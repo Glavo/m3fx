@@ -39,9 +39,10 @@ import java.util.Objects;
 /// Controls a Material Design 3 modal dialog rendered inside an owner scene.
 ///
 /// `M3Dialog` does not create a native window and does not use JavaFX [javafx.scene.control.Dialog] modality. Its
-/// pane and scrim are installed above the owner scene content, so the owner window retains normal window-manager
-/// behavior while application content remains blocked by the scrim and focus trap. Closing the final dialog
-/// restores the exact scene root and focus owner that preceded presentation.
+/// pane and scrim are installed in the [M3OverlayPane] containing the owner, so the owner window retains normal
+/// window-manager behavior while application content remains blocked by the scrim and focus trap. Presentation
+/// never replaces the scene root. Closing the dialog removes only its overlay layer and restores prior focus when
+/// no newer overlay has superseded it.
 ///
 /// [#show()] is non-blocking. [#showAndWait()] enters a JavaFX nested event loop and returns the nullable result after
 /// the dialog has closed. An action button first bubbles its ordinary action event; consuming that event prevents
@@ -50,11 +51,11 @@ import java.util.Objects;
 /// Activating the surrounding scrim requests the same cancellable close by default and produces no button type;
 /// [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining modality.
 ///
-/// A dialog must have an attached [owner][#setOwner(Node)] before it is shown. The owner also supplies inherited
-/// stylesheets, node orientation, motion settings, and the nearest local Material theme. An explicit
-/// [theme][#themeProperty()] overrides that inherited theme while preserving the owner's remaining context. Hiding
-/// the owner window forcibly removes the overlay and completes the hiding lifecycle without emitting a cancellable
-/// close request.
+/// A dialog must have an attached [owner][#setOwner(Node)] inside an [M3OverlayPane] before it is shown. The owner
+/// also supplies inherited stylesheets, node orientation, motion settings, and the nearest local Material theme.
+/// An explicit [theme][#themeProperty()] overrides that inherited theme while preserving the owner's remaining
+/// context. Hiding the owner window forcibly removes the overlay and completes the hiding lifecycle without
+/// emitting a cancellable close request.
 ///
 /// ```java
 /// M3Dialog<String> dialog = new M3Dialog<>();
@@ -124,7 +125,7 @@ public class M3Dialog<R> {
     /// affected.
     ///
     /// @defaultValue `true`
-    private final BooleanProperty dismissOnScrimClick =
+    private final BooleanProperty dismissOnScrimClickValue =
             new SimpleBooleanProperty(this, "dismissOnScrimClick", true);
 
     /// Reports whether this dialog currently owns an overlay layer in its owner's scene.
@@ -145,7 +146,7 @@ public class M3Dialog<R> {
 
     /// The handler invoked after this dialog's overlay layer has been installed.
     ///
-    /// Throwing from this handler removes the partially presented layer and restores the original scene root.
+    /// Throwing from this handler removes the partially presented layer from its stable overlay pane.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShown =
@@ -225,7 +226,7 @@ public class M3Dialog<R> {
         this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
         presenter = new M3DialogPresenter(dialogPane, this::handleScrimAction);
         presenter.setDismissOnScrimClick(isDismissOnScrimClick());
-        dismissOnScrimClick.addListener((observable, oldValue, enabled) ->
+        dismissOnScrimClickValue.addListener((observable, oldValue, enabled) ->
                 presenter.setDismissOnScrimClick(enabled));
         presentationAnimation = new M3NodeTransition(dialogPane);
         presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
@@ -249,8 +250,8 @@ public class M3Dialog<R> {
 
     /// Sets the owner node used for subsequent presentations.
     ///
-    /// The owner may be replaced while the dialog is fully hidden. It must be attached to a showing window when
-    /// [#show()] is called.
+    /// The owner may be replaced while the dialog is fully hidden. It must be attached to a showing window and be
+    /// the [M3OverlayPane] used as that scene's root or one of its descendants when [#show()] is called.
     ///
     /// @param owner the owner node
     /// @throws IllegalStateException if this dialog is showing or beginning presentation
@@ -320,7 +321,7 @@ public class M3Dialog<R> {
     ///
     /// @return `true` when pointer activation of the scrim requests dismissal
     public final boolean isDismissOnScrimClick() {
-        return dismissOnScrimClick.get();
+        return dismissOnScrimClickValue.get();
     }
 
     /// Sets whether a primary click on the surrounding scrim requests that this dialog close.
@@ -330,14 +331,14 @@ public class M3Dialog<R> {
     ///
     /// @param dismissOnScrimClick whether pointer activation of the scrim requests dismissal
     public final void setDismissOnScrimClick(boolean dismissOnScrimClick) {
-        this.dismissOnScrimClick.set(dismissOnScrimClick);
+        dismissOnScrimClickValue.set(dismissOnScrimClick);
     }
 
     /// Returns the property controlling pointer dismissal through the surrounding scrim.
     ///
     /// @return the scrim pointer-dismissal property
     public final BooleanProperty dismissOnScrimClickProperty() {
-        return dismissOnScrimClick;
+        return dismissOnScrimClickValue;
     }
 
     /// Returns whether this dialog currently owns an installed overlay layer.
@@ -357,7 +358,8 @@ public class M3Dialog<R> {
     /// application thread.
     ///
     /// @throws IllegalStateException if called off the JavaFX application thread, if no owner is configured, if the
-    ///         owner is detached, or if the dialog pane already belongs to another scene-graph parent
+    ///         owner is detached or outside an [M3OverlayPane], or if the dialog pane already belongs to another
+    ///         scene-graph parent
     public final void show() {
         checkFxThread();
         if (isShowing() || presenting) {
@@ -420,8 +422,8 @@ public class M3Dialog<R> {
     ///
     /// @return the completed result, or `null`
     /// @throws IllegalStateException if called off the JavaFX application thread, while already showing or beginning
-    ///         presentation, while a nested wait for this dialog is already active, if no showing owner is configured,
-    ///         or if the dialog pane already belongs to another scene-graph parent
+    ///         presentation, while a nested wait for this dialog is already active, if no showing owner inside an
+    ///         [M3OverlayPane] is configured, or if the dialog pane already belongs to another scene-graph parent
     public final @Nullable R showAndWait() {
         checkFxThread();
         if (isShowing() || presenting || nestedEventLoopRunning) {

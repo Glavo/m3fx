@@ -84,7 +84,7 @@ public final class M3SegmentedButton extends ButtonBase {
     /// other segments to restore its selection invariant.
     ///
     /// @defaultValue `false`
-    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+    private final BooleanProperty selectedValue = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
         protected void invalidated() {
@@ -101,7 +101,7 @@ public final class M3SegmentedButton extends ButtonBase {
     /// `false` does not affect selection behavior, accessibility state, or the supplied graphic.
     ///
     /// @defaultValue `true`
-    private final BooleanProperty selectionIndicatorEnabled =
+    private final BooleanProperty selectionIndicatorEnabledValue =
             new SimpleBooleanProperty(this, "selectionIndicatorEnabled", true);
 
     /// Creates an unselected segmented button with an empty label and no graphic.
@@ -130,28 +130,28 @@ public final class M3SegmentedButton extends ButtonBase {
     ///
     /// @return `true` if this segmented button is selected
     public final boolean isSelected() {
-        return selected.get();
+        return selectedValue.get();
     }
 
     /// Sets whether this segmented button is selected.
     ///
     /// @param selected whether this segmented button is selected
     public final void setSelected(boolean selected) {
-        this.selected.set(selected);
+        selectedValue.set(selected);
     }
 
     /// Returns the property containing this segmented button's selected state.
     ///
     /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
-        return selected;
+        return selectedValue;
     }
 
     /// Returns whether the default selected-state check indicator is enabled.
     ///
     /// @return `true` if the default skin may display its selection indicator
     public final boolean isSelectionIndicatorEnabled() {
-        return selectionIndicatorEnabled.get();
+        return selectionIndicatorEnabledValue.get();
     }
 
     /// Enables or disables the default selected-state check indicator.
@@ -161,14 +161,14 @@ public final class M3SegmentedButton extends ButtonBase {
     ///
     /// @param enabled whether the default selection indicator is enabled
     public final void setSelectionIndicatorEnabled(boolean enabled) {
-        selectionIndicatorEnabled.set(enabled);
+        selectionIndicatorEnabledValue.set(enabled);
     }
 
     /// Returns the property controlling the default selected-state check indicator.
     ///
     /// @return the selection-indicator-enabled property
     public final BooleanProperty selectionIndicatorEnabledProperty() {
-        return selectionIndicatorEnabled;
+        return selectionIndicatorEnabledValue;
     }
 
     /// Returns the preferred container height token.

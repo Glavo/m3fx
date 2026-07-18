@@ -531,7 +531,7 @@ public class M3DialogPane extends Control {
 
     /// Returns accessibility attributes for dialog content, actions, and focus state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute parameters supplied by JavaFX
     /// @return the resolved accessibility value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
@@ -553,7 +553,7 @@ public class M3DialogPane extends Control {
 
     /// Executes accessibility actions for dialog content and action buttons.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters optional action parameters supplied by JavaFX
     /// @throws NullPointerException if `action` is `null`
     @Override
@@ -1067,9 +1067,6 @@ public class M3DialogPane extends Control {
     private static @Nullable Node firstDialogContentFocusItem(@Nullable Node item) {
         if (!M3Accessible.canReach(item)) {
             return null;
-        }
-        if (item instanceof M3SnackbarHost) {
-            return item;
         }
         @Nullable Node directFocusTarget = M3Accessible.focusTarget(item);
         if (directFocusTarget == item) {

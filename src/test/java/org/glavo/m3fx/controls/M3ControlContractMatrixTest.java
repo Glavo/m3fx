@@ -138,7 +138,6 @@ import org.glavo.m3fx.skins.M3SearchBarSkin;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SplitButtonSkin;
-import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
@@ -599,8 +598,8 @@ final class M3ControlContractMatrixTest {
             containedLoadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
 
             M3Banner banner = banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar standaloneSnackbar = new M3Snackbar("Standalone snackbar", "Action");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setHeaderText("Dialog");
@@ -693,7 +692,6 @@ final class M3ControlContractMatrixTest {
                     defaultLoadingIndicator,
                     containedLoadingIndicator,
                     banner,
-                    snackbarHost,
                     standaloneSnackbar,
                     dialogPane,
                     topAppBar,
@@ -703,7 +701,8 @@ final class M3ControlContractMatrixTest {
                     validationSummary
             );
             root.setPrefWrapLength(1180.0);
-            Scene scene = new Scene(root, 1180.0, 900.0);
+            overlayPane.setContent(root);
+            Scene scene = new Scene(overlayPane, 1180.0, 900.0);
             Stage stage = new Stage();
 
             stageReference.set(stage);
@@ -711,9 +710,9 @@ final class M3ControlContractMatrixTest {
             subMenuItemReference.set(subMenuItem);
             stage.setScene(scene);
             stage.show();
-            snackbarHost.show(new M3Snackbar("Hosted snackbar", "Action"));
-            root.applyCss();
-            root.layout();
+            overlayPane.showSnackbar(new M3Snackbar("Hosted snackbar", "Action"));
+            overlayPane.applyCss();
+            overlayPane.layout();
             menuButton.showMenu();
             subMenuItem.showSubMenu();
         }, () -> {
@@ -6733,15 +6732,15 @@ final class M3ControlContractMatrixTest {
             );
             customSnackbar.setStyle("-m3-container-min-width: 240px; -m3-container-max-width: 420px;");
 
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.ZERO);
-            StackPane root = new StackPane(host);
-            Scene scene = new Scene(root, 1000.0, 180.0);
+            M3OverlayPane host = new M3OverlayPane();
+            host.setSnackbarDisplayDuration(Duration.ZERO);
+            host.setContent(new Region());
+            Scene scene = new Scene(host, 1000.0, 180.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
 
-            host.show(shortSnackbar);
-            root.applyCss();
-            root.layout();
+            host.showSnackbar(shortSnackbar);
+            host.applyCss();
+            host.layout();
 
             Region shortContainer = assertInstanceOf(
                     Region.class,
@@ -6752,9 +6751,9 @@ final class M3ControlContractMatrixTest {
             assertEquals(344.0, shortSnackbar.getWidth(), 1.0);
             assertEquals(344.0, shortContainer.getWidth(), 1.0);
 
-            host.show(defaultSnackbar);
-            root.applyCss();
-            root.layout();
+            host.showSnackbar(defaultSnackbar);
+            host.applyCss();
+            host.layout();
 
             Region defaultContainer = assertInstanceOf(
                     Region.class,
@@ -6765,9 +6764,9 @@ final class M3ControlContractMatrixTest {
             assertEquals(672.0, defaultSnackbar.getWidth(), 1.0);
             assertEquals(672.0, defaultContainer.getWidth(), 1.0);
 
-            host.show(customSnackbar);
-            root.applyCss();
-            root.layout();
+            host.showSnackbar(customSnackbar);
+            host.applyCss();
+            host.layout();
 
             Region customContainer = assertInstanceOf(
                     Region.class,
@@ -7690,30 +7689,30 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that snackbar hosts show action snackbars and route action events.
+    /// Verifies that overlay panes show action snackbars and route action events.
     @Test
-    void snackbarHostShowsActionSnackbars() {
+    void overlayPaneShowsActionSnackbars() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane host = new M3OverlayPane();
+            host.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3MotionSettings.setReducedMotionRequested(host, true);
             AtomicInteger actionCount = new AtomicInteger();
-            Pane root = new Pane(host);
-            Scene scene = new Scene(root, 320.0, 120.0);
+            host.setContent(new Pane());
+            Scene scene = new Scene(host, 320.0, 120.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             M3Snackbar actionSnackbar = new M3Snackbar("Saved", "Undo");
             actionSnackbar.setOnAction(event -> {
-                host.dismiss();
+                host.dismissSnackbar();
                 actionCount.incrementAndGet();
             });
-            host.show(actionSnackbar);
-            root.applyCss();
+            host.showSnackbar(actionSnackbar);
+            host.applyCss();
 
             M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
-            assertTrue(host.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
-            assertInstanceOf(M3SnackbarHostSkin.class, host.getSkin());
-            assertTrue(host.isShowing());
+            assertTrue(host.getStyleClass().contains(M3OverlayPane.STYLE_CLASS));
+            assertSame(actionSnackbar, snackbar);
+            assertTrue(host.isSnackbarShowing());
             assertTrue(snackbar.getParent() != null);
             assertTrue(snackbar.isVisible());
             assertTrue(snackbar.isManaged());
@@ -7722,53 +7721,58 @@ final class M3ControlContractMatrixTest {
             actionButton.fire();
 
             assertEquals(1, actionCount.get());
-            assertFalse(host.isShowing());
+            assertFalse(host.isSnackbarShowing());
 
             M3Snackbar closableSnackbar = new M3Snackbar("Closable");
             closableSnackbar.setCloseButtonVisible(true);
-            host.show(closableSnackbar);
-            root.applyCss();
+            host.showSnackbar(closableSnackbar);
+            host.applyCss();
             M3IconButton closeButton = assertInstanceOf(
                     M3IconButton.class,
                     closableSnackbar.lookup(".m3-snackbar-close")
             );
             closeButton.fire();
 
-            assertFalse(host.isShowing());
+            assertFalse(host.isSnackbarShowing());
         });
     }
 
-    /// Verifies that snackbar hosts do not stretch snackbars to the full overlay size.
+    /// Verifies that overlay panes do not stretch snackbars to the full overlay size.
     @Test
-    void snackbarHostKeepsSnackbarAtPreferredSizeInLargeOverlay() {
+    void overlayPaneKeepsSnackbarAtPreferredSizeInLargeOverlay() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
-            StackPane root = new StackPane(new Region(), host);
-            StackPane.setAlignment(host, Pos.BOTTOM_CENTER);
-            Scene scene = new Scene(root, 800.0, 500.0);
+            M3OverlayPane host = new M3OverlayPane();
+            host.setSnackbarDisplayDuration(Duration.INDEFINITE);
+            host.setContent(new Region());
+            Scene scene = new Scene(host, 800.0, 500.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            host.show(new M3Snackbar("Saved"));
-            root.applyCss();
-            root.resize(800.0, 500.0);
-            root.layout();
+            host.showSnackbar(new M3Snackbar("Saved"));
+            host.applyCss();
+            host.resize(800.0, 500.0);
+            host.layout();
 
             M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
-            assertTrue(host.getWidth() >= 790.0);
-            assertTrue(snackbar.getWidth() < host.getWidth() / 2.0);
-            assertTrue(snackbar.getHeight() < host.getHeight() / 3.0);
-            assertEquals((host.getWidth() - snackbar.getWidth()) / 2.0, snackbar.getLayoutX(), 1.0);
-            assertTrue(snackbar.getLayoutY() > host.getHeight() - 120.0);
-            assertTrue(snackbar.getLayoutY() + snackbar.getHeight()
-                    <= host.getHeight() - host.getPadding().getBottom() + 0.0001);
+            Node hostNode = Objects.requireNonNull(host.lookup(".m3-snackbar-host"), "snackbar overlay node");
+            Bounds hostBounds = hostNode.localToScene(hostNode.getBoundsInLocal());
+            Bounds snackbarBounds = snackbar.localToScene(snackbar.getBoundsInLocal());
+            assertTrue(hostBounds.getWidth() >= 790.0);
+            assertTrue(snackbarBounds.getWidth() < hostBounds.getWidth() / 2.0);
+            assertTrue(snackbarBounds.getHeight() < hostBounds.getHeight() / 3.0);
+            assertEquals(
+                    hostBounds.getMinX() + (hostBounds.getWidth() - snackbarBounds.getWidth()) / 2.0,
+                    snackbarBounds.getMinX(),
+                    1.0
+            );
+            assertTrue(snackbarBounds.getMinY() > hostBounds.getMaxY() - 120.0);
+            assertTrue(snackbarBounds.getMaxY() <= hostBounds.getMaxY() + 0.0001);
         });
     }
 
-    /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
+    /// Verifies that overlay panes remove dismissed snackbars after the exit animation.
     @Tier2Test
     @Test
-    void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
+    void overlayPaneRemovesDismissedSnackbars() throws InterruptedException {
         AtomicReference<@Nullable M3Snackbar> snackbarReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
@@ -7781,18 +7785,18 @@ final class M3ControlContractMatrixTest {
                         "Snackbar was not detached after dismissal"
                 ),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
-                    Pane root = new Pane(host);
-                    Scene scene = new Scene(root, 320.0, 120.0);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                    host.setContent(new Pane());
+                    Scene scene = new Scene(host, 320.0, 120.0);
 
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    host.show(new M3Snackbar("Saved"));
-                    root.applyCss();
+                    host.showSnackbar(new M3Snackbar("Saved"));
+                    host.applyCss();
 
                     M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
                     snackbarReference.set(snackbar);
-                    host.dismiss();
+                    host.dismissSnackbar();
                 },
                 () -> {
                     M3Snackbar snackbar = Objects.requireNonNull(snackbarReference.get(), "snackbar");
@@ -7802,52 +7806,52 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that snackbar hosts display queued snackbars after the current snackbar is dismissed.
+    /// Verifies that overlay panes display queued snackbars after the current snackbar is dismissed.
     @Tier2Test
     @Test
-    void snackbarHostQueuesSnackbars() throws InterruptedException {
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+    void overlayPaneQueuesSnackbars() throws InterruptedException {
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
-                () -> describeSnackbarHostState(
+                () -> describeOverlayPaneState(
                         hostReference,
                         firstReference,
                         secondReference,
                         "Queued snackbar was not promoted after dismissal"
                 ),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
-                    Pane root = new Pane(host);
-                    Scene scene = new Scene(root, 320.0, 120.0);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                    host.setContent(new Pane());
+                    Scene scene = new Scene(host, 320.0, 120.0);
 
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     M3Snackbar first = new M3Snackbar("First");
                     M3Snackbar second = new M3Snackbar("Second");
-                    host.enqueue(first);
-                    host.enqueue(second);
-                    root.applyCss();
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
+                    host.applyCss();
 
                     assertEquals(first, host.getSnackbar());
-                    assertEquals(java.util.List.of(second), host.getQueue());
+                    assertEquals(java.util.List.of(second), host.getSnackbarQueue());
                     assertTrue(first.getParent() != null);
 
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    host.dismiss();
+                    host.dismissSnackbar();
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertEquals(second, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(host.isSnackbarShowing());
+                    assertTrue(host.getSnackbarQueue().isEmpty());
                     assertNull(first.getParent());
                     assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
@@ -7855,45 +7859,45 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that snackbar hosts clear pending snackbars without dismissing the current snackbar.
+    /// Verifies that overlay panes clear pending snackbars without dismissing the current snackbar.
     @Test
-    void snackbarHostClearsQueuedSnackbars() {
+    void overlayPaneClearsQueuedSnackbars() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane host = new M3OverlayPane();
+            host.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar first = new M3Snackbar("First");
             M3Snackbar second = new M3Snackbar("Second");
             M3Snackbar third = new M3Snackbar("Third");
 
-            host.enqueue(first);
-            host.enqueue(second);
-            host.enqueue(third);
+            host.enqueueSnackbar(first);
+            host.enqueueSnackbar(second);
+            host.enqueueSnackbar(third);
 
             assertEquals(first, host.getSnackbar());
-            assertEquals(java.util.List.of(second, third), host.getQueue());
-            assertThrows(UnsupportedOperationException.class, () -> host.getQueue().add(new M3Snackbar("Fourth")));
+            assertEquals(java.util.List.of(second, third), host.getSnackbarQueue());
+            assertThrows(UnsupportedOperationException.class, () -> host.getSnackbarQueue().add(new M3Snackbar("Fourth")));
 
-            host.clearQueue();
+            host.clearSnackbarQueue();
 
             assertEquals(first, host.getSnackbar());
-            assertTrue(host.isShowing());
-            assertTrue(host.getQueue().isEmpty());
+            assertTrue(host.isSnackbarShowing());
+            assertTrue(host.getSnackbarQueue().isEmpty());
         });
     }
 
-    /// Verifies that snackbar hosts reset a snackbar when it is replaced immediately.
+    /// Verifies that overlay panes reset a snackbar when it is replaced immediately.
     @Test
-    void snackbarHostResetsReplacedSnackbar() {
+    void overlayPaneResetsReplacedSnackbar() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane host = new M3OverlayPane();
+            host.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar first = new M3Snackbar("First");
             M3Snackbar second = new M3Snackbar("Second");
 
-            host.show(first);
+            host.showSnackbar(first);
             first.setOpacity(0.25);
             first.setTranslateY(8.0);
-            host.show(second);
+            host.showSnackbar(second);
             applyCss(host);
 
             assertEquals(second, host.getSnackbar());
@@ -7906,46 +7910,46 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that snackbar hosts can dismiss the current snackbar and clear the queue in one call.
+    /// Verifies that overlay panes can dismiss the current snackbar and clear the queue in one call.
     @Tier2Test
     @Test
-    void snackbarHostDismissAllClearsCurrentAndQueuedSnackbars() throws InterruptedException {
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+    void overlayPaneDismissAllClearsCurrentAndQueuedSnackbars() throws InterruptedException {
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
-                () -> snackbarHostCleared(hostReference, firstReference, secondReference),
-                () -> describeSnackbarHostState(
+                () -> overlayPaneCleared(hostReference, firstReference, secondReference),
+                () -> describeOverlayPaneState(
                         hostReference,
                         firstReference,
                         secondReference,
-                        "Snackbar host did not clear current and queued snackbars"
+                        "Snackbar overlay did not clear current and queued snackbars"
                 ),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
                     M3Snackbar first = new M3Snackbar("First");
                     M3Snackbar second = new M3Snackbar("Second");
 
-                    host.enqueue(first);
-                    host.enqueue(second);
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
                     assertEquals(first, host.getSnackbar());
-                    assertEquals(java.util.List.of(second), host.getQueue());
+                    assertEquals(java.util.List.of(second), host.getSnackbarQueue());
 
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    host.dismissAll();
+                    host.dismissAllSnackbars();
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertNull(host.getSnackbar());
-                    assertFalse(host.isShowing());
-                    assertTrue(host.getQueue().isEmpty());
+                    assertFalse(host.isSnackbarShowing());
+                    assertTrue(host.getSnackbarQueue().isEmpty());
                     assertNull(first.getParent());
                     assertNull(second.getParent());
                     assertFalse(first.isVisible());
@@ -7953,122 +7957,107 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that snackbar hosts expose the current snackbar and queue to accessibility clients.
+    /// Verifies the overlay facade state and the current snackbar accessibility contract.
     @Test
-    void snackbarHostExposesAccessibleStateAndActions() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
+    void overlayPaneExposesSnackbarStateAndAccessibility() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = new M3OverlayPane();
             M3Snackbar first = new M3Snackbar("Saved", "Undo");
             M3Snackbar second = new M3Snackbar("Deleted");
 
-            host.setDisplayDuration(Duration.ZERO);
-            host.show(first);
-            host.enqueue(second);
+            overlayPane.setSnackbarDisplayDuration(Duration.ZERO);
+            overlayPane.showSnackbar(first);
+            overlayPane.enqueueSnackbar(second);
+            applyCss(overlayPane);
 
-            assertEquals(true, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
-            assertEquals(first, host.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
-            assertEquals(2, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-            assertEquals(first, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertEquals(second, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-            assertEquals("Saved Undo", host.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+            assertSame(first, overlayPane.getSnackbar());
+            assertTrue(overlayPane.isSnackbarShowing());
+            assertEquals(List.of(second), overlayPane.getSnackbarQueue());
+            assertEquals(1, first.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertInstanceOf(
+                    M3Button.class,
+                    first.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+            );
+            assertEquals("Saved Undo", first.queryAccessibleAttribute(AccessibleAttribute.TEXT));
 
-            host.executeAccessibleAction(AccessibleAction.COLLAPSE);
+            overlayPane.dismissAllSnackbars();
 
-            assertFalse(host.isShowing());
-            assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            assertFalse(overlayPane.isSnackbarShowing());
+            assertNull(overlayPane.getSnackbar());
+            assertTrue(overlayPane.getSnackbarQueue().isEmpty());
         });
     }
 
-    /// Verifies that snackbar hosts route focus to the current snackbar action and support Escape dismissal.
+    /// Verifies current snackbar accessibility focus, queued focus transfer, and Escape dismissal.
     @Test
-    void snackbarHostSupportsAccessibleFocusAndKeyboardDismissal() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
-            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            Pane root = new Pane(host);
+    void overlaySnackbarSupportsAccessibleFocusAndKeyboardDismissal() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new Pane());
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar first = new M3Snackbar("Saved", "Undo");
+            M3Snackbar second = new M3Snackbar("Archived", "Recover");
             Stage stage = new Stage();
             try {
-                stage.setScene(new Scene(root, 360.0, 140.0));
+                stage.setScene(new Scene(overlayPane, 360.0, 140.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
-                host.show(snackbar);
-                root.applyCss();
-                root.layout();
+                overlayPane.showSnackbar(first);
+                overlayPane.enqueueSnackbar(second);
+                overlayPane.applyCss();
+                overlayPane.layout();
 
-                M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
-
-                assertEquals(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                host.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-                assertTrue(actionButton.isFocused());
-
-                actionButton.getScene().getRoot().requestFocus();
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
-                assertTrue(actionButton.isFocused());
-
-                actionButton.getScene().getRoot().requestFocus();
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, actionButton);
-                assertTrue(actionButton.isFocused());
-
-                M3Snackbar indexedSnackbar = new M3Snackbar("Archived", "Recover");
-                host.enqueue(indexedSnackbar);
-                actionButton.getScene().getRoot().requestFocus();
-
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-
-                assertSame(indexedSnackbar, host.getSnackbar());
-                assertTrue(host.getQueue().isEmpty());
-                M3Button indexedActionButton = assertInstanceOf(
+                M3Button firstAction = assertInstanceOf(
                         M3Button.class,
-                        indexedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                        first.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 );
-                assertTrue(indexedActionButton.isFocused());
-                assertEquals(indexedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, first));
+                assertTrue(firstAction.isFocused());
 
-                M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-                host.enqueue(queuedSnackbar);
-                indexedActionButton.getScene().getRoot().requestFocus();
+                firstAction.getScene().getRoot().requestFocus();
+                first.executeAccessibleAction(AccessibleAction.SHOW_ITEM, firstAction);
+                assertTrue(firstAction.isFocused());
 
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                overlayPane.dismissSnackbar();
+                overlayPane.applyCss();
+                overlayPane.layout();
 
-                assertSame(queuedSnackbar, host.getSnackbar());
-                assertTrue(host.getQueue().isEmpty());
-                M3Button queuedActionButton = assertInstanceOf(
+                M3Button secondAction = assertInstanceOf(
                         M3Button.class,
-                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                        second.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 );
-                assertTrue(queuedActionButton.isFocused());
-                assertEquals(queuedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(second, overlayPane.getSnackbar());
+                assertTrue(overlayPane.getSnackbarQueue().isEmpty());
+                assertTrue(secondAction.isFocused());
 
-                queuedActionButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
-                assertFalse(host.isShowing());
-                assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
-                assertNull(host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(overlayPane.isSnackbarShowing());
+                assertNull(overlayPane.getSnackbar());
             } finally {
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });
     }
 
-    /// Verifies that snackbar hosts delegate current snackbar action indexes into action-owned targets.
+    /// Verifies a current snackbar can reveal an action-owned rich tooltip target.
     @Test
-    void snackbarHostActionIndexRevealsCurrentRichTooltipActionTarget() {
+    void overlaySnackbarRevealsCurrentRichTooltipActionTarget() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new Pane());
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            Pane root = new Pane(host);
             Stage stage = new Stage();
 
             try {
-                stage.setScene(new Scene(root, 400.0, 160.0));
+                stage.setScene(new Scene(overlayPane, 400.0, 160.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
-                host.show(snackbar);
-                root.applyCss();
-                root.layout();
+                overlayPane.showSnackbar(snackbar);
+                overlayPane.applyCss();
+                overlayPane.layout();
 
                 M3Button actionButton = assertInstanceOf(
                         M3Button.class,
@@ -8085,48 +8074,43 @@ final class M3ControlContractMatrixTest {
                 try {
                     assertFalse(tooltip.isShowing());
 
-                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
 
                     assertTrue(tooltip.isShowing());
                     assertTrue(tooltipAction.isFocused());
                     assertSame(tooltipAction, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 } finally {
                     tooltip.hide();
                     M3Tooltip.uninstall(actionButton, tooltip);
                 }
             } finally {
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });
     }
 
-    /// Verifies that snackbar hosts can promote queued snackbars before indexed action-owned target reveal.
+    /// Verifies a promoted queued snackbar can reveal an action-owned rich tooltip target.
     @Test
-    void snackbarHostActionIndexRevealsPromotedQueuedRichTooltipActionTarget() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+    void promotedOverlaySnackbarRevealsRichTooltipActionTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new Pane());
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-            Pane root = new Pane(host);
             Stage stage = new Stage();
 
             try {
-                stage.setScene(new Scene(root, 400.0, 160.0));
+                stage.setScene(new Scene(overlayPane, 400.0, 160.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
-                host.show(currentSnackbar);
-                host.enqueue(queuedSnackbar);
-                root.applyCss();
-                root.layout();
+                overlayPane.showSnackbar(currentSnackbar);
+                overlayPane.enqueueSnackbar(queuedSnackbar);
+                overlayPane.dismissSnackbar();
+                overlayPane.applyCss();
+                overlayPane.layout();
 
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-                root.applyCss();
-                root.layout();
                 M3Button actionButton = assertInstanceOf(
                         M3Button.class,
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
@@ -8140,45 +8124,43 @@ final class M3ControlContractMatrixTest {
                 );
 
                 try {
-                    assertSame(queuedSnackbar, host.getSnackbar());
-                    assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-                    assertNull(host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-                    assertTrue(host.getQueue().isEmpty());
+                    assertSame(queuedSnackbar, overlayPane.getSnackbar());
+                    assertTrue(overlayPane.getSnackbarQueue().isEmpty());
                     assertFalse(tooltip.isShowing());
 
-                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+                    queuedSnackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
 
                     assertTrue(tooltip.isShowing());
                     assertTrue(tooltipAction.isFocused());
                     assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 } finally {
                     tooltip.hide();
                     M3Tooltip.uninstall(actionButton, tooltip);
                 }
             } finally {
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });
     }
 
-    /// Verifies that snackbar hosts reject disabled action-owned targets before changing focus.
+    /// Verifies a snackbar rejects a disabled action-owned target without changing focus.
     @Test
-    void snackbarHostActionIndexRejectsDisabledRichTooltipActionTarget() {
+    void overlaySnackbarRejectsDisabledRichTooltipActionTarget() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new Pane());
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            Pane root = new Pane(host);
             Stage stage = new Stage();
 
             try {
-                stage.setScene(new Scene(root, 400.0, 160.0));
+                stage.setScene(new Scene(overlayPane, 400.0, 160.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
-                host.show(snackbar);
-                root.applyCss();
-                root.layout();
+                overlayPane.showSnackbar(snackbar);
+                overlayPane.applyCss();
+                overlayPane.layout();
 
                 M3Button actionButton = assertInstanceOf(
                         M3Button.class,
@@ -8194,92 +8176,61 @@ final class M3ControlContractMatrixTest {
                 );
 
                 try {
-                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                     assertTrue(actionButton.isFocused());
                     assertFalse(tooltip.isShowing());
 
-                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledTooltipAction);
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledTooltipAction);
 
                     assertFalse(tooltip.isShowing());
                     assertFalse(disabledTooltipAction.isFocused());
                     assertTrue(actionButton.isFocused());
                     assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                    assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 } finally {
                     tooltip.hide();
                     M3Tooltip.uninstall(actionButton, tooltip);
                 }
             } finally {
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });
     }
 
-    /// Verifies that hidden or disabled queued snackbars are not promoted by explicit reveal requests.
+    /// Verifies inaccessible queued snackbars cannot alter the overlay facade queue through accessibility actions.
     @Test
-    void snackbarHostRejectsUnreachableQueuedSnackbarRevealWithoutPromoting() {
+    void inaccessibleQueuedSnackbarsDoNotAlterOverlayQueue() {
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new Pane());
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar disabledQueuedSnackbar = new M3Snackbar("Deleted", "Restore");
             disabledQueuedSnackbar.setDisable(true);
             M3Snackbar hiddenQueuedSnackbar = new M3Snackbar("Uploaded", "View");
             hiddenQueuedSnackbar.setVisible(false);
-            Pane root = new Pane(host);
             Stage stage = new Stage();
 
             try {
-                stage.setScene(new Scene(root, 360.0, 140.0));
+                stage.setScene(new Scene(overlayPane, 360.0, 140.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
-                host.show(currentSnackbar);
-                host.enqueue(disabledQueuedSnackbar);
-                host.enqueue(hiddenQueuedSnackbar);
-                root.applyCss();
-                root.layout();
+                overlayPane.showSnackbar(currentSnackbar);
+                overlayPane.enqueueSnackbar(disabledQueuedSnackbar);
+                overlayPane.enqueueSnackbar(hiddenQueuedSnackbar);
+                overlayPane.applyCss();
+                overlayPane.layout();
 
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertEquals(2, host.getQueue().size());
-                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
-                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+                disabledQueuedSnackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertFalse(M3Accessible.requestAccessibleFocus(hiddenQueuedSnackbar));
 
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledQueuedSnackbar);
-                root.applyCss();
-                root.layout();
-
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertEquals(2, host.getQueue().size());
-                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
-                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
-
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenQueuedSnackbar);
-                root.applyCss();
-                root.layout();
-
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertEquals(2, host.getQueue().size());
-                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
-                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
-
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-                root.applyCss();
-                root.layout();
-
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertEquals(2, host.getQueue().size());
-                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
-                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
-
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2);
-                root.applyCss();
-                root.layout();
-
-                assertSame(currentSnackbar, host.getSnackbar());
-                assertEquals(2, host.getQueue().size());
-                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
-                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+                assertSame(currentSnackbar, overlayPane.getSnackbar());
+                assertEquals(
+                        List.of(disabledQueuedSnackbar, hiddenQueuedSnackbar),
+                        overlayPane.getSnackbarQueue()
+                );
             } finally {
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });
@@ -8288,10 +8239,10 @@ final class M3ControlContractMatrixTest {
     /// Verifies that queued snackbar promotion preserves action focus when the dismissed action owned focus.
     @Tier2Test
     @Test
-    void snackbarHostTransfersFocusedActionWhenQueuedSnackbarIsPromoted() throws InterruptedException {
+    void overlayPaneTransfersFocusedActionWhenQueuedSnackbarIsPromoted() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> firstActionReference = new AtomicReference<>();
@@ -8299,33 +8250,33 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
                         && snackbarFocusNodeFocused(secondReference.get()),
-                () -> describeSnackbarHostState(
+                () -> describeOverlayPaneState(
                         hostReference,
                         firstReference,
                         secondReference,
                         "Queued snackbar action did not receive transferred focus"
                 ),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
                     M3Button outside = new M3Button("Outside");
-                    VBox root = new VBox(12.0, outside, host);
+                    host.setContent(new VBox(12.0, outside));
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    Scene scene = new Scene(root, 420.0, 180.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    Scene scene = new Scene(host, 420.0, 180.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First", "Undo");
                     M3Snackbar second = new M3Snackbar("Second", "Restore");
-                    host.enqueue(first);
-                    host.enqueue(second);
-                    root.applyCss();
-                    root.layout();
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
+                    host.applyCss();
+                    host.layout();
 
                     M3Button firstAction = assertInstanceOf(
                             M3Button.class,
@@ -8335,15 +8286,15 @@ final class M3ControlContractMatrixTest {
                     assertTrue(firstAction.isFocused());
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
                     firstActionReference.set(firstAction);
-                    host.dismiss();
+                    host.dismissSnackbar();
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
                     M3Button firstAction = Objects.requireNonNull(firstActionReference.get(), "firstAction");
@@ -8366,11 +8317,11 @@ final class M3ControlContractMatrixTest {
     /// Verifies that queued snackbar promotion does not steal focus from unrelated page content.
     @Tier2Test
     @Test
-    void snackbarHostKeepsExternalFocusWhenQueuedSnackbarPromotes() throws InterruptedException {
+    void overlayPaneKeepsExternalFocusWhenQueuedSnackbarPromotes() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> outsideReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
@@ -8378,47 +8329,47 @@ final class M3ControlContractMatrixTest {
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
                         && outsideReference.get() != null
                         && Objects.requireNonNull(outsideReference.get(), "outside").isFocused(),
-                () -> describeSnackbarHostState(
+                () -> describeOverlayPaneState(
                         hostReference,
                         firstReference,
                         secondReference,
                         "Queued snackbar promotion stole external focus"
                 ),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
                     M3Button outside = new M3Button("Outside");
-                    VBox root = new VBox(12.0, outside, host);
+                    host.setContent(new VBox(12.0, outside));
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    Scene scene = new Scene(root, 420.0, 180.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    Scene scene = new Scene(host, 420.0, 180.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First", "Undo");
                     M3Snackbar second = new M3Snackbar("Second", "Restore");
-                    host.enqueue(first);
-                    host.enqueue(second);
-                    root.applyCss();
-                    root.layout();
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
+                    host.applyCss();
+                    host.layout();
 
                     outside.requestFocus();
                     assertTrue(outside.isFocused());
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     outsideReference.set(outside);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    host.dismiss();
+                    host.dismissSnackbar();
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
                     M3Button outside = Objects.requireNonNull(outsideReference.get(), "outside");
 
@@ -8432,74 +8383,74 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that snackbar host default display duration resolves from motion behavior.
+    /// Verifies the snackbar display-duration property stores only an explicit override.
     @Test
-    void snackbarHostDisplayDurationUsesMotionBehaviorDefault() {
-        M3SnackbarHost host = new M3SnackbarHost();
+    void overlayPaneDisplayDurationPropertyStoresExplicitOverride() {
+        M3OverlayPane host = new M3OverlayPane();
         M3MotionBehavior behavior = snackbarBehavior(Duration.millis(1234.0));
 
         FxTestUtils.setMotionBehavior(host, behavior);
 
-        assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
+        assertNull(host.getSnackbarDisplayDuration());
 
-        host.setDisplayDuration(Duration.INDEFINITE);
+        host.setSnackbarDisplayDuration(Duration.INDEFINITE);
 
-        assertEquals(Duration.INDEFINITE, host.getDisplayDuration());
+        assertEquals(Duration.INDEFINITE, host.getSnackbarDisplayDuration());
 
-        host.displayDurationProperty().set(null);
+        host.snackbarDisplayDurationProperty().set(null);
 
-        assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
+        assertNull(host.getSnackbarDisplayDuration());
     }
 
     /// Verifies that explicit display-duration changes drive automatic snackbar dismissal.
     @Tier2Test
     @Test
-    void snackbarHostAutoDismissesWhenExplicitDurationBecomesFinite() throws InterruptedException {
+    void overlayPaneAutoDismissesWhenExplicitDurationBecomesFinite() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
-                    VBox root = new VBox(host);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                    host.setContent(new Pane());
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    Scene scene = new Scene(host, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First");
                     M3Snackbar second = new M3Snackbar("Second");
-                    host.enqueue(first);
-                    host.enqueue(second);
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
 
                     assertSame(first, host.getSnackbar());
-                    assertEquals(List.of(second), host.getQueue());
+                    assertEquals(List.of(second), host.getSnackbarQueue());
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    host.setDisplayDuration(Duration.millis(250.0));
+                    host.setSnackbarDisplayDuration(Duration.millis(250.0));
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertSame(second, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(host.isSnackbarShowing());
+                    assertTrue(host.getSnackbarQueue().isEmpty());
                     assertNull(first.getParent());
                     assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
@@ -8513,10 +8464,10 @@ final class M3ControlContractMatrixTest {
     /// Verifies that actionable snackbars remain visible until their interactive affordance is removed.
     @Tier2Test
     @Test
-    void snackbarHostKeepsActionableSnackbarUntilInteractivityIsRemoved() throws InterruptedException {
+    void overlayPaneKeepsActionableSnackbarUntilInteractivityIsRemoved() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
@@ -8524,45 +8475,45 @@ final class M3ControlContractMatrixTest {
                 () -> queuedSnackbarStillCurrent(hostReference, firstReference, secondReference),
                 SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.millis(1.0));
-                    VBox root = new VBox(host);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.millis(1.0));
+                    host.setContent(new Pane());
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    Scene scene = new Scene(host, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First", "Undo");
                     M3Snackbar second = new M3Snackbar("Second", "Open");
-                    host.enqueue(first);
-                    host.enqueue(second);
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertSame(first, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertEquals(List.of(second), host.getQueue());
+                    assertTrue(host.isSnackbarShowing());
+                    assertEquals(List.of(second), host.getSnackbarQueue());
                     first.setActionText("");
                 }
         );
 
         FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
-                () -> describeSnackbarHostState(
+                () -> describeOverlayPaneState(
                         hostReference,
                         firstReference,
                         secondReference,
@@ -8571,13 +8522,13 @@ final class M3ControlContractMatrixTest {
                 () -> {
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertSame(second, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(host.isSnackbarShowing());
+                    assertTrue(host.getSnackbarQueue().isEmpty());
                     assertNull(first.getParent());
                     assertTrue(second.getParent() != null);
 
@@ -8587,61 +8538,132 @@ final class M3ControlContractMatrixTest {
         );
     }
 
+    /// Verifies a modal overlay pauses snackbar timeout progress until the overlay is removed.
+    @Tier2Test
+    @Test
+    void modalOverlayPausesSnackbarTimeoutUntilHidden() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayPaneReference = new AtomicReference<>();
+        AtomicReference<M3OverlayPane.@Nullable OverlayHandle> modalHandleReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> queuedSnackbarStillCurrent(overlayPaneReference, firstReference, secondReference),
+                SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
+                () -> {
+                    M3OverlayPane overlayPane = new M3OverlayPane();
+                    overlayPane.setContent(new Pane());
+                    overlayPane.setSnackbarDisplayDuration(Duration.millis(1.0));
+                    M3MotionSettings.setReducedMotionRequested(overlayPane, true);
+                    Pane modalLayer = new Pane();
+                    M3OverlayPane.OverlayHandle modalHandle = overlayPane.showModalOverlay(modalLayer);
+                    Stage stage = new Stage();
+                    Scene scene = new Scene(overlayPane, 360.0, 140.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+                    overlayPane.enqueueSnackbar(first);
+                    overlayPane.enqueueSnackbar(second);
+
+                    stageReference.set(stage);
+                    overlayPaneReference.set(overlayPane);
+                    modalHandleReference.set(modalHandle);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                },
+                () -> {
+                    M3OverlayPane overlayPane =
+                            Objects.requireNonNull(overlayPaneReference.get(), "overlayPane");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+
+                    assertSame(first, overlayPane.getSnackbar());
+                    assertEquals(List.of(second), overlayPane.getSnackbarQueue());
+                    overlayPane.setSnackbarDisplayDuration(Duration.millis(1000.0));
+                    assertTrue(Objects.requireNonNull(modalHandleReference.get(), "modalHandle").hide());
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> queuedSnackbarShown(overlayPaneReference, firstReference, secondReference),
+                () -> describeOverlayPaneState(
+                        overlayPaneReference,
+                        firstReference,
+                        secondReference,
+                        "Snackbar timeout did not resume after the modal overlay was hidden"
+                ),
+                () -> {
+                },
+                () -> {
+                    M3OverlayPane overlayPane =
+                            Objects.requireNonNull(overlayPaneReference.get(), "overlayPane");
+                    assertSame(Objects.requireNonNull(secondReference.get(), "second"), overlayPane.getSnackbar());
+                    assertTrue(overlayPane.getSnackbarQueue().isEmpty());
+                    M3MotionSettings.setReducedMotionRequested(overlayPane, false);
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
+    }
+
     /// Verifies that inherited motion-behavior duration changes drive automatic snackbar dismissal.
     @Tier2Test
     @Test
-    void snackbarHostAutoDismissesWhenInheritedMotionBehaviorDurationChanges() throws InterruptedException {
+    void overlayPaneAutoDismissesWhenInheritedMotionBehaviorDurationChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    VBox root = new VBox(host);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setContent(new Pane());
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    FxTestUtils.setMotionBehavior(root, M3MotionBehavior.standard());
-                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    FxTestUtils.setMotionBehavior(host, M3MotionBehavior.standard());
+                    Scene scene = new Scene(host, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First");
                     M3Snackbar second = new M3Snackbar("Second");
-                    host.enqueue(first);
-                    host.enqueue(second);
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
 
                     assertSame(first, host.getSnackbar());
-                    assertEquals(Duration.seconds(4.0), host.getDisplayDuration());
-                    assertEquals(List.of(second), host.getQueue());
+                    assertNull(host.getSnackbarDisplayDuration());
+                    assertEquals(List.of(second), host.getSnackbarQueue());
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    FxTestUtils.setMotionBehavior(root, snackbarBehavior(Duration.millis(250.0)));
+                    FxTestUtils.setMotionBehavior(host, snackbarBehavior(Duration.millis(250.0)));
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertSame(second, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(host.isSnackbarShowing());
+                    assertTrue(host.getSnackbarQueue().isEmpty());
                     assertNull(first.getParent());
                     assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
 
-                    VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                    M3OverlayPane root = Objects.requireNonNull(rootReference.get(), "root");
                     M3MotionSettings.setReducedMotionRequested(root, false);
                     FxTestUtils.clearMotionBehavior(root);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
@@ -8652,10 +8674,10 @@ final class M3ControlContractMatrixTest {
     /// Verifies that indefinite display duration disables automatic snackbar dismissal until a finite duration is set.
     @Tier2Test
     @Test
-    void snackbarHostIndefiniteDisplayDurationKeepsCurrentSnackbar() throws InterruptedException {
+    void overlayPaneIndefiniteDisplayDurationKeepsCurrentSnackbar() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> hostReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
@@ -8663,38 +8685,38 @@ final class M3ControlContractMatrixTest {
                 () -> queuedSnackbarStillCurrent(hostReference, firstReference, secondReference),
                 SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
                 () -> {
-                    M3SnackbarHost host = new M3SnackbarHost();
-                    host.setDisplayDuration(Duration.INDEFINITE);
-                    VBox root = new VBox(host);
+                    M3OverlayPane host = new M3OverlayPane();
+                    host.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                    host.setContent(new Pane());
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setReducedMotionRequested(root, true);
-                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3MotionSettings.setReducedMotionRequested(host, true);
+                    Scene scene = new Scene(host, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
                     stage.show();
-                    root.applyCss();
-                    root.layout();
+                    host.applyCss();
+                    host.layout();
 
                     M3Snackbar first = new M3Snackbar("First");
                     M3Snackbar second = new M3Snackbar("Second");
-                    host.enqueue(first);
-                    host.enqueue(second);
+                    host.enqueueSnackbar(first);
+                    host.enqueueSnackbar(second);
 
                     stageReference.set(stage);
-                    rootReference.set(root);
+                    rootReference.set(host);
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
                 },
                 () -> {
-                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3OverlayPane host = Objects.requireNonNull(hostReference.get(), "host");
                     M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
                     M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertSame(first, host.getSnackbar());
-                    assertTrue(host.isShowing());
-                    assertEquals(List.of(second), host.getQueue());
+                    assertTrue(host.isSnackbarShowing());
+                    assertEquals(List.of(second), host.getSnackbarQueue());
 
                     M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
@@ -15987,15 +16009,8 @@ final class M3ControlContractMatrixTest {
             M3Scrim scrim = new M3Scrim();
             scrim.hide();
 
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
-            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
-            M3Snackbar queuedSnackbar = new M3Snackbar("Queued", "Action");
-            snackbarHost.enqueue(currentSnackbar);
-            snackbarHost.enqueue(queuedSnackbar);
-
             M3Button outside = new M3Button("Outside");
-            VBox hiddenOwner = new VBox(8.0, sideSheet, bottomSheet, scrim, snackbarHost);
+            VBox hiddenOwner = new VBox(8.0, sideSheet, bottomSheet, scrim);
             M3Surface ownerSurface = surface(hiddenOwner);
             VBox root = new VBox(8.0, outside, ownerSurface);
             Stage stage = new Stage();
@@ -16007,11 +16022,6 @@ final class M3ControlContractMatrixTest {
                 stage.show();
                 root.applyCss();
                 root.layout();
-
-                M3Button snackbarAction = assertInstanceOf(
-                        M3Button.class,
-                        currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                );
 
                 outside.requestFocus();
                 hiddenOwner.setVisible(false);
@@ -16043,17 +16053,6 @@ final class M3ControlContractMatrixTest {
                 assertNull(scrim.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertTrue(outside.isFocused());
 
-                snackbarHost.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-                snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
-                snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-                ownerSurface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
-                ownerSurface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-
-                assertSame(currentSnackbar, snackbarHost.getSnackbar());
-                assertEquals(1, snackbarHost.getQueue().size());
-                assertSame(queuedSnackbar, snackbarHost.getQueue().get(0));
-                assertNull(snackbarHost.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertFalse(snackbarAction.isFocused());
                 assertTrue(outside.isFocused());
             } finally {
                 M3MotionSettings.setReducedMotionRequested(root, false);
@@ -29578,8 +29577,8 @@ final class M3ControlContractMatrixTest {
                                 + ", appBar=" + appBarBounds);
                 assertTrue(titleTextBounds.getCenterY() > rowCenterY,
                         () -> "tall top app bar title should sit below the icon row: variant="
-                            + appBar.getVariant() + ", title=" + titleTextBounds
-                            + ", rowCenterY=" + rowCenterY);
+                                + appBar.getVariant() + ", title=" + titleTextBounds
+                                + ", rowCenterY=" + rowCenterY);
             }
             case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> {
                 double collapseProgress = appBar.getCollapseProgress();
@@ -32136,18 +32135,6 @@ final class M3ControlContractMatrixTest {
             }
         });
 
-        FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            M3Snackbar first = new M3Snackbar("First");
-            M3Snackbar second = new M3Snackbar("Second");
-            snackbarHost.show(first);
-            snackbarHost.enqueue(second);
-
-            snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, second);
-
-            assertSame(second, snackbarHost.getSnackbar());
-            assertTrue(snackbarHost.getQueue().isEmpty());
-        });
     }
 
     /// Verifies that indexed structural containers expose default accessibility focus targets.
@@ -33702,7 +33689,7 @@ final class M3ControlContractMatrixTest {
 
                         M3Snackbar snackbar = assertInstanceOf(
                                 M3Snackbar.class,
-                                scene.snackbarHost.getSnackbar()
+                                scene.root.getSnackbar()
                         );
                         double snackbarOpacity = snackbar.getOpacity();
                         double snackbarTranslateY = snackbar.getTranslateY();
@@ -33711,8 +33698,8 @@ final class M3ControlContractMatrixTest {
                         double actionScaleY = scene.action.getScaleY();
                         double actionTranslateY = scene.action.getTranslateY();
 
-                        scene.snackbarHost.dismiss();
-                        scene.snackbarHost.show(snackbar);
+                        scene.root.dismissSnackbar();
+                        scene.root.showSnackbar(snackbar);
                         scene.fabMenu.hide();
                         scene.fabMenu.show();
 
@@ -36614,12 +36601,6 @@ final class M3ControlContractMatrixTest {
             );
             banner.setPrefWidth(520.0);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            M3Snackbar hostedSnackbar = new M3Snackbar("Hosted snackbar", "Dismiss");
-            snackbarHost.setPrefSize(360.0, 88.0);
-            snackbarHost.show(hostedSnackbar);
-            hostedSnackbar.setOpacity(1.0);
-            hostedSnackbar.setTranslateY(0.0);
             M3Scrim scrim = new M3Scrim();
             scrim.setPrefSize(180.0, 72.0);
             scrim.show();
@@ -36780,7 +36761,7 @@ final class M3ControlContractMatrixTest {
                             loadingIndicator
                     ),
                     visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard, carousel),
-                    visualSection("Feedback", banner, snackbar, snackbarHost, scrim, dialogPane),
+                    visualSection("Feedback", banner, snackbar, scrim, dialogPane),
                     visualSection("Lists, Menus, Search", list, menu, menuButton, searchBar, searchView),
                     visualSection("App Bars", topAppBar, bottomAppBar),
                     visualSection("Navigation", navigationBar, navigationRail, navigationDrawer),
@@ -36843,7 +36824,6 @@ final class M3ControlContractMatrixTest {
                     Color.WHITE,
                     0.08
             );
-            assertSnapshotNodeContainsContrast(image, snackbarHost, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, scrim, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, list, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, menu, Color.WHITE, 0.04);
@@ -37419,6 +37399,7 @@ final class M3ControlContractMatrixTest {
     @Test
     void darkExpressiveDialogOverlayInheritsOwnerThemeContext() throws InterruptedException {
         AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayPaneReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Theme> themeReference = new AtomicReference<>();
 
@@ -37434,15 +37415,18 @@ final class M3ControlContractMatrixTest {
                                 Brightness.DARK
                         );
                         M3Button owner = new M3Button("Open dialog");
-                        StackPane root = new StackPane(owner);
-                        root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
-                        Scene scene = new Scene(root, 360.0, 180.0);
+                        StackPane content = new StackPane(owner);
+                        content.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
+                        M3OverlayPane overlayPane = new M3OverlayPane();
+                        overlayPane.setContent(content);
+                        Scene scene = new Scene(overlayPane, 360.0, 180.0);
                         M3ThemeManager.install(scene, theme);
+                        M3MotionSettings.setReducedMotionRequested(overlayPane, true);
                         ownerStage.setScene(scene);
                         ownerStage.show();
-                        root.applyCss();
-                        root.resize(360.0, 180.0);
-                        root.layout();
+                        overlayPane.applyCss();
+                        overlayPane.resize(360.0, 180.0);
+                        overlayPane.layout();
 
                         M3Dialog<ButtonType> dialog = new M3Dialog<>();
                         dialog.setOwner(owner);
@@ -37450,6 +37434,7 @@ final class M3ControlContractMatrixTest {
                         dialog.getDialogPane().setContentText("Dark overlay body");
                         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
                         ownerStageReference.set(ownerStage);
+                        overlayPaneReference.set(overlayPane);
                         dialogReference.set(dialog);
                         themeReference.set(theme);
                         dialog.show();
@@ -37457,6 +37442,8 @@ final class M3ControlContractMatrixTest {
                     () -> {
                         M3Theme theme = Objects.requireNonNull(themeReference.get(), "theme");
                         M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+                        M3OverlayPane overlayPane =
+                                Objects.requireNonNull(overlayPaneReference.get(), "overlayPane");
                         M3DialogPane pane = dialog.getDialogPane();
                         pane.applyCss();
                         pane.layout();
@@ -37466,6 +37453,11 @@ final class M3ControlContractMatrixTest {
                                 pane.getParent(),
                                 "dialog presentation context root"
                         );
+                        assertSame(
+                                overlayPane,
+                                Objects.requireNonNull(overlayPane.getScene(), "overlay scene").getRoot()
+                        );
+                        assertTrue(M3Accessible.containsNode(overlayPane, pane));
                         assertPopupRootUsesThemeClasses(contextRoot, theme);
                         assertSame(theme, M3ThemeManager.getTheme(contextRoot));
                         assertTrue(contextRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
@@ -37495,6 +37487,15 @@ final class M3ControlContractMatrixTest {
                         ));
                         assertMaterialTargetGeometryIsStable(
                                 Objects.requireNonNull(pane.getScene(), "dialog scene").getRoot()
+                        );
+
+                        dialog.close();
+
+                        assertFalse(dialog.isShowing());
+                        assertNull(pane.getParent());
+                        assertSame(
+                                overlayPane,
+                                Objects.requireNonNull(overlayPane.getScene(), "overlay scene").getRoot()
                         );
                     }
             );
@@ -37989,7 +37990,7 @@ final class M3ControlContractMatrixTest {
 
         M3Banner banner = banner("Message");
         M3Snackbar snackbar = new M3Snackbar("Message");
-        M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        M3OverlayPane overlayPane = new M3OverlayPane();
         M3DialogPane dialogPane = new M3DialogPane();
         M3TopAppBar topAppBar = topAppBar();
         M3BottomAppBar bottomAppBar = bottomAppBar();
@@ -38015,7 +38016,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.styleClass()));
         assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
-        assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
+        assertTrue(overlayPane.getStyleClass().contains(M3OverlayPane.STYLE_CLASS));
         assertTrue(dialogPane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
@@ -38729,12 +38730,9 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ButtonGroup buttonGroup = buttonGroup(new M3Button("Archive"), new M3Button("Share"));
 
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-
             M3SearchView searchView = searchView("Search", new M3Button("Result"));
 
-            M3Surface surface = surface(buttonGroup, snackbarHost, searchView);
+            M3Surface surface = surface(buttonGroup, searchView);
             Stage stage = new Stage();
             try {
                 Scene scene = new Scene(surface, 640.0, 320.0);
@@ -38750,16 +38748,6 @@ final class M3ControlContractMatrixTest {
                 );
 
                 buttonGroup.setVisible(false);
-                snackbarHost.show(snackbar);
-                surface.applyCss();
-                surface.layout();
-
-                assertSame(
-                        snackbarHost.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
-                        surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                );
-
-                snackbarHost.setVisible(false);
                 surface.applyCss();
                 surface.layout();
 
@@ -38781,12 +38769,9 @@ final class M3ControlContractMatrixTest {
             M3Button share = new M3Button("Share");
             M3ButtonGroup buttonGroup = buttonGroup(archive, share);
 
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-
             M3SearchView searchView = searchView("Search", new M3Button("Result"));
 
-            M3Surface surface = surface(buttonGroup, snackbarHost, searchView);
+            M3Surface surface = surface(buttonGroup, searchView);
             Stage stage = new Stage();
             try {
                 Scene scene = new Scene(surface, 640.0, 320.0);
@@ -38796,32 +38781,20 @@ final class M3ControlContractMatrixTest {
                 surface.applyCss();
                 surface.layout();
 
-                snackbarHost.show(snackbar);
-                surface.applyCss();
-                surface.layout();
-                Node snackbarAction = assertInstanceOf(
-                        Node.class,
-                        snackbarHost.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                );
-
                 surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, buttonGroup);
 
                 assertTrue(archive.isFocused());
 
-                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, snackbarHost);
-
-                assertTrue(snackbarAction.isFocused());
-
                 surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-
-                assertTrue(snackbarAction.isFocused());
-
-                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, searchView);
 
                 Node searchFocusNode = assertInstanceOf(
                         Node.class,
                         searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 );
+                assertTrue(searchFocusNode.isFocused());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, searchView);
+
                 assertTrue(searchFocusNode.isFocused());
             } finally {
                 stage.close();
@@ -39199,7 +39172,6 @@ final class M3ControlContractMatrixTest {
         assertUserAgentStylesheet(new M3Carousel(), "/styles/controls/carousel.css");
         assertUserAgentStylesheet(banner(), "/styles/controls/banner.css");
         assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
-        assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.
@@ -39341,61 +39313,61 @@ final class M3ControlContractMatrixTest {
         return focusNode instanceof Node node && node.isFocused();
     }
 
-    /// Returns whether a snackbar host has advanced from its first queued snackbar to its second.
+    /// Returns whether a snackbar overlay has advanced from its first queued snackbar to its second.
     private static boolean queuedSnackbarShown(
-            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3OverlayPane> hostReference,
             AtomicReference<@Nullable M3Snackbar> firstReference,
             AtomicReference<@Nullable M3Snackbar> secondReference
     ) {
-        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3OverlayPane host = hostReference.get();
         @Nullable M3Snackbar first = firstReference.get();
         @Nullable M3Snackbar second = secondReference.get();
         return host != null
                 && first != null
                 && second != null
                 && host.getSnackbar() == second
-                && host.isShowing()
-                && host.getQueue().isEmpty()
+                && host.isSnackbarShowing()
+                && host.getSnackbarQueue().isEmpty()
                 && first.getParent() == null
                 && second.getParent() != null
                 && !first.isVisible();
     }
 
-    /// Returns whether a snackbar host still shows the first snackbar while the second remains queued.
+    /// Returns whether a snackbar overlay still shows the first snackbar while the second remains queued.
     private static boolean queuedSnackbarStillCurrent(
-            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3OverlayPane> hostReference,
             AtomicReference<@Nullable M3Snackbar> firstReference,
             AtomicReference<@Nullable M3Snackbar> secondReference
     ) {
-        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3OverlayPane host = hostReference.get();
         @Nullable M3Snackbar first = firstReference.get();
         @Nullable M3Snackbar second = secondReference.get();
         return host != null
                 && first != null
                 && second != null
                 && host.getSnackbar() == first
-                && host.isShowing()
-                && host.getQueue().equals(List.of(second))
+                && host.isSnackbarShowing()
+                && host.getSnackbarQueue().equals(List.of(second))
                 && first.getParent() != null
                 && second.getParent() == null
                 && first.isVisible();
     }
 
-    /// Returns whether a snackbar host has completed dismissing its current snackbar and clearing its queue.
-    private static boolean snackbarHostCleared(
-            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+    /// Returns whether a snackbar overlay has completed dismissing its current snackbar and clearing its queue.
+    private static boolean overlayPaneCleared(
+            AtomicReference<@Nullable M3OverlayPane> hostReference,
             AtomicReference<@Nullable M3Snackbar> firstReference,
             AtomicReference<@Nullable M3Snackbar> secondReference
     ) {
-        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3OverlayPane host = hostReference.get();
         @Nullable M3Snackbar first = firstReference.get();
         @Nullable M3Snackbar second = secondReference.get();
         return host != null
                 && first != null
                 && second != null
                 && host.getSnackbar() == null
-                && !host.isShowing()
-                && host.getQueue().isEmpty()
+                && !host.isSnackbarShowing()
+                && host.getSnackbarQueue().isEmpty()
                 && first.getParent() == null
                 && second.getParent() == null
                 && !first.isVisible();
@@ -40422,7 +40394,7 @@ final class M3ControlContractMatrixTest {
         private final Stage stage;
 
         /// The root node that carries local motion settings.
-        private final VBox root;
+        private final M3OverlayPane root;
 
         /// The scrim used to verify opacity-only exit settling.
         private final M3Scrim scrim;
@@ -40436,9 +40408,6 @@ final class M3ControlContractMatrixTest {
         /// The search view used to verify results-container exit settling.
         private final M3SearchView searchView;
 
-        /// The snackbar host used to verify snackbar entrance settling.
-        private final M3SnackbarHost snackbarHost;
-
         /// The FAB menu used to verify action entrance settling.
         private final M3FabMenu fabMenu;
 
@@ -40448,12 +40417,11 @@ final class M3ControlContractMatrixTest {
         /// Creates an overlay-owned state-transition test scene holder.
         private OverlayOwnedStateMotionScene(
                 Stage stage,
-                VBox root,
+                M3OverlayPane root,
                 M3Scrim scrim,
                 M3SideSheet sideSheet,
                 M3BottomSheet bottomSheet,
                 M3SearchView searchView,
-                M3SnackbarHost snackbarHost,
                 M3FabMenu fabMenu,
                 M3FloatingActionButton action
         ) {
@@ -40463,7 +40431,6 @@ final class M3ControlContractMatrixTest {
             this.sideSheet = sideSheet;
             this.bottomSheet = bottomSheet;
             this.searchView = searchView;
-            this.snackbarHost = snackbarHost;
             this.fabMenu = fabMenu;
             this.action = action;
         }
@@ -40475,39 +40442,38 @@ final class M3ControlContractMatrixTest {
         M3SideSheet sideSheet = sideSheet("Details", new Label("Side content"));
         M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom content"));
         M3SearchView searchView = searchView("Search", new M3ListItem("Result"));
-        M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        M3OverlayPane overlayPane = new M3OverlayPane();
         M3FloatingActionButton action = new M3FloatingActionButton("A");
         M3FabMenu fabMenu = new M3FabMenu();
-        VBox root = new VBox(12.0, scrim, sideSheet, bottomSheet, searchView, snackbarHost, fabMenu);
-        Scene scene = new Scene(root, 520.0, 680.0);
+        VBox content = new VBox(12.0, scrim, sideSheet, bottomSheet, searchView, fabMenu);
+        overlayPane.setContent(content);
+        Scene scene = new Scene(overlayPane, 520.0, 680.0);
         Stage stage = new Stage();
 
         scrim.setPrefSize(180.0, 80.0);
         sideSheet.setPrefSize(260.0, 140.0);
         bottomSheet.setPrefSize(360.0, 140.0);
         searchView.setPrefSize(360.0, 160.0);
-        snackbarHost.setPrefSize(420.0, 96.0);
         fabMenu.setPrefSize(120.0, 160.0);
         fabMenu.getItems().add(action);
-        snackbarHost.setDisplayDuration(Duration.INDEFINITE);
-        root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
+        content.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setReducedMotionRequested(root, false);
-        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(overlayPane, false);
+        FxTestUtils.setMotionScheme(overlayPane, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
-        root.applyCss();
-        root.resize(520.0, 680.0);
-        root.layout();
+        overlayPane.applyCss();
+        overlayPane.resize(520.0, 680.0);
+        overlayPane.layout();
 
         return new OverlayOwnedStateMotionScene(
                 stage,
-                root,
+                overlayPane,
                 scrim,
                 sideSheet,
                 bottomSheet,
                 searchView,
-                snackbarHost,
                 fabMenu,
                 action
         );
@@ -40519,7 +40485,7 @@ final class M3ControlContractMatrixTest {
         scene.sideSheet.hide();
         scene.bottomSheet.hide();
         scene.searchView.deactivate();
-        scene.snackbarHost.show(new M3Snackbar("Saved"));
+        scene.root.showSnackbar(new M3Snackbar("Saved"));
         scene.fabMenu.show();
     }
 
@@ -40533,7 +40499,7 @@ final class M3ControlContractMatrixTest {
         }
 
         scene.root.layout();
-        @Nullable M3Snackbar snackbar = scene.snackbarHost.getSnackbar();
+        @Nullable M3Snackbar snackbar = scene.root.getSnackbar();
         return opacityExitNodeIsTransitioning(scene.scrim, scene.scrim.getVisibleOpacity())
                 && spatialExitNodeIsTransitioning(scene.sideSheet)
                 && spatialExitNodeIsTransitioning(scene.bottomSheet)
@@ -40549,7 +40515,7 @@ final class M3ControlContractMatrixTest {
         assertSpatialExitNodeIntermediate(scene.sideSheet, "side sheet");
         assertSpatialExitNodeIntermediate(scene.bottomSheet, "bottom sheet");
         assertSpatialExitNodeIntermediate(searchViewResultsContainer(scene.searchView), "search results");
-        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.snackbarHost.getSnackbar());
+        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.root.getSnackbar());
         assertSpatialEnterNodeIntermediate(snackbar, "snackbar");
         assertFabActionEnterNodeIntermediate(scene.action);
     }
@@ -40569,7 +40535,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(searchViewResultsContainer(scene.searchView).isManaged());
         assertEquals(0.0, searchViewResultsContainer(scene.searchView).getOpacity(), 0.0001);
 
-        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.snackbarHost.getSnackbar());
+        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.root.getSnackbar());
         assertTrue(snackbar.isVisible());
         assertTrue(snackbar.isManaged());
         assertEquals(1.0, snackbar.getOpacity(), 0.0001);
@@ -40729,18 +40695,18 @@ final class M3ControlContractMatrixTest {
                 + ", snackbar=" + describeNodeState(snackbar);
     }
 
-    /// Describes a snackbar host and its current or queued snackbars for timeout diagnostics.
-    private static String describeSnackbarHostState(
-            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+    /// Describes a snackbar overlay and its current or queued snackbars for timeout diagnostics.
+    private static String describeOverlayPaneState(
+            AtomicReference<@Nullable M3OverlayPane> hostReference,
             AtomicReference<@Nullable M3Snackbar> firstReference,
             AtomicReference<@Nullable M3Snackbar> secondReference,
             String description
     ) {
-        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3OverlayPane host = hostReference.get();
         return description
-                + ": hostShowing=" + (host == null ? "<null>" : host.isShowing())
+                + ": hostShowing=" + (host == null ? "<null>" : host.isSnackbarShowing())
                 + ", current=" + (host == null ? "<null>" : host.getSnackbar())
-                + ", queue=" + (host == null ? "<null>" : host.getQueue())
+                + ", queue=" + (host == null ? "<null>" : host.getSnackbarQueue())
                 + ", host=" + describeNodeState(host)
                 + ", first=" + describeNodeState(firstReference.get())
                 + ", second=" + describeNodeState(secondReference.get());

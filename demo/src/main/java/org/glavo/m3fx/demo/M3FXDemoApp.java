@@ -113,6 +113,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3NavigationRailVariant;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -134,7 +135,6 @@ import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SliderSize;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SuggestionChip;
-import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
@@ -298,8 +298,8 @@ public final class M3FXDemoApp extends Application {
     /// The page host replaced when sidebar selection changes.
     private @Nullable StackPane pageHost;
 
-    /// The snackbar host used by demo actions.
-    private @Nullable M3SnackbarHost snackbarHost;
+    /// The stable root that owns dialogs, snackbars, and other in-scene overlays.
+    private @Nullable M3OverlayPane overlayPane;
 
     /// Starts the demo application.
     @Override
@@ -309,18 +309,18 @@ public final class M3FXDemoApp extends Application {
             System.getProperties().putIfAbsent("prism.lcdtext", "false");
         }
 
-        BorderPane root = new BorderPane();
-        root.getStyleClass().add("demo-root");
+        BorderPane scaffold = new BorderPane();
+        scaffold.getStyleClass().add("demo-root");
+        M3OverlayPane root = new M3OverlayPane();
+        root.setContent(scaffold);
+        overlayPane = root;
         applyDemoFont(root);
-
-        M3SnackbarHost snackbarHost = new M3SnackbarHost();
-        this.snackbarHost = snackbarHost;
 
         List<DemoPage> createdPages = createPages();
         pages = createdPages;
 
-        root.setTop(createHeader());
-        root.setCenter(createContent(createdPages, snackbarHost));
+        scaffold.setTop(createHeader());
+        scaffold.setCenter(createContent(createdPages));
 
         Scene scene = new Scene(root, 1180.0, 820.0);
         scene.getStylesheets().add(demoStylesheetUrl());
@@ -537,7 +537,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", DemoMaterialDocs.BOTTOM_SHEETS, this::createBottomSheetsPage),
                 new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", DemoMaterialDocs.SIDE_SHEETS, this::createSideSheetsPage),
                 new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", DemoMaterialDocs.SLIDERS, this::createSlidersPage),
-                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", DemoMaterialDocs.SNACKBAR, this::createSnackbarsPage),
+                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar presentation with action and queued messages", DemoMaterialDocs.SNACKBAR, this::createSnackbarsPage),
                 new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", DemoMaterialDocs.SWITCH, this::createSwitchesPage),
                 new DemoPage("Tabs", "Tabs", "Tabs", "Primary and secondary fixed and scrollable tabs", DemoMaterialDocs.TABS, this::createTabsPage),
                 new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", DemoMaterialDocs.TEXT_FIELDS, this::createTextFieldsPage),
@@ -554,19 +554,15 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
-    /// Creates the main content shell with sidebar, page host, and page-local snackbar overlay.
+    /// Creates the main content shell with sidebar and page host.
     ///
-    /// @param pages        the pages shown by the sidebar and content host
-    /// @param snackbarHost the snackbar overlay positioned over the content page
+    /// @param pages the pages shown by the sidebar and content host
     /// @return the assembled demo content shell
-    private Node createContent(List<DemoPage> pages, M3SnackbarHost snackbarHost) {
+    private Node createContent(List<DemoPage> pages) {
         BorderPane shell = new BorderPane();
         shell.getStyleClass().add("demo-shell");
         shell.setLeft(createSidebar(pages));
-
-        StackPane pageOverlay = new StackPane(createPageScrollPane(), snackbarHost);
-        StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
-        shell.setCenter(pageOverlay);
+        shell.setCenter(createPageScrollPane());
         return shell;
     }
 
@@ -3124,17 +3120,17 @@ public final class M3FXDemoApp extends Application {
         queueButton.setOnAction(event -> showQueuedSnackbars());
         M3Button dismissibleButton = new M3Button("Show dismissible", M3ButtonVariant.ELEVATED);
         dismissibleButton.setOnAction(event -> {
-            M3SnackbarHost activeHost = snackbarHost;
-            if (activeHost == null) {
+            M3OverlayPane activeOverlay = overlayPane;
+            if (activeOverlay == null) {
                 return;
             }
             M3Snackbar snackbar = new M3Snackbar("Dismiss this message");
             snackbar.setCloseButtonVisible(true);
-            activeHost.show(snackbar);
+            activeOverlay.showSnackbar(snackbar);
         });
 
         return createGallery(createShowcaseGroup(
-                "Snackbar Host",
+                "Snackbar Presentation",
                 messageButton,
                 actionButton,
                 dismissibleButton,
@@ -4407,7 +4403,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates an SVG icon from an official Material Symbols 960-unit source viewport.
     ///
-    /// @param size the semantic rendered size
+    /// @param size    the semantic rendered size
     /// @param variant the semantic color role
     /// @return the configured Material Symbols icon
     private static M3SVGIcon createMaterialSymbolIcon(M3IconSize size, M3IconVariant variant) {
@@ -4762,43 +4758,43 @@ public final class M3FXDemoApp extends Application {
 
     /// Shows a demo snackbar message.
     private void showSnackbar(String message) {
-        M3SnackbarHost snackbarHost = this.snackbarHost;
-        if (snackbarHost == null) {
+        M3OverlayPane activeOverlay = overlayPane;
+        if (activeOverlay == null) {
             return;
         }
-        snackbarHost.show(new M3Snackbar(message));
+        activeOverlay.showSnackbar(new M3Snackbar(message));
     }
 
     /// Shows the demo snackbar with an action.
     private void showActionSnackbar() {
-        M3SnackbarHost snackbarHost = this.snackbarHost;
-        if (snackbarHost == null) {
+        M3OverlayPane activeOverlay = overlayPane;
+        if (activeOverlay == null) {
             return;
         }
 
         M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
         snackbar.setOnAction(event -> {
-            snackbarHost.dismiss();
-            snackbarHost.show(new M3Snackbar("Action pressed"));
+            activeOverlay.dismissSnackbar();
+            activeOverlay.showSnackbar(new M3Snackbar("Action pressed"));
         });
-        snackbarHost.show(snackbar);
+        activeOverlay.showSnackbar(snackbar);
     }
 
     /// Shows multiple demo snackbars through the host queue.
     private void showQueuedSnackbars() {
-        M3SnackbarHost snackbarHost = this.snackbarHost;
-        if (snackbarHost == null) {
+        M3OverlayPane activeOverlay = overlayPane;
+        if (activeOverlay == null) {
             return;
         }
 
         M3Snackbar secondSnackbar = new M3Snackbar("Second queued message", "Undo");
         secondSnackbar.setOnAction(event -> {
-            snackbarHost.dismiss();
-            snackbarHost.enqueue(new M3Snackbar("Undo pressed"));
+            activeOverlay.dismissSnackbar();
+            activeOverlay.enqueueSnackbar(new M3Snackbar("Undo pressed"));
         });
-        snackbarHost.enqueue(new M3Snackbar("First queued message"));
-        snackbarHost.enqueue(secondSnackbar);
-        snackbarHost.enqueue(new M3Snackbar("Third queued message"));
+        activeOverlay.enqueueSnackbar(new M3Snackbar("First queued message"));
+        activeOverlay.enqueueSnackbar(secondSnackbar);
+        activeOverlay.enqueueSnackbar(new M3Snackbar("Third queued message"));
     }
 
     /// Applies the current theme to the scene.

@@ -128,6 +128,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3NavigationRailVariant;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -146,7 +147,6 @@ import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
-import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SliderSize;
@@ -458,7 +458,7 @@ final class M3FXDemoVisualMatrixTest {
                     "banner-action",
                     "banner action",
                     root -> firstVisibleBannerActionWithText(root, "Dismiss"),
-                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+                    scene -> hideShowingSnackbars(scene.getRoot())
             ),
             new InteractionTargetCase(
                     "Dialogs",
@@ -483,7 +483,7 @@ final class M3FXDemoVisualMatrixTest {
                     "fab-menu-action",
                     "FAB menu action",
                     M3FXDemoVisualMatrixTest::firstVisibleFabMenuAction,
-                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+                    scene -> hideShowingSnackbars(scene.getRoot())
             ),
             new InteractionTargetCase(
                     "Text Fields",
@@ -616,7 +616,7 @@ final class M3FXDemoVisualMatrixTest {
                     "banner-action",
                     "banner action",
                     root -> firstVisibleBannerActionWithText(root, "Dismiss"),
-                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+                    scene -> hideShowingSnackbars(scene.getRoot())
             ),
             new InteractionTargetCase(
                     "Dialogs",
@@ -2595,7 +2595,7 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies that sheet and snackbar demo pages render stable overlay and feedback states.
     @Test
-    void sheetsAndSnackbarsDemoPagesRenderSurfaceAndHostStates() throws InterruptedException {
+    void sheetsAndSnackbarsDemoPagesRenderSurfaceAndOverlayStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -4721,7 +4721,7 @@ final class M3FXDemoVisualMatrixTest {
         });
 
         try {
-            verifySnackbarHostAnimation(appReference, sceneReference);
+            verifySnackbarOverlayAnimation(appReference, sceneReference);
             verifyFabMenuExpansionAnimation(appReference, sceneReference);
             verifyRichTooltipInteractiveLifetime(appReference, sceneReference);
             verifyDialogPopupSurface(sceneReference);
@@ -5049,8 +5049,8 @@ final class M3FXDemoVisualMatrixTest {
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
-        showActionSnackbarForInteraction(appReference, sceneReference, hostReference);
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
+        showActionSnackbarForInteraction(appReference, sceneReference, overlayReference);
         verifyPreparedTargetMouseFeedback(
                 sceneReference,
                 "snackbar-action",
@@ -5058,9 +5058,9 @@ final class M3FXDemoVisualMatrixTest {
                 M3FXDemoVisualMatrixTest::firstVisibleSnackbarAction
         );
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            host.dismissAll();
-            FxTestUtils.clearMotionScheme(host);
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            overlay.dismissAllSnackbars();
+            FxTestUtils.clearMotionScheme(overlay);
         });
     }
 
@@ -5069,8 +5069,8 @@ final class M3FXDemoVisualMatrixTest {
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
-        showActionSnackbarForInteraction(appReference, sceneReference, hostReference);
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
+        showActionSnackbarForInteraction(appReference, sceneReference, overlayReference);
         verifyRippleReleaseAnimation(
                 appReference,
                 sceneReference,
@@ -5080,9 +5080,9 @@ final class M3FXDemoVisualMatrixTest {
                 M3FXDemoVisualMatrixTest::firstVisibleSnackbarAction
         );
         FxTestUtils.runOnFxThread(() -> {
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            host.dismissAll();
-            FxTestUtils.clearMotionScheme(host);
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            overlay.dismissAllSnackbars();
+            FxTestUtils.clearMotionScheme(overlay);
         });
     }
 
@@ -5090,13 +5090,15 @@ final class M3FXDemoVisualMatrixTest {
     private static void showActionSnackbarForInteraction(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference,
-            AtomicReference<@Nullable M3SnackbarHost> hostReference
+            AtomicReference<@Nullable M3OverlayPane> overlayReference
     ) throws InterruptedException {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
-        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, settledReference, () -> {
-            @Nullable M3SnackbarHost host = hostReference.get();
-            return snackbarSettled(host)
-                    && firstVisibleSnackbarAction(Objects.requireNonNull(host, "snackbar host").getSnackbar()) != null;
+        runOnFxThreadWhenNodeAreaStable(overlayReference, sceneReference, settledReference, () -> {
+            @Nullable M3OverlayPane overlay = overlayReference.get();
+            return snackbarSettled(overlay)
+                    && firstVisibleSnackbarAction(
+                            Objects.requireNonNull(overlay, "overlay pane").getSnackbar()
+                    ) != null;
         }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -5104,17 +5106,20 @@ final class M3FXDemoVisualMatrixTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
-            FxTestUtils.setMotionScheme(host, visualOverlayMotionScheme());
-            host.setDisplayDuration(Duration.INDEFINITE);
+            M3OverlayPane overlay = Objects.requireNonNull(
+                    firstVisibleOverlayPane(scene.getRoot()),
+                    "overlay pane"
+            );
+            FxTestUtils.setMotionScheme(overlay, visualOverlayMotionScheme());
+            overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
-            snackbar.setOnAction(event -> host.dismiss());
-            host.show(snackbar);
-            hostReference.set(host);
+            snackbar.setOnAction(event -> overlay.dismissSnackbar());
+            overlay.showSnackbar(snackbar);
+            overlayReference.set(overlay);
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "interaction snackbar");
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            M3Snackbar snackbar = Objects.requireNonNull(overlay.getSnackbar(), "interaction snackbar");
             assertSnackbarStaysCompact(scene, snackbar);
         });
     }
@@ -5817,11 +5822,11 @@ final class M3FXDemoVisualMatrixTest {
         });
     }
 
-    /// Hides every showing snackbar host below a root.
-    private static void hideShowingSnackbarHosts(Node root) {
+    /// Dismisses every snackbar presented by an overlay pane below a root.
+    private static void hideShowingSnackbars(Node root) {
         visitVisibleNodes(root, node -> {
-            if (node instanceof M3SnackbarHost host && host.isShowing()) {
-                host.dismissAll();
+            if (node instanceof M3OverlayPane overlay && overlay.isSnackbarShowing()) {
+                overlay.dismissAllSnackbars();
             }
         });
     }
@@ -7211,110 +7216,118 @@ final class M3FXDemoVisualMatrixTest {
                 .build();
     }
 
-    /// Verifies snackbar entrance and dismissal motion on the demo host.
-    private static void verifySnackbarHostAnimation(
+    /// Verifies snackbar entrance and dismissal motion on the demo overlay.
+    private static void verifySnackbarOverlayAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
-        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hiddenBaselineReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hiddenReference = new AtomicReference<>();
 
-        runOnFxThreadWhenNodeAreaChanged(hostReference, hiddenBaselineReference, sceneReference, openingReference, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageByTitle("Snackbars");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
+        runOnFxThreadWhenNodeAreaChanged(
+                overlayReference,
+                hiddenBaselineReference,
+                sceneReference,
+                openingReference,
+                () -> {
+                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    app.showPageByTitle("Snackbars");
+                    scene.getRoot().applyCss();
+                    scene.getRoot().layout();
 
-            M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
-            FxTestUtils.setMotionScheme(host, visualOverlayMotionScheme());
-            host.setDisplayDuration(Duration.INDEFINITE);
-            hostReference.set(host);
-            hiddenBaselineReference.set(snapshot(scene));
-            M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
-            snackbar.setOnAction(event -> host.dismiss());
-            host.show(snackbar);
+                    M3OverlayPane overlay = Objects.requireNonNull(
+                            firstVisibleOverlayPane(scene.getRoot()),
+                            "overlay pane"
+                    );
+                    FxTestUtils.setMotionScheme(overlay, visualOverlayMotionScheme());
+                    overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                    overlayReference.set(overlay);
+                    hiddenBaselineReference.set(snapshot(scene));
+                    M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
+                    snackbar.setOnAction(event -> overlay.dismissSnackbar());
+                    overlay.showSnackbar(snackbar);
+                }, () -> {
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+                    M3Snackbar snackbar = Objects.requireNonNull(overlay.getSnackbar(), "opening snackbar");
+                    scene.getRoot().applyCss();
+                    scene.getRoot().layout();
+                    assertSnackbarStaysCompact(scene, snackbar);
+                    openingReference.set(snapshot(scene));
+                    writeAnimationSnapshot(
+                            Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
+                            "snackbar-overlay",
+                            "opening"
+                    );
+                });
+
+        runOnFxThreadWhenNodeAreaStable(overlayReference, sceneReference, settledReference, () ->
+                snackbarSettled(overlayReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "opening snackbar");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-            assertSnackbarStaysCompact(scene, snackbar);
-            openingReference.set(snapshot(scene));
-            writeAnimationSnapshot(
-                    Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
-                    "snackbar-host",
-                    "opening"
-            );
-        });
-
-        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, settledReference, () ->
-                snackbarSettled(hostReference.get()), () -> {
-        }, () -> {
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "settled snackbar");
-            assertTrue(host.isShowing());
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            M3Snackbar snackbar = Objects.requireNonNull(overlay.getSnackbar(), "settled snackbar");
+            assertTrue(overlay.isSnackbarShowing());
             scene.getRoot().applyCss();
             scene.getRoot().layout();
             assertSnackbarStaysCompact(scene, snackbar);
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
-                    "snackbar-host",
+                    "snackbar-overlay",
                     "settled"
             );
-            host.dismiss();
+            overlay.dismissSnackbar();
         });
 
-        runOnFxThreadWhenNodeAreaChanged(hostReference, settledReference, sceneReference, hidingReference, () -> {
+        runOnFxThreadWhenNodeAreaChanged(overlayReference, settledReference, sceneReference, hidingReference, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            assertNotNull(host.getSnackbar(), "hiding snackbar");
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            assertNotNull(overlay.getSnackbar(), "hiding snackbar");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
             writeAnimationSnapshot(
                     Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
-                    "snackbar-host",
+                    "snackbar-overlay",
                     "hiding"
             );
         });
 
-        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, hiddenReference, () -> {
-            @Nullable M3SnackbarHost host = hostReference.get();
-            return host != null && !host.isShowing() && host.getSnackbar() == null;
+        runOnFxThreadWhenNodeAreaStable(overlayReference, sceneReference, hiddenReference, () -> {
+            @Nullable M3OverlayPane overlay = overlayReference.get();
+            return overlay != null && !overlay.isSnackbarShowing() && overlay.getSnackbar() == null;
         }, () -> {
         }, () -> {
-            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
-            assertFalse(host.isShowing());
-            assertNull(host.getSnackbar(), "hidden snackbar");
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
+            assertFalse(overlay.isSnackbarShowing());
+            assertNull(overlay.getSnackbar(), "hidden snackbar");
             writeAnimationSnapshot(
                     Objects.requireNonNull(hiddenReference.get(), "hidden snackbar snapshot"),
-                    "snackbar-host",
+                    "snackbar-overlay",
                     "hidden"
             );
-            FxTestUtils.clearMotionScheme(host);
+            FxTestUtils.clearMotionScheme(overlay);
         });
 
         assertSnapshotChanged(
                 Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
                 Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
-                "snackbar host enter motion"
+                "snackbar overlay enter motion"
         );
         assertSnapshotChanged(
                 Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
                 Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
-                "snackbar host exit motion"
+                "snackbar overlay exit motion"
         );
         assertSnapshotChanged(
                 Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
                 Objects.requireNonNull(hiddenReference.get(), "hidden snackbar snapshot"),
-                "snackbar host hidden frame"
+                "snackbar overlay hidden frame"
         );
     }
 
@@ -7663,6 +7676,7 @@ final class M3FXDemoVisualMatrixTest {
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
@@ -7682,19 +7696,31 @@ final class M3FXDemoVisualMatrixTest {
                     && dialogPane.getLayoutBounds().getHeight() > 0.0;
         }, "dialog popup settled frame", () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3OverlayPane overlay = assertInstanceOf(
+                    M3OverlayPane.class,
+                    scene.getRoot(),
+                    "demo scene root"
+            );
+            overlayReference.set(overlay);
             M3Dialog<ButtonType> dialog = new M3Dialog<>();
-            dialog.setOwner(scene.getRoot());
+            dialog.setOwner(overlay);
             dialog.getDialogPane().setHeaderText("Dialog title");
             dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
             dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
             dialog.getDialogPane().setPrefWidth(420.0);
             dialog.show();
+            assertSame(overlay, scene.getRoot(), "showing a dialog must not replace the demo scene root");
             dialogReference.set(dialog);
         }, () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
             M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+            assertSame(overlay, ownerScene.getRoot(), "shown dialog must keep the demo scene root stable");
             assertTrue(dialog.isShowing());
             Parent dialogPane = dialog.getDialogPane();
+            assertNotNull(dialogPane.getParent(), "shown dialog pane should have a presentation parent");
+            assertTrue(isNodeOrDescendant(overlay, dialogPane),
+                    "shown dialog pane should remain inside the demo overlay root");
             Scene dialogScene = Objects.requireNonNull(dialogPane.getScene(), "dialog scene");
             assertSame(ownerScene, dialogScene, "dialog should share its owner's scene");
             dialogPane.applyCss();
@@ -7716,6 +7742,7 @@ final class M3FXDemoVisualMatrixTest {
                     "dialog popup"
             );
             dialog.close();
+            assertSame(overlay, ownerScene.getRoot(), "closing a dialog must not replace the demo scene root");
         });
     }
 
@@ -7730,6 +7757,7 @@ final class M3FXDemoVisualMatrixTest {
             String snapshotName
     ) throws InterruptedException {
         AtomicReference<@Nullable M3DialogPane> dialogPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
@@ -7742,14 +7770,29 @@ final class M3FXDemoVisualMatrixTest {
             return dialogPane != null && dialogPane.getScene() != null;
         }, snapshotName + " settled frame", () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3OverlayPane overlay = assertInstanceOf(
+                    M3OverlayPane.class,
+                    ownerScene.getRoot(),
+                    snapshotName + " owner root"
+            );
+            overlayReference.set(overlay);
             M3Button openButton = Objects.requireNonNull(
-                    firstVisibleButtonWithText(ownerScene.getRoot(), openButtonText),
+                    firstVisibleButtonWithText(overlay, openButtonText),
                     openButtonText
             );
             openButton.fire();
+            assertSame(overlay, ownerScene.getRoot(),
+                    snapshotName + " dialog opening must not replace the scene root");
         }, () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
             M3DialogPane dialogPane = Objects.requireNonNull(dialogPaneReference.get(), "dialog pane");
+            assertSame(overlay, ownerScene.getRoot(),
+                    snapshotName + " shown dialog must keep the scene root stable");
+            assertNotNull(dialogPane.getParent(),
+                    snapshotName + " shown dialog pane should have a presentation parent");
+            assertTrue(isNodeOrDescendant(overlay, dialogPane),
+                    snapshotName + " shown dialog pane should remain inside the demo overlay root");
             Scene dialogScene = Objects.requireNonNull(dialogPane.getScene(), "dialog scene");
             assertSame(ownerScene, dialogScene, "picker dialog should share its owner's scene");
 
@@ -7837,6 +7880,8 @@ final class M3FXDemoVisualMatrixTest {
                     snapshotName + " cancel action"
             );
             cancelButton.fire();
+            assertSame(overlay, ownerScene.getRoot(),
+                    snapshotName + " dialog closing must not replace the scene root");
         });
     }
 
@@ -15152,12 +15197,12 @@ final class M3FXDemoVisualMatrixTest {
         assertSideSheetDemoGeometry(detached, "detached side sheet");
     }
 
-    /// Verifies the real Snackbars demo page buttons, compact host surface, actions, and queue state.
+    /// Verifies the real Snackbars demo page buttons, compact overlay surface, actions, and queue state.
     private static void assertSnackbarsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Snackbars");
         assertCurrentPageTitle(scene, "Snackbars");
-        assertVisibleText(root, "Snackbar Host", "Snackbars");
+        assertVisibleText(root, "Snackbar Presentation", "Snackbars");
         assertVisibleText(root, "Show message", "Snackbars");
         assertVisibleText(root, "Show action", "Snackbars");
         assertVisibleText(root, "Show dismissible", "Snackbars");
@@ -15170,14 +15215,14 @@ final class M3FXDemoVisualMatrixTest {
         assertButtonVariantCount(buttons, M3ButtonVariant.OUTLINED, 1, "Snackbars");
         assertButtonVariantCount(buttons, M3ButtonVariant.ELEVATED, 1, "Snackbars");
 
-        M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(root), "snackbar host");
-        assertFalse(host.isShowing(), "snackbar host should start idle");
-        assertNull(host.getSnackbar(), "snackbar host should not start with a visible snackbar");
-        assertTrue(host.getQueue().isEmpty(), "snackbar host queue should start empty");
+        M3OverlayPane overlay = Objects.requireNonNull(firstVisibleOverlayPane(root), "overlay pane");
+        assertFalse(overlay.isSnackbarShowing(), "snackbar layer should start idle");
+        assertNull(overlay.getSnackbar(), "snackbar layer should not start with a visible snackbar");
+        assertTrue(overlay.getSnackbarQueue().isEmpty(), "snackbar queue should start empty");
 
-        @Nullable Duration previousDisplayDuration = host.displayDurationProperty().get();
-        M3MotionSettings.setReducedMotionRequested(host, true);
-        host.setDisplayDuration(Duration.INDEFINITE);
+        @Nullable Duration previousDisplayDuration = overlay.snackbarDisplayDurationProperty().get();
+        M3MotionSettings.setReducedMotionRequested(overlay, true);
+        overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
         try {
             M3Button messageButton = Objects.requireNonNull(
                     firstVisibleButtonWithText(page, "Show message"),
@@ -15185,7 +15230,7 @@ final class M3FXDemoVisualMatrixTest {
             );
             messageButton.fire();
             applySceneCssAndLayout(scene);
-            assertSnackbarHostShowsCompactMessage(scene, host, "Theme-aware snackbar");
+            assertSnackbarOverlayShowsCompactMessage(scene, overlay, "Theme-aware snackbar");
             writePageSnapshot(scene, "overlay-snackbars-message.png", "Snackbars message state");
 
             M3Button actionButton = Objects.requireNonNull(
@@ -15194,7 +15239,8 @@ final class M3FXDemoVisualMatrixTest {
             );
             actionButton.fire();
             applySceneCssAndLayout(scene);
-            M3Snackbar actionSnackbar = assertSnackbarHostShowsCompactMessage(scene, host, "Theme-aware snackbar");
+            M3Snackbar actionSnackbar =
+                    assertSnackbarOverlayShowsCompactMessage(scene, overlay, "Theme-aware snackbar");
             assertNotNull(firstVisibleButtonWithText(actionSnackbar, "Action"),
                     "action snackbar should expose its action button");
             writePageSnapshot(scene, "overlay-snackbars-action.png", "Snackbars action state");
@@ -15206,7 +15252,7 @@ final class M3FXDemoVisualMatrixTest {
             dismissibleButton.fire();
             applySceneCssAndLayout(scene);
             M3Snackbar dismissibleSnackbar =
-                    assertSnackbarHostShowsCompactMessage(scene, host, "Dismiss this message");
+                    assertSnackbarOverlayShowsCompactMessage(scene, overlay, "Dismiss this message");
             M3IconButton closeButton = assertInstanceOf(
                     M3IconButton.class,
                     dismissibleSnackbar.lookup(".m3-snackbar-close")
@@ -15216,12 +15262,13 @@ final class M3FXDemoVisualMatrixTest {
             writePageSnapshot(scene, "overlay-snackbars-dismissible.png", "Snackbars dismissible state");
             closeButton.fire();
             applySceneCssAndLayout(scene);
-            assertFalse(host.isShowing(), "snackbar close affordance should dismiss the current message");
+            assertFalse(overlay.isSnackbarShowing(),
+                    "snackbar close affordance should dismiss the current message");
 
-            host.dismissAll();
+            overlay.dismissAllSnackbars();
             applySceneCssAndLayout(scene);
-            assertFalse(host.isShowing(), "snackbar host should hide before queue verification");
-            assertNull(host.getSnackbar(), "snackbar host should clear the dismissed snackbar");
+            assertFalse(overlay.isSnackbarShowing(), "snackbar layer should hide before queue verification");
+            assertNull(overlay.getSnackbar(), "snackbar layer should clear the dismissed snackbar");
 
             M3Button queueButton = Objects.requireNonNull(
                     firstVisibleButtonWithText(page, "Queue messages"),
@@ -15229,13 +15276,14 @@ final class M3FXDemoVisualMatrixTest {
             );
             queueButton.fire();
             applySceneCssAndLayout(scene);
-            assertSnackbarHostShowsCompactMessage(scene, host, "First queued message");
-            assertEquals(2, host.getQueue().size(), "queued snackbar demo should leave two pending messages");
+            assertSnackbarOverlayShowsCompactMessage(scene, overlay, "First queued message");
+            assertEquals(2, overlay.getSnackbarQueue().size(),
+                    "queued snackbar demo should leave two pending messages");
             writePageSnapshot(scene, "overlay-snackbars-queued.png", "Snackbars queued state");
         } finally {
-            host.dismissAll();
-            host.displayDurationProperty().set(previousDisplayDuration);
-            M3MotionSettings.setReducedMotionRequested(host, false);
+            overlay.dismissAllSnackbars();
+            overlay.snackbarDisplayDurationProperty().set(previousDisplayDuration);
+            M3MotionSettings.setReducedMotionRequested(overlay, false);
             applySceneCssAndLayout(scene);
         }
     }
@@ -15332,40 +15380,40 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies that a snackbar host is showing the requested compact message surface.
-    private static M3Snackbar assertSnackbarHostShowsCompactMessage(
+    /// Verifies that an overlay pane is showing the requested compact snackbar surface.
+    private static M3Snackbar assertSnackbarOverlayShowsCompactMessage(
             Scene scene,
-            M3SnackbarHost host,
+            M3OverlayPane overlay,
             String message
     ) {
-        assertTrue(snackbarSettled(host), () -> "snackbar host should be settled for message: " + message);
-        M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "snackbar");
+        assertTrue(snackbarSettled(overlay), () -> "snackbar should be settled for message: " + message);
+        M3Snackbar snackbar = Objects.requireNonNull(overlay.getSnackbar(), "snackbar");
         assertVisibleText(snackbar, message, "Snackbars");
         assertSnackbarStaysCompact(scene, snackbar);
         assertNodeSnapshotHasOpaquePixels(snackbar, "snackbar " + message);
         assertSnackbarContentGeometry(scene, snackbar, "snackbar " + message);
-        assertSnackbarCenteredOverPage(scene, snackbar, "snackbar " + message);
+        assertSnackbarCenteredInOverlay(scene, snackbar, "snackbar " + message);
         return snackbar;
     }
 
-    /// Verifies that a demo snackbar is centered over the content page rather than the full shell including its sidebar.
-    private static void assertSnackbarCenteredOverPage(
+    /// Verifies that a demo snackbar is centered in the stable overlay pane that presents it.
+    private static void assertSnackbarCenteredInOverlay(
             Scene scene,
             M3Snackbar snackbar,
             String description
     ) {
-        Node pageScrollPane = Objects.requireNonNull(
-                scene.lookup(".demo-scroll-pane"),
-                "demo page scroll pane"
+        M3OverlayPane overlay = Objects.requireNonNull(
+                firstVisibleOverlayPane(scene.getRoot()),
+                "overlay pane"
         );
-        Bounds pageBounds = pageScrollPane.localToScene(pageScrollPane.getBoundsInLocal());
+        Bounds overlayBounds = overlay.localToScene(overlay.getBoundsInLocal());
         Bounds snackbarBounds = snackbar.localToScene(snackbar.getBoundsInLocal());
         assertEquals(
-                pageBounds.getCenterX(),
+                overlayBounds.getCenterX(),
                 snackbarBounds.getCenterX(),
                 CONTROL_EDGE_TOLERANCE,
-                () -> description + " should be centered over the content page: page="
-                        + pageBounds + ", snackbar=" + snackbarBounds
+                () -> description + " should be centered in the overlay pane: overlay="
+                        + overlayBounds + ", snackbar=" + snackbarBounds
         );
     }
 
@@ -19377,8 +19425,8 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Returns the first visible snackbar action button below a root.
     private static @Nullable M3Button firstVisibleSnackbarAction(Node root) {
-        @Nullable M3SnackbarHost host = firstVisibleSnackbarHost(root);
-        return host == null ? null : firstVisibleSnackbarAction(host.getSnackbar());
+        @Nullable M3OverlayPane overlay = firstVisibleOverlayPane(root);
+        return overlay == null ? null : firstVisibleSnackbarAction(overlay.getSnackbar());
     }
 
     /// Returns the first visible action button in a snackbar.
@@ -19534,14 +19582,14 @@ final class M3FXDemoVisualMatrixTest {
         return null;
     }
 
-    /// Returns the first visible snackbar host.
-    private static @Nullable M3SnackbarHost firstVisibleSnackbarHost(Node root) {
-        if (root instanceof M3SnackbarHost host && host.isVisible() && hasRenderableBounds(host)) {
-            return host;
+    /// Returns the first visible Material overlay pane.
+    private static @Nullable M3OverlayPane firstVisibleOverlayPane(Node root) {
+        if (root instanceof M3OverlayPane overlay && overlay.isVisible() && hasRenderableBounds(overlay)) {
+            return overlay;
         }
         if (root instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable M3SnackbarHost result = firstVisibleSnackbarHost(child);
+                @Nullable M3OverlayPane result = firstVisibleOverlayPane(child);
                 if (result != null) {
                     return result;
                 }
@@ -19649,13 +19697,13 @@ final class M3FXDemoVisualMatrixTest {
                 && hasRenderableBounds(sheet);
     }
 
-    /// Returns whether a snackbar host has reached its fully shown state.
-    private static boolean snackbarSettled(@Nullable M3SnackbarHost host) {
-        if (host == null || !host.isShowing()) {
+    /// Returns whether an overlay pane's snackbar has reached its fully shown state.
+    private static boolean snackbarSettled(@Nullable M3OverlayPane overlay) {
+        if (overlay == null || !overlay.isSnackbarShowing()) {
             return false;
         }
 
-        @Nullable M3Snackbar snackbar = host.getSnackbar();
+        @Nullable M3Snackbar snackbar = overlay.getSnackbar();
         return snackbar != null
                 && snackbar.isVisible()
                 && snackbar.isManaged()

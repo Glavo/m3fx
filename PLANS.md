@@ -7,6 +7,11 @@ theme and motion system, broad Standard and Expressive component coverage, an ex
 independent focused Catalog application, rendered state tests, and release packaging for modular applications. The
 project is ready for systematic integration testing, but it is not yet a release candidate.
 
+Scene-scoped presentation now uses one stable `M3OverlayPane` root. It owns ordinary content, snackbar presentation,
+regular overlays, and a modal stack; dialogs and custom surfaces retain lifecycle handles instead of replacing the
+`Scene` root or mutating a shared overlay list. The Demo and Catalog applications use this integration model, and
+real-window tests cover input blocking, focus restoration, accessibility isolation, queue ownership, and rendering.
+
 The remaining risk is concentrated in specification fidelity and runtime quality rather than missing infrastructure:
 
 - Some component variants and transitional states still require direct comparison with the official Material Design

@@ -53,8 +53,8 @@ final class CatalogFeedbackComponents {
                         "snackbar",
                         "M3Snackbar",
                         CatalogComponents.example(
-                                "Snackbar host",
-                                "A transient message presented by a local host.",
+                                "Snackbar presentation",
+                                "A transient message presented by a local overlay pane.",
                                 false,
                                 CatalogSamples::snackbars
                         )

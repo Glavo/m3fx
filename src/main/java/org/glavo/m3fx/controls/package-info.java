@@ -28,10 +28,13 @@
 /// order in the rendered control; individual APIs document whether they reject `null`, duplicates, or nonselectable
 /// entries. Read-only observable views remain observable but reject structural modification.
 ///
-/// A typical application installs a theme through [org.glavo.m3fx.theme.M3ThemeManager] and then creates
-/// controls such as [M3Button], [M3TextInputLayout], [M3NavigationDrawer], [M3SnackbarHost],
-/// [M3DatePicker], or [M3ProgressIndicator]. Controls resolve color, shape, typography, elevation,
-/// density, and motion through the active M3FX theme while still allowing per-control CSS overrides.
+/// A typical application uses an [M3OverlayPane] as its stable scene root, assigns its ordinary scaffold with
+/// [M3OverlayPane#setContent(javafx.scene.Node)], and installs a theme through
+/// [org.glavo.m3fx.theme.M3ThemeManager]. Controls such as [M3Button], [M3TextInputLayout], [M3NavigationDrawer],
+/// [M3DatePicker], and [M3ProgressIndicator] resolve color, shape, typography, elevation, density, and motion
+/// through the active M3FX theme while still allowing
+/// per-control CSS overrides. [M3Dialog] and [M3Snackbar] presentations use the containing overlay pane without
+/// replacing the scene root.
 ///
 /// The implementation follows the public Material Design 3 component guidance where it maps cleanly to
 /// JavaFX. See [Material Design](https://m3.material.io/) and the

@@ -56,6 +56,8 @@ import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3OverlayPane;
+import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.theme.M3Theme;
@@ -71,7 +73,11 @@ public final class DemoApp extends Application {
         );
         M3Button create = new M3Button("Create");
 
-        VBox root = new VBox(16.0, name, create);
+        VBox content = new VBox(16.0, name, create);
+        M3OverlayPane root = new M3OverlayPane();
+        root.setContent(content);
+        create.setOnAction(event -> root.showSnackbar(new M3Snackbar("Project created")));
+
         Scene scene = new Scene(root, 480.0, 320.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
 
@@ -81,6 +87,20 @@ public final class DemoApp extends Application {
     }
 }
 ```
+
+Use one `M3OverlayPane` as the stable root of each application scene. It owns transient snackbar presentation and
+the in-scene layers used by `M3Dialog`; neither feature replaces `Scene.root`. A dialog owner must be the overlay
+pane or one of its descendants.
+
+Custom floating surfaces use a retained lifecycle handle instead of mutating an exposed overlay list:
+
+```java
+M3OverlayPane.OverlayHandle handle = root.showOverlay(floatingSurface);
+handle.hide();
+```
+
+`showModalOverlay(...)` uses the same handle contract while blocking lower-layer input and accessibility and
+suspending snackbar interaction until the modal layer is hidden.
 
 `M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Theme stylesheet compilation is an internal implementation detail, so applications should use the manager instead of constructing generated stylesheet URLs.
 

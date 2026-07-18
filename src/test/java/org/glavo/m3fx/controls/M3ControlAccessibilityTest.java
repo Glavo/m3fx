@@ -98,7 +98,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.PARENT, new M3Banner().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
         assertEquals("Saved Undo", snackbar.getAccessibleText());
-        assertEquals(AccessibleRole.PARENT, new M3SnackbarHost().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3OverlayPane().getAccessibleRole());
         assertEquals(AccessibleRole.DIALOG, new M3SideSheet().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
@@ -207,7 +207,7 @@ final class M3ControlAccessibilityTest {
                 passiveCard,
                 new M3Banner(),
                 new M3Snackbar(),
-                new M3SnackbarHost(),
+                new M3OverlayPane(),
                 new M3SideSheet(),
                 new M3BottomSheet(),
                 new M3Menu(),
@@ -515,13 +515,13 @@ final class M3ControlAccessibilityTest {
         sideSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
         assertTrue(sideSheet.isShown());
 
-        M3SnackbarHost host = new M3SnackbarHost();
-        host.setDisplayDuration(Duration.ZERO);
-        host.show(new M3Snackbar("Visible"));
-        host.setDisable(true);
-        host.executeAccessibleAction(AccessibleAction.COLLAPSE);
-        assertTrue(host.isShowing());
-        host.dismissAll();
+        M3OverlayPane overlayPane = new M3OverlayPane();
+        overlayPane.setSnackbarDisplayDuration(Duration.ZERO);
+        overlayPane.showSnackbar(new M3Snackbar("Visible"));
+        overlayPane.setDisable(true);
+        overlayPane.executeAccessibleAction(AccessibleAction.COLLAPSE);
+        assertTrue(overlayPane.isSnackbarShowing());
+        overlayPane.dismissAllSnackbars();
     }
 
     /// Verifies that popup-backed controls expose expanded state through accessibility actions.

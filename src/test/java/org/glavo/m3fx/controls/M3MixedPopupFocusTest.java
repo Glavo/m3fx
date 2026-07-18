@@ -340,46 +340,61 @@ final class M3MixedPopupFocusTest {
         });
     }
 
-    /// Verifies dialog content exposes the active action from a nested snackbar host.
+    /// Verifies a modal overlay prevents queued snackbar promotion from stealing focus.
     @Test
-    void dialogPaneRoutesNestedSnackbarFocus() {
+    void modalOverlayBlocksSnackbarFocusTransfer() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            Pane content = new Pane(host);
-            content.setPrefSize(420.0, 120.0);
-            M3DialogPane dialogPane = new M3DialogPane();
-            dialogPane.setContent(content);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button pageAction = new M3Button("Page action");
+            Pane content = new Pane(pageAction);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(content);
+            overlayPane.setSnackbarDisplayDuration(javafx.util.Duration.INDEFINITE);
+            M3Snackbar firstSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar secondSnackbar = new M3Snackbar("Deleted", "Restore");
+            M3Button modalAction = new M3Button("Modal action");
+            Pane modalLayer = new Pane(modalAction);
             Stage stage = new Stage();
 
             try {
-                Pane root = new Pane(dialogPane);
-                Scene scene = new Scene(root, 640.0, 360.0);
+                Scene scene = new Scene(overlayPane, 640.0, 360.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
                 stage.show();
-                root.applyCss();
-                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
-                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
-                root.layout();
-
-                host.show(snackbar);
-                root.applyCss();
-                root.layout();
-                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                pageAction.resizeRelocate(32.0, 32.0, 160.0, 48.0);
+                overlayPane.showSnackbar(firstSnackbar);
+                overlayPane.enqueueSnackbar(secondSnackbar);
+                overlayPane.applyCss();
+                overlayPane.layout();
+                Node firstAction = Objects.requireNonNull(assertInstanceOf(
                         Node.class,
-                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                        firstSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
-                actionButton.requestFocus();
+                firstAction.requestFocus();
+                assertTrue(firstAction.isFocused());
 
-                assertTrue(host.isShowing());
-                assertTrue(actionButton.isFocused());
-                assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertPopupFocusRoutedByContainer(dialogPane, actionButton);
+                M3OverlayPane.OverlayHandle modalHandle = overlayPane.showModalOverlay(modalLayer);
+                overlayPane.applyCss();
+                overlayPane.layout();
+                modalAction.resizeRelocate(240.0, 144.0, 160.0, 48.0);
+                modalAction.requestFocus();
+                overlayPane.dismissSnackbar();
+                overlayPane.applyCss();
+                overlayPane.layout();
+
+                Node secondAction = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        secondSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertSame(secondSnackbar, overlayPane.getSnackbar());
+                assertTrue(overlayPane.getSnackbarQueue().isEmpty());
+                assertTrue(modalAction.isFocused());
+                assertFalse(secondAction.isFocused());
+
+                assertTrue(modalHandle.hide());
+                assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, secondSnackbar));
+                assertTrue(secondAction.isFocused());
             } finally {
-                host.dismissAll();
+                overlayPane.dismissAllSnackbars();
                 stage.close();
             }
         });

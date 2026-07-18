@@ -612,19 +612,20 @@ final class CatalogSamples {
         return column(slider, range);
     }
 
-    /// Creates a local snackbar host and an action that displays a fresh snackbar.
+    /// Creates a local overlay pane and an action that displays a fresh snackbar.
     ///
     /// @return the snackbar example
     static Node snackbars() {
-        M3SnackbarHost host = new M3SnackbarHost();
-        host.setPrefWidth(420.0);
+        M3OverlayPane overlayPane = new M3OverlayPane();
+        overlayPane.setPrefSize(420.0, 120.0);
         M3Button show = new M3Button("Show snackbar", M3ButtonVariant.FILLED);
         show.setOnAction(event -> {
             M3Snackbar snackbar = new M3Snackbar("Message archived", "Undo");
-            snackbar.setOnAction(actionEvent -> host.dismiss());
-            host.show(snackbar);
+            snackbar.setOnAction(actionEvent -> overlayPane.dismissSnackbar());
+            overlayPane.showSnackbar(snackbar);
         });
-        return column(show, host);
+        overlayPane.setContent(column(show));
+        return overlayPane;
     }
 
     /// Creates filled and outlined split buttons with attached menus.

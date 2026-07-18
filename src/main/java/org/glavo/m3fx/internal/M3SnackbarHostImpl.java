@@ -1,17 +1,15 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -28,15 +26,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
-import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -44,37 +35,24 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
-/// Hosts transient Material Design 3 snackbar messages.
+/// Internal presentation host for transient Material Design 3 snackbar messages.
 ///
-/// `M3SnackbarHost` owns the visible snackbar slot and a FIFO queue of pending [M3Snackbar] instances. It
-/// coordinates display duration, action dismissal, automatic timeout, and Material entrance and exit motion. Add
-/// one host near the root of an application scene and call its show methods from feature code that needs
-/// non-modal feedback.
-///
-/// The following example installs a host in an overlay pane and queues an actionable snackbar:
-///
-/// ```java
-/// StackPane root = new StackPane();
-/// M3SnackbarHost host = new M3SnackbarHost();
-/// root.getChildren().add(host);
-///
-/// M3Snackbar snackbar = new M3Snackbar("Draft saved", "Undo");
-/// snackbar.setOnAction(event -> host.dismiss());
-/// host.enqueue(snackbar);
-/// ```
-///
-/// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
+/// `M3SnackbarHostImpl` owns the visible snackbar slot, pending FIFO queue, automatic timeout, accessibility route,
+/// and reusable entrance and exit transitions for one [org.glavo.m3fx.controls.M3OverlayPane]. Applications use the
+/// overlay pane's snackbar API and never install this implementation node directly.
 @NotNullByDefault
-public final class M3SnackbarHost extends Control {
+public final class M3SnackbarHostImpl extends Control {
     /// The base style class for M3FX snackbar hosts.
     public static final String STYLE_CLASS = "m3-snackbar-host";
 
     /// The initial vertical offset used by snackbar entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
 
-    /// Backing property for the public read-only current snackbar API.
-    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar =
-            new ReadOnlyObjectWrapper<>(this, "snackbar");
+    /// Private node-property key recording the host that currently owns a snackbar instance.
+    private static final Object OWNER_PROPERTY_KEY = new Object();
+
+    /// Backing property for the current snackbar API owned by the overlay pane.
+    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar;
 
     /// Pending snackbars waiting to be shown.
     private final ObservableList<M3Snackbar> queue = M3ObservableLists.nonNullElementList("snackbar");
@@ -85,26 +63,13 @@ public final class M3SnackbarHost extends Control {
 
     /// The display duration used for automatic dismissal.
     ///
-    /// `null` selects the duration from the effective motion behavior. Finite negative values are normalized to
-    /// zero. Zero, unknown, and indefinite durations disable automatic dismissal. The timer applies only while a
-    /// non-actionable snackbar without a close affordance is visible in a showing window. Changing this property
-    /// reschedules or cancels the current timer.
-    private final ObjectProperty<@Nullable Duration> displayDuration =
-            new SimpleObjectProperty<>(this, "displayDuration") {
-                /// Keeps explicit display durations non-negative.
-                @Override
-                protected void invalidated() {
-                    @Nullable Duration duration = get();
-                    if (duration != null && duration.lessThan(Duration.ZERO)) {
-                        set(Duration.ZERO);
-                        return;
-                    }
-                    refreshDisplayTimer();
-                }
-            };
+    /// `null` selects the duration from the effective motion behavior. Zero, unknown, and indefinite durations
+    /// disable automatic dismissal. The timer applies only while a non-actionable snackbar without a close
+    /// affordance is visible in a showing window. Changing this property reschedules or cancels the current timer.
+    private final ObjectProperty<@Nullable Duration> displayDuration;
 
-    /// Backing property for the public read-only showing state API.
-    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+    /// Backing property for the showing state owned by the overlay pane.
+    private final ReadOnlyBooleanWrapper showing;
 
     /// The automatic dismissal timer.
     private final PauseTransition displayTimer = new PauseTransition();
@@ -118,13 +83,14 @@ public final class M3SnackbarHost extends Control {
     /// The snackbar associated with the current display timer.
     private @Nullable M3Snackbar displayTimerTarget;
 
+    /// Whether a modal overlay currently blocks snackbar interaction and timeout progress.
+    private boolean modalBlocked;
+
     /// Observes runtime motion settings while a snackbar is active.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
+    private final M3MotionSettingsObserver motionSettingsObserver;
 
     /// Reports hosted snackbar focus changes to accessibility clients.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
+    private final M3AccessibleFocusNotifier focusNotifier;
 
     /// Refreshes automatic dismissal when the current snackbar gains or loses an interactive affordance.
     private final InvalidationListener snackbarInteractivityInvalidation = observable -> refreshDisplayTimer();
@@ -137,11 +103,21 @@ public final class M3SnackbarHost extends Control {
         }
     };
 
-    /// Creates an empty snackbar host.
+    /// Creates an empty snackbar host backed by state properties owned by its overlay pane.
     ///
-    /// The new host has no current snackbar and an empty queue. Its display duration follows the effective motion
-    /// behavior until [#setDisplayDuration(Duration)] is called or [#displayDurationProperty()] is assigned.
-    public M3SnackbarHost() {
+    /// @param snackbar        the current-snackbar state to update
+    /// @param showing         the visible-display state to update
+    /// @param displayDuration the optional explicit automatic-dismissal duration to observe
+    public M3SnackbarHostImpl(
+            ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar,
+            ReadOnlyBooleanWrapper showing,
+            ObjectProperty<@Nullable Duration> displayDuration
+    ) {
+        this.snackbar = Objects.requireNonNull(snackbar, "snackbar");
+        this.showing = Objects.requireNonNull(showing, "showing");
+        this.displayDuration = Objects.requireNonNull(displayDuration, "displayDuration");
+        motionSettingsObserver = new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
+        focusNotifier = new M3AccessibleFocusNotifier(this, this::currentFocusNode);
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
@@ -155,29 +131,29 @@ public final class M3SnackbarHost extends Control {
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         displayTimer.setOnFinished(event -> handleDisplayTimerFinished());
+        displayDuration.addListener(observable -> refreshDisplayTimer());
         focusNotifier.start();
     }
 
     /// Returns the currently hosted snackbar.
     ///
     /// @return the currently hosted snackbar, or `null` when the host is idle
-    public final @Nullable M3Snackbar getSnackbar() {
+    public @Nullable M3Snackbar getSnackbar() {
         return snackbar.get();
     }
 
-    public final ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
+    /// Returns the read-only property containing the currently hosted snackbar.
+    ///
+    /// @return the current-snackbar property
+    public ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
         return snackbar.getReadOnlyProperty();
     }
 
     /// Returns whether the current snackbar is in its visible display phase.
     ///
     /// @return `true` if the current snackbar is in its visible display phase
-    public final boolean isShowing() {
+    public boolean isShowing() {
         return showing.get();
-    }
-
-    public final ReadOnlyBooleanProperty showingProperty() {
-        return showing.getReadOnlyProperty();
     }
 
     /// Returns the pending snackbars waiting to be shown.
@@ -186,7 +162,7 @@ public final class M3SnackbarHost extends Control {
     /// Use [#enqueue(M3Snackbar)] to append an item and [#clearQueue()] to remove pending items.
     ///
     /// @return the unmodifiable live queue of pending snackbars
-    public final @UnmodifiableView ObservableList<M3Snackbar> getQueue() {
+    public @UnmodifiableView ObservableList<M3Snackbar> getQueue() {
         return queueView;
     }
 
@@ -199,25 +175,48 @@ public final class M3SnackbarHost extends Control {
     ///
     /// @return the explicitly configured duration, or the duration supplied by the effective motion behavior when
     ///     the property contains `null`
-    public final Duration getDisplayDuration() {
+    private Duration getDisplayDuration() {
         @Nullable Duration duration = displayDuration.get();
         return duration == null ? M3Animation.motionBehavior(this).snackbarDisplayDuration() : duration;
     }
 
-    /// Sets the display duration before automatic dismissal.
+    /// Updates whether a modal overlay blocks this host.
     ///
-    /// The duration applies only to snackbars without an action or close affordance. A zero, unknown, or indefinite
-    /// duration disables automatic dismissal. Set [#displayDurationProperty()] to `null` to restore motion-behavior
-    /// defaults.
+    /// Blocking suppresses accessibility focus and reveal actions and pauses automatic dismissal. The visible
+    /// snackbar remains rendered below the modal scrim and resumes a fresh timeout when the modal stack clears.
     ///
-    /// @param displayDuration the display duration before automatic dismissal
-    /// @throws NullPointerException if `displayDuration` is `null`
-    public final void setDisplayDuration(Duration displayDuration) {
-        this.displayDuration.set(Objects.requireNonNull(displayDuration, "displayDuration"));
-    }
+    /// @param modalBlocked whether a modal overlay blocks snackbar interaction
+    public void setModalBlocked(boolean modalBlocked) {
+        if (this.modalBlocked == modalBlocked) {
+            return;
+        }
 
-    public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
-        return displayDuration;
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        boolean expandedResultChanges = isShowing();
+        int itemCount = (currentSnackbar == null ? 0 : 1) + queue.size();
+        String currentText = currentSnackbarText();
+        @Nullable Node previousFocusNode = currentFocusNode();
+
+        this.modalBlocked = modalBlocked;
+        refreshDisplayTimer();
+        if (currentSnackbar != null) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        }
+        if (expandedResultChanges) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        }
+        @Nullable Node currentFocusNode = currentFocusNode();
+        if (previousFocusNode != currentFocusNode) {
+            M3Accessible.notifyFocusNodeChanged(this);
+        }
+        focusNotifier.refresh();
+        if (itemCount > 0) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_AT_INDEX);
+        }
+        if (!currentText.isEmpty()) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        }
     }
 
     /// Adds the supplied snackbar to the end of the display queue.
@@ -227,19 +226,29 @@ public final class M3SnackbarHost extends Control {
     /// once; each occurrence is processed in insertion order.
     ///
     /// @param snackbar the snackbar to enqueue
-    /// @throws NullPointerException if `snackbar` is `null`
-    public final void enqueue(M3Snackbar snackbar) {
+    /// @throws NullPointerException     if `snackbar` is `null`
+    /// @throws IllegalArgumentException if `snackbar` belongs to another overlay pane or an unrelated parent
+    public void enqueue(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
         if (getSnackbar() == null && !showing.get()) {
             show(snackbar);
         } else {
-            queue.add(snackbar);
+            claimSnackbar(snackbar);
+            try {
+                queue.add(snackbar);
+            } catch (RuntimeException | Error exception) {
+                releaseSnackbarIfUnused(snackbar);
+                throw exception;
+            }
         }
     }
 
     /// Clears pending snackbars without dismissing or otherwise modifying the currently hosted snackbar.
-    public final void clearQueue() {
-        queue.clear();
+    public void clearQueue() {
+        while (!queue.isEmpty()) {
+            M3Snackbar removedSnackbar = queue.remove(queue.size() - 1);
+            releaseSnackbarIfUnused(removedSnackbar);
+        }
     }
 
     /// Shows the supplied snackbar.
@@ -249,15 +258,18 @@ public final class M3SnackbarHost extends Control {
     /// retain FIFO ordering.
     ///
     /// @param snackbar the snackbar to show
-    /// @throws NullPointerException if `snackbar` is `null`
-    public final void show(M3Snackbar snackbar) {
+    /// @throws NullPointerException     if `snackbar` is `null`
+    /// @throws IllegalArgumentException if `snackbar` belongs to another overlay pane or an unrelated parent
+    public void show(M3Snackbar snackbar) {
+        Objects.requireNonNull(snackbar, "snackbar");
+        validateSnackbarClaim(snackbar);
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
         show(snackbar, currentSnackbar != null && snackbarFocusNodeOwnsFocus(currentSnackbar));
     }
 
     /// Shows the supplied snackbar and optionally transfers current snackbar action focus to it.
     private void show(M3Snackbar snackbar, boolean transferActionFocus) {
-        Objects.requireNonNull(snackbar, "snackbar");
+        claimSnackbar(snackbar);
         motionSettingsObserver.start();
 
         stopDisplayTimer();
@@ -274,6 +286,9 @@ public final class M3SnackbarHost extends Control {
                 resetSnackbar(previousSnackbar);
             }
             this.snackbar.set(snackbar);
+            if (previousSnackbar != null) {
+                releaseSnackbarIfUnused(previousSnackbar);
+            }
             snackbar.actionTextProperty().addListener(snackbarInteractivityInvalidation);
             snackbar.closeButtonVisibleProperty().addListener(snackbarInteractivityInvalidation);
             snackbar.addEventHandler(M3Snackbar.DISMISS_REQUEST, dismissRequestHandler);
@@ -299,7 +314,7 @@ public final class M3SnackbarHost extends Control {
     ///
     /// The operation is a no-op while the host is idle or the current snackbar is already leaving. After dismissal
     /// completes, the first pending snackbar becomes current.
-    public final void dismiss() {
+    public void dismiss() {
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
         if (currentSnackbar == null || !showing.get()) {
             return;
@@ -314,7 +329,7 @@ public final class M3SnackbarHost extends Control {
     /// Clears pending snackbars and dismisses the currently hosted snackbar when one is visible.
     ///
     /// This method is idempotent when the host and queue are already empty.
-    public final void dismissAll() {
+    public void dismissAll() {
         clearQueue();
         dismiss();
     }
@@ -337,13 +352,22 @@ public final class M3SnackbarHost extends Control {
 
     /// Returns accessibility attributes for the current snackbar and queue state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
+        if (modalBlocked) {
+            return switch (attribute) {
+                case CONTENTS, FOCUS_NODE, ITEM_AT_INDEX -> null;
+                case EXPANDED -> false;
+                case ITEM_COUNT -> 0;
+                case TEXT -> "";
+                default -> super.queryAccessibleAttribute(attribute, parameters);
+            };
+        }
         return switch (attribute) {
             case CONTENTS -> getSnackbar();
             case EXPANDED -> isShowing();
@@ -357,13 +381,13 @@ public final class M3SnackbarHost extends Control {
 
     /// Executes accessibility actions supported by the snackbar host.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (isDisabled()) {
+        if (isDisabled() || modalBlocked) {
             super.executeAccessibleAction(action, parameters);
             return;
         }
@@ -426,18 +450,18 @@ public final class M3SnackbarHost extends Control {
 
     /// Applies changed runtime motion settings and window lifecycle to active snackbar work.
     private void refreshMotionSettings() {
-        if (!isShowingWindow()) {
+        if (isWindowUnavailable()) {
             M3Animation.finishIfRunning(showAnimation);
             M3Animation.finishIfRunning(hideAnimation);
         }
         refreshDisplayTimer();
     }
 
-    /// Returns whether this host is attached to a currently showing window.
-    private boolean isShowingWindow() {
+    /// Returns whether this host lacks a currently showing window.
+    private boolean isWindowUnavailable() {
         @Nullable Scene scene = getScene();
         @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window != null && window.isShowing();
+        return window == null || !window.isShowing();
     }
 
     /// Schedules automatic dismissal for the target snackbar.
@@ -453,7 +477,8 @@ public final class M3SnackbarHost extends Control {
         Duration duration = getDisplayDuration();
         if (target == null
                 || !showing.get()
-                || !isShowingWindow()
+                || modalBlocked
+                || isWindowUnavailable()
                 || target.hasAction()
                 || target.isCloseButtonVisible()
                 || duration.isUnknown()
@@ -592,6 +617,7 @@ public final class M3SnackbarHost extends Control {
             return start + (end - start) * fraction;
         }
     }
+
     /// Removes the snackbar after its exit transition finishes.
     private void removeSnackbar(M3Snackbar target) {
         if (getSnackbar() != target) {
@@ -604,6 +630,7 @@ public final class M3SnackbarHost extends Control {
         target.removeEventHandler(M3Snackbar.DISMISS_REQUEST, dismissRequestHandler);
         resetSnackbar(target);
         this.snackbar.set(null);
+        releaseSnackbarIfUnused(target);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -619,6 +646,57 @@ public final class M3SnackbarHost extends Control {
         target.setTranslateY(0.0);
     }
 
+    /// Claims a snackbar for this host after validating its existing ownership and parent.
+    private void claimSnackbar(M3Snackbar target) {
+        validateSnackbarClaim(target);
+        if (!target.hasProperties() || target.getProperties().get(OWNER_PROPERTY_KEY) == null) {
+            target.getProperties().put(OWNER_PROPERTY_KEY, this);
+        }
+    }
+
+    /// Validates that a snackbar can be used by this host without changing either host's state.
+    private void validateSnackbarClaim(M3Snackbar target) {
+        Objects.requireNonNull(target, "target");
+        @Nullable Object owner = target.hasProperties() ? target.getProperties().get(OWNER_PROPERTY_KEY) : null;
+        if (owner != null && owner != this) {
+            throw new IllegalArgumentException("snackbar is already claimed by another M3OverlayPane");
+        }
+
+        @Nullable Node parent = target.getParent();
+        if (parent != null && parent != this) {
+            throw new IllegalArgumentException("snackbar already belongs to an unrelated parent");
+        }
+    }
+
+    /// Releases this host's claim when the snackbar is neither current nor queued by identity.
+    private void releaseSnackbarIfUnused(M3Snackbar target) {
+        if (getSnackbar() == target || queueContainsIdentity(target) || !target.hasProperties()) {
+            return;
+        }
+        target.getProperties().remove(OWNER_PROPERTY_KEY, this);
+    }
+
+    /// Returns whether the pending queue contains the supplied snackbar instance.
+    private boolean queueContainsIdentity(M3Snackbar target) {
+        for (M3Snackbar queuedSnackbar : queue) {
+            if (queuedSnackbar == target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Removes the first queued occurrence of the supplied snackbar instance.
+    private boolean removeFirstQueuedSnackbar(M3Snackbar target) {
+        for (int index = 0; index < queue.size(); index++) {
+            if (queue.get(index) == target) {
+                queue.remove(index);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// Shows the next queued snackbar and optionally transfers focused action ownership to it.
     private void showNextQueuedSnackbar(boolean transferActionFocus) {
         if (getSnackbar() != null) {
@@ -629,8 +707,15 @@ public final class M3SnackbarHost extends Control {
             return;
         }
 
-        M3Snackbar nextSnackbar = queue.remove(0);
-        show(nextSnackbar, transferActionFocus);
+        M3Snackbar nextSnackbar = queue.get(0);
+        validateSnackbarClaim(nextSnackbar);
+        queue.remove(0);
+        try {
+            show(nextSnackbar, transferActionFocus);
+        } catch (RuntimeException | Error exception) {
+            releaseSnackbarIfUnused(nextSnackbar);
+            throw exception;
+        }
     }
 
     /// Returns the current or queued snackbar at the supplied accessibility index.
@@ -651,7 +736,7 @@ public final class M3SnackbarHost extends Control {
 
     /// Returns the preferred focus node for the current snackbar.
     private @Nullable Node currentFocusNode() {
-        if (!M3Accessible.canReach(this)) {
+        if (modalBlocked || !M3Accessible.canReach(this)) {
             return null;
         }
 
@@ -676,7 +761,7 @@ public final class M3SnackbarHost extends Control {
     /// Focuses the current snackbar action focus node when it is reachable.
     ///
     /// @return `true` when the current snackbar focus node accepted focus
-    final boolean focusCurrentAccessibleNode() {
+    boolean focusCurrentAccessibleNode() {
         if (M3Accessible.showItem(this, currentFocusNode())) {
             notifyFocusNodeChanged();
             return true;
@@ -723,8 +808,8 @@ public final class M3SnackbarHost extends Control {
     ///
     /// @param parameters optional accessibility target parameters
     /// @return `true` when the target snackbar was focused, shown, or accepted as the current target
-    final boolean showAccessibleSnackbar(Object... parameters) {
-        if (!M3Accessible.canReach(this) && !isDetachedReachableHost()) {
+    boolean showAccessibleSnackbar(Object... parameters) {
+        if (modalBlocked || (!M3Accessible.canReach(this) && !isDetachedReachableHost())) {
             return false;
         }
         @Nullable M3Snackbar target = accessibleSnackbar(parameters);
@@ -740,7 +825,11 @@ public final class M3SnackbarHost extends Control {
             }
             return shown;
         }
-        if (queue.remove(target)) {
+        if (queueContainsIdentity(target)) {
+            validateSnackbarClaim(target);
+            if (!removeFirstQueuedSnackbar(target)) {
+                return false;
+            }
             show(target);
             boolean shown = showAccessibleSnackbarTarget(target, parameters);
             if (shown) {
@@ -759,7 +848,8 @@ public final class M3SnackbarHost extends Control {
             if (M3Accessible.containsUnrevealableActionNodeTarget(target, targetParameters)) {
                 return false;
             }
-            if (target.showAccessibleItem(targetParameters) && currentFocusNode() != null) {
+            target.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetParameters);
+            if (currentFocusNode() != null) {
                 return true;
             }
         }

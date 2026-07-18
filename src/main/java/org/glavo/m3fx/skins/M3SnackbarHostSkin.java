@@ -6,13 +6,13 @@ package org.glavo.m3fx.skins;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3Snackbar;
-import org.glavo.m3fx.controls.M3SnackbarHost;
+import org.glavo.m3fx.internal.M3SnackbarHostImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for [M3SnackbarHost].
+/// The default skin for [M3SnackbarHostImpl].
 @NotNullByDefault
-public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHost> {
+public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHostImpl> {
     /// Updates hosted content when the current snackbar changes.
     private final ChangeListener<@Nullable M3Snackbar> snackbarListener =
             (observable, oldValue, newValue) -> updateSnackbar(newValue);
@@ -20,7 +20,7 @@ public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHost> {
     /// Creates a snackbar host skin.
     ///
     /// @param control the snackbar host controlled by this skin
-    public M3SnackbarHostSkin(M3SnackbarHost control) {
+    public M3SnackbarHostSkin(M3SnackbarHostImpl control) {
         super(control);
         control.snackbarProperty().addListener(snackbarListener);
         updateSnackbar(control.getSnackbar());
@@ -29,7 +29,7 @@ public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHost> {
     /// Removes listeners and hosted content before disposal.
     @Override
     public void dispose() {
-        M3SnackbarHost control = getSkinnable();
+        M3SnackbarHostImpl control = getSkinnable();
         control.snackbarProperty().removeListener(snackbarListener);
         if (control.getSkin() == null || control.getSkin() == this) {
             getChildren().clear();

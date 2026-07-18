@@ -24,11 +24,11 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
-import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
@@ -87,8 +87,8 @@ public final class M3FXCatalogApp extends Application {
     /// Component names marked as favorites during this application session.
     private final Set<String> favorites = new HashSet<>();
 
-    /// The root overlay containing application content and modal surfaces.
-    private final StackPane root = new StackPane();
+    /// The stable root containing application content and in-scene presentation layers.
+    private final M3OverlayPane root = new M3OverlayPane();
 
     /// The persistent app-bar and route-content scaffold.
     private final BorderPane scaffold = new BorderPane();
@@ -105,8 +105,11 @@ public final class M3FXCatalogApp extends Application {
     /// The modal theme-settings bottom sheet.
     private final M3BottomSheet settingsSheet = new M3BottomSheet("Theme");
 
-    /// The overlay host for transient Catalog messages.
-    private final M3SnackbarHost snackbarHost = new M3SnackbarHost();
+    /// The coordinated full-size layer containing the settings scrim and sheet.
+    private final StackPane settingsLayer = new StackPane();
+
+    /// The active settings presentation, or `null` while the settings layer is detached.
+    private @Nullable M3OverlayPane.OverlayHandle settingsOverlayHandle;
 
     /// The brightness control retained so reset can synchronize its state.
     private final M3Switch darkThemeSwitch = new M3Switch("Dark theme");
@@ -166,7 +169,7 @@ public final class M3FXCatalogApp extends Application {
         configureSettingsOverlay();
 
         root.getStyleClass().add("catalog-root");
-        root.getChildren().setAll(scaffold, settingsScrim, settingsSheet, snackbarHost);
+        root.setContent(scaffold);
 
         Scene activeScene = new Scene(root, INITIAL_WIDTH, INITIAL_HEIGHT);
         activeScene.getStylesheets().add(Objects.requireNonNull(
@@ -195,9 +198,6 @@ public final class M3FXCatalogApp extends Application {
         routeHost.getStyleClass().add("catalog-route-host");
         scaffold.setCenter(routeHost);
 
-        snackbarHost.setMaxWidth(560.0);
-        StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
-        StackPane.setMargin(snackbarHost, new Insets(0.0, 24.0, 24.0, 24.0));
     }
 
     /// Configures the modal theme settings sheet and its coordinated scrim.
@@ -211,6 +211,7 @@ public final class M3FXCatalogApp extends Application {
         settingsSheet.setPrefWidth(640.0);
         settingsSheet.setMaxWidth(640.0);
         settingsSheet.setMaxHeight(SETTINGS_SHEET_MAX_HEIGHT);
+        settingsSheet.setRestoreFocusOnHide(false);
 
         ScrollPane settingsScroll = new ScrollPane(createSettingsContent());
         settingsScroll.getStyleClass().add("catalog-settings-scroll");
@@ -221,6 +222,13 @@ public final class M3FXCatalogApp extends Application {
         settingsSheet.setShown(false);
         StackPane.setAlignment(settingsSheet, Pos.BOTTOM_CENTER);
         StackPane.setMargin(settingsSheet, new Insets(16.0));
+
+        settingsLayer.setPickOnBounds(false);
+        settingsLayer.getChildren().setAll(settingsScrim, settingsSheet);
+        settingsScrim.visibleProperty().addListener((observable, oldVisible, visible) ->
+                removeSettingsLayerWhenHidden());
+        settingsSheet.visibleProperty().addListener((observable, oldVisible, visible) ->
+                removeSettingsLayerWhenHidden());
 
         M3Button closeButton = new M3Button("Done", M3ButtonVariant.TEXT);
         closeButton.setOnAction(event -> hideSettings());
@@ -485,6 +493,10 @@ public final class M3FXCatalogApp extends Application {
 
     /// Shows the modal theme settings overlay.
     void showSettings() {
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = settingsOverlayHandle;
+        if (currentHandle == null || !currentHandle.isShowing()) {
+            settingsOverlayHandle = root.showModalOverlay(settingsLayer);
+        }
         settingsScrim.show();
         settingsSheet.show();
     }
@@ -493,6 +505,17 @@ public final class M3FXCatalogApp extends Application {
     void hideSettings() {
         settingsSheet.hide();
         settingsScrim.hide();
+    }
+
+    /// Detaches the settings layer after both coordinated exit transitions complete.
+    private void removeSettingsLayerWhenHidden() {
+        if (!settingsScrim.isVisible() && !settingsSheet.isVisible()) {
+            @Nullable M3OverlayPane.OverlayHandle currentHandle = settingsOverlayHandle;
+            settingsOverlayHandle = null;
+            if (currentHandle != null) {
+                currentHandle.hide();
+            }
+        }
     }
 
     /// Restores the Catalog theme and display controls to their defaults.
@@ -551,7 +574,7 @@ public final class M3FXCatalogApp extends Application {
     ///
     /// @param message the snackbar message
     private void showMessage(String message) {
-        snackbarHost.enqueue(new M3Snackbar(message));
+        root.enqueueSnackbar(new M3Snackbar(message));
     }
 
     /// Returns the immutable component registry for package-level verification.

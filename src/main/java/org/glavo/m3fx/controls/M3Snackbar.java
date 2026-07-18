@@ -40,10 +40,10 @@ import java.util.Objects;
 /// A Material Design 3 snackbar message.
 ///
 /// `M3Snackbar` represents a short message with an optional action and close affordance. It is normally shown
-/// through [M3SnackbarHost], which owns queueing, timeout, entrance, and exit lifecycle. Action activation fires an
+/// through [M3OverlayPane], which owns queueing, timeout, entrance, and exit lifecycle. Action activation fires an
 /// [ActionEvent] but does not dismiss the snackbar automatically; the handler decides whether to call
-/// [M3SnackbarHost#dismiss()]. A visible close affordance emits [#DISMISS_REQUEST], which a host handles as a
-/// dismissal request.
+/// [M3OverlayPane#dismissSnackbar()]. A visible close affordance emits [#DISMISS_REQUEST], which the overlay pane
+/// handles as a dismissal request.
 ///
 /// Text and action text are empty by default, so a newly created snackbar has no action. Geometry properties expose
 /// stable Material defaults in JavaFX logical pixels and may be overridden directly or through CSS.
@@ -176,7 +176,7 @@ public final class M3Snackbar extends Control {
 
     /// Creates a snackbar with message text and action button text.
     ///
-    /// @param text the snackbar message text
+    /// @param text       the snackbar message text
     /// @param actionText the action button text
     /// @throws NullPointerException if `text` or `actionText` is `null`
     public M3Snackbar(String text, String actionText) {
@@ -258,8 +258,8 @@ public final class M3Snackbar extends Control {
 
     /// Sets whether the optional close affordance is visible.
     ///
-    /// When this snackbar is hosted by [M3SnackbarHost], activating the close affordance dismisses the current
-    /// snackbar and advances the host queue.
+    /// When this snackbar is presented by an [M3OverlayPane], activating the close affordance dismisses the current
+    /// snackbar and advances the overlay pane's queue.
     ///
     /// @param closeButtonVisible whether the close affordance is visible
     public final void setCloseButtonVisible(boolean closeButtonVisible) {
@@ -289,7 +289,7 @@ public final class M3Snackbar extends Control {
 
     /// Returns accessibility attributes for snackbar text and action content.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
@@ -307,7 +307,7 @@ public final class M3Snackbar extends Control {
 
     /// Executes accessibility actions supported by snackbars with action text.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
@@ -663,9 +663,9 @@ public final class M3Snackbar extends Control {
             }
             if (targetParameters.length > 0
                     && !M3Accessible.parametersContainDirectTarget(
-                            parameter -> parameter == interactiveItem,
-                            targetParameters
-                    )) {
+                    parameter -> parameter == interactiveItem,
+                    targetParameters
+            )) {
                 return false;
             }
             if (M3Accessible.showItem(this, interactiveItem)) {

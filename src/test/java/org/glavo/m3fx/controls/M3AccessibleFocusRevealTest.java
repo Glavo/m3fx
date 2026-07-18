@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.glavo.m3fx.M3TestControls.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -194,40 +195,42 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
-    /// Verifies accessibility focus on a snackbar host reveals and focuses its current action node.
+    /// Verifies accessibility focus on an overlay snackbar focuses its current action node without moving content.
     @Test
-    void snackbarHostAccessibleRequestFocusRevealsCurrentActionNode() {
+    void overlaySnackbarAccessibleRequestFocusFocusesCurrentActionNode() {
         FxTestUtils.runOnFxThread(() -> {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
-            M3SnackbarHost host = new M3SnackbarHost();
-            host.setDisplayDuration(javafx.util.Duration.INDEFINITE);
-            host.setPrefSize(320.0, 96.0);
-            VBox content = new VBox(spacer, host);
+            VBox content = new VBox(spacer, new Label("Page content"));
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(220.0, 120.0);
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(scrollPane);
+            overlayPane.setSnackbarDisplayDuration(javafx.util.Duration.INDEFINITE);
 
-            show(scrollPane, 220.0, 120.0);
-            host.show(new M3Snackbar("Saved", "Undo"));
-            scrollPane.applyCss();
-            scrollPane.resize(220.0, 120.0);
-            scrollPane.layout();
-            content.layout();
-            host.layout();
-            M3Snackbar snackbar = java.util.Objects.requireNonNull(host.getSnackbar(), "snackbar");
+            Stage stage = new Stage();
+            stage.setScene(new Scene(overlayPane, 220.0, 120.0));
+            stage.show();
+            overlayPane.showSnackbar(new M3Snackbar("Saved", "Undo"));
+            overlayPane.applyCss();
+            overlayPane.layout();
+            M3Snackbar snackbar = java.util.Objects.requireNonNull(overlayPane.getSnackbar(), "snackbar");
             Node actionNode = java.util.Objects.requireNonNull(
                     (Node) snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
                     "actionNode"
             );
 
-            assertFalse(host.isFocusTraversable());
-            assertTrue(M3Accessible.requestAccessibleFocus(content, host));
+            assertFalse(overlayPane.isFocusTraversable());
+            assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, snackbar));
 
             assertTrue(actionNode.isFocused());
-            assertSame(actionNode, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-            assertTargetVisible(scrollPane, content, actionNode);
-            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+            assertSame(actionNode, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            Bounds actionBounds = actionNode.localToScene(actionNode.getBoundsInLocal());
+            Bounds overlayBounds = overlayPane.localToScene(overlayPane.getBoundsInLocal());
+            assertTrue(overlayBounds.contains(actionBounds));
+            assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+            stage.close();
         });
     }
 
