@@ -449,7 +449,7 @@ public final class M3ThemeRuntime {
         StringBuilder builder = new StringBuilder(THEME_STYLESHEET_INITIAL_CAPACITY);
         builder.append('.').append(ROOT_STYLE_CLASS).append(" { ");
         M3ThemeCssCompiler.appendRootStyleDeclarations(builder, theme.tokens());
-        builder.append(" }\n\n");
+        builder.append("}\n\n");
         M3ThemeCssCompiler.appendControlStyleRules(builder, theme.tokens());
         return builder.toString();
     }

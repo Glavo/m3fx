@@ -61,7 +61,6 @@ public final class M3ThemeCssCompiler {
     public static void appendRootStyleDeclarations(StringBuilder builder, M3TokenSet tokens) {
         Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        int start = builder.length();
         M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.colorTokens());
         M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.typographyTokens());
         M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.shapeTokens());
@@ -71,7 +70,6 @@ public final class M3ThemeCssCompiler {
         appendStateColorStyleDeclarations(builder, tokens.colorTokens(), tokens.stateLayerTokens());
         M3ComponentTokenCssCompiler.appendStyleDeclarations(builder, tokens.componentTokens());
         appendComponentColorStyleDeclarations(builder, tokens.componentTokens(), tokens.colorTokens());
-        stripTrailingWhitespace(builder, start);
     }
 
     /// Compiles component selector rules for a complete token set.
@@ -92,12 +90,10 @@ public final class M3ThemeCssCompiler {
     public static void appendControlStyleRules(StringBuilder builder, M3TokenSet tokens) {
         Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        int start = builder.length();
         M3TokenCssCompiler.appendControlStyleRules(builder, tokens.typographyTokens());
         M3ComponentTokenCssCompiler.appendControlStyleRules(builder, tokens.componentTokens());
         M3TokenCssCompiler.appendControlStyleRules(builder, tokens.stateLayerTokens());
         M3TokenCssCompiler.appendControlStyleRules(builder, tokens.elevationTokens());
-        stripTrailingWhitespace(builder, start);
     }
 
     /// Appends state-dependent colors that combine role colors with state opacities.
@@ -253,15 +249,6 @@ public final class M3ThemeCssCompiler {
     /// Appends one CSS declaration to the destination buffer.
     private static void appendDeclaration(StringBuilder builder, String name, String value) {
         builder.append(name).append(": ").append(value).append("; ");
-    }
-
-    /// Removes trailing whitespace appended by one compiler section without touching earlier buffer content.
-    private static void stripTrailingWhitespace(StringBuilder builder, int start) {
-        int end = builder.length();
-        while (end > start && Character.isWhitespace(builder.charAt(end - 1))) {
-            end--;
-        }
-        builder.setLength(end);
     }
 
     /// Returns the generated Material CSS variable for a MonetFX color role.
