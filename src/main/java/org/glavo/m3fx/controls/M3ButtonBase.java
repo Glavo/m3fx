@@ -23,6 +23,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +44,8 @@ import java.util.Objects;
 /// setting either property alone does not install a scene-wide keyboard accelerator.
 ///
 /// New buttons are filled, small, round, focus traversable, mnemonic-parsing, and neither default nor cancel.
-/// Their token-backed geometry can be changed through the styleable properties or CSS.
+/// Their token-backed geometry can be changed through the styleable properties or CSS. [#colorsProperty()] provides
+/// optional, type-safe color overrides for one button while leaving null color slots connected to the active theme.
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
@@ -254,6 +256,49 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// @return the resting button shape property
     public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
         return buttonShape;
+    }
+
+    /// The explicit color overrides for this button, or `null` to use its variant and active theme.
+    ///
+    /// Assigning a value changes only the non-null components in that value. The colors remain effective across
+    /// variant and theme changes until this property is cleared. The default value is `null`.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3ButtonColors> colors =
+            new SimpleObjectProperty<>(this, "colors") {
+                /// Rebuilds the branch-local color declarations after the immutable value changes.
+                @Override
+                protected void invalidated() {
+                    M3ComponentColorStyles.applyButtonColors(M3ButtonBase.this, get());
+                }
+            };
+
+    /// Returns the explicit button color overrides.
+    ///
+    /// @return the color overrides, or `null` when the variant and active theme determine every color
+    public final @Nullable M3ButtonColors getColors() {
+        return colors.get();
+    }
+
+    /// Sets explicit button color overrides.
+    ///
+    /// Non-null components in the supplied value take precedence over the button variant and active theme. Other
+    /// declarations continue through the normal CSS cascade. Set this property to `null` to remove all managed
+    /// overrides.
+    ///
+    /// @param colors the color overrides, or `null` to restore variant and theme color resolution
+    public final void setColors(@Nullable M3ButtonColors colors) {
+        this.colors.set(colors);
+    }
+
+    /// Returns the observable property that stores explicit button color overrides.
+    ///
+    /// The property can be observed and bound. Its default value is `null`. Replacing its immutable value updates
+    /// the button's local declarations without modifying the application's inline style.
+    ///
+    /// @return the nullable button-colors property
+    public final ObjectProperty<@Nullable M3ButtonColors> colorsProperty() {
+        return colors;
     }
 
     /// The preferred button container height, in logical pixels.

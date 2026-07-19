@@ -20,11 +20,13 @@ import javafx.css.converter.StringConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -38,8 +40,9 @@ import java.util.Objects;
 ///
 /// `M3Icon` is an M3FX utility control rather than a standalone interactive component. Its
 /// [glyph][#glyphProperty()] contains a character or symbol-font ligature, while [#sizeProperty()],
-/// [#variantProperty()], and the styleable font token properties determine its metrics and color role. The default
-/// icon is empty, medium sized, uses the system font at medium weight, and uses the on-surface-variant color role.
+/// [#variantProperty()], and the styleable font token properties determine its metrics and color role. An explicit
+/// [tint][#tintProperty()] overrides that role and any containing component color until cleared. The default icon is
+/// empty, medium sized, uses the system font at medium weight, and uses the on-surface-variant color role.
 ///
 /// The control renders exactly one glyph and does not provide label layout, graphics, mnemonic parsing, text
 /// wrapping, or action behavior. It is centered and not focus traversable by default. Place it in an action-owning
@@ -208,6 +211,44 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// @return the icon color-variant property
     public ObjectProperty<M3IconVariant> variantProperty() {
         return variantValue;
+    }
+
+    /// The explicit tint used to paint the glyph, or `null` to use semantic color resolution.
+    ///
+    /// A non-null tint takes precedence over [#variantProperty()] and over the color supplied by a containing M3FX
+    /// component. Clearing the tint restores those normal rules without changing the semantic variant.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Color> tintValue =
+            new SimpleObjectProperty<>(this, "tint") {
+                /// Updates the branch-local tint declaration.
+                @Override
+                protected void invalidated() {
+                    M3ComponentColorStyles.applyIconTint(M3Icon.this, get());
+                }
+            };
+
+    /// Returns the explicit icon tint.
+    ///
+    /// @return the tint, or `null` when semantic color resolution is active
+    public @Nullable Color getTint() {
+        return tintValue.get();
+    }
+
+    /// Sets the explicit icon tint.
+    ///
+    /// @param tint the tint to apply, or `null` to restore semantic color resolution
+    public void setTint(@Nullable Color tint) {
+        tintValue.set(tint);
+    }
+
+    /// Returns the observable property that stores the explicit icon tint.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the nullable tint property
+    public ObjectProperty<@Nullable Color> tintProperty() {
+        return tintValue;
     }
 
     /// The resolved immutable font used by the glyph node.

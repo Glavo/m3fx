@@ -18,10 +18,12 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.FillRule;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3SVGIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -44,9 +46,10 @@ import java.util.Objects;
 /// meet semantics, centered in the control, and never stretched to a different aspect ratio.
 ///
 /// This control intentionally models one monochrome path. Its fill follows [#variantProperty()] and the surrounding
-/// component's icon-color token. Compose several JavaFX nodes when an icon requires multiple independently colored
-/// paths, strokes, masks, or animation. The icon is non-interactive and not focus traversable by default; place it in
-/// an action-owning control such as [M3IconButton], [M3Chip], or [M3MenuItem] when it represents an action.
+/// component's icon-color token. A non-null [tint][#tintProperty()] takes precedence over both sources. Compose
+/// several JavaFX nodes when an icon requires multiple independently colored paths, strokes, masks, or animation.
+/// The icon is non-interactive and not focus traversable by default; place it in an action-owning control such as
+/// [M3IconButton], [M3Chip], or [M3MenuItem] when it represents an action.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -293,6 +296,44 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// @return the icon color-variant property
     public ObjectProperty<M3IconVariant> variantProperty() {
         return variantValue;
+    }
+
+    /// The explicit tint used to fill the SVG path, or `null` to use semantic color resolution.
+    ///
+    /// A non-null tint takes precedence over [#variantProperty()] and over the color supplied by a containing M3FX
+    /// component. Clearing it restores those normal rules without changing the semantic variant.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Color> tintValue =
+            new SimpleObjectProperty<>(this, "tint") {
+                /// Updates the branch-local tint declaration.
+                @Override
+                protected void invalidated() {
+                    M3ComponentColorStyles.applyIconTint(M3SVGIcon.this, get());
+                }
+            };
+
+    /// Returns the explicit SVG icon tint.
+    ///
+    /// @return the tint, or `null` when semantic color resolution is active
+    public @Nullable Color getTint() {
+        return tintValue.get();
+    }
+
+    /// Sets the explicit SVG icon tint.
+    ///
+    /// @param tint the tint to apply, or `null` to restore semantic color resolution
+    public void setTint(@Nullable Color tint) {
+        tintValue.set(tint);
+    }
+
+    /// Returns the observable property that stores the explicit SVG icon tint.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the nullable tint property
+    public ObjectProperty<@Nullable Color> tintProperty() {
+        return tintValue;
     }
 
     /// Whether the path is mirrored horizontally in a right-to-left scene orientation.

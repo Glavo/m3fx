@@ -29,6 +29,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3CardSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +48,8 @@ import java.util.Objects;
 /// Passive cards are not focus targets and do not display hover, pressed, or ripple feedback.
 ///
 /// The control exposes token-backed container shape, content padding, outline width, and variant state so cards can
-/// participate in the same theme and density system as other M3FX controls. Applications that implement card
+/// participate in the same theme and density system as other M3FX controls. [#colorsProperty()] can override selected
+/// colors on one card without disconnecting its remaining colors from that system. Applications that implement card
 /// reordering can set the dragged property for the duration of the drag gesture to apply the Material dragged state.
 ///
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
@@ -264,6 +266,47 @@ public final class M3Card extends Control {
     /// @return the card variant property
     public final ObjectProperty<M3CardVariant> variantProperty() {
         return variant;
+    }
+
+    /// The explicit card color overrides, or `null` to use the variant and active theme.
+    ///
+    /// Non-null components in the immutable value remain effective across variant and theme changes. The default
+    /// value is `null`.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3CardColors> colors =
+            new SimpleObjectProperty<>(this, "colors") {
+                /// Rebuilds the branch-local card color declarations.
+                @Override
+                protected void invalidated() {
+                    M3ComponentColorStyles.applyCardColors(M3Card.this, get());
+                }
+            };
+
+    /// Returns the explicit card color overrides.
+    ///
+    /// @return the overrides, or `null` when the variant and active theme determine every card color
+    public final @Nullable M3CardColors getColors() {
+        return colors.get();
+    }
+
+    /// Sets explicit card color overrides.
+    ///
+    /// Components not replaced by the supplied value continue through the normal CSS cascade. Set the property
+    /// itself to `null` to remove all managed overrides.
+    ///
+    /// @param colors the overrides, or `null` to restore variant and theme color resolution
+    public final void setColors(@Nullable M3CardColors colors) {
+        this.colors.set(colors);
+    }
+
+    /// Returns the observable property that stores explicit card color overrides.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the nullable card-colors property
+    public final ObjectProperty<@Nullable M3CardColors> colorsProperty() {
+        return colors;
     }
 
     /// The card corner radius, in logical pixels.

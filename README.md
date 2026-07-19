@@ -203,8 +203,30 @@ M3ThemeManager.install(emphasizedAction, expressiveControlTheme);
 
 Color generation is independent when a prebuilt MonetFX `ColorScheme` is supplied through
 `M3Theme.fromColorScheme(...)`; M3FX retains that scheme instead of regenerating it for the selected profile.
-Use CSS for individual brand-color overrides, specialized typography, or visual treatments outside the component
-property model:
+Use the type-safe color properties for local component overrides. A `null` base-color slot contributes no local
+declaration, so the component variant and active theme continue to resolve that role. Base colors remain in the CSS
+cascade for all states; provide a disabled replacement when the disabled state should use a different local color:
+
+```java
+M3Button action = new M3Button("Save", M3ButtonVariant.FILLED);
+action.setColors(new M3ButtonColors(
+        Color.web("#006A6A"),
+        Color.WHITE,
+        null,
+        Color.web("#7A7A7A")
+));
+
+M3Icon icon = new M3Icon("favorite");
+icon.setTint(Color.web("#9C4146"));
+M3SVGIcon svgIcon = new M3SVGIcon(path, viewBox);
+svgIcon.setTint(Color.web("#9C4146"));
+```
+
+The same local-color pattern is available through `M3Card.setColors(...)` and `M3Surface.setColors(...)`. These
+overrides remain attached to the control when the application switches its global theme; roles without a local
+declaration continue to follow that new theme. Use a local `M3ThemeManager.install(...)` call when an entire
+subtree needs a different token set. Use CSS for brand-wide typography, outline treatments, and visual details
+outside the typed component color model:
 
 ```css
 .save-action {
@@ -213,8 +235,8 @@ property model:
 }
 ```
 
-Color, typography, and elevation remain theme-token or CSS concerns rather than being duplicated as properties on
-every control.
+Colors that must follow a subtree-wide token set should still be expressed through a local theme. This keeps the
+public properties focused on common component semantics without duplicating every CSS token on every control.
 
 A card becomes an interactive whole only when it has an action handler:
 

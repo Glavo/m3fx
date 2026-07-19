@@ -27,6 +27,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +46,7 @@ import java.util.Objects;
 ///
 /// A new surface uses the container color role, elevation level zero, a 12-pixel shape radius, and 16-pixel content
 /// padding. Color role and elevation are semantic properties; shape and padding are styleable logical-pixel
-/// properties.
+/// properties. [#colorsProperty()] optionally overrides container or content color for this surface alone.
 ///
 /// See [Material Design](https://m3.material.io/) and
 /// [Material color roles](https://m3.material.io/styles/color/roles).
@@ -112,6 +113,47 @@ public final class M3Surface extends Control {
     /// @return the `variant` property
     public final ObjectProperty<M3SurfaceVariant> variantProperty() {
         return variant;
+    }
+
+    /// The explicit surface color overrides, or `null` to use the variant and active theme.
+    ///
+    /// Non-null components in the immutable value remain effective across variant and theme changes. The default
+    /// value is `null`.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3SurfaceColors> colors =
+            new SimpleObjectProperty<>(this, "colors") {
+                /// Rebuilds the branch-local surface color declarations.
+                @Override
+                protected void invalidated() {
+                    M3ComponentColorStyles.applySurfaceColors(M3Surface.this, get());
+                }
+            };
+
+    /// Returns the explicit surface color overrides.
+    ///
+    /// @return the overrides, or `null` when the variant and active theme determine both colors
+    public final @Nullable M3SurfaceColors getColors() {
+        return colors.get();
+    }
+
+    /// Sets explicit surface color overrides.
+    ///
+    /// Null components continue to inherit from the surface variant and active theme. Set the property itself to
+    /// `null` to remove all managed overrides.
+    ///
+    /// @param colors the overrides, or `null` to restore variant and theme color resolution
+    public final void setColors(@Nullable M3SurfaceColors colors) {
+        this.colors.set(colors);
+    }
+
+    /// Returns the observable property that stores explicit surface color overrides.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the nullable surface-colors property
+    public final ObjectProperty<@Nullable M3SurfaceColors> colorsProperty() {
+        return colors;
     }
 
     /// The surface elevation level.
