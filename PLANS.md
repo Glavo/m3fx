@@ -31,12 +31,12 @@ policies, centered split panes, fixed side panes, physical safety insets, logica
 coordination, and focus repair when an active region becomes hidden. The Catalog uses this scaffold as a real
 application integration path.
 
-The exported motion foundation now includes an interruptible scalar animatable, owned-content visibility and
-replacement containers, animated replacement sizing, and a FLIP-style placement transition that can be installed
-on existing JavaFX parents. They share the same spring, theme, scene-lifecycle, and reduced-motion infrastructure as
-component skins, avoid per-pulse allocation, and are demonstrated by the Demo's Motion page. General child entry,
-removal, arbitrary layout-size remeasurement, and shared-element overlay transitions remain future layers rather
-than responsibilities of specialized layout panes.
+The exported motion foundation now includes an interruptible scalar animatable, a four-state retained visibility
+lifecycle with animated removal sizing, retained-node content replacement, and a FLIP-style placement transition
+that can be installed on existing JavaFX parents. Visibility and replacement share the same fixed-holder engine,
+spring, theme, scene-lifecycle, and reduced-motion infrastructure as component skins, avoid per-pulse allocation,
+and are demonstrated by the Demo's Motion page. General multi-child entry and removal orchestration and
+shared-element overlay transitions remain future layers rather than responsibilities of specialized layout panes.
 
 The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable

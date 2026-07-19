@@ -5,6 +5,7 @@ package org.glavo.m3fx.animation;
 
 import javafx.animation.Animation;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -14,6 +15,8 @@ import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -83,45 +86,157 @@ final class M3LayoutAnimationTest {
         });
     }
 
-    /// Verifies visibility transitions preserve content-owned visual properties and collapse after completion.
+    /// Verifies the complete visibility lifecycle, rapid reversal, detachment, and content-owned visual properties.
     @Test
-    void animatedVisibilityOwnsOnlyItsPrivateWrapper() {
+    void animatedVisibilityTracksLifecycleAndOwnsOnlyPrivateVisuals() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Region content = new Region();
-            content.setMinSize(80.0, 32.0);
-            content.setPrefSize(80.0, 32.0);
+            Region content = fixedRegion(80.0, 32.0);
             content.setOpacity(0.7);
             content.setScaleX(1.2);
             content.setScaleY(0.8);
             content.setTranslateX(6.0);
 
             M3AnimatedVisibility visibility = new M3AnimatedVisibility(content);
+            visibility.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            AtomicBoolean detachedWhenHiddenWasPublished = new AtomicBoolean();
+            visibility.stateProperty().addListener((observable, oldState, newState) -> {
+                if (newState == M3VisibilityState.HIDDEN) {
+                    detachedWhenHiddenWasPublished.set(content.getParent() == null);
+                }
+            });
             Pane root = new Pane(visibility);
             new Scene(root);
             root.applyCss();
             root.layout();
 
             assertSame(content, visibility.getContent());
-            assertTrue(visibility.prefWidth(-1.0) >= 80.0);
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertSame(M3VisibilityState.VISIBLE, visibility.stateProperty().get());
+            assertNotNull(content.getParent());
+            assertEquals(80.0, visibility.prefWidth(-1.0), 1.0e-6);
 
             visibility.setShowing(false);
+            assertSame(M3VisibilityState.EXITING, visibility.getState());
             assertTrue(visibility.isTransitioning());
-            visibility.snapToCurrentState();
+            assertNotNull(content.getParent());
+            assertEquals(80.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            visibility.setShowing(true);
+            assertSame(M3VisibilityState.ENTERING, visibility.getState());
+            assertTrue(visibility.isTransitioning());
+            assertNotNull(content.getParent());
+            visibility.finish();
+
+            assertTrue(visibility.isShowing());
+            assertFalse(visibility.isTransitioning());
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertNotNull(content.getParent());
+            assertEquals(80.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            visibility.setShowing(false);
+            visibility.finish();
 
             assertFalse(visibility.isShowing());
             assertFalse(visibility.isTransitioning());
+            assertSame(M3VisibilityState.HIDDEN, visibility.getState());
+            assertNull(content.getParent());
+            assertTrue(detachedWhenHiddenWasPublished.get());
             assertEquals(0.0, visibility.prefWidth(-1.0), 0.0);
             assertEquals(0.7, content.getOpacity(), 0.0);
             assertEquals(1.2, content.getScaleX(), 0.0);
             assertEquals(0.8, content.getScaleY(), 0.0);
             assertEquals(6.0, content.getTranslateX(), 0.0);
 
+            visibility.setShowing(true);
+            assertSame(M3VisibilityState.ENTERING, visibility.getState());
+            assertNotNull(content.getParent());
+            visibility.snapToCurrentState();
+
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertNotNull(content.getParent());
+            assertEquals(80.0, visibility.prefWidth(-1.0), 1.0e-6);
+        }));
+    }
+
+    /// Verifies empty, hidden replacement, configuration, and reduced-motion visibility contracts together.
+    @Test
+    void animatedVisibilityHandlesReplacementConfigurationAndReducedMotion() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3AnimatedVisibility visibility = new M3AnimatedVisibility();
+            assertTrue(visibility.isShowing());
+            assertSame(M3VisibilityState.HIDDEN, visibility.getState());
+            assertFalse(visibility.isTransitioning());
+            assertEquals(Pos.CENTER, visibility.getAlignment());
+
+            visibility.alignmentProperty().set(null);
+            visibility.setSizeAnimationEnabled(false);
+            visibility.setClipContent(false);
+            assertEquals(Pos.CENTER, visibility.getAlignment());
+            assertFalse(visibility.isSizeAnimationEnabled());
+            assertFalse(visibility.isClipContent());
+            assertThrows(IllegalArgumentException.class, () -> visibility.setHiddenScale(0.0));
+            assertThrows(IllegalArgumentException.class, () -> visibility.setHiddenScale(Double.NaN));
+
+            visibility.setShowing(false);
+            Region first = fixedRegion(72.0, 28.0);
+            Region second = fixedRegion(144.0, 48.0);
+            visibility.setContent(first);
+            assertNull(first.getParent());
+            assertSame(M3VisibilityState.HIDDEN, visibility.getState());
+            visibility.setContent(second);
+            assertNull(first.getParent());
+            assertNull(second.getParent());
+
+            Pane root = new Pane(visibility);
+            new Scene(root);
+            root.applyCss();
+            root.layout();
             M3MotionSettings.setReducedMotionRequested(root, true);
             visibility.setShowing(true);
 
             assertTrue(visibility.isShowing());
             assertFalse(visibility.isTransitioning());
-            assertTrue(visibility.prefWidth(-1.0) >= 80.0);
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertNotNull(second.getParent());
+            assertEquals(144.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            Region third = fixedRegion(196.0, 56.0);
+            visibility.setContent(third);
+            assertNull(second.getParent());
+            assertNotNull(third.getParent());
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertEquals(196.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            visibility.setContent(null);
+            assertNull(third.getParent());
+            assertSame(M3VisibilityState.HIDDEN, visibility.getState());
+            assertEquals(0.0, visibility.prefWidth(-1.0), 0.0);
+        }));
+    }
+
+    /// Verifies an active visibility exit settles and releases content when its starting scene is detached.
+    @Test
+    void animatedVisibilitySettlesWhenLeavingItsStartingScene() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Region content = fixedRegion(96.0, 40.0);
+            M3AnimatedVisibility visibility = new M3AnimatedVisibility(content);
+            visibility.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            Pane root = new Pane(visibility);
+            Scene scene = new Scene(root);
+            root.applyCss();
+            root.layout();
+
+            visibility.setShowing(false);
+            assertSame(M3VisibilityState.EXITING, visibility.getState());
+            assertTrue(visibility.isTransitioning());
+            assertNotNull(content.getParent());
+
+            scene.setRoot(new Pane());
+
+            assertFalse(visibility.isTransitioning());
+            assertSame(M3VisibilityState.HIDDEN, visibility.getState());
+            assertNull(content.getParent());
+            assertEquals(0.0, visibility.prefWidth(-1.0), 0.0);
         }));
     }
 

@@ -505,7 +505,6 @@ public final class M3AnimatedContent extends Region {
     /// scale `1.0`. Repeated calls are idempotent.
     public void snapToCurrentState() {
         animation.stop();
-        transitioning.set(false);
         clearOutgoingState();
 
         @Nullable HolderState current = currentState;
@@ -522,6 +521,7 @@ public final class M3AnimatedContent extends Region {
         sizeInitialized = true;
         animation.resetSizeChannels();
         updateHolderOrder();
+        transitioning.set(false);
         requestContainerLayout();
     }
 
@@ -737,7 +737,6 @@ public final class M3AnimatedContent extends Region {
 
     /// Completes lifecycle cleanup after every channel reaches its target.
     private void completeTransition() {
-        transitioning.set(false);
         clearOutgoingState();
 
         @Nullable HolderState current = currentState;
@@ -753,6 +752,7 @@ public final class M3AnimatedContent extends Region {
         sizeInitialized = true;
         animation.resetSizeChannels();
         updateHolderOrder();
+        transitioning.set(false);
         requestContainerLayout();
     }
 

@@ -193,12 +193,15 @@ M3DoubleAnimatable position = new M3DoubleAnimatable(
 position.animateTo(240.0);
 ```
 
-`M3AnimatedVisibility` hosts one content node without taking ownership of that node's visual properties. Its
-showing state is observable and can be reversed while a transition is running:
+`M3AnimatedVisibility` retains one content node without taking ownership of that node's visual properties. Its
+showing target can be reversed while a transition is running, while `stateProperty()` distinguishes `ENTERING`,
+`VISIBLE`, `EXITING`, and `HIDDEN`. Exit keeps the node mounted until opacity, scale, and animated container size
+finish, then detaches it while retaining the public content reference:
 
 ```java
 M3AnimatedVisibility details = new M3AnimatedVisibility(detailsPane);
 details.setShowing(expanded);
+details.stateProperty().addListener((observable, oldState, newState) -> updateStatus(newState));
 ```
 
 `M3AnimatedContent` performs retained-node replacement. The outgoing node remains attached until its exit effect

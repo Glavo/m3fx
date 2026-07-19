@@ -3312,10 +3312,10 @@ public final class M3FXDemoApp extends Application {
         valueActions.setAlignment(Pos.CENTER_LEFT);
         VBox valueExample = new VBox(12.0, valueTrack, valueActions);
 
-        Label visibilityHeadline = new Label("Animated content remains interactive while shown");
+        Label visibilityHeadline = new Label("Content remains mounted until exit completes");
         visibilityHeadline.getStyleClass().add("demo-group-title");
         Label visibilitySupporting = new Label(
-                "The wrapper owns visual transition properties without changing the content node."
+                "Visibility state, visual effects, and container size remain interruptible without changing the node."
         );
         visibilitySupporting.setWrapText(true);
         M3Surface visibilitySurface = new M3Surface();
@@ -3330,7 +3330,14 @@ public final class M3FXDemoApp extends Application {
             animatedVisibility.setShowing(show);
             toggleVisibility.setText(show ? "Hide content" : "Show content");
         });
-        VBox visibilityExample = new VBox(12.0, animatedVisibility, toggleVisibility);
+        M3Button finishVisibility = new M3Button("Finish transition", M3ButtonVariant.OUTLINED);
+        finishVisibility.disableProperty().bind(animatedVisibility.transitioningProperty().not());
+        finishVisibility.setOnAction(event -> animatedVisibility.finish());
+        Label visibilityState = new Label();
+        visibilityState.textProperty().bind(animatedVisibility.stateProperty().asString("State: %s"));
+        HBox visibilityActions = new HBox(12.0, toggleVisibility, finishVisibility, visibilityState);
+        visibilityActions.setAlignment(Pos.CENTER_LEFT);
+        VBox visibilityExample = new VBox(12.0, animatedVisibility, visibilityActions);
 
         M3AnimatedContent animatedContent = new M3AnimatedContent(createMotionContent(false));
         animatedContent.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
