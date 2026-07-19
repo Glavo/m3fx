@@ -27,6 +27,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /// The default Material Design 3 skin for [M3TabBar].
+///
+/// The skin presents tabs in fixed or scrollable layout, preserves the selected tab's visibility, and mirrors
+/// horizontal scrolling for right-to-left orientation. Fixed layout distributes available width across tabs;
+/// scrollable layout clips the row and animates offset changes when motion is enabled.
 @NotNullByDefault
 public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, M3Tab> {
     /// The bottom divider rendered behind active indicators.
@@ -36,6 +40,8 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
     private final TabRow tabRow;
 
     /// Creates a tab bar skin.
+    ///
+    /// @param control the tab bar controlled by this skin
     public M3TabBarSkin(M3TabBar control) {
         super(control, control.getTabs(), new TabRow(control));
         tabRow = (TabRow) getContainer();

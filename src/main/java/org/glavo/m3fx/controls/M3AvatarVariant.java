@@ -29,6 +29,8 @@ public enum M3AvatarVariant {
     private final String styleClass;
 
     /// Creates an avatar variant.
+    ///
+    /// @param styleClass the style class applied to avatars using this variant
     M3AvatarVariant(String styleClass) {
         this.styleClass = styleClass;
     }

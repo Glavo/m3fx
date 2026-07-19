@@ -29,7 +29,9 @@ public interface M3TextInput {
     /// @throws NullPointerException if `variant` is `null`
     void setVariant(M3TextInputVariant variant);
 
-    /// Returns the text input variant property.
+    /// Returns the observable, bindable text input variant property.
+    ///
+    /// The default value is [M3TextInputVariant#FILLED].
     ///
     /// @return the writable text input variant property
     ObjectProperty<M3TextInputVariant> variantProperty();
@@ -44,7 +46,9 @@ public interface M3TextInput {
     /// @param error whether this text input renders its error state
     void setError(boolean error);
 
-    /// Returns the error state property.
+    /// Returns the observable, bindable error-state property.
+    ///
+    /// The default value is `false`.
     ///
     /// @return the writable error state property
     BooleanProperty errorProperty();
@@ -60,7 +64,9 @@ public interface M3TextInput {
     /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
     void setContainerHeight(double containerHeight);
 
-    /// Returns the preferred container height token property.
+    /// Returns the observable, bindable, and styleable preferred-container-height property.
+    ///
+    /// The default is implementation-specific. Values must be finite and non-negative logical pixels.
     ///
     /// @return the styleable preferred container height property
     StyleableDoubleProperty containerHeightProperty();
@@ -76,7 +82,9 @@ public interface M3TextInput {
     /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     void setContainerShape(double containerShape);
 
-    /// Returns the container shape radius token property.
+    /// Returns the observable, bindable, and styleable container-shape-radius property.
+    ///
+    /// The default value is `4.0` logical pixels. Values must be finite and non-negative.
     ///
     /// @return the styleable container shape radius property
     StyleableDoubleProperty containerShapeProperty();
@@ -92,7 +100,9 @@ public interface M3TextInput {
     /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     void setHorizontalPadding(double horizontalPadding);
 
-    /// Returns the horizontal content padding token property.
+    /// Returns the observable, bindable, and styleable horizontal-content-padding property.
+    ///
+    /// The default value is `16.0` logical pixels. Values must be finite and non-negative.
     ///
     /// @return the styleable horizontal content padding property
     StyleableDoubleProperty horizontalPaddingProperty();
@@ -108,7 +118,9 @@ public interface M3TextInput {
     /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
     void setVerticalPadding(double verticalPadding);
 
-    /// Returns the vertical content padding token property.
+    /// Returns the observable, bindable, and styleable vertical-content-padding property.
+    ///
+    /// The default is implementation-specific. Values must be finite and non-negative logical pixels.
     ///
     /// @return the styleable vertical content padding property
     StyleableDoubleProperty verticalPaddingProperty();

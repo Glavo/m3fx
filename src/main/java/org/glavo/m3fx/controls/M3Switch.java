@@ -84,77 +84,6 @@ public final class M3Switch extends ButtonBase {
     /// The default selected or unselected handle icon size.
     private static final double DEFAULT_ICON_SIZE = 16.0;
 
-    /// The preferred square touch-target size in logical pixels.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty touchTargetSize;
-
-    /// The switch track corner radius in logical pixels.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty trackShape;
-
-    /// The switch track width in logical pixels.
-    ///
-    /// @defaultValue `52.0`
-    private @Nullable StyleableDoubleProperty trackWidth;
-
-    /// The switch track height in logical pixels.
-    ///
-    /// @defaultValue `32.0`
-    private @Nullable StyleableDoubleProperty trackHeight;
-
-    /// The circular handle state-layer diameter in logical pixels.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty stateLayerSize;
-
-    /// The unselected handle diameter in logical pixels when no icon is present.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty unselectedHandleSize;
-
-    /// The handle diameter in logical pixels when the current state has an icon.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty withIconHandleSize;
-
-    /// The selected handle diameter in logical pixels when no icon-specific size applies.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty selectedHandleSize;
-
-    /// The pressed handle diameter in logical pixels.
-    ///
-    /// @defaultValue `28.0`
-    private @Nullable StyleableDoubleProperty pressedHandleSize;
-
-    /// The selected and unselected handle icon size in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty iconSize;
-
-    /// Whether the switch is selected.
-    ///
-    /// Direct changes do not fire an action event.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty selected;
-
-    /// The optional icon shown inside the selected handle.
-    ///
-    /// A non-null node is owned by this switch and must be available for it to parent.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Node> selectedIcon;
-
-    /// The optional icon shown inside the unselected handle.
-    ///
-    /// A non-null node is owned by this switch and must be available for it to parent.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Node> unselectedIcon;
-
     /// Creates an unselected switch with empty text and no handle icons.
     public M3Switch() {
         initialize();
@@ -168,12 +97,12 @@ public final class M3Switch extends ButtonBase {
         initialize();
     }
 
-    /// Sets whether this switch is selected.
+    /// Whether the switch is selected.
     ///
-    /// @param selected whether this switch is selected
-    public final void setSelected(boolean selected) {
-        selectedProperty().set(selected);
-    }
+    /// Direct changes do not fire an action event.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty selected;
 
     /// Returns whether this switch is selected.
     ///
@@ -182,6 +111,18 @@ public final class M3Switch extends ButtonBase {
         return selected != null && selected.get();
     }
 
+    /// Sets whether this switch is selected.
+    ///
+    /// @param selected whether this switch is selected
+    public final void setSelected(boolean selected) {
+        selectedProperty().set(selected);
+    }
+
+    /// Returns the `selected` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `selected` property
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
             selected = new BooleanPropertyBase(false) {
@@ -209,6 +150,13 @@ public final class M3Switch extends ButtonBase {
         return selected;
     }
 
+    /// The optional icon shown inside the selected handle.
+    ///
+    /// A non-null node is owned by this switch and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Node> selectedIcon;
+
     /// Returns the icon shown inside the handle while this switch is selected.
     ///
     /// @return the selected handle icon, or `null` when the selected handle has no icon
@@ -226,6 +174,11 @@ public final class M3Switch extends ButtonBase {
         selectedIconProperty().set(selectedIcon);
     }
 
+    /// Returns the `selectedIcon` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `selectedIcon` property
     public final ObjectProperty<@Nullable Node> selectedIconProperty() {
         if (selectedIcon == null) {
             selectedIcon = new SimpleObjectProperty<>(this, "selectedIcon") {
@@ -238,6 +191,13 @@ public final class M3Switch extends ButtonBase {
         }
         return selectedIcon;
     }
+
+    /// The optional icon shown inside the unselected handle.
+    ///
+    /// A non-null node is owned by this switch and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Node> unselectedIcon;
 
     /// Returns the icon shown inside the handle while this switch is unselected.
     ///
@@ -256,6 +216,11 @@ public final class M3Switch extends ButtonBase {
         unselectedIconProperty().set(unselectedIcon);
     }
 
+    /// Returns the `unselectedIcon` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `unselectedIcon` property
     public final ObjectProperty<@Nullable Node> unselectedIconProperty() {
         if (unselectedIcon == null) {
             unselectedIcon = new SimpleObjectProperty<>(this, "unselectedIcon") {
@@ -268,6 +233,11 @@ public final class M3Switch extends ButtonBase {
         }
         return unselectedIcon;
     }
+
+    /// The preferred square touch-target size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// Returns the preferred touch target size token.
     ///
@@ -284,6 +254,12 @@ public final class M3Switch extends ButtonBase {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
+    /// Returns the `touchTargetSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `48.0` logical pixels.
+    ///
+    /// @return the `touchTargetSize` property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = sizeProperty(
@@ -295,6 +271,11 @@ public final class M3Switch extends ButtonBase {
         }
         return touchTargetSize;
     }
+
+    /// The switch track corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty trackShape;
 
     /// Returns the switch track shape radius token.
     ///
@@ -311,6 +292,12 @@ public final class M3Switch extends ButtonBase {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
+    /// Returns the `trackShape` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `999.0` logical pixels.
+    ///
+    /// @return the `trackShape` property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = sizeProperty(
@@ -322,6 +309,11 @@ public final class M3Switch extends ButtonBase {
         }
         return trackShape;
     }
+
+    /// The switch track width in logical pixels.
+    ///
+    /// @defaultValue `52.0`
+    private @Nullable StyleableDoubleProperty trackWidth;
 
     /// Returns the switch track width token.
     ///
@@ -338,12 +330,23 @@ public final class M3Switch extends ButtonBase {
         trackWidthProperty().set(M3Css.nonNegative(trackWidth, "trackWidth"));
     }
 
+    /// Returns the `trackWidth` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `52.0` logical pixels.
+    ///
+    /// @return the `trackWidth` property
     public final StyleableDoubleProperty trackWidthProperty() {
         if (trackWidth == null) {
             trackWidth = sizeProperty(DEFAULT_TRACK_WIDTH, "trackWidth", StyleableProperties.TRACK_WIDTH, this::requestLayout);
         }
         return trackWidth;
     }
+
+    /// The switch track height in logical pixels.
+    ///
+    /// @defaultValue `32.0`
+    private @Nullable StyleableDoubleProperty trackHeight;
 
     /// Returns the switch track height token.
     ///
@@ -360,12 +363,23 @@ public final class M3Switch extends ButtonBase {
         trackHeightProperty().set(M3Css.nonNegative(trackHeight, "trackHeight"));
     }
 
+    /// Returns the `trackHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `32.0` logical pixels.
+    ///
+    /// @return the `trackHeight` property
     public final StyleableDoubleProperty trackHeightProperty() {
         if (trackHeight == null) {
             trackHeight = sizeProperty(DEFAULT_TRACK_HEIGHT, "trackHeight", StyleableProperties.TRACK_HEIGHT, this::updateMetrics);
         }
         return trackHeight;
     }
+
+    /// The circular handle state-layer diameter in logical pixels.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty stateLayerSize;
 
     /// Returns the switch state layer size token.
     ///
@@ -382,6 +396,12 @@ public final class M3Switch extends ButtonBase {
         stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
     }
 
+    /// Returns the `stateLayerSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `40.0` logical pixels.
+    ///
+    /// @return the `stateLayerSize` property
     public final StyleableDoubleProperty stateLayerSizeProperty() {
         if (stateLayerSize == null) {
             stateLayerSize = sizeProperty(
@@ -393,6 +413,11 @@ public final class M3Switch extends ButtonBase {
         }
         return stateLayerSize;
     }
+
+    /// The unselected handle diameter in logical pixels when no icon is present.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty unselectedHandleSize;
 
     /// Returns the unselected switch handle size token.
     ///
@@ -409,6 +434,12 @@ public final class M3Switch extends ButtonBase {
         unselectedHandleSizeProperty().set(M3Css.nonNegative(unselectedHandleSize, "unselectedHandleSize"));
     }
 
+    /// Returns the `unselectedHandleSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `unselectedHandleSize` property
     public final StyleableDoubleProperty unselectedHandleSizeProperty() {
         if (unselectedHandleSize == null) {
             unselectedHandleSize = sizeProperty(
@@ -420,6 +451,11 @@ public final class M3Switch extends ButtonBase {
         }
         return unselectedHandleSize;
     }
+
+    /// The handle diameter in logical pixels when the current state has an icon.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty withIconHandleSize;
 
     /// Returns the switch handle size used when the current state has an icon.
     ///
@@ -436,6 +472,12 @@ public final class M3Switch extends ButtonBase {
         withIconHandleSizeProperty().set(M3Css.nonNegative(withIconHandleSize, "withIconHandleSize"));
     }
 
+    /// Returns the `withIconHandleSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `24.0` logical pixels.
+    ///
+    /// @return the `withIconHandleSize` property
     public final StyleableDoubleProperty withIconHandleSizeProperty() {
         if (withIconHandleSize == null) {
             withIconHandleSize = sizeProperty(
@@ -447,6 +489,11 @@ public final class M3Switch extends ButtonBase {
         }
         return withIconHandleSize;
     }
+
+    /// The selected handle diameter in logical pixels when no icon-specific size applies.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty selectedHandleSize;
 
     /// Returns the selected switch handle size token.
     ///
@@ -463,6 +510,12 @@ public final class M3Switch extends ButtonBase {
         selectedHandleSizeProperty().set(M3Css.nonNegative(selectedHandleSize, "selectedHandleSize"));
     }
 
+    /// Returns the `selectedHandleSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `24.0` logical pixels.
+    ///
+    /// @return the `selectedHandleSize` property
     public final StyleableDoubleProperty selectedHandleSizeProperty() {
         if (selectedHandleSize == null) {
             selectedHandleSize = sizeProperty(
@@ -474,6 +527,11 @@ public final class M3Switch extends ButtonBase {
         }
         return selectedHandleSize;
     }
+
+    /// The pressed handle diameter in logical pixels.
+    ///
+    /// @defaultValue `28.0`
+    private @Nullable StyleableDoubleProperty pressedHandleSize;
 
     /// Returns the pressed switch handle size token.
     ///
@@ -490,6 +548,12 @@ public final class M3Switch extends ButtonBase {
         pressedHandleSizeProperty().set(M3Css.nonNegative(pressedHandleSize, "pressedHandleSize"));
     }
 
+    /// Returns the `pressedHandleSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `28.0` logical pixels.
+    ///
+    /// @return the `pressedHandleSize` property
     public final StyleableDoubleProperty pressedHandleSizeProperty() {
         if (pressedHandleSize == null) {
             pressedHandleSize = sizeProperty(
@@ -501,6 +565,11 @@ public final class M3Switch extends ButtonBase {
         }
         return pressedHandleSize;
     }
+
+    /// The selected and unselected handle icon size in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty iconSize;
 
     /// Returns the selected or unselected handle icon size token.
     ///
@@ -517,6 +586,12 @@ public final class M3Switch extends ButtonBase {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
+    /// Returns the `iconSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `iconSize` property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = sizeProperty(DEFAULT_ICON_SIZE, "iconSize", StyleableProperties.ICON_SIZE, this::requestLayout);

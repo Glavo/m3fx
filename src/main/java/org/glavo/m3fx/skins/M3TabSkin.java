@@ -18,6 +18,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Tab].
+///
+/// The skin augments labeled-button content with the selected tab indicator. Indicator width, height, corner radius,
+/// opacity, and horizontal position follow the control properties and selected state without affecting tab content
+/// measurement.
 @NotNullByDefault
 public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     /// The active indicator style class.
@@ -49,6 +53,8 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     private final InvalidationListener indicatorMetricsInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Creates a tab skin.
+    ///
+    /// @param control the tab controlled by this skin
     public M3TabSkin(M3Tab control) {
         super(control);
         activeIndicator.getStyleClass().add(ACTIVE_INDICATOR_STYLE_CLASS);

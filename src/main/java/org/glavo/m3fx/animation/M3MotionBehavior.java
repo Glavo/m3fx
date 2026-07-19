@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// Behavior values are immutable and are normally obtained from the active theme's
 /// [M3MotionTokens][org.glavo.m3fx.tokens.M3MotionTokens]. [standard] and [expressive] provide the built-in
-/// profiles, while [builder] creates a mutable copy for application-specific timing changes.
+/// profiles, while [builder][#builder()] creates a mutable copy for application-specific timing changes.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault

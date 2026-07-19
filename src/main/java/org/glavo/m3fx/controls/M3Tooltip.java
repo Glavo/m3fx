@@ -92,91 +92,6 @@ public class M3Tooltip extends PopupControl {
     /// The currently visible installed tooltip, retained weakly so unused tooltips remain collectable.
     private static @Nullable WeakReference<M3Tooltip> activeTooltipReference;
 
-    /// The displayed text.
-    ///
-    /// The default is an empty string. `null` is accepted and suppresses textual content and accessible help text.
-    /// Installed owner nodes track changes to this property while the tooltip remains installed.
-    private final StringProperty text = new SimpleStringProperty(this, "text", "");
-
-    /// The graphic displayed by the tooltip.
-    ///
-    /// The default is `null`. A non-null graphic is owned by the popup content while it is displayed and therefore
-    /// must satisfy normal JavaFX scene-graph ownership rules.
-    private final ObjectProperty<@Nullable Node> graphic =
-            new SimpleObjectProperty<>(this, "graphic");
-
-    /// The text and graphic placement mode.
-    ///
-    /// Assigning `null` restores [ContentDisplay#LEFT].
-    ///
-    /// @defaultValue `LEFT`
-    private final ObjectProperty<ContentDisplay> contentDisplay =
-            new ObjectPropertyBase<>(ContentDisplay.LEFT) {
-                /// Keeps the content display mode non-null.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(ContentDisplay.LEFT);
-                    }
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Tooltip.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentDisplay";
-                }
-            };
-
-    /// Whether tooltip text wraps inside its preferred width.
-    ///
-    /// @defaultValue `true`
-    private final BooleanProperty wrapText = new BooleanPropertyBase(false) {
-        /// Returns the owning bean.
-        @Override
-        public Object getBean() {
-            return M3Tooltip.this;
-        }
-
-        /// Returns the property name.
-        @Override
-        public String getName() {
-            return "wrapText";
-        }
-    };
-
-    /// The delay before the tooltip opens after pointer entry.
-    private final ObjectProperty<Duration> showDelay =
-            new DurationProperty("showDelay", M3MotionBehavior.standard().tooltipShowDelay());
-
-    /// The delay before the tooltip closes after pointer exit.
-    private final ObjectProperty<Duration> hideDelay =
-            new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
-
-    /// The maximum duration the tooltip remains visible after pointer-triggered opening.
-    private final ObjectProperty<Duration> showDuration =
-            new DurationProperty("showDuration", M3MotionBehavior.standard().tooltipShowDuration());
-
-    /// The explicit theme applied directly to this tooltip.
-    ///
-    /// The default is `null`, which inherits the theme and stylesheet context from the current owner node whenever
-    /// the popup is shown. A non-null value overrides that inherited theme.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
-        /// Applies theme declarations to the tooltip style.
-        @Override
-        protected void invalidated() {
-            themeInherited = applyingInheritedTheme;
-            applyTheme(get());
-        }
-    };
-
     /// A detached theme root used when the tooltip has an explicit theme rather than an owner-inherited theme.
     private final Pane explicitThemeRoot = new Pane();
 
@@ -216,42 +131,16 @@ public class M3Tooltip extends PopupControl {
     /// Creates a tooltip with text.
     ///
     /// @param text the tooltip text, or `null` for no text
-    public M3Tooltip(String text) {
+    public M3Tooltip(@Nullable String text) {
         initialize();
         setText(text);
     }
 
-
-    /// Installs a Material Design 3 tooltip on a node.
+    /// The displayed text.
     ///
-    /// Installation adds the activation behavior and accessible help text used by the tooltip. If another M3FX
-    /// tooltip is already installed on `node`, it is uninstalled first. Reinstalling the same instance refreshes
-    /// the installation.
-    ///
-    /// @param node the node that should own the tooltip
-    /// @param tooltip the tooltip to install
-    /// @throws NullPointerException if `node` or `tooltip` is `null`
-    public static void install(Node node, M3Tooltip tooltip) {
-        Objects.requireNonNull(node, "node");
-        Objects.requireNonNull(tooltip, "tooltip");
-
-        installActivation(node, tooltip);
-    }
-
-    /// Uninstalls a Material Design 3 tooltip from a node.
-    ///
-    /// The operation removes the installation only when `tooltip` is the instance currently installed on `node`.
-    /// It is otherwise a no-op. A currently visible popup owned by that installation is hidden.
-    ///
-    /// @param node the node that owns the tooltip
-    /// @param tooltip the tooltip to uninstall
-    /// @throws NullPointerException if `node` or `tooltip` is `null`
-    public static void uninstall(Node node, M3Tooltip tooltip) {
-        Objects.requireNonNull(node, "node");
-        Objects.requireNonNull(tooltip, "tooltip");
-
-        uninstallActivation(node, tooltip);
-    }
+    /// The default is an empty string. `null` is accepted and suppresses textual content and accessible help text.
+    /// Installed owner nodes track changes to this property while the tooltip remains installed.
+    private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
     /// Returns the displayed text.
     ///
@@ -267,9 +156,21 @@ public class M3Tooltip extends PopupControl {
         this.text.set(text);
     }
 
+    /// Returns the `text` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
+    /// @return the `text` property
     public final StringProperty textProperty() {
         return text;
     }
+
+    /// The graphic displayed by the tooltip.
+    ///
+    /// The default is `null`. A non-null graphic is owned by the popup content while it is displayed and therefore
+    /// must satisfy normal JavaFX scene-graph ownership rules.
+    private final ObjectProperty<@Nullable Node> graphic =
+            new SimpleObjectProperty<>(this, "graphic");
 
     /// Returns the displayed graphic.
     ///
@@ -288,9 +189,42 @@ public class M3Tooltip extends PopupControl {
         this.graphic.set(graphic);
     }
 
+    /// Returns the `graphic` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `graphic` property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
+
+    /// The text and graphic placement mode.
+    ///
+    /// Assigning `null` restores [ContentDisplay#LEFT].
+    ///
+    /// @defaultValue `LEFT`
+    private final ObjectProperty<ContentDisplay> contentDisplay =
+            new ObjectPropertyBase<>(ContentDisplay.LEFT) {
+                /// Keeps the content display mode non-null.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(ContentDisplay.LEFT);
+                    }
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Tooltip.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "contentDisplay";
+                }
+            };
 
     /// Returns the text and graphic placement mode.
     ///
@@ -307,9 +241,31 @@ public class M3Tooltip extends PopupControl {
         this.contentDisplay.set(Objects.requireNonNull(contentDisplay, "contentDisplay"));
     }
 
+    /// Returns the `contentDisplay` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `LEFT`.
+    ///
+    /// @return the `contentDisplay` property
     public final ObjectProperty<ContentDisplay> contentDisplayProperty() {
         return contentDisplay;
     }
+
+    /// Whether tooltip text wraps inside its preferred width.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty wrapText = new BooleanPropertyBase(false) {
+        /// Returns the owning bean.
+        @Override
+        public Object getBean() {
+            return M3Tooltip.this;
+        }
+
+        /// Returns the property name.
+        @Override
+        public String getName() {
+            return "wrapText";
+        }
+    };
 
     /// Returns whether tooltip text wraps inside its preferred width.
     ///
@@ -325,9 +281,18 @@ public class M3Tooltip extends PopupControl {
         this.wrapText.set(wrapText);
     }
 
+    /// Returns the `wrapText` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `true`.
+    ///
+    /// @return the `wrapText` property
     public final BooleanProperty wrapTextProperty() {
         return wrapText;
     }
+
+    /// The delay before the tooltip opens after pointer entry.
+    private final ObjectProperty<Duration> showDelay =
+            new DurationProperty("showDelay", M3MotionBehavior.standard().tooltipShowDelay());
 
     /// Returns the delay before the tooltip opens after pointer entry.
     ///
@@ -338,6 +303,8 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the delay before the tooltip opens after pointer entry.
     ///
+    /// Calling this method marks the value as an application override for installed tooltip activation.
+    ///
     /// @param showDelay the delay before the tooltip opens after pointer entry
     /// @throws NullPointerException if `showDelay` is `null`
     public final void setShowDelay(Duration showDelay) {
@@ -345,9 +312,22 @@ public class M3Tooltip extends PopupControl {
         this.showDelay.set(Objects.requireNonNull(showDelay, "showDelay"));
     }
 
+    /// Returns the `showDelay` property.
+    ///
+    /// The returned property is observable and bindable. Its initial value is the show delay from the standard motion
+    /// profile. Direct property changes do not mark the value as an application override; until
+    /// [#setShowDelay(Duration)]
+    /// is called, installed activation continues to resolve its effective delay from the owner node's motion profile.
+    /// An unbound direct `null` assignment is normalized to [Duration#ZERO]; bound sources must not produce `null`.
+    ///
+    /// @return the `showDelay` property
     public final ObjectProperty<Duration> showDelayProperty() {
         return showDelay;
     }
+
+    /// The delay before the tooltip closes after pointer exit.
+    private final ObjectProperty<Duration> hideDelay =
+            new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
 
     /// Returns the delay before the tooltip closes after pointer exit.
     ///
@@ -358,6 +338,8 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the delay before the tooltip closes after pointer exit.
     ///
+    /// Calling this method marks the value as an application override for installed tooltip activation.
+    ///
     /// @param hideDelay the delay before the tooltip closes after pointer exit
     /// @throws NullPointerException if `hideDelay` is `null`
     public final void setHideDelay(Duration hideDelay) {
@@ -365,9 +347,22 @@ public class M3Tooltip extends PopupControl {
         this.hideDelay.set(Objects.requireNonNull(hideDelay, "hideDelay"));
     }
 
+    /// Returns the `hideDelay` property.
+    ///
+    /// The returned property is observable and bindable. Its initial value is the hide delay from the standard motion
+    /// profile. Direct property changes do not mark the value as an application override; until
+    /// [#setHideDelay(Duration)]
+    /// is called, installed activation continues to resolve its effective delay from the owner node's motion profile.
+    /// An unbound direct `null` assignment is normalized to [Duration#ZERO]; bound sources must not produce `null`.
+    ///
+    /// @return the `hideDelay` property
     public final ObjectProperty<Duration> hideDelayProperty() {
         return hideDelay;
     }
+
+    /// The maximum duration the tooltip remains visible after pointer-triggered opening.
+    private final ObjectProperty<Duration> showDuration =
+            new DurationProperty("showDuration", M3MotionBehavior.standard().tooltipShowDuration());
 
     /// Returns the maximum duration the tooltip remains visible after pointer-triggered opening.
     ///
@@ -378,6 +373,8 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the maximum duration the tooltip remains visible after pointer-triggered opening.
     ///
+    /// Calling this method marks the value as an application override for installed tooltip activation.
+    ///
     /// @param showDuration the maximum visible duration after pointer-triggered opening
     /// @throws NullPointerException if `showDuration` is `null`
     public final void setShowDuration(Duration showDuration) {
@@ -385,9 +382,33 @@ public class M3Tooltip extends PopupControl {
         this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
     }
 
+    /// Returns the `showDuration` property.
+    ///
+    /// The returned property is observable and bindable. Its initial value is the visible duration from the standard
+    /// motion profile. Direct property changes do not mark the value as an application override; until
+    /// [#setShowDuration(Duration)] is called, installed activation continues to resolve its effective duration from
+    /// the owner node's motion profile. An unbound direct `null` assignment is normalized to [Duration#ZERO]; bound
+    /// sources must not produce `null`.
+    ///
+    /// @return the `showDuration` property
     public final ObjectProperty<Duration> showDurationProperty() {
         return showDuration;
     }
+
+    /// The explicit theme applied directly to this tooltip.
+    ///
+    /// The default is `null`, which inherits the theme and stylesheet context from the current owner node whenever
+    /// the popup is shown. A non-null value overrides that inherited theme.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
+        /// Applies theme declarations to the tooltip style.
+        @Override
+        protected void invalidated() {
+            themeInherited = applyingInheritedTheme;
+            applyTheme(get());
+        }
+    };
 
     /// Returns the explicit theme applied directly to this tooltip.
     ///
@@ -407,8 +428,44 @@ public class M3Tooltip extends PopupControl {
         this.theme.set(theme);
     }
 
+    /// Returns the `theme` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `theme` property
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
+    }
+
+    /// Installs a Material Design 3 tooltip on a node.
+    ///
+    /// Installation adds the activation behavior and accessible help text used by the tooltip. If another M3FX
+    /// tooltip is already installed on `node`, it is uninstalled first. Reinstalling the same instance refreshes
+    /// the installation.
+    ///
+    /// @param node    the node that should own the tooltip
+    /// @param tooltip the tooltip to install
+    /// @throws NullPointerException if `node` or `tooltip` is `null`
+    public static void install(Node node, M3Tooltip tooltip) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(tooltip, "tooltip");
+
+        installActivation(node, tooltip);
+    }
+
+    /// Uninstalls a Material Design 3 tooltip from a node.
+    ///
+    /// The operation removes the installation only when `tooltip` is the instance currently installed on `node`.
+    /// It is otherwise a no-op. A currently visible popup owned by that installation is hidden.
+    ///
+    /// @param node    the node that owns the tooltip
+    /// @param tooltip the tooltip to uninstall
+    /// @throws NullPointerException if `node` or `tooltip` is `null`
+    public static void uninstall(Node node, M3Tooltip tooltip) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(tooltip, "tooltip");
+
+        uninstallActivation(node, tooltip);
     }
 
     /// Creates the default Material Design 3 tooltip skin.
@@ -426,8 +483,8 @@ public class M3Tooltip extends PopupControl {
     /// orientation, stylesheets, and theme context from `ownerNode` unless an explicit theme is set.
     ///
     /// @param ownerNode the node that owns the popup
-    /// @param anchorX the screen x coordinate for the popup anchor
-    /// @param anchorY the screen y coordinate for the popup anchor
+    /// @param anchorX   the screen x coordinate for the popup anchor
+    /// @param anchorY   the screen y coordinate for the popup anchor
     /// @throws NullPointerException if `ownerNode` is `null`
     @Override
     public void show(Node ownerNode, double anchorX, double anchorY) {
@@ -518,7 +575,7 @@ public class M3Tooltip extends PopupControl {
     /// Returns the next focusable node in the interactive popup content.
     ///
     /// @param currentFocus the current popup focus owner
-    /// @param backward whether traversal moves backward
+    /// @param backward     whether traversal moves backward
     /// @return the next focusable interactive node, or `null` when traversal should leave the popup
     protected @Nullable Node nextInteractiveFocusTarget(Node currentFocus, boolean backward) {
         Objects.requireNonNull(currentFocus, "currentFocus");
@@ -649,7 +706,6 @@ public class M3Tooltip extends PopupControl {
         }
         return value + "px";
     }
-
 
     /// Synchronizes the popup scene root style classes with the owner theme context.
     private void syncPopupRootThemeContext(Node ownerNode) {
@@ -877,7 +933,7 @@ public class M3Tooltip extends PopupControl {
         /// The reusable timer for delayed show, delayed hide, and visible-duration actions.
         private final PauseTransition timer = new PauseTransition();
 
-        /// The action executed when [timer] finishes.
+        /// The action executed when the current delay finishes.
         private int timerAction;
 
         /// Updates tooltip activation timings when runtime motion settings change.
@@ -1493,7 +1549,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Starts the reusable timer with one pending action.
         ///
-        /// @param action the action identifier executed after the delay
+        /// @param action   the action identifier executed after the delay
         /// @param duration the delay before the action
         private void startTimer(int action, Duration duration) {
             timer.stop();
@@ -1513,7 +1569,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Reconfigures a running timer after motion behavior changes.
         ///
-        /// @param duration the updated delay
+        /// @param duration         the updated delay
         /// @param restartIfRunning whether the active interaction still requires the timer
         private void refreshRunningTimer(Duration duration, boolean restartIfRunning) {
             M3Animation.updatePauseDuration(timer, duration, restartIfRunning);

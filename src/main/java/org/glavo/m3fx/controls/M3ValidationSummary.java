@@ -81,50 +81,6 @@ public final class M3ValidationSummary extends Control {
     /// The pseudo-class used while the summary has no rendered content.
     private static final PseudoClass EMPTY_PSEUDO_CLASS = PseudoClass.getPseudoClass("empty");
 
-    /// The form validator that supplies invalid input layouts.
-    ///
-    /// The default is `null`. Replacing the value detaches observation from the previous validator and immediately
-    /// reflects the replacement's current invalid-input list. It does not run validation.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3FormValidator> validator =
-            new SimpleObjectProperty<>(this, "validator");
-
-    /// The title displayed above invalid field entries.
-    ///
-    /// An empty string suppresses the title. The value cannot be `null`.
-    ///
-    /// @defaultValue `"Fix the following fields"`
-    private final StringProperty titleText = new SimpleStringProperty(this, "titleText", "Fix the following fields") {
-        /// Rejects null title text values.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "titleText"));
-        }
-    };
-
-    /// The text displayed when the summary is configured to render while valid.
-    ///
-    /// An empty string suppresses the valid-state message. The value cannot be `null`.
-    ///
-    /// @defaultValue `"No validation issues"`
-    private final StringProperty emptyText = new SimpleStringProperty(this, "emptyText", "No validation issues") {
-        /// Rejects null empty text values.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "emptyText"));
-        }
-    };
-
-    /// Whether the summary renders an empty state when no invalid inputs exist.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty showWhenValid = new SimpleBooleanProperty(this, "showWhenValid", false);
-
-    /// The number of invalid input layouts that currently have a visible and enabled ancestor chain.
-    private final ReadOnlyIntegerWrapper visibleInvalidInputCount =
-            new ReadOnlyIntegerWrapper(this, "visibleInvalidInputCount");
-
     /// Updates summary state when the validator invalid input list changes.
     private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> {
         updateReachabilityObservers();
@@ -176,6 +132,15 @@ public final class M3ValidationSummary extends Control {
         setValidator(Objects.requireNonNull(validator, "validator"));
     }
 
+    /// The form validator that supplies invalid input layouts.
+    ///
+    /// The default is `null`. Replacing the value detaches observation from the previous validator and immediately
+    /// reflects the replacement's current invalid-input list. It does not run validation.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3FormValidator> validator =
+            new SimpleObjectProperty<>(this, "validator");
+
     /// Returns the form validator that supplies invalid fields.
     ///
     /// @return the observed validator, or `null` when this summary is detached
@@ -193,9 +158,27 @@ public final class M3ValidationSummary extends Control {
         this.validator.set(validator);
     }
 
+    /// Returns the `validator` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `validator` property
     public final ObjectProperty<@Nullable M3FormValidator> validatorProperty() {
         return validator;
     }
+
+    /// The title displayed above invalid field entries.
+    ///
+    /// An empty string suppresses the title. The value cannot be `null`.
+    ///
+    /// @defaultValue `"Fix the following fields"`
+    private final StringProperty titleText = new SimpleStringProperty(this, "titleText", "Fix the following fields") {
+        /// Rejects null title text values.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "titleText"));
+        }
+    };
 
     /// Returns the title displayed above invalid field entries.
     ///
@@ -212,9 +195,27 @@ public final class M3ValidationSummary extends Control {
         this.titleText.set(Objects.requireNonNull(titleText, "titleText"));
     }
 
+    /// Returns the `titleText` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `"Fix the following fields"`.
+    ///
+    /// @return the `titleText` property
     public final StringProperty titleTextProperty() {
         return titleText;
     }
+
+    /// The text displayed when the summary is configured to render while valid.
+    ///
+    /// An empty string suppresses the valid-state message. The value cannot be `null`.
+    ///
+    /// @defaultValue `"No validation issues"`
+    private final StringProperty emptyText = new SimpleStringProperty(this, "emptyText", "No validation issues") {
+        /// Rejects null empty text values.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "emptyText"));
+        }
+    };
 
     /// Returns the text displayed when the summary renders a valid empty state.
     ///
@@ -231,9 +232,19 @@ public final class M3ValidationSummary extends Control {
         this.emptyText.set(Objects.requireNonNull(emptyText, "emptyText"));
     }
 
+    /// Returns the `emptyText` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `"No validation issues"`.
+    ///
+    /// @return the `emptyText` property
     public final StringProperty emptyTextProperty() {
         return emptyText;
     }
+
+    /// Whether the summary renders an empty state when no invalid inputs exist.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty showWhenValid = new SimpleBooleanProperty(this, "showWhenValid", false);
 
     /// Returns whether the summary renders an empty state when no invalid inputs exist.
     ///
@@ -249,16 +260,18 @@ public final class M3ValidationSummary extends Control {
         this.showWhenValid.set(showWhenValid);
     }
 
+    /// Returns the `showWhenValid` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `showWhenValid` property
     public final BooleanProperty showWhenValidProperty() {
         return showWhenValid;
     }
 
-    /// Returns whether the summary currently has visible content.
-    ///
-    /// @return whether invalid rows or the configured valid-state message should be rendered
-    public final boolean isShowingSummary() {
-        return isShowWhenValid() || getVisibleInvalidInputCount() > 0;
-    }
+    /// The number of invalid input layouts that currently have a visible and enabled ancestor chain.
+    private final ReadOnlyIntegerWrapper visibleInvalidInputCount =
+            new ReadOnlyIntegerWrapper(this, "visibleInvalidInputCount");
 
     /// Returns the number of invalid inputs currently shown by this summary.
     ///
@@ -271,13 +284,25 @@ public final class M3ValidationSummary extends Control {
         return visibleInvalidInputCount.get();
     }
 
+    /// Returns the `visibleInvalidInputCount` property.
+    ///
+    /// The returned property is observable and read-only. Its default value is `0`.
+    ///
+    /// @return the `visibleInvalidInputCount` property
     public final ReadOnlyIntegerProperty visibleInvalidInputCountProperty() {
         return visibleInvalidInputCount.getReadOnlyProperty();
     }
 
+    /// Returns whether the summary currently has visible content.
+    ///
+    /// @return whether invalid rows or the configured valid-state message should be rendered
+    public final boolean isShowingSummary() {
+        return isShowWhenValid() || getVisibleInvalidInputCount() > 0;
+    }
+
     /// Returns the number of invalid inputs currently reported by the validator.
     ///
-    /// Unlike [getVisibleInvalidInputCount()], this count includes invalid inputs hidden or disabled by an ancestor.
+    /// Unlike [#getVisibleInvalidInputCount()], this count includes invalid inputs hidden or disabled by an ancestor.
     ///
     /// @return the validator's complete invalid-input count, or zero when no validator is installed
     public final int getInvalidInputCount() {

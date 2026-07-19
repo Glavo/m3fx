@@ -29,6 +29,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Slider].
+///
+/// The skin renders inactive, active, and optional secondary tracks together with the handle, stop indicator, tick
+/// marks, and value label. Its visual state follows value changes from pointer, keyboard, programmatic, and
+/// accessibility input; horizontal value geometry mirrors under right-to-left orientation.
 @NotNullByDefault
 public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The pseudo-class used for stop indicators on the active track.

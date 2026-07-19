@@ -47,6 +47,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ListItemBase].
+///
+/// The skin lays out the item's text and optional leading and trailing slots, presents selected and interaction
+/// feedback, and implements pointer and keyboard activation. Menu-item subclasses additionally receive grouped
+/// corner treatment and persistent active feedback while a submenu is showing.
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The pseudo-class applied to the first item in a visible menu group.

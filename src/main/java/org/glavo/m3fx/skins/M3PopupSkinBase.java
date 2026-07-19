@@ -11,7 +11,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// The base class for popup-control skins whose skinnable is not accepted by JavaFX [javafx.scene.control.SkinBase].
+/// The base class for M3FX skins whose skinnable is a JavaFX [PopupControl].
+///
+/// A popup control is not a [javafx.scene.control.Control], so its skin cannot extend
+/// [javafx.scene.control.SkinBase]. This region supplies the popup scene node while retaining the skinnable reference
+/// required by [Skin]. Subclasses remain responsible for releasing listeners and bindings from [dispose()].
 @NotNullByDefault
 abstract class M3PopupSkinBase<C extends PopupControl> extends Region implements Skin<C> {
     /// The popup control rendered by this skin.
@@ -20,6 +24,7 @@ abstract class M3PopupSkinBase<C extends PopupControl> extends Region implements
     /// Creates a popup skin for the supplied control.
     ///
     /// @param control the popup control rendered by this skin
+    /// @throws NullPointerException if `control` is `null`
     M3PopupSkinBase(C control) {
         this.control = Objects.requireNonNull(control, "control");
     }
@@ -37,6 +42,9 @@ abstract class M3PopupSkinBase<C extends PopupControl> extends Region implements
     }
 
     /// Releases resources held by this base skin.
+    ///
+    /// The base implementation has no resources to release. Subclasses that override this method should release
+    /// their listeners and bindings before invoking `super.dispose()`.
     @Override
     public void dispose() {
     }

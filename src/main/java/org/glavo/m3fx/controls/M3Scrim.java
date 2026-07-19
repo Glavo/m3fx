@@ -48,60 +48,6 @@ public final class M3Scrim extends Region {
     /// The default visible scrim opacity.
     private static final double DEFAULT_VISIBLE_OPACITY = 0.32;
 
-    /// The handler invoked for this scrim's action events.
-    ///
-    /// A `null` value removes the handler.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction") {
-                /// Updates the registered action event handler.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get());
-                }
-            };
-
-    /// Whether this scrim is logically shown.
-    ///
-    /// Setting this property to `true` makes the node visible and managed before its entrance transition. Setting it
-    /// to `false` starts the exit transition and makes the node invisible and unmanaged after that transition. When
-    /// the node is not attached to a scene, the final state is applied immediately.
-    ///
-    /// @defaultValue `true`
-    private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
-        /// Updates the scrim visibility when the property changes.
-        @Override
-        protected void invalidated() {
-            updateShownState(get());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-        }
-    };
-
-    /// The opacity used when the scrim is fully shown.
-    ///
-    /// Values below `0.0` or above `1.0` are rejected, including values assigned through the property.
-    ///
-    /// @defaultValue `0.32`
-    private final DoubleProperty visibleOpacity =
-            new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
-                /// Applies the updated visible opacity when the scrim is shown.
-                @Override
-                protected void invalidated() {
-                    set(validateOpacity(get()));
-                    if (isShown()) {
-                        setOpacity(get());
-                    }
-                }
-            };
-
-    /// Whether a primary mouse click fires the scrim's action event.
-    ///
-    /// This property does not control keyboard activation and does not hide the scrim by itself.
-    ///
-    /// @defaultValue `true`
-    private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
-
     /// The scrim show and hide animation.
     private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
 
@@ -128,23 +74,68 @@ public final class M3Scrim extends Region {
         });
     }
 
-    /// Returns whether this scrim is shown.
+    /// Whether this scrim is logically shown.
     ///
-    /// @return `true` if the scrim is visible and managed
+    /// Setting this property to `true` makes the node visible and managed before its entrance transition. Setting it
+    /// to `false` starts the exit transition and makes the node invisible and unmanaged after that transition. When
+    /// the node is not attached to a scene, the final state is applied immediately.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
+        /// Updates the scrim visibility when the property changes.
+        @Override
+        protected void invalidated() {
+            updateShownState(get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        }
+    };
+
+    /// Returns the requested logical shown state.
+    ///
+    /// During an exit transition this method returns `false` while the node may remain visible and managed until the
+    /// transition completes.
+    ///
+    /// @return `true` when the scrim is logically shown
     public final boolean isShown() {
         return shown.get();
     }
 
-    /// Sets whether this scrim is shown.
+    /// Sets the requested logical shown state.
     ///
-    /// @param shown whether the scrim should be visible and managed
+    /// Showing makes the node visible and managed before its entrance transition. Hiding keeps it visible and
+    /// managed until its exit transition completes, unless no animated transition can run.
+    ///
+    /// @param shown whether the scrim should be logically shown
     public final void setShown(boolean shown) {
         this.shown.set(shown);
     }
 
+    /// Returns the observable, bindable shown-state property.
+    ///
+    /// The property is `true` by default. Changes drive the scrim's visibility, managed state, transition, and
+    /// expanded accessibility attribute.
+    ///
+    /// @return the shown-state property
     public final BooleanProperty shownProperty() {
         return shown;
     }
+
+    /// The opacity used when the scrim is fully shown.
+    ///
+    /// Values below `0.0` or above `1.0` are rejected, including values assigned through the property.
+    ///
+    /// @defaultValue `0.32`
+    private final DoubleProperty visibleOpacity =
+            new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
+                /// Applies the updated visible opacity when the scrim is shown.
+                @Override
+                protected void invalidated() {
+                    validateOpacity(get());
+                    if (isShown()) {
+                        setOpacity(get());
+                    }
+                }
+            };
 
     /// Returns the opacity used while this scrim is shown.
     ///
@@ -156,14 +147,27 @@ public final class M3Scrim extends Region {
     /// Sets the opacity used while this scrim is shown.
     ///
     /// @param visibleOpacity the normalized opacity used while this scrim is shown
-    /// @throws IllegalArgumentException if the value is outside `0.0..1.0`
+    /// @throws IllegalArgumentException if the value is not finite or is outside `0.0..1.0`
     public final void setVisibleOpacity(double visibleOpacity) {
         this.visibleOpacity.set(validateOpacity(visibleOpacity));
     }
 
+    /// Returns the observable, bindable fully shown opacity property.
+    ///
+    /// The property is `0.32` by default and accepts only values in the inclusive range `0.0..1.0`. Changing it
+    /// immediately updates [#opacityProperty()] while the scrim is shown.
+    ///
+    /// @return the fully shown opacity property
     public final DoubleProperty visibleOpacityProperty() {
         return visibleOpacity;
     }
+
+    /// Whether a primary mouse click fires the scrim's action event.
+    ///
+    /// This property does not control keyboard activation and does not hide the scrim by itself.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
 
     /// Returns whether primary mouse clicks fire this scrim's action event.
     ///
@@ -179,9 +183,29 @@ public final class M3Scrim extends Region {
         this.dismissOnClick.set(dismissOnClick);
     }
 
+    /// Returns the observable, bindable click-dismissal property.
+    ///
+    /// The property is `true` by default. It controls primary-pointer activation only and does not change keyboard
+    /// activation or hide the scrim automatically.
+    ///
+    /// @return the click-dismissal property
     public final BooleanProperty dismissOnClickProperty() {
         return dismissOnClick;
     }
+
+    /// The handler invoked for this scrim's action events.
+    ///
+    /// A `null` value removes the handler.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
 
     /// Returns the action handler.
     ///
@@ -197,6 +221,11 @@ public final class M3Scrim extends Region {
         this.onAction.set(onAction);
     }
 
+    /// Returns the observable, bindable action-handler property.
+    ///
+    /// The property is `null` by default. Changing it replaces the handler registered for [ActionEvent#ACTION].
+    ///
+    /// @return the action-handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -234,7 +263,7 @@ public final class M3Scrim extends Region {
 
     /// Returns accessibility attributes for scrim visibility state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
@@ -250,7 +279,7 @@ public final class M3Scrim extends Region {
 
     /// Executes assistive-technology actions supported by this scrim.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
@@ -350,8 +379,8 @@ public final class M3Scrim extends Region {
 
     /// Validates a normalized opacity value.
     private static double validateOpacity(double opacity) {
-        if (opacity < 0.0 || opacity > 1.0) {
-            throw new IllegalArgumentException("visibleOpacity must be between 0.0 and 1.0");
+        if (!Double.isFinite(opacity) || opacity < 0.0 || opacity > 1.0) {
+            throw new IllegalArgumentException("visibleOpacity must be finite and between 0.0 and 1.0");
         }
         return opacity;
     }

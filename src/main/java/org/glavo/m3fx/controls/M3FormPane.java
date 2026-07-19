@@ -73,19 +73,10 @@ public final class M3FormPane extends Control {
     /// The default vertical spacing between top-level form items.
     private static final double DEFAULT_ROW_SPACING = 16.0;
 
-    /// The live, mutable, ordered list of top-level form items.
-    ///
-    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
-    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
-    /// parent do not satisfy the scene-graph ownership contract.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
-
-    /// The listener used to refresh accessibility state when form items change.
-    private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
-
-    /// Notifies accessibility clients when focus moves between form items.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
+    /// Creates an empty form pane with default padding and item spacing.
+    public M3FormPane() {
+        initialize();
+    }
 
     /// The uniform content padding in logical pixels.
     ///
@@ -93,29 +84,6 @@ public final class M3FormPane extends Control {
     ///
     /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// The vertical spacing between top-level items in logical pixels.
-    ///
-    /// The value is styleable, finite, and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty rowSpacing;
-
-    /// Creates an empty form pane with default padding and item spacing.
-    public M3FormPane() {
-        initialize();
-    }
-
-    /// Returns the live, mutable list of top-level form items in layout order.
-    ///
-    /// @return the live, mutable top-level form item list
-    public final ObservableList<Node> getItems() {
-        return items;
-    }
-
-
-
-
 
     /// Returns the uniform content padding in logical pixels.
     ///
@@ -132,6 +100,12 @@ public final class M3FormPane extends Control {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
+    /// Returns the observable, bindable, styleable uniform content-padding property.
+    ///
+    /// The property defaults to `0.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the uniform content-padding property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -144,6 +118,13 @@ public final class M3FormPane extends Control {
         }
         return contentPadding;
     }
+
+    /// The vertical spacing between top-level items in logical pixels.
+    ///
+    /// The value is styleable, finite, and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty rowSpacing;
 
     /// Returns the vertical spacing between top-level form items in logical pixels.
     ///
@@ -160,6 +141,12 @@ public final class M3FormPane extends Control {
         rowSpacingProperty().set(M3Css.nonNegative(rowSpacing, "rowSpacing"));
     }
 
+    /// Returns the observable, bindable, styleable row-spacing property.
+    ///
+    /// The property defaults to `16.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the row-spacing property
     public final StyleableDoubleProperty rowSpacingProperty() {
         if (rowSpacing == null) {
             rowSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -171,6 +158,27 @@ public final class M3FormPane extends Control {
             );
         }
         return rowSpacing;
+    }
+
+    /// The live, mutable, ordered list of top-level form items.
+    ///
+    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
+    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
+    /// parent do not satisfy the scene-graph ownership contract.
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+
+    /// The listener used to refresh accessibility state when form items change.
+    private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
+
+    /// Notifies accessibility clients when focus moves between form items.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
+
+    /// Returns the live, mutable list of top-level form items in layout order.
+    ///
+    /// @return the live, mutable top-level form item list
+    public final ObservableList<Node> getItems() {
+        return items;
     }
 
     /// Returns the user-agent stylesheet for M3FX form containers.

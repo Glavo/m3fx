@@ -14,7 +14,9 @@ import java.util.Objects;
 /// @param colorScheme the MonetFX color scheme used by this token set
 @NotNullByDefault
 public record M3ColorTokensImpl(ColorScheme colorScheme) implements M3ColorTokens {
-    /// Creates color tokens.
+    /// Creates color tokens backed by the supplied immutable color scheme.
+    ///
+    /// @throws NullPointerException if `colorScheme` is `null`
     public M3ColorTokensImpl {
         Objects.requireNonNull(colorScheme, "colorScheme");
     }

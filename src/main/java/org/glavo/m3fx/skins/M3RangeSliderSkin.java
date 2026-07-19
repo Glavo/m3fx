@@ -37,8 +37,9 @@ import java.util.Objects;
 
 /// The default skin for [M3RangeSlider].
 ///
-/// The skin owns two independently focusable accessible slider handles. Track and handle geometry is updated
-/// directly from reusable transition properties, avoiding scene-graph allocation during animation or dragging.
+/// The skin presents two independently focusable accessible slider handles with leading, active, and trailing track
+/// sections. Keyboard, pointer, and accessibility actions update the corresponding low or high value while
+/// preserving the control's ordered range; horizontal value geometry mirrors under right-to-left orientation.
 @NotNullByDefault
 public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// The pseudo-class used for stop indicators inside the selected range.
@@ -398,8 +399,8 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         M3RangeSlider slider = getSkinnable();
         double indicatorReserve = slider.isShowValueIndicator()
                 ? slider.getValueIndicatorBottomSpace()
-                        + (slider.getOrientation() == Orientation.VERTICAL
-                        ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT)
+                + (slider.getOrientation() == Orientation.VERTICAL
+                ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT)
                 : 0.0;
         if (slider.getOrientation() == Orientation.VERTICAL) {
             layoutVerticalSlider(
@@ -785,8 +786,8 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
             layoutValueIndicator(
                     slider.isShowValueIndicator()
                             ? slider.getValueIndicatorBottomSpace()
-                                    + (slider.getOrientation() == Orientation.VERTICAL
-                                    ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT)
+                            + (slider.getOrientation() == Orientation.VERTICAL
+                            ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT)
                             : 0.0
             );
         }
@@ -1230,10 +1231,8 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
                 case REQUEST_FOCUS -> requestFocus();
                 case INCREMENT -> adjustThumb(thumb, valueForThumb(thumb) + unitIncrement());
                 case DECREMENT -> adjustThumb(thumb, valueForThumb(thumb) - unitIncrement());
-                case BLOCK_INCREMENT ->
-                        adjustThumb(thumb, valueForThumb(thumb) + getSkinnable().getBlockIncrement());
-                case BLOCK_DECREMENT ->
-                        adjustThumb(thumb, valueForThumb(thumb) - getSkinnable().getBlockIncrement());
+                case BLOCK_INCREMENT -> adjustThumb(thumb, valueForThumb(thumb) + getSkinnable().getBlockIncrement());
+                case BLOCK_DECREMENT -> adjustThumb(thumb, valueForThumb(thumb) - getSkinnable().getBlockIncrement());
                 case SET_VALUE -> setAccessibleValue(parameters);
                 default -> super.executeAccessibleAction(action, parameters);
             }

@@ -81,14 +81,17 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
         return new M3ShapeTokensBuilder(tokens);
     }
 
-    /// Creates shape tokens from the original compact M3FX scale.
+    /// Creates shape tokens by expanding a six-value radius scale to the complete Material shape roles.
+    ///
+    /// The large-increased role reuses `large`; the extra-large-increased and extra-extra-large roles reuse
+    /// `extraLarge`; and the no-corner role is zero.
     ///
     /// @param extraSmall the extra-small corner radius in pixels
-    /// @param small the small corner radius in pixels
-    /// @param medium the medium corner radius in pixels
-    /// @param large the large corner radius in pixels
+    /// @param small      the small corner radius in pixels
+    /// @param medium     the medium corner radius in pixels
+    /// @param large      the large corner radius in pixels
     /// @param extraLarge the extra-large corner radius in pixels
-    /// @param full the full corner radius used for pills, in pixels
+    /// @param full       the full corner radius used for pills, in pixels
     /// @return the created shape token set
     private static M3ShapeTokens create(
             double extraSmall,
@@ -103,16 +106,16 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
 
     /// Creates shape tokens.
     ///
-    /// @param none the no-corner radius in pixels
-    /// @param extraSmall the extra-small corner radius in pixels
-    /// @param small the small corner radius in pixels
-    /// @param medium the medium corner radius in pixels
-    /// @param large the large corner radius in pixels
-    /// @param largeIncreased the large-increased corner radius in pixels
-    /// @param extraLarge the extra-large corner radius in pixels
+    /// @param none                the no-corner radius in pixels
+    /// @param extraSmall          the extra-small corner radius in pixels
+    /// @param small               the small corner radius in pixels
+    /// @param medium              the medium corner radius in pixels
+    /// @param large               the large corner radius in pixels
+    /// @param largeIncreased      the large-increased corner radius in pixels
+    /// @param extraLarge          the extra-large corner radius in pixels
     /// @param extraLargeIncreased the extra-large-increased corner radius in pixels
-    /// @param extraExtraLarge the extra-extra-large corner radius in pixels
-    /// @param full the full corner radius used for pills, in pixels
+    /// @param extraExtraLarge     the extra-extra-large corner radius in pixels
+    /// @param full                the full corner radius used for pills, in pixels
     /// @return the created shape token set
     private static M3ShapeTokens create(
             double none,

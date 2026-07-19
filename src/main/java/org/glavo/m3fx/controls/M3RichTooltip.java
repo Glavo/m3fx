@@ -64,29 +64,6 @@ public final class M3RichTooltip extends M3Tooltip {
     /// The action row style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
-    /// The non-null title displayed above the supporting text.
-    ///
-    /// An empty or blank value omits the title from layout. The property must not be set or bound to `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty title = new SimpleStringProperty(this, "title", "");
-
-    /// The non-null supporting text displayed below the title.
-    ///
-    /// An empty or blank value omits the supporting text from layout. The property must not be set or bound to
-    /// `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
-
-    /// Whether installation uses explicit persistent activation rather than hover and focus activation.
-    ///
-    /// This property affects installed activation semantics; it does not prevent an application from calling
-    /// [#show(Node,double,double)] or [#hide()] directly.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty persistent = new SimpleBooleanProperty(this, "persistent");
-
     /// The title label.
     private final Label titleLabel = new Label();
 
@@ -106,7 +83,7 @@ public final class M3RichTooltip extends M3Tooltip {
 
     /// Creates a non-persistent rich tooltip with the specified title and supporting text.
     ///
-    /// @param title the title displayed at the top of the tooltip
+    /// @param title          the title displayed at the top of the tooltip
     /// @param supportingText the supporting text displayed below the title
     /// @throws NullPointerException if `title` or `supportingText` is `null`
     public M3RichTooltip(String title, String supportingText) {
@@ -115,6 +92,12 @@ public final class M3RichTooltip extends M3Tooltip {
         setSupportingText(supportingText);
     }
 
+    /// The non-null title displayed above the supporting text.
+    ///
+    /// An empty or blank value omits the title from layout. The property must not be set or bound to `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
     /// Returns the rich tooltip title.
     ///
@@ -131,9 +114,23 @@ public final class M3RichTooltip extends M3Tooltip {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
+    /// Returns the observable, bindable title property.
+    ///
+    /// The property has an initial value of `""`; empty or blank values omit the title from layout. It must not be
+    /// set or bound to `null`.
+    ///
+    /// @return the title property
     public final StringProperty titleProperty() {
         return title;
     }
+
+    /// The non-null supporting text displayed below the title.
+    ///
+    /// An empty or blank value omits the supporting text from layout. The property must not be set or bound to
+    /// `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
     /// Returns the rich tooltip supporting text.
     ///
@@ -150,9 +147,23 @@ public final class M3RichTooltip extends M3Tooltip {
         this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
 
+    /// Returns the observable, bindable supporting-text property.
+    ///
+    /// The property has an initial value of `""`; empty or blank values omit the supporting text from layout. It
+    /// must not be set or bound to `null`.
+    ///
+    /// @return the supporting-text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
+
+    /// Whether installation uses explicit persistent activation rather than hover and focus activation.
+    ///
+    /// This property affects installed activation semantics; it does not prevent an application from calling
+    /// [#show(Node,double,double)] or [#hide()] directly.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty persistent = new SimpleBooleanProperty(this, "persistent");
 
     /// Returns whether this rich tooltip uses persistent interaction behavior.
     ///
@@ -172,6 +183,12 @@ public final class M3RichTooltip extends M3Tooltip {
         this.persistent.set(persistent);
     }
 
+    /// Returns the observable, bindable persistent-interaction property.
+    ///
+    /// The property is `false` by default. Changing it affects how an installed tooltip is activated; it does not
+    /// prevent direct calls to [#show(Node,double,double)] or [#hide()].
+    ///
+    /// @return the persistent-interaction property
     public final BooleanProperty persistentProperty() {
         return persistent;
     }

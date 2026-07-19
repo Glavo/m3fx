@@ -10,6 +10,10 @@ import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SegmentedButtonGroup].
+///
+/// The skin presents the group's observable button list as one logical horizontal sequence. Alignment follows node
+/// orientation and spacing is bound to the group property, while each button skin remains responsible for edge shape
+/// and selection treatment.
 @NotNullByDefault
 public final class M3SegmentedButtonGroupSkin
         extends M3ItemContainerSkinBase<M3SegmentedButtonGroup, HBox, M3SegmentedButton> {

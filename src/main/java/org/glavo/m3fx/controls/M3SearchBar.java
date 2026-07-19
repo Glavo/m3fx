@@ -80,76 +80,6 @@ public final class M3SearchBar extends Control {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The node displayed before the editable text.
-    ///
-    /// The default is a search indicator supplied by the control. A `null` value leaves the leading slot empty.
-    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
-        /// Updates accessibility state when the leading slot changes.
-        @Override
-        protected void invalidated() {
-            notifyAccessibleItemsChanged();
-        }
-    };
-
-    /// The non-null search text edited by the user.
-    ///
-    /// The property is bidirectionally synchronized with the embedded editor. Assigning or binding a `null` value
-    /// throws [NullPointerException].
-    ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
-        /// Keeps search text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "text"));
-        }
-    };
-
-    /// The non-null prompt displayed when [#getText()] is empty.
-    ///
-    /// Assigning or binding a `null` value throws [NullPointerException].
-    ///
-    /// @defaultValue `""`
-    private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
-        /// Keeps prompt text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "promptText"));
-        }
-    };
-
-    /// The handler invoked for search action events.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction") {
-                /// Updates the registered action event handler.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get());
-                }
-            };
-
-    /// Whether this bar is in its active input state.
-    ///
-    /// Changing the value to `true` requests focus for the editor when the control is reachable. Changing it to
-    /// `false` does not clear the text or forcibly move focus.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
-        /// Updates active pseudo-class state and input focus.
-        @Override
-        protected void invalidated() {
-            boolean active = get();
-            pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            if (active && !suppressActiveEditorFocus && M3Accessible.canReach(editor)) {
-                M3Accessible.showItem(M3SearchBar.this, editor);
-            }
-            notifyFocusNodeChanged();
-        }
-    };
-
     /// The editable search input.
     private final TextField editor = new TextField();
 
@@ -177,6 +107,20 @@ public final class M3SearchBar extends Control {
         setPromptText(promptText);
     }
 
+    /// The non-null search text edited by the user.
+    ///
+    /// The property is bidirectionally synchronized with the embedded editor. Assigning or binding a `null` value
+    /// throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps search text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
     /// Returns the text entered in this search bar.
     ///
     /// @return the text entered in this search bar
@@ -192,9 +136,28 @@ public final class M3SearchBar extends Control {
         this.text.set(text);
     }
 
+    /// Returns the observable, bidirectionally bindable search-text property.
+    ///
+    /// The property has an initial value of `""`, is synchronized with the embedded editor, and rejects `null`
+    /// values, including values supplied by a binding.
+    ///
+    /// @return the search-text property
     public final StringProperty textProperty() {
         return text;
     }
+
+    /// The non-null prompt displayed when [#getText()] is empty.
+    ///
+    /// Assigning or binding a `null` value throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
+    private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
+        /// Keeps prompt text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "promptText"));
+        }
+    };
 
     /// Returns the prompt text displayed when the search text is empty.
     ///
@@ -211,9 +174,35 @@ public final class M3SearchBar extends Control {
         this.promptText.set(promptText);
     }
 
+    /// Returns the observable, bidirectionally bindable prompt-text property.
+    ///
+    /// The property has an initial value of `""`, is synchronized with the embedded editor, and rejects `null`
+    /// values, including values supplied by a binding.
+    ///
+    /// @return the prompt-text property
     public final StringProperty promptTextProperty() {
         return promptText;
     }
+
+    /// Whether this bar is in its active input state.
+    ///
+    /// Changing the value to `true` requests focus for the editor when the control is reachable. Changing it to
+    /// `false` does not clear the text or forcibly move focus.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
+        /// Updates active pseudo-class state and input focus.
+        @Override
+        protected void invalidated() {
+            boolean active = get();
+            pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            if (active && !suppressActiveEditorFocus && M3Accessible.canReach(editor)) {
+                M3Accessible.showItem(M3SearchBar.this, editor);
+            }
+            notifyFocusNodeChanged();
+        }
+    };
 
     /// Returns whether this search bar is in its active input state.
     ///
@@ -229,16 +218,26 @@ public final class M3SearchBar extends Control {
         this.active.set(active);
     }
 
+    /// Returns the observable, bindable active-state property.
+    ///
+    /// The property is `false` by default. Setting it to `true` requests focus for the embedded editor when the
+    /// control is reachable; setting it to `false` does not clear text or forcibly move focus.
+    ///
+    /// @return the active-state property
     public final BooleanProperty activeProperty() {
         return active;
     }
 
-    /// Returns the editable search input used by this search bar.
+    /// The node displayed before the editable text.
     ///
-    /// @return the embedded editable search input
-    final TextField editor() {
-        return editor;
-    }
+    /// The default is a search indicator supplied by the control. A `null` value leaves the leading slot empty.
+    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
+        /// Updates accessibility state when the leading slot changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleItemsChanged();
+        }
+    };
 
     /// Returns the leading content node.
     ///
@@ -254,20 +253,27 @@ public final class M3SearchBar extends Control {
         this.leading.set(leading);
     }
 
+    /// Returns the observable, bindable leading-content property.
+    ///
+    /// A new search bar contains a search indicator. The property accepts `null` to leave the leading slot empty;
+    /// changes update the indexed accessibility children.
+    ///
+    /// @return the leading-content property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
 
-    /// Returns the mutable trailing action list.
+    /// The handler invoked for search action events.
     ///
-    /// The returned list is live, mutable, and ordered. Changes update the visible action row immediately. `null`
-    /// elements are rejected. Each node must satisfy the normal JavaFX single-parent rule when the control displays
-    /// it, and the same node must not be inserted more than once.
-    ///
-    /// @return the live trailing action list
-    public final ObservableList<Node> getTrailingActions() {
-        return trailingActions;
-    }
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
 
     /// Returns the action handler.
     ///
@@ -283,8 +289,31 @@ public final class M3SearchBar extends Control {
         this.onAction.set(onAction);
     }
 
+    /// Returns the observable, bindable search-action handler property.
+    ///
+    /// The property is `null` by default. Changing it replaces the handler registered for [ActionEvent#ACTION].
+    ///
+    /// @return the search-action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
+    }
+
+    /// Returns the editable search input used by this search bar.
+    ///
+    /// @return the embedded editable search input
+    final TextField editor() {
+        return editor;
+    }
+
+    /// Returns the mutable trailing action list.
+    ///
+    /// The returned list is live, mutable, and ordered. Changes update the visible action row immediately. `null`
+    /// elements are rejected. Each node must satisfy the normal JavaFX single-parent rule when the control displays
+    /// it, and the same node must not be inserted more than once.
+    ///
+    /// @return the live trailing action list
+    public final ObservableList<Node> getTrailingActions() {
+        return trailingActions;
     }
 
     /// Returns the user-agent stylesheet for M3FX search bars.

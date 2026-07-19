@@ -33,6 +33,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3NavigationItem].
+///
+/// The skin presents the item's icon, label, optional badge, active indicator, state layer, ripple, and focus
+/// indicator. It adapts that content to bar, rail, and drawer layouts and implements pointer and keyboard activation
+/// without transferring scene focus to decorative child nodes.
 @NotNullByDefault
 public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// The selected indicator hidden scale.

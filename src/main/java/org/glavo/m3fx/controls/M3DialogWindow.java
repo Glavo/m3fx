@@ -61,22 +61,6 @@ public final class M3DialogWindow {
     /// The style class installed on the dedicated scene root.
     public static final String STYLE_CLASS = "m3-dialog-window-root";
 
-    /// The native stage owned by this host.
-    private final Stage stage;
-
-    /// The stable root that supplies theme and motion context to each presented pane.
-    private final StackPane root = new StackPane();
-
-    /// The scene retained for the complete lifetime of this host.
-    private final Scene scene;
-
-    /// The explicit theme, or `null` to resolve an owner theme or the default theme for each presentation.
-    private final ObjectProperty<@Nullable M3Theme> themeValue =
-            new SimpleObjectProperty<>(this, "theme");
-
-    /// The presentation currently reserved for this host, including its showing callback phase.
-    private @Nullable M3DialogPresentation activePresentation;
-
     /// Creates an ownerless, non-modal, decorated dialog window.
     ///
     /// This constructor must run on the JavaFX Application Thread after the JavaFX toolkit has started.
@@ -100,6 +84,103 @@ public final class M3DialogWindow {
             }
         });
     }
+
+    /// Returns this dialog window's title.
+    ///
+    /// @return the non-null title, which is empty by default
+    public String getTitle() {
+        return Objects.requireNonNull(stage.getTitle(), "title");
+    }
+
+    /// Sets this dialog window's title.
+    ///
+    /// @param title the non-null native window title
+    /// @throws NullPointerException if `title` is `null`
+    /// @throws RuntimeException     if [#titleProperty()] is bound
+    public void setTitle(String title) {
+        stage.setTitle(Objects.requireNonNull(title, "title"));
+    }
+
+    /// Returns the observable property that stores this dialog window's title.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string. Values assigned directly or
+    /// supplied by a binding must be non-null, and changes update the native window title.
+    ///
+    /// @return the non-null title property
+    public StringProperty titleProperty() {
+        return stage.titleProperty();
+    }
+
+    /// Returns whether this dialog window can be resized by the user.
+    ///
+    /// @return `true` when native resizing is enabled
+    public boolean isResizable() {
+        return stage.isResizable();
+    }
+
+    /// Sets whether this dialog window can be resized by the user.
+    ///
+    /// @param resizable whether native resizing is enabled
+    /// @throws RuntimeException if [#resizableProperty()] is bound
+    public void setResizable(boolean resizable) {
+        stage.setResizable(resizable);
+    }
+
+    /// Returns the observable property controlling whether this dialog window can be resized by the user.
+    ///
+    /// The property can be observed and bound. Its default value is `false`, and changes update native resizing.
+    ///
+    /// @return the non-null resizable property
+    public BooleanProperty resizableProperty() {
+        return stage.resizableProperty();
+    }
+
+    /// The explicit theme, or `null` to resolve an owner theme or the default theme for each presentation.
+    private final ObjectProperty<@Nullable M3Theme> themeValue =
+            new SimpleObjectProperty<>(this, "theme");
+
+    /// Returns the explicit theme installed for standalone presentations.
+    ///
+    /// A `null` value selects the owner's current scene theme when one is installed, or the default M3FX theme for
+    /// an ownerless or unthemed window.
+    ///
+    /// @return the explicit theme, or `null` for automatic resolution
+    public @Nullable M3Theme getTheme() {
+        return themeValue.get();
+    }
+
+    /// Sets the explicit theme installed for standalone presentations.
+    ///
+    /// Changing this value while a dialog is visible immediately updates its dedicated theme root. Setting it to
+    /// `null` restores automatic owner-theme or default-theme resolution.
+    ///
+    /// @param theme the explicit theme, or `null` for automatic resolution
+    /// @throws RuntimeException if [#themeProperty()] is bound
+    public void setTheme(@Nullable M3Theme theme) {
+        themeValue.set(theme);
+    }
+
+    /// Returns the observable property that stores the explicit standalone-window theme.
+    ///
+    /// The property can be observed and bound. Its default value is `null`, which enables owner-theme or default-theme
+    /// resolution. Changes made while a dialog is visible update the dedicated scene immediately.
+    ///
+    /// @return the non-null, nullable-valued theme property
+    public ObjectProperty<@Nullable M3Theme> themeProperty() {
+        return themeValue;
+    }
+
+    /// The native stage owned by this host.
+    private final Stage stage;
+
+    /// The stable root that supplies theme and motion context to each presented pane.
+    private final StackPane root = new StackPane();
+
+    /// The scene retained for the complete lifetime of this host.
+    private final Scene scene;
+
+    /// The presentation currently reserved for this host, including its showing callback phase.
+    private @Nullable M3DialogPresentation activePresentation;
 
     /// Returns the native owner initialized for this dialog window.
     ///
@@ -157,53 +238,6 @@ public final class M3DialogWindow {
         stage.initStyle(Objects.requireNonNull(style, "style"));
     }
 
-    /// Returns this dialog window's title.
-    ///
-    /// @return the non-null title, which is empty by default
-    public String getTitle() {
-        return Objects.requireNonNull(stage.getTitle(), "title");
-    }
-
-    /// Sets this dialog window's title.
-    ///
-    /// @param title the non-null native window title
-    /// @throws NullPointerException if `title` is `null`
-    /// @throws RuntimeException     if [#titleProperty()] is bound
-    public void setTitle(String title) {
-        stage.setTitle(Objects.requireNonNull(title, "title"));
-    }
-
-    /// Returns the property holding this dialog window's title.
-    ///
-    /// Values assigned or supplied by a binding must be non-null.
-    ///
-    /// @return the non-null title property
-    public StringProperty titleProperty() {
-        return stage.titleProperty();
-    }
-
-    /// Returns whether this dialog window can be resized by the user.
-    ///
-    /// @return `true` when native resizing is enabled
-    public boolean isResizable() {
-        return stage.isResizable();
-    }
-
-    /// Sets whether this dialog window can be resized by the user.
-    ///
-    /// @param resizable whether native resizing is enabled
-    /// @throws RuntimeException if [#resizableProperty()] is bound
-    public void setResizable(boolean resizable) {
-        stage.setResizable(resizable);
-    }
-
-    /// Returns the property controlling whether this dialog window can be resized by the user.
-    ///
-    /// @return the non-null resizable property
-    public BooleanProperty resizableProperty() {
-        return stage.resizableProperty();
-    }
-
     /// Returns the mutable list of native window icons.
     ///
     /// Changes to the returned list update the Stage icons according to JavaFX platform behavior.
@@ -211,34 +245,6 @@ public final class M3DialogWindow {
     /// @return the mutable, non-null icon list
     public ObservableList<Image> getIcons() {
         return stage.getIcons();
-    }
-
-    /// Returns the explicit theme installed for standalone presentations.
-    ///
-    /// A `null` value selects the owner's current scene theme when one is installed, or the default M3FX theme for
-    /// an ownerless or unthemed window.
-    ///
-    /// @return the explicit theme, or `null` for automatic resolution
-    public @Nullable M3Theme getTheme() {
-        return themeValue.get();
-    }
-
-    /// Sets the explicit theme installed for standalone presentations.
-    ///
-    /// Changing this value while a dialog is visible immediately updates its dedicated theme root. Setting it to
-    /// `null` restores automatic owner-theme or default-theme resolution.
-    ///
-    /// @param theme the explicit theme, or `null` for automatic resolution
-    /// @throws RuntimeException if [#themeProperty()] is bound
-    public void setTheme(@Nullable M3Theme theme) {
-        themeValue.set(theme);
-    }
-
-    /// Returns the property holding the explicit standalone-window theme.
-    ///
-    /// @return the non-null, nullable-valued theme property
-    public ObjectProperty<@Nullable M3Theme> themeProperty() {
-        return themeValue;
     }
 
     /// Presents a dialog in this dedicated native window.

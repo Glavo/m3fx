@@ -34,8 +34,8 @@ import java.util.Objects;
 /// A collapsible Material Design 3 navigation drawer destination group.
 ///
 /// The group owns one header row and exposes a live list of child [M3ListItem] destinations. Activating the header
-/// toggles [expandedProperty]; collapsed children are removed from layout, focus traversal, and accessibility
-/// indexing. The header is managed by the group and is available through [getHeaderItem] for presentation
+/// toggles [#expandedProperty()]; collapsed children are removed from layout, focus traversal, and accessibility
+/// indexing. The header is managed by the group and is available through [#getHeaderItem()] for presentation
 /// customization, but it must not be reparented.
 ///
 /// A new group has an empty title, no child destinations, and is collapsed. Collapsing a group while one of its
@@ -61,29 +61,6 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// The expanded pseudo-class used by navigation drawer groups.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
-
-    /// The non-null text displayed by the owned header item.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty title = new SimpleStringProperty(this, "title", "");
-
-    /// Whether child destinations participate in layout, focus traversal, and accessibility indexing.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
-        /// Updates expanded pseudo-class state.
-        @Override
-        protected void invalidated() {
-            boolean expanded = get();
-            boolean restoreHeaderFocus = !expanded && isFocusInsideChildItems();
-            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, expanded);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleContentChanged();
-            if (restoreHeaderFocus) {
-                focusAccessibleNode();
-            }
-        }
-    };
 
     /// The live, mutable, ordered child destination list.
     ///
@@ -134,6 +111,13 @@ public final class M3NavigationDrawerGroup extends Control {
         setTitle(title);
     }
 
+    /// The non-null text displayed by the owned header item.
+    ///
+    /// The property must not be set or bound to `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty title = new SimpleStringProperty(this, "title", "");
+
     /// Returns the group title displayed by the header list item.
     ///
     /// @return the group title displayed by the header row
@@ -149,9 +133,33 @@ public final class M3NavigationDrawerGroup extends Control {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
+    /// Returns the observable, bindable group-title property.
+    ///
+    /// The property has an initial value of `""` and updates the owned header row and accessible text. It must not
+    /// be set or bound to `null`.
+    ///
+    /// @return the group-title property
     public StringProperty titleProperty() {
         return title;
     }
+
+    /// Whether child destinations participate in layout, focus traversal, and accessibility indexing.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
+        /// Updates expanded pseudo-class state.
+        @Override
+        protected void invalidated() {
+            boolean expanded = get();
+            boolean restoreHeaderFocus = !expanded && isFocusInsideChildItems();
+            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, expanded);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleContentChanged();
+            if (restoreHeaderFocus) {
+                focusAccessibleNode();
+            }
+        }
+    };
 
     /// Returns whether child destination items are visible.
     ///
@@ -167,6 +175,12 @@ public final class M3NavigationDrawerGroup extends Control {
         this.expanded.set(expanded);
     }
 
+    /// Returns the observable, bindable expanded-state property.
+    ///
+    /// The property is `false` by default. Collapsing the group removes its children from layout, traversal, and
+    /// accessibility indexing and transfers focus to the header when a child currently owns focus.
+    ///
+    /// @return the expanded-state property
     public BooleanProperty expandedProperty() {
         return expanded;
     }

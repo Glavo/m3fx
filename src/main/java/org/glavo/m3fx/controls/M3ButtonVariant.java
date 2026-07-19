@@ -33,6 +33,8 @@ public enum M3ButtonVariant {
     private final String styleClass;
 
     /// Creates a button variant.
+    ///
+    /// @param styleClass the style class applied to buttons using this variant
     M3ButtonVariant(String styleClass) {
         this.styleClass = styleClass;
     }

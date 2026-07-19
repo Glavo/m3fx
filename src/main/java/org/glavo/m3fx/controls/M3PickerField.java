@@ -48,13 +48,13 @@ import java.util.Objects;
 /// A base control for Material Design 3 text fields that edit values through a picker popup.
 ///
 /// [M3DatePickerField] and [M3TimePickerField] combine editable text with a non-modal picker popup. The raw editor
-/// text and committed value are deliberately separate: changing [textProperty] does not change [valueProperty]
-/// until [commitEditorText] succeeds, while changing the value immediately rewrites the text with the current
-/// [formatterProperty]. An empty committed string clears the value.
+/// text and committed value are deliberately separate: changing [#textProperty()] does not change [#valueProperty()]
+/// until [#commitEditorText()] succeeds, while changing the value immediately rewrites the text with the current
+/// [#formatterProperty()]. An empty committed string clears the value.
 ///
-/// The popup has no independent owner property; [showPicker] uses the window containing this control and has no
+/// The popup has no independent owner property; [#showPicker()] uses the window containing this control and has no
 /// effect until that window can show popups. It is auto-hiding, closes after a picker selection, and is also closed
-/// when this control becomes unreachable. [showingProperty] is read-only and remains `true` until a requested hide
+/// when this control becomes unreachable. [#showingProperty()] is read-only and remains `true` until a requested hide
 /// has completed. Showing and hiding are non-blocking.
 ///
 /// ```java
@@ -92,175 +92,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// The selected and committed picker value.
-    ///
-    /// A `null` value represents an empty field. Non-null values are normalized to the precision supported by the
-    /// concrete picker and must fall within its selectable range. Changing the value rewrites [text] using the
-    /// current formatter and synchronizes the popup picker.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable T> value =
-            new SimpleObjectProperty<>(this, "value") {
-                /// Normalizes and validates values assigned through the property.
-                @Override
-                public void set(@Nullable T newValue) {
-                    @Nullable T normalizedValue = newValue == null ? null : normalizeValue(newValue);
-                    validateValue(normalizedValue);
-                    super.set(normalizedValue);
-                }
-
-                /// Synchronizes the editor and popup picker after the selected value changes.
-                @Override
-                protected void invalidated() {
-                    handleValueChanged(get());
-                }
-            };
-
-    /// The non-null raw editor text.
-    ///
-    /// Text may be incomplete or invalid while the user edits it. Assigning text does not update [value] until
-    /// [commitEditorText] succeeds.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
-        /// Keeps editor text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "text"));
-        }
-    };
-
-    /// The visual variant of the editable text field.
-    ///
-    /// The value is never `null`.
-    ///
-    /// @defaultValue [M3TextInputVariant#FILLED]
-    private final ObjectProperty<M3TextInputVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
-                /// Keeps the text input variant non-null.
-                @Override
-                public void set(M3TextInputVariant newValue) {
-                    super.set(Objects.requireNonNull(newValue, "variant"));
-                }
-            };
-
-    /// Whether the character counter is shown below the editor.
-    ///
-    /// This property does not enforce [characterLimit]; enforcement is controlled independently by
-    /// [characterLimitEnforced].
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty characterCounterVisible =
-            new SimpleBooleanProperty(this, "characterCounterVisible");
-
-    /// Whether input longer than [characterLimit] is rejected by the editor.
-    ///
-    /// This property has no effect while the character limit is `-1`.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty characterLimitEnforced =
-            new SimpleBooleanProperty(this, "characterLimitEnforced");
-
-    /// The maximum editor-text length, or `-1` for no limit.
-    ///
-    /// Values less than `-1` are rejected. The limit is measured using the same character-count semantics as
-    /// [M3TextInputLayout]. It may be displayed or enforced independently.
-    ///
-    /// @defaultValue `-1`
-    private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", -1) {
-        /// Accepts `-1` for no limit or a non-negative character count.
-        @Override
-        public void set(int newValue) {
-            if (newValue < -1) {
-                throw new IllegalArgumentException("characterLimit must be -1 or non-negative");
-            }
-            super.set(newValue);
-        }
-    };
-
-    /// The non-null floating label text.
-    ///
-    /// An empty string suppresses the label.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
-        /// Keeps label text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "labelText"));
-        }
-    };
-
-    /// The non-null supporting text displayed when no error message is active.
-    ///
-    /// An empty string suppresses supporting text.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
-        /// Keeps supporting text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "supportingText"));
-        }
-    };
-
-    /// The non-null error message currently displayed by the field.
-    ///
-    /// An empty string clears the error presentation. A failed [commitEditorText] replaces this value with either
-    /// [invalidTextErrorText] or [rangeErrorText]; subsequent user edits clear such generated messages.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
-        /// Keeps error text non-null.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "errorText"));
-        }
-    };
-
-    /// The non-null formatter used to parse and display values.
-    ///
-    /// Changing the formatter immediately rewrites the editor when a value is selected. Concrete picker fields
-    /// provide their documented default formatter.
-    private final ObjectProperty<DateTimeFormatter> formatter =
-            new SimpleObjectProperty<>(this, "formatter") {
-                /// Keeps formatter values non-null.
-                @Override
-                public void set(DateTimeFormatter newValue) {
-                    super.set(Objects.requireNonNull(newValue, "formatter"));
-                }
-
-                /// Rewrites the editor text when a selected value already exists.
-                @Override
-                protected void invalidated() {
-                    updateEditorFromValue();
-                }
-            };
-
-    /// The non-null message used when editor text cannot be parsed.
-    ///
-    /// Concrete picker fields provide their documented default message.
-    private final StringProperty invalidTextErrorText =
-            new SimpleStringProperty(this, "invalidTextErrorText") {
-                /// Keeps parse error text non-null.
-                @Override
-                public void set(String newValue) {
-                    super.set(Objects.requireNonNull(newValue, "invalidTextErrorText"));
-                }
-            };
-
-    /// The non-null message used when parsed text is outside the selectable range.
-    ///
-    /// Concrete picker fields provide their documented default message.
-    private final StringProperty rangeErrorText =
-            new SimpleStringProperty(this, "rangeErrorText") {
-                /// Keeps range error text non-null.
-                @Override
-                public void set(String newValue) {
-                    super.set(Objects.requireNonNull(newValue, "rangeErrorText"));
-                }
-            };
-
     /// The editable text field used by the picker field.
     private final M3TextField editor = new M3TextField();
 
@@ -285,12 +116,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Keeps the detached picker popup synchronized with the owner scene and theme context while visible.
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
-
-    /// Whether the picker popup is currently visible or completing its hide transition.
-    ///
-    /// This is derived read-only state. It becomes `true` only after the popup is shown successfully and returns to
-    /// `false` when the popup has actually hidden.
-    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(popupContent);
@@ -320,15 +145,15 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Creates a picker field around the supplied popup picker.
     ///
-    /// @param picker the concrete popup picker control
-    /// @param pickerValue the picker value property synchronized with this field value
-    /// @param formatter the formatter used to convert between editor text and picker values
-    /// @param styleClass the concrete picker field style class
-    /// @param popupStyleClass the concrete picker popup style class
-    /// @param pickerIconGraphic the graphic displayed by the trailing open button
+    /// @param picker                   the concrete popup picker control
+    /// @param pickerValue              the picker value property synchronized with this field value
+    /// @param formatter                the formatter used to convert between editor text and picker values
+    /// @param styleClass               the concrete picker field style class
+    /// @param popupStyleClass          the concrete picker popup style class
+    /// @param pickerIconGraphic        the graphic displayed by the trailing open button
     /// @param openButtonAccessibleText the accessible text for the trailing open button
-    /// @param invalidTextErrorText the error text shown when editor text cannot be parsed
-    /// @param rangeErrorText the error text shown when editor text parses outside the selectable range
+    /// @param invalidTextErrorText     the error text shown when editor text cannot be parsed
+    /// @param rangeErrorText           the error text shown when editor text parses outside the selectable range
     /// @throws NullPointerException if `picker`, `pickerValue`, `formatter`, `styleClass`, `popupStyleClass`,
     ///         `pickerIconGraphic`, `openButtonAccessibleText`, `invalidTextErrorText`, or `rangeErrorText` is `null`
     M3PickerField(
@@ -363,6 +188,39 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         );
     }
 
+    /// The selected and committed picker value.
+    ///
+    /// A `null` value represents an empty field. Direct non-null assignments are normalized to the precision
+    /// supported by the concrete picker and must fall within its selectable range. A binding source must already
+    /// provide normalized values in that range. Changing the value rewrites [#textProperty()] using the current
+    /// formatter and synchronizes the popup picker.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable T> value =
+            new SimpleObjectProperty<>(this, "value") {
+                /// Normalizes and validates values assigned through the property.
+                @Override
+                public void set(@Nullable T newValue) {
+                    @Nullable T normalizedValue = newValue == null ? null : normalizeValue(newValue);
+                    validateValue(normalizedValue);
+                    super.set(normalizedValue);
+                }
+
+                /// Synchronizes the editor and popup picker after the selected value changes.
+                @Override
+                protected void invalidated() {
+                    @Nullable T selectedValue = get();
+                    if (isBound() && selectedValue != null) {
+                        T normalizedValue = normalizeValue(selectedValue);
+                        if (!Objects.equals(normalizedValue, selectedValue)
+                                || isPickerValueDisabled(selectedValue)) {
+                            return;
+                        }
+                    }
+                    handleValueChanged(selectedValue);
+                }
+            };
+
     /// Returns the selected value, or `null` when the field is empty.
     ///
     /// @return the selected value, or `null` when the field is empty
@@ -378,14 +236,35 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.value.set(value);
     }
 
+    /// Returns the observable, bindable committed-value property.
+    ///
+    /// The property is `null` by default. Direct non-null assignments are normalized and validated by the concrete
+    /// picker. A binding source must supply values that are already normalized and within the current selectable
+    /// range. Valid changes rewrite editor text and synchronize the popup picker.
+    ///
+    /// @return the committed-value property
     public final ObjectProperty<@Nullable T> valueProperty() {
         return value;
     }
 
+    /// The non-null raw editor text.
+    ///
+    /// Text may be incomplete or invalid while the user edits it. Assigning text does not update [#valueProperty()]
+    /// until [#commitEditorText()] succeeds.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps editor text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
     /// Returns the current raw editor text.
     ///
-    /// This text may be temporarily invalid while the user is editing. Call [commitEditorText] to parse it into
-    /// [valueProperty].
+    /// This text may be temporarily invalid while the user is editing. Call [#commitEditorText()] to parse it into
+    /// [#valueProperty()].
     ///
     /// @return the current raw editor text
     public final String getText() {
@@ -394,7 +273,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Sets the raw editor text.
     ///
-    /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
+    /// The value is not parsed until [#commitEditorText()] is called or the editor action commits it.
     ///
     /// @param text the raw editor text
     /// @throws NullPointerException if `text` is `null`
@@ -402,9 +281,29 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.text.set(text);
     }
 
+    /// Returns the observable, bindable raw editor-text property.
+    ///
+    /// The property is the empty string by default and rejects `null`. Assignments update the embedded editor but do
+    /// not change [#valueProperty()] until the text is committed successfully.
+    ///
+    /// @return the raw editor-text property
     public final StringProperty textProperty() {
         return text;
     }
+
+    /// The visual variant of the editable text field.
+    ///
+    /// The property rejects `null`.
+    ///
+    /// @defaultValue [M3TextInputVariant#FILLED]
+    private final ObjectProperty<M3TextInputVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
+                /// Keeps the text input variant non-null.
+                @Override
+                public void set(M3TextInputVariant newValue) {
+                    super.set(Objects.requireNonNull(newValue, "variant"));
+                }
+            };
 
     /// Returns the text input variant used by the embedded editor.
     ///
@@ -421,9 +320,24 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.variant.set(variant);
     }
 
+    /// Returns the observable, bindable text-input variant property.
+    ///
+    /// The property is [M3TextInputVariant#FILLED] by default and rejects `null`. It is bidirectionally synchronized
+    /// with the embedded editor's variant property.
+    ///
+    /// @return the text-input variant property
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
         return variant;
     }
+
+    /// Whether the character counter is shown below the editor.
+    ///
+    /// This property does not enforce [#characterLimitProperty()]; enforcement is controlled independently by
+    /// [#characterLimitEnforcedProperty()].
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty characterCounterVisible =
+            new SimpleBooleanProperty(this, "characterCounterVisible");
 
     /// Returns whether the character counter is visible below the editor.
     ///
@@ -439,9 +353,23 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterCounterVisible.set(characterCounterVisible);
     }
 
+    /// Returns the observable, bindable character-counter visibility property.
+    ///
+    /// The property is `false` by default and is bidirectionally synchronized with the wrapped input layout. It does
+    /// not enforce the configured character limit.
+    ///
+    /// @return the character-counter visibility property
     public final BooleanProperty characterCounterVisibleProperty() {
         return characterCounterVisible;
     }
+
+    /// Whether input longer than [#characterLimitProperty()] is rejected by the editor.
+    ///
+    /// This property has no effect while the character limit is `-1`.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty characterLimitEnforced =
+            new SimpleBooleanProperty(this, "characterLimitEnforced");
 
     /// Returns whether editor text is truncated to the configured character limit.
     ///
@@ -457,9 +385,32 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterLimitEnforced.set(characterLimitEnforced);
     }
 
+    /// Returns the observable, bindable character-limit enforcement property.
+    ///
+    /// The property is `false` by default and is bidirectionally synchronized with the wrapped input layout. It has
+    /// no effect while [#getCharacterLimit()] is `-1`.
+    ///
+    /// @return the character-limit enforcement property
     public final BooleanProperty characterLimitEnforcedProperty() {
         return characterLimitEnforced;
     }
+
+    /// The maximum editor-text length, or `-1` for no limit.
+    ///
+    /// Values less than `-1` are rejected. The limit is measured using the same character-count semantics as
+    /// [M3TextInputLayout]. It may be displayed or enforced independently.
+    ///
+    /// @defaultValue `-1`
+    private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", -1) {
+        /// Accepts `-1` for no limit or a non-negative character count.
+        @Override
+        public void set(int newValue) {
+            if (newValue < -1) {
+                throw new IllegalArgumentException("characterLimit must be -1 or non-negative");
+            }
+            super.set(newValue);
+        }
+    };
 
     /// Returns the active character limit, or `-1` when no limit is active.
     ///
@@ -476,8 +427,272 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterLimit.set(characterLimit);
     }
 
+    /// Returns the observable, bindable character-limit property.
+    ///
+    /// The property is `-1` by default and accepts `-1` or a non-negative character count. It is bidirectionally
+    /// synchronized with the wrapped input layout.
+    ///
+    /// @return the character-limit property
     public final IntegerProperty characterLimitProperty() {
         return characterLimit;
+    }
+
+    /// The non-null formatter used to parse and display values.
+    ///
+    /// Changing the formatter immediately rewrites the editor when a value is selected. Concrete picker fields
+    /// supply their documented initial formatter.
+    private final ObjectProperty<DateTimeFormatter> formatter =
+            new SimpleObjectProperty<>(this, "formatter") {
+                /// Keeps formatter values non-null.
+                @Override
+                public void set(DateTimeFormatter newValue) {
+                    super.set(Objects.requireNonNull(newValue, "formatter"));
+                }
+
+                /// Rewrites the editor text when a selected value already exists.
+                @Override
+                protected void invalidated() {
+                    updateEditorFromValue();
+                }
+            };
+
+    /// Returns the formatter used for editor text.
+    ///
+    /// @return the formatter used for editor text
+    public final DateTimeFormatter getFormatter() {
+        return formatter.get();
+    }
+
+    /// Sets the formatter used for editor text.
+    ///
+    /// @param formatter the formatter used for editor text
+    /// @throws NullPointerException if `formatter` is `null`
+    public final void setFormatter(DateTimeFormatter formatter) {
+        this.formatter.set(formatter);
+    }
+
+    /// Returns the observable, bindable non-null formatter property.
+    ///
+    /// The concrete picker field supplies the initial formatter. The property rejects `null`; changes immediately
+    /// reformat editor text when a value is selected.
+    ///
+    /// @return the formatter property
+    public final ObjectProperty<DateTimeFormatter> formatterProperty() {
+        return formatter;
+    }
+
+    /// The non-null floating label text.
+    ///
+    /// An empty string suppresses the label.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
+        /// Keeps label text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "labelText"));
+        }
+    };
+
+    /// Returns the label text displayed by the wrapped input layout.
+    ///
+    /// @return the label text displayed by the wrapped input layout
+    public final String getLabelText() {
+        return labelText.get();
+    }
+
+    /// Sets the label text displayed by the wrapped input layout.
+    ///
+    /// @param labelText the label text displayed by the wrapped input layout
+    /// @throws NullPointerException if `labelText` is `null`
+    public final void setLabelText(String labelText) {
+        this.labelText.set(labelText);
+    }
+
+    /// Returns the observable, bindable non-null floating-label property.
+    ///
+    /// The property is the empty string by default, which suppresses the label, and rejects `null`. It is
+    /// bidirectionally synchronized with the wrapped input layout.
+    ///
+    /// @return the floating-label property
+    public final StringProperty labelTextProperty() {
+        return labelText;
+    }
+
+    /// The non-null supporting text displayed when no error message is active.
+    ///
+    /// An empty string suppresses supporting text.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
+        /// Keeps supporting text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "supportingText"));
+        }
+    };
+
+    /// Returns the supporting text shown when no error is active.
+    ///
+    /// @return the supporting text shown when no error is active
+    public final String getSupportingText() {
+        return supportingText.get();
+    }
+
+    /// Sets the supporting text shown when no error is active.
+    ///
+    /// @param supportingText the supporting text shown when no error is active
+    /// @throws NullPointerException if `supportingText` is `null`
+    public final void setSupportingText(String supportingText) {
+        this.supportingText.set(supportingText);
+    }
+
+    /// Returns the observable, bindable non-null supporting-text property.
+    ///
+    /// The property is the empty string by default, which suppresses supporting text, and rejects `null`. It is
+    /// bidirectionally synchronized with the wrapped input layout.
+    ///
+    /// @return the supporting-text property
+    public final StringProperty supportingTextProperty() {
+        return supportingText;
+    }
+
+    /// The non-null error message currently displayed by the field.
+    ///
+    /// An empty string clears the error presentation. A failed [#commitEditorText()] replaces this value with either
+    /// [#getInvalidTextErrorText()] or [#getRangeErrorText()]; subsequent user edits clear such generated messages.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
+        /// Keeps error text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "errorText"));
+        }
+    };
+
+    /// Returns the current error text shown by the wrapped input layout.
+    ///
+    /// @return the current error text shown by the wrapped input layout
+    public final String getErrorText() {
+        return errorText.get();
+    }
+
+    /// Sets the current error text shown by the wrapped input layout.
+    ///
+    /// @param errorText the current error text shown by the wrapped input layout
+    /// @throws NullPointerException if `errorText` is `null`
+    public final void setErrorText(String errorText) {
+        this.errorText.set(errorText);
+    }
+
+    /// Returns the observable, bindable non-null current-error-text property.
+    ///
+    /// The property is the empty string by default, which clears error presentation, and rejects `null`. It is
+    /// bidirectionally synchronized with the wrapped input layout and may be replaced by a failed text commit.
+    ///
+    /// @return the current-error-text property
+    public final StringProperty errorTextProperty() {
+        return errorText;
+    }
+
+    /// The non-null message used when editor text cannot be parsed.
+    ///
+    /// Concrete picker fields supply their documented initial message.
+    private final StringProperty invalidTextErrorText =
+            new SimpleStringProperty(this, "invalidTextErrorText") {
+                /// Keeps parse error text non-null.
+                @Override
+                public void set(String newValue) {
+                    super.set(Objects.requireNonNull(newValue, "invalidTextErrorText"));
+                }
+            };
+
+    /// Returns the parse error message used when editor text is invalid.
+    ///
+    /// @return the parse error message used when editor text is invalid
+    public final String getInvalidTextErrorText() {
+        return invalidTextErrorText.get();
+    }
+
+    /// Sets the parse error message used when editor text is invalid.
+    ///
+    /// @param invalidTextErrorText the parse error message used when editor text is invalid
+    /// @throws NullPointerException if `invalidTextErrorText` is `null`
+    public final void setInvalidTextErrorText(String invalidTextErrorText) {
+        this.invalidTextErrorText.set(invalidTextErrorText);
+    }
+
+    /// Returns the observable, bindable non-null parse-error-message property.
+    ///
+    /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
+    /// copied to [#errorTextProperty()] when editor text cannot be parsed.
+    ///
+    /// @return the parse-error-message property
+    public final StringProperty invalidTextErrorTextProperty() {
+        return invalidTextErrorText;
+    }
+
+    /// The non-null message used when parsed text is outside the selectable range.
+    ///
+    /// Concrete picker fields supply their documented initial message.
+    private final StringProperty rangeErrorText =
+            new SimpleStringProperty(this, "rangeErrorText") {
+                /// Keeps range error text non-null.
+                @Override
+                public void set(String newValue) {
+                    super.set(Objects.requireNonNull(newValue, "rangeErrorText"));
+                }
+            };
+
+    /// Returns the range error message used when editor text is outside the selectable range.
+    ///
+    /// @return the range error message used when editor text is outside the selectable range
+    public final String getRangeErrorText() {
+        return rangeErrorText.get();
+    }
+
+    /// Sets the range error message used when editor text is outside the selectable range.
+    ///
+    /// @param rangeErrorText the range error message used when editor text is outside the selectable range
+    /// @throws NullPointerException if `rangeErrorText` is `null`
+    public final void setRangeErrorText(String rangeErrorText) {
+        this.rangeErrorText.set(rangeErrorText);
+    }
+
+    /// Returns the observable, bindable non-null range-error-message property.
+    ///
+    /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
+    /// copied to [#errorTextProperty()] when parsed editor text is outside the selectable range.
+    ///
+    /// @return the range-error-message property
+    public final StringProperty rangeErrorTextProperty() {
+        return rangeErrorText;
+    }
+
+    /// Whether the picker popup is visible or completing its hide transition.
+    ///
+    /// This is derived read-only state. It becomes `true` only after the popup is shown successfully and returns to
+    /// `false` when the popup has actually hidden.
+    ///
+    /// @defaultValue `false`
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+
+    /// Returns whether the picker popup is currently showing.
+    ///
+    /// @return `true` when the picker popup is showing
+    public final boolean isShowing() {
+        return showing.get();
+    }
+
+    /// Returns the observable, read-only picker-popup showing property.
+    ///
+    /// The property is `false` by default and cannot be written directly. It remains `true` through a requested hide
+    /// transition and becomes `false` only after the popup has hidden.
+    ///
+    /// @return the read-only picker-popup showing property
+    public final ReadOnlyBooleanProperty showingProperty() {
+        return showing.getReadOnlyProperty();
     }
 
     /// Returns the current editor text character count.
@@ -516,131 +731,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// @return the concrete popup picker control
     public final P getPicker() {
         return picker;
-    }
-
-    /// Returns the formatter used for editor text.
-    ///
-    /// @return the formatter used for editor text
-    public final DateTimeFormatter getFormatter() {
-        return formatter.get();
-    }
-
-    /// Sets the formatter used for editor text.
-    ///
-    /// @param formatter the formatter used for editor text
-    /// @throws NullPointerException if `formatter` is `null`
-    public final void setFormatter(DateTimeFormatter formatter) {
-        this.formatter.set(formatter);
-    }
-
-    public final ObjectProperty<DateTimeFormatter> formatterProperty() {
-        return formatter;
-    }
-
-    /// Returns the label text displayed by the wrapped input layout.
-    ///
-    /// @return the label text displayed by the wrapped input layout
-    public final String getLabelText() {
-        return labelText.get();
-    }
-
-    /// Sets the label text displayed by the wrapped input layout.
-    ///
-    /// @param labelText the label text displayed by the wrapped input layout
-    /// @throws NullPointerException if `labelText` is `null`
-    public final void setLabelText(String labelText) {
-        this.labelText.set(labelText);
-    }
-
-    public final StringProperty labelTextProperty() {
-        return labelText;
-    }
-
-    /// Returns the supporting text shown when no error is active.
-    ///
-    /// @return the supporting text shown when no error is active
-    public final String getSupportingText() {
-        return supportingText.get();
-    }
-
-    /// Sets the supporting text shown when no error is active.
-    ///
-    /// @param supportingText the supporting text shown when no error is active
-    /// @throws NullPointerException if `supportingText` is `null`
-    public final void setSupportingText(String supportingText) {
-        this.supportingText.set(supportingText);
-    }
-
-    public final StringProperty supportingTextProperty() {
-        return supportingText;
-    }
-
-    /// Returns the current error text shown by the wrapped input layout.
-    ///
-    /// @return the current error text shown by the wrapped input layout
-    public final String getErrorText() {
-        return errorText.get();
-    }
-
-    /// Sets the current error text shown by the wrapped input layout.
-    ///
-    /// @param errorText the current error text shown by the wrapped input layout
-    /// @throws NullPointerException if `errorText` is `null`
-    public final void setErrorText(String errorText) {
-        this.errorText.set(errorText);
-    }
-
-    public final StringProperty errorTextProperty() {
-        return errorText;
-    }
-
-    /// Returns the parse error message used when editor text is invalid.
-    ///
-    /// @return the parse error message used when editor text is invalid
-    public final String getInvalidTextErrorText() {
-        return invalidTextErrorText.get();
-    }
-
-    /// Sets the parse error message used when editor text is invalid.
-    ///
-    /// @param invalidTextErrorText the parse error message used when editor text is invalid
-    /// @throws NullPointerException if `invalidTextErrorText` is `null`
-    public final void setInvalidTextErrorText(String invalidTextErrorText) {
-        this.invalidTextErrorText.set(invalidTextErrorText);
-    }
-
-    public final StringProperty invalidTextErrorTextProperty() {
-        return invalidTextErrorText;
-    }
-
-    /// Returns the range error message used when editor text is outside the selectable range.
-    ///
-    /// @return the range error message used when editor text is outside the selectable range
-    public final String getRangeErrorText() {
-        return rangeErrorText.get();
-    }
-
-    /// Sets the range error message used when editor text is outside the selectable range.
-    ///
-    /// @param rangeErrorText the range error message used when editor text is outside the selectable range
-    /// @throws NullPointerException if `rangeErrorText` is `null`
-    public final void setRangeErrorText(String rangeErrorText) {
-        this.rangeErrorText.set(rangeErrorText);
-    }
-
-    public final StringProperty rangeErrorTextProperty() {
-        return rangeErrorText;
-    }
-
-    /// Returns whether the picker popup is currently showing.
-    ///
-    /// @return `true` when the picker popup is showing
-    public final boolean isShowing() {
-        return showing.get();
-    }
-
-    public final ReadOnlyBooleanProperty showingProperty() {
-        return showing.getReadOnlyProperty();
     }
 
     /// Parses and commits the current editor text.
@@ -737,7 +827,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns accessibility attributes for the embedded editor and popup picker.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`
@@ -757,7 +847,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Executes editor and popup accessibility actions.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
@@ -781,14 +871,14 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Parses one non-empty editor text value.
     ///
-    /// @param text the non-empty editor text to parse
+    /// @param text      the non-empty editor text to parse
     /// @param formatter the formatter used by this field
     /// @return the parsed value
     abstract T parseValue(String text, DateTimeFormatter formatter);
 
     /// Formats one selected value for editor display.
     ///
-    /// @param value the selected value to format
+    /// @param value     the selected value to format
     /// @param formatter the formatter used by this field
     /// @return the editor text representation of the value
     abstract String formatValue(T value, DateTimeFormatter formatter);

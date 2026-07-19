@@ -22,8 +22,9 @@ import java.util.Objects;
 
 /// Lays out the graphic, headline, content, and action row of an [M3DialogPane].
 ///
-/// This skin contains no window or closing behavior. It renders the same pane both in a live dialog overlay and in
-/// static previews, while the owning [org.glavo.m3fx.controls.M3Dialog] controls modality and lifecycle.
+/// This skin contains no presentation, modality, or close behavior. It renders the same pane in an in-scene
+/// overlay, a dedicated dialog window, or a static preview; [org.glavo.m3fx.controls.M3Dialog] coordinates
+/// lifecycle when the pane is presented.
 @NotNullByDefault
 public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     /// The vertical layout containing all visible dialog sections.
@@ -47,7 +48,7 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     /// The horizontal row containing the retained dialog actions.
     private final HBox actionBar = new HBox();
 
-    /// The optional package-owned action placed at the logical start of the action row.
+    /// The optional action supplied for the logical start of the action row.
     private final @Nullable Node leadingAction;
 
     /// The flexible space separating a leading action from trailing dialog actions.
@@ -62,10 +63,10 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         rebuildSections();
     };
 
-    /// Creates a skin around the retained actions owned by the supplied pane.
+    /// Creates a skin around the actions owned by the supplied pane.
     ///
     /// @param control       the dialog pane being skinned
-    /// @param leadingAction the optional package-owned logical-start action
+    /// @param leadingAction an optional action placed at the logical start of the action row
     /// @throws NullPointerException if `control` is `null`
     public M3DialogPaneSkin(M3DialogPane control, @Nullable Node leadingAction) {
         super(Objects.requireNonNull(control, "control"));

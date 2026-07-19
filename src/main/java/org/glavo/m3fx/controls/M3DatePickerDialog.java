@@ -21,9 +21,10 @@ import java.time.LocalDate;
 
 /// A Material Design 3 dialog for selecting one date.
 ///
-/// The embedded [picker][#getPicker()] and the dialog [value][#valueProperty()] stay synchronized. The OK button is
-/// disabled until a date is selected. Activating OK requests dialog closure, and the current date remains available
-/// through [#valueProperty()]. Cancel and other dismissal paths retain that state, so callers must inspect
+/// While the dialog [value][#valueProperty()] is unbound, it stays synchronized with the embedded
+/// [picker][#getPicker()]. The OK button is disabled until a date is selected. Activating OK requests dialog closure,
+/// and the current date remains available through [#valueProperty()]. Cancel and other dismissal paths retain that
+/// state, so callers must inspect
 /// [M3DialogEvent#getAction()] from the hidden event before treating it as confirmed. Close requests remain
 /// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
@@ -64,21 +65,27 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// The style class applied to each preset action button.
     public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-dialog-preset-button";
 
-    /// The date picker displayed as dialog content.
-    private final M3DatePicker picker = new M3DatePicker();
+    /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
+    ///
+    /// The headline is initialized to `Select date`, and Cancel and OK buttons are installed.
+    public M3DatePickerDialog() {
+        initialize();
+    }
 
-    /// The retained cancel action shown in the dialog action row.
-    private final M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
-
-    /// The retained confirmation action shown in the dialog action row.
-    private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
+    /// Creates a date picker dialog initialized with the specified selected date.
+    ///
+    /// @param value the initially selected date, or `null` for no selected date
+    public M3DatePickerDialog(@Nullable LocalDate value) {
+        initialize();
+        setValue(value);
+    }
 
     /// The selected date, or `null` when no date is selected.
     ///
-    /// The default value is `null`. This property is bidirectionally synchronized with the embedded picker. A
-    /// non-null assignment is validated against the picker's current inclusive bounds and displays its month.
-    /// Assigning `null` clears selection and disables the OK action. Changes made through the embedded picker update
-    /// this property as well.
+    /// The default value is `null`. While unbound, this property is bidirectionally synchronized with the embedded
+    /// picker. A non-null assignment is validated against the picker's current inclusive bounds and displays its
+    /// month. Assigning `null` clears selection and disables the OK action. Changes made through the embedded picker
+    /// update an unbound property as well.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> value =
@@ -99,6 +106,40 @@ public final class M3DatePickerDialog extends M3Dialog {
                     }
                 }
             };
+
+    /// Returns the selected date, or `null` when no date is selected.
+    ///
+    /// @return the selected date, or `null` when no date is selected
+    public @Nullable LocalDate getValue() {
+        return value.get();
+    }
+
+    /// Sets the selected date in both this dialog and its embedded picker, or clears selection for `null`.
+    ///
+    /// @param value the selected date, or `null` to clear selection
+    /// @throws IllegalArgumentException if `value` is outside the picker's current inclusive bounds
+    public void setValue(@Nullable LocalDate value) {
+        this.value.set(value);
+    }
+
+    /// Returns the observable property that stores the selected date.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. While unbound, direct assignments
+    /// are validated through and synchronized with the embedded picker; picker changes update this property.
+    ///
+    /// @return the selected-date property
+    public ObjectProperty<@Nullable LocalDate> valueProperty() {
+        return value;
+    }
+
+    /// The date picker displayed as dialog content.
+    private final M3DatePicker picker = new M3DatePicker();
+
+    /// The retained cancel action shown in the dialog action row.
+    private final M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+
+    /// The retained confirmation action shown in the dialog action row.
+    private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
     /// Whether the dialog and embedded picker are currently synchronizing selected values.
     private boolean synchronizingValue;
@@ -141,21 +182,6 @@ public final class M3DatePickerDialog extends M3Dialog {
     private final InvalidationListener presetBoundsInvalidation =
             observable -> presetController.refreshDisabledStates();
 
-    /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
-    ///
-    /// The headline is initialized to `Select date`, and Cancel and OK buttons are installed.
-    public M3DatePickerDialog() {
-        initialize();
-    }
-
-    /// Creates a date picker dialog initialized with the specified selected date.
-    ///
-    /// @param value the initially selected date, or `null` for no selected date
-    public M3DatePickerDialog(@Nullable LocalDate value) {
-        initialize();
-        setValue(value);
-    }
-
     /// Returns the date picker owned and displayed by this dialog.
     ///
     /// @return the date picker displayed by this dialog
@@ -172,28 +198,6 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// @return the live, mutable date preset list
     public ObservableList<M3DatePreset> getPresets() {
         return presets;
-    }
-
-    /// Returns the selected date, or `null` when no date is selected.
-    ///
-    /// @return the selected date, or `null` when no date is selected
-    public @Nullable LocalDate getValue() {
-        return value.get();
-    }
-
-    /// Sets the selected date in both this dialog and its embedded picker, or clears selection for `null`.
-    ///
-    /// @param value the selected date, or `null` to clear selection
-    /// @throws IllegalArgumentException if `value` is outside the picker's current inclusive bounds
-    public void setValue(@Nullable LocalDate value) {
-        this.value.set(value);
-    }
-
-    /// Returns the property synchronized with the selected date of the embedded picker.
-    ///
-    /// @return the selected-date property
-    public ObjectProperty<@Nullable LocalDate> valueProperty() {
-        return value;
     }
 
     /// Configures dialog content, buttons, value synchronization, and button state.

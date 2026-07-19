@@ -142,175 +142,8 @@ public final class M3TopAppBar extends Control {
     /// The style class applied to each 48 dp trailing action slot.
     public static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
 
-    /// The app bar title property.
-    ///
-    /// The property never exposes a `null` value. Assigning `null` through the property API normalizes the value to
-    /// an empty string; [#setTitle(String)] rejects `null` so ordinary setter misuse is reported immediately.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty title = new SimpleStringProperty(this, "title", "") {
-        /// Normalizes direct property assignments to the non-null title contract.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set("");
-            }
-        }
-    };
-
-    /// The app bar subtitle.
-    ///
-    /// Assigning `null` through the property normalizes the value to an empty string. An empty subtitle selects the
-    /// shorter flexible-container metrics.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty subtitle = new SimpleStringProperty(this, "subtitle", "") {
-        /// Updates subtitle state and height metrics when the text changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set("");
-                return;
-            }
-            pseudoClassStateChanged(HAS_SUBTITLE_PSEUDO_CLASS, !get().isEmpty());
-            updateAccessibleText();
-            updateMetrics();
-        }
-    };
-
-    /// The optional custom title-content node.
-    ///
-    /// A non-null node replaces the expanded title label and is owned by this app bar.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> titleContent = new SimpleObjectProperty<>(this, "titleContent");
-
-    /// The top app bar layout variant.
-    ///
-    /// Assigning `null` through the property restores [M3TopAppBarVariant#SMALL].
-    ///
-    /// @defaultValue `SMALL`
-    private final ObjectProperty<M3TopAppBarVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
-                /// Updates variant style classes and layout metrics when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3TopAppBarVariant.SMALL);
-                        return;
-                    }
-                    updateVariantStyle();
-                    updateMetrics();
-                }
-            };
-
-    /// Whether content is currently scrolled beneath the app bar.
-    ///
-    /// For an unbound flexible app bar, changing this state drives its collapse transition.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
-        /// Updates the scroll-under pseudo-class when the property changes.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SCROLLED_UNDER_PSEUDO_CLASS, get());
-        }
-    };
-
-    /// The flexible app bar collapse progress.
-    ///
-    /// The effective value is in the closed interval `0.0..1.0`. [#setCollapseProgress(double)] rejects values
-    /// outside that interval; direct property writes are accepted and clamped by [#getCollapseProgress()].
-    ///
-    /// @defaultValue `0.0`
-    private final DoubleProperty collapseProgress = new SimpleDoubleProperty(this, "collapseProgress", 0.0) {
-        /// Updates height and layout as direct scrolling or the built-in transition changes progress.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(COLLAPSED_PSEUDO_CLASS, getCollapseProgress() >= 1.0);
-            updateMetrics();
-        }
-    };
-
-    /// The optional leading navigation node.
-    ///
-    /// A non-null node is owned by this app bar and must be available for it to parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
-
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
-
-    /// The small and center-aligned container height in logical pixels.
-    ///
-    /// @defaultValue `64.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The baseline medium container height in logical pixels.
-    ///
-    /// @defaultValue `112.0`
-    private @Nullable StyleableDoubleProperty mediumContainerHeight;
-
-    /// The baseline large container height in logical pixels.
-    ///
-    /// @defaultValue `152.0`
-    private @Nullable StyleableDoubleProperty largeContainerHeight;
-
-    /// The medium flexible container height without a subtitle in logical pixels.
-    ///
-    /// @defaultValue `112.0`
-    private @Nullable StyleableDoubleProperty mediumFlexibleContainerHeight;
-
-    /// The medium flexible container height with a subtitle in logical pixels.
-    ///
-    /// @defaultValue `136.0`
-    private @Nullable StyleableDoubleProperty mediumFlexibleSubtitleContainerHeight;
-
-    /// The large flexible container height without a subtitle in logical pixels.
-    ///
-    /// @defaultValue `120.0`
-    private @Nullable StyleableDoubleProperty largeFlexibleContainerHeight;
-
-    /// The large flexible container height with a subtitle in logical pixels.
-    ///
-    /// @defaultValue `152.0`
-    private @Nullable StyleableDoubleProperty largeFlexibleSubtitleContainerHeight;
-
-    /// The outer space before the leading and after the trailing action slots in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty edgePadding;
-
-    /// The horizontal content padding in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The baseline medium bottom content padding in logical pixels.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty mediumBottomPadding;
-
-    /// The baseline large bottom content padding in logical pixels.
-    ///
-    /// @defaultValue `28.0`
-    private @Nullable StyleableDoubleProperty largeBottomPadding;
-
-    /// The flexible title bottom padding in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty flexibleBottomPadding;
-
-    /// The spacing between leading, title, and trailing content slots in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty contentSpacing;
-
-    /// The spacing between trailing action nodes in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between navigation and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -334,6 +167,21 @@ public final class M3TopAppBar extends Control {
         setTitle(title);
     }
 
+    /// The app bar title property.
+    ///
+    /// The property never exposes a `null` value. Assigning `null` through the property API normalizes the value to
+    /// an empty string; [#setTitle(String)] rejects `null` so ordinary setter misuse is reported immediately.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty title = new SimpleStringProperty(this, "title", "") {
+        /// Normalizes direct property assignments to the non-null title contract.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set("");
+            }
+        }
+    };
 
     /// Returns the app bar title.
     ///
@@ -350,9 +198,34 @@ public final class M3TopAppBar extends Control {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
+    /// Returns the `title` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
+    /// @return the `title` property
     public final StringProperty titleProperty() {
         return title;
     }
+
+    /// The app bar subtitle.
+    ///
+    /// Assigning `null` through the property normalizes the value to an empty string. An empty subtitle selects the
+    /// shorter flexible-container metrics.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty subtitle = new SimpleStringProperty(this, "subtitle", "") {
+        /// Updates subtitle state and height metrics when the text changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set("");
+                return;
+            }
+            pseudoClassStateChanged(HAS_SUBTITLE_PSEUDO_CLASS, !get().isEmpty());
+            updateAccessibleText();
+            updateMetrics();
+        }
+    };
 
     /// Returns the app bar subtitle.
     ///
@@ -373,13 +246,25 @@ public final class M3TopAppBar extends Control {
         this.subtitle.set(Objects.requireNonNull(subtitle, "subtitle"));
     }
 
+    /// Returns the `subtitle` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
+    /// @return the `subtitle` property
     public final StringProperty subtitleProperty() {
         return subtitle;
     }
 
+    /// The optional custom title-content node.
+    ///
+    /// A non-null node replaces the expanded title label and is owned by this app bar.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> titleContent = new SimpleObjectProperty<>(this, "titleContent");
+
     /// Returns the optional custom title content.
     ///
-    /// When present, this node replaces the expanded title label. The [titleProperty] remains the accessible name
+    /// When present, this node replaces the expanded title label. The [#titleProperty()] remains the accessible name
     /// and supplies the compact title used during a flexible app bar collapse. A title-content node must not already
     /// belong to another parent when it is assigned to the app bar.
     ///
@@ -395,9 +280,33 @@ public final class M3TopAppBar extends Control {
         this.titleContent.set(titleContent);
     }
 
+    /// Returns the `titleContent` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `titleContent` property
     public final ObjectProperty<@Nullable Node> titleContentProperty() {
         return titleContent;
     }
+
+    /// The top app bar layout variant.
+    ///
+    /// Assigning `null` through the property restores [M3TopAppBarVariant#SMALL].
+    ///
+    /// @defaultValue `SMALL`
+    private final ObjectProperty<M3TopAppBarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
+                /// Updates variant style classes and layout metrics when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3TopAppBarVariant.SMALL);
+                        return;
+                    }
+                    updateVariantStyle();
+                    updateMetrics();
+                }
+            };
 
     /// Returns the top app bar variant.
     ///
@@ -414,9 +323,27 @@ public final class M3TopAppBar extends Control {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the `variant` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `SMALL`.
+    ///
+    /// @return the `variant` property
     public final ObjectProperty<M3TopAppBarVariant> variantProperty() {
         return variant;
     }
+
+    /// Whether content is currently scrolled beneath the app bar.
+    ///
+    /// For an unbound flexible app bar, changing this state drives its collapse transition.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
+        /// Updates the scroll-under pseudo-class when the property changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SCROLLED_UNDER_PSEUDO_CLASS, get());
+        }
+    };
 
     /// Returns whether scrollable content is currently passing beneath this app bar.
     ///
@@ -435,9 +362,30 @@ public final class M3TopAppBar extends Control {
         this.scrolledUnder.set(scrolledUnder);
     }
 
+    /// Returns the `scrolledUnder` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `scrolledUnder` property
     public final BooleanProperty scrolledUnderProperty() {
         return scrolledUnder;
     }
+
+    /// The flexible app bar collapse progress.
+    ///
+    /// The effective value is in the closed interval `0.0..1.0`. [#setCollapseProgress(double)] rejects values
+    /// outside that interval. Direct property writes are accepted and clamped by [#getCollapseProgress()]; a
+    /// `NaN` property value is exposed as `0.0`.
+    ///
+    /// @defaultValue `0.0`
+    private final DoubleProperty collapseProgress = new SimpleDoubleProperty(this, "collapseProgress", 0.0) {
+        /// Updates height and layout as direct scrolling or the built-in transition changes progress.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(COLLAPSED_PSEUDO_CLASS, getCollapseProgress() >= 1.0);
+            updateMetrics();
+        }
+    };
 
     /// Returns the current flexible app bar collapse progress.
     ///
@@ -448,7 +396,8 @@ public final class M3TopAppBar extends Control {
     ///
     /// @return the collapse progress in the closed interval from zero to one
     public final double getCollapseProgress() {
-        return Math.max(0.0, Math.min(1.0, collapseProgress.get()));
+        double value = collapseProgress.get();
+        return Double.isNaN(value) ? 0.0 : Math.max(0.0, Math.min(1.0, value));
     }
 
     /// Sets the flexible app bar collapse progress.
@@ -462,9 +411,21 @@ public final class M3TopAppBar extends Control {
         this.collapseProgress.set(collapseProgress);
     }
 
+    /// Returns the `collapseProgress` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `0.0`.
+    ///
+    /// @return the `collapseProgress` property
     public final DoubleProperty collapseProgressProperty() {
         return collapseProgress;
     }
+
+    /// The optional leading navigation node.
+    ///
+    /// A non-null node is owned by this app bar and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
     /// Returns the optional leading navigation node.
     ///
@@ -483,19 +444,19 @@ public final class M3TopAppBar extends Control {
         this.navigation.set(navigation);
     }
 
+    /// Returns the `navigation` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `navigation` property
     public final ObjectProperty<@Nullable Node> navigationProperty() {
         return navigation;
     }
 
-    /// Returns the mutable trailing action node list.
+    /// The small and center-aligned container height in logical pixels.
     ///
-    /// Changes to the returned list are observed immediately. The list rejects `null` elements. Each node must be
-    /// eligible for attachment to the app bar and therefore must not simultaneously belong to another parent.
-    ///
-    /// @return the live, mutable list of trailing action nodes
-    public final ObservableList<Node> getActions() {
-        return actions;
-    }
+    /// @defaultValue `64.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// Returns the small and centered top app bar container height token.
     ///
@@ -512,6 +473,12 @@ public final class M3TopAppBar extends Control {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the `containerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `64.0` logical pixels.
+    ///
+    /// @return the `containerHeight` property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -522,6 +489,11 @@ public final class M3TopAppBar extends Control {
         }
         return containerHeight;
     }
+
+    /// The baseline medium container height in logical pixels.
+    ///
+    /// @defaultValue `112.0`
+    private @Nullable StyleableDoubleProperty mediumContainerHeight;
 
     /// Returns the medium top app bar container height token.
     ///
@@ -538,6 +510,12 @@ public final class M3TopAppBar extends Control {
         mediumContainerHeightProperty().set(M3Css.nonNegative(mediumContainerHeight, "mediumContainerHeight"));
     }
 
+    /// Returns the `mediumContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `112.0` logical pixels.
+    ///
+    /// @return the `mediumContainerHeight` property
     public final StyleableDoubleProperty mediumContainerHeightProperty() {
         if (mediumContainerHeight == null) {
             mediumContainerHeight = createStyleableDoubleProperty(
@@ -548,6 +526,11 @@ public final class M3TopAppBar extends Control {
         }
         return mediumContainerHeight;
     }
+
+    /// The baseline large container height in logical pixels.
+    ///
+    /// @defaultValue `152.0`
+    private @Nullable StyleableDoubleProperty largeContainerHeight;
 
     /// Returns the large top app bar container height token.
     ///
@@ -564,6 +547,12 @@ public final class M3TopAppBar extends Control {
         largeContainerHeightProperty().set(M3Css.nonNegative(largeContainerHeight, "largeContainerHeight"));
     }
 
+    /// Returns the `largeContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `152.0` logical pixels.
+    ///
+    /// @return the `largeContainerHeight` property
     public final StyleableDoubleProperty largeContainerHeightProperty() {
         if (largeContainerHeight == null) {
             largeContainerHeight = createStyleableDoubleProperty(
@@ -574,6 +563,11 @@ public final class M3TopAppBar extends Control {
         }
         return largeContainerHeight;
     }
+
+    /// The medium flexible container height without a subtitle in logical pixels.
+    ///
+    /// @defaultValue `112.0`
+    private @Nullable StyleableDoubleProperty mediumFlexibleContainerHeight;
 
     /// Returns the medium flexible container height without a subtitle.
     ///
@@ -592,6 +586,12 @@ public final class M3TopAppBar extends Control {
         mediumFlexibleContainerHeightProperty().set(M3Css.nonNegative(height, "mediumFlexibleContainerHeight"));
     }
 
+    /// Returns the `mediumFlexibleContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `112.0` logical pixels.
+    ///
+    /// @return the `mediumFlexibleContainerHeight` property
     public final StyleableDoubleProperty mediumFlexibleContainerHeightProperty() {
         if (mediumFlexibleContainerHeight == null) {
             mediumFlexibleContainerHeight = createStyleableDoubleProperty(
@@ -602,6 +602,11 @@ public final class M3TopAppBar extends Control {
         }
         return mediumFlexibleContainerHeight;
     }
+
+    /// The medium flexible container height with a subtitle in logical pixels.
+    ///
+    /// @defaultValue `136.0`
+    private @Nullable StyleableDoubleProperty mediumFlexibleSubtitleContainerHeight;
 
     /// Returns the medium flexible container height used while a subtitle is present.
     ///
@@ -622,6 +627,12 @@ public final class M3TopAppBar extends Control {
         );
     }
 
+    /// Returns the `mediumFlexibleSubtitleContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `136.0` logical pixels.
+    ///
+    /// @return the `mediumFlexibleSubtitleContainerHeight` property
     public final StyleableDoubleProperty mediumFlexibleSubtitleContainerHeightProperty() {
         if (mediumFlexibleSubtitleContainerHeight == null) {
             mediumFlexibleSubtitleContainerHeight = createStyleableDoubleProperty(
@@ -632,6 +643,11 @@ public final class M3TopAppBar extends Control {
         }
         return mediumFlexibleSubtitleContainerHeight;
     }
+
+    /// The large flexible container height without a subtitle in logical pixels.
+    ///
+    /// @defaultValue `120.0`
+    private @Nullable StyleableDoubleProperty largeFlexibleContainerHeight;
 
     /// Returns the large flexible container height without a subtitle.
     ///
@@ -650,6 +666,12 @@ public final class M3TopAppBar extends Control {
         largeFlexibleContainerHeightProperty().set(M3Css.nonNegative(height, "largeFlexibleContainerHeight"));
     }
 
+    /// Returns the `largeFlexibleContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `120.0` logical pixels.
+    ///
+    /// @return the `largeFlexibleContainerHeight` property
     public final StyleableDoubleProperty largeFlexibleContainerHeightProperty() {
         if (largeFlexibleContainerHeight == null) {
             largeFlexibleContainerHeight = createStyleableDoubleProperty(
@@ -660,6 +682,11 @@ public final class M3TopAppBar extends Control {
         }
         return largeFlexibleContainerHeight;
     }
+
+    /// The large flexible container height with a subtitle in logical pixels.
+    ///
+    /// @defaultValue `152.0`
+    private @Nullable StyleableDoubleProperty largeFlexibleSubtitleContainerHeight;
 
     /// Returns the large flexible container height used while a subtitle is present.
     ///
@@ -680,6 +707,12 @@ public final class M3TopAppBar extends Control {
         );
     }
 
+    /// Returns the `largeFlexibleSubtitleContainerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `152.0` logical pixels.
+    ///
+    /// @return the `largeFlexibleSubtitleContainerHeight` property
     public final StyleableDoubleProperty largeFlexibleSubtitleContainerHeightProperty() {
         if (largeFlexibleSubtitleContainerHeight == null) {
             largeFlexibleSubtitleContainerHeight = createStyleableDoubleProperty(
@@ -690,6 +723,11 @@ public final class M3TopAppBar extends Control {
         }
         return largeFlexibleSubtitleContainerHeight;
     }
+
+    /// The outer space before the leading and after the trailing action slots in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty edgePadding;
 
     /// Returns the outer space before leading and after trailing action slots.
     ///
@@ -706,6 +744,12 @@ public final class M3TopAppBar extends Control {
         edgePaddingProperty().set(M3Css.nonNegative(edgePadding, "edgePadding"));
     }
 
+    /// Returns the `edgePadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `edgePadding` property
     public final StyleableDoubleProperty edgePaddingProperty() {
         if (edgePadding == null) {
             edgePadding = createStyleableDoubleProperty(
@@ -716,6 +760,11 @@ public final class M3TopAppBar extends Control {
         }
         return edgePadding;
     }
+
+    /// The horizontal content padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Returns the horizontal content padding token.
     ///
@@ -732,6 +781,12 @@ public final class M3TopAppBar extends Control {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
+    /// Returns the `horizontalPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `horizontalPadding` property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -742,6 +797,11 @@ public final class M3TopAppBar extends Control {
         }
         return horizontalPadding;
     }
+
+    /// The baseline medium bottom content padding in logical pixels.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty mediumBottomPadding;
 
     /// Returns the medium top app bar bottom padding token.
     ///
@@ -758,6 +818,12 @@ public final class M3TopAppBar extends Control {
         mediumBottomPaddingProperty().set(M3Css.nonNegative(mediumBottomPadding, "mediumBottomPadding"));
     }
 
+    /// Returns the `mediumBottomPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `20.0` logical pixels.
+    ///
+    /// @return the `mediumBottomPadding` property
     public final StyleableDoubleProperty mediumBottomPaddingProperty() {
         if (mediumBottomPadding == null) {
             mediumBottomPadding = createStyleableDoubleProperty(
@@ -768,6 +834,11 @@ public final class M3TopAppBar extends Control {
         }
         return mediumBottomPadding;
     }
+
+    /// The baseline large bottom content padding in logical pixels.
+    ///
+    /// @defaultValue `28.0`
+    private @Nullable StyleableDoubleProperty largeBottomPadding;
 
     /// Returns the large top app bar bottom padding token.
     ///
@@ -784,6 +855,12 @@ public final class M3TopAppBar extends Control {
         largeBottomPaddingProperty().set(M3Css.nonNegative(largeBottomPadding, "largeBottomPadding"));
     }
 
+    /// Returns the `largeBottomPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `28.0` logical pixels.
+    ///
+    /// @return the `largeBottomPadding` property
     public final StyleableDoubleProperty largeBottomPaddingProperty() {
         if (largeBottomPadding == null) {
             largeBottomPadding = createStyleableDoubleProperty(
@@ -794,6 +871,11 @@ public final class M3TopAppBar extends Control {
         }
         return largeBottomPadding;
     }
+
+    /// The flexible title bottom padding in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty flexibleBottomPadding;
 
     /// Returns the bottom space below expanded flexible title content.
     ///
@@ -810,6 +892,12 @@ public final class M3TopAppBar extends Control {
         flexibleBottomPaddingProperty().set(M3Css.nonNegative(flexibleBottomPadding, "flexibleBottomPadding"));
     }
 
+    /// Returns the `flexibleBottomPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `flexibleBottomPadding` property
     public final StyleableDoubleProperty flexibleBottomPaddingProperty() {
         if (flexibleBottomPadding == null) {
             flexibleBottomPadding = createStyleableDoubleProperty(
@@ -820,6 +908,11 @@ public final class M3TopAppBar extends Control {
         }
         return flexibleBottomPadding;
     }
+
+    /// The spacing between leading, title, and trailing content slots in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Returns the spacing token between leading, title, and trailing content slots.
     ///
@@ -836,6 +929,12 @@ public final class M3TopAppBar extends Control {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
+    /// Returns the `contentSpacing` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `0.0` logical pixels.
+    ///
+    /// @return the `contentSpacing` property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = createStyleableDoubleProperty(
@@ -846,6 +945,11 @@ public final class M3TopAppBar extends Control {
         }
         return contentSpacing;
     }
+
+    /// The spacing between trailing action nodes in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Returns the spacing token between trailing action nodes.
     ///
@@ -862,6 +966,12 @@ public final class M3TopAppBar extends Control {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
+    /// Returns the `actionSpacing` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `0.0` logical pixels.
+    ///
+    /// @return the `actionSpacing` property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = createStyleableDoubleProperty(
@@ -871,6 +981,16 @@ public final class M3TopAppBar extends Control {
             );
         }
         return actionSpacing;
+    }
+
+    /// Returns the mutable trailing action node list.
+    ///
+    /// Changes to the returned list are observed immediately. The list rejects `null` elements. Each node must be
+    /// eligible for attachment to the app bar and therefore must not simultaneously belong to another parent.
+    ///
+    /// @return the live, mutable list of trailing action nodes
+    public final ObservableList<Node> getActions() {
+        return actions;
     }
 
     /// Returns the user-agent stylesheet for M3FX top app bars.

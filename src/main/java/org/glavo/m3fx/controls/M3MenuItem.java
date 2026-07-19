@@ -22,8 +22,8 @@ import java.util.List;
 
 /// A Material Design 3 menu item.
 ///
-/// `M3MenuItem` is the concrete action row used inside [M3Menu]. Calling [fire] on an enabled item delivers its
-/// action event. A containing menu may additionally change [selectedProperty] according to its selection mode.
+/// `M3MenuItem` is the concrete action row used inside [M3Menu]. Calling [#fire()] on an enabled item delivers its
+/// action event. A containing menu may additionally change [#selectedProperty()] according to its selection mode.
 /// Leading and trailing nodes use the slot and ownership contract defined by [M3ListItemBase].
 ///
 /// A menu item is focus traversable as part of menu keyboard navigation. It is not an [M3ListItem] and cannot be
@@ -37,14 +37,6 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
 
     /// The fallback radius used by inner corners at a grouped-menu boundary.
     private static final double DEFAULT_INNER_CORNER_SHAPE = 4.0;
-
-    /// The corner radius used at the inner edge of the first or last item in a contiguous menu group.
-    ///
-    /// Values must be finite and non-negative. The value is ignored for middle items and states that use one
-    /// uniform container shape.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty innerCornerShapeValue;
 
     /// Creates an empty menu item.
     public M3MenuItem() {
@@ -81,6 +73,14 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
         this(text, leading);
         setTrailing(trailing);
     }
+
+    /// The corner radius used at the inner edge of the first or last item in a contiguous menu group.
+    ///
+    /// Values must be finite and non-negative. The value is ignored for middle items and states that use one
+    /// uniform container shape.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty innerCornerShapeValue;
 
     /// Returns the radius used by the inner corners of a first or last item in a visual menu group.
     ///

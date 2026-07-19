@@ -21,7 +21,16 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
-/// Provides shared accessibility query helpers for M3FX controls.
+/// Provides accessibility query, focus, reveal, and indexed-child helpers for M3FX controls.
+///
+/// JavaFX passes accessibility action arguments as an untyped parameter array. M3FX containers accept a numeric
+/// first parameter as an indexed-child request and accept [Node] instances, nested [Iterable] values, or nested
+/// object arrays as explicit action targets. These helpers apply that grammar consistently while avoiding cycles in
+/// physical and accessibility child graphs.
+///
+/// Unless a method explicitly supports detached structural lookup, a reachable node is visible, enabled, attached
+/// to a scene, and has only visible and enabled ancestors. Methods that request focus or execute accessibility
+/// actions must be called on the JavaFX Application Thread.
 @NotNullByDefault
 public final class M3Accessible {
     /// The node property key used to provide an accessibility index before a skin attaches nodes.
@@ -47,8 +56,8 @@ public final class M3Accessible {
 
     /// Stores direct accessibility action handlers for a node.
     ///
-    /// @param focusHandler the optional focus handler
-    /// @param showHandler the optional reveal handler
+    /// @param focusHandler      the optional focus handler
+    /// @param showHandler       the optional reveal handler
     /// @param showTargetMatcher the optional reveal target matcher
     @NotNullByDefault
     private record AccessibleActionRoute(
@@ -59,6 +68,13 @@ public final class M3Accessible {
     }
 
     /// Installs direct accessibility action handlers on a node.
+    ///
+    /// Supplying `null` for both handlers removes any existing route.
+    ///
+    /// @param node         the node that owns the route
+    /// @param focusHandler the optional handler for focus requests
+    /// @param showHandler  the optional handler for explicit reveal requests
+    /// @throws NullPointerException if `node` is `null`
     public static void installAccessibleActionRoute(
             Node node,
             @Nullable BooleanSupplier focusHandler,
@@ -68,6 +84,15 @@ public final class M3Accessible {
     }
 
     /// Installs direct accessibility action handlers and a non-node reveal target matcher on a node.
+    ///
+    /// Supplying `null` for all optional arguments removes any existing route. Otherwise the supplied route replaces
+    /// the previous route atomically.
+    ///
+    /// @param node              the node that owns the route
+    /// @param focusHandler      the optional handler for focus requests
+    /// @param showHandler       the optional handler for explicit reveal requests
+    /// @param showTargetMatcher the optional predicate that identifies targets owned by this route
+    /// @throws NullPointerException if `node` is `null`
     public static void installAccessibleActionRoute(
             Node node,
             @Nullable BooleanSupplier focusHandler,
@@ -95,6 +120,10 @@ public final class M3Accessible {
     }
 
     /// Returns an accessibility attribute by name when the running JavaFX version provides it.
+    ///
+    /// @param name the exact [AccessibleAttribute] enum constant name
+    /// @return the attribute, or `null` when that name is unavailable
+    /// @throws NullPointerException if `name` is `null`
     public static @Nullable AccessibleAttribute attribute(String name) {
         Objects.requireNonNull(name, "name");
         try {
@@ -105,6 +134,12 @@ public final class M3Accessible {
     }
 
     /// Notifies an optional accessibility attribute when the running JavaFX version provides it.
+    ///
+    /// A `null` attribute is ignored.
+    ///
+    /// @param node      the node whose accessibility attribute changed
+    /// @param attribute the changed attribute, or `null`
+    /// @throws NullPointerException if `node` is `null`
     public static void notifyAttribute(Node node, @Nullable AccessibleAttribute attribute) {
         Objects.requireNonNull(node, "node");
         if (attribute != null) {
@@ -113,6 +148,11 @@ public final class M3Accessible {
     }
 
     /// Returns the child requested by an accessibility index parameter.
+    ///
+    /// @param items      the indexed children
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed child, or `null` when no valid in-range index is supplied
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node itemAt(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         int index = indexParameter(parameters);
@@ -120,12 +160,23 @@ public final class M3Accessible {
     }
 
     /// Returns the number of indexed accessibility items with an optional leading item.
+    ///
+    /// @param leading the optional child before `items`
+    /// @param items   the indexed item list
+    /// @return the number of non-null indexed children
+    /// @throws NullPointerException if `items` is `null`
     public static int itemCount(@Nullable Node leading, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         return (leading == null ? 0 : 1) + items.size();
     }
 
     /// Returns the indexed accessibility item from an optional leading item and trailing item list.
+    ///
+    /// @param leading    the optional child at the start of the index space
+    /// @param items      the remaining indexed children
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed child, or `null` when no valid in-range index is supplied
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node itemAt(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         int index = indexParameter(parameters);
@@ -142,12 +193,23 @@ public final class M3Accessible {
     }
 
     /// Returns the number of indexed accessibility items with an optional trailing item.
+    ///
+    /// @param items    the indexed item list
+    /// @param trailing the optional child after `items`
+    /// @return the number of non-null indexed children
+    /// @throws NullPointerException if `items` is `null`
     public static int itemCount(ObservableList<? extends Node> items, @Nullable Node trailing) {
         Objects.requireNonNull(items, "items");
         return items.size() + (trailing == null ? 0 : 1);
     }
 
     /// Returns the indexed accessibility item from a leading item list and optional trailing item.
+    ///
+    /// @param items      the indexed children before the trailing slot
+    /// @param trailing   the optional final child
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed child, or `null` when no valid in-range index is supplied
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node itemAt(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
         Objects.requireNonNull(items, "items");
         int index = indexParameter(parameters);
@@ -161,11 +223,21 @@ public final class M3Accessible {
     }
 
     /// Returns the number of indexed accessibility items with two optional child slots.
+    ///
+    /// @param first  the optional first child
+    /// @param second the optional second child
+    /// @return the number of non-null children
     public static int itemCount(@Nullable Node first, @Nullable Node second) {
         return (first == null ? 0 : 1) + (second == null ? 0 : 1);
     }
 
     /// Returns the indexed accessibility item from two optional child slots.
+    ///
+    /// @param first      the optional first child
+    /// @param second     the optional second child
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed non-null child, or `null` when no valid index is supplied
+    /// @throws NullPointerException if `parameters` is `null`
     public static @Nullable Node itemAt(@Nullable Node first, @Nullable Node second, Object... parameters) {
         int index = indexParameter(parameters);
         if (index < 0) {
@@ -181,11 +253,23 @@ public final class M3Accessible {
     }
 
     /// Returns the number of indexed accessibility items with three optional child slots.
+    ///
+    /// @param first  the optional first child
+    /// @param second the optional second child
+    /// @param third  the optional third child
+    /// @return the number of non-null children
     public static int itemCount(@Nullable Node first, @Nullable Node second, @Nullable Node third) {
         return (first == null ? 0 : 1) + (second == null ? 0 : 1) + (third == null ? 0 : 1);
     }
 
     /// Returns the indexed accessibility item from three optional child slots.
+    ///
+    /// @param first      the optional first child
+    /// @param second     the optional second child
+    /// @param third      the optional third child
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed non-null child, or `null` when no valid index is supplied
+    /// @throws NullPointerException if `parameters` is `null`
     public static @Nullable Node itemAt(
             @Nullable Node first,
             @Nullable Node second,
@@ -212,12 +296,25 @@ public final class M3Accessible {
     }
 
     /// Returns the number of indexed accessibility items with two optional leading slots and a trailing list.
+    ///
+    /// @param first  the optional first child
+    /// @param second the optional second child
+    /// @param items  the remaining indexed children
+    /// @return the number of non-null indexed children
+    /// @throws NullPointerException if `items` is `null`
     public static int itemCount(@Nullable Node first, @Nullable Node second, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         return (first == null ? 0 : 1) + (second == null ? 0 : 1) + items.size();
     }
 
     /// Returns the indexed accessibility item from two optional leading slots and a trailing list.
+    ///
+    /// @param first      the optional first child
+    /// @param second     the optional second child
+    /// @param items      the remaining indexed children
+    /// @param parameters the action parameters whose first value may be a number
+    /// @return the indexed non-null child, or `null` when no valid index is supplied
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node itemAt(
             @Nullable Node first,
             @Nullable Node second,
@@ -244,7 +341,14 @@ public final class M3Accessible {
         return index < items.size() ? items.get(index) : null;
     }
 
-    /// Returns whether parameters contain a direct atomic value accepted by the target matcher.
+    /// Returns whether parameters contain a value accepted by the target matcher.
+    ///
+    /// Nested iterable values and object arrays are searched recursively.
+    ///
+    /// @param targetMatcher the predicate that recognizes a target value
+    /// @param parameters    the parameter values to search
+    /// @return `true` when the matcher accepts any direct or nested value
+    /// @throws NullPointerException if `targetMatcher` or `parameters` is `null`
     public static boolean parametersContainDirectTarget(
             Predicate<@Nullable Object> targetMatcher,
             Object... parameters
@@ -286,6 +390,14 @@ public final class M3Accessible {
     }
 
     /// Returns whether parameters directly express exactly one target accepted by the matcher and nothing else.
+    ///
+    /// A single chain of one-element iterable values or object arrays is accepted; empty or multi-value containers
+    /// are rejected.
+    ///
+    /// @param targetMatcher the predicate that recognizes the target value
+    /// @param parameters    the parameter values to inspect
+    /// @return `true` when the parameters contain exactly one accepted target and no other value
+    /// @throws NullPointerException if `targetMatcher` or `parameters` is `null`
     public static boolean parametersDirectlyReferenceSingleTarget(
             Predicate<@Nullable Object> targetMatcher,
             Object... parameters
@@ -349,6 +461,11 @@ public final class M3Accessible {
     }
 
     /// Returns whether accessibility action parameters contain the requested reachable selection target or one of its descendants.
+    ///
+    /// @param target     the selection root to match
+    /// @param parameters the direct or nested action parameters to search
+    /// @return `true` when a reachable node parameter belongs to `target`
+    /// @throws NullPointerException if `target` or `parameters` is `null`
     public static boolean containsSelectionTarget(Node target, Object... parameters) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(parameters, "parameters");
@@ -361,6 +478,11 @@ public final class M3Accessible {
     }
 
     /// Returns whether accessibility action parameters reference the target node or one of its descendants.
+    ///
+    /// @param target     the root node to match
+    /// @param parameters the direct or nested action parameters to search
+    /// @return `true` when a node parameter belongs to `target`
+    /// @throws NullPointerException if `target` or `parameters` is `null`
     public static boolean containsNodeTarget(Node target, Object... parameters) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(parameters, "parameters");
@@ -373,6 +495,14 @@ public final class M3Accessible {
     }
 
     /// Returns whether an item exposes the supplied target through its accessibility item tree.
+    ///
+    /// Physical descendants, indexed accessibility children, installed tooltip targets, and direct action routes
+    /// participate in the search.
+    ///
+    /// @param item       the possible accessibility owner, or `null`
+    /// @param parameters the direct or nested target parameters
+    /// @return `true` when the item exposes any supplied target
+    /// @throws NullPointerException if `parameters` is `null`
     public static boolean containsAccessibleActionTarget(@Nullable Node item, @Nullable Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (item == null || parameters.length == 0) {
@@ -396,6 +526,11 @@ public final class M3Accessible {
     }
 
     /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    ///
+    /// @param items      the possible action-item owners
+    /// @param parameters the direct or nested target parameters
+    /// @return `true` when a referenced owned node is disabled or hidden below an unrevealable boundary
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean containsUnrevealableActionNodeTarget(
             ObservableList<? extends Node> items,
             Object... parameters
@@ -458,6 +593,11 @@ public final class M3Accessible {
     }
 
     /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    ///
+    /// @param item       the possible action-item owner, or `null`
+    /// @param parameters the direct or nested target parameters
+    /// @return `true` when a referenced owned node is disabled or hidden below an unrevealable boundary
+    /// @throws NullPointerException if `parameters` is `null`
     public static boolean containsUnrevealableActionNodeTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         for (Object parameter : parameters) {
@@ -537,6 +677,15 @@ public final class M3Accessible {
     }
 
     /// Returns whether a leading item or indexed items can handle explicit accessibility item parameters.
+    ///
+    /// An empty parameter array is always accepted. A numeric first parameter selects the corresponding child;
+    /// remaining parameters, when present, must identify a revealable target exposed by that child.
+    ///
+    /// @param leading    the optional leading action item
+    /// @param items      the remaining action items
+    /// @param parameters the accessibility action parameters to validate
+    /// @return `true` when the request can be handled by this child set
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean canShowItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
@@ -574,6 +723,13 @@ public final class M3Accessible {
     }
 
     /// Returns whether two leading items or indexed trailing items can handle explicit accessibility item parameters.
+    ///
+    /// @param first      the optional first leading action item
+    /// @param second     the optional second leading action item
+    /// @param items      the remaining action items
+    /// @param parameters the accessibility action parameters to validate
+    /// @return `true` when the request can be handled by this child set
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean canShowItem(
             @Nullable Node first,
             @Nullable Node second,
@@ -617,11 +773,24 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the item referenced by accessibility action parameters.
+    ///
+    /// With no parameters, the first item exposing an accessible focus target is used.
+    ///
+    /// @param items      the indexed action items
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean showItem(ObservableList<? extends Node> items, Object... parameters) {
         return showItemOrAccessibleActionTarget(actionItem(items, parameters), items, parameters);
     }
 
     /// Requests focus for the item referenced by accessibility action parameters and reveals it through the owner.
+    ///
+    /// @param owner      the container through which the focused target should be revealed
+    /// @param items      the indexed action items
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showIndexedItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
@@ -629,23 +798,48 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the leading item or one of the indexed trailing items.
+    ///
+    /// @param leading    the optional leading action item
+    /// @param items      the remaining indexed action items
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean showItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         return showItemOrAccessibleActionTarget(actionItem(leading, items, parameters), leading, items, parameters);
     }
 
     /// Requests focus for one of the indexed items or the trailing item.
+    ///
+    /// @param items      the indexed action items before the trailing slot
+    /// @param trailing   the optional trailing action item
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean showItem(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
         Objects.requireNonNull(items, "items");
         return showItemOrAccessibleActionTarget(actionItem(items, trailing, parameters), items, trailing, parameters);
     }
 
     /// Requests focus for one of two optional indexed items.
+    ///
+    /// @param first      the optional first action item
+    /// @param second     the optional second action item
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `parameters` is `null`
     public static boolean showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
         return showItemOrAccessibleActionTarget(actionItem(first, second, parameters), first, second, parameters);
     }
 
     /// Requests focus for one of three optional indexed items.
+    ///
+    /// @param first      the optional first action item
+    /// @param second     the optional second action item
+    /// @param third      the optional third action item
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `parameters` is `null`
     public static boolean showItem(
             @Nullable Node first,
             @Nullable Node second,
@@ -662,6 +856,13 @@ public final class M3Accessible {
     }
 
     /// Requests focus for one of two optional leading items or an indexed trailing item.
+    ///
+    /// @param first      the optional first leading action item
+    /// @param second     the optional second leading action item
+    /// @param items      the remaining indexed action items
+    /// @param parameters the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean showItem(
             @Nullable Node first,
             @Nullable Node second,
@@ -679,6 +880,16 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the default item or indexed item and reveals it through the owner.
+    ///
+    /// `defaultItem` is preferred for an empty request when it exposes a focus target; otherwise the first focusable
+    /// list item is used.
+    ///
+    /// @param owner       the container through which the focused target should be revealed
+    /// @param defaultItem the preferred item for an empty request, or `null`
+    /// @param items       the indexed action items
+    /// @param parameters  the index or explicit target parameters
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showItemOrDefault(
             Node owner,
             @Nullable Node defaultItem,
@@ -695,6 +906,12 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target in an indexed container, or for the requested item.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param items      the indexed action items
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if any argument is `null`
     public static boolean showCurrentOrItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
@@ -706,6 +923,13 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target in a leading/list container, or for the requested item.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param leading    the optional leading action item
+    /// @param items      the remaining action items
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node leading,
@@ -726,6 +950,13 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target in a list/trailing container, or for the requested item.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param items      the action items before the trailing slot
+    /// @param trailing   the optional trailing action item
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showCurrentOrItem(
             Node owner,
             ObservableList<? extends Node> items,
@@ -746,6 +977,13 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target among two optional children, or for the requested item.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param first      the optional first action item
+    /// @param second     the optional second action item
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner` or `parameters` is `null`
     public static boolean showCurrentOrItem(Node owner, @Nullable Node first, @Nullable Node second, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(parameters, "parameters");
@@ -760,6 +998,14 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target among three optional children, or for the requested item.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param first      the optional first action item
+    /// @param second     the optional second action item
+    /// @param third      the optional third action item
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner` or `parameters` is `null`
     public static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node first,
@@ -780,6 +1026,14 @@ public final class M3Accessible {
     }
 
     /// Requests focus for the current focus target in two leading slots or a trailing list.
+    ///
+    /// @param owner      the container that supplies current focus and reveal context
+    /// @param first      the optional first leading action item
+    /// @param second     the optional second leading action item
+    /// @param items      the remaining action items
+    /// @param parameters the index or explicit target parameters; empty to restore current or first focus
+    /// @return `true` when focus or a delegated reveal request succeeded
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node first,
@@ -801,17 +1055,33 @@ public final class M3Accessible {
     }
 
     /// Requests focus for an accessibility item when it can be reached.
+    ///
+    /// @param item the item to focus, or `null`
+    /// @return `true` when a reachable focus target accepted focus
     public static boolean showItem(@Nullable Node item) {
         return showItemIfPresent(item);
     }
 
     /// Requests focus for an accessibility item and reveals it through the owner when it can be reached.
+    ///
+    /// @param owner the container through which the focused target should be revealed
+    /// @param item  the item to focus, or `null`
+    /// @return `true` when a reachable focus target accepted focus
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean showItem(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
         return showItemIfPresent(owner, item);
     }
 
     /// Requests focus for the exact item node and reveals it through the owner when the item can be reached.
+    ///
+    /// Unlike [#showItem(Node, Node)], this method does not substitute a descendant accessibility focus target and
+    /// therefore requires `item` itself to be focus traversable.
+    ///
+    /// @param owner the container through which the item should be revealed
+    /// @param item  the exact node to focus, or `null`
+    /// @return `true` when the item accepted focus
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean showDirectItem(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
         if (!canReach(item) || !item.isFocusTraversable()) {
@@ -825,6 +1095,12 @@ public final class M3Accessible {
     }
 
     /// Requests focus through a node's accessibility focus action.
+    ///
+    /// A directly installed focus route is preferred; otherwise [AccessibleAction#REQUEST_FOCUS] is executed and
+    /// the resulting contained or external focus target is verified.
+    ///
+    /// @param item the item whose accessible focus action should run, or `null`
+    /// @return `true` when the action established a reachable focus target
     public static boolean requestAccessibleFocus(@Nullable Node item) {
         if (!canReach(item)) {
             return false;
@@ -838,6 +1114,11 @@ public final class M3Accessible {
     }
 
     /// Requests focus through a node's accessibility focus action and reveals it through the owner.
+    ///
+    /// @param owner the container through which the resulting focus target should be revealed
+    /// @param item  the item whose accessible focus action should run, or `null`
+    /// @return `true` when the action established a reachable focus target
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean requestAccessibleFocus(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
         if (requestAccessibleFocus(item)) {
@@ -1113,6 +1394,12 @@ public final class M3Accessible {
     }
 
     /// Delegates an explicit reveal request to a resolved item and reveals the focused target through the owner.
+    ///
+    /// @param owner      the container through which the resulting focus target should be revealed
+    /// @param item       the already resolved action item, or `null`
+    /// @param parameters the explicit target parameters
+    /// @return `true` when a nested route or accessibility action handled the request
+    /// @throws NullPointerException if `owner` or `parameters` is `null`
     public static boolean showResolvedAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         if (showAccessibleActionTarget(item, parameters)) {
@@ -1123,6 +1410,15 @@ public final class M3Accessible {
     }
 
     /// Delegates an explicit reveal request and reveals the focused target through the owner when one is reached.
+    ///
+    /// The owner may itself route an indexed request to `item`; direct item routes are attempted before the owner's
+    /// fallback route.
+    ///
+    /// @param owner      the container through which the resulting focus target should be revealed
+    /// @param item       the preferred action item, or `null`
+    /// @param parameters the explicit target parameters
+    /// @return `true` when a nested route or accessibility action handled the request
+    /// @throws NullPointerException if `owner` or `parameters` is `null`
     public static boolean showAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         if (item != null
@@ -1144,6 +1440,11 @@ public final class M3Accessible {
     }
 
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
+    ///
+    /// @param item       the root of the physical and accessibility child search, or `null`
+    /// @param parameters the explicit target parameters
+    /// @return `true` when a route or accessibility action handled the request
+    /// @throws NullPointerException if `parameters` is `null`
     public static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (item == null || cannotReachOrReveal(item) || parameters.length == 0) {
@@ -1298,6 +1599,12 @@ public final class M3Accessible {
     }
 
     /// Delegates an explicit reveal request to an indexed child and reveals it through the owner when reached.
+    ///
+    /// @param owner      the container through which the resulting focus target should be revealed
+    /// @param items      the indexed action items
+    /// @param parameters the explicit target parameters
+    /// @return `true` when an item handled the request
+    /// @throws NullPointerException if `owner`, `items`, or `parameters` is `null`
     public static boolean showAccessibleActionTarget(
             Node owner,
             ObservableList<? extends Node> items,
@@ -1312,6 +1619,11 @@ public final class M3Accessible {
     }
 
     /// Delegates an explicit reveal request to the first indexed child that exposes the requested target.
+    ///
+    /// @param items      the indexed action items
+    /// @param parameters the explicit target parameters
+    /// @return `true` when an item handled the request
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static boolean showAccessibleActionTarget(
             ObservableList<? extends Node> items,
             Object... parameters
@@ -1329,6 +1641,12 @@ public final class M3Accessible {
     }
 
     /// Returns a node's currently exposed accessibility focus target when available.
+    ///
+    /// The node's `FOCUS_NODE` attribute is preferred when it resolves to a reachable node; otherwise the first
+    /// reachable focus-traversable node in the item's accessibility tree is returned.
+    ///
+    /// @param item the item to inspect, or `null`
+    /// @return the reachable accessibility focus target, or `null`
     public static @Nullable Node accessibleFocusTarget(@Nullable Node item) {
         if (!canReach(item)) {
             return null;
@@ -1344,6 +1662,9 @@ public final class M3Accessible {
     }
 
     /// Returns the focusable item or descendant used for accessibility focus requests.
+    ///
+    /// @param item the item whose reachable tree should be searched, or `null`
+    /// @return the first reachable focus-traversable node, or `null`
     public static @Nullable Node focusTarget(@Nullable Node item) {
         if (!canReach(item)) {
             return null;
@@ -1355,6 +1676,9 @@ public final class M3Accessible {
     ///
     /// This helper is for structural reveal APIs that can decide which node would receive focus before a control is
     /// attached to a live scene. Callers that actually request keyboard focus must still check [canReach].
+    ///
+    /// @param item the item whose visible and enabled structure should be searched, or `null`
+    /// @return the first structurally reachable focus-traversable node, or `null`
     public static @Nullable Node structuralFocusTarget(@Nullable Node item) {
         if (!isEffectivelyReachable(item)) {
             return null;
@@ -1424,12 +1748,21 @@ public final class M3Accessible {
     }
 
     /// Returns the first focusable item or descendant in the supplied item list.
+    ///
+    /// @param items the items in focus order
+    /// @return the first reachable accessibility focus target, or `null`
+    /// @throws NullPointerException if `items` is `null`
     public static @Nullable Node firstFocusTarget(ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         return firstAccessibleFocusTarget(items);
     }
 
     /// Returns the leading focus target, or the first focusable item in the supplied item list.
+    ///
+    /// @param leading the optional leading item
+    /// @param items   the remaining items in focus order
+    /// @return the first reachable accessibility focus target, or `null`
+    /// @throws NullPointerException if `items` is `null`
     public static @Nullable Node firstFocusTarget(@Nullable Node leading, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         @Nullable Node leadingTarget = accessibleFocusTarget(leading);
@@ -1437,6 +1770,11 @@ public final class M3Accessible {
     }
 
     /// Returns the first focusable item in the supplied item list, or the trailing focus target.
+    ///
+    /// @param items    the items before the trailing slot
+    /// @param trailing the optional trailing item
+    /// @return the first reachable accessibility focus target, or `null`
+    /// @throws NullPointerException if `items` is `null`
     public static @Nullable Node firstFocusTarget(ObservableList<? extends Node> items, @Nullable Node trailing) {
         Objects.requireNonNull(items, "items");
         @Nullable Node itemTarget = firstAccessibleFocusTarget(items);
@@ -1444,12 +1782,21 @@ public final class M3Accessible {
     }
 
     /// Returns the first focusable target among two optional child nodes.
+    ///
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @return the first reachable accessibility focus target, or `null`
     public static @Nullable Node firstFocusTarget(@Nullable Node first, @Nullable Node second) {
         @Nullable Node firstTarget = accessibleFocusTarget(first);
         return firstTarget != null ? firstTarget : accessibleFocusTarget(second);
     }
 
     /// Returns the first focusable target among three optional child nodes.
+    ///
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @param third  the optional third item
+    /// @return the first reachable accessibility focus target, or `null`
     public static @Nullable Node firstFocusTarget(@Nullable Node first, @Nullable Node second, @Nullable Node third) {
         @Nullable Node firstTarget = accessibleFocusTarget(first);
         if (firstTarget != null) {
@@ -1460,6 +1807,12 @@ public final class M3Accessible {
     }
 
     /// Returns the first focusable target among two optional child nodes and a trailing list.
+    ///
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @param items  the remaining items in focus order
+    /// @return the first reachable accessibility focus target, or `null`
+    /// @throws NullPointerException if `items` is `null`
     public static @Nullable Node firstFocusTarget(
             @Nullable Node first,
             @Nullable Node second,
@@ -1475,6 +1828,11 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside the supplied item list, or the first focusable item.
+    ///
+    /// @param owner the node whose scene and external overlays supply current focus
+    /// @param items the possible focus owners
+    /// @return the current contained or external target, the first reachable target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(Node owner, ObservableList<? extends Node> items) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
@@ -1483,6 +1841,14 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside a selection container, or its selected or first reachable item.
+    ///
+    /// @param <T>          the selectable item type
+    /// @param owner        the node whose scene and external overlays supply current focus
+    /// @param items        the selectable children in order
+    /// @param selectedItem the current selection, or `null`
+    /// @param itemType     the selectable item type token
+    /// @return the current focus target, selected-item target, first reachable target, or `null`
+    /// @throws NullPointerException if `owner`, `items`, or `itemType` is `null`
     public static <T extends Node> @Nullable Node currentOrSelectionFocusTarget(
             Node owner,
             List<? extends Node> items,
@@ -1501,6 +1867,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside a leading item or item list, or the first focusable item.
+    ///
+    /// @param owner   the node whose scene and external overlays supply current focus
+    /// @param leading the optional leading item
+    /// @param items   the remaining possible focus owners
+    /// @return the current or first reachable focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(
             Node owner,
             @Nullable Node leading,
@@ -1513,6 +1885,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside an item list or trailing item, or the first focusable item.
+    ///
+    /// @param owner    the node whose scene and external overlays supply current focus
+    /// @param items    the possible focus owners before the trailing slot
+    /// @param trailing the optional trailing item
+    /// @return the current or first reachable focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(
             Node owner,
             ObservableList<? extends Node> items,
@@ -1525,6 +1903,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside either optional child node, or the first focusable item.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @return the current or first reachable focus target, or `null`
+    /// @throws NullPointerException if `owner` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
         Objects.requireNonNull(owner, "owner");
         @Nullable Node currentTarget = currentFocusTarget(owner, first, second);
@@ -1532,6 +1916,13 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside three optional child nodes, or the first focusable item.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @param third  the optional third item
+    /// @return the current or first reachable focus target, or `null`
+    /// @throws NullPointerException if `owner` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(
             Node owner,
             @Nullable Node first,
@@ -1544,6 +1935,13 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus target inside two optional child nodes and a list, or the first focusable item.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first item
+    /// @param second the optional second item
+    /// @param items  the remaining possible focus owners
+    /// @return the current or first reachable focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentOrFirstFocusTarget(
             Node owner,
             @Nullable Node first,
@@ -1557,6 +1955,13 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list.
+    ///
+    /// Active popup or overlay focus exposed by an item is considered before focus in the owner's scene.
+    ///
+    /// @param owner the node whose scene and external overlays supply current focus
+    /// @param items the possible focus owners
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentFocusTarget(Node owner, List<? extends Node> items) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
@@ -1580,6 +1985,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to a leading item or one item in the supplied list.
+    ///
+    /// @param owner   the node whose scene and external overlays supply current focus
+    /// @param leading the optional leading focus owner
+    /// @param items   the remaining possible focus owners
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentFocusTarget(
             Node owner,
             @Nullable Node leading,
@@ -1616,6 +2027,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list or a trailing item.
+    ///
+    /// @param owner    the node whose scene and external overlays supply current focus
+    /// @param items    the possible focus owners before the trailing slot
+    /// @param trailing the optional trailing focus owner
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentFocusTarget(
             Node owner,
             ObservableList<? extends Node> items,
@@ -1648,6 +2065,12 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to either optional child node.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first focus owner
+    /// @param second the optional second focus owner
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` is `null`
     public static @Nullable Node currentFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
         Objects.requireNonNull(owner, "owner");
         @Nullable Node externalFirstTarget = activeExternalFocusTarget(owner, first);
@@ -1669,6 +2092,13 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one of three optional child nodes.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first focus owner
+    /// @param second the optional second focus owner
+    /// @param third  the optional third focus owner
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` is `null`
     public static @Nullable Node currentFocusTarget(
             Node owner,
             @Nullable Node first,
@@ -1703,6 +2133,13 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one of two optional children or a list item.
+    ///
+    /// @param owner  the node whose scene and external overlays supply current focus
+    /// @param first  the optional first focus owner
+    /// @param second the optional second focus owner
+    /// @param items  the remaining possible focus owners
+    /// @return the current contained or external focus target, or `null`
+    /// @throws NullPointerException if `owner` or `items` is `null`
     public static @Nullable Node currentFocusTarget(
             Node owner,
             @Nullable Node first,
@@ -1753,6 +2190,14 @@ public final class M3Accessible {
     }
 
     /// Returns an active external focus target exposed by one item outside the owner subtree.
+    ///
+    /// Installed rich-tooltip content, popup content exposed through `FOCUS_NODE`, and indexed accessibility
+    /// descendants participate in the search.
+    ///
+    /// @param owner the node whose physical subtree is excluded
+    /// @param item  the item that may expose external focus, or `null`
+    /// @return the active reachable external focus target, or `null`
+    /// @throws NullPointerException if `owner` is `null`
     public static @Nullable Node activeExternalFocusTarget(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
         if (!canReach(item)) {
@@ -1883,6 +2328,9 @@ public final class M3Accessible {
     }
 
     /// Returns whether a node can receive a direct or descendant focus request.
+    ///
+    /// @param node the node to inspect, or `null`
+    /// @return `true` when the node is attached and effectively reachable
     public static boolean canReach(@Nullable Node node) {
         return node != null && node.getScene() != null && isEffectivelyReachable(node);
     }
@@ -1892,6 +2340,9 @@ public final class M3Accessible {
     /// Unlike [canReach], this allows the node itself to be invisible because several Material surfaces use
     /// visibility to represent their collapsed state. The node may be detached for structural tests, but it must be
     /// enabled and every ancestor must be visible and enabled.
+    ///
+    /// @param node the node to inspect, or `null`
+    /// @return `true` when the node can be revealed by its owner
     public static boolean canReveal(@Nullable Node node) {
         if (node == null || node.isDisabled()) {
             return false;
@@ -1908,6 +2359,11 @@ public final class M3Accessible {
     }
 
     /// Returns whether a node and its ancestor chain are visible and enabled.
+    ///
+    /// Scene attachment is not required.
+    ///
+    /// @param node the node to inspect, or `null`
+    /// @return `true` when the node and every ancestor are visible and enabled
     public static boolean isEffectivelyReachable(@Nullable Node node) {
         @Nullable Node current = node;
         while (current != null) {
@@ -1920,6 +2376,9 @@ public final class M3Accessible {
     }
 
     /// Notifies a node and its ancestors that the node's exposed accessibility focus target changed.
+    ///
+    /// @param node the node whose focus target changed
+    /// @throws NullPointerException if `node` is `null`
     public static void notifyFocusNodeChanged(Node node) {
         Objects.requireNonNull(node, "node");
         node.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
@@ -1927,6 +2386,11 @@ public final class M3Accessible {
     }
 
     /// Notifies ancestor nodes that a descendant's accessible focus target changed.
+    ///
+    /// The supplied node itself is not notified.
+    ///
+    /// @param node the descendant whose focus target changed
+    /// @throws NullPointerException if `node` is `null`
     public static void notifyFocusNodeChangedInAncestors(Node node) {
         Objects.requireNonNull(node, "node");
         @Nullable Parent parent = node.getParent();
@@ -1937,6 +2401,14 @@ public final class M3Accessible {
     }
 
     /// Returns whether the possible ancestor contains the requested descendant node.
+    ///
+    /// In addition to physical parent links, this recognizes the logical leading and trailing content owned by
+    /// [M3ListItemBase].
+    ///
+    /// @param possibleAncestor   the possible physical or logical ancestor
+    /// @param possibleDescendant the node to locate
+    /// @return `true` when the nodes are identical or the descendant belongs to the ancestor
+    /// @throws NullPointerException if either argument is `null`
     public static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
         Objects.requireNonNull(possibleAncestor, "possibleAncestor");
         Objects.requireNonNull(possibleDescendant, "possibleDescendant");
@@ -2011,6 +2483,11 @@ public final class M3Accessible {
     }
 
     /// Returns the indexed item or the item exposing the target referenced by accessibility parameters.
+    ///
+    /// @param items      the candidate item owners
+    /// @param parameters the index or explicit target parameters
+    /// @return the matching item, or `null` when no item owns the request
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node containingItem(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
@@ -2258,6 +2735,13 @@ public final class M3Accessible {
     }
 
     /// Returns the child item referenced by accessibility action parameters.
+    ///
+    /// With no parameters, the first item exposing a reachable focus target is returned.
+    ///
+    /// @param items      the candidate action items
+    /// @param parameters the index or explicit target parameters
+    /// @return the matching action item, or `null`
+    /// @throws NullPointerException if `items` or `parameters` is `null`
     public static @Nullable Node actionItem(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
@@ -2278,6 +2762,13 @@ public final class M3Accessible {
     }
 
     /// Returns a single node or contained descendant referenced by accessibility action parameters.
+    ///
+    /// With no parameters, `item` is returned only when it exposes a reachable focus target.
+    ///
+    /// @param item       the candidate action-item root, or `null`
+    /// @param parameters the index or explicit target parameters
+    /// @return the matching node or owned descendant, or `null`
+    /// @throws NullPointerException if `parameters` is `null`
     public static @Nullable Node actionItem(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
@@ -2767,6 +3258,13 @@ public final class M3Accessible {
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.
+    ///
+    /// A detached node may still resolve an index from a list previously registered by
+    /// [setIndexOwner][#setIndexOwner(Node, ObservableList)].
+    ///
+    /// @param node the node whose index should be resolved
+    /// @return the identity-based child-list index, or `-1`
+    /// @throws NullPointerException if `node` is `null`
     public static int indexInParent(Node node) {
         Objects.requireNonNull(node, "node");
         @Nullable Parent parent = node.getParent();
@@ -2781,6 +3279,13 @@ public final class M3Accessible {
     }
 
     /// Sets the owner item list used for accessibility index lookup before skin attachment.
+    ///
+    /// The list is retained by reference until [#clearIndexOwner(Node)] is called. Later list mutations are reflected
+    /// in [#indexInParent(Node)].
+    ///
+    /// @param node  the detached or pre-skin child node
+    /// @param items the list that defines the node's logical index
+    /// @throws NullPointerException if either argument is `null`
     public static void setIndexOwner(Node node, ObservableList<? extends Node> items) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(items, "items");
@@ -2788,6 +3293,9 @@ public final class M3Accessible {
     }
 
     /// Clears the owner item list used for accessibility index lookup.
+    ///
+    /// @param node the node whose logical owner should be cleared
+    /// @throws NullPointerException if `node` is `null`
     public static void clearIndexOwner(Node node) {
         Objects.requireNonNull(node, "node");
         if (node.hasProperties()) {
@@ -2796,6 +3304,12 @@ public final class M3Accessible {
     }
 
     /// Returns the first integer accessibility parameter, or `-1` when none was supplied.
+    ///
+    /// Only the first parameter is inspected; any [Number] is converted with [Number#intValue()].
+    ///
+    /// @param parameters the accessibility action parameters
+    /// @return the converted first parameter, or `-1` when it is absent or not numeric
+    /// @throws NullPointerException if `parameters` is `null`
     public static int indexParameter(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0 || !(parameters[0] instanceof Number number)) {

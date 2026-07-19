@@ -20,7 +20,11 @@ import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// Animates CSS-resolved drop shadow effect changes for an interaction owner.
+/// Animates CSS-resolved drop-shadow changes for an interaction owner.
+///
+/// The transition observes interaction state on the owner and applies the interpolated effect to the target. Only
+/// user-agent and author styles that resolve to a [DropShadow], or to no effect, are interpolated; an application
+/// effect set at user origin remains under application control.
 @NotNullByDefault
 final class M3CssEffectTransition {
     /// The pseudo-class used by controls that expose an explicit armed state.
@@ -62,13 +66,18 @@ final class M3CssEffectTransition {
         }
     };
 
-    /// Creates an effect transition.
+    /// Creates an effect transition without installing listeners.
+    ///
+    /// @param owner  the node whose interaction state determines the CSS target
+    /// @param target the node whose effect is rendered
     M3CssEffectTransition(Node owner, Node target) {
         this.owner = owner;
         this.target = target;
     }
 
     /// Installs interaction listeners.
+    ///
+    /// This method is intended to be paired with one later call to [#uninstall()].
     void install() {
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
         owner.hoverProperty().addListener(interactionStateListener);
@@ -77,7 +86,7 @@ final class M3CssEffectTransition {
         owner.disabledProperty().addListener(interactionStateListener);
     }
 
-    /// Uninstalls interaction listeners and stops active animation.
+    /// Uninstalls interaction listeners, stops active animation, and applies the exact target effect.
     void uninstall() {
         owner.hoverProperty().removeListener(interactionStateListener);
         owner.focusedProperty().removeListener(interactionStateListener);

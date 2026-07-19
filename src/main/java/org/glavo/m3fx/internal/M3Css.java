@@ -17,7 +17,11 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
-/// Provides shared helpers for M3FX CSS-backed component tokens.
+/// Provides shared helpers for CSS-backed M3FX component tokens and helper-owned region metrics.
+///
+/// Metric writers remember values installed by M3FX in the target region's properties map. A later token refresh
+/// may replace that value only while the application has not changed or bound the corresponding JavaFX property.
+/// This preserves explicit application sizing while still allowing theme and density changes to update defaults.
 @NotNullByDefault
 public final class M3Css {
     /// Tracks the last minimum width written by M3FX metric helpers.
@@ -48,19 +52,34 @@ public final class M3Css {
     private M3Css() {
     }
 
-    /// Returns whether a styleable property can be set by CSS.
+    /// Returns whether a styleable numeric property can be set by CSS.
+    ///
+    /// A property is settable when it is unbound and has not received an explicit application value through an
+    /// M3FX component-token property.
+    ///
+    /// @param property the property to inspect
+    /// @return `true` when CSS may assign the property
+    /// @throws NullPointerException if `property` is `null`
     public static boolean isSettable(StyleableDoubleProperty property) {
         return !property.isBound()
                 && (!(property instanceof M3StyleableDoubleProperty m3Property) || !m3Property.isUserSet());
     }
 
     /// Returns whether a styleable object property can be set by CSS.
+    ///
+    /// @param property the property to inspect
+    /// @return `true` when CSS may assign the property
+    /// @throws NullPointerException if `property` is `null`
     public static boolean isSettable(StyleableObjectProperty<?> property) {
         return !property.isBound()
                 && (!(property instanceof M3StyleableObjectProperty<?> m3Property) || !m3Property.isUserSet());
     }
 
     /// Writes a region minimum width when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param width  the minimum width value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setMinWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
@@ -75,6 +94,10 @@ public final class M3Css {
     }
 
     /// Writes a region preferred width when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param width  the preferred width value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setPrefWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
@@ -89,6 +112,10 @@ public final class M3Css {
     }
 
     /// Writes a region maximum width when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param width  the maximum width value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setMaxWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
@@ -103,6 +130,10 @@ public final class M3Css {
     }
 
     /// Writes a region minimum height when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param height the minimum height value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setMinHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
@@ -117,6 +148,10 @@ public final class M3Css {
     }
 
     /// Writes a region preferred height when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param height the preferred height value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setPrefHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
@@ -131,6 +166,10 @@ public final class M3Css {
     }
 
     /// Writes a region maximum height when application code has not taken ownership of it.
+    ///
+    /// @param region the region to update
+    /// @param height the maximum height value to write, in pixels
+    /// @throws NullPointerException if `region` is `null`
     public static void setMaxHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
@@ -145,6 +184,10 @@ public final class M3Css {
     }
 
     /// Writes region padding when application code has not taken ownership of it.
+    ///
+    /// @param region  the region to update
+    /// @param padding the padding to install
+    /// @throws NullPointerException if `region` is `null`
     public static void setPaddingIfUnbound(Region region, Insets padding) {
         if (shouldWriteMetric(
                 region,
@@ -159,6 +202,13 @@ public final class M3Css {
     }
 
     /// Writes region padding without marking the metric as helper-owned.
+    ///
+    /// The value replaces any current unbound padding. Subsequent calls to [#setPaddingIfUnbound(Region, Insets)]
+    /// treat it as application-owned and do not overwrite it.
+    ///
+    /// @param region  the region to update
+    /// @param padding the padding to install
+    /// @throws NullPointerException if `region` is `null`
     public static void setPaddingWithoutOwnershipIfUnbound(Region region, Insets padding) {
         if (region.paddingProperty().isBound()) {
             return;
@@ -171,6 +221,13 @@ public final class M3Css {
     }
 
     /// Writes region padding as an M3FX-owned metric.
+    ///
+    /// The value replaces any current unbound padding and becomes eligible for later replacement by
+    /// [#setPaddingIfUnbound(Region, Insets)].
+    ///
+    /// @param region  the region to update
+    /// @param padding the padding to install
+    /// @throws NullPointerException if `region` is `null`
     public static void setPaddingAsHelperOwned(Region region, Insets padding) {
         if (region.paddingProperty().isBound()) {
             return;
@@ -281,6 +338,17 @@ public final class M3Css {
     }
 
     /// Creates a styleable non-negative component token property.
+    ///
+    /// Explicit application assignments prevent later CSS passes from replacing the value. Every changed value is
+    /// required to be finite and non-negative before `invalidation` runs.
+    ///
+    /// @param initialValue the initial token value before CSS is applied
+    /// @param bean         the object that owns the property
+    /// @param name         the property name
+    /// @param cssMetaData  the CSS metadata exposed by the property
+    /// @param invalidation the callback invoked after a valid value changes
+    /// @return the newly created styleable property
+    /// @throws NullPointerException if `bean`, `name`, `cssMetaData`, or `invalidation` is `null`
     public static StyleableDoubleProperty nonNegativeStyleableDoubleProperty(
             double initialValue,
             Object bean,
@@ -299,6 +367,17 @@ public final class M3Css {
     }
 
     /// Creates a styleable finite component token property.
+    ///
+    /// Explicit application assignments prevent later CSS passes from replacing the value. Every changed value is
+    /// required to be finite before `invalidation` runs.
+    ///
+    /// @param initialValue the initial token value before CSS is applied
+    /// @param bean         the object that owns the property
+    /// @param name         the property name
+    /// @param cssMetaData  the CSS metadata exposed by the property
+    /// @param invalidation the callback invoked after a valid value changes
+    /// @return the newly created styleable property
+    /// @throws NullPointerException if `bean`, `name`, `cssMetaData`, or `invalidation` is `null`
     public static StyleableDoubleProperty finiteStyleableDoubleProperty(
             double initialValue,
             Object bean,
@@ -317,6 +396,18 @@ public final class M3Css {
     }
 
     /// Creates a styleable object component token property.
+    ///
+    /// Explicit application assignments prevent later CSS passes from replacing the value. The initial and later
+    /// values may be `null`; interpretation belongs to the owning component.
+    ///
+    /// @param <T>          the property value type
+    /// @param initialValue the initial token value before CSS is applied, or `null`
+    /// @param bean         the object that owns the property
+    /// @param name         the property name
+    /// @param cssMetaData  the CSS metadata exposed by the property
+    /// @param invalidation the callback invoked after the value changes
+    /// @return the newly created styleable property
+    /// @throws NullPointerException if `bean`, `name`, `cssMetaData`, or `invalidation` is `null`
     public static <T> StyleableObjectProperty<@Nullable T> styleableObjectProperty(
             @Nullable T initialValue,
             Object bean,
@@ -328,6 +419,11 @@ public final class M3Css {
     }
 
     /// Validates that a CSS size token is finite and not negative.
+    ///
+    /// @param value the value to validate
+    /// @param name  the token name used in an exception message
+    /// @return `value` unchanged
+    /// @throws IllegalArgumentException if `value` is negative, infinite, or NaN
     public static double nonNegative(double value, String name) {
         if (!Double.isFinite(value) || value < 0.0) {
             throw new IllegalArgumentException(name + " must be finite and not negative");
@@ -336,6 +432,11 @@ public final class M3Css {
     }
 
     /// Validates that a CSS numeric token is finite.
+    ///
+    /// @param value the value to validate
+    /// @param name  the token name used in an exception message
+    /// @return `value` unchanged
+    /// @throws IllegalArgumentException if `value` is infinite or NaN
     public static double finite(double value, String name) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(name + " must be finite");

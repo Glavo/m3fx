@@ -24,9 +24,9 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3TopAppBar].
 ///
-/// The skin keeps the 64-pixel navigation and action row independent from the expanded flexible title area. Flexible
-/// variants reuse preallocated expanded and compact labels during collapse motion, so animation pulses update only
-/// scalar opacity, scale, height, and layout values.
+/// The skin keeps the 64-logical-pixel navigation and action row independent from the expanded flexible title area.
+/// Flexible variants interpolate title presentation and bar height from the control's collapse progress; compact and
+/// fixed variants omit the expanded title area.
 @NotNullByDefault
 public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// The minimum Material hit slot used by top app bar navigation and trailing action icons.

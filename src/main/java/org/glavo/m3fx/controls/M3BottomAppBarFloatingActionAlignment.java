@@ -26,6 +26,8 @@ public enum M3BottomAppBarFloatingActionAlignment {
     private final String styleClass;
 
     /// Creates a floating action alignment.
+    ///
+    /// @param styleClass the style class applied for this alignment
     M3BottomAppBarFloatingActionAlignment(String styleClass) {
         this.styleClass = styleClass;
     }

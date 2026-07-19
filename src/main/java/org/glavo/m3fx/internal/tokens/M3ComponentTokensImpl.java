@@ -10,52 +10,52 @@ import java.util.Objects;
 
 /// Default immutable implementation of [M3ComponentTokens].
 ///
-/// @param filledButton tokens used by filled buttons
-/// @param tonalButton tokens used by filled tonal buttons
-/// @param outlinedButton tokens used by outlined buttons
-/// @param textButton tokens used by text buttons
-/// @param elevatedButton tokens used by elevated buttons
-/// @param buttonSizing the five-step button size token scale
-/// @param iconButton tokens used by icon buttons
+/// @param filledButton         tokens used by filled buttons
+/// @param tonalButton          tokens used by filled tonal buttons
+/// @param outlinedButton       tokens used by outlined buttons
+/// @param textButton           tokens used by text buttons
+/// @param elevatedButton       tokens used by elevated buttons
+/// @param buttonSizing         the five-step button size token scale
+/// @param iconButton           tokens used by icon buttons
 /// @param floatingActionButton tokens used by floating action buttons
-/// @param icon tokens used by icon glyph primitives
-/// @param buttonGroup tokens used by button groups
-/// @param splitButton tokens used by split buttons
-/// @param segmentedButton tokens used by segmented buttons
-/// @param tab tokens used by tabs
-/// @param field tokens used by text input controls
-/// @param textArea tokens used by text area controls
-/// @param form tokens used by form containers
-/// @param validationSummary tokens used by validation summaries
-/// @param menu tokens used by menus
-/// @param search tokens used by search components
-/// @param pickerField tokens used by picker fields
-/// @param datePicker tokens used by date pickers
-/// @param timePicker tokens used by time pickers
-/// @param sheet tokens used by sheet containers
-/// @param scrim tokens used by scrims
-/// @param selection tokens used by selection controls
-/// @param slider tokens used by sliders
-/// @param chip tokens used by chips
-/// @param progress tokens used by progress controls
-/// @param loadingIndicator tokens used by loading indicators
-/// @param surface tokens used by surfaces
-/// @param carousel tokens used by carousels
-/// @param card tokens used by cards
-/// @param dialog tokens used by dialogs
-/// @param snackbar tokens used by snackbar controls
-/// @param banner tokens used by banners
-/// @param tooltip tokens used by tooltips
-/// @param divider tokens used by dividers
-/// @param badge tokens used by badges
-/// @param avatar tokens used by avatars
-/// @param topAppBar tokens used by top app bars
-/// @param bottomAppBar tokens used by bottom app bars
-/// @param toolbar tokens used by toolbars
-/// @param navigationBar tokens used by navigation bars
-/// @param navigationRail tokens used by navigation rails
-/// @param navigationDrawer tokens used by navigation drawers
-/// @param listItem tokens used by list items
+/// @param icon                 tokens used by icon glyph primitives
+/// @param buttonGroup          tokens used by button groups
+/// @param splitButton          tokens used by split buttons
+/// @param segmentedButton      tokens used by segmented buttons
+/// @param tab                  tokens used by tabs
+/// @param field                tokens used by text input controls
+/// @param textArea             tokens used by text area controls
+/// @param form                 tokens used by form containers
+/// @param validationSummary    tokens used by validation summaries
+/// @param menu                 tokens used by menus
+/// @param search               tokens used by search components
+/// @param pickerField          tokens used by picker fields
+/// @param datePicker           tokens used by date pickers
+/// @param timePicker           tokens used by time pickers
+/// @param sheet                tokens used by sheet containers
+/// @param scrim                tokens used by scrims
+/// @param selection            tokens used by selection controls
+/// @param slider               tokens used by sliders
+/// @param chip                 tokens used by chips
+/// @param progress             tokens used by progress controls
+/// @param loadingIndicator     tokens used by loading indicators
+/// @param surface              tokens used by surfaces
+/// @param carousel             tokens used by carousels
+/// @param card                 tokens used by cards
+/// @param dialog               tokens used by dialogs
+/// @param snackbar             tokens used by snackbar controls
+/// @param banner               tokens used by banners
+/// @param tooltip              tokens used by tooltips
+/// @param divider              tokens used by dividers
+/// @param badge                tokens used by badges
+/// @param avatar               tokens used by avatars
+/// @param topAppBar            tokens used by top app bars
+/// @param bottomAppBar         tokens used by bottom app bars
+/// @param toolbar              tokens used by toolbars
+/// @param navigationBar        tokens used by navigation bars
+/// @param navigationRail       tokens used by navigation rails
+/// @param navigationDrawer     tokens used by navigation drawers
+/// @param listItem             tokens used by list items
 @NotNullByDefault
 public record M3ComponentTokensImpl(
         M3ComponentTokens.ButtonTokens filledButton,
@@ -105,7 +105,9 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.NavigationDrawerTokens navigationDrawer,
         M3ComponentTokens.ListItemTokens listItem
 ) implements M3ComponentTokens {
-    /// Creates component token implementation.
+    /// Creates a complete component token set.
+    ///
+    /// @throws NullPointerException if any component token group is `null`
     public M3ComponentTokensImpl {
         Objects.requireNonNull(filledButton, "filledButton");
         Objects.requireNonNull(tonalButton, "tonalButton");

@@ -35,8 +35,9 @@ import java.util.Objects;
 /// A Material Design 3 toggle icon button.
 ///
 /// `M3IconToggleButton` represents a persistent binary choice such as favorite, visibility, or formatting state.
-/// Calling [fire] while the control is enabled reverses [selectedProperty] and then delivers an action event.
-/// Calling [setSelected] changes the state without firing an action event. A disabled button ignores [fire].
+/// Calling [#fire()] while the control is enabled reverses [#selectedProperty()] and then delivers an action event.
+/// Calling [#setSelected(boolean)] changes the state without firing an action event. A disabled button ignores
+/// [#fire()].
 ///
 /// The default button is unselected and has no graphic. It uses the standard color variant, small size, default
 /// width role, round shape, and a `40.0` by `40.0` logical-pixel container. Add buttons to an
@@ -77,127 +78,6 @@ public final class M3IconToggleButton extends ButtonBase {
     /// The default toggle icon button glyph size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
 
-    /// The color and container treatment used for selected and unselected states.
-    ///
-    /// A direct assignment of `null` is replaced with the default variant.
-    ///
-    /// @defaultValue [M3IconToggleButtonVariant#STANDARD]
-    private final ObjectProperty<M3IconToggleButtonVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3IconToggleButtonVariant.STANDARD) {
-                /// Updates variant style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3IconToggleButtonVariant.STANDARD);
-                        return;
-                    }
-                    updateVariantStyle();
-                }
-            };
-
-    /// The Material size role for the button container and icon.
-    ///
-    /// A direct assignment of `null` is replaced with the default size.
-    ///
-    /// @defaultValue [M3ButtonSize#SMALL]
-    private final ObjectProperty<M3ButtonSize> size =
-            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
-                /// Updates size style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_SIZE);
-                        return;
-                    }
-                    updateSizeStyle();
-                }
-            };
-
-    /// The semantic width role used with the active button size.
-    ///
-    /// A direct assignment of `null` is replaced with the default role.
-    ///
-    /// @defaultValue [M3IconButtonWidth#DEFAULT]
-    private final ObjectProperty<M3IconButtonWidth> widthRole =
-            new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
-                /// Updates width style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_WIDTH);
-                        return;
-                    }
-                    updateWidthStyle();
-                }
-            };
-
-    /// The resting shape family of the button.
-    ///
-    /// A direct assignment of `null` is replaced with the default shape. Expressive selected and pressed states
-    /// may use the corresponding Material state shape without changing this property value.
-    ///
-    /// @defaultValue [M3ButtonShape#ROUND]
-    private final ObjectProperty<M3ButtonShape> buttonShape =
-            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_SHAPE) {
-                /// Updates shape style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_SHAPE);
-                        return;
-                    }
-                    updateShapeStyle();
-                }
-            };
-
-    /// Whether the button represents the selected state.
-    ///
-    /// Changing this property updates visual and accessibility state but does not fire an action event. If the
-    /// button belongs to an [M3IconToggleButtonGroup], the group observes direct and bound changes and reapplies
-    /// its active selection policy.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
-        /// Updates selected pseudo-class state.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
-        }
-    };
-
-    /// The preferred visual container height in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The preferred visual container width in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerWidth;
-
-    /// The container corner radius in logical pixels.
-    ///
-    /// Values must be finite and non-negative. The default produces a fully rounded container at the default size.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The preferred icon glyph size in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty iconSize;
-
-    /// The direct M3FX icon whose embedded color and size are managed by this button.
-    private @Nullable Node managedIconGraphic;
-
     /// Creates an unselected standard toggle icon button with no graphic.
     public M3IconToggleButton() {
         this((Node) null);
@@ -221,13 +101,31 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// Creates a standard toggle icon button with an M3FX icon label, size, and color variant.
     ///
-    /// @param iconText the glyph text rendered by the icon
-    /// @param iconSize the icon size role
+    /// @param iconText    the glyph text rendered by the icon
+    /// @param iconSize    the icon size role
     /// @param iconVariant the icon color variant
     /// @throws NullPointerException if `iconText`, `iconSize`, or `iconVariant` is `null`
     public M3IconToggleButton(String iconText, M3IconSize iconSize, M3IconVariant iconVariant) {
         this(new M3Icon(iconText, iconSize, iconVariant));
     }
+
+    /// The color and container treatment used for selected and unselected states.
+    ///
+    /// A direct assignment of `null` is replaced with the default variant.
+    ///
+    /// @defaultValue [M3IconToggleButtonVariant#STANDARD]
+    private final ObjectProperty<M3IconToggleButtonVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3IconToggleButtonVariant.STANDARD) {
+                /// Updates variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3IconToggleButtonVariant.STANDARD);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
 
     /// Returns the toggle icon button variant.
     ///
@@ -244,9 +142,33 @@ public final class M3IconToggleButton extends ButtonBase {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable, bindable toggle icon-button variant property.
+    ///
+    /// The property defaults to [M3IconToggleButtonVariant#STANDARD]. A `null` value assigned directly through the
+    /// property is replaced with that default.
+    ///
+    /// @return the toggle icon-button variant property
     public final ObjectProperty<M3IconToggleButtonVariant> variantProperty() {
         return variant;
     }
+
+    /// The Material size role for the button container and icon.
+    ///
+    /// A direct assignment of `null` is replaced with the default size.
+    ///
+    /// @defaultValue [M3ButtonSize#SMALL]
+    private final ObjectProperty<M3ButtonSize> size =
+            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+                /// Updates size style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SIZE);
+                        return;
+                    }
+                    updateSizeStyle();
+                }
+            };
 
     /// Returns the toggle icon button size.
     ///
@@ -263,9 +185,33 @@ public final class M3IconToggleButton extends ButtonBase {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
+    /// Returns the observable, bindable toggle icon-button size property.
+    ///
+    /// The property defaults to [M3ButtonSize#SMALL]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the toggle icon-button size property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
+
+    /// The semantic width role used with the active button size.
+    ///
+    /// A direct assignment of `null` is replaced with the default role.
+    ///
+    /// @defaultValue [M3IconButtonWidth#DEFAULT]
+    private final ObjectProperty<M3IconButtonWidth> widthRole =
+            new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
+                /// Updates width style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_WIDTH);
+                        return;
+                    }
+                    updateWidthStyle();
+                }
+            };
 
     /// Returns the toggle icon button width role.
     ///
@@ -282,9 +228,34 @@ public final class M3IconToggleButton extends ButtonBase {
         this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
     }
 
+    /// Returns the observable, bindable toggle icon-button width-role property.
+    ///
+    /// The property defaults to [M3IconButtonWidth#DEFAULT]. A `null` value assigned directly through the property
+    /// is replaced with that default.
+    ///
+    /// @return the toggle icon-button width-role property
     public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
         return widthRole;
     }
+
+    /// The resting shape family of the button.
+    ///
+    /// A direct assignment of `null` is replaced with the default shape. Expressive selected and pressed states
+    /// may use the corresponding Material state shape without changing this property value.
+    ///
+    /// @defaultValue [M3ButtonShape#ROUND]
+    private final ObjectProperty<M3ButtonShape> buttonShape =
+            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_SHAPE) {
+                /// Updates shape style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SHAPE);
+                        return;
+                    }
+                    updateShapeStyle();
+                }
+            };
 
     /// Returns the toggle icon button shape.
     ///
@@ -301,9 +272,32 @@ public final class M3IconToggleButton extends ButtonBase {
         this.buttonShape.set(Objects.requireNonNull(shape, "shape"));
     }
 
+    /// Returns the observable, bindable resting button-shape property.
+    ///
+    /// The property defaults to [M3ButtonShape#ROUND]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the resting button-shape property
     public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
         return buttonShape;
     }
+
+    /// Whether the button represents the selected state.
+    ///
+    /// Changing this property updates visual and accessibility state but does not fire an action event. If the
+    /// button belongs to an [M3IconToggleButtonGroup], the group observes direct and bound changes and reapplies
+    /// its active selection policy.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+        }
+    };
 
     /// Returns whether this toggle icon button is selected.
     ///
@@ -319,9 +313,22 @@ public final class M3IconToggleButton extends ButtonBase {
         this.selected.set(selected);
     }
 
+    /// Returns the observable, bindable selected-state property.
+    ///
+    /// The property defaults to `false`. Changing it does not fire an action event and remains subject to the
+    /// selection policy of an owning [M3IconToggleButtonGroup].
+    ///
+    /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
+
+    /// The preferred visual container height in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// Returns the preferred container height token.
     ///
@@ -338,6 +345,12 @@ public final class M3IconToggleButton extends ButtonBase {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the observable, bindable, styleable preferred container-height property.
+    ///
+    /// The property defaults to `40.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the preferred container-height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -350,6 +363,13 @@ public final class M3IconToggleButton extends ButtonBase {
         }
         return containerHeight;
     }
+
+    /// The preferred visual container width in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerWidth;
 
     /// Returns the preferred container width token.
     ///
@@ -366,6 +386,12 @@ public final class M3IconToggleButton extends ButtonBase {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
+    /// Returns the observable, bindable, styleable preferred container-width property.
+    ///
+    /// The property defaults to `40.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the preferred container-width property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -378,6 +404,13 @@ public final class M3IconToggleButton extends ButtonBase {
         }
         return containerWidth;
     }
+
+    /// The container corner radius in logical pixels.
+    ///
+    /// Values must be finite and non-negative. The default produces a fully rounded container at the default size.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Returns the container shape radius token.
     ///
@@ -394,6 +427,12 @@ public final class M3IconToggleButton extends ButtonBase {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
+    /// Returns the observable, bindable, styleable container corner-radius property.
+    ///
+    /// The property defaults to `999.0` logical pixels and accepts only finite, non-negative values. CSS cannot
+    /// set the property while it is bound.
+    ///
+    /// @return the container corner-radius property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -406,6 +445,13 @@ public final class M3IconToggleButton extends ButtonBase {
         }
         return containerShape;
     }
+
+    /// The preferred icon glyph size in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty iconSize;
 
     /// Returns the icon glyph size token.
     ///
@@ -422,6 +468,12 @@ public final class M3IconToggleButton extends ButtonBase {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
+    /// Returns the observable, bindable, styleable icon glyph-size property.
+    ///
+    /// The property defaults to `24.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the icon glyph-size property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -434,6 +486,9 @@ public final class M3IconToggleButton extends ButtonBase {
         }
         return iconSize;
     }
+
+    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    private @Nullable Node managedIconGraphic;
 
     /// Reverses the selected state and fires an action event when this button is enabled.
     ///
@@ -474,7 +529,7 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// Returns accessibility attributes for the toggle selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` if the attribute is not supported
     /// @throws NullPointerException if `attribute` is `null`

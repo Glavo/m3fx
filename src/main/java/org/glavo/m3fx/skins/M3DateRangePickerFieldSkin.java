@@ -28,6 +28,7 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     /// Creates a date range picker field skin.
     ///
     /// @param control the date range picker field controlled by this skin
+    /// @throws IllegalStateException if the control does not expose its start and end input layouts
     public M3DateRangePickerFieldSkin(M3DateRangePickerField control) {
         super(control);
         Object startItem = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);

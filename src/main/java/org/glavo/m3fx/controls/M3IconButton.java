@@ -44,6 +44,21 @@ public final class M3IconButton extends M3ButtonBase {
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
 
+    /// Creates an icon button with no graphic and the default icon-button metrics.
+    public M3IconButton() {
+        this(null);
+    }
+
+    /// Creates an icon button with a graphic.
+    ///
+    /// @param graphic the graphic displayed by the icon button, or `null`
+    public M3IconButton(@Nullable Node graphic) {
+        super("", graphic);
+        M3ControlStyles.add(this, STYLE_CLASS);
+        setVariant(M3ButtonVariant.TEXT);
+        initializeIconMetrics();
+    }
+
     /// The semantic width role used with the active button size.
     ///
     /// A direct assignment of `null` is replaced with the default role.
@@ -62,29 +77,6 @@ public final class M3IconButton extends M3ButtonBase {
                 }
             };
 
-    /// The preferred visual container width in logical pixels.
-    ///
-    /// The value must be finite and non-negative. This property updates the unbound minimum, preferred, and
-    /// maximum width; an application binding on those inherited size properties remains authoritative.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerWidth;
-
-    /// Creates an icon button with no graphic and the default icon-button metrics.
-    public M3IconButton() {
-        this(null);
-    }
-
-    /// Creates an icon button with a graphic.
-    ///
-    /// @param graphic the graphic displayed by the icon button, or `null`
-    public M3IconButton(@Nullable Node graphic) {
-        super("", graphic);
-        M3ControlStyles.add(this, STYLE_CLASS);
-        setVariant(M3ButtonVariant.TEXT);
-        initializeIconMetrics();
-    }
-
     /// Returns the icon button width role.
     ///
     /// @return the icon button width role
@@ -100,9 +92,23 @@ public final class M3IconButton extends M3ButtonBase {
         this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
     }
 
+    /// Returns the observable, bindable icon-button width-role property.
+    ///
+    /// The property defaults to [M3IconButtonWidth#DEFAULT]. A `null` value assigned directly through the property
+    /// is replaced with that default.
+    ///
+    /// @return the icon-button width-role property
     public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
         return widthRole;
     }
+
+    /// The preferred visual container width in logical pixels.
+    ///
+    /// The value must be finite and non-negative. This property updates the unbound minimum, preferred, and
+    /// maximum width; an application binding on those inherited size properties remains authoritative.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerWidth;
 
     /// Returns the preferred visual container width token.
     ///
@@ -119,6 +125,12 @@ public final class M3IconButton extends M3ButtonBase {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
+    /// Returns the observable, bindable, styleable preferred container-width property.
+    ///
+    /// The property defaults to `40.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the preferred container-width property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = M3Css.nonNegativeStyleableDoubleProperty(

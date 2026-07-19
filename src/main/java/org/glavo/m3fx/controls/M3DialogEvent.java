@@ -21,9 +21,11 @@ import java.util.Objects;
 /// Only a [#CLOSE_REQUEST] event is cancellable by contract. Calling [#consume()] on that event keeps the dialog
 /// visible and prevents its exit transition. Other lifecycle handlers may observe their event but consumption has no
 /// effect on the already established transition.
+///
+/// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public final class M3DialogEvent extends Event {
-    /// Serialization identifier for JavaFX event compatibility.
+    /// The serialization version identifier.
     @Serial
     private static final long serialVersionUID = 1L;
 

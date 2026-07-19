@@ -23,9 +23,13 @@ interface M3IconGraphic {
     /// Sets an explicit icon size.
     ///
     /// @param iconSize the icon size in logical pixels
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
     void setIconSize(double iconSize);
 
-    /// Returns the styleable icon-size property.
+    /// Returns the observable, bindable, styleable icon-size property.
+    ///
+    /// The property represents both rendered dimensions in logical pixels and accepts only finite, non-negative
+    /// values. Each implementation initializes it from its current semantic size.
     ///
     /// @return the icon-size property
     StyleableDoubleProperty iconSizeProperty();

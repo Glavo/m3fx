@@ -26,6 +26,8 @@ public enum M3CardVariant {
     private final String styleClass;
 
     /// Creates a card variant.
+    ///
+    /// @param styleClass the style class applied to cards using this variant
     M3CardVariant(String styleClass) {
         this.styleClass = styleClass;
     }

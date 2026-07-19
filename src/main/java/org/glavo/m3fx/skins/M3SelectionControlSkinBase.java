@@ -22,6 +22,10 @@ import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base skin for Material Design 3 selection controls.
+///
+/// The base arranges an indicator slot and label in logical order and provides shared state-layer, ripple, focus,
+/// pointer, and keyboard interaction. Subclasses supply the indicator geometry and may customize Enter-key
+/// activation while retaining Space-key arming semantics.
 @NotNullByDefault
 abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase<C> {
     /// The root layout container.
@@ -204,7 +208,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Applies a fixed size to a region.
     ///
     /// @param region the region to size
-    /// @param width the fixed width in pixels
+    /// @param width  the fixed width in pixels
     /// @param height the fixed height in pixels
     protected static void setFixedSize(Region region, double width, double height) {
         region.setMinSize(width, height);
@@ -214,7 +218,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
     /// Applies a fixed size to the indicator touch target slot.
     ///
-    /// @param width the fixed indicator slot width in pixels
+    /// @param width  the fixed indicator slot width in pixels
     /// @param height the fixed indicator slot height in pixels
     protected final void setIndicatorSlotSize(double width, double height) {
         setFixedSize(indicatorSlot, width, height);
@@ -223,10 +227,10 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
     /// Lays out the indicator state layer within the indicator slot.
     ///
-    /// @param x the layer x position
-    /// @param y the layer y position
-    /// @param width the layer width
-    /// @param height the layer height
+    /// @param x           the layer x position
+    /// @param y           the layer y position
+    /// @param width       the layer width
+    /// @param height      the layer height
     /// @param shapeRadius the layer clipping radius
     protected final void layoutIndicatorStateLayer(
             double x,
@@ -242,10 +246,10 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     ///
     /// Coordinates are relative to the state layer itself, not the indicator slot.
     ///
-    /// @param x the focus indicator container x position
-    /// @param y the focus indicator container y position
-    /// @param width the focus indicator container width
-    /// @param height the focus indicator container height
+    /// @param x           the focus indicator container x position
+    /// @param y           the focus indicator container y position
+    /// @param width       the focus indicator container width
+    /// @param height      the focus indicator container height
     /// @param shapeRadius the focus indicator container shape radius
     protected final void layoutIndicatorFocusIndicator(
             double x,
@@ -273,7 +277,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     ///
     /// Returning `false` suppresses the base click action because the subclass has committed the interaction.
     ///
-    /// @param event the primary mouse release
+    /// @param event          the primary mouse release
     /// @param releasedInside whether the armed pointer was released inside the control
     /// @return whether normal click activation should continue
     protected boolean completePrimaryPointerInteraction(MouseEvent event, boolean releasedInside) {

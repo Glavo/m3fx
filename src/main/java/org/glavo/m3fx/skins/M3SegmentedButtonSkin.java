@@ -22,6 +22,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3SegmentedButton].
+///
+/// The skin augments labeled-button content with an animated selection container and optional selected-state
+/// indicator. Group position and node orientation determine the outer edge shape; content and selection geometry are
+/// updated without changing the button's requested size during state transitions.
 @NotNullByDefault
 public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedButton> {
     /// The selected container style class.

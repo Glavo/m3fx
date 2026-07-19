@@ -63,47 +63,6 @@ public final class M3SegmentedButton extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 12.0;
 
-    /// The preferred container height in logical pixels.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The container corner radius in logical pixels.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The padding on each horizontal side of the content, in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// Whether this segment is selected.
-    ///
-    /// Direct property changes are observed by a containing [M3SegmentedButtonGroup], which may update this or
-    /// other segments to restore its selection invariant.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty selectedValue = new SimpleBooleanProperty(this, "selected") {
-        /// Updates selected pseudo-class state.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
-        }
-    };
-
-    /// Whether the default skin may display its built-in selected-state check indicator.
-    ///
-    /// The indicator is rendered only while this button is selected. With an application-provided graphic, the
-    /// indicator visually replaces the graphic without changing [#graphicProperty()]. Setting this property to
-    /// `false` does not affect selection behavior, accessibility state, or the supplied graphic.
-    ///
-    /// @defaultValue `true`
-    private final BooleanProperty selectionIndicatorEnabledValue =
-            new SimpleBooleanProperty(this, "selectionIndicatorEnabled", true);
-
     /// Creates an unselected segmented button with an empty label and no graphic.
     public M3SegmentedButton() {
         this("");
@@ -126,6 +85,22 @@ public final class M3SegmentedButton extends ButtonBase {
         initialize();
     }
 
+    /// Whether this segment is selected.
+    ///
+    /// Direct property changes are observed by a containing [M3SegmentedButtonGroup], which may update this or
+    /// other segments to restore its selection invariant.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty selectedValue = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+        }
+    };
+
     /// Returns whether this segmented button is selected.
     ///
     /// @return `true` if this segmented button is selected
@@ -142,10 +117,22 @@ public final class M3SegmentedButton extends ButtonBase {
 
     /// Returns the property containing this segmented button's selected state.
     ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
     /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
         return selectedValue;
     }
+
+    /// Whether the default skin may display its built-in selected-state check indicator.
+    ///
+    /// The indicator is rendered only while this button is selected. With an application-provided graphic, the
+    /// indicator visually replaces the graphic without changing [#graphicProperty()]. Setting this property to
+    /// `false` does not affect selection behavior, accessibility state, or the supplied graphic.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty selectionIndicatorEnabledValue =
+            new SimpleBooleanProperty(this, "selectionIndicatorEnabled", true);
 
     /// Returns whether the default selected-state check indicator is enabled.
     ///
@@ -166,10 +153,17 @@ public final class M3SegmentedButton extends ButtonBase {
 
     /// Returns the property controlling the default selected-state check indicator.
     ///
+    /// The returned property is observable and bindable. Its default value is `true`.
+    ///
     /// @return the selection-indicator-enabled property
     public final BooleanProperty selectionIndicatorEnabledProperty() {
         return selectionIndicatorEnabledValue;
     }
+
+    /// The preferred container height in logical pixels.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// Returns the preferred container height token.
     ///
@@ -186,6 +180,12 @@ public final class M3SegmentedButton extends ButtonBase {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the `containerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `40.0` logical pixels.
+    ///
+    /// @return the `containerHeight` property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -198,6 +198,11 @@ public final class M3SegmentedButton extends ButtonBase {
         }
         return containerHeight;
     }
+
+    /// The container corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Returns the container shape radius token.
     ///
@@ -214,6 +219,12 @@ public final class M3SegmentedButton extends ButtonBase {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
+    /// Returns the `containerShape` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `999.0` logical pixels.
+    ///
+    /// @return the `containerShape` property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -226,6 +237,11 @@ public final class M3SegmentedButton extends ButtonBase {
         }
         return containerShape;
     }
+
+    /// The padding on each horizontal side of the content, in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Returns the horizontal content padding token.
     ///
@@ -242,6 +258,12 @@ public final class M3SegmentedButton extends ButtonBase {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
+    /// Returns the `horizontalPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `horizontalPadding` property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(

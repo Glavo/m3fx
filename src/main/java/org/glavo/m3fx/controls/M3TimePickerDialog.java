@@ -69,15 +69,6 @@ public final class M3TimePickerDialog extends M3Dialog {
     /// The retained confirmation action shown at the logical end of the action row.
     private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
-    /// The selected time synchronized with the embedded picker.
-    ///
-    /// Non-null assignments discard seconds and nanoseconds, then validate the normalized time against the picker's
-    /// inclusive bounds. Assigning `null` clears selection and disables the OK action. Changes made through the
-    /// embedded picker update this property as well.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable LocalTime> value;
-
     /// Whether the dialog and embedded picker are currently synchronizing selected values.
     private boolean synchronizingValue;
 
@@ -141,23 +132,15 @@ public final class M3TimePickerDialog extends M3Dialog {
         setValue(value);
     }
 
-    /// Returns the time picker displayed by this dialog.
+    /// The selected time synchronized with the embedded picker.
     ///
-    /// @return the time picker displayed by this dialog
-    public M3TimePicker getPicker() {
-        return picker;
-    }
-
-    /// Returns the mutable time preset list.
+    /// Direct non-null assignments discard seconds and nanoseconds, then validate the normalized time against the
+    /// picker's inclusive bounds. Assigning `null` clears selection and disables the OK action. A binding source
+    /// must provide minute-precision values within those bounds. Changes made through the embedded picker update
+    /// this property as well while it is not bound.
     ///
-    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update the dialog action
-    /// column immediately. Duplicate presets are retained as separate actions in list order. Presets outside the
-    /// picker's current bounds remain in the list but are disabled.
-    ///
-    /// @return the live mutable time preset list
-    public ObservableList<M3TimePreset> getPresets() {
-        return presets;
-    }
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable LocalTime> value;
 
     /// Returns the selected time, or `null` when no time is selected.
     ///
@@ -179,9 +162,31 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Returns the property synchronized with the selected minute-precision time of the embedded picker.
     ///
+    /// The returned property is observable and bindable. Its default value is `null`. A binding source must provide
+    /// either `null` or a value whose seconds and nanoseconds are zero and which lies within the embedded picker's
+    /// current bounds. While the property is bound, picker interaction cannot replace the bound value.
+    ///
     /// @return the selected-time property
     public ObjectProperty<@Nullable LocalTime> valueProperty() {
         return value;
+    }
+
+    /// Returns the time picker displayed by this dialog.
+    ///
+    /// @return the time picker displayed by this dialog
+    public M3TimePicker getPicker() {
+        return picker;
+    }
+
+    /// Returns the mutable time preset list.
+    ///
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update the dialog action
+    /// column immediately. Duplicate presets are retained as separate actions in list order. Presets outside the
+    /// picker's current bounds remain in the list but are disabled.
+    ///
+    /// @return the live mutable time preset list
+    public ObservableList<M3TimePreset> getPresets() {
+        return presets;
     }
 
     /// Configures dialog content, buttons, value synchronization, and button state.
@@ -230,6 +235,29 @@ public final class M3TimePickerDialog extends M3Dialog {
                 try {
                     picker.setValue(newValue);
                     super.set(picker.getValue());
+                } finally {
+                    synchronizingValue = false;
+                }
+            }
+
+            /// Synchronizes valid values supplied by a binding source with the embedded picker.
+            @Override
+            protected void invalidated() {
+                if (!isBound() || synchronizingValue) {
+                    return;
+                }
+
+                @Nullable LocalTime selectedTime = get();
+                if (selectedTime != null
+                        && (selectedTime.getSecond() != 0
+                        || selectedTime.getNano() != 0
+                        || picker.isTimeDisabled(selectedTime))) {
+                    return;
+                }
+
+                synchronizingValue = true;
+                try {
+                    picker.setValue(selectedTime);
                 } finally {
                     synchronizingValue = false;
                 }

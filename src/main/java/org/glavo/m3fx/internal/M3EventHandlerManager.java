@@ -23,6 +23,9 @@ import java.util.Objects;
 /// This manager supplies the public event semantics needed by non-Node event targets without relying on internal
 /// `com.sun.javafx` APIs. Registrations are retained by identity, duplicate registrations for the same phase and
 /// event type are ignored, and event type superclasses participate in both capture and bubble phases.
+///
+/// Instances are not thread-safe. Registration and dispatch must be serialized by the owning event target and are
+/// normally performed on the JavaFX application thread.
 @NotNullByDefault
 public final class M3EventHandlerManager implements EventDispatcher {
     /// The object installed as the source of events delivered through this manager.

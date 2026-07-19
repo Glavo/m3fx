@@ -39,7 +39,8 @@ import java.util.Objects;
 /// The picker maintains a nullable selected [value][#valueProperty()] independently from the
 /// [displayed month][#displayedMonthProperty()]. Selecting a date also displays its month; changing only the
 /// displayed month does not change selection. Inclusive minimum and maximum dates constrain selection. Updating a
-/// bound so that the current value falls outside the permitted interval clears the value.
+/// bound so that the current value falls outside the permitted interval clears the value. When the value property is
+/// bound, its binding must continue to supply a selectable date as the bounds change.
 ///
 /// The calendar is focus traversable. Arrow keys move by day or week, Page Up and Page Down move by month, and Home
 /// and End move to the first and last day of the displayed month. Keyboard navigation changes selection only when
@@ -110,6 +111,19 @@ public final class M3DatePicker extends Control {
     /// The style class applied to the selected day cell.
     public static final String SELECTED_DAY_STYLE_CLASS = "m3-date-picker-selected-day";
 
+    /// Creates a picker showing the current month with no selected date and no date bounds.
+    public M3DatePicker() {
+        initialize();
+    }
+
+    /// Creates a picker whose selected value and displayed month are initialized from the specified date.
+    ///
+    /// @param value the initially selected date
+    public M3DatePicker(LocalDate value) {
+        initialize();
+        setValue(value);
+    }
+
     /// The selected date, or `null` when selection is empty.
     ///
     /// The default value is `null`. A non-null value set through [setValue][#setValue(LocalDate)] must be within
@@ -132,102 +146,6 @@ public final class M3DatePicker extends Control {
                 }
             };
 
-    /// The month currently displayed by the calendar.
-    ///
-    /// The initial value is the month containing the construction date. The property never reports `null`; a
-    /// direct `null` assignment replaces it with the month containing the assignment date. Changing this property
-    /// does not change [value][#valueProperty()].
-    private final ObjectProperty<YearMonth> displayedMonth =
-            new SimpleObjectProperty<>(this, "displayedMonth", YearMonth.now()) {
-                /// Restores a valid month when callers set the property directly to `null`.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(YearMonth.now());
-                        return;
-                    }
-                    notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
-                    notifyAccessibleItemsChanged();
-                }
-            };
-
-    /// The weekday shown in the first calendar column.
-    ///
-    /// The initial value is derived from the default locale at construction time. A direct `null` assignment
-    /// recomputes the locale default. Changing the JVM default locale does not otherwise update an existing picker.
-    private final ObjectProperty<DayOfWeek> firstDayOfWeek =
-            new SimpleObjectProperty<>(this, "firstDayOfWeek", defaultFirstDayOfWeek()) {
-                /// Restores the locale default when callers set the property directly to `null`.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(defaultFirstDayOfWeek());
-                    }
-                    notifyAccessibleItemsChanged();
-                }
-            };
-
-    /// The inclusive lower selection bound, or `null` for no lower bound.
-    ///
-    /// The default value is `null`. [setMinDate][#setMinDate(LocalDate)] rejects a value after the current maximum.
-    /// Direct property writes are not prevalidated and must preserve the bound ordering. Changing this property
-    /// clears a selected value that becomes out of range.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable LocalDate> minDate =
-            new SimpleObjectProperty<>(this, "minDate") {
-                /// Clears the selected date when it no longer satisfies the range.
-                @Override
-                protected void invalidated() {
-                    clearValueIfOutOfRange();
-                    notifyAccessibleItemsChanged();
-                }
-            };
-
-    /// The inclusive upper selection bound, or `null` for no upper bound.
-    ///
-    /// The default value is `null`. [setMaxDate][#setMaxDate(LocalDate)] rejects a value before the current minimum.
-    /// Direct property writes are not prevalidated and must preserve the bound ordering. Changing this property
-    /// clears a selected value that becomes out of range.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable LocalDate> maxDate =
-            new SimpleObjectProperty<>(this, "maxDate") {
-                /// Clears the selected date when it no longer satisfies the range.
-                @Override
-                protected void invalidated() {
-                    clearValueIfOutOfRange();
-                    notifyAccessibleItemsChanged();
-                }
-            };
-
-    /// Whether leading and trailing cells display dates from adjacent months.
-    ///
-    /// The default value is `true`. Hidden adjacent-month dates remain available by navigating to their month.
-    ///
-    /// @defaultValue `true`
-    private final BooleanProperty showAdjacentMonthDays =
-            new SimpleBooleanProperty(this, "showAdjacentMonthDays", true) {
-                /// Notifies accessibility clients when visible day cells change.
-                @Override
-                protected void invalidated() {
-                    notifyAccessibleItemsChanged();
-                }
-            };
-
-    /// Creates a picker showing the current month with no selected date and no date bounds.
-    public M3DatePicker() {
-        initialize();
-    }
-
-    /// Creates a picker whose selected value and displayed month are initialized from the specified date.
-    ///
-    /// @param value the initially selected date
-    public M3DatePicker(LocalDate value) {
-        initialize();
-        setValue(value);
-    }
-
     /// Returns the selected date, or `null` when no date is selected.
     ///
     /// @return the selected date, or `null` when no date is selected
@@ -248,9 +166,36 @@ public final class M3DatePicker extends Control {
         this.value.set(value);
     }
 
+    /// Returns the observable property that stores the selected date.
+    ///
+    /// The property can be observed and bound. Its default value is `null`. Direct non-null assignments through
+    /// the property bypass [setValue][#setValue(LocalDate)] range validation and change the displayed month. A
+    /// binding must supply only dates within the current bounds; changing a bound cannot clear an invalid value while
+    /// this property remains bound.
+    ///
+    /// @return the selected-date property
     public final ObjectProperty<@Nullable LocalDate> valueProperty() {
         return value;
     }
+
+    /// The month currently displayed by the calendar.
+    ///
+    /// The initial value is the month containing the construction date. A direct `null` assignment replaces it with
+    /// the month containing the assignment date; bound values must be non-null. Changing this property does not
+    /// change [value][#valueProperty()].
+    private final ObjectProperty<YearMonth> displayedMonth =
+            new SimpleObjectProperty<>(this, "displayedMonth", YearMonth.now()) {
+                /// Restores a valid month when callers set the property directly to `null`.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(YearMonth.now());
+                        return;
+                    }
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Returns the month currently displayed by the calendar grid.
     ///
@@ -267,9 +212,31 @@ public final class M3DatePicker extends Control {
         this.displayedMonth.set(Objects.requireNonNull(displayedMonth, "displayedMonth"));
     }
 
+    /// Returns the observable property that stores the displayed month.
+    ///
+    /// The property can be observed and bound. Its initial value is the month containing the construction date.
+    /// Direct `null` assignments restore the month containing the assignment date; bound values must be non-null.
+    ///
+    /// @return the displayed-month property
     public final ObjectProperty<YearMonth> displayedMonthProperty() {
         return displayedMonth;
     }
+
+    /// The weekday shown in the first calendar column.
+    ///
+    /// The initial value is derived from the default locale at construction time. A direct `null` assignment
+    /// recomputes the locale default. Changing the JVM default locale does not otherwise update an existing picker.
+    private final ObjectProperty<DayOfWeek> firstDayOfWeek =
+            new SimpleObjectProperty<>(this, "firstDayOfWeek", defaultFirstDayOfWeek()) {
+                /// Restores the locale default when callers set the property directly to `null`.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(defaultFirstDayOfWeek());
+                    }
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Returns the weekday shown in the first calendar column.
     ///
@@ -286,9 +253,32 @@ public final class M3DatePicker extends Control {
         this.firstDayOfWeek.set(Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek"));
     }
 
+    /// Returns the observable property that stores the first day of the week.
+    ///
+    /// The property can be observed and bound. Its initial value is derived from the default locale at construction
+    /// time. Direct `null` assignments recompute that locale default; bound values must be non-null.
+    ///
+    /// @return the first-day-of-week property
     public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
         return firstDayOfWeek;
     }
+
+    /// The inclusive lower selection bound, or `null` for no lower bound.
+    ///
+    /// The default value is `null`. [setMinDate][#setMinDate(LocalDate)] rejects a value after the current maximum.
+    /// Direct property writes are not prevalidated and must preserve the bound ordering. Changing this property
+    /// clears a selected value that becomes out of range.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable LocalDate> minDate =
+            new SimpleObjectProperty<>(this, "minDate") {
+                /// Clears the selected date when it no longer satisfies the range.
+                @Override
+                protected void invalidated() {
+                    clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Returns the earliest selectable date, or `null` when there is no lower bound.
     ///
@@ -301,14 +291,39 @@ public final class M3DatePicker extends Control {
     ///
     /// @param minDate the earliest selectable date, or `null` to clear the lower bound
     /// @throws IllegalArgumentException if `minDate` is after the current [maxDate][#maxDateProperty()]
+    /// @throws RuntimeException         if the selected value becomes invalid and [#valueProperty()] is bound
     public final void setMinDate(@Nullable LocalDate minDate) {
         validateDateRange(minDate, getMaxDate());
         this.minDate.set(minDate);
     }
 
+    /// Returns the observable property that stores the inclusive lower date bound.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct property writes bypass the
+    /// ordering check performed by [setMinDate][#setMinDate(LocalDate)] and clear a selection that becomes invalid.
+    /// If [#valueProperty()] is bound, its binding must update the selected date before this property excludes it.
+    ///
+    /// @return the minimum-date property
     public final ObjectProperty<@Nullable LocalDate> minDateProperty() {
         return minDate;
     }
+
+    /// The inclusive upper selection bound, or `null` for no upper bound.
+    ///
+    /// The default value is `null`. [setMaxDate][#setMaxDate(LocalDate)] rejects a value before the current minimum.
+    /// Direct property writes are not prevalidated and must preserve the bound ordering. Changing this property
+    /// clears a selected value that becomes out of range.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable LocalDate> maxDate =
+            new SimpleObjectProperty<>(this, "maxDate") {
+                /// Clears the selected date when it no longer satisfies the range.
+                @Override
+                protected void invalidated() {
+                    clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Returns the latest selectable date, or `null` when there is no upper bound.
     ///
@@ -321,14 +336,36 @@ public final class M3DatePicker extends Control {
     ///
     /// @param maxDate the latest selectable date, or `null` to clear the upper bound
     /// @throws IllegalArgumentException if `maxDate` is before the current [minDate][#minDateProperty()]
+    /// @throws RuntimeException         if the selected value becomes invalid and [#valueProperty()] is bound
     public final void setMaxDate(@Nullable LocalDate maxDate) {
         validateDateRange(getMinDate(), maxDate);
         this.maxDate.set(maxDate);
     }
 
+    /// Returns the observable property that stores the inclusive upper date bound.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct property writes bypass the
+    /// ordering check performed by [setMaxDate][#setMaxDate(LocalDate)] and clear a selection that becomes invalid.
+    /// If [#valueProperty()] is bound, its binding must update the selected date before this property excludes it.
+    ///
+    /// @return the maximum-date property
     public final ObjectProperty<@Nullable LocalDate> maxDateProperty() {
         return maxDate;
     }
+
+    /// Whether leading and trailing cells display dates from adjacent months.
+    ///
+    /// The default value is `true`. Hidden adjacent-month dates remain available by navigating to their month.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty showAdjacentMonthDays =
+            new SimpleBooleanProperty(this, "showAdjacentMonthDays", true) {
+                /// Notifies accessibility clients when visible day cells change.
+                @Override
+                protected void invalidated() {
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Returns whether adjacent-month days are visible in leading and trailing grid cells.
     ///
@@ -344,6 +381,11 @@ public final class M3DatePicker extends Control {
         this.showAdjacentMonthDays.set(showAdjacentMonthDays);
     }
 
+    /// Returns the observable property that controls whether adjacent-month dates are visible.
+    ///
+    /// The property can be observed and bound. Its default value is `true`.
+    ///
+    /// @return the show-adjacent-month-days property
     public final BooleanProperty showAdjacentMonthDaysProperty() {
         return showAdjacentMonthDays;
     }
@@ -351,7 +393,7 @@ public final class M3DatePicker extends Control {
     /// Selects the specified date and displays its month.
     ///
     /// @param date the date to select
-    /// @throws NullPointerException if `date` is `null`
+    /// @throws NullPointerException     if `date` is `null`
     /// @throws IllegalArgumentException if `date` is outside the current inclusive bounds
     public final void selectDate(LocalDate date) {
         setValue(Objects.requireNonNull(date, "date"));
@@ -367,7 +409,7 @@ public final class M3DatePicker extends Control {
     /// Selects the date represented by a preset and displays its month.
     ///
     /// @param preset the date preset to apply
-    /// @throws NullPointerException if `preset` is `null`
+    /// @throws NullPointerException     if `preset` is `null`
     /// @throws IllegalArgumentException if the preset date is outside the current inclusive bounds
     public final void applyPreset(M3DatePreset preset) {
         LocalDate date = Objects.requireNonNull(preset, "preset").date();
@@ -828,7 +870,6 @@ public final class M3DatePicker extends Control {
         );
         return firstOfMonth.minusDays(leadingDays);
     }
-
 
     /// Notifies accessibility clients that visible day cells changed.
     private void notifyAccessibleItemsChanged() {

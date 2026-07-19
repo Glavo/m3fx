@@ -89,20 +89,15 @@ public final class M3ButtonGroup extends Control {
     private static final PseudoClass CONNECTED_GROUP_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("connected-group");
 
-    /// The live, mutable list of buttons in visual order.
-    ///
-    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. Removing a
-    /// button also removes grouping-specific state from that button.
-    private final ObservableList<ButtonBase> items = M3ObservableLists.nonNullElementList("item");
-
-    /// Notifies accessibility clients when focus moves between grouped buttons.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
+    /// Creates an empty, connected, small button group.
+    public M3ButtonGroup() {
+        initialize();
+    }
 
     /// The visual grouping model used for the items.
     ///
-    /// The default value is [M3ButtonGroupVariant#CONNECTED]. The property never reports `null`; a direct `null`
-    /// assignment restores the default.
+    /// The default value is [M3ButtonGroupVariant#CONNECTED]. A direct `null` assignment restores the default;
+    /// bound values must be non-null.
     ///
     /// @defaultValue [M3ButtonGroupVariant#CONNECTED]
     private final ObjectProperty<M3ButtonGroupVariant> variant =
@@ -120,10 +115,35 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
+    /// Returns the visual button group variant.
+    ///
+    /// @return the visual button group variant
+    public final M3ButtonGroupVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the visual button group variant.
+    ///
+    /// @param variant the visual button group variant
+    /// @throws NullPointerException if `variant` is `null`
+    public final void setVariant(M3ButtonGroupVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the observable property that stores the button group variant.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonGroupVariant#CONNECTED], and a direct
+    /// `null` assignment restores that default.
+    ///
+    /// @return the button group variant property
+    public final ObjectProperty<M3ButtonGroupVariant> variantProperty() {
+        return variant;
+    }
+
     /// The common Material size applied to compatible grouped buttons.
     ///
-    /// The default value is [M3ButtonSize#SMALL]. The property never reports `null`; a direct `null` assignment
-    /// restores the default.
+    /// The default value is [M3ButtonSize#SMALL]. A direct `null` assignment restores the default; bound values must
+    /// be non-null.
     ///
     /// @defaultValue [M3ButtonSize#SMALL]
     private final ObjectProperty<M3ButtonSize> size =
@@ -141,6 +161,31 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
+    /// Returns the Material Expressive button group size.
+    ///
+    /// @return the Material Expressive button group size
+    public final M3ButtonSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the Material Expressive button group size.
+    ///
+    /// @param size the Material Expressive button group size
+    /// @throws NullPointerException if `size` is `null`
+    public final void setSize(M3ButtonSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the observable property that stores the common button size.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonSize#SMALL], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the common button size property
+    public final ObjectProperty<M3ButtonSize> sizeProperty() {
+        return size;
+    }
+
     /// The spacing between adjacent button bounds, in logical pixels.
     ///
     /// The default value is `-1.0`, allowing adjacent borders to overlap. Any finite value is accepted, including
@@ -149,6 +194,41 @@ public final class M3ButtonGroup extends Control {
     /// @defaultValue `-1.0`
     private @Nullable StyleableDoubleProperty spacing;
 
+    /// Returns the spacing between grouped buttons.
+    ///
+    /// @return the child spacing in logical pixels
+    public final double getSpacing() {
+        return spacing == null ? DEFAULT_SPACING : spacing.get();
+    }
+
+    /// Sets the spacing between grouped buttons.
+    ///
+    /// @param spacing the child spacing in logical pixels
+    /// @throws IllegalArgumentException if `spacing` is not finite
+    public final void setSpacing(double spacing) {
+        spacingProperty().set(M3Css.finite(spacing, "spacing"));
+    }
+
+    /// Returns the styleable property that stores the spacing between button bounds.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-button-group-spacing`, and accepts any
+    /// finite value. Its default value is `-1.0` logical pixels.
+    ///
+    /// @return the button spacing property
+    public final StyleableDoubleProperty spacingProperty() {
+        if (spacing == null) {
+            spacing = M3Css.finiteStyleableDoubleProperty(
+                    DEFAULT_SPACING,
+                    this,
+                    "spacing",
+                    StyleableProperties.SPACING,
+                    () -> {
+                    }
+            );
+        }
+        return spacing;
+    }
+
     /// The proportional width increase assigned to the active item in a standard group.
     ///
     /// The default value is `0.15`. Values must be finite and non-negative. This property has no effect on a
@@ -156,6 +236,55 @@ public final class M3ButtonGroup extends Control {
     ///
     /// @defaultValue `0.15`
     private @Nullable StyleableDoubleProperty standardPressedWidthMultiplierStyleable;
+
+    /// Returns the proportional width increase applied to an activated button in a standard group.
+    ///
+    /// @return the pressed width multiplier
+    public final double getStandardPressedWidthMultiplier() {
+        return standardPressedWidthMultiplierStyleable == null
+                ? DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER
+                : standardPressedWidthMultiplierStyleable.get();
+    }
+
+    /// Sets the proportional width increase applied to an activated button in a standard group.
+    ///
+    /// @param multiplier the non-negative pressed width multiplier
+    /// @throws IllegalArgumentException if `multiplier` is negative or not finite
+    public final void setStandardPressedWidthMultiplier(double multiplier) {
+        standardPressedWidthMultiplierProperty().set(
+                M3Css.nonNegative(multiplier, "standardPressedWidthMultiplier")
+        );
+    }
+
+    /// Returns the styleable property that stores the standard-group pressed width multiplier.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as
+    /// `-m3-button-group-standard-pressed-width-multiplier`, and accepts finite, non-negative values. Its default
+    /// value is `0.15`.
+    ///
+    /// @return the pressed width multiplier property
+    public final StyleableDoubleProperty standardPressedWidthMultiplierProperty() {
+        if (standardPressedWidthMultiplierStyleable == null) {
+            standardPressedWidthMultiplierStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER,
+                    this,
+                    "standardPressedWidthMultiplier",
+                    StyleableProperties.STANDARD_PRESSED_WIDTH_MULTIPLIER,
+                    this::requestLayout
+            );
+        }
+        return standardPressedWidthMultiplierStyleable;
+    }
+
+    /// The live, mutable list of buttons in visual order.
+    ///
+    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. Removing a
+    /// button also removes grouping-specific state from that button.
+    private final ObservableList<ButtonBase> items = M3ObservableLists.nonNullElementList("item");
+
+    /// Notifies accessibility clients when focus moves between grouped buttons.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
     /// Updates grouped button position style classes when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -177,11 +306,6 @@ public final class M3ButtonGroup extends Control {
     private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
             (observable, oldValue, newValue) -> updateButtonStyles();
 
-    /// Creates an empty, connected, small button group.
-    public M3ButtonGroup() {
-        initialize();
-    }
-
     /// Returns the live list of buttons displayed by this group.
     ///
     /// Changes to the returned list are reflected immediately. The list preserves insertion order and rejects
@@ -190,108 +314,6 @@ public final class M3ButtonGroup extends Control {
     /// @return the live, mutable button list
     public final ObservableList<ButtonBase> getItems() {
         return items;
-    }
-
-    /// Returns the visual button group variant.
-    ///
-    /// @return the visual button group variant
-    public final M3ButtonGroupVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the visual button group variant.
-    ///
-    /// @param variant the visual button group variant
-    /// @throws NullPointerException if `variant` is `null`
-    public final void setVariant(M3ButtonGroupVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    public final ObjectProperty<M3ButtonGroupVariant> variantProperty() {
-        return variant;
-    }
-
-    /// Returns the Material Expressive button group size.
-    ///
-    /// @return the Material Expressive button group size
-    public final M3ButtonSize getSize() {
-        return size.get();
-    }
-
-    /// Sets the Material Expressive button group size.
-    ///
-    /// @param size the Material Expressive button group size
-    /// @throws NullPointerException if `size` is `null`
-    public final void setSize(M3ButtonSize size) {
-        this.size.set(Objects.requireNonNull(size, "size"));
-    }
-
-    public final ObjectProperty<M3ButtonSize> sizeProperty() {
-        return size;
-    }
-
-    /// Returns the spacing between grouped buttons.
-    ///
-    /// @return the child spacing in logical pixels
-    public final double getSpacing() {
-        return spacing == null ? DEFAULT_SPACING : spacing.get();
-    }
-
-    /// Sets the spacing between grouped buttons.
-    ///
-    /// @param spacing the child spacing in logical pixels
-    /// @throws IllegalArgumentException if `spacing` is not finite
-    public final void setSpacing(double spacing) {
-        spacingProperty().set(M3Css.finite(spacing, "spacing"));
-    }
-
-    public final StyleableDoubleProperty spacingProperty() {
-        if (spacing == null) {
-            spacing = M3Css.finiteStyleableDoubleProperty(
-                    DEFAULT_SPACING,
-                    this,
-                    "spacing",
-                    StyleableProperties.SPACING,
-                    () -> {
-                    }
-            );
-        }
-        return spacing;
-    }
-
-    /// Returns the proportional width increase applied to an activated button in a standard group.
-    ///
-    /// @return the pressed width multiplier
-    public final double getStandardPressedWidthMultiplier() {
-        return standardPressedWidthMultiplierStyleable == null
-                ? DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER
-                : standardPressedWidthMultiplierStyleable.get();
-    }
-
-    /// Sets the proportional width increase applied to an activated button in a standard group.
-    ///
-    /// @param multiplier the non-negative pressed width multiplier
-    /// @throws IllegalArgumentException if `multiplier` is negative or not finite
-    public final void setStandardPressedWidthMultiplier(double multiplier) {
-        standardPressedWidthMultiplierProperty().set(
-                M3Css.nonNegative(multiplier, "standardPressedWidthMultiplier")
-        );
-    }
-
-    /// Returns the standard-group pressed width multiplier property.
-    ///
-    /// @return the styleable pressed width multiplier property
-    public final StyleableDoubleProperty standardPressedWidthMultiplierProperty() {
-        if (standardPressedWidthMultiplierStyleable == null) {
-            standardPressedWidthMultiplierStyleable = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER,
-                    this,
-                    "standardPressedWidthMultiplier",
-                    StyleableProperties.STANDARD_PRESSED_WIDTH_MULTIPLIER,
-                    this::requestLayout
-            );
-        }
-        return standardPressedWidthMultiplierStyleable;
     }
 
     /// Returns a content-hugging maximum width for standard groups and a flexible maximum for connected groups.

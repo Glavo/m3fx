@@ -8,12 +8,14 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Default immutable implementation of [M3ElevationTokens].
 ///
-/// @param level0 elevation level zero
-/// @param level1 elevation level one
-/// @param level2 elevation level two
-/// @param level3 elevation level three
-/// @param level4 elevation level four
-/// @param level5 elevation level five
+/// Every level is expressed in JavaFX logical pixels and must be finite and non-negative.
+///
+/// @param level0 elevation level zero in logical pixels
+/// @param level1 elevation level one in logical pixels
+/// @param level2 elevation level two in logical pixels
+/// @param level3 elevation level three in logical pixels
+/// @param level4 elevation level four in logical pixels
+/// @param level5 elevation level five in logical pixels
 @NotNullByDefault
 public record M3ElevationTokensImpl(
         double level0,
@@ -24,6 +26,8 @@ public record M3ElevationTokensImpl(
         double level5
 ) implements M3ElevationTokens {
     /// Creates elevation tokens.
+    ///
+    /// @throws IllegalArgumentException if any level is negative or not finite
     public M3ElevationTokensImpl {
         validate(level0, "level0");
         validate(level1, "level1");

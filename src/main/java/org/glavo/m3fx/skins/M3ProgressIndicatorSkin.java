@@ -30,6 +30,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ProgressIndicator].
+///
+/// The skin renders determinate and indeterminate circular progress using standard arcs or expressive wavy paths.
+/// It preserves the configured gap between active and inactive geometry, animates determinate value changes through
+/// the active motion profile, and pauses indeterminate activity while the control has no showing window.
 @NotNullByDefault
 public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The AndroidX Material 3 circular indeterminate cycle duration used to normalize keyframe timings.

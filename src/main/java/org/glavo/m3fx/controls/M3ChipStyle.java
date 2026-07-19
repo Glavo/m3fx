@@ -24,6 +24,8 @@ public enum M3ChipStyle {
     private final String styleClass;
 
     /// Creates a chip style.
+    ///
+    /// @param styleClass the style class applied to chips using this container treatment
     M3ChipStyle(String styleClass) {
         this.styleClass = styleClass;
     }

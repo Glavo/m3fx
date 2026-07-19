@@ -25,6 +25,9 @@ import java.util.function.Consumer;
 /// scene and window observation overhead. Notifications raised off the JavaFX application thread are coalesced and
 /// dispatched on that thread. Callback dispatch does not allocate snapshots and remains stable when callbacks dispose
 /// subscriptions or move their owner to another scene.
+///
+/// Construction and lifecycle methods must be invoked on the JavaFX application thread. A disposed observer cannot
+/// be restarted. Calling [stop] or [dispose] more than once has no effect.
 @NotNullByDefault
 public final class M3MotionSettingsObserver {
     /// Opaque owner property key for the shared owner coordinator.
@@ -66,6 +69,7 @@ public final class M3MotionSettingsObserver {
     ///
     /// @param owner         the node whose scene attachment controls listener lifetime
     /// @param refreshAction the action invoked when motion settings may affect the owner
+    /// @throws NullPointerException if `owner` or `refreshAction` is `null`
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction) {
         this(owner, refreshAction, true);
     }
@@ -77,6 +81,7 @@ public final class M3MotionSettingsObserver {
     /// @param owner              the node whose scene attachment controls listener lifetime
     /// @param refreshAction      the action invoked when motion settings may affect the owner
     /// @param observeImmediately whether observation should start during construction
+    /// @throws NullPointerException if `owner` or `refreshAction` is `null`
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction, boolean observeImmediately) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.refreshAction = Objects.requireNonNull(refreshAction, "refreshAction");
@@ -86,6 +91,8 @@ public final class M3MotionSettingsObserver {
     }
 
     /// Starts observation when it is not already active.
+    ///
+    /// Calling this method while observation is active has no effect.
     ///
     /// @throws IllegalStateException if this observer has been disposed
     public void start() {
@@ -110,6 +117,9 @@ public final class M3MotionSettingsObserver {
     }
 
     /// Pauses observation without disposing this observer.
+    ///
+    /// Calling this method while observation is inactive has no effect. A stopped observer may be restarted with
+    /// [start] until it is disposed.
     public void stop() {
         if (!observing) {
             return;
@@ -123,7 +133,7 @@ public final class M3MotionSettingsObserver {
         }
     }
 
-    /// Stops observing scene and runtime motion setting changes.
+    /// Permanently stops observing scene and runtime motion setting changes.
     public void dispose() {
         if (disposed) {
             return;

@@ -71,99 +71,6 @@ public final class M3Card extends Control {
     /// The pseudo-class applied while the card participates in a drag operation.
     private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
 
-    /// The single content node displayed by this card.
-    ///
-    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
-        /// Updates accessibility semantics when content changes.
-        @Override
-        protected void invalidated() {
-            notifyAccessibleContentChanged();
-        }
-    };
-
-    /// Notifies accessibility clients when focus moves between the card and nested content.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
-
-    /// The handler for action events fired directly by this card.
-    ///
-    /// The default value is `null`, making the card passive. A non-null handler makes the card a focusable,
-    /// directly actionable surface. Action events originating from controls inside the content are not forwarded
-    /// to this handler.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction") {
-                /// Updates accessibility semantics when action behavior changes.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get() == null ? null : M3Card.this::handleOwnAction);
-                    updateActionAccessibility();
-                }
-            };
-
-    /// Whether the card is represented in the Material dragged state.
-    ///
-    /// The default value is `false`. This state is visual only and does not initiate or manage a JavaFX
-    /// drag-and-drop gesture.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty draggedState = new SimpleBooleanProperty(this, "dragged", false) {
-        /// Updates the dragged pseudo-class after the state changes.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(DRAGGED_PSEUDO_CLASS, get());
-        }
-    };
-
-    /// The visual treatment of this card.
-    ///
-    /// The default value is [M3CardVariant#FILLED]. The property never reports `null`; a direct `null` assignment
-    /// restores the default.
-    ///
-    /// @defaultValue [M3CardVariant#FILLED]
-    private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
-        /// Updates variant style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(M3CardVariant.FILLED);
-                return;
-            }
-            updateVariantStyle();
-        }
-    };
-
-    /// The card corner radius, in logical pixels.
-    ///
-    /// The default value is `12.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The padding on each side of card content, in logical pixels.
-    ///
-    /// The default value is `16.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// The outline width used by outlined cards, in logical pixels.
-    ///
-    /// The default value is `1.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `1.0`
-    private @Nullable StyleableDoubleProperty outlineWidth;
-
-    /// Whether focus traversal was enabled automatically because the card became actionable.
-    private boolean actionFocusTraversableApplied;
-
-    /// The focus traversal value that was active before the card became actionable.
-    private boolean focusTraversableBeforeAction;
-
     /// Creates an empty filled card.
     public M3Card() {
         this(null);
@@ -193,6 +100,19 @@ public final class M3Card extends Control {
         setVariant(variant);
     }
 
+    /// The single content node displayed by this card.
+    ///
+    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
+        /// Updates accessibility semantics when content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleContentChanged();
+        }
+    };
+
     /// Returns the card content node.
     ///
     /// @return the card content node, or `null` when no content is set
@@ -207,9 +127,31 @@ public final class M3Card extends Control {
         this.content.set(content);
     }
 
+    /// Returns the observable property that stores the optional card content.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the card content property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
+
+    /// The handler for action events fired directly by this card.
+    ///
+    /// The default value is `null`, making the card passive. A non-null handler makes the card a focusable,
+    /// directly actionable surface. Action events originating from controls inside the content are not forwarded
+    /// to this handler.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates accessibility semantics when action behavior changes.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get() == null ? null : M3Card.this::handleOwnAction);
+                    updateActionAccessibility();
+                }
+            };
 
     /// Returns the action handler.
     ///
@@ -229,9 +171,29 @@ public final class M3Card extends Control {
         this.onAction.set(onAction);
     }
 
+    /// Returns the observable property that stores the card action handler.
+    ///
+    /// The property can be observed and bound. Its default value is `null`; a non-null value makes the complete
+    /// card surface directly actionable.
+    ///
+    /// @return the card action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
+
+    /// Whether the card is represented in the Material dragged state.
+    ///
+    /// The default value is `false`. This state is visual only and does not initiate or manage a JavaFX
+    /// drag-and-drop gesture.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty draggedState = new SimpleBooleanProperty(this, "dragged", false) {
+        /// Updates the dragged pseudo-class after the state changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(DRAGGED_PSEUDO_CLASS, get());
+        }
+    };
 
     /// Returns whether this card is currently represented as dragged.
     ///
@@ -251,12 +213,33 @@ public final class M3Card extends Control {
         draggedState.set(dragged);
     }
 
-    /// Returns the dragged state property.
+    /// Returns the observable property that stores the Material dragged state.
     ///
-    /// @return the writable dragged state property
+    /// The property can be observed and bound. Its default value is `false`; it controls visual state only and
+    /// does not initiate a JavaFX drag-and-drop gesture.
+    ///
+    /// @return the dragged state property
     public final BooleanProperty draggedProperty() {
         return draggedState;
     }
+
+    /// The visual treatment of this card.
+    ///
+    /// The default value is [M3CardVariant#FILLED]. A direct `null` assignment restores the default; bound values
+    /// must be non-null.
+    ///
+    /// @defaultValue [M3CardVariant#FILLED]
+    private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
+        /// Updates variant style classes when the property changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(M3CardVariant.FILLED);
+                return;
+            }
+            updateVariantStyle();
+        }
+    };
 
     /// Returns the card variant.
     ///
@@ -273,9 +256,22 @@ public final class M3Card extends Control {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable property that stores the card variant.
+    ///
+    /// The property can be observed and bound. Its default value is [M3CardVariant#FILLED], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the card variant property
     public final ObjectProperty<M3CardVariant> variantProperty() {
         return variant;
     }
+
+    /// The card corner radius, in logical pixels.
+    ///
+    /// The default value is `12.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Returns the card container shape radius token.
     ///
@@ -292,6 +288,12 @@ public final class M3Card extends Control {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
+    /// Returns the styleable property that stores the card corner radius.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-shape`, and accepts finite,
+    /// non-negative values. Its default value is `12.0` logical pixels.
+    ///
+    /// @return the card corner radius property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -304,6 +306,13 @@ public final class M3Card extends Control {
         }
         return containerShape;
     }
+
+    /// The padding on each side of card content, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Returns the card content padding token.
     ///
@@ -320,6 +329,12 @@ public final class M3Card extends Control {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
+    /// Returns the styleable property that stores the card content padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-content-padding`, and accepts finite,
+    /// non-negative values. Its default value is `16.0` logical pixels.
+    ///
+    /// @return the card content padding property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -332,6 +347,13 @@ public final class M3Card extends Control {
         }
         return contentPadding;
     }
+
+    /// The outline width used by outlined cards, in logical pixels.
+    ///
+    /// The default value is `1.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `1.0`
+    private @Nullable StyleableDoubleProperty outlineWidth;
 
     /// Returns the outlined card border width token.
     ///
@@ -348,6 +370,12 @@ public final class M3Card extends Control {
         outlineWidthProperty().set(M3Css.nonNegative(outlineWidth, "outlineWidth"));
     }
 
+    /// Returns the styleable property that stores the outlined-card border width.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-outline-width`, and accepts finite,
+    /// non-negative values. Its default value is `1.0` logical pixel.
+    ///
+    /// @return the outlined-card border width property
     public final StyleableDoubleProperty outlineWidthProperty() {
         if (outlineWidth == null) {
             outlineWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -360,6 +388,16 @@ public final class M3Card extends Control {
         }
         return outlineWidth;
     }
+
+    /// Notifies accessibility clients when focus moves between the card and nested content.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
+
+    /// Whether focus traversal was enabled automatically because the card became actionable.
+    private boolean actionFocusTraversableApplied;
+
+    /// The focus traversal value that was active before the card became actionable.
+    private boolean focusTraversableBeforeAction;
 
     /// Creates the default card skin.
     @Override

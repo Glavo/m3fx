@@ -8,13 +8,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Default immutable implementation of [M3StateLayerTokens].
 ///
-/// @param hoverOpacity the hover state layer opacity
-/// @param focusOpacity the focus state layer opacity
-/// @param pressedOpacity the pressed state layer opacity
-/// @param draggedOpacity the dragged state layer opacity
-/// @param disabledContainerOpacity the disabled container opacity
-/// @param disabledContentOpacity the disabled content opacity
-/// @param focusIndicatorThickness the keyboard focus indicator thickness
+/// Opacity values are in the inclusive range `[0.0, 1.0]`. Focus indicator metrics are expressed in JavaFX
+/// logical pixels; thickness must be non-negative, while offsets may be negative.
+///
+/// @param hoverOpacity              the hover state layer opacity
+/// @param focusOpacity              the focus state layer opacity
+/// @param pressedOpacity            the pressed state layer opacity
+/// @param draggedOpacity            the dragged state layer opacity
+/// @param disabledContainerOpacity  the disabled container opacity
+/// @param disabledContentOpacity    the disabled content opacity
+/// @param focusIndicatorThickness   the keyboard focus indicator thickness
 /// @param focusIndicatorOuterOffset the keyboard focus indicator outer offset
 /// @param focusIndicatorInnerOffset the keyboard focus indicator inner offset
 @NotNullByDefault
@@ -30,6 +33,9 @@ public record M3StateLayerTokensImpl(
         double focusIndicatorInnerOffset
 ) implements M3StateLayerTokens {
     /// Creates state layer tokens.
+    ///
+    /// @throws IllegalArgumentException if an opacity is outside `[0.0, 1.0]`, a thickness is negative, or any
+    ///                                  value is not finite
     public M3StateLayerTokensImpl {
         validateOpacity(hoverOpacity, "hoverOpacity");
         validateOpacity(focusOpacity, "focusOpacity");

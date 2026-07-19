@@ -18,9 +18,10 @@ import org.jetbrains.annotations.Nullable;
 /// scene.
 ///
 /// Installation is replaceable and idempotent. Installing another theme on the same target replaces the previous
-/// M3FX theme rather than accumulating theme state. [uninstall] restores the root style and managed style-class
-/// membership captured by the corresponding installation. Applications should therefore avoid replacing a themed
-/// root's complete inline style while the installation is active if that change must survive uninstallation.
+/// M3FX theme rather than accumulating theme state. [uninstall(Scene)][#uninstall(Scene)] and
+/// [uninstall(Parent)][#uninstall(Parent)] restore the root style and managed style-class membership captured by the
+/// corresponding installation. Applications should therefore avoid replacing a themed root's complete inline
+/// style while the installation is active if that change must survive uninstallation.
 ///
 /// These methods mutate JavaFX scene-graph state. They must be called on the JavaFX Application Thread once the
 /// affected scene graph is live, following the same threading rules as [Scene] and [Parent].
@@ -77,7 +78,7 @@ public final class M3ThemeManager {
     ///
     /// @param scene the scene to theme
     /// @param theme the Material theme to install
-    /// @throws NullPointerException if `scene` or `theme` is `null`
+    /// @throws NullPointerException  if `scene` or `theme` is `null`
     /// @throws IllegalStateException if the theme stylesheet cannot be made available to JavaFX
     public static void install(Scene scene, M3Theme theme) {
         M3ThemeRuntime.install(scene, theme);
@@ -89,7 +90,7 @@ public final class M3ThemeManager {
     /// Reinstalling replaces the previous local theme. The installation remains attached to `root` if that
     /// parent is moved elsewhere in the scene graph.
     ///
-    /// @param root the root of the local theme scope
+    /// @param root  the root of the local theme scope
     /// @param theme the Material theme to install
     /// @throws NullPointerException if `root` or `theme` is `null`
     public static void install(Parent root, M3Theme theme) {

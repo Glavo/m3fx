@@ -79,19 +79,15 @@ public final class M3Carousel extends Control {
     /// The pseudo-class applied to the selected carousel item node.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
-    /// The live, mutable item list in visual order.
-    ///
-    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. An item is a
-    /// scene-graph node and cannot simultaneously be a child of another parent.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
-
-    /// The focus-traversable value restored when an application-owned item leaves this carousel.
-    private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
+    /// Creates an empty uncontained carousel with no selection.
+    public M3Carousel() {
+        initialize();
+    }
 
     /// The Material layout strategy used to size and position items.
     ///
-    /// The default value is [M3CarouselLayout#UNCONTAINED]. The property never reports `null`; assigning `null`
-    /// restores the default.
+    /// The default value is [M3CarouselLayout#UNCONTAINED]. A direct `null` assignment restores the default; bound
+    /// values must be non-null.
     ///
     /// @defaultValue [M3CarouselLayout#UNCONTAINED]
     private final ObjectProperty<M3CarouselLayout> carouselLayout =
@@ -107,6 +103,32 @@ public final class M3Carousel extends Control {
                     requestLayout();
                 }
             };
+
+    /// Returns the Material layout strategy used by this carousel.
+    ///
+    /// @return the current carousel layout
+    public final M3CarouselLayout getCarouselLayout() {
+        return carouselLayout.get();
+    }
+
+    /// Sets the Material layout strategy used by this carousel.
+    ///
+    /// A `null` assignment restores [M3CarouselLayout#UNCONTAINED].
+    ///
+    /// @param carouselLayout the carousel layout, or `null` to restore the default
+    public final void setCarouselLayout(@Nullable M3CarouselLayout carouselLayout) {
+        this.carouselLayout.set(carouselLayout);
+    }
+
+    /// Returns the observable property that stores the carousel layout strategy.
+    ///
+    /// The property can be observed and bound. Its default value is [M3CarouselLayout#UNCONTAINED], and a `null`
+    /// assignment restores that default.
+    ///
+    /// @return the carousel layout property
+    public final ObjectProperty<M3CarouselLayout> carouselLayoutProperty() {
+        return carouselLayout;
+    }
 
     /// The selected item index, or `-1` when selection is empty.
     ///
@@ -126,12 +148,63 @@ public final class M3Carousel extends Control {
         }
     };
 
+    /// Returns the selected item index, or `-1` when no item is selected.
+    ///
+    /// @return the selected item index, or `-1` when selection is empty
+    public final int getSelectedIndex() {
+        return selectedIndex.get();
+    }
+
+    /// Requests selection of the item at the specified index.
+    ///
+    /// A negative value clears selection. A value beyond the last item is bounded to the current list, and an
+    /// unreachable target is replaced with the nearest reachable item. Use [selectIndex][#selectIndex(int)] when
+    /// invalid indices or unreachable targets should be reported instead of normalized.
+    ///
+    /// @param selectedIndex the requested selected index, or a negative value to clear selection
+    public final void setSelectedIndex(int selectedIndex) {
+        this.selectedIndex.set(selectedIndex);
+    }
+
+    /// Returns the observable property that stores the selected item index.
+    ///
+    /// The property can be observed and bound. Its default value is `-1`. Negative values clear selection, and
+    /// other values are normalized to a reachable index in the current item list.
+    ///
+    /// @return the selected index property
+    public final IntegerProperty selectedIndexProperty() {
+        return selectedIndex;
+    }
+
     /// Whether relative keyboard and method-based navigation wraps around the first and last selectable items.
     ///
     /// The default value is `false`.
     ///
     /// @defaultValue `false`
     private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", false);
+
+    /// Returns whether keyboard previous and next navigation wraps around item edges.
+    ///
+    /// @return `true` when keyboard navigation wraps around carousel edges
+    public final boolean isWrapAround() {
+        return wrapAround.get();
+    }
+
+    /// Sets whether keyboard previous and next navigation wraps around item edges.
+    ///
+    /// @param wrapAround whether keyboard navigation should wrap around carousel edges
+    public final void setWrapAround(boolean wrapAround) {
+        this.wrapAround.set(wrapAround);
+    }
+
+    /// Returns the observable property that controls edge wrapping during relative navigation.
+    ///
+    /// The property can be observed and bound. Its default value is `false`.
+    ///
+    /// @return the wrap-around property
+    public final BooleanProperty wrapAroundProperty() {
+        return wrapAround;
+    }
 
     /// Whether selection changes request animated scrolling to the selected item.
     ///
@@ -140,9 +213,59 @@ public final class M3Carousel extends Control {
     /// @defaultValue `true`
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
+    /// Returns whether selection changes animate viewport scrolling.
+    ///
+    /// @return `true` when selection changes animate viewport scrolling
+    public final boolean isAnimatedScroll() {
+        return animatedScroll.get();
+    }
+
+    /// Sets whether selection changes animate viewport scrolling.
+    ///
+    /// @param animatedScroll whether selection changes should animate viewport scrolling
+    public final void setAnimatedScroll(boolean animatedScroll) {
+        this.animatedScroll.set(animatedScroll);
+    }
+
+    /// Returns the observable property that requests animated scrolling after selection changes.
+    ///
+    /// The property can be observed and bound. Its default value is `true`; reduced-motion settings may still
+    /// suppress animation.
+    ///
+    /// @return the animated-scroll property
+    public final BooleanProperty animatedScrollProperty() {
+        return animatedScroll;
+    }
+
     /// The currently selected item.
     private final ReadOnlyObjectWrapper<@Nullable Node> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
+
+    /// Returns the selected item, or `null` when no item is selected.
+    ///
+    /// @return the selected item node, or `null` when selection is empty
+    public final @Nullable Node getSelectedItem() {
+        return selectedItem.get();
+    }
+
+    /// Returns the read-only observable property that reports the selected item.
+    ///
+    /// The property can be observed and used as a binding source. Its default value is `null`, and its value is
+    /// kept consistent with [selectedIndex][#selectedIndexProperty()] and the current item list.
+    ///
+    /// @return the read-only selected item property
+    public final ReadOnlyObjectProperty<@Nullable Node> selectedItemProperty() {
+        return selectedItem.getReadOnlyProperty();
+    }
+
+    /// The live, mutable item list in visual order.
+    ///
+    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. An item is a
+    /// scene-graph node and cannot simultaneously be a child of another parent.
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+
+    /// The focus-traversable value restored when an application-owned item leaves this carousel.
+    private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
 
     /// The selected item exposed as an immutable observable list for accessibility clients.
     private final ObservableList<Node> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
@@ -188,11 +311,6 @@ public final class M3Carousel extends Control {
     /// Whether the selection property is being updated from normalization logic.
     private boolean updatingSelection;
 
-    /// Creates an empty uncontained carousel with no selection.
-    public M3Carousel() {
-        initialize();
-    }
-
     /// Returns the live list of carousel items.
     ///
     /// Each installed item becomes focus traversable so Tab and arrow-key navigation operate on items rather than the
@@ -205,59 +323,6 @@ public final class M3Carousel extends Control {
         return items;
     }
 
-    /// Returns the Material layout strategy used by this carousel.
-    ///
-    /// @return the current carousel layout
-    public final M3CarouselLayout getCarouselLayout() {
-        return carouselLayout.get();
-    }
-
-    /// Sets the Material layout strategy used by this carousel.
-    ///
-    /// A `null` assignment restores [M3CarouselLayout#UNCONTAINED].
-    ///
-    /// @param carouselLayout the carousel layout, or `null` to restore the default
-    public final void setCarouselLayout(@Nullable M3CarouselLayout carouselLayout) {
-        this.carouselLayout.set(carouselLayout);
-    }
-
-    public final ObjectProperty<M3CarouselLayout> carouselLayoutProperty() {
-        return carouselLayout;
-    }
-
-    /// Returns the selected item index, or `-1` when no item is selected.
-    ///
-    /// @return the selected item index, or `-1` when selection is empty
-    public final int getSelectedIndex() {
-        return selectedIndex.get();
-    }
-
-    /// Requests selection of the item at the specified index.
-    ///
-    /// A negative value clears selection. A value beyond the last item is bounded to the current list, and an
-    /// unreachable target is replaced with the nearest reachable item. Use [selectIndex][#selectIndex(int)] when
-    /// invalid indices or unreachable targets should be reported instead of normalized.
-    ///
-    /// @param selectedIndex the requested selected index, or a negative value to clear selection
-    public final void setSelectedIndex(int selectedIndex) {
-        this.selectedIndex.set(selectedIndex);
-    }
-
-    public final IntegerProperty selectedIndexProperty() {
-        return selectedIndex;
-    }
-
-    /// Returns the selected item, or `null` when no item is selected.
-    ///
-    /// @return the selected item node, or `null` when selection is empty
-    public final @Nullable Node getSelectedItem() {
-        return selectedItem.get();
-    }
-
-    public final ReadOnlyObjectProperty<@Nullable Node> selectedItemProperty() {
-        return selectedItem.getReadOnlyProperty();
-    }
-
     /// Returns the selected item as a read-only observable list.
     ///
     /// The returned live view contains either zero or one element and updates whenever selection changes. Attempts
@@ -268,46 +333,10 @@ public final class M3Carousel extends Control {
         return selectedItemsView;
     }
 
-    /// Returns whether keyboard previous and next navigation wraps around item edges.
-    ///
-    /// @return `true` when keyboard navigation wraps around carousel edges
-    public final boolean isWrapAround() {
-        return wrapAround.get();
-    }
-
-    /// Sets whether keyboard previous and next navigation wraps around item edges.
-    ///
-    /// @param wrapAround whether keyboard navigation should wrap around carousel edges
-    public final void setWrapAround(boolean wrapAround) {
-        this.wrapAround.set(wrapAround);
-    }
-
-    public final BooleanProperty wrapAroundProperty() {
-        return wrapAround;
-    }
-
-    /// Returns whether selection changes animate viewport scrolling.
-    ///
-    /// @return `true` when selection changes animate viewport scrolling
-    public final boolean isAnimatedScroll() {
-        return animatedScroll.get();
-    }
-
-    /// Sets whether selection changes animate viewport scrolling.
-    ///
-    /// @param animatedScroll whether selection changes should animate viewport scrolling
-    public final void setAnimatedScroll(boolean animatedScroll) {
-        this.animatedScroll.set(animatedScroll);
-    }
-
-    public final BooleanProperty animatedScrollProperty() {
-        return animatedScroll;
-    }
-
     /// Selects the supplied item node.
     ///
     /// @param item the item node to select
-    /// @throws NullPointerException if `item` is `null`
+    /// @throws NullPointerException     if `item` is `null`
     /// @throws IllegalArgumentException if `item` is not in [items][#getItems()]
     public final void select(Node item) {
         Objects.requireNonNull(item, "item");
@@ -322,7 +351,7 @@ public final class M3Carousel extends Control {
     ///
     /// @param index the item index to select
     /// @throws IndexOutOfBoundsException if `index` is outside the item list
-    /// @throws IllegalArgumentException if the item at the index is not reachable for selection
+    /// @throws IllegalArgumentException  if the item at the index is not reachable for selection
     public final void selectIndex(int index) {
         Node item = getItems().get(index);
         if (!isSelectable(item)) {
@@ -618,7 +647,7 @@ public final class M3Carousel extends Control {
         if (item == null
                 || focusTarget == null
                 || (!M3Accessible.containsNode(item, focusTarget)
-                    && !M3Accessible.containsAccessibleActionTarget(item, focusTarget))) {
+                && !M3Accessible.containsAccessibleActionTarget(item, focusTarget))) {
             focusTarget = M3Accessible.focusTarget(item);
         }
         if (M3Accessible.showItem(this, focusTarget)) {

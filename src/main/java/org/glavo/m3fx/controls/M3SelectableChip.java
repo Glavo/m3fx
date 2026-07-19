@@ -26,6 +26,16 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
     /// The pseudo-class representing selected state.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// Creates a selectable chip with fixed semantic styling.
+    ///
+    /// @param text              the text displayed by the chip
+    /// @param graphic           the optional graphic displayed with the text
+    /// @param variantStyleClass the style class identifying the concrete chip kind
+    M3SelectableChip(String text, @Nullable Node graphic, String variantStyleClass) {
+        super(text, graphic, variantStyleClass);
+        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
+    }
+
     /// The persistent selected state.
     ///
     /// Direct property changes update presentation and accessibility without firing an action event.
@@ -41,16 +51,6 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
         }
     };
 
-    /// Creates a selectable chip with fixed semantic styling.
-    ///
-    /// @param text the text displayed by the chip
-    /// @param graphic the optional graphic displayed with the text
-    /// @param variantStyleClass the style class identifying the concrete chip kind
-    M3SelectableChip(String text, @Nullable Node graphic, String variantStyleClass) {
-        super(text, graphic, variantStyleClass);
-        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
-    }
-
     /// Returns whether this chip is selected.
     ///
     /// @return `true` when this chip is selected
@@ -65,6 +65,11 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
         this.selected.set(selected);
     }
 
+    /// Returns the `selected` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `selected` property
     public final BooleanProperty selectedProperty() {
         return selected;
     }

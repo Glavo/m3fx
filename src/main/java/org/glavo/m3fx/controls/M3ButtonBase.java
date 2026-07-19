@@ -77,112 +77,6 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// The default icon glyph size.
     private static final double DEFAULT_ICON_SIZE = 20.0;
 
-    /// The visual emphasis variant of this button.
-    ///
-    /// The default value is [M3ButtonVariant#FILLED]. The property never reports `null`; a direct `null`
-    /// assignment restores the default.
-    ///
-    /// @defaultValue [M3ButtonVariant#FILLED]
-    private final ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.FILLED) {
-        /// Updates variant style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(M3ButtonVariant.FILLED);
-                return;
-            }
-            updateVariantStyle();
-        }
-    };
-
-    /// The Material size that selects the button's geometry and typography roles.
-    ///
-    /// The default value is [M3ButtonSize#SMALL]. The property never reports `null`; a direct `null` assignment
-    /// restores the default.
-    ///
-    /// @defaultValue [M3ButtonSize#SMALL]
-    private final ObjectProperty<M3ButtonSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
-        /// Updates size and typography style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(DEFAULT_SIZE);
-                return;
-            }
-            updateSizeStyle();
-            updateTypographyStyle();
-            requestLayout();
-        }
-    };
-
-    /// The resting container shape of this button.
-    ///
-    /// The default value is [M3ButtonShape#ROUND]. Interaction states may temporarily use another shape without
-    /// changing this property. The property never reports `null`; a direct `null` assignment restores the
-    /// default.
-    ///
-    /// @defaultValue [M3ButtonShape#ROUND]
-    private final ObjectProperty<M3ButtonShape> buttonShape =
-            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_BUTTON_SHAPE) {
-                /// Updates the resting shape style class when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_BUTTON_SHAPE);
-                        return;
-                    }
-                    updateButtonShapeStyle();
-                    requestLayout();
-                }
-            };
-
-    /// The preferred button container height, in logical pixels.
-    ///
-    /// The default value is `40.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The button container corner radius, in logical pixels.
-    ///
-    /// The default value is `999.0`, producing a fully rounded container for normal button dimensions. Values
-    /// must be finite and non-negative.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The horizontal padding on each side of button content, in logical pixels.
-    ///
-    /// The default value is `24.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The requested width and height of a direct M3FX icon graphic, in logical pixels.
-    ///
-    /// The default value is `20.0`. Values must be finite and non-negative. Other graphics are not resized by this
-    /// property.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty iconSize;
-
-    /// The direct M3FX icon whose embedded color and size are managed by this button.
-    private @Nullable Node managedIconGraphic;
-
-    /// Whether this button is marked as the default action in its containing context.
-    ///
-    /// The default value is `false`. A containing control may use this role for keyboard activation and styling.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty defaultButton;
-
-    /// Whether this button is marked as the cancel action in its containing context.
-    ///
-    /// The default value is `false`. A containing control may use this role for keyboard activation and styling.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty cancelButton;
-
     /// Creates a filled, small, round button with empty text and no graphic.
     protected M3ButtonBase() {
         this("");
@@ -198,7 +92,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Creates a filled, small, round button with the specified text and graphic.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param graphic the graphic displayed with the text, or `null` for no graphic
     protected M3ButtonBase(String text, @Nullable Node graphic) {
         super(text, graphic);
@@ -207,7 +101,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Creates a button with text and the requested variant.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param variant the Material button variant
     /// @throws NullPointerException if `variant` is `null`
     protected M3ButtonBase(String text, M3ButtonVariant variant) {
@@ -217,7 +111,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Creates a button with text, graphic content, and the requested variant.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param graphic the graphic displayed with the text, or `null` for no graphic
     /// @param variant the Material button variant
     /// @throws NullPointerException if `variant` is `null`
@@ -225,6 +119,24 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         this(text, graphic);
         setVariant(variant);
     }
+
+    /// The visual emphasis variant of this button.
+    ///
+    /// The default value is [M3ButtonVariant#FILLED]. A direct `null` assignment restores the default; bound values
+    /// must be non-null.
+    ///
+    /// @defaultValue [M3ButtonVariant#FILLED]
+    private final ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.FILLED) {
+        /// Updates variant style classes when the property changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(M3ButtonVariant.FILLED);
+                return;
+            }
+            updateVariantStyle();
+        }
+    };
 
     /// Returns the button variant.
     ///
@@ -241,9 +153,35 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable property that stores the button variant.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonVariant#FILLED], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
     }
+
+    /// The Material size that selects the button's geometry and typography roles.
+    ///
+    /// The default value is [M3ButtonSize#SMALL]. A direct `null` assignment restores the default; bound values must
+    /// be non-null.
+    ///
+    /// @defaultValue [M3ButtonSize#SMALL]
+    private final ObjectProperty<M3ButtonSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+        /// Updates size and typography style classes when the property changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(DEFAULT_SIZE);
+                return;
+            }
+            updateSizeStyle();
+            updateTypographyStyle();
+            requestLayout();
+        }
+    };
 
     /// Returns the Material button size.
     ///
@@ -263,9 +201,35 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
+    /// Returns the observable property that stores the Material button size.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonSize#SMALL], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the button size property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
+
+    /// The resting container shape of this button.
+    ///
+    /// The default value is [M3ButtonShape#ROUND]. Interaction states may temporarily use another shape without
+    /// changing this property. A direct `null` assignment restores the default; bound values must be non-null.
+    ///
+    /// @defaultValue [M3ButtonShape#ROUND]
+    private final ObjectProperty<M3ButtonShape> buttonShape =
+            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_BUTTON_SHAPE) {
+                /// Updates the resting shape style class when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_BUTTON_SHAPE);
+                        return;
+                    }
+                    updateButtonShapeStyle();
+                    requestLayout();
+                }
+            };
 
     /// Returns the resting Material button shape.
     ///
@@ -282,8 +246,197 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         this.buttonShape.set(Objects.requireNonNull(buttonShape, "buttonShape"));
     }
 
+    /// Returns the observable property that stores the resting button shape.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonShape#ROUND], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the resting button shape property
     public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
         return buttonShape;
+    }
+
+    /// The preferred button container height, in logical pixels.
+    ///
+    /// The default value is `40.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
+
+    /// Returns the preferred container height token.
+    ///
+    /// @return the preferred button container height in logical pixels
+    public final double getContainerHeight() {
+        return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
+    }
+
+    /// Sets the preferred container height token.
+    ///
+    /// @param containerHeight the preferred button container height in logical pixels
+    /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
+    public final void setContainerHeight(double containerHeight) {
+        containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
+    }
+
+    /// Returns the styleable property that stores the button container height.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-height`, and accepts finite,
+    /// non-negative values. Its default value is `40.0` logical pixels.
+    ///
+    /// @return the button container height property
+    public final StyleableDoubleProperty containerHeightProperty() {
+        if (containerHeight == null) {
+            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_HEIGHT,
+                    this,
+                    "containerHeight",
+                    StyleableProperties.CONTAINER_HEIGHT,
+                    this::updateMetrics
+            );
+        }
+        return containerHeight;
+    }
+
+    /// The button container corner radius, in logical pixels.
+    ///
+    /// The default value is `999.0`, producing a fully rounded container for normal button dimensions. Values
+    /// must be finite and non-negative.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty containerShape;
+
+    /// Returns the container shape radius token.
+    ///
+    /// @return the button container corner radius in logical pixels
+    public final double getContainerShape() {
+        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+    }
+
+    /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the button container corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
+    public final void setContainerShape(double containerShape) {
+        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+    }
+
+    /// Returns the styleable property that stores the button corner radius.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-shape`, and accepts finite,
+    /// non-negative values. Its default value is `999.0` logical pixels.
+    ///
+    /// @return the button corner radius property
+    public final StyleableDoubleProperty containerShapeProperty() {
+        if (containerShape == null) {
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
+        }
+        return containerShape;
+    }
+
+    /// The horizontal padding on each side of button content, in logical pixels.
+    ///
+    /// The default value is `24.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
+
+    /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal content padding in logical pixels
+    public final double getHorizontalPadding() {
+        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
+    }
+
+    /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal content padding in logical pixels
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
+    public final void setHorizontalPadding(double horizontalPadding) {
+        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
+    }
+
+    /// Returns the styleable property that stores the horizontal content padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-horizontal-padding`, and accepts finite,
+    /// non-negative values. Its default value is `24.0` logical pixels.
+    ///
+    /// @return the horizontal content padding property
+    public final StyleableDoubleProperty horizontalPaddingProperty() {
+        if (horizontalPadding == null) {
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    this,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING,
+                    this::updateMetrics
+            );
+        }
+        return horizontalPadding;
+    }
+
+    /// The requested width and height of a direct M3FX icon graphic, in logical pixels.
+    ///
+    /// The default value is `20.0`. Values must be finite and non-negative. Other graphics are not resized by this
+    /// property.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty iconSize;
+
+    /// Returns the icon glyph size token.
+    ///
+    /// Direct [M3Icon] graphics are resized to this value after CSS resolves the active size tokens. Other
+    /// graphic nodes retain their application-controlled dimensions.
+    ///
+    /// @return the icon glyph size in logical pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the icon glyph size token.
+    ///
+    /// @param iconSize the icon glyph size in logical pixels
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the styleable property that stores the managed icon size.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-button-icon-size`, and accepts finite,
+    /// non-negative values. Its default value is `20.0` logical pixels.
+    ///
+    /// @return the managed icon size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateM3IconGraphicSize
+            );
+        }
+        return iconSize;
+    }
+
+    /// Whether this button is marked as the default action in its containing context.
+    ///
+    /// The default value is `false`. A containing control may use this role for keyboard activation and styling.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty defaultButton;
+
+    /// Returns whether this button is the default action in its containing context.
+    ///
+    /// @return `true` when this button is the default action
+    public final boolean isDefaultButton() {
+        return defaultButton != null && defaultButton.get();
     }
 
     /// Sets whether this button is the default action in its containing context.
@@ -293,13 +446,12 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         defaultButtonProperty().set(defaultButton);
     }
 
-    /// Returns whether this button is the default action in its containing context.
+    /// Returns the observable property that marks this button as a default action.
     ///
-    /// @return `true` when this button is the default action
-    public final boolean isDefaultButton() {
-        return defaultButton != null && defaultButton.get();
-    }
-
+    /// The property can be observed and bound. Its default value is `false`; changes update the `default`
+    /// pseudo-class.
+    ///
+    /// @return the default-button property
     public final BooleanProperty defaultButtonProperty() {
         if (defaultButton == null) {
             defaultButton = new BooleanPropertyBase(false) {
@@ -325,12 +477,12 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return defaultButton;
     }
 
-    /// Sets whether this button is the cancel action in its containing context.
+    /// Whether this button is marked as the cancel action in its containing context.
     ///
-    /// @param cancelButton whether this button should be treated as the cancel action
-    public final void setCancelButton(boolean cancelButton) {
-        cancelButtonProperty().set(cancelButton);
-    }
+    /// The default value is `false`. A containing control may use this role for keyboard activation and styling.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty cancelButton;
 
     /// Returns whether this button is the cancel action in its containing context.
     ///
@@ -339,6 +491,19 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return cancelButton != null && cancelButton.get();
     }
 
+    /// Sets whether this button is the cancel action in its containing context.
+    ///
+    /// @param cancelButton whether this button should be treated as the cancel action
+    public final void setCancelButton(boolean cancelButton) {
+        cancelButtonProperty().set(cancelButton);
+    }
+
+    /// Returns the observable property that marks this button as a cancel action.
+    ///
+    /// The property can be observed and bound. Its default value is `false`; changes update the `cancel`
+    /// pseudo-class.
+    ///
+    /// @return the cancel-button property
     public final BooleanProperty cancelButtonProperty() {
         if (cancelButton == null) {
             cancelButton = new BooleanPropertyBase(false) {
@@ -364,120 +529,8 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return cancelButton;
     }
 
-    /// Returns the preferred container height token.
-    ///
-    /// @return the preferred button container height in logical pixels
-    public final double getContainerHeight() {
-        return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
-    }
-
-    /// Sets the preferred container height token.
-    ///
-    /// @param containerHeight the preferred button container height in logical pixels
-    /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
-    public final void setContainerHeight(double containerHeight) {
-        containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
-    }
-
-    public final StyleableDoubleProperty containerHeightProperty() {
-        if (containerHeight == null) {
-            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_HEIGHT,
-                    this,
-                    "containerHeight",
-                    StyleableProperties.CONTAINER_HEIGHT,
-                    this::updateMetrics
-            );
-        }
-        return containerHeight;
-    }
-
-    /// Returns the container shape radius token.
-    ///
-    /// @return the button container corner radius in logical pixels
-    public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
-    }
-
-    /// Sets the container shape radius token.
-    ///
-    /// @param containerShape the button container corner radius in logical pixels
-    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
-    public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
-    }
-
-    public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_SHAPE,
-                    this,
-                    "containerShape",
-                    StyleableProperties.CONTAINER_SHAPE,
-                    this::requestLayout
-            );
-        }
-        return containerShape;
-    }
-
-    /// Returns the horizontal content padding token.
-    ///
-    /// @return the horizontal content padding in logical pixels
-    public final double getHorizontalPadding() {
-        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
-    }
-
-    /// Sets the horizontal content padding token.
-    ///
-    /// @param horizontalPadding the horizontal content padding in logical pixels
-    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
-    public final void setHorizontalPadding(double horizontalPadding) {
-        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
-    }
-
-    public final StyleableDoubleProperty horizontalPaddingProperty() {
-        if (horizontalPadding == null) {
-            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_HORIZONTAL_PADDING,
-                    this,
-                    "horizontalPadding",
-                    StyleableProperties.HORIZONTAL_PADDING,
-                    this::updateMetrics
-            );
-        }
-        return horizontalPadding;
-    }
-
-    /// Returns the icon glyph size token.
-    ///
-    /// Direct [M3Icon] graphics are resized to this value after CSS resolves the active size tokens. Other
-    /// graphic nodes retain their application-controlled dimensions.
-    ///
-    /// @return the icon glyph size in logical pixels
-    public final double getIconSize() {
-        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
-    }
-
-    /// Sets the icon glyph size token.
-    ///
-    /// @param iconSize the icon glyph size in logical pixels
-    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
-    public final void setIconSize(double iconSize) {
-        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
-    }
-
-    public final StyleableDoubleProperty iconSizeProperty() {
-        if (iconSize == null) {
-            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ICON_SIZE,
-                    this,
-                    "iconSize",
-                    StyleableProperties.ICON_SIZE,
-                    this::updateM3IconGraphicSize
-            );
-        }
-        return iconSize;
-    }
+    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    private @Nullable Node managedIconGraphic;
 
     /// Fires an action event unless this button is disabled.
     ///

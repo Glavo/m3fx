@@ -25,6 +25,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3LoadingIndicator].
+///
+/// The skin renders the default and contained variants with the configured indicator and container sizes. While the
+/// control belongs to a showing window, full motion morphs and rotates the indicator continuously; reduced motion
+/// retains a fixed shape and uses basic rotation. Animation stops while the control has no showing window and is
+/// released when the skin is disposed.
 @NotNullByDefault
 public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The Material loading indicator indeterminate morph sequence.
@@ -335,11 +340,11 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
         /// Configures the next segment without allocating key frames or writable properties.
         ///
-        /// @param interval the complete morph interval
+        /// @param interval             the complete morph interval
         /// @param activeDurationMillis the part of the interval used for geometric interpolation, in milliseconds
-        /// @param rotationDuration the duration of one complete independent rotation
-        /// @param morphInterpolator the Material easing curve for the active part
-        /// @param startPhase the absolute sequence phase at the beginning of the segment
+        /// @param rotationDuration     the duration of one complete independent rotation
+        /// @param morphInterpolator    the Material easing curve for the active part
+        /// @param startPhase           the absolute sequence phase at the beginning of the segment
         private void configure(
                 Duration interval,
                 double activeDurationMillis,

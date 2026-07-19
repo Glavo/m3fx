@@ -34,16 +34,16 @@ import java.util.Objects;
 /// A token-aware, single-path SVG icon for Material Design 3 controls.
 ///
 /// `M3SVGIcon` renders the path-data syntax accepted by [javafx.scene.shape.SVGPath]. Unlike APIs that assume a
-/// 24-by-24 coordinate system, this control accepts an arbitrary [viewBoxProperty] including view boxes with
+/// 24-by-24 coordinate system, this control accepts an arbitrary [#viewBoxProperty()] including view boxes with
 /// negative origins. This allows an icon to use source coordinates directly, such as Material Symbols paths whose
 /// published view box is commonly `0 -960 960 960`, without rewriting or prefixing the path data.
 ///
-/// When [viewBoxProperty] is `null`, the path's rendered bounds are used as an automatic view box. Automatic bounds
+/// When [#viewBoxProperty()] is `null`, the path's rendered bounds are used as an automatic view box. Automatic bounds
 /// are convenient for compact path data but cannot preserve transparent padding authored into an SVG document. Set
 /// an explicit view box whenever alignment with the source SVG viewport matters. The path is uniformly scaled with
 /// meet semantics, centered in the control, and never stretched to a different aspect ratio.
 ///
-/// This control intentionally models one monochrome path. Its fill follows [variantProperty] and the surrounding
+/// This control intentionally models one monochrome path. Its fill follows [#variantProperty()] and the surrounding
 /// component's icon-color token. Compose several JavaFX nodes when an icon requires multiple independently colored
 /// paths, strokes, masks, or animation. The icon is non-interactive and not focus traversable by default; place it in
 /// an action-owning control such as [M3IconButton], [M3Chip], or [M3MenuItem] when it represents an action.
@@ -60,76 +60,6 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// The default icon size token.
     private static final double DEFAULT_ICON_SIZE = M3IconSize.MEDIUM.defaultSize();
-
-    /// The SVG path data rendered by this icon.
-    ///
-    /// The property is expected to contain a non-null string. Use an empty string for an icon with no visible path.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty contentValue = new SimpleStringProperty(this, "content", "") {
-        /// Requests layout after the path data changes.
-        @Override
-        protected void invalidated() {
-            requestLayout();
-        }
-    };
-
-    /// The source-coordinate viewport used to scale and align the path, or `null` to derive it from path bounds.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Rectangle2D> viewBoxValue =
-            new SimpleObjectProperty<>(this, "viewBox") {
-                /// Requests layout after viewport coordinates change.
-                @Override
-                protected void invalidated() {
-                    requestLayout();
-                }
-            };
-
-    /// The fill rule used to determine the inside of the SVG path.
-    ///
-    /// @defaultValue [FillRule#NON_ZERO]
-    private final ObjectProperty<FillRule> fillRuleValue =
-            new SimpleObjectProperty<>(this, "fillRule", FillRule.NON_ZERO);
-
-    /// The semantic icon size role.
-    ///
-    /// @defaultValue [M3IconSize#MEDIUM]
-    private final ObjectProperty<M3IconSize> sizeValue =
-            new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
-                /// Applies the new size role and updates intrinsic metrics.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3IconSize.MEDIUM);
-                        return;
-                    }
-                    updateSizeStyle();
-                    requestLayout();
-                }
-            };
-
-    /// The Material color role used to paint the path.
-    ///
-    /// @defaultValue [M3IconVariant#ON_SURFACE_VARIANT]
-    private final ObjectProperty<M3IconVariant> variantValue =
-            new SimpleObjectProperty<>(this, "variant", M3IconVariant.ON_SURFACE_VARIANT) {
-                /// Applies the style class for the new color role.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3IconVariant.ON_SURFACE_VARIANT);
-                        return;
-                    }
-                    updateVariantStyle();
-                }
-            };
-
-    /// Whether the path is mirrored horizontally in a right-to-left scene orientation.
-    private @Nullable BooleanProperty autoMirroredValue;
-
-    /// The styleable rendered width and height of the icon in logical pixels.
-    private @Nullable StyleableDoubleProperty iconSizeValue;
 
     /// Creates an empty icon with automatic path bounds as its viewport.
     public M3SVGIcon() {
@@ -157,6 +87,19 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
         setViewBox(Objects.requireNonNull(viewBox, "viewBox"));
     }
 
+    /// The SVG path data rendered by this icon.
+    ///
+    /// The property is expected to contain a non-null string. Use an empty string for an icon with no visible path.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty contentValue = new SimpleStringProperty(this, "content", "") {
+        /// Requests layout after the path data changes.
+        @Override
+        protected void invalidated() {
+            requestLayout();
+        }
+    };
+
     /// Returns the SVG path data rendered by this icon.
     ///
     /// @return the non-null SVG path data
@@ -179,10 +122,24 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// The property must contain a non-null string. Binding it to a source that produces `null` violates this
     /// control's contract.
     ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
     /// @return the SVG path-data property
     public StringProperty contentProperty() {
         return contentValue;
     }
+
+    /// The source-coordinate viewport used to scale and align the path, or `null` to derive it from path bounds.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Rectangle2D> viewBoxValue =
+            new SimpleObjectProperty<>(this, "viewBox") {
+                /// Requests layout after viewport coordinates change.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+            };
 
     /// Returns the explicit source-coordinate viewport, or `null` when path bounds are used.
     ///
@@ -209,12 +166,20 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// Returns the property containing the source-coordinate viewport.
     ///
     /// A non-null value assigned directly through this property must have finite coordinates and positive finite
-    /// dimensions. Use [setViewBox] when validation at the API boundary is required.
+    /// dimensions. Use [#setViewBox(Rectangle2D)] when validation at the API boundary is required.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
     ///
     /// @return the nullable view-box property
     public ObjectProperty<@Nullable Rectangle2D> viewBoxProperty() {
         return viewBoxValue;
     }
+
+    /// The fill rule used to determine the inside of the SVG path.
+    ///
+    /// @defaultValue [FillRule#NON_ZERO]
+    private final ObjectProperty<FillRule> fillRuleValue =
+            new SimpleObjectProperty<>(this, "fillRule", FillRule.NON_ZERO);
 
     /// Returns the path fill rule.
     ///
@@ -235,10 +200,29 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     ///
     /// The property must contain a non-null value.
     ///
+    /// The returned property is observable and bindable. Its default value is [FillRule#NON_ZERO].
+    ///
     /// @return the fill-rule property
     public ObjectProperty<FillRule> fillRuleProperty() {
         return fillRuleValue;
     }
+
+    /// The semantic icon size role.
+    ///
+    /// @defaultValue [M3IconSize#MEDIUM]
+    private final ObjectProperty<M3IconSize> sizeValue =
+            new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
+                /// Applies the new size role and updates intrinsic metrics.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3IconSize.MEDIUM);
+                        return;
+                    }
+                    updateSizeStyle();
+                    requestLayout();
+                }
+            };
 
     /// Returns the semantic icon size role.
     ///
@@ -249,7 +233,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Sets the semantic icon size role.
     ///
-    /// The role determines the effective size until [iconSizeProperty] is explicitly initialized or styled.
+    /// The role determines the effective size until [#iconSizeProperty()] is explicitly initialized or styled.
     ///
     /// @param size the icon size role
     /// @throws NullPointerException if `size` is `null`
@@ -259,10 +243,29 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Returns the property containing the semantic icon size role.
     ///
+    /// The returned property is observable and bindable. Its default value is [M3IconSize#MEDIUM]; assigning
+    /// `null` directly restores that default.
+    ///
     /// @return the icon size-role property
     public ObjectProperty<M3IconSize> sizeProperty() {
         return sizeValue;
     }
+
+    /// The Material color role used to paint the path.
+    ///
+    /// @defaultValue [M3IconVariant#ON_SURFACE_VARIANT]
+    private final ObjectProperty<M3IconVariant> variantValue =
+            new SimpleObjectProperty<>(this, "variant", M3IconVariant.ON_SURFACE_VARIANT) {
+                /// Applies the style class for the new color role.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3IconVariant.ON_SURFACE_VARIANT);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
 
     /// Returns the icon color variant.
     ///
@@ -284,10 +287,16 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Returns the property containing the icon color variant.
     ///
+    /// The returned property is observable and bindable. Its default value is
+    /// [M3IconVariant#ON_SURFACE_VARIANT]; assigning `null` directly restores that default.
+    ///
     /// @return the icon color-variant property
     public ObjectProperty<M3IconVariant> variantProperty() {
         return variantValue;
     }
+
+    /// Whether the path is mirrored horizontally in a right-to-left scene orientation.
+    private @Nullable BooleanProperty autoMirroredValue;
 
     /// Returns whether the icon mirrors itself in right-to-left orientation.
     ///
@@ -308,6 +317,8 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Returns the property controlling automatic right-to-left mirroring.
     ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
     /// @return the auto-mirroring property
     public BooleanProperty autoMirroredProperty() {
         if (autoMirroredValue == null) {
@@ -322,6 +333,9 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
         return autoMirroredValue;
     }
 
+    /// The styleable rendered width and height of the icon in logical pixels.
+    private @Nullable StyleableDoubleProperty iconSizeValue;
+
     /// Returns the effective rendered icon size.
     ///
     /// @return the rendered width and height in logical pixels
@@ -330,7 +344,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
         return iconSizeValue == null ? getSize().defaultSize() : iconSizeValue.get();
     }
 
-    /// Sets an explicit rendered icon size, overriding [sizeProperty].
+    /// Sets an explicit rendered icon size, overriding [#sizeProperty()].
     ///
     /// @param iconSize the rendered width and height in logical pixels
     /// @throws IllegalArgumentException if `iconSize` is negative or not finite
@@ -340,6 +354,9 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     }
 
     /// Returns the styleable property containing the rendered icon size.
+    ///
+    /// The returned property is observable, bindable, and styleable, and accepts finite, non-negative logical
+    /// pixel values. When first requested, it is initialized from the current [#sizeProperty()] value.
     ///
     /// @return the icon-size property
     @Override

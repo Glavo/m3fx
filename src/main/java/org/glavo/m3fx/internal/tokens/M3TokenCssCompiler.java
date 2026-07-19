@@ -28,7 +28,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts the color tokens into inline JavaFX CSS declarations.
     ///
+    /// @param tokens the color token set to compile
     /// @return inline JavaFX CSS declarations for all supported color roles
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3ColorTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -52,6 +54,10 @@ public final class M3TokenCssCompiler {
     }
 
     /// Converts typography tokens into inline JavaFX CSS declarations.
+    ///
+    /// @param tokens the typography token set to compile
+    /// @return inline JavaFX CSS declarations for every Material type scale
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3TypographyTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -74,6 +80,10 @@ public final class M3TokenCssCompiler {
     }
 
     /// Converts typography tokens into JavaFX CSS rules for M3FX text controls.
+    ///
+    /// @param tokens the typography token set to compile
+    /// @return JavaFX CSS rules for the M3FX type-scale style classes
+    /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3TypographyTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -125,7 +135,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts shape tokens into inline JavaFX CSS declarations.
     ///
+    /// @param tokens the shape token set to compile
     /// @return inline JavaFX CSS declarations for this shape token set
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3ShapeTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -144,7 +156,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts elevation tokens into inline JavaFX CSS declarations.
     ///
+    /// @param tokens the elevation token set to compile
     /// @return inline JavaFX CSS declarations for these elevation tokens
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3ElevationTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -159,7 +173,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts elevation tokens into JavaFX CSS rules for M3FX controls.
     ///
+    /// @param tokens the elevation token set to compile
     /// @return JavaFX CSS rules for M3FX controls using these elevation tokens
+    /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3ElevationTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -222,7 +238,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts motion tokens into inline JavaFX CSS declarations.
     ///
+    /// @param tokens the motion token set to compile
     /// @return inline JavaFX CSS declarations for these motion tokens
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3MotionTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
@@ -299,7 +317,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts the state tokens into root-level JavaFX CSS declarations.
     ///
+    /// @param tokens the state-layer token set to compile
     /// @return root-level JavaFX CSS declarations for this state layer token set
+    /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3StateLayerTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         return "-m3-state-hover-opacity: " + format(tokens.hoverOpacity()) + "; "
@@ -316,7 +336,9 @@ public final class M3TokenCssCompiler {
 
     /// Converts state layer tokens into JavaFX CSS rules for M3FX controls.
     ///
+    /// @param tokens the state-layer token set to compile
     /// @return JavaFX CSS rules for controls that render interaction state layers
+    /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3StateLayerTokens tokens) {
         Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();

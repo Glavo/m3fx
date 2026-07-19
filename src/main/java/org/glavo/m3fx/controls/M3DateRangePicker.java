@@ -86,6 +86,21 @@ public final class M3DateRangePicker extends Control {
     /// The style class applied to the range picker's day grid.
     public static final String DAY_GRID_STYLE_CLASS = "m3-date-range-picker-day-grid";
 
+    /// Creates a picker showing the current month with no selected range and no date bounds.
+    public M3DateRangePicker() {
+        initialize();
+    }
+
+    /// Creates a date range picker initialized with the supplied selected range.
+    ///
+    /// @param startDate the first selected date
+    /// @param endDate   the last selected date
+    /// @throws IllegalArgumentException if `startDate` is after `endDate`
+    public M3DateRangePicker(LocalDate startDate, LocalDate endDate) {
+        initialize();
+        setRange(startDate, endDate);
+    }
+
     /// The first selected date, or `null` when the range is empty.
     ///
     /// The default value is `null`. Assignments are validated against the current bounds and end date. Clearing
@@ -98,6 +113,9 @@ public final class M3DateRangePicker extends Control {
                 @Override
                 public void set(@Nullable LocalDate newValue) {
                     if (!applyingRange) {
+                        if (newValue == null && getEndDate() != null && endDate.isBound()) {
+                            throw new RuntimeException("A bound range end cannot be cleared");
+                        }
                         validateDate(newValue);
                         validateDateRange(newValue, getEndDate());
                     }
@@ -117,6 +135,34 @@ public final class M3DateRangePicker extends Control {
                     notifyAccessibleRangeChanged();
                 }
             };
+
+    /// Returns the first selected date, or `null` when no range start is selected.
+    ///
+    /// @return the first selected date, or `null` when no range start is selected
+    public final @Nullable LocalDate getStartDate() {
+        return startDate.get();
+    }
+
+    /// Sets the first selected date, or clears the complete range when `null` is supplied.
+    ///
+    /// @param startDate the first selected date, or `null` to clear the range
+    /// @throws IllegalArgumentException if `startDate` is outside the current bounds or after the current end
+    /// @throws RuntimeException         if the start property is bound, or clearing the start would require clearing a bound
+    ///                          end property
+    public final void setStartDate(@Nullable LocalDate startDate) {
+        this.startDate.set(startDate);
+    }
+
+    /// Returns the observable property that stores the selected range start.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct assignments are validated
+    /// against the current bounds and range end; clearing it also clears a non-null end. A binding must preserve
+    /// these invariants and must not clear the start while a bound end remains non-null.
+    ///
+    /// @return the selected start-date property
+    public final ObjectProperty<@Nullable LocalDate> startDateProperty() {
+        return startDate;
+    }
 
     /// The last selected date, or `null` while the range is empty or incomplete.
     ///
@@ -150,9 +196,38 @@ public final class M3DateRangePicker extends Control {
                 }
             };
 
+    /// Returns the last selected date, or `null` while only a range start is selected.
+    ///
+    /// @return the last selected date, or `null` while only a range start is selected
+    public final @Nullable LocalDate getEndDate() {
+        return endDate.get();
+    }
+
+    /// Sets the last selected date, or clears the range end when `null` is supplied.
+    ///
+    /// @param endDate the last selected date, or `null` to clear the range end
+    /// @throws IllegalArgumentException if `endDate` is outside the current bounds, no start is selected, or it
+    ///                                  precedes the current start
+    /// @throws RuntimeException         if the end property is bound
+    public final void setEndDate(@Nullable LocalDate endDate) {
+        this.endDate.set(endDate);
+    }
+
+    /// Returns the observable property that stores the selected range end.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct non-null assignments require
+    /// a selected start, must not precede it, and must satisfy the current date bounds. A binding must preserve the
+    /// same invariants whenever either endpoint or a selectable bound changes.
+    ///
+    /// @return the selected end-date property
+    public final ObjectProperty<@Nullable LocalDate> endDateProperty() {
+        return endDate;
+    }
+
     /// The month currently displayed by the calendar.
     ///
-    /// The initial value is the month containing the construction date. This property does not accept `null`.
+    /// The initial value is the month containing the construction date. Direct assignments reject `null`, and
+    /// bound values must be non-null.
     private final ObjectProperty<YearMonth> displayedMonth =
             new SimpleObjectProperty<>(this, "displayedMonth", YearMonth.now()) {
                 /// Keeps displayed month values non-null.
@@ -168,10 +243,35 @@ public final class M3DateRangePicker extends Control {
                 }
             };
 
+    /// Returns the month currently displayed by the calendar grid.
+    ///
+    /// @return the displayed calendar month
+    public final YearMonth getDisplayedMonth() {
+        return displayedMonth.get();
+    }
+
+    /// Sets the month displayed by the calendar grid.
+    ///
+    /// @param displayedMonth the month displayed by the calendar grid
+    /// @throws NullPointerException if `displayedMonth` is `null`
+    public final void setDisplayedMonth(YearMonth displayedMonth) {
+        this.displayedMonth.set(Objects.requireNonNull(displayedMonth, "displayedMonth"));
+    }
+
+    /// Returns the observable property that stores the displayed month.
+    ///
+    /// The property can be observed and bound. Its initial value is the month containing the construction date,
+    /// and direct assignments and bound values must be non-null.
+    ///
+    /// @return the displayed-month property
+    public final ObjectProperty<YearMonth> displayedMonthProperty() {
+        return displayedMonth;
+    }
+
     /// The weekday shown in the first calendar column.
     ///
-    /// The initial value is derived from the default locale at construction time. This property does not accept
-    /// `null`, and later default-locale changes do not update an existing picker.
+    /// The initial value is derived from the default locale at construction time. Direct assignments reject `null`,
+    /// bound values must be non-null, and later default-locale changes do not update an existing picker.
     private final ObjectProperty<DayOfWeek> firstDayOfWeek =
             new SimpleObjectProperty<>(this, "firstDayOfWeek", defaultFirstDayOfWeek()) {
                 /// Keeps first day of week values non-null.
@@ -186,6 +286,31 @@ public final class M3DateRangePicker extends Control {
                     notifyAccessibleItemsChanged();
                 }
             };
+
+    /// Returns the weekday shown in the first calendar column.
+    ///
+    /// @return the weekday shown in the first calendar column
+    public final DayOfWeek getFirstDayOfWeek() {
+        return firstDayOfWeek.get();
+    }
+
+    /// Sets the weekday shown in the first calendar column.
+    ///
+    /// @param firstDayOfWeek the weekday shown in the first calendar column
+    /// @throws NullPointerException if `firstDayOfWeek` is `null`
+    public final void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
+        this.firstDayOfWeek.set(Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek"));
+    }
+
+    /// Returns the observable property that stores the first day of the week.
+    ///
+    /// The property can be observed and bound. Its initial value is derived from the default locale at construction
+    /// time, and direct assignments and bound values must be non-null.
+    ///
+    /// @return the first-day-of-week property
+    public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
+        return firstDayOfWeek;
+    }
 
     /// The inclusive lower selection bound, or `null` for no lower bound.
     ///
@@ -204,6 +329,34 @@ public final class M3DateRangePicker extends Control {
                 }
             };
 
+    /// Returns the earliest selectable date, or `null` when there is no lower bound.
+    ///
+    /// @return the earliest selectable date, or `null` when there is no lower bound
+    public final @Nullable LocalDate getMinDate() {
+        return minDate.get();
+    }
+
+    /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
+    ///
+    /// @param minDate the earliest selectable date, or `null` to clear the lower bound
+    /// @throws IllegalArgumentException if `minDate` is after the current [maxDate][#maxDateProperty()]
+    /// @throws RuntimeException         if an invalid range must be cleared while either endpoint property is bound
+    public final void setMinDate(@Nullable LocalDate minDate) {
+        validateSelectableBounds(minDate, getMaxDate());
+        this.minDate.set(minDate);
+    }
+
+    /// Returns the observable property that stores the inclusive lower date bound.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct property writes bypass the
+    /// ordering check performed by [setMinDate][#setMinDate(LocalDate)] and clear a range that becomes invalid. When
+    /// an endpoint property is bound, its binding must update the range before this property excludes it.
+    ///
+    /// @return the minimum-date property
+    public final ObjectProperty<@Nullable LocalDate> minDateProperty() {
+        return minDate;
+    }
+
     /// The inclusive upper selection bound, or `null` for no upper bound.
     ///
     /// The default value is `null`. Setter calls reject an upper bound before the current lower bound. Direct
@@ -221,6 +374,34 @@ public final class M3DateRangePicker extends Control {
                 }
             };
 
+    /// Returns the latest selectable date, or `null` when there is no upper bound.
+    ///
+    /// @return the latest selectable date, or `null` when there is no upper bound
+    public final @Nullable LocalDate getMaxDate() {
+        return maxDate.get();
+    }
+
+    /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
+    ///
+    /// @param maxDate the latest selectable date, or `null` to clear the upper bound
+    /// @throws IllegalArgumentException if `maxDate` is before the current [minDate][#minDateProperty()]
+    /// @throws RuntimeException         if an invalid range must be cleared while either endpoint property is bound
+    public final void setMaxDate(@Nullable LocalDate maxDate) {
+        validateSelectableBounds(getMinDate(), maxDate);
+        this.maxDate.set(maxDate);
+    }
+
+    /// Returns the observable property that stores the inclusive upper date bound.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. Direct property writes bypass the
+    /// ordering check performed by [setMaxDate][#setMaxDate(LocalDate)] and clear a range that becomes invalid. When
+    /// an endpoint property is bound, its binding must update the range before this property excludes it.
+    ///
+    /// @return the maximum-date property
+    public final ObjectProperty<@Nullable LocalDate> maxDateProperty() {
+        return maxDate;
+    }
+
     /// Whether leading and trailing cells display dates from adjacent months.
     ///
     /// The default value is `true`.
@@ -235,62 +416,31 @@ public final class M3DateRangePicker extends Control {
                 }
             };
 
+    /// Returns whether adjacent-month days are visible in leading and trailing grid cells.
+    ///
+    /// @return `true` when adjacent-month days are visible
+    public final boolean isShowAdjacentMonthDays() {
+        return showAdjacentMonthDays.get();
+    }
+
+    /// Sets whether adjacent-month days are visible in leading and trailing grid cells.
+    ///
+    /// @param showAdjacentMonthDays whether adjacent-month days should be visible
+    public final void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
+        this.showAdjacentMonthDays.set(showAdjacentMonthDays);
+    }
+
+    /// Returns the observable property that controls whether adjacent-month dates are visible.
+    ///
+    /// The property can be observed and bound. Its default value is `true`.
+    ///
+    /// @return the show-adjacent-month-days property
+    public final BooleanProperty showAdjacentMonthDaysProperty() {
+        return showAdjacentMonthDays;
+    }
+
     /// Whether both endpoints are currently being assigned through [setRange][#setRange(LocalDate, LocalDate)].
     private boolean applyingRange;
-
-    /// Creates a picker showing the current month with no selected range and no date bounds.
-    public M3DateRangePicker() {
-        initialize();
-    }
-
-    /// Creates a date range picker initialized with the supplied selected range.
-    ///
-    /// @param startDate the first selected date
-    /// @param endDate the last selected date
-    /// @throws IllegalArgumentException if `startDate` is after `endDate`
-    public M3DateRangePicker(LocalDate startDate, LocalDate endDate) {
-        initialize();
-        setRange(startDate, endDate);
-    }
-
-    /// Returns the first selected date, or `null` when no range start is selected.
-    ///
-    /// @return the first selected date, or `null` when no range start is selected
-    public final @Nullable LocalDate getStartDate() {
-        return startDate.get();
-    }
-
-    /// Sets the first selected date, or clears the complete range when `null` is supplied.
-    ///
-    /// @param startDate the first selected date, or `null` to clear the range
-    /// @throws IllegalArgumentException if `startDate` is outside the current bounds or after the current end
-    public final void setStartDate(@Nullable LocalDate startDate) {
-        this.startDate.set(startDate);
-    }
-
-    public final ObjectProperty<@Nullable LocalDate> startDateProperty() {
-        return startDate;
-    }
-
-    /// Returns the last selected date, or `null` while only a range start is selected.
-    ///
-    /// @return the last selected date, or `null` while only a range start is selected
-    public final @Nullable LocalDate getEndDate() {
-        return endDate.get();
-    }
-
-    /// Sets the last selected date, or clears the range end when `null` is supplied.
-    ///
-    /// @param endDate the last selected date, or `null` to clear the range end
-    /// @throws IllegalArgumentException if `endDate` is outside the current bounds, no start is selected, or it
-    ///         precedes the current start
-    public final void setEndDate(@Nullable LocalDate endDate) {
-        this.endDate.set(endDate);
-    }
-
-    public final ObjectProperty<@Nullable LocalDate> endDateProperty() {
-        return endDate;
-    }
 
     /// Sets both range endpoints after validating ordering and selectable bounds.
     ///
@@ -298,12 +448,16 @@ public final class M3DateRangePicker extends Control {
     /// start together with the previous end before the second assignment completes.
     ///
     /// @param startDate the first selected date, or `null` to clear the range
-    /// @param endDate the last selected date, or `null` for an incomplete range
+    /// @param endDate   the last selected date, or `null` for an incomplete range
     /// @throws IllegalArgumentException if an endpoint is outside the current bounds or the start is after the end
+    /// @throws RuntimeException         if either endpoint property is bound
     public final void setRange(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         validateDate(startDate);
         validateDate(endDate);
         validateDateRange(startDate, endDate);
+        if (this.startDate.isBound() || this.endDate.isBound()) {
+            throw new RuntimeException("A bound range endpoint cannot be set");
+        }
         applyingRange = true;
         try {
             this.startDate.set(startDate);
@@ -316,8 +470,9 @@ public final class M3DateRangePicker extends Control {
     /// Sets both range endpoints from the supplied inclusive range.
     ///
     /// @param range the inclusive date range to select
-    /// @throws NullPointerException if `range` is `null`
+    /// @throws NullPointerException     if `range` is `null`
     /// @throws IllegalArgumentException if either endpoint is outside the current bounds
+    /// @throws RuntimeException         if either endpoint property is bound
     public final void setRange(M3DateRange range) {
         M3DateRange validatedRange = Objects.requireNonNull(range, "range");
         setRange(validatedRange.startDate(), validatedRange.endDate());
@@ -326,6 +481,8 @@ public final class M3DateRangePicker extends Control {
     /// Clears both range endpoints.
     ///
     /// Calling this method while the range is empty has no effect.
+    ///
+    /// @throws RuntimeException if either endpoint property is bound
     public final void clearRange() {
         setRange(null, null);
     }
@@ -349,7 +506,7 @@ public final class M3DateRangePicker extends Control {
     /// Applies a labeled date range preset and shows the preset start month.
     ///
     /// @param preset the date range preset to apply
-    /// @throws NullPointerException if `preset` is `null`
+    /// @throws NullPointerException     if `preset` is `null`
     /// @throws IllegalArgumentException if either preset endpoint is outside the current bounds
     public final void applyPreset(M3DateRangePreset preset) {
         M3DateRange range = Objects.requireNonNull(preset, "preset").range();
@@ -369,106 +526,10 @@ public final class M3DateRangePicker extends Control {
         return start != null && end != null && !date.isBefore(start) && !date.isAfter(end);
     }
 
-    /// Returns the month currently displayed by the calendar grid.
-    ///
-    /// @return the displayed calendar month
-    public final YearMonth getDisplayedMonth() {
-        return displayedMonth.get();
-    }
-
-    /// Sets the month displayed by the calendar grid.
-    ///
-    /// @param displayedMonth the month displayed by the calendar grid
-    /// @throws NullPointerException if `displayedMonth` is `null`
-    public final void setDisplayedMonth(YearMonth displayedMonth) {
-        this.displayedMonth.set(Objects.requireNonNull(displayedMonth, "displayedMonth"));
-    }
-
-    public final ObjectProperty<YearMonth> displayedMonthProperty() {
-        return displayedMonth;
-    }
-
-    /// Returns the weekday shown in the first calendar column.
-    ///
-    /// @return the weekday shown in the first calendar column
-    public final DayOfWeek getFirstDayOfWeek() {
-        return firstDayOfWeek.get();
-    }
-
-    /// Sets the weekday shown in the first calendar column.
-    ///
-    /// @param firstDayOfWeek the weekday shown in the first calendar column
-    /// @throws NullPointerException if `firstDayOfWeek` is `null`
-    public final void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
-        this.firstDayOfWeek.set(Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek"));
-    }
-
-    public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
-        return firstDayOfWeek;
-    }
-
-    /// Returns the earliest selectable date, or `null` when there is no lower bound.
-    ///
-    /// @return the earliest selectable date, or `null` when there is no lower bound
-    public final @Nullable LocalDate getMinDate() {
-        return minDate.get();
-    }
-
-    /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
-    ///
-    /// @param minDate the earliest selectable date, or `null` to clear the lower bound
-    /// @throws IllegalArgumentException if `minDate` is after the current [maxDate][#maxDateProperty()]
-    public final void setMinDate(@Nullable LocalDate minDate) {
-        validateSelectableBounds(minDate, getMaxDate());
-        this.minDate.set(minDate);
-    }
-
-    public final ObjectProperty<@Nullable LocalDate> minDateProperty() {
-        return minDate;
-    }
-
-    /// Returns the latest selectable date, or `null` when there is no upper bound.
-    ///
-    /// @return the latest selectable date, or `null` when there is no upper bound
-    public final @Nullable LocalDate getMaxDate() {
-        return maxDate.get();
-    }
-
-    /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
-    ///
-    /// @param maxDate the latest selectable date, or `null` to clear the upper bound
-    /// @throws IllegalArgumentException if `maxDate` is before the current [minDate][#minDateProperty()]
-    public final void setMaxDate(@Nullable LocalDate maxDate) {
-        validateSelectableBounds(getMinDate(), maxDate);
-        this.maxDate.set(maxDate);
-    }
-
-    public final ObjectProperty<@Nullable LocalDate> maxDateProperty() {
-        return maxDate;
-    }
-
-    /// Returns whether adjacent-month days are visible in leading and trailing grid cells.
-    ///
-    /// @return `true` when adjacent-month days are visible
-    public final boolean isShowAdjacentMonthDays() {
-        return showAdjacentMonthDays.get();
-    }
-
-    /// Sets whether adjacent-month days are visible in leading and trailing grid cells.
-    ///
-    /// @param showAdjacentMonthDays whether adjacent-month days should be visible
-    public final void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
-        this.showAdjacentMonthDays.set(showAdjacentMonthDays);
-    }
-
-    public final BooleanProperty showAdjacentMonthDaysProperty() {
-        return showAdjacentMonthDays;
-    }
-
     /// Selects a date as the next range endpoint.
     ///
     /// @param date the date to select as the next range endpoint
-    /// @throws NullPointerException if `date` is `null`
+    /// @throws NullPointerException     if `date` is `null`
     /// @throws IllegalArgumentException if `date` is outside the current inclusive bounds
     public final void selectDate(LocalDate date) {
         Objects.requireNonNull(date, "date");
@@ -1051,7 +1112,6 @@ public final class M3DateRangePicker extends Control {
         );
         return firstOfMonth.minusDays(leadingDays);
     }
-
 
     /// Notifies accessibility clients that selected range values changed.
     private void notifyAccessibleRangeChanged() {

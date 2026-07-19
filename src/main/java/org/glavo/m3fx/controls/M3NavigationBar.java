@@ -52,8 +52,8 @@ import java.util.Objects;
 /// or medium-width application layout. Arrow keys move between reachable items and activation selects the item
 /// before its action event continues through the event dispatch chain.
 ///
-/// [getItems] is a live mutable list. The default bar uses vertical item layout, does not add spacing between
-/// targets, and requires one selected destination whenever a reachable item exists. [getSelectedItems] is a live,
+/// [#getItems()] is a live mutable list. The default bar uses vertical item layout, does not add spacing between
+/// targets, and requires one selected destination whenever a reachable item exists. [#getSelectedItems()] is a live,
 /// unmodifiable observable view containing zero or one item. Item nodes are owned by the bar while displayed and
 /// must not belong to another parent.
 ///
@@ -96,57 +96,12 @@ public final class M3NavigationBar extends Control {
                             M3NavigationItem.class
                     ));
 
-    /// The currently selected navigation item.
-    private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
-            new ReadOnlyObjectWrapper<>(this, "selectedItem");
-
     /// The selected navigation items in child order.
     private final ObservableList<M3NavigationItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected navigation item view.
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
-
-    /// The icon and label arrangement propagated to every item in the bar.
-    ///
-    /// A direct assignment of `null` is replaced with [M3NavigationItemLayout#VERTICAL].
-    ///
-    /// @defaultValue [M3NavigationItemLayout#VERTICAL]
-    private final ObjectProperty<M3NavigationItemLayout> itemLayoutState =
-            new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
-                /// Propagates layout changes to the installed navigation items.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3NavigationItemLayout.VERTICAL);
-                        return;
-                    }
-                    updateItemLayoutStyle();
-                    updateItemLayouts();
-                    requestLayout();
-                }
-            };
-
-    /// The spacing between adjacent vertical item target areas in logical pixels.
-    ///
-    /// Values must be finite and non-negative. The effective default depends on the active Material profile and
-    /// item layout, so this property has no context-independent default value.
-    private @Nullable StyleableDoubleProperty itemSpacingStyleable;
-
-    /// Whether selection may be empty while reachable items exist.
-    ///
-    /// Setting the value to `false` selects the first reachable item if the selection is empty.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
-        /// Restores a selected item when empty selection is disabled.
-        @Override
-        protected void invalidated() {
-            if (!get()) {
-                selectFirstItemIfNeeded();
-            }
-        }
-    };
 
     /// Reusable storage for computing selected items without allocating on every refresh.
     private final List<M3NavigationItem> selectedItemsScratch = new ArrayList<>();
@@ -197,18 +152,25 @@ public final class M3NavigationBar extends Control {
         initialize();
     }
 
-    /// Returns the live mutable destination list.
+    /// The icon and label arrangement propagated to every item in the bar.
     ///
-    /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each item is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent. Removing an item clears its selected
-    /// state.
+    /// A direct assignment of `null` is replaced with [M3NavigationItemLayout#VERTICAL].
     ///
-    /// @return the live mutable destination list
-    public final ObservableList<M3NavigationItem> getItems() {
-        return items;
-    }
-
+    /// @defaultValue [M3NavigationItemLayout#VERTICAL]
+    private final ObjectProperty<M3NavigationItemLayout> itemLayoutState =
+            new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
+                /// Propagates layout changes to the installed navigation items.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationItemLayout.VERTICAL);
+                        return;
+                    }
+                    updateItemLayoutStyle();
+                    updateItemLayouts();
+                    requestLayout();
+                }
+            };
 
     /// Returns how child navigation items arrange their icon and label.
     ///
@@ -228,17 +190,28 @@ public final class M3NavigationBar extends Control {
         this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
 
-    /// Returns the child navigation item layout property.
+    /// Returns the observable, bindable child navigation-item layout property.
     ///
-    /// @return the writable navigation item layout property
+    /// The property is [M3NavigationItemLayout#VERTICAL] by default. A direct `null` assignment restores that
+    /// default; changes update the bar style and every installed item.
+    ///
+    /// @return the child navigation-item layout property
     public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
         return itemLayoutState;
     }
 
+    /// The spacing between adjacent vertical item target areas in logical pixels.
+    ///
+    /// Values must be finite and non-negative. The Java default is `0.0`; stylesheets may supply a profile-specific
+    /// value through `-m3-item-spacing`.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty itemSpacingStyleable;
+
     /// Returns the spacing between adjacent vertical navigation item target areas.
     ///
     /// The baseline navigation bar resolves this value to zero. The flexible M3 Expressive vertical layout uses
-    /// six pixels between target areas. Horizontal items retain fixed widths with no additional spacing.
+    /// six logical pixels between target areas. Horizontal items retain fixed widths with no additional spacing.
     ///
     /// @return the item spacing in logical pixels
     public final double getItemSpacing() {
@@ -253,9 +226,12 @@ public final class M3NavigationBar extends Control {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the styleable item-spacing property.
+    /// Returns the observable, bindable, CSS-styleable item-spacing property.
     ///
-    /// @return the styleable item-spacing property
+    /// The property is `0.0` logical pixels before CSS is applied and accepts only finite non-negative values. It is
+    /// styleable through `-m3-item-spacing`; changes request layout.
+    ///
+    /// @return the item-spacing property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacingStyleable == null) {
             itemSpacingStyleable = M3Css.nonNegativeStyleableDoubleProperty(
@@ -269,14 +245,11 @@ public final class M3NavigationBar extends Control {
         return itemSpacingStyleable;
     }
 
-    /// Returns an unmodifiable observable view containing the selected destination.
+    /// The currently selected navigation item.
     ///
-    /// The returned view is live and contains zero or one item in destination order.
-    ///
-    /// @return the live unmodifiable selected-item view
-    public final @UnmodifiableView ObservableList<M3NavigationItem> getSelectedItems() {
-        return selectedItemsView;
-    }
+    /// @defaultValue `null`
+    private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
+            new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
     /// Returns the selected navigation item.
     ///
@@ -285,17 +258,30 @@ public final class M3NavigationBar extends Control {
         return selectedItem.get();
     }
 
+    /// Returns the observable, read-only selected-item property.
+    ///
+    /// The property is `null` by default and tracks the selected reachable destination. It becomes `null` when no
+    /// item is selected.
+    ///
+    /// @return the read-only selected-item property
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
-    /// Returns the child index of the selected navigation item, or `-1` when no item is selected.
+    /// Whether selection may be empty while reachable items exist.
     ///
-    /// @return the child index of the selected navigation item, or `-1` when no item is selected
-    public final int getSelectedIndex() {
-        @Nullable M3NavigationItem item = getSelectedItem();
-        return item == null ? -1 : getItems().indexOf(item);
-    }
+    /// Setting the value to `false` selects the first reachable item if the selection is empty.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
+        /// Restores a selected item when empty selection is disabled.
+        @Override
+        protected void invalidated() {
+            if (!get()) {
+                selectFirstItemIfNeeded();
+            }
+        }
+    };
 
     /// Returns whether this bar allows all navigation items to be unselected.
     ///
@@ -311,14 +297,49 @@ public final class M3NavigationBar extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
+    /// Returns the observable, bindable empty-selection policy property.
+    ///
+    /// The property is `false` by default. Setting it to `false` while selection is empty selects the first
+    /// reachable destination, when one exists.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
+    }
+
+    /// Returns the live mutable destination list.
+    ///
+    /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each item is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent. Removing an item clears its selected
+    /// state.
+    ///
+    /// @return the live mutable destination list
+    public final ObservableList<M3NavigationItem> getItems() {
+        return items;
+    }
+
+    /// Returns an unmodifiable observable view containing the selected destination.
+    ///
+    /// The returned view is live and contains zero or one item in destination order.
+    ///
+    /// @return the live unmodifiable selected-item view
+    public final @UnmodifiableView ObservableList<M3NavigationItem> getSelectedItems() {
+        return selectedItemsView;
+    }
+
+    /// Returns the child index of the selected navigation item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the selected navigation item, or `-1` when no item is selected
+    public final int getSelectedIndex() {
+        @Nullable M3NavigationItem item = getSelectedItem();
+        return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Selects a navigation item that belongs to this bar.
     ///
     /// @param item the navigation item to select
-    /// @throws NullPointerException if `item` is `null`
+    /// @throws NullPointerException     if `item` is `null`
     /// @throws IllegalArgumentException if `item` is not an effectively reachable member of this bar
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
@@ -335,7 +356,7 @@ public final class M3NavigationBar extends Control {
     ///
     /// @param index the child index of the navigation item
     /// @throws IndexOutOfBoundsException if `index` is outside the item list
-    /// @throws IllegalArgumentException if the indexed item is not selectable
+    /// @throws IllegalArgumentException  if the indexed item is not selectable
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3NavigationItem item) {

@@ -112,161 +112,6 @@ public final class M3Slider extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The minimum slider value.
-    ///
-    /// Changing the minimum immediately normalizes the current value against the resulting range.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable DoubleProperty min;
-
-    /// The maximum slider value.
-    ///
-    /// Changing the maximum immediately normalizes the current value against the resulting range.
-    ///
-    /// @defaultValue `100.0`
-    private @Nullable DoubleProperty max;
-
-    /// The current slider value.
-    ///
-    /// Values are clamped to the range and, for a discrete slider, snapped to the nearest step measured from the
-    /// minimum. `NaN` and an inverted range normalize to the minimum.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable DoubleProperty value;
-
-    /// The slider orientation.
-    ///
-    /// Assigning `null` restores [Orientation#HORIZONTAL].
-    ///
-    /// @defaultValue `HORIZONTAL`
-    private @Nullable ObjectProperty<Orientation> orientation;
-
-    /// Whether a direct pointer interaction is changing the value.
-    ///
-    /// The control sets this property for the duration of a drag. Applications may also set or bind it to coordinate
-    /// commit behavior.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty valueChanging;
-
-    /// The amount used for page navigation and continuous-slider single-step adjustment.
-    ///
-    /// The value must be finite and non-negative.
-    ///
-    /// @defaultValue `10.0`
-    private @Nullable DoubleProperty blockIncrement;
-
-    /// The discrete step size, or zero for a continuous slider.
-    ///
-    /// The value must be finite and non-negative. Changing it immediately re-normalizes the current value.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable DoubleProperty stepSize;
-
-    /// Whether the active track begins at the range midpoint instead of the minimum.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty centered;
-
-    /// The Material slider size.
-    ///
-    /// Assigning `null` restores [M3SliderSize#EXTRA_SMALL].
-    ///
-    /// @defaultValue `EXTRA_SMALL`
-    private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
-        /// Updates the component token style class when the size changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(DEFAULT_SIZE);
-                return;
-            }
-            updateSizeStyle();
-            requestLayout();
-        }
-    };
-
-    /// The optional graphic inset into the active track.
-    ///
-    /// A non-null node is owned by this slider and must be available for it to parent.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Node> activeTrackGraphic;
-
-    /// The optional graphic inset into the inactive track.
-    ///
-    /// A non-null node is owned by this slider and must be available for it to parent.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Node> inactiveTrackGraphic;
-
-    /// Whether the value indicator is available during direct pointer manipulation.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty showValueIndicator;
-
-    /// The optional formatter used by the value indicator and accessibility value string.
-    ///
-    /// `null` selects the built-in compact decimal representation.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
-
-    /// The track thickness in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty trackThickness;
-
-    /// The track corner radius in logical pixels.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty trackShape;
-
-    /// The stop-indicator diameter in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty stopIndicatorSize;
-
-    /// The distance between the inactive-track outer edge and stop indicator in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
-
-    /// The thumb long-side size in logical pixels.
-    ///
-    /// @defaultValue `44.0`
-    private @Nullable StyleableDoubleProperty thumbSize;
-
-    /// The thumb short-side width in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty thumbWidth;
-
-    /// The gap between the thumb and each adjacent track segment in logical pixels.
-    ///
-    /// @defaultValue `6.0`
-    private @Nullable StyleableDoubleProperty thumbTrackGap;
-
-    /// The preferred square touch-target size in logical pixels.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty touchTargetSize;
-
-    /// The inset-icon size in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty iconSize;
-
-    /// The inset-icon outer padding in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty iconPadding;
-
-    /// The distance between the thumb and value indicator in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
-
     /// Creates a horizontal, continuous slider with range `0.0..100.0` and value `0.0`.
     public M3Slider() {
         initialize();
@@ -286,6 +131,24 @@ public final class M3Slider extends Control {
         setMax(max);
         setValue(value);
     }
+
+    /// The Material slider size.
+    ///
+    /// Assigning `null` restores [M3SliderSize#EXTRA_SMALL].
+    ///
+    /// @defaultValue `EXTRA_SMALL`
+    private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+        /// Updates the component token style class when the size changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(DEFAULT_SIZE);
+                return;
+            }
+            updateSizeStyle();
+            requestLayout();
+        }
+    };
 
     /// Returns the Material slider size.
     ///
@@ -308,9 +171,21 @@ public final class M3Slider extends Control {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
+    /// Returns the `size` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `EXTRA_SMALL`.
+    ///
+    /// @return the `size` property
     public final ObjectProperty<M3SliderSize> sizeProperty() {
         return size;
     }
+
+    /// The optional graphic inset into the active track.
+    ///
+    /// A non-null node is owned by this slider and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Node> activeTrackGraphic;
 
     /// Returns the graphic inset into the active track.
     ///
@@ -332,6 +207,11 @@ public final class M3Slider extends Control {
         activeTrackGraphicProperty().set(graphic);
     }
 
+    /// Returns the `activeTrackGraphic` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `activeTrackGraphic` property
     public final ObjectProperty<@Nullable Node> activeTrackGraphicProperty() {
         if (activeTrackGraphic == null) {
             activeTrackGraphic = new ObjectPropertyBase<>() {
@@ -357,6 +237,13 @@ public final class M3Slider extends Control {
         return activeTrackGraphic;
     }
 
+    /// The optional graphic inset into the inactive track.
+    ///
+    /// A non-null node is owned by this slider and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Node> inactiveTrackGraphic;
+
     /// Returns the graphic inset into the inactive track.
     ///
     /// This graphic is the fallback visual variant shown when the active segment cannot contain the active-track
@@ -375,6 +262,11 @@ public final class M3Slider extends Control {
         inactiveTrackGraphicProperty().set(graphic);
     }
 
+    /// Returns the `inactiveTrackGraphic` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `inactiveTrackGraphic` property
     public final ObjectProperty<@Nullable Node> inactiveTrackGraphicProperty() {
         if (inactiveTrackGraphic == null) {
             inactiveTrackGraphic = new ObjectPropertyBase<>() {
@@ -400,6 +292,11 @@ public final class M3Slider extends Control {
         return inactiveTrackGraphic;
     }
 
+    /// Whether the value indicator is available during direct pointer manipulation.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty showValueIndicator;
+
     /// Returns whether a value indicator is shown during direct pointer manipulation.
     ///
     /// @return `true` when the slider reserves and displays a value indicator
@@ -417,6 +314,11 @@ public final class M3Slider extends Control {
         showValueIndicatorProperty().set(showValueIndicator);
     }
 
+    /// Returns the `showValueIndicator` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `showValueIndicator` property
     public final BooleanProperty showValueIndicatorProperty() {
         if (showValueIndicator == null) {
             showValueIndicator = new BooleanPropertyBase(false) {
@@ -442,6 +344,13 @@ public final class M3Slider extends Control {
         return showValueIndicator;
     }
 
+    /// The optional formatter used by the value indicator and accessibility value string.
+    ///
+    /// `null` selects the built-in compact decimal representation.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
+
     /// Returns the formatter used for the value indicator and accessible value string.
     ///
     /// A null formatter uses a compact decimal representation that preserves fractional values without adding
@@ -459,6 +368,11 @@ public final class M3Slider extends Control {
         labelFormatterProperty().set(formatter);
     }
 
+    /// Returns the `labelFormatter` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `labelFormatter` property
     public final ObjectProperty<@Nullable StringConverter<Double>> labelFormatterProperty() {
         if (labelFormatter == null) {
             labelFormatter = new ObjectPropertyBase<>() {
@@ -486,6 +400,13 @@ public final class M3Slider extends Control {
         return labelFormatter;
     }
 
+    /// The minimum slider value.
+    ///
+    /// Changing the minimum immediately normalizes the current value against the resulting range.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable DoubleProperty min;
+
     /// Returns the minimum slider value.
     ///
     /// @return the minimum slider value
@@ -496,10 +417,17 @@ public final class M3Slider extends Control {
     /// Sets the minimum slider value.
     ///
     /// @param min the minimum slider value
+    /// @throws RuntimeException if normalizing the current value requires writing a bound [#valueProperty()]
     public final void setMin(double min) {
         minProperty().set(min);
     }
 
+    /// Returns the `min` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `0.0`. If [#valueProperty()] is
+    /// bound, its binding must continue to supply a value normalized for this bound.
+    ///
+    /// @return the `min` property
     public final DoubleProperty minProperty() {
         if (min == null) {
             min = new DoublePropertyBase(DEFAULT_MIN) {
@@ -529,6 +457,13 @@ public final class M3Slider extends Control {
         return min;
     }
 
+    /// The maximum slider value.
+    ///
+    /// Changing the maximum immediately normalizes the current value against the resulting range.
+    ///
+    /// @defaultValue `100.0`
+    private @Nullable DoubleProperty max;
+
     /// Returns the maximum slider value.
     ///
     /// @return the maximum slider value
@@ -539,10 +474,17 @@ public final class M3Slider extends Control {
     /// Sets the maximum slider value.
     ///
     /// @param max the maximum slider value
+    /// @throws RuntimeException if normalizing the current value requires writing a bound [#valueProperty()]
     public final void setMax(double max) {
         maxProperty().set(max);
     }
 
+    /// Returns the `max` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `100.0`. If [#valueProperty()] is
+    /// bound, its binding must continue to supply a value normalized for this bound.
+    ///
+    /// @return the `max` property
     public final DoubleProperty maxProperty() {
         if (max == null) {
             max = new DoublePropertyBase(DEFAULT_MAX) {
@@ -572,6 +514,14 @@ public final class M3Slider extends Control {
         return max;
     }
 
+    /// The current slider value.
+    ///
+    /// Values are clamped to the range and, for a discrete slider, snapped to the nearest step measured from the
+    /// minimum. `NaN` and an inverted range normalize to the minimum.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable DoubleProperty value;
+
     /// Returns the current slider value.
     ///
     /// @return the current slider value
@@ -586,6 +536,13 @@ public final class M3Slider extends Control {
         valueProperty().set(value);
     }
 
+    /// Returns the `value` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `0.0`. A binding must supply values
+    /// already clamped to the current range and, when the slider is discrete, aligned to [#stepSizeProperty()];
+    /// values that require normalization cannot be written back while this property is bound.
+    ///
+    /// @return the `value` property
     public final DoubleProperty valueProperty() {
         if (value == null) {
             value = new DoublePropertyBase(DEFAULT_VALUE) {
@@ -618,6 +575,13 @@ public final class M3Slider extends Control {
         return value;
     }
 
+    /// The slider orientation.
+    ///
+    /// Assigning `null` restores [Orientation#HORIZONTAL].
+    ///
+    /// @defaultValue `HORIZONTAL`
+    private @Nullable ObjectProperty<Orientation> orientation;
+
     /// Returns the slider orientation.
     ///
     /// @return the slider orientation
@@ -632,6 +596,11 @@ public final class M3Slider extends Control {
         orientationProperty().set(orientation);
     }
 
+    /// Returns the `orientation` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `HORIZONTAL`.
+    ///
+    /// @return the `orientation` property
     public final ObjectProperty<Orientation> orientationProperty() {
         if (orientation == null) {
             orientation = new ObjectPropertyBase<>(Orientation.HORIZONTAL) {
@@ -662,6 +631,14 @@ public final class M3Slider extends Control {
         return orientation;
     }
 
+    /// Whether a direct pointer interaction is changing the value.
+    ///
+    /// The control sets this property for the duration of a drag. Applications may also set or bind it to coordinate
+    /// commit behavior.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty valueChanging;
+
     /// Returns whether the value is being changed by a direct interaction.
     ///
     /// @return `true` while the value is being changed by direct interaction
@@ -676,6 +653,11 @@ public final class M3Slider extends Control {
         valueChangingProperty().set(valueChanging);
     }
 
+    /// Returns the `valueChanging` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `valueChanging` property
     public final BooleanProperty valueChangingProperty() {
         if (valueChanging == null) {
             valueChanging = new BooleanPropertyBase(false) {
@@ -695,6 +677,13 @@ public final class M3Slider extends Control {
         return valueChanging;
     }
 
+    /// The amount used for page navigation and continuous-slider single-step adjustment.
+    ///
+    /// The value must be finite and non-negative.
+    ///
+    /// @defaultValue `10.0`
+    private @Nullable DoubleProperty blockIncrement;
+
     /// Returns the amount changed by page navigation and continuous single-step navigation.
     ///
     /// @return the amount changed by page navigation and continuous single-step navigation
@@ -710,6 +699,11 @@ public final class M3Slider extends Control {
         blockIncrementProperty().set(M3Css.nonNegative(blockIncrement, "blockIncrement"));
     }
 
+    /// Returns the `blockIncrement` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `10.0`.
+    ///
+    /// @return the `blockIncrement` property
     public final DoubleProperty blockIncrementProperty() {
         if (blockIncrement == null) {
             blockIncrement = new DoublePropertyBase(DEFAULT_BLOCK_INCREMENT) {
@@ -738,22 +732,12 @@ public final class M3Slider extends Control {
         return blockIncrement;
     }
 
-    /// Moves the value by one unit increment.
-    public final void increment() {
-        adjustValue(getValue() + getUnitIncrement());
-    }
-
-    /// Moves the value down by one unit increment.
-    public final void decrement() {
-        adjustValue(getValue() - getUnitIncrement());
-    }
-
-    /// Sets the value after clamping it to the current slider range.
+    /// The discrete step size, or zero for a continuous slider.
     ///
-    /// @param value the value to clamp and apply
-    public final void adjustValue(double value) {
-        setValue(normalizeValue(value));
-    }
+    /// The value must be finite and non-negative. Changing it immediately re-normalizes the current value.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable DoubleProperty stepSize;
 
     /// Returns the step size used by discrete sliders.
     ///
@@ -769,10 +753,17 @@ public final class M3Slider extends Control {
     ///
     /// @param stepSize the non-negative step size
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws RuntimeException         if re-snapping the current value requires writing a bound [#valueProperty()]
     public final void setStepSize(double stepSize) {
         stepSizeProperty().set(M3Css.nonNegative(stepSize, "stepSize"));
     }
 
+    /// Returns the `stepSize` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `0.0`. If [#valueProperty()] is
+    /// bound, its binding must continue to supply a value aligned to this step.
+    ///
+    /// @return the `stepSize` property
     public final DoubleProperty stepSizeProperty() {
         if (stepSize == null) {
             stepSize = new DoublePropertyBase(DEFAULT_STEP_SIZE) {
@@ -804,6 +795,11 @@ public final class M3Slider extends Control {
         return stepSize;
     }
 
+    /// Whether the active track begins at the range midpoint instead of the minimum.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty centered;
+
     /// Returns whether the active track starts at the center of the slider.
     ///
     /// Centered sliders are intended for ranges where zero or another neutral value is represented by the
@@ -822,6 +818,11 @@ public final class M3Slider extends Control {
         centeredProperty().set(centered);
     }
 
+    /// Returns the `centered` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `centered` property
     public final BooleanProperty centeredProperty() {
         if (centered == null) {
             centered = new BooleanPropertyBase(false) {
@@ -848,6 +849,11 @@ public final class M3Slider extends Control {
         return centered;
     }
 
+    /// The track thickness in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty trackThickness;
+
     /// Returns the slider track thickness token.
     ///
     /// @return the slider track thickness token in pixels
@@ -863,6 +869,12 @@ public final class M3Slider extends Control {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
+    /// Returns the `trackThickness` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `trackThickness` property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -875,6 +887,11 @@ public final class M3Slider extends Control {
         }
         return trackThickness;
     }
+
+    /// The track corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty trackShape;
 
     /// Returns the slider track shape radius token.
     ///
@@ -891,6 +908,12 @@ public final class M3Slider extends Control {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
+    /// Returns the `trackShape` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `999.0` logical pixels.
+    ///
+    /// @return the `trackShape` property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -903,6 +926,11 @@ public final class M3Slider extends Control {
         }
         return trackShape;
     }
+
+    /// The stop-indicator diameter in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty stopIndicatorSize;
 
     /// Returns the inactive-track stop indicator diameter token.
     ///
@@ -921,6 +949,12 @@ public final class M3Slider extends Control {
         stopIndicatorSizeProperty().set(M3Css.nonNegative(stopIndicatorSize, "stopIndicatorSize"));
     }
 
+    /// Returns the `stopIndicatorSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `stopIndicatorSize` property
     public final StyleableDoubleProperty stopIndicatorSizeProperty() {
         if (stopIndicatorSize == null) {
             stopIndicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -933,6 +967,11 @@ public final class M3Slider extends Control {
         }
         return stopIndicatorSize;
     }
+
+    /// The distance between the inactive-track outer edge and stop indicator in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
 
     /// Returns the distance between an inactive track's outer edge and its stop indicator.
     ///
@@ -957,6 +996,12 @@ public final class M3Slider extends Control {
         ));
     }
 
+    /// Returns the `stopIndicatorTrailingSpace` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `stopIndicatorTrailingSpace` property
     public final StyleableDoubleProperty stopIndicatorTrailingSpaceProperty() {
         if (stopIndicatorTrailingSpace == null) {
             stopIndicatorTrailingSpace = M3Css.nonNegativeStyleableDoubleProperty(
@@ -969,6 +1014,11 @@ public final class M3Slider extends Control {
         }
         return stopIndicatorTrailingSpace;
     }
+
+    /// The thumb long-side size in logical pixels.
+    ///
+    /// @defaultValue `44.0`
+    private @Nullable StyleableDoubleProperty thumbSize;
 
     /// Returns the slider handle long-side size token.
     ///
@@ -985,6 +1035,12 @@ public final class M3Slider extends Control {
         thumbSizeProperty().set(M3Css.nonNegative(thumbSize, "thumbSize"));
     }
 
+    /// Returns the `thumbSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `44.0` logical pixels.
+    ///
+    /// @return the `thumbSize` property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
             thumbSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -997,6 +1053,11 @@ public final class M3Slider extends Control {
         }
         return thumbSize;
     }
+
+    /// The thumb short-side width in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty thumbWidth;
 
     /// Returns the slider handle short-side width token.
     ///
@@ -1013,6 +1074,12 @@ public final class M3Slider extends Control {
         thumbWidthProperty().set(M3Css.nonNegative(thumbWidth, "thumbWidth"));
     }
 
+    /// Returns the `thumbWidth` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `thumbWidth` property
     public final StyleableDoubleProperty thumbWidthProperty() {
         if (thumbWidth == null) {
             thumbWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1025,6 +1092,11 @@ public final class M3Slider extends Control {
         }
         return thumbWidth;
     }
+
+    /// The gap between the thumb and each adjacent track segment in logical pixels.
+    ///
+    /// @defaultValue `6.0`
+    private @Nullable StyleableDoubleProperty thumbTrackGap;
 
     /// Returns the gap between the handle and each adjacent track segment.
     ///
@@ -1041,6 +1113,12 @@ public final class M3Slider extends Control {
         thumbTrackGapProperty().set(M3Css.nonNegative(thumbTrackGap, "thumbTrackGap"));
     }
 
+    /// Returns the `thumbTrackGap` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `6.0` logical pixels.
+    ///
+    /// @return the `thumbTrackGap` property
     public final StyleableDoubleProperty thumbTrackGapProperty() {
         if (thumbTrackGap == null) {
             thumbTrackGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1053,6 +1131,11 @@ public final class M3Slider extends Control {
         }
         return thumbTrackGap;
     }
+
+    /// The preferred square touch-target size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// Returns the preferred touch target size token.
     ///
@@ -1069,6 +1152,12 @@ public final class M3Slider extends Control {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
+    /// Returns the `touchTargetSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `48.0` logical pixels.
+    ///
+    /// @return the `touchTargetSize` property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1081,6 +1170,11 @@ public final class M3Slider extends Control {
         }
         return touchTargetSize;
     }
+
+    /// The inset-icon size in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty iconSize;
 
     /// Returns the inset-icon size token.
     ///
@@ -1099,6 +1193,12 @@ public final class M3Slider extends Control {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
+    /// Returns the `iconSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `0.0` logical pixels.
+    ///
+    /// @return the `iconSize` property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1111,6 +1211,11 @@ public final class M3Slider extends Control {
         }
         return iconSize;
     }
+
+    /// The inset-icon outer padding in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty iconPadding;
 
     /// Returns the distance between an inset icon and the track's outer edge.
     ///
@@ -1127,6 +1232,12 @@ public final class M3Slider extends Control {
         iconPaddingProperty().set(M3Css.nonNegative(iconPadding, "iconPadding"));
     }
 
+    /// Returns the `iconPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `0.0` logical pixels.
+    ///
+    /// @return the `iconPadding` property
     public final StyleableDoubleProperty iconPaddingProperty() {
         if (iconPadding == null) {
             iconPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1139,6 +1250,11 @@ public final class M3Slider extends Control {
         }
         return iconPadding;
     }
+
+    /// The distance between the thumb and value indicator in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
 
     /// Returns the distance between the handle and the value indicator.
     ///
@@ -1159,6 +1275,12 @@ public final class M3Slider extends Control {
         );
     }
 
+    /// Returns the `valueIndicatorBottomSpace` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `valueIndicatorBottomSpace` property
     public final StyleableDoubleProperty valueIndicatorBottomSpaceProperty() {
         if (valueIndicatorBottomSpace == null) {
             valueIndicatorBottomSpace = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1170,6 +1292,23 @@ public final class M3Slider extends Control {
             );
         }
         return valueIndicatorBottomSpace;
+    }
+
+    /// Moves the value by one unit increment.
+    public final void increment() {
+        adjustValue(getValue() + getUnitIncrement());
+    }
+
+    /// Moves the value down by one unit increment.
+    public final void decrement() {
+        adjustValue(getValue() - getUnitIncrement());
+    }
+
+    /// Sets the value after clamping it to the current slider range.
+    ///
+    /// @param value the value to clamp and apply
+    public final void adjustValue(double value) {
+        setValue(normalizeValue(value));
     }
 
     /// Returns the CSS metadata for this control class.
@@ -1287,7 +1426,11 @@ public final class M3Slider extends Control {
 
     /// Clamps the current value after a range change.
     private void clampCurrentValue() {
-        setValue(normalizeValue(getValue()));
+        double currentValue = getValue();
+        double normalizedValue = normalizeValue(currentValue);
+        if (Double.compare(normalizedValue, currentValue) != 0) {
+            setValue(normalizedValue);
+        }
     }
 
     /// Returns the unit amount used for single-step keyboard and accessibility adjustments.
@@ -1332,7 +1475,6 @@ public final class M3Slider extends Control {
             }
         }
     }
-
 
     /// CSS metadata for M3FX slider component tokens.
     @NotNullByDefault

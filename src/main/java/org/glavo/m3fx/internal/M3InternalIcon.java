@@ -14,9 +14,9 @@ import java.util.Objects;
 
 /// An internal token-colored SVG icon used for built-in component affordances.
 ///
-/// This class is deliberately kept in a non-exported package. Public components still accept arbitrary JavaFX
-/// nodes for icon slots, while the library's own default arrows, clear buttons, picker buttons, and toggle
-/// affordances use stable vector geometry instead of font-dependent fallback text.
+/// Built-in arrows, clear actions, picker buttons, and toggle affordances use this fixed-viewport vector node so
+/// their geometry does not depend on an installed icon font. The icon is mouse-transparent and owns its [SVGPath]
+/// child for its complete lifetime.
 @NotNullByDefault
 public final class M3InternalIcon extends StackPane {
     /// The base style class applied to internal icon viewports.
@@ -49,7 +49,7 @@ public final class M3InternalIcon extends StackPane {
     /// The style class applied when the icon uses the on-tertiary color role.
     public static final String ON_TERTIARY_STYLE_CLASS = "m3-internal-icon-on-tertiary";
 
-    /// The default Material icon viewport size in device-independent pixels.
+    /// The default Material icon viewport size in JavaFX logical pixels.
     private static final double DEFAULT_SIZE = 24.0;
 
     /// The SVG path rendered by this icon.
@@ -63,17 +63,20 @@ public final class M3InternalIcon extends StackPane {
 
     /// Creates a 24 dp internal icon.
     ///
-    /// @param glyph the SVG glyph to render
+    /// @param glyph     the SVG glyph to render
     /// @param colorRole the Material color role used for the SVG fill
+    /// @throws NullPointerException if `glyph` or `colorRole` is `null`
     public M3InternalIcon(Glyph glyph, ColorRole colorRole) {
         this(glyph, colorRole, DEFAULT_SIZE);
     }
 
     /// Creates an internal icon with an explicit square viewport size.
     ///
-    /// @param glyph the SVG glyph to render
+    /// @param glyph     the SVG glyph to render
     /// @param colorRole the Material color role used for the SVG fill
-    /// @param size the square viewport size in pixels
+    /// The supplied size is assigned to the minimum, preferred, and maximum dimensions of this region.
+    /// @param size      the square viewport size in JavaFX logical pixels
+    /// @throws NullPointerException if `glyph` or `colorRole` is `null`
     public M3InternalIcon(Glyph glyph, ColorRole colorRole, double size) {
         this.glyph = Objects.requireNonNull(glyph, "glyph");
         this.colorRole = Objects.requireNonNull(colorRole, "colorRole");
@@ -92,6 +95,7 @@ public final class M3InternalIcon extends StackPane {
     /// Sets the glyph rendered by this icon.
     ///
     /// @param glyph the glyph to render
+    /// @throws NullPointerException if `glyph` is `null`
     public void setGlyph(Glyph glyph) {
         this.glyph = Objects.requireNonNull(glyph, "glyph");
         updateGlyph();
@@ -107,12 +111,16 @@ public final class M3InternalIcon extends StackPane {
     /// Sets the Material color role used for the SVG fill.
     ///
     /// @param colorRole the Material color role used for the SVG fill
+    /// @throws NullPointerException if `colorRole` is `null`
     public void setColorRole(ColorRole colorRole) {
         this.colorRole = Objects.requireNonNull(colorRole, "colorRole");
         updateColor();
     }
 
     /// Returns the SVG path node rendered inside this viewport.
+    ///
+    /// The returned node is the live child owned by this icon. Mutating its geometry or style directly affects the
+    /// rendered icon; it must not be reparented.
     ///
     /// @return the SVG path node rendered inside this viewport
     public SVGPath getPath() {

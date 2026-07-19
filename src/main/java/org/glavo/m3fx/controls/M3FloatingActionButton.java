@@ -60,62 +60,6 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// The default logical trailing content padding for extended floating action buttons.
     private static final double DEFAULT_TRAILING_PADDING = 20.0;
 
-    /// The floating action button color variant.
-    ///
-    /// A direct `null` assignment restores the default.
-    ///
-    /// @defaultValue [M3FloatingActionButtonVariant#PRIMARY_CONTAINER]
-    private final ObjectProperty<M3FloatingActionButtonVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY_CONTAINER) {
-                /// Updates variant style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
-                        return;
-                    }
-                    updateVariantStyle();
-                }
-            };
-
-    /// The floating action button size variant.
-    ///
-    /// A direct `null` assignment restores the default.
-    ///
-    /// @defaultValue [M3FloatingActionButtonSize#REGULAR]
-    private final ObjectProperty<M3FloatingActionButtonSize> size =
-            new SimpleObjectProperty<>(this, "size", M3FloatingActionButtonSize.REGULAR) {
-                /// Updates size style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3FloatingActionButtonSize.REGULAR);
-                        return;
-                    }
-                    updateSizeStyle();
-                }
-            };
-
-    /// The preferred square container size in logical pixels.
-    ///
-    /// @defaultValue `56.0`
-    private @Nullable StyleableDoubleProperty containerSize;
-
-    /// The container corner radius in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The logical leading content padding for an extended FAB, in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The logical trailing content padding for an extended FAB, in logical pixels.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty trailingPadding;
-
     /// Creates an iconless, unlabeled regular primary-container floating action button.
     public M3FloatingActionButton() {
         this("");
@@ -139,12 +83,30 @@ public final class M3FloatingActionButton extends ButtonBase {
 
     /// Creates a regular primary-container floating action button with the specified text and graphic.
     ///
-    /// @param text the text displayed by the floating action button
+    /// @param text    the text displayed by the floating action button
     /// @param graphic the graphic displayed by the floating action button, or `null`
     public M3FloatingActionButton(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
     }
+
+    /// The floating action button color variant.
+    ///
+    /// A direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [M3FloatingActionButtonVariant#PRIMARY_CONTAINER]
+    private final ObjectProperty<M3FloatingActionButtonVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY_CONTAINER) {
+                /// Updates variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
 
     /// Returns the floating action button color variant.
     ///
@@ -161,9 +123,33 @@ public final class M3FloatingActionButton extends ButtonBase {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable, bindable floating action button variant property.
+    ///
+    /// The property defaults to [M3FloatingActionButtonVariant#PRIMARY_CONTAINER]. A `null` value assigned directly
+    /// through the property is replaced with that default.
+    ///
+    /// @return the floating action button variant property
     public final ObjectProperty<M3FloatingActionButtonVariant> variantProperty() {
         return variant;
     }
+
+    /// The floating action button size variant.
+    ///
+    /// A direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [M3FloatingActionButtonSize#REGULAR]
+    private final ObjectProperty<M3FloatingActionButtonSize> size =
+            new SimpleObjectProperty<>(this, "size", M3FloatingActionButtonSize.REGULAR) {
+                /// Updates size style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3FloatingActionButtonSize.REGULAR);
+                        return;
+                    }
+                    updateSizeStyle();
+                }
+            };
 
     /// Returns the floating action button size.
     ///
@@ -180,9 +166,20 @@ public final class M3FloatingActionButton extends ButtonBase {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
+    /// Returns the observable, bindable floating action button size property.
+    ///
+    /// The property defaults to [M3FloatingActionButtonSize#REGULAR]. A `null` value assigned directly through the
+    /// property is replaced with that default.
+    ///
+    /// @return the floating action button size property
     public final ObjectProperty<M3FloatingActionButtonSize> sizeProperty() {
         return size;
     }
+
+    /// The preferred square container size in logical pixels.
+    ///
+    /// @defaultValue `56.0`
+    private @Nullable StyleableDoubleProperty containerSize;
 
     /// Returns the preferred square container size in logical pixels.
     ///
@@ -199,6 +196,12 @@ public final class M3FloatingActionButton extends ButtonBase {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
+    /// Returns the observable, bindable, styleable preferred container size property.
+    ///
+    /// The property defaults to `56.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the preferred container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -211,6 +214,11 @@ public final class M3FloatingActionButton extends ButtonBase {
         }
         return containerSize;
     }
+
+    /// The container corner radius in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Returns the container corner radius in logical pixels.
     ///
@@ -227,6 +235,12 @@ public final class M3FloatingActionButton extends ButtonBase {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
+    /// Returns the observable, bindable, styleable container corner-radius property.
+    ///
+    /// The property defaults to `16.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the container corner-radius property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -239,6 +253,11 @@ public final class M3FloatingActionButton extends ButtonBase {
         }
         return containerShape;
     }
+
+    /// The logical leading content padding for an extended FAB, in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Returns the logical leading content padding for an extended FAB, in logical pixels.
     ///
@@ -255,6 +274,12 @@ public final class M3FloatingActionButton extends ButtonBase {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
+    /// Returns the observable, bindable, styleable logical leading-padding property.
+    ///
+    /// The property defaults to `16.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the logical leading-padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -267,6 +292,11 @@ public final class M3FloatingActionButton extends ButtonBase {
         }
         return horizontalPadding;
     }
+
+    /// The logical trailing content padding for an extended FAB, in logical pixels.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty trailingPadding;
 
     /// Returns the logical trailing content padding token.
     ///
@@ -286,6 +316,12 @@ public final class M3FloatingActionButton extends ButtonBase {
         trailingPaddingProperty().set(M3Css.nonNegative(trailingPadding, "trailingPadding"));
     }
 
+    /// Returns the observable, bindable, styleable logical trailing-padding property.
+    ///
+    /// The property defaults to `20.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the logical trailing-padding property
     public final StyleableDoubleProperty trailingPaddingProperty() {
         if (trailingPadding == null) {
             trailingPadding = M3Css.nonNegativeStyleableDoubleProperty(

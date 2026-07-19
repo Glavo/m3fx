@@ -24,6 +24,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Card].
+///
+/// A card participates in whole-surface activation only while its action handler is non-`null`. Pointer events
+/// originating from nested focus-traversable controls or nodes with their own mouse handlers remain available to
+/// that nested content instead of firing the card action.
 @NotNullByDefault
 public class M3CardSkin extends SkinBase<M3Card> {
     /// The transient activation pseudo-class shared with button behavior.

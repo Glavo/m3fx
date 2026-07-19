@@ -92,131 +92,6 @@ public class M3DialogPane extends Control {
     /// The style class applied to Material icons used as dialog graphics.
     private static final String GRAPHIC_ICON_STYLE_CLASS = "m3-dialog-graphic-icon";
 
-    /// The dialog headline displayed before the content area.
-    ///
-    /// Empty and blank values omit the headline section from layout. The property never contains `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty headerText = new SimpleStringProperty(this, "headerText", "") {
-        /// Rejects null headline values and refreshes accessibility state.
-        @Override
-        protected void invalidated() {
-            Objects.requireNonNull(get(), "headerText");
-            updateAccessibleText();
-        }
-    };
-
-    /// The fallback body text displayed while [content][#contentProperty()] is `null`.
-    ///
-    /// Empty and blank values omit the fallback content section from layout. The property never contains `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty contentText = new SimpleStringProperty(this, "contentText", "") {
-        /// Rejects null content text and refreshes accessibility state.
-        @Override
-        protected void invalidated() {
-            Objects.requireNonNull(get(), "contentText");
-            updateAccessibleText();
-        }
-    };
-
-    /// The optional graphic displayed before the dialog headline.
-    ///
-    /// A non-null node must not already belong to another scene-graph parent when the skin installs it. Material
-    /// icon sizing is applied only when the value is an [M3Icon].
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
-
-    /// The optional node displayed in the dialog content area.
-    ///
-    /// A non-null node replaces [contentText][#contentTextProperty()] visually and must not already belong to
-    /// another scene-graph parent when the skin installs it.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
-
-    /// The live ordered list of retained Material dialog actions.
-    private final ObservableList<M3Button> actions = M3ObservableLists.nonNullElementList("action");
-
-    /// An optional package-owned action shown at the logical start of the action row.
-    ///
-    /// This slot supports specification-defined picker affordances without broadening the public dialog action list
-    /// beyond text-capable [M3Button] instances.
-    private @Nullable Node leadingAction;
-
-    /// Receives unconsumed action-button activations while this pane belongs to a dialog.
-    private @Nullable Consumer<M3Button> buttonAction;
-
-    /// Whether this pane currently forms the active modal surface of a dialog overlay.
-    private boolean modalActive;
-
-    /// The inline style declaration managed by the container shape token.
-    private @Nullable String managedContainerShapeStyle;
-
-    /// Whether the current style change is produced by managed metric synchronization.
-    private boolean updatingManagedStyle;
-
-    /// Whether the managed container shape style must be synchronized before the next layout pass.
-    private boolean containerShapeStyleDirty;
-
-    /// The dialog container corner radius in logical pixels.
-    ///
-    /// This styleable property maps to `-m3-container-shape`.
-    ///
-    /// @defaultValue `28.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The uniform padding between the visible dialog surface edge and its sections, in logical pixels.
-    ///
-    /// This styleable property maps to `-m3-content-padding`.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// The minimum visible dialog surface width in logical pixels.
-    ///
-    /// Shadow effect margins are added outside this value when the control computes its minimum region width. This
-    /// styleable property maps to `-m3-container-min-width`.
-    ///
-    /// @defaultValue `280.0`
-    private @Nullable StyleableDoubleProperty containerMinWidth;
-
-    /// The preferred maximum dialog surface width in logical pixels.
-    ///
-    /// If this value is less than [containerMinWidth][#containerMinWidthProperty()], effective layout still permits
-    /// at least the configured minimum width. This styleable property maps to `-m3-container-max-width`.
-    ///
-    /// @defaultValue `560.0`
-    private @Nullable StyleableDoubleProperty containerMaxWidth;
-
-    /// The spacing between adjacent dialog action buttons in logical pixels.
-    ///
-    /// This styleable property maps to `-m3-action-spacing`.
-    ///
-    /// @defaultValue `8.0`
-    private @Nullable StyleableDoubleProperty actionSpacing;
-
-    /// The preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
-    ///
-    /// Other graphic node types are not resized by this property. A bound icon-size property is not replaced. This
-    /// styleable property maps to `-m3-dialog-icon-size`.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty iconSize;
-
-    /// Reports focused dialog content or action changes to accessibility clients.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
-
-    /// Keeps keyboard traversal inside this dialog pane while it is presented as a modal overlay.
-    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
-            this,
-            this::isFocusTrapActive,
-            this::focusTrapTargets,
-            this::fireCancelButton
-    );
-
     /// Creates an empty dialog pane with Material geometry and no actions.
     ///
     /// Header and content text default to empty strings; graphic and content nodes default to `null`.
@@ -242,6 +117,21 @@ public class M3DialogPane extends Control {
         updateAccessibleText();
     }
 
+    /// The dialog headline displayed before the content area.
+    ///
+    /// Empty and blank values omit the headline section from layout. Values must be non-null; direct property writes
+    /// validate this constraint when invalidated.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty headerText = new SimpleStringProperty(this, "headerText", "") {
+        /// Rejects null headline values and refreshes accessibility state.
+        @Override
+        protected void invalidated() {
+            Objects.requireNonNull(get(), "headerText");
+            updateAccessibleText();
+        }
+    };
+
     /// Returns the dialog headline.
     ///
     /// @return the non-null dialog headline, or an empty string when no headline is displayed
@@ -257,9 +147,30 @@ public class M3DialogPane extends Control {
         this.headerText.set(Objects.requireNonNull(headerText, "headerText"));
     }
 
+    /// Returns the observable property that stores the dialog headline.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string, and values must be non-null.
+    /// Empty and blank values omit the headline section from layout.
+    ///
+    /// @return the dialog headline property
     public final StringProperty headerTextProperty() {
         return headerText;
     }
+
+    /// The fallback body text displayed while [content][#contentProperty()] is `null`.
+    ///
+    /// Empty and blank values omit the fallback content section from layout. Values must be non-null; direct property
+    /// writes validate this constraint when invalidated.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty contentText = new SimpleStringProperty(this, "contentText", "") {
+        /// Rejects null content text and refreshes accessibility state.
+        @Override
+        protected void invalidated() {
+            Objects.requireNonNull(get(), "contentText");
+            updateAccessibleText();
+        }
+    };
 
     /// Returns the fallback dialog body text.
     ///
@@ -276,9 +187,23 @@ public class M3DialogPane extends Control {
         this.contentText.set(Objects.requireNonNull(contentText, "contentText"));
     }
 
+    /// Returns the observable property that stores the fallback body text.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string, and values must be non-null.
+    /// The text is displayed only while [content][#contentProperty()] is `null`.
+    ///
+    /// @return the fallback body-text property
     public final StringProperty contentTextProperty() {
         return contentText;
     }
+
+    /// The optional graphic displayed before the dialog headline.
+    ///
+    /// A non-null node must not already belong to another scene-graph parent when the skin installs it. Material
+    /// icon sizing is applied only when the value is an [M3Icon].
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
 
     /// Returns the optional dialog graphic.
     ///
@@ -294,9 +219,23 @@ public class M3DialogPane extends Control {
         this.graphic.set(graphic);
     }
 
+    /// Returns the observable property that stores the optional dialog graphic.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. A non-null node must be available
+    /// for parenting by the dialog skin.
+    ///
+    /// @return the dialog graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
+
+    /// The optional node displayed in the dialog content area.
+    ///
+    /// A non-null node replaces [contentText][#contentTextProperty()] visually and must not already belong to
+    /// another scene-graph parent when the skin installs it.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
     /// Returns the optional dialog content node.
     ///
@@ -312,9 +251,301 @@ public class M3DialogPane extends Control {
         this.content.set(content);
     }
 
+    /// Returns the observable property that stores the optional dialog content node.
+    ///
+    /// The property can be observed and bound, and its default value is `null`. A non-null node replaces the
+    /// fallback body text visually and must be available for parenting by the dialog skin.
+    ///
+    /// @return the dialog content-node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
+
+    /// The dialog container corner radius in logical pixels.
+    ///
+    /// This styleable property maps to `-m3-container-shape`.
+    ///
+    /// @defaultValue `28.0`
+    private @Nullable StyleableDoubleProperty containerShape;
+
+    /// Returns the dialog container corner radius in logical pixels.
+    ///
+    /// @return the dialog container shape radius token
+    public final double getContainerShape() {
+        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+    }
+
+    /// Sets the dialog container corner radius in logical pixels.
+    ///
+    /// @param containerShape the dialog container shape radius token
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
+    public final void setContainerShape(double containerShape) {
+        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+    }
+
+    /// Returns the styleable property that stores the dialog corner radius.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-shape`, and accepts finite,
+    /// non-negative values. Its default value is `28.0` logical pixels.
+    ///
+    /// @return the container-shape property, in logical pixels
+    public final StyleableDoubleProperty containerShapeProperty() {
+        if (containerShape == null) {
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestContainerShapeStyleSync
+            );
+        }
+        return containerShape;
+    }
+
+    /// The uniform padding between the visible dialog surface edge and its sections, in logical pixels.
+    ///
+    /// This styleable property maps to `-m3-content-padding`.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty contentPadding;
+
+    /// Returns the uniform dialog content padding in logical pixels.
+    ///
+    /// @return the dialog content padding token
+    public final double getContentPadding() {
+        return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
+    }
+
+    /// Sets the uniform dialog content padding in logical pixels.
+    ///
+    /// @param contentPadding the dialog content padding token
+    /// @throws IllegalArgumentException if `contentPadding` is negative or not finite
+    public final void setContentPadding(double contentPadding) {
+        contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
+    }
+
+    /// Returns the styleable property that stores the uniform content padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-content-padding`, and accepts finite,
+    /// non-negative values. Its default value is `24.0` logical pixels.
+    ///
+    /// @return the content-padding property, in logical pixels
+    public final StyleableDoubleProperty contentPaddingProperty() {
+        if (contentPadding == null) {
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::updateMetrics
+            );
+        }
+        return contentPadding;
+    }
+
+    /// The minimum visible dialog surface width in logical pixels.
+    ///
+    /// Shadow effect margins are added outside this value when the control computes its minimum region width. This
+    /// styleable property maps to `-m3-container-min-width`.
+    ///
+    /// @defaultValue `280.0`
+    private @Nullable StyleableDoubleProperty containerMinWidth;
+
+    /// Returns the minimum dialog surface width in logical pixels.
+    ///
+    /// @return the minimum dialog container width token
+    public final double getContainerMinWidth() {
+        return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
+    }
+
+    /// Sets the minimum dialog surface width in logical pixels.
+    ///
+    /// @param containerMinWidth the minimum dialog container width token
+    /// @throws IllegalArgumentException if `containerMinWidth` is negative or not finite
+    public final void setContainerMinWidth(double containerMinWidth) {
+        containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
+    }
+
+    /// Returns the styleable property that stores the minimum visible surface width.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-min-width`, and accepts finite,
+    /// non-negative values. Its default value is `280.0` logical pixels, excluding shadow margins.
+    ///
+    /// @return the minimum container-width property, in logical pixels
+    public final StyleableDoubleProperty containerMinWidthProperty() {
+        if (containerMinWidth == null) {
+            containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MIN_WIDTH,
+                    this,
+                    "containerMinWidth",
+                    StyleableProperties.CONTAINER_MIN_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return containerMinWidth;
+    }
+
+    /// The preferred maximum dialog surface width in logical pixels.
+    ///
+    /// If this value is less than [containerMinWidth][#containerMinWidthProperty()], effective layout still permits
+    /// at least the configured minimum width. This styleable property maps to `-m3-container-max-width`.
+    ///
+    /// @defaultValue `560.0`
+    private @Nullable StyleableDoubleProperty containerMaxWidth;
+
+    /// Returns the preferred maximum dialog surface width in logical pixels.
+    ///
+    /// @return the maximum dialog container width token
+    public final double getContainerMaxWidth() {
+        return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
+    }
+
+    /// Sets the preferred maximum dialog surface width in logical pixels.
+    ///
+    /// @param containerMaxWidth the maximum dialog container width token
+    /// @throws IllegalArgumentException if `containerMaxWidth` is negative or not finite
+    public final void setContainerMaxWidth(double containerMaxWidth) {
+        containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
+    }
+
+    /// Returns the styleable property that stores the preferred maximum surface width.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-max-width`, and accepts finite,
+    /// non-negative values. Its default value is `560.0` logical pixels; the effective width still honors the
+    /// configured minimum.
+    ///
+    /// @return the maximum container-width property, in logical pixels
+    public final StyleableDoubleProperty containerMaxWidthProperty() {
+        if (containerMaxWidth == null) {
+            containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MAX_WIDTH,
+                    this,
+                    "containerMaxWidth",
+                    StyleableProperties.CONTAINER_MAX_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return containerMaxWidth;
+    }
+
+    /// The spacing between adjacent dialog action buttons in logical pixels.
+    ///
+    /// This styleable property maps to `-m3-action-spacing`.
+    ///
+    /// @defaultValue `8.0`
+    private @Nullable StyleableDoubleProperty actionSpacing;
+
+    /// Returns the spacing between dialog action buttons in logical pixels.
+    ///
+    /// @return the spacing between dialog action buttons
+    public final double getActionSpacing() {
+        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
+    }
+
+    /// Sets the spacing between dialog action buttons in logical pixels.
+    ///
+    /// @param actionSpacing the spacing between dialog action buttons
+    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
+    public final void setActionSpacing(double actionSpacing) {
+        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
+    }
+
+    /// Returns the styleable property that stores action-button spacing.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-action-spacing`, and accepts finite,
+    /// non-negative values. Its default value is `8.0` logical pixels.
+    ///
+    /// @return the action-spacing property, in logical pixels
+    public final StyleableDoubleProperty actionSpacingProperty() {
+        if (actionSpacing == null) {
+            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ACTION_SPACING,
+                    this,
+                    "actionSpacing",
+                    StyleableProperties.ACTION_SPACING,
+                    this::updateActionSpacing
+            );
+        }
+        return actionSpacing;
+    }
+
+    /// The preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
+    ///
+    /// Other graphic node types are not resized by this property. A bound icon-size property is not replaced. This
+    /// styleable property maps to `-m3-dialog-icon-size`.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty iconSize;
+
+    /// Returns the preferred Material dialog graphic icon size in logical pixels.
+    ///
+    /// @return the dialog graphic icon size token
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
+    ///
+    /// @param iconSize the dialog graphic icon size token
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the styleable property that stores the preferred dialog icon size.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-dialog-icon-size`, and accepts finite,
+    /// non-negative values. Its default value is `24.0` logical pixels and affects only [M3Icon] graphics.
+    ///
+    /// @return the icon-size property, in logical pixels
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    () -> updateGraphicMetrics(null, getGraphic())
+            );
+        }
+        return iconSize;
+    }
+
+    /// The live ordered list of retained Material dialog actions.
+    private final ObservableList<M3Button> actions = M3ObservableLists.nonNullElementList("action");
+
+    /// An optional action shown at the logical start of the action row.
+    ///
+    /// This slot supports specification-defined picker affordances without broadening the public dialog action list
+    /// beyond text-capable [M3Button] instances.
+    private @Nullable Node leadingAction;
+
+    /// Receives unconsumed action-button activations while this pane belongs to a dialog.
+    private @Nullable Consumer<M3Button> buttonAction;
+
+    /// Whether this pane currently forms the active modal surface of a dialog overlay.
+    private boolean modalActive;
+
+    /// The inline style declaration managed by the container shape token.
+    private @Nullable String managedContainerShapeStyle;
+
+    /// Whether the current style change is produced by managed metric synchronization.
+    private boolean updatingManagedStyle;
+
+    /// Whether the managed container shape style must be synchronized before the next layout pass.
+    private boolean containerShapeStyleDirty;
+
+    /// Reports focused dialog content or action changes to accessibility clients.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
+
+    /// Keeps keyboard traversal inside this dialog pane while it is presented as a modal overlay.
+    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
+            this,
+            this::isFocusTrapActive,
+            this::focusTrapTargets,
+            this::fireCancelButton
+    );
 
     /// Returns the live ordered list of Material dialog actions.
     ///
@@ -361,174 +592,6 @@ public class M3DialogPane extends Control {
             }
         }
         return null;
-    }
-
-    /// Returns the dialog container corner radius in logical pixels.
-    ///
-    /// @return the dialog container shape radius token
-    public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
-    }
-
-    /// Sets the dialog container corner radius in logical pixels.
-    ///
-    /// @param containerShape the dialog container shape radius token
-    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
-    public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
-    }
-
-    public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_SHAPE,
-                    this,
-                    "containerShape",
-                    StyleableProperties.CONTAINER_SHAPE,
-                    this::requestContainerShapeStyleSync
-            );
-        }
-        return containerShape;
-    }
-
-    /// Returns the uniform dialog content padding in logical pixels.
-    ///
-    /// @return the dialog content padding token
-    public final double getContentPadding() {
-        return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
-    }
-
-    /// Sets the uniform dialog content padding in logical pixels.
-    ///
-    /// @param contentPadding the dialog content padding token
-    /// @throws IllegalArgumentException if `contentPadding` is negative or not finite
-    public final void setContentPadding(double contentPadding) {
-        contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
-    }
-
-    public final StyleableDoubleProperty contentPaddingProperty() {
-        if (contentPadding == null) {
-            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTENT_PADDING,
-                    this,
-                    "contentPadding",
-                    StyleableProperties.CONTENT_PADDING,
-                    this::updateMetrics
-            );
-        }
-        return contentPadding;
-    }
-
-    /// Returns the minimum dialog surface width in logical pixels.
-    ///
-    /// @return the minimum dialog container width token
-    public final double getContainerMinWidth() {
-        return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
-    }
-
-    /// Sets the minimum dialog surface width in logical pixels.
-    ///
-    /// @param containerMinWidth the minimum dialog container width token
-    /// @throws IllegalArgumentException if `containerMinWidth` is negative or not finite
-    public final void setContainerMinWidth(double containerMinWidth) {
-        containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
-    }
-
-    public final StyleableDoubleProperty containerMinWidthProperty() {
-        if (containerMinWidth == null) {
-            containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_MIN_WIDTH,
-                    this,
-                    "containerMinWidth",
-                    StyleableProperties.CONTAINER_MIN_WIDTH,
-                    this::updateMetrics
-            );
-        }
-        return containerMinWidth;
-    }
-
-    /// Returns the preferred maximum dialog surface width in logical pixels.
-    ///
-    /// @return the maximum dialog container width token
-    public final double getContainerMaxWidth() {
-        return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
-    }
-
-    /// Sets the preferred maximum dialog surface width in logical pixels.
-    ///
-    /// @param containerMaxWidth the maximum dialog container width token
-    /// @throws IllegalArgumentException if `containerMaxWidth` is negative or not finite
-    public final void setContainerMaxWidth(double containerMaxWidth) {
-        containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
-    }
-
-    public final StyleableDoubleProperty containerMaxWidthProperty() {
-        if (containerMaxWidth == null) {
-            containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_MAX_WIDTH,
-                    this,
-                    "containerMaxWidth",
-                    StyleableProperties.CONTAINER_MAX_WIDTH,
-                    this::updateMetrics
-            );
-        }
-        return containerMaxWidth;
-    }
-
-    /// Returns the spacing between dialog action buttons in logical pixels.
-    ///
-    /// @return the spacing between dialog action buttons
-    public final double getActionSpacing() {
-        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
-    }
-
-    /// Sets the spacing between dialog action buttons in logical pixels.
-    ///
-    /// @param actionSpacing the spacing between dialog action buttons
-    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
-    public final void setActionSpacing(double actionSpacing) {
-        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
-    }
-
-    public final StyleableDoubleProperty actionSpacingProperty() {
-        if (actionSpacing == null) {
-            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ACTION_SPACING,
-                    this,
-                    "actionSpacing",
-                    StyleableProperties.ACTION_SPACING,
-                    this::updateActionSpacing
-            );
-        }
-        return actionSpacing;
-    }
-
-    /// Returns the preferred Material dialog graphic icon size in logical pixels.
-    ///
-    /// @return the dialog graphic icon size token
-    public final double getIconSize() {
-        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
-    }
-
-    /// Sets the preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
-    ///
-    /// @param iconSize the dialog graphic icon size token
-    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
-    public final void setIconSize(double iconSize) {
-        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
-    }
-
-    public final StyleableDoubleProperty iconSizeProperty() {
-        if (iconSize == null) {
-            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ICON_SIZE,
-                    this,
-                    "iconSize",
-                    StyleableProperties.ICON_SIZE,
-                    () -> updateGraphicMetrics(null, getGraphic())
-            );
-        }
-        return iconSize;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -624,7 +687,7 @@ public class M3DialogPane extends Control {
         this.buttonAction = buttonAction;
     }
 
-    /// Installs a package-owned action at the logical start of the action row.
+    /// Installs an action at the logical start of the action row.
     ///
     /// The leading action participates in focus traversal and accessibility but does not automatically request dialog
     /// closure. It must be configured before the pane creates its skin.

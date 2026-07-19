@@ -14,7 +14,9 @@ import java.util.Objects;
 /// @param tokens the complete token set for this theme
 @NotNullByDefault
 public record M3ThemeImpl(M3TokenSet tokens) implements M3Theme {
-    /// Creates a theme implementation.
+    /// Creates a theme from a complete immutable token set.
+    ///
+    /// @throws NullPointerException if `tokens` is `null`
     public M3ThemeImpl {
         Objects.requireNonNull(tokens, "tokens");
     }

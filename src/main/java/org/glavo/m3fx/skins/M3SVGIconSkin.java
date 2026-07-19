@@ -16,9 +16,9 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3SVGIcon].
 ///
-/// The skin owns one unmanaged [SVGPath] and one reusable [Affine] transform. Layout derives a uniform scale from
-/// the configured viewport and updates the existing transform, avoiding scene-graph churn and per-layout path
-/// reconstruction.
+/// The skin scales the SVG path uniformly from the explicit view box, or from the path bounds when no view box is
+/// supplied, and centers it within the configured logical icon size. Auto-mirrored icons reflect horizontally when
+/// the effective node orientation is right to left. Invalid or empty source geometry is not rendered.
 @NotNullByDefault
 public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     /// The rendered SVG path node.
@@ -33,7 +33,7 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     /// Creates an SVG icon skin.
     ///
     /// @param control the icon controlled by this skin
-    /// @throws NullPointerException if `control` is `null`
+    /// @throws IllegalArgumentException if `control` is `null`
     public M3SVGIconSkin(M3SVGIcon control) {
         super(control);
         orientationListener = observable -> control.requestLayout();

@@ -987,7 +987,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         setVisibleAndManaged(label, false);
     }
 
-    /// Updates selected style compatibility without duplicating style-class entries.
+    /// Updates the selected marker style class without creating duplicate entries.
     private static void setSelectedStyleClass(Node node, boolean selected) {
         List<String> styleClasses = node.getStyleClass();
         if (selected) {

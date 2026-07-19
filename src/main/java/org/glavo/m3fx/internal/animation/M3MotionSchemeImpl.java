@@ -11,12 +11,12 @@ import java.util.Objects;
 
 /// Default immutable implementation of [M3MotionScheme].
 ///
-/// @param fastEffects the fast effects motion spec
+/// @param fastEffects    the fast effects motion spec
 /// @param defaultEffects the default effects motion spec
-/// @param slowEffects the slow effects motion spec
-/// @param fastSpatial the fast spatial motion spec
+/// @param slowEffects    the slow effects motion spec
+/// @param fastSpatial    the fast spatial motion spec
 /// @param defaultSpatial the default spatial motion spec
-/// @param slowSpatial the slow spatial motion spec
+/// @param slowSpatial    the slow spatial motion spec
 @NotNullByDefault
 public record M3MotionSchemeImpl(
         M3MotionSpec fastEffects,
@@ -26,7 +26,9 @@ public record M3MotionSchemeImpl(
         M3MotionSpec defaultSpatial,
         M3MotionSpec slowSpatial
 ) implements M3MotionScheme {
-    /// Creates a motion scheme implementation.
+    /// Creates a motion scheme.
+    ///
+    /// @throws NullPointerException if any motion specification is `null`
     public M3MotionSchemeImpl {
         Objects.requireNonNull(fastEffects, "fastEffects");
         Objects.requireNonNull(defaultEffects, "defaultEffects");

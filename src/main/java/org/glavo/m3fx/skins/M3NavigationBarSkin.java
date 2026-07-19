@@ -15,6 +15,10 @@ import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3NavigationBar].
+///
+/// The skin distributes navigation destinations across the available width, updates each destination's navigation
+/// bar layout, and mirrors placement for right-to-left orientation. Item measurement includes the control's snapped
+/// insets; additional vertical space is centered around the destination row.
 @NotNullByDefault
 public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     /// The internal item container that applies compact or medium-window distribution.

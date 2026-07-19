@@ -13,6 +13,10 @@ import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SearchView].
+///
+/// The skin adopts the search bar and results container owned by the control and lays them out as a single vertical
+/// surface. A divider participates in layout only while a divided search view is active; right-to-left orientation is
+/// inherited from the skinned control.
 @NotNullByDefault
 public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     /// The internal vertical container.

@@ -53,21 +53,10 @@ public final class M3LoadingIndicator extends Control {
     /// The default active indicator shape size.
     private static final double DEFAULT_INDICATOR_SIZE = 38.0;
 
-    /// The square container size, in logical pixels.
-    ///
-    /// The value must be finite and non-negative. It determines the control's minimum and preferred dimensions and
-    /// is styleable through `-m3-container-size`.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty containerSize;
-
-    /// The maximum active-shape size, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`. Values larger than
-    /// the container are permitted and may draw outside the nominal container bounds.
-    ///
-    /// @defaultValue `38.0`
-    private @Nullable StyleableDoubleProperty indicatorSize;
+    /// Creates a default loading indicator using the standard container and indicator sizes.
+    public M3LoadingIndicator() {
+        initialize();
+    }
 
     /// The non-null visual variant used by this loading indicator.
     ///
@@ -75,11 +64,6 @@ public final class M3LoadingIndicator extends Control {
     ///
     /// @defaultValue [M3LoadingIndicatorVariant#DEFAULT]
     private @Nullable ObjectProperty<M3LoadingIndicatorVariant> variant;
-
-    /// Creates a default loading indicator using the standard container and indicator sizes.
-    public M3LoadingIndicator() {
-        initialize();
-    }
 
     /// Returns the visual variant used by this loading indicator.
     ///
@@ -96,6 +80,12 @@ public final class M3LoadingIndicator extends Control {
         variantProperty().set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable, bindable visual-variant property.
+    ///
+    /// The property defaults to [M3LoadingIndicatorVariant#DEFAULT]. A `null` value assigned directly through the
+    /// property is replaced with that default.
+    ///
+    /// @return the visual-variant property
     public final ObjectProperty<M3LoadingIndicatorVariant> variantProperty() {
         if (variant == null) {
             variant = new SimpleObjectProperty<>(this, "variant", M3LoadingIndicatorVariant.DEFAULT) {
@@ -114,6 +104,14 @@ public final class M3LoadingIndicator extends Control {
         return variant;
     }
 
+    /// The square container size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. It determines the control's minimum and preferred dimensions and
+    /// is styleable through `-m3-container-size`.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty containerSize;
+
     /// Returns the loading indicator container size token.
     ///
     /// @return the container size in logical pixels
@@ -129,6 +127,12 @@ public final class M3LoadingIndicator extends Control {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
+    /// Returns the observable, bindable, styleable container-size property.
+    ///
+    /// The property defaults to `48.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the container-size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -141,6 +145,14 @@ public final class M3LoadingIndicator extends Control {
         }
         return containerSize;
     }
+
+    /// The maximum active-shape size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`. Values larger than
+    /// the container are permitted and may draw outside the nominal container bounds.
+    ///
+    /// @defaultValue `38.0`
+    private @Nullable StyleableDoubleProperty indicatorSize;
 
     /// Returns the active indicator shape size token.
     ///
@@ -157,6 +169,12 @@ public final class M3LoadingIndicator extends Control {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
 
+    /// Returns the observable, bindable, styleable active-shape size property.
+    ///
+    /// The property defaults to `38.0` logical pixels and accepts only finite, non-negative values. Values may
+    /// exceed the container size, and CSS cannot set the property while it is bound.
+    ///
+    /// @return the active-shape size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -193,7 +211,7 @@ public final class M3LoadingIndicator extends Control {
 
     /// Returns accessibility attributes for the active loading operation.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`

@@ -53,50 +53,6 @@ public final class M3Avatar extends Control {
     /// The default avatar container size.
     private static final double DEFAULT_CONTAINER_SIZE = 40.0;
 
-    /// The text displayed when [graphic][#graphicProperty()] is `null`.
-    ///
-    /// The default value is the empty string. This property does not accept `null`; [setText][#setText(String)]
-    /// throws when passed `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "");
-
-    /// The graphic displayed in place of [text][#textProperty()].
-    ///
-    /// The default value is `null`. A non-null graphic takes precedence over text and supplies the accessible
-    /// text when its own accessible text is non-blank.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
-
-    /// The Material color role used by the avatar container and content.
-    ///
-    /// The default value is [M3AvatarVariant#PRIMARY]. The property never reports `null`; a direct `null`
-    /// assignment is replaced with the default value. [setVariant][#setVariant(M3AvatarVariant)] rejects
-    /// `null`.
-    ///
-    /// @defaultValue [M3AvatarVariant#PRIMARY]
-    private final ObjectProperty<M3AvatarVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3AvatarVariant.PRIMARY) {
-                /// Updates avatar variant style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3AvatarVariant.PRIMARY);
-                        return;
-                    }
-                    updateVariantStyle();
-                }
-            };
-
-    /// The width and height of the avatar container, in logical pixels.
-    ///
-    /// The default value is `40.0`. Values must be finite and non-negative. This styleable property is exposed
-    /// to CSS as `-m3-container-size`.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty containerSize;
-
     /// Creates an avatar with empty text, no graphic, the primary variant, and the default container size.
     public M3Avatar() {
         this("");
@@ -119,6 +75,13 @@ public final class M3Avatar extends Control {
         setGraphic(graphic);
     }
 
+    /// The text displayed when [graphic][#graphicProperty()] is `null`.
+    ///
+    /// The default value is the empty string. [setText][#setText(String)] rejects `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "");
+
     /// Returns the avatar text.
     ///
     /// @return the text displayed when no graphic is set
@@ -134,9 +97,22 @@ public final class M3Avatar extends Control {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
+    /// Returns the observable property that stores the avatar text.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string.
+    ///
+    /// @return the avatar text property
     public final StringProperty textProperty() {
         return text;
     }
+
+    /// The graphic displayed in place of [text][#textProperty()].
+    ///
+    /// The default value is `null`. A non-null graphic takes precedence over text and supplies the accessible
+    /// text when its own accessible text is non-blank.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
 
     /// Returns the optional graphic node.
     ///
@@ -152,9 +128,33 @@ public final class M3Avatar extends Control {
         this.graphic.set(graphic);
     }
 
+    /// Returns the observable property that stores the optional graphic node.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
+
+    /// The Material color role used by the avatar container and content.
+    ///
+    /// The default value is [M3AvatarVariant#PRIMARY]. A direct `null` assignment restores the default;
+    /// bound values must be non-null. [setVariant][#setVariant(M3AvatarVariant)] rejects `null`.
+    ///
+    /// @defaultValue [M3AvatarVariant#PRIMARY]
+    private final ObjectProperty<M3AvatarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3AvatarVariant.PRIMARY) {
+                /// Updates avatar variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3AvatarVariant.PRIMARY);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
 
     /// Returns the avatar color variant.
     ///
@@ -171,9 +171,23 @@ public final class M3Avatar extends Control {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
+    /// Returns the observable property that stores the avatar color variant.
+    ///
+    /// The property can be observed and bound. Its default value is [M3AvatarVariant#PRIMARY], and a direct
+    /// `null` assignment restores that default.
+    ///
+    /// @return the avatar variant property
     public final ObjectProperty<M3AvatarVariant> variantProperty() {
         return variant;
     }
+
+    /// The width and height of the avatar container, in logical pixels.
+    ///
+    /// The default value is `40.0`. Values must be finite and non-negative. This styleable property is exposed
+    /// to CSS as `-m3-container-size`.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty containerSize;
 
     /// Returns the avatar container size token.
     ///
@@ -190,6 +204,12 @@ public final class M3Avatar extends Control {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
+    /// Returns the styleable property that stores the avatar container size.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-size`, and accepts finite,
+    /// non-negative values. Its default value is `40.0` logical pixels.
+    ///
+    /// @return the container size property, in logical pixels
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(

@@ -25,7 +25,11 @@ import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.Set;
 
-/// Shared keyboard focus traversal helpers for Material containers.
+/// Provides keyboard focus traversal and focus-target discovery for Material containers.
+///
+/// Target lists returned by this class are immutable snapshots. A target is included only when the corresponding
+/// node or accessibility focus proxy is currently reachable; callers must rebuild the snapshot after structural or
+/// reachability changes.
 @NotNullByDefault
 public final class M3FocusTraversal {
     /// The fallback row height used for page focus traversal before targets have been measured.
@@ -39,11 +43,25 @@ public final class M3FocusTraversal {
     }
 
     /// Handles horizontal keyboard traversal across the supplied focus targets.
+    ///
+    /// @param owner          the container that owns traversal and reveals the selected target
+    /// @param event          the key event to handle
+    /// @param focusableItems the candidate targets in traversal order
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if any argument is `null`
     public static boolean handleHorizontalKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
         return handleDirectionalKeyFocus(owner, event, focusableItems, true, false);
     }
 
     /// Handles directional keyboard traversal across the supplied focus targets.
+    ///
+    /// @param owner             the container that owns traversal and reveals the selected target
+    /// @param event             the key event to handle
+    /// @param focusableItems    the candidate targets in traversal order
+    /// @param horizontalEnabled whether horizontal arrows are handled
+    /// @param verticalEnabled   whether vertical arrows and page keys are handled
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
@@ -55,6 +73,18 @@ public final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal across the supplied focus targets using a fallback focused index.
+    ///
+    /// The fallback index is used only when no target contains the current scene focus owner. An out-of-range or
+    /// unreachable index is ignored.
+    ///
+    /// @param owner                the container that owns traversal and reveals the selected target
+    /// @param event                the key event to handle
+    /// @param focusableItems       the candidate targets in traversal order
+    /// @param horizontalEnabled    whether horizontal arrows are handled
+    /// @param verticalEnabled      whether vertical arrows and page keys are handled
+    /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
@@ -75,6 +105,16 @@ public final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal with explicit boundary wrapping behavior.
+    ///
+    /// @param owner                the container that owns traversal and reveals the selected target
+    /// @param event                the key event to handle
+    /// @param focusableItems       the candidate targets in traversal order
+    /// @param horizontalEnabled    whether horizontal arrows are handled
+    /// @param verticalEnabled      whether vertical arrows and page keys are handled
+    /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
+    /// @param wrap                 whether arrow traversal wraps at the first and last target
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
@@ -97,6 +137,21 @@ public final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal with an explicit event target fallback.
+    ///
+    /// Disabled, invisible, detached, and duplicate targets are ignored. Horizontal movement follows the owner's
+    /// effective node orientation. Home and End select the first and last reachable target; Page Up and Page Down
+    /// move by an estimated viewport page when vertical traversal is enabled.
+    ///
+    /// @param owner                the container that owns traversal and reveals the selected target
+    /// @param event                the key event to handle
+    /// @param focusableItems       the candidate targets in traversal order
+    /// @param horizontalEnabled    whether horizontal arrows are handled
+    /// @param verticalEnabled      whether vertical arrows and page keys are handled
+    /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
+    /// @param wrap                 whether arrow traversal wraps at the first and last target
+    /// @param eventTarget          the event endpoint used when scene focus cannot identify an anchor, or `null`
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
@@ -143,6 +198,15 @@ public final class M3FocusTraversal {
     }
 
     /// Handles cyclic Tab and F6 keyboard traversal across the supplied focus targets.
+    ///
+    /// Shift reverses traversal. Recognized traversal events are consumed even when no reachable target exists, so
+    /// the owning composite remains one focus cycle rather than leaking traversal into its child implementation.
+    ///
+    /// @param owner          the container that owns traversal and reveals the selected target
+    /// @param event          the key event to handle
+    /// @param focusableItems the candidate targets in traversal order
+    /// @return `true` when the event requested unmodified Tab or F6 traversal
+    /// @throws NullPointerException if any argument is `null`
     public static boolean handleCyclicTabKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
@@ -188,21 +252,42 @@ public final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from an optional leading node followed by a node list.
+    ///
+    /// @param leading the optional leading slot
+    /// @param items   the item nodes in traversal order
+    /// @return an immutable snapshot of reachable focus targets
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
         return focusTargets(leading, items, null);
     }
 
     /// Returns reachable focus targets from a node list.
+    ///
+    /// @param items the item nodes in traversal order
+    /// @return an immutable snapshot of reachable focus targets
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items) {
         return focusTargets(null, items, null);
     }
 
     /// Returns every reachable focus target discovered in each item subtree.
+    ///
+    /// @param items the subtree roots in traversal order
+    /// @return an immutable scene-graph-order snapshot without duplicate node identities
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargetsInReachableTrees(ObservableList<? extends Node> items) {
         return focusTargetsInReachableTrees(null, items);
     }
 
     /// Returns every reachable focus target from an optional leading subtree followed by item subtrees.
+    ///
+    /// Indexed accessibility children are visited before ordinary scene-graph children. A node reachable through
+    /// both routes appears only once.
+    ///
+    /// @param leading the optional leading subtree root
+    /// @param items   the remaining subtree roots in traversal order
+    /// @return an immutable scene-graph-order snapshot without duplicate node identities
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargetsInReachableTrees(
             @Nullable Node leading,
             Iterable<? extends Node> items
@@ -218,6 +303,9 @@ public final class M3FocusTraversal {
     }
 
     /// Returns every reachable focus target discovered in a nullable item subtree.
+    ///
+    /// @param item the subtree root, or `null`
+    /// @return an immutable scene-graph-order snapshot without duplicate node identities
     public static @Unmodifiable List<Node> focusTargetsInReachableTree(@Nullable Node item) {
         ArrayList<Node> targets = new ArrayList<>();
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -226,6 +314,13 @@ public final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from an arbitrary ordered item sequence.
+    ///
+    /// Each item contributes at most the single focus target exposed by
+    /// [M3Accessible#accessibleFocusTarget(Node)].
+    ///
+    /// @param items the item nodes in traversal order
+    /// @return an immutable snapshot of reachable focus targets
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargets(Iterable<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         ArrayList<Node> targets = new ArrayList<>();
@@ -236,11 +331,20 @@ public final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from a node list followed by an optional trailing node.
+    ///
+    /// @param items    the item nodes in traversal order
+    /// @param trailing the optional trailing slot
+    /// @return an immutable snapshot of reachable focus targets
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items, @Nullable Node trailing) {
         return focusTargets(null, items, trailing);
     }
 
     /// Returns reachable focus targets from two optional node slots.
+    ///
+    /// @param first  the first optional slot
+    /// @param second the second optional slot
+    /// @return an immutable snapshot containing each reachable slot target
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node first, @Nullable Node second) {
         @Nullable Node firstTarget = M3Accessible.accessibleFocusTarget(first);
         @Nullable Node secondTarget = M3Accessible.accessibleFocusTarget(second);
@@ -251,6 +355,11 @@ public final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from three optional node slots.
+    ///
+    /// @param first  the first optional slot
+    /// @param second the second optional slot
+    /// @param third  the third optional slot
+    /// @return an immutable snapshot containing each reachable slot target
     public static @Unmodifiable List<Node> focusTargets(
             @Nullable Node first,
             @Nullable Node second,
@@ -264,6 +373,12 @@ public final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from two optional leading slots followed by a node list.
+    ///
+    /// @param first  the first optional leading slot
+    /// @param second the second optional leading slot
+    /// @param items  the item nodes in traversal order
+    /// @return an immutable snapshot of reachable focus targets
+    /// @throws NullPointerException if `items` is `null`
     public static @Unmodifiable List<Node> focusTargets(
             @Nullable Node first,
             @Nullable Node second,
@@ -318,6 +433,11 @@ public final class M3FocusTraversal {
     }
 
     /// Returns whether the current scene focus owner is inside the supplied container.
+    ///
+    /// @param owner     the node whose scene supplies the focus owner
+    /// @param container the possible ancestor to test, or `null`
+    /// @return `true` when the scene focus owner is `container` or one of its descendants
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean focusOwnerInside(Node owner, @Nullable Node container) {
         Objects.requireNonNull(owner, "owner");
         if (container == null) {
@@ -330,6 +450,16 @@ public final class M3FocusTraversal {
     }
 
     /// Consumes owner-level navigation keys when a descendant text input owns focus.
+    ///
+    /// A matching key targeted directly at the focused text input is left unconsumed so the editor can process it.
+    /// The method still returns `true` to tell the owner's traversal handler not to act on that key.
+    ///
+    /// @param owner             the composite control that owns the traversal handler
+    /// @param event             the key event to inspect
+    /// @param horizontalEnabled whether horizontal navigation belongs to the owner
+    /// @param verticalEnabled   whether vertical and page navigation belongs to the owner
+    /// @return `true` when a nested text input should retain control of the key
+    /// @throws NullPointerException if `owner` or `event` is `null`
     public static boolean consumeNavigationKeyIfFocusOwnerInsideTextInput(
             Node owner,
             KeyEvent event,
@@ -640,6 +770,13 @@ public final class M3FocusTraversal {
     }
 
     /// Returns the index of the focused target in the supplied target list.
+    ///
+    /// A target also matches when it contains the scene focus owner. Identity is used to match list entries.
+    ///
+    /// @param owner   the node whose scene supplies the focus owner
+    /// @param targets the targets in traversal order
+    /// @return the matching index, or `-1` when no target contains focus
+    /// @throws NullPointerException if `owner` or `targets` is `null`
     public static int focusedTargetIndex(Node owner, List<Node> targets) {
         return focusedTargetIndex(owner, targets, null);
     }

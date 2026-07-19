@@ -11,7 +11,11 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Base skin for controls that mirror an item list into one internal layout container.
+/// Base skin for controls that mirror an observable item list into one layout container.
+///
+/// While the skin is installed, item nodes are children of the supplied container and list membership, insertion,
+/// removal, and permutation changes are mirrored into its child list. Disposing the skin releases those child
+/// references without modifying the source item list.
 @NotNullByDefault
 abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N extends Node> extends SkinBase<C> {
     /// The public item list mirrored by this skin.
@@ -23,7 +27,11 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
     /// Mirrors public item changes into the skin container.
     private final ListChangeListener<N> itemsListener = this::updateItems;
 
-    /// Creates an item-container skin.
+    /// Creates an item-container skin and installs its list listener.
+    ///
+    /// @param control   the control represented by this skin
+    /// @param items     the observable item list to mirror
+    /// @param container the container that hosts item nodes while this skin is installed
     M3ItemContainerSkinBase(C control, ObservableList<N> items, P container) {
         super(control);
         this.items = items;

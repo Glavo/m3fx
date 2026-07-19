@@ -73,41 +73,6 @@ public final class M3Tab extends ButtonBase {
     /// The default extension on each side of primary tab content.
     private static final double DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET = 2.0;
 
-    /// The tab container height token property.
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The tab minimum width token property.
-    private @Nullable StyleableDoubleProperty tabMinWidth;
-
-    /// The horizontal content padding token property.
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The active indicator height token property.
-    private @Nullable StyleableDoubleProperty activeIndicatorHeight;
-
-    /// The active indicator shape token property.
-    private @Nullable StyleableDoubleProperty activeIndicatorShape;
-
-    /// The minimum primary active-indicator length property.
-    private @Nullable StyleableDoubleProperty activeIndicatorMinWidth;
-
-    /// The primary active-indicator horizontal-inset property.
-    private @Nullable StyleableDoubleProperty activeIndicatorHorizontalInset;
-
-    /// Whether this tab is selected.
-    ///
-    /// Direct changes are observed by a containing [M3TabBar], which enforces single selection synchronously.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
-        /// Updates selected pseudo-class state.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-        }
-    };
-
     /// Creates an unselected tab with an empty label and no graphic.
     public M3Tab() {
         this("", null);
@@ -123,13 +88,27 @@ public final class M3Tab extends ButtonBase {
 
     /// Creates an unselected tab with the specified label and graphic.
     ///
-    /// @param text the tab label
+    /// @param text    the tab label
     /// @param graphic the graphic displayed with the label, or `null` for none
     /// @throws NullPointerException if `text` is `null`
     public M3Tab(String text, @Nullable Node graphic) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
     }
+
+    /// Whether this tab is selected.
+    ///
+    /// Direct changes are observed by a containing [M3TabBar], which enforces single selection synchronously.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+        }
+    };
 
     /// Returns whether this tab is selected.
     ///
@@ -147,9 +126,17 @@ public final class M3Tab extends ButtonBase {
         this.selected.set(selected);
     }
 
+    /// Returns the `selected` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
+    /// @return the `selected` property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
+
+    /// The tab container height token property.
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// Returns the tab container height token.
     ///
@@ -166,6 +153,12 @@ public final class M3Tab extends ButtonBase {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the `containerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `48.0` logical pixels.
+    ///
+    /// @return the `containerHeight` property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -177,6 +170,9 @@ public final class M3Tab extends ButtonBase {
         }
         return containerHeight;
     }
+
+    /// The tab minimum width token property.
+    private @Nullable StyleableDoubleProperty tabMinWidth;
 
     /// Returns the tab minimum width token.
     ///
@@ -193,6 +189,12 @@ public final class M3Tab extends ButtonBase {
         tabMinWidthProperty().set(M3Css.nonNegative(tabMinWidth, "tabMinWidth"));
     }
 
+    /// Returns the `tabMinWidth` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `90.0` logical pixels.
+    ///
+    /// @return the `tabMinWidth` property
     public final StyleableDoubleProperty tabMinWidthProperty() {
         if (tabMinWidth == null) {
             tabMinWidth = createStyleableDoubleProperty(
@@ -204,6 +206,9 @@ public final class M3Tab extends ButtonBase {
         }
         return tabMinWidth;
     }
+
+    /// The horizontal content padding token property.
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Returns the horizontal content padding token.
     ///
@@ -220,6 +225,12 @@ public final class M3Tab extends ButtonBase {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
+    /// Returns the `horizontalPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `horizontalPadding` property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -231,6 +242,9 @@ public final class M3Tab extends ButtonBase {
         }
         return horizontalPadding;
     }
+
+    /// The active indicator height token property.
+    private @Nullable StyleableDoubleProperty activeIndicatorHeight;
 
     /// Returns the active indicator height token.
     ///
@@ -247,6 +261,12 @@ public final class M3Tab extends ButtonBase {
         activeIndicatorHeightProperty().set(M3Css.nonNegative(activeIndicatorHeight, "activeIndicatorHeight"));
     }
 
+    /// Returns the `activeIndicatorHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `3.0` logical pixels.
+    ///
+    /// @return the `activeIndicatorHeight` property
     public final StyleableDoubleProperty activeIndicatorHeightProperty() {
         if (activeIndicatorHeight == null) {
             activeIndicatorHeight = createStyleableDoubleProperty(
@@ -258,6 +278,9 @@ public final class M3Tab extends ButtonBase {
         }
         return activeIndicatorHeight;
     }
+
+    /// The active indicator shape token property.
+    private @Nullable StyleableDoubleProperty activeIndicatorShape;
 
     /// Returns the active indicator shape token.
     ///
@@ -274,6 +297,12 @@ public final class M3Tab extends ButtonBase {
         activeIndicatorShapeProperty().set(M3Css.nonNegative(activeIndicatorShape, "activeIndicatorShape"));
     }
 
+    /// Returns the `activeIndicatorShape` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `3.0` logical pixels.
+    ///
+    /// @return the `activeIndicatorShape` property
     public final StyleableDoubleProperty activeIndicatorShapeProperty() {
         if (activeIndicatorShape == null) {
             activeIndicatorShape = createStyleableDoubleProperty(
@@ -285,6 +314,9 @@ public final class M3Tab extends ButtonBase {
         }
         return activeIndicatorShape;
     }
+
+    /// The minimum primary active-indicator length property.
+    private @Nullable StyleableDoubleProperty activeIndicatorMinWidth;
 
     /// Returns the minimum length of a primary active indicator.
     ///
@@ -308,6 +340,12 @@ public final class M3Tab extends ButtonBase {
         ));
     }
 
+    /// Returns the `activeIndicatorMinWidth` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `24.0` logical pixels.
+    ///
+    /// @return the `activeIndicatorMinWidth` property
     public final StyleableDoubleProperty activeIndicatorMinWidthProperty() {
         if (activeIndicatorMinWidth == null) {
             activeIndicatorMinWidth = createStyleableDoubleProperty(
@@ -319,6 +357,9 @@ public final class M3Tab extends ButtonBase {
         }
         return activeIndicatorMinWidth;
     }
+
+    /// The primary active-indicator horizontal-inset property.
+    private @Nullable StyleableDoubleProperty activeIndicatorHorizontalInset;
 
     /// Returns the extension on each side of primary tab content used to size its active indicator.
     ///
@@ -342,6 +383,12 @@ public final class M3Tab extends ButtonBase {
         ));
     }
 
+    /// Returns the `activeIndicatorHorizontalInset` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `2.0` logical pixels.
+    ///
+    /// @return the `activeIndicatorHorizontalInset` property
     public final StyleableDoubleProperty activeIndicatorHorizontalInsetProperty() {
         if (activeIndicatorHorizontalInset == null) {
             activeIndicatorHorizontalInset = createStyleableDoubleProperty(

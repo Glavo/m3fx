@@ -1,4 +1,5 @@
 import java.util.zip.ZipFile
+import org.glavo.m3fx.build.M3FXStandardDoclet
 import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.SourceSetContainer
@@ -201,7 +202,16 @@ tasks.withType<Javadoc> {
     })
 
     (options as StandardJavadocDocletOptions).also {
-        it.jFlags!!.addAll(listOf("-Duser.language=en", "-Duser.country=", "-Duser.variant="))
+        it.doclet = M3FXStandardDoclet::class.java.name
+        it.docletpath = listOf(file(M3FXStandardDoclet::class.java.protectionDomain.codeSource.location.toURI()))
+        it.jFlags!!.addAll(
+            listOf(
+                "-Duser.language=en",
+                "-Duser.country=",
+                "-Duser.variant=",
+                "--add-exports=jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED",
+            )
+        )
 
         it.encoding("UTF-8")
         it.addStringOption("sourcepath", mainSourceDirectory.absolutePath)
@@ -215,7 +225,6 @@ tasks.withType<Javadoc> {
             monetFxJavadocLinkDirectory.get().asFile.absolutePath
         )
         it.addBooleanOption("html5", true)
-        it.addBooleanOption("javafx", true)
         it.addBooleanOption("Werror", true)
         it.addStringOption("Xmaxwarns", "10000")
         it.addStringOption("-show-packages", "exported")

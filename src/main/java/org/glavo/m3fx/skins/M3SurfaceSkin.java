@@ -13,6 +13,10 @@ import org.glavo.m3fx.controls.M3Surface;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Surface].
+///
+/// The skin renders the surface container behind the control's observable content list. Container shape, color, and
+/// elevation are applied independently from content layout, and the visual container remains mouse transparent so
+/// application content receives input normally.
 @NotNullByDefault
 public final class M3SurfaceSkin extends SkinBase<M3Surface> {
     /// The visual container that renders surface color, shape, and elevation.

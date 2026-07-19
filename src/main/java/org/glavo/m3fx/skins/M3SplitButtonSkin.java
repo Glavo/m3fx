@@ -21,6 +21,10 @@ import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SplitButton].
+///
+/// The skin lays out the action and menu parts as one connected or gapped control according to the split-button
+/// properties. Each part retains its own action, focus, and accessible item identity while coordinated corner-shape
+/// transitions preserve the visual relationship between both parts.
 @NotNullByDefault
 public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// The armed interaction pseudo-class used by both button parts.
@@ -72,6 +76,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// Creates a split button skin.
     ///
     /// @param control the split button controlled by this skin
+    /// @throws IllegalStateException if the split button does not expose both of its button parts
     public M3SplitButtonSkin(M3SplitButton control) {
         super(control);
         container.setManaged(false);

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Identifies a Material Design 3 slider size configuration.
 ///
 /// The five sizes select the track height, track shape, handle height, and optional inset-icon metrics published
-/// by Material Design 3 Expressive. [EXTRA_SMALL] is the default configuration and corresponds to the baseline
+/// by Material Design 3 Expressive. [#EXTRA_SMALL] is the default configuration and corresponds to the baseline
 /// slider geometry. Larger sizes are intended for prominent controls or touch-oriented layouts and do not change
 /// the slider's numeric range or adjustment behavior.
 ///

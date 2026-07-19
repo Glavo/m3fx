@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// change without depending on profile-specific numeric values.
 ///
 /// A scheme is immutable and may be shared. [standard] and [expressive] provide complete built-in schemes;
-/// [builder] creates a mutable copy for replacing individual roles.
+/// [builder][#builder()] creates a mutable copy for replacing individual roles.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault

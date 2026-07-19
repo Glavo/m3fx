@@ -824,6 +824,15 @@ final class M3FXDemoVisualMatrixTest {
     );
 
     /// Describes one complete demo presentation mode rendered by the release visual matrix.
+    ///
+    /// @param name              the mode name used in assertion messages
+    /// @param snapshotPrefix    the prefix applied to snapshots captured in this mode
+    /// @param profile           the Material profile installed for the mode
+    /// @param brightness        the theme brightness installed for the mode
+    /// @param orientation       the scene-graph orientation installed for the mode
+    /// @param animationsEnabled whether motion is enabled for the mode
+    /// @param stageWidth        the stage width in logical pixels
+    /// @param stageHeight       the stage height in logical pixels
     private record DemoVisualMode(
             String name,
             String snapshotPrefix,
@@ -837,6 +846,12 @@ final class M3FXDemoVisualMatrixTest {
     }
 
     /// Describes one demo target that uses shared interaction visual checks.
+    ///
+    /// @param pageTitle    the demo page containing the target
+    /// @param snapshotName the name used for the target snapshot
+    /// @param targetName   the target description used in assertion messages
+    /// @param targetLookup the lookup that resolves the target from the page root
+    /// @param cleanup      the optional operation that clears transient scene state after the interaction
     private record InteractionTargetCase(
             String pageTitle,
             String snapshotName,
@@ -863,6 +878,12 @@ final class M3FXDemoVisualMatrixTest {
     }
 
     /// Describes one demo target that uses shared selected-state visual checks.
+    ///
+    /// @param pageTitle      the demo page containing the target
+    /// @param snapshotName   the name used for the target snapshot
+    /// @param targetName     the target description used in assertion messages
+    /// @param targetLookup   the lookup that resolves the interaction target from the page root
+    /// @param selectedLookup the lookup that resolves the node whose selected state is inspected
     private record SelectionTargetCase(
             String pageTitle,
             String snapshotName,

@@ -38,19 +38,15 @@ public final class M3MotionSettings {
     /// The key used to store node-local reduced-motion requests.
     private static final Object REDUCED_MOTION_REQUEST_KEY = new Object();
 
+    /// Prevents instantiation.
+    private M3MotionSettings() {
+    }
+
     /// The application-wide reduced-motion request.
     ///
     /// @defaultValue `false`
     private static final BooleanProperty globalReducedMotionRequest =
             new SimpleBooleanProperty(M3MotionSettings.class, "globalReducedMotionRequested", false);
-
-    static {
-        globalReducedMotionRequest.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
-    }
-
-    /// Prevents instantiation.
-    private M3MotionSettings() {
-    }
 
     /// Returns whether the application directly requests reduced motion.
     ///
@@ -64,7 +60,7 @@ public final class M3MotionSettings {
     /// Sets whether the application requests reduced motion.
     ///
     /// If the global property is bound, this method has the same direct-write behavior as
-    /// [BooleanProperty.set(boolean)].
+    /// [BooleanProperty#set(boolean)].
     ///
     /// @param requested whether reduced motion should be requested application-wide
     public static void setGlobalReducedMotionRequested(boolean requested) {
@@ -78,6 +74,10 @@ public final class M3MotionSettings {
     /// @return the writable application-wide reduced-motion request property
     public static BooleanProperty globalReducedMotionRequestedProperty() {
         return globalReducedMotionRequest;
+    }
+
+    static {
+        globalReducedMotionRequest.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
     }
 
     /// Returns whether a node should use reduced motion after resolving global and inherited requests.

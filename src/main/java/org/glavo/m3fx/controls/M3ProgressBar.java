@@ -84,64 +84,6 @@ public final class M3ProgressBar extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The current progress value.
-    ///
-    /// Values in the inclusive range `0.0` to `1.0` represent determinate completion. Values greater than `1.0`
-    /// are normalized to `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS].
-    ///
-    /// @defaultValue [INDETERMINATE_PROGRESS]
-    private @Nullable DoubleProperty progress;
-
-    /// The track and active-indicator thickness, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-track-thickness`.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty trackThickness;
-
-    /// The track corner radius, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-track-shape`.
-    ///
-    /// @defaultValue `999.0`
-    private @Nullable StyleableDoubleProperty trackShape;
-
-    /// The expressive wave amplitude, in logical pixels.
-    ///
-    /// A value of `0.0` selects flat geometry. The value must be finite and non-negative and is styleable through
-    /// `-m3-wave-amplitude`.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty waveAmplitude;
-
-    /// The determinate wave length, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-wavelength`.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty wavelength;
-
-    /// The indeterminate wave length, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-indeterminate-wavelength`.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty indeterminateWavelength;
-
-    /// The visual gap between active progress and inactive track, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-track-gap`.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty trackGap;
-
-    /// The stop-indicator diameter, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-stop-size`.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty stopSize;
-
     /// Creates an indeterminate progress bar.
     public M3ProgressBar() {
         initialize();
@@ -156,6 +98,14 @@ public final class M3ProgressBar extends Control {
         initialize();
         setProgress(progress);
     }
+
+    /// The current progress value.
+    ///
+    /// Values in the inclusive range `0.0` to `1.0` represent determinate completion. Values greater than `1.0`
+    /// are normalized to `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS].
+    ///
+    /// @defaultValue [INDETERMINATE_PROGRESS]
+    private @Nullable DoubleProperty progress;
 
     /// Returns the current progress value.
     ///
@@ -173,6 +123,14 @@ public final class M3ProgressBar extends Control {
         progressProperty().set(progress);
     }
 
+    /// Returns the observable, bindable progress property.
+    ///
+    /// The property is [INDETERMINATE_PROGRESS] by default. Directly assigned values above `1.0` are normalized to
+    /// `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS]. A binding source must provide
+    /// either [INDETERMINATE_PROGRESS] or a value in `0.0..1.0`. Valid changes update accessibility,
+    /// pseudo-class state, and layout.
+    ///
+    /// @return the progress property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -181,6 +139,9 @@ public final class M3ProgressBar extends Control {
                 protected void invalidated() {
                     double normalizedProgress = normalizeProgress(get());
                     if (Double.compare(normalizedProgress, get()) != 0) {
+                        if (isBound()) {
+                            return;
+                        }
                         set(normalizedProgress);
                         return;
                     }
@@ -207,12 +168,12 @@ public final class M3ProgressBar extends Control {
         return progress;
     }
 
-    /// Returns whether the current progress value is indeterminate.
+    /// The track and active-indicator thickness, in logical pixels.
     ///
-    /// @return `true` when the current progress value is indeterminate
-    public final boolean isIndeterminate() {
-        return getProgress() == INDETERMINATE_PROGRESS;
-    }
+    /// The value must be finite and non-negative and is styleable through `-m3-track-thickness`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty trackThickness;
 
     /// Returns the progress track thickness token.
     ///
@@ -229,6 +190,12 @@ public final class M3ProgressBar extends Control {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable track-thickness property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-track-thickness`.
+    ///
+    /// @return the track-thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -241,6 +208,13 @@ public final class M3ProgressBar extends Control {
         }
         return trackThickness;
     }
+
+    /// The track corner radius, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-track-shape`.
+    ///
+    /// @defaultValue `999.0`
+    private @Nullable StyleableDoubleProperty trackShape;
 
     /// Returns the progress track shape radius token.
     ///
@@ -257,6 +231,12 @@ public final class M3ProgressBar extends Control {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable track-shape property.
+    ///
+    /// The property is `999.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-track-shape`.
+    ///
+    /// @return the track-shape property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -269,6 +249,14 @@ public final class M3ProgressBar extends Control {
         }
         return trackShape;
     }
+
+    /// The expressive wave amplitude, in logical pixels.
+    ///
+    /// A value of `0.0` selects flat geometry. The value must be finite and non-negative and is styleable through
+    /// `-m3-wave-amplitude`.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty waveAmplitude;
 
     /// Returns the wavy progress amplitude token.
     ///
@@ -285,6 +273,12 @@ public final class M3ProgressBar extends Control {
         waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable wave-amplitude property.
+    ///
+    /// The property is `0.0` logical pixels by default, which selects flat geometry. It accepts only finite
+    /// non-negative values and is styleable through `-m3-wave-amplitude`.
+    ///
+    /// @return the wave-amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
             waveAmplitude = M3Css.nonNegativeStyleableDoubleProperty(
@@ -301,6 +295,13 @@ public final class M3ProgressBar extends Control {
         return waveAmplitude;
     }
 
+    /// The determinate wave length, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-wavelength`.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty wavelength;
+
     /// Returns the wavy progress wavelength token.
     ///
     /// @return the wavy progress wavelength in logical pixels
@@ -316,6 +317,12 @@ public final class M3ProgressBar extends Control {
         wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable determinate wavelength property.
+    ///
+    /// The property is `40.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-wavelength`.
+    ///
+    /// @return the determinate wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
             wavelength = M3Css.nonNegativeStyleableDoubleProperty(
@@ -328,6 +335,13 @@ public final class M3ProgressBar extends Control {
         }
         return wavelength;
     }
+
+    /// The indeterminate wave length, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-indeterminate-wavelength`.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty indeterminateWavelength;
 
     /// Returns the wavy indeterminate progress wavelength token.
     ///
@@ -349,6 +363,12 @@ public final class M3ProgressBar extends Control {
         ));
     }
 
+    /// Returns the observable, bindable, CSS-styleable indeterminate wavelength property.
+    ///
+    /// The property is `20.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-indeterminate-wavelength`.
+    ///
+    /// @return the indeterminate wavelength property
     public final StyleableDoubleProperty indeterminateWavelengthProperty() {
         if (indeterminateWavelength == null) {
             indeterminateWavelength = M3Css.nonNegativeStyleableDoubleProperty(
@@ -361,6 +381,13 @@ public final class M3ProgressBar extends Control {
         }
         return indeterminateWavelength;
     }
+
+    /// The visual gap between active progress and inactive track, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-track-gap`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty trackGap;
 
     /// Returns the gap token between active progress and track.
     ///
@@ -377,6 +404,12 @@ public final class M3ProgressBar extends Control {
         trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable track-gap property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-track-gap`.
+    ///
+    /// @return the track-gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
             trackGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -389,6 +422,13 @@ public final class M3ProgressBar extends Control {
         }
         return trackGap;
     }
+
+    /// The stop-indicator diameter, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-stop-size`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty stopSize;
 
     /// Returns the stop indicator size token.
     ///
@@ -405,6 +445,12 @@ public final class M3ProgressBar extends Control {
         stopSizeProperty().set(M3Css.nonNegative(stopSize, "stopSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable stop-indicator size property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-stop-size`.
+    ///
+    /// @return the stop-indicator size property
     public final StyleableDoubleProperty stopSizeProperty() {
         if (stopSize == null) {
             stopSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -416,6 +462,13 @@ public final class M3ProgressBar extends Control {
             );
         }
         return stopSize;
+    }
+
+    /// Returns whether the current progress value is indeterminate.
+    ///
+    /// @return `true` when the current progress value is indeterminate
+    public final boolean isIndeterminate() {
+        return getProgress() == INDETERMINATE_PROGRESS;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -441,7 +494,7 @@ public final class M3ProgressBar extends Control {
 
     /// Returns accessibility attributes for the progress value and orientation.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`

@@ -61,34 +61,8 @@ public final class M3OverlayPane extends Pane {
     /// The base style class for Material overlay panes.
     public static final String STYLE_CLASS = "m3-overlay-pane";
 
-    /// Backing property for the ordinary application content.
-    private final ReadOnlyObjectWrapper<@Nullable Node> contentValue =
-            new ReadOnlyObjectWrapper<>(this, "content");
-
-    /// Backing property for the snackbar currently presented by this pane.
-    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbarValue =
-            new ReadOnlyObjectWrapper<>(this, "snackbar");
-
-    /// Backing property for the snackbar visible-display state.
-    private final ReadOnlyBooleanWrapper snackbarShowingValue =
-            new ReadOnlyBooleanWrapper(this, "snackbarShowing");
-
-    /// The optional explicit duration used for automatic snackbar dismissal.
-    private final ObjectProperty<@Nullable Duration> snackbarDisplayDurationValue =
-            new SimpleObjectProperty<>(this, "snackbarDisplayDuration") {
-                /// Normalizes finite negative durations to zero.
-                @Override
-                protected void invalidated() {
-                    @Nullable Duration duration = get();
-                    if (duration != null && duration.lessThan(Duration.ZERO)) {
-                        set(Duration.ZERO);
-                    }
-                }
-            };
-
     /// The built-in snackbar presentation layer.
-    private final M3SnackbarPresenter snackbarPresenter =
-            new M3SnackbarPresenter(snackbarValue, snackbarShowingValue, snackbarDisplayDurationValue);
+    private final M3SnackbarPresenter snackbarPresenter;
 
     /// Regular overlays ordered from bottom to top below the snackbar layer.
     private final ArrayList<OverlayHandle> regularOverlays = new ArrayList<>();
@@ -117,6 +91,11 @@ public final class M3OverlayPane extends Pane {
 
     /// Creates an empty overlay pane with an idle snackbar presentation layer.
     public M3OverlayPane() {
+        snackbarPresenter = new M3SnackbarPresenter(
+                snackbarValue,
+                snackbarShowingValue,
+                snackbarDisplayDurationValue
+        );
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setPickOnBounds(false);
@@ -126,6 +105,14 @@ public final class M3OverlayPane extends Pane {
         observeFocusScene(getScene());
         addEventFilter(InputEvent.ANY, this::filterModalInput);
     }
+
+    /// The ordinary application content.
+    ///
+    /// The content is owned by this pane while installed and may have only one parent.
+    ///
+    /// @defaultValue `null`
+    private final ReadOnlyObjectWrapper<@Nullable Node> contentValue =
+            new ReadOnlyObjectWrapper<>(this, "content");
 
     /// Returns the ordinary content shown below every presentation layer.
     ///
@@ -163,13 +150,106 @@ public final class M3OverlayPane extends Pane {
         }
     }
 
-    /// Returns the read-only property containing the ordinary application content.
+    /// Returns the observable, read-only property containing the ordinary application content.
     ///
     /// Structural updates use [#setContent(Node)] so node validation and scene-graph mutation remain atomic.
+    /// The property is `null` by default and cannot be written directly.
     ///
     /// @return the read-only content property
     public ReadOnlyObjectProperty<@Nullable Node> contentProperty() {
         return contentValue.getReadOnlyProperty();
+    }
+
+    /// The snackbar currently presented by this pane.
+    ///
+    /// @defaultValue `null`
+    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbarValue =
+            new ReadOnlyObjectWrapper<>(this, "snackbar");
+
+    /// Returns the snackbar currently presented by this pane.
+    ///
+    /// @return the current snackbar, or `null` while the snackbar layer is idle
+    public @Nullable M3Snackbar getSnackbar() {
+        return snackbarValue.get();
+    }
+
+    /// Returns the observable, read-only property containing the current snackbar.
+    ///
+    /// The property is `null` while the presenter is idle and cannot be written directly. It changes when a
+    /// snackbar is shown, dismissed, replaced, or promoted from the queue.
+    ///
+    /// @return the current-snackbar property
+    public ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
+        return snackbarValue.getReadOnlyProperty();
+    }
+
+    /// Whether the current snackbar is in its visible display phase.
+    ///
+    /// @defaultValue `false`
+    private final ReadOnlyBooleanWrapper snackbarShowingValue =
+            new ReadOnlyBooleanWrapper(this, "snackbarShowing");
+
+    /// Returns whether the current snackbar is in its visible display phase.
+    ///
+    /// @return `true` while a snackbar is being presented
+    public boolean isSnackbarShowing() {
+        return snackbarShowingValue.get();
+    }
+
+    /// Returns the observable, read-only property reporting snackbar presentation state.
+    ///
+    /// The property is `false` by default and cannot be written directly. It is `true` only during the current
+    /// snackbar's visible display phase.
+    ///
+    /// @return the snackbar-showing property
+    public ReadOnlyBooleanProperty snackbarShowingProperty() {
+        return snackbarShowingValue.getReadOnlyProperty();
+    }
+
+    /// The optional explicit duration used for automatic snackbar dismissal.
+    ///
+    /// A `null` value uses the duration supplied by effective motion behavior. Finite negative durations are
+    /// normalized to [Duration#ZERO].
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Duration> snackbarDisplayDurationValue =
+            new SimpleObjectProperty<>(this, "snackbarDisplayDuration") {
+                /// Normalizes finite negative durations to zero.
+                @Override
+                protected void invalidated() {
+                    @Nullable Duration duration = get();
+                    if (!isBound() && duration != null && duration.lessThan(Duration.ZERO)) {
+                        set(Duration.ZERO);
+                    }
+                }
+            };
+
+    /// Returns the explicitly configured automatic snackbar dismissal duration.
+    ///
+    /// @return the explicit duration, or `null` when effective motion behavior supplies it
+    public @Nullable Duration getSnackbarDisplayDuration() {
+        return snackbarDisplayDurationValue.get();
+    }
+
+    /// Sets the duration used for automatic snackbar dismissal.
+    ///
+    /// A finite negative duration is normalized to zero. A zero, unknown, or indefinite duration disables automatic
+    /// dismissal. Assign `null` to restore the effective motion-behavior duration.
+    ///
+    /// @param duration the explicit display duration, or `null` to use effective motion behavior
+    public void setSnackbarDisplayDuration(@Nullable Duration duration) {
+        snackbarDisplayDurationValue.set(duration);
+    }
+
+    /// Returns the observable, bindable optional snackbar display-duration property.
+    ///
+    /// The property is `null` by default. Finite negative values assigned directly are normalized to
+    /// [Duration#ZERO]; zero, unknown, and indefinite durations disable automatic dismissal. A binding source must
+    /// not provide a finite negative duration.
+    ///
+    /// @return the snackbar display-duration property
+    public ObjectProperty<@Nullable Duration> snackbarDisplayDurationProperty() {
+        return snackbarDisplayDurationValue;
     }
 
     /// Shows a regular node above the content and below snackbars and modal overlays.
@@ -219,34 +299,6 @@ public final class M3OverlayPane extends Pane {
         return Objects.requireNonNull(dialog, "dialog").present(this);
     }
 
-    /// Returns the snackbar currently presented by this pane.
-    ///
-    /// @return the current snackbar, or `null` while the snackbar layer is idle
-    public @Nullable M3Snackbar getSnackbar() {
-        return snackbarValue.get();
-    }
-
-    /// Returns the read-only property containing the current snackbar.
-    ///
-    /// @return the current-snackbar property
-    public ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
-        return snackbarValue.getReadOnlyProperty();
-    }
-
-    /// Returns whether the current snackbar is in its visible display phase.
-    ///
-    /// @return `true` while a snackbar is being presented
-    public boolean isSnackbarShowing() {
-        return snackbarShowingValue.get();
-    }
-
-    /// Returns the read-only property reporting snackbar presentation state.
-    ///
-    /// @return the snackbar-showing property
-    public ReadOnlyBooleanProperty snackbarShowingProperty() {
-        return snackbarShowingValue.getReadOnlyProperty();
-    }
-
     /// Returns pending snackbars in FIFO order.
     ///
     /// The returned list is live, observable, and unmodifiable. It excludes the current snackbar. Changes to a
@@ -255,30 +307,6 @@ public final class M3OverlayPane extends Pane {
     /// @return the pending snackbar queue
     public @UnmodifiableView ObservableList<M3Snackbar> getSnackbarQueue() {
         return snackbarPresenter.getQueue();
-    }
-
-    /// Returns the explicitly configured automatic snackbar dismissal duration.
-    ///
-    /// @return the explicit duration, or `null` when effective motion behavior supplies it
-    public @Nullable Duration getSnackbarDisplayDuration() {
-        return snackbarDisplayDurationValue.get();
-    }
-
-    /// Sets the duration used for automatic snackbar dismissal.
-    ///
-    /// A finite negative duration is normalized to zero. A zero, unknown, or indefinite duration disables automatic
-    /// dismissal. Assign `null` to restore the effective motion-behavior duration.
-    ///
-    /// @param duration the explicit display duration, or `null` to use effective motion behavior
-    public void setSnackbarDisplayDuration(@Nullable Duration duration) {
-        snackbarDisplayDurationValue.set(duration);
-    }
-
-    /// Returns the property storing the optional explicit snackbar display duration.
-    ///
-    /// @return the snackbar display-duration property
-    public ObjectProperty<@Nullable Duration> snackbarDisplayDurationProperty() {
-        return snackbarDisplayDurationValue;
     }
 
     /// Appends a snackbar to the FIFO presentation queue.

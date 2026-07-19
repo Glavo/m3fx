@@ -11,6 +11,10 @@ import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3NavigationDrawer].
+///
+/// The skin arranges drawer content in observable-list order inside a vertically scrollable viewport. Item spacing
+/// follows the control property, and the horizontal scroll bar remains disabled while content is fitted to the
+/// available drawer width.
 @NotNullByDefault
 public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3NavigationDrawer, VBox, Node> {
     /// The vertically scrollable viewport containing the drawer destinations.

@@ -6,13 +6,9 @@ The library provides JavaFX controls, skins, themes, generated Material token st
 
 ## Status
 
-M3FX is a `1.0-SNAPSHOT` release candidate for baseline Material Design 3 support. The public API surface has completed its 1.0 review, and every registered demo page participates in the release visual matrix. Source changes remain gated by release verification rather than broad architecture changes.
+M3FX implements the baseline Material Design 3 profile and an opt-in Material 3 Expressive profile. The profile-aware token model covers color, typography, shape, motion, component geometry, progress and loading indicators, navigation, forms, pickers, menus, and surfaces.
 
-The baseline Material Design 3 profile is the primary 1.0 compatibility target. M3 Expressive support is available through profile-aware color, typography, shape, motion, component, progress, loading, navigation, form, picker, menu, and surface tokens. Full exact visual parity for every M3 Expressive component is tracked as post-baseline parity work unless a component already has stable tokens and rendered-state coverage.
-
-The exported package surface, public top-level and nested type inventory, constructor surface, enum constants, public field constants, static utility methods, style class namespace, duplicate wrapper methods, reviewed public batch constructors, and internal type exposure are covered by project contract tests.
-
-The release visual matrix renders all component pages in baseline light, expressive light, baseline dark, expressive dark, baseline RTL, expressive dark RTL, and reduced-motion modes. It captures reviewable screenshots while checking theme context, CSS warnings, sidebar navigation, documentation links, component geometry, and page-specific visual states.
+The demo and catalog applications exercise both profiles in light, dark, left-to-right, right-to-left, and reduced-motion configurations.
 
 ## Requirements
 

@@ -70,7 +70,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setVariant(variant);
     }
 
-    /// Returns the text input variant property.
+    /// Returns the observable, bindable text input variant property.
+    ///
+    /// The default value is [M3TextInputVariant#FILLED].
     @Override
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
         return support.variantProperty();
@@ -88,7 +90,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setError(error);
     }
 
-    /// Returns the error state property.
+    /// Returns the observable, bindable error-state property.
+    ///
+    /// The default value is `false`.
     @Override
     public final BooleanProperty errorProperty() {
         return support.errorProperty();
@@ -106,7 +110,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setContainerHeight(containerHeight);
     }
 
-    /// Returns the preferred container height token property.
+    /// Returns the observable, bindable, and styleable preferred-container-height property.
+    ///
+    /// The default value is `56.0` logical pixels. Values must be finite and non-negative.
     @Override
     public final StyleableDoubleProperty containerHeightProperty() {
         return support.containerHeightProperty();
@@ -124,7 +130,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setContainerShape(containerShape);
     }
 
-    /// Returns the container shape radius token property.
+    /// Returns the observable, bindable, and styleable container-shape-radius property.
+    ///
+    /// The default value is `4.0` logical pixels. Values must be finite and non-negative.
     @Override
     public final StyleableDoubleProperty containerShapeProperty() {
         return support.containerShapeProperty();
@@ -142,7 +150,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setHorizontalPadding(horizontalPadding);
     }
 
-    /// Returns the horizontal content padding token property.
+    /// Returns the observable, bindable, and styleable horizontal-content-padding property.
+    ///
+    /// The default value is `16.0` logical pixels. Values must be finite and non-negative.
     @Override
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         return support.horizontalPaddingProperty();
@@ -160,7 +170,9 @@ public final class M3TextField extends TextField implements M3TextInput {
         support.setVerticalPadding(verticalPadding);
     }
 
-    /// Returns the vertical content padding token property.
+    /// Returns the observable, bindable, and styleable vertical-content-padding property.
+    ///
+    /// The default value is `8.0` logical pixels. Values must be finite and non-negative.
     @Override
     public final StyleableDoubleProperty verticalPaddingProperty() {
         return support.verticalPaddingProperty();
@@ -197,34 +209,34 @@ public final class M3TextField extends TextField implements M3TextInput {
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3TextField, Number> CONTAINER_HEIGHT =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-container-height",
-                M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
-                M3TextField::containerHeightProperty
-        );
+                        "-m3-container-height",
+                        M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
+                        M3TextField::containerHeightProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3TextField, Number> CONTAINER_SHAPE =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-container-shape",
-                M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
-                M3TextField::containerShapeProperty
-        );
+                        "-m3-container-shape",
+                        M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
+                        M3TextField::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3TextField, Number> HORIZONTAL_PADDING =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-horizontal-padding",
-                M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
-                M3TextField::horizontalPaddingProperty
-        );
+                        "-m3-horizontal-padding",
+                        M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
+                        M3TextField::horizontalPaddingProperty
+                );
 
         /// CSS metadata for the vertical padding token.
         private static final CssMetaData<M3TextField, Number> VERTICAL_PADDING =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-vertical-padding",
-                M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
-                M3TextField::verticalPaddingProperty
-        );
+                        "-m3-vertical-padding",
+                        M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
+                        M3TextField::verticalPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(

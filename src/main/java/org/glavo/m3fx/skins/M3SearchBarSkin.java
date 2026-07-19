@@ -28,6 +28,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3SearchBar].
+///
+/// The skin arranges the leading slot, editable text field, and trailing actions in logical order and keeps decorative
+/// state-layer and focus geometry aligned with the visible container. Pointer and keyboard activation target the
+/// search bar without allowing its decorative layers to intercept input.
 @NotNullByDefault
 public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     /// The spacing between search bar content slots.
@@ -96,6 +100,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     /// Creates a search bar skin.
     ///
     /// @param control the search bar controlled by this skin
+    /// @throws IllegalStateException if the search bar does not expose its text editor
     public M3SearchBarSkin(M3SearchBar control) {
         super(control);
         container.setManaged(false);

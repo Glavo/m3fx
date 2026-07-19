@@ -11,10 +11,10 @@ import java.util.Objects;
 /// Default immutable implementation of [M3TextStyle].
 ///
 /// @param fontFamily the font family name
-/// @param size the font size in pixels
-/// @param lineHeight the line height in pixels
-/// @param weight the font weight
-/// @param tracking the letter tracking in pixels
+/// @param size       the finite, non-negative font size in JavaFX logical pixels
+/// @param lineHeight the finite, non-negative line height in JavaFX logical pixels
+/// @param weight     the font weight
+/// @param tracking   the finite letter tracking in JavaFX logical pixels
 @NotNullByDefault
 public record M3TextStyleImpl(
         String fontFamily,
@@ -24,6 +24,10 @@ public record M3TextStyleImpl(
         double tracking
 ) implements M3TextStyle {
     /// Creates a text style token.
+    ///
+    /// @throws NullPointerException     if `fontFamily` is `null`
+    /// @throws IllegalArgumentException if `size` or `lineHeight` is negative or not finite, `weight` is not
+    ///                                  positive, or `tracking` is not finite
     public M3TextStyleImpl {
         Objects.requireNonNull(fontFamily, "fontFamily");
         validate(size, "size");

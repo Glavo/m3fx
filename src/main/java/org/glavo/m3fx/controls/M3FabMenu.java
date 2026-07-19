@@ -104,24 +104,100 @@ public final class M3FabMenu extends Control {
     /// The scale used when action buttons enter or exit.
     private static final double ACTION_TRANSITION_SCALE = 0.86;
 
-    /// The action item container.
-    private final VBox actions = new VBox();
+    /// Creates a collapsed menu with a default regular primary-container toggle button and no action items.
+    public M3FabMenu() {
+        this(createDefaultToggleButton());
+    }
+
+    /// Creates a collapsed menu using the specified toggle button.
+    ///
+    /// The button becomes owned by this control. Its existing action handlers remain installed; the menu also
+    /// installs an action handler that expands the menu.
+    ///
+    /// @param toggleButton the floating action button used to expand or collapse the menu
+    /// @throws NullPointerException if `toggleButton` is `null`
+    public M3FabMenu(M3FloatingActionButton toggleButton) {
+        this.toggleButton = Objects.requireNonNull(toggleButton, "toggleButton");
+        initialize();
+    }
 
     /// The spacing between expanded action items in logical pixels.
     ///
     /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty actionSpacing;
 
+    /// Returns the spacing between expanded action items.
+    ///
+    /// @return the action item spacing in logical pixels
+    public final double getActionSpacing() {
+        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
+    }
+
+    /// Sets the spacing between expanded action items.
+    ///
+    /// @param actionSpacing the action item spacing in logical pixels
+    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
+    public final void setActionSpacing(double actionSpacing) {
+        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
+    }
+
+    /// Returns the observable, bindable, styleable action-item spacing property.
+    ///
+    /// The property defaults to `4.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the action-item spacing property
+    public final StyleableDoubleProperty actionSpacingProperty() {
+        if (actionSpacing == null) {
+            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ACTION_SPACING,
+                    this,
+                    "actionSpacing",
+                    StyleableProperties.ACTION_SPACING,
+                    this::requestLayout
+            );
+        }
+        return actionSpacing;
+    }
+
     /// The spacing between the last action and close button in logical pixels.
     ///
     /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty closeSpacing;
 
-    /// The toggle floating action button owned by this menu.
-    private final M3FloatingActionButton toggleButton;
+    /// Returns the spacing between the last expanded action and close button.
+    ///
+    /// @return the close button spacing in logical pixels
+    public final double getCloseSpacing() {
+        return closeSpacing == null ? DEFAULT_CLOSE_SPACING : closeSpacing.get();
+    }
 
-    /// The close floating action button shown while expanded.
-    private final M3FloatingActionButton closeButton = createCloseButton();
+    /// Sets the spacing between the last expanded action and close button.
+    ///
+    /// @param closeSpacing the close button spacing in logical pixels
+    /// @throws IllegalArgumentException if `closeSpacing` is negative or not finite
+    public final void setCloseSpacing(double closeSpacing) {
+        closeSpacingProperty().set(M3Css.nonNegative(closeSpacing, "closeSpacing"));
+    }
+
+    /// Returns the observable, bindable, styleable close-button spacing property.
+    ///
+    /// The property defaults to `8.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the close-button spacing property
+    public final StyleableDoubleProperty closeSpacingProperty() {
+        if (closeSpacing == null) {
+            closeSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CLOSE_SPACING,
+                    this,
+                    "closeSpacing",
+                    StyleableProperties.CLOSE_SPACING,
+                    this::requestLayout
+            );
+        }
+        return closeSpacing;
+    }
 
     /// Whether the action items are expanded.
     ///
@@ -136,6 +212,39 @@ public final class M3FabMenu extends Control {
             setExpandedState(get());
         }
     };
+
+    /// Returns whether action items are currently expanded.
+    ///
+    /// @return `true` when action items are currently expanded
+    public final boolean isExpanded() {
+        return expanded.get();
+    }
+
+    /// Sets whether action items are currently expanded.
+    ///
+    /// @param expanded whether action items are currently expanded
+    public final void setExpanded(boolean expanded) {
+        this.expanded.set(expanded);
+    }
+
+    /// Returns the observable, bindable expanded-state property.
+    ///
+    /// The property defaults to `false`. Changing it updates child visibility, focus, accessibility state, and the
+    /// animated visual transition.
+    ///
+    /// @return the expanded-state property
+    public final BooleanProperty expandedProperty() {
+        return expanded;
+    }
+
+    /// The action item container.
+    private final VBox actions = new VBox();
+
+    /// The toggle floating action button owned by this menu.
+    private final M3FloatingActionButton toggleButton;
+
+    /// The close floating action button shown while expanded.
+    private final M3FloatingActionButton closeButton = createCloseButton();
 
     /// The reusable expand and collapse animation for every action item.
     private final ActionItemsTransition animation = new ActionItemsTransition();
@@ -172,23 +281,6 @@ public final class M3FabMenu extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    /// Creates a collapsed menu with a default regular primary-container toggle button and no action items.
-    public M3FabMenu() {
-        this(createDefaultToggleButton());
-    }
-
-    /// Creates a collapsed menu using the specified toggle button.
-    ///
-    /// The button becomes owned by this control. Its existing action handlers remain installed; the menu also
-    /// installs an action handler that expands the menu.
-    ///
-    /// @param toggleButton the floating action button used to expand or collapse the menu
-    /// @throws NullPointerException if `toggleButton` is `null`
-    public M3FabMenu(M3FloatingActionButton toggleButton) {
-        this.toggleButton = Objects.requireNonNull(toggleButton, "toggleButton");
-        initialize();
-    }
-
     /// Returns the toggle floating action button.
     ///
     /// @return the toggle floating action button
@@ -203,62 +295,6 @@ public final class M3FabMenu extends Control {
         return closeButton;
     }
 
-    /// Returns the spacing between expanded action items.
-    ///
-    /// @return the action item spacing in logical pixels
-    public final double getActionSpacing() {
-        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
-    }
-
-    /// Sets the spacing between expanded action items.
-    ///
-    /// @param actionSpacing the action item spacing in logical pixels
-    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
-    public final void setActionSpacing(double actionSpacing) {
-        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
-    }
-
-    public final StyleableDoubleProperty actionSpacingProperty() {
-        if (actionSpacing == null) {
-            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ACTION_SPACING,
-                    this,
-                    "actionSpacing",
-                    StyleableProperties.ACTION_SPACING,
-                    this::requestLayout
-            );
-        }
-        return actionSpacing;
-    }
-
-    /// Returns the spacing between the last expanded action and close button.
-    ///
-    /// @return the close button spacing in logical pixels
-    public final double getCloseSpacing() {
-        return closeSpacing == null ? DEFAULT_CLOSE_SPACING : closeSpacing.get();
-    }
-
-    /// Sets the spacing between the last expanded action and close button.
-    ///
-    /// @param closeSpacing the close button spacing in logical pixels
-    /// @throws IllegalArgumentException if `closeSpacing` is negative or not finite
-    public final void setCloseSpacing(double closeSpacing) {
-        closeSpacingProperty().set(M3Css.nonNegative(closeSpacing, "closeSpacing"));
-    }
-
-    public final StyleableDoubleProperty closeSpacingProperty() {
-        if (closeSpacing == null) {
-            closeSpacing = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CLOSE_SPACING,
-                    this,
-                    "closeSpacing",
-                    StyleableProperties.CLOSE_SPACING,
-                    this::requestLayout
-            );
-        }
-        return closeSpacing;
-    }
-
     /// Returns the live, mutable list of direct action item nodes in display order.
     ///
     /// The list initially is empty and enforces JavaFX parent-child constraints, including non-null elements and no
@@ -268,28 +304,6 @@ public final class M3FabMenu extends Control {
     /// @return the live, mutable action item list
     public final ObservableList<Node> getItems() {
         return actions.getChildren();
-    }
-
-
-
-
-
-    /// Returns whether action items are currently expanded.
-    ///
-    /// @return `true` when action items are currently expanded
-    public final boolean isExpanded() {
-        return expanded.get();
-    }
-
-    /// Sets whether action items are currently expanded.
-    ///
-    /// @param expanded whether action items are currently expanded
-    public final void setExpanded(boolean expanded) {
-        this.expanded.set(expanded);
-    }
-
-    public final BooleanProperty expandedProperty() {
-        return expanded;
     }
 
     /// Expands the action items.
@@ -800,16 +814,16 @@ public final class M3FabMenu extends Control {
         /// Nodes participating in the current transition.
         private @Nullable Node[] targets = new Node[0];
 
-        /// Starting opacity values parallel to [targets].
+        /// Starting opacity values parallel to [#targets].
         private double[] startOpacities = new double[0];
 
-        /// Starting horizontal scale values parallel to [targets].
+        /// Starting horizontal scale values parallel to [#targets].
         private double[] startScaleX = new double[0];
 
-        /// Starting vertical scale values parallel to [targets].
+        /// Starting vertical scale values parallel to [#targets].
         private double[] startScaleY = new double[0];
 
-        /// Starting vertical translations parallel to [targets].
+        /// Starting vertical translations parallel to [#targets].
         private double[] startTranslateY = new double[0];
 
         /// Starting opacity of the entry button.
@@ -946,7 +960,7 @@ public final class M3FabMenu extends Control {
         return button;
     }
 
-    /// Creates the 56-pixel solid close button shown by an expanded menu.
+    /// Creates the 56-logical-pixel solid close button shown by an expanded menu.
     private static M3FloatingActionButton createCloseButton() {
         M3FloatingActionButton button = new M3FloatingActionButton(new M3InternalIcon(
                 M3InternalIcon.Glyph.CLOSE,

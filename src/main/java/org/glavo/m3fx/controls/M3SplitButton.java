@@ -102,6 +102,31 @@ public final class M3SplitButton extends Control {
     /// The disclosure icon displayed by the menu button side.
     private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
 
+    /// The focusable button parts exposed to accessibility and keyboard navigation.
+    private final ObservableList<Node> buttonParts = M3ObservableLists.nonNullElementList("buttonPart");
+
+    /// Notifies accessibility clients when focus moves between split button parts.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, buttonParts));
+
+    /// Notifies accessibility clients when focus moves inside the popup-hosted menu.
+    private final M3AccessibleFocusNotifier popupFocusNotifier =
+            new M3AccessibleFocusNotifier(this, menuButton.getMenu(), this::focusNode);
+
+    /// Creates an empty split button.
+    public M3SplitButton() {
+        this("");
+    }
+
+    /// Creates a split button with primary action text.
+    ///
+    /// @param text the primary action text
+    /// @throws NullPointerException if `text` is `null`
+    public M3SplitButton(String text) {
+        initialize();
+        setText(text);
+    }
+
     /// The primary action text.
     ///
     /// Assigning `null` through the property is normalized to an empty string.
@@ -119,6 +144,30 @@ public final class M3SplitButton extends Control {
         }
     };
 
+    /// Returns the primary action text.
+    ///
+    /// @return the primary action text
+    public final String getText() {
+        return text.get();
+    }
+
+    /// Sets the primary action text.
+    ///
+    /// @param text the primary action text
+    /// @throws NullPointerException if `text` is `null`
+    public final void setText(String text) {
+        this.text.set(Objects.requireNonNull(text, "text"));
+    }
+
+    /// Returns the `text` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
+    /// @return the `text` property
+    public final StringProperty textProperty() {
+        return text;
+    }
+
     /// The primary action graphic.
     ///
     /// A non-null node is owned by the primary button and must be available for it to parent.
@@ -133,6 +182,32 @@ public final class M3SplitButton extends Control {
                 }
             };
 
+    /// Returns the primary action graphic.
+    ///
+    /// @return the primary action graphic, or `null` if none is set
+    public final @Nullable Node getGraphic() {
+        return graphic.get();
+    }
+
+    /// Sets the primary action graphic.
+    ///
+    /// A non-null graphic becomes a child of the primary button and must satisfy normal JavaFX parent ownership
+    /// rules.
+    ///
+    /// @param graphic the primary action graphic, or `null` to clear it
+    public final void setGraphic(@Nullable Node graphic) {
+        this.graphic.set(graphic);
+    }
+
+    /// Returns the `graphic` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `graphic` property
+    public final ObjectProperty<@Nullable Node> graphicProperty() {
+        return graphic;
+    }
+
     /// The primary action handler.
     ///
     /// @defaultValue `null`
@@ -145,19 +220,28 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The read-only showing state property.
-    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+    /// Returns the primary action handler.
+    ///
+    /// @return the primary action handler, or `null` if none is set
+    public final @Nullable EventHandler<ActionEvent> getOnAction() {
+        return onAction.get();
+    }
 
-    /// The focusable button parts exposed to accessibility and keyboard navigation.
-    private final ObservableList<Node> buttonParts = M3ObservableLists.nonNullElementList("buttonPart");
+    /// Sets the primary action handler.
+    ///
+    /// @param onAction the primary action handler, or `null` to clear it
+    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
+        this.onAction.set(onAction);
+    }
 
-    /// Notifies accessibility clients when focus moves between split button parts.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, buttonParts));
-
-    /// Notifies accessibility clients when focus moves inside the popup-hosted menu.
-    private final M3AccessibleFocusNotifier popupFocusNotifier =
-            new M3AccessibleFocusNotifier(this, menuButton.getMenu(), this::focusNode);
+    /// Returns the `onAction` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
+    /// @return the `onAction` property
+    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
+        return onAction;
+    }
 
     /// The button variant shared by both parts.
     ///
@@ -176,6 +260,30 @@ public final class M3SplitButton extends Control {
                     updateVariant();
                 }
             };
+
+    /// Returns the button variant shared by both split button parts.
+    ///
+    /// @return the button variant shared by both split button parts
+    public final M3ButtonVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the button variant shared by both split button parts.
+    ///
+    /// @param variant the button variant shared by both split button parts
+    /// @throws NullPointerException if `variant` is `null`
+    public final void setVariant(M3ButtonVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the `variant` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `TONAL`.
+    ///
+    /// @return the `variant` property
+    public final ObjectProperty<M3ButtonVariant> variantProperty() {
+        return variant;
+    }
 
     /// The Material Expressive split button size.
     ///
@@ -196,139 +304,6 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The spacing between the action and menu parts in logical pixels.
-    ///
-    /// Negative values are permitted; non-finite values are rejected.
-    ///
-    /// @defaultValue `2.0`
-    private @Nullable StyleableDoubleProperty spacing;
-
-    /// The outer-corner radius shared by both button parts in logical pixels.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty outerCorner;
-
-    /// The resting inner-corner radius shared by both button parts in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty innerCorner;
-
-    /// The hovered inner-corner radius shared by both button parts in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty hoveredInnerCorner;
-
-    /// The pressed inner-corner radius shared by both button parts in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty pressedInnerCorner;
-
-    /// The selected trailing-button inner-corner radius in logical pixels.
-    ///
-    /// @defaultValue `20.0`
-    private @Nullable StyleableDoubleProperty selectedInnerCorner;
-
-    /// Creates an empty split button.
-    public M3SplitButton() {
-        this("");
-    }
-
-    /// Creates a split button with primary action text.
-    ///
-    /// @param text the primary action text
-    /// @throws NullPointerException if `text` is `null`
-    public M3SplitButton(String text) {
-        initialize();
-        setText(text);
-    }
-
-    /// Returns the primary action text.
-    ///
-    /// @return the primary action text
-    public final String getText() {
-        return text.get();
-    }
-
-    /// Sets the primary action text.
-    ///
-    /// @param text the primary action text
-    /// @throws NullPointerException if `text` is `null`
-    public final void setText(String text) {
-        this.text.set(Objects.requireNonNull(text, "text"));
-    }
-
-    public final StringProperty textProperty() {
-        return text;
-    }
-
-    /// Returns the primary action graphic.
-    ///
-    /// @return the primary action graphic, or `null` if none is set
-    public final @Nullable Node getGraphic() {
-        return graphic.get();
-    }
-
-    /// Sets the primary action graphic.
-    ///
-    /// A non-null graphic becomes a child of the primary button and must satisfy normal JavaFX parent ownership
-    /// rules.
-    ///
-    /// @param graphic the primary action graphic, or `null` to clear it
-    public final void setGraphic(@Nullable Node graphic) {
-        this.graphic.set(graphic);
-    }
-
-    public final ObjectProperty<@Nullable Node> graphicProperty() {
-        return graphic;
-    }
-
-    /// Returns the primary action handler.
-    ///
-    /// @return the primary action handler, or `null` if none is set
-    public final @Nullable EventHandler<ActionEvent> getOnAction() {
-        return onAction.get();
-    }
-
-    /// Sets the primary action handler.
-    ///
-    /// @param onAction the primary action handler, or `null` to clear it
-    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
-        this.onAction.set(onAction);
-    }
-
-    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
-        return onAction;
-    }
-
-    /// Fires the primary action.
-    ///
-    /// The event is delivered synchronously when this control is enabled. This method does not open or close the
-    /// attached menu and is a no-op while disabled.
-    public final void fire() {
-        if (!isDisabled()) {
-            fireEvent(new ActionEvent(this, this));
-        }
-    }
-
-    /// Returns the button variant shared by both split button parts.
-    ///
-    /// @return the button variant shared by both split button parts
-    public final M3ButtonVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the button variant shared by both split button parts.
-    ///
-    /// @param variant the button variant shared by both split button parts
-    /// @throws NullPointerException if `variant` is `null`
-    public final void setVariant(M3ButtonVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    public final ObjectProperty<M3ButtonVariant> variantProperty() {
-        return variant;
-    }
-
     /// Returns the Material Expressive split button size.
     ///
     /// @return the Material Expressive split button size
@@ -344,9 +319,21 @@ public final class M3SplitButton extends Control {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
+    /// Returns the `size` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `SMALL`.
+    ///
+    /// @return the `size` property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
+
+    /// The spacing between the action and menu parts in logical pixels.
+    ///
+    /// Negative values are permitted; non-finite values are rejected.
+    ///
+    /// @defaultValue `2.0`
+    private @Nullable StyleableDoubleProperty spacing;
 
     /// Returns the spacing between the primary action and menu button parts.
     ///
@@ -363,6 +350,12 @@ public final class M3SplitButton extends Control {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
 
+    /// Returns the `spacing` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite values, including negative
+    /// values, and has a default value of `2.0` logical pixels.
+    ///
+    /// @return the `spacing` property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
             spacing = M3Css.finiteStyleableDoubleProperty(
@@ -375,6 +368,11 @@ public final class M3SplitButton extends Control {
         }
         return spacing;
     }
+
+    /// The outer-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty outerCorner;
 
     /// Returns the outer-corner radius shared by both button parts.
     ///
@@ -391,6 +389,12 @@ public final class M3SplitButton extends Control {
         outerCornerProperty().set(M3Css.nonNegative(outerCorner, "outerCorner"));
     }
 
+    /// Returns the `outerCorner` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `20.0` logical pixels.
+    ///
+    /// @return the `outerCorner` property
     public final StyleableDoubleProperty outerCornerProperty() {
         if (outerCorner == null) {
             outerCorner = shapeProperty(
@@ -401,6 +405,11 @@ public final class M3SplitButton extends Control {
         }
         return outerCorner;
     }
+
+    /// The resting inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty innerCorner;
 
     /// Returns the resting inner-corner radius shared by both button parts.
     ///
@@ -417,6 +426,12 @@ public final class M3SplitButton extends Control {
         innerCornerProperty().set(M3Css.nonNegative(innerCorner, "innerCorner"));
     }
 
+    /// Returns the `innerCorner` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `innerCorner` property
     public final StyleableDoubleProperty innerCornerProperty() {
         if (innerCorner == null) {
             innerCorner = shapeProperty(
@@ -427,6 +442,11 @@ public final class M3SplitButton extends Control {
         }
         return innerCorner;
     }
+
+    /// The hovered inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty hoveredInnerCorner;
 
     /// Returns the hovered inner-corner radius shared by both button parts.
     ///
@@ -443,6 +463,12 @@ public final class M3SplitButton extends Control {
         hoveredInnerCornerProperty().set(M3Css.nonNegative(hoveredInnerCorner, "hoveredInnerCorner"));
     }
 
+    /// Returns the `hoveredInnerCorner` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `hoveredInnerCorner` property
     public final StyleableDoubleProperty hoveredInnerCornerProperty() {
         if (hoveredInnerCorner == null) {
             hoveredInnerCorner = shapeProperty(
@@ -453,6 +479,11 @@ public final class M3SplitButton extends Control {
         }
         return hoveredInnerCorner;
     }
+
+    /// The pressed inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty pressedInnerCorner;
 
     /// Returns the pressed inner-corner radius shared by both button parts.
     ///
@@ -469,6 +500,12 @@ public final class M3SplitButton extends Control {
         pressedInnerCornerProperty().set(M3Css.nonNegative(pressedInnerCorner, "pressedInnerCorner"));
     }
 
+    /// Returns the `pressedInnerCorner` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `pressedInnerCorner` property
     public final StyleableDoubleProperty pressedInnerCornerProperty() {
         if (pressedInnerCorner == null) {
             pressedInnerCorner = shapeProperty(
@@ -479,6 +516,11 @@ public final class M3SplitButton extends Control {
         }
         return pressedInnerCorner;
     }
+
+    /// The selected trailing-button inner-corner radius in logical pixels.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty selectedInnerCorner;
 
     /// Returns the selected trailing-button inner-corner radius.
     ///
@@ -495,6 +537,12 @@ public final class M3SplitButton extends Control {
         selectedInnerCornerProperty().set(M3Css.nonNegative(selectedInnerCorner, "selectedInnerCorner"));
     }
 
+    /// Returns the `selectedInnerCorner` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `20.0` logical pixels.
+    ///
+    /// @return the `selectedInnerCorner` property
     public final StyleableDoubleProperty selectedInnerCornerProperty() {
         if (selectedInnerCorner == null) {
             selectedInnerCorner = shapeProperty(
@@ -504,6 +552,35 @@ public final class M3SplitButton extends Control {
             );
         }
         return selectedInnerCorner;
+    }
+
+    /// The read-only showing state property.
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+
+    /// Returns whether the attached menu is currently showing.
+    ///
+    /// @return `true` if the attached menu is currently showing
+    public final boolean isShowing() {
+        return showing.get();
+    }
+
+    /// Returns the `showing` property.
+    ///
+    /// The returned property is observable and read-only. Its default value is `false`.
+    ///
+    /// @return the `showing` property
+    public final ReadOnlyBooleanProperty showingProperty() {
+        return showing.getReadOnlyProperty();
+    }
+
+    /// Fires the primary action.
+    ///
+    /// The event is delivered synchronously when this control is enabled. This method does not open or close the
+    /// attached menu and is a no-op while disabled.
+    public final void fire() {
+        if (!isDisabled()) {
+            fireEvent(new ActionEvent(this, this));
+        }
     }
 
     /// Creates one non-negative styleable split-button shape token property.
@@ -553,17 +630,6 @@ public final class M3SplitButton extends Control {
         menuButton.hideMenu();
     }
 
-    /// Returns whether the attached menu is currently showing.
-    ///
-    /// @return `true` if the attached menu is currently showing
-    public final boolean isShowing() {
-        return showing.get();
-    }
-
-    public final ReadOnlyBooleanProperty showingProperty() {
-        return showing.getReadOnlyProperty();
-    }
-
     /// Returns the user-agent stylesheet for M3FX split buttons.
     ///
     /// @return the split button user-agent stylesheet URL
@@ -589,7 +655,7 @@ public final class M3SplitButton extends Control {
 
     /// Returns accessibility attributes for the split button and its attached menu.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
@@ -610,7 +676,7 @@ public final class M3SplitButton extends Control {
 
     /// Executes accessibility actions for the primary action and attached menu.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override

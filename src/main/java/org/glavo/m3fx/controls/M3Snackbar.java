@@ -43,6 +43,16 @@ import java.util.Objects;
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public final class M3Snackbar {
+
+    /// Creates a plain snackbar message without an action or close button.
+    ///
+    /// @param text the non-blank supporting text
+    /// @throws IllegalArgumentException if `text` is blank
+    /// @throws NullPointerException     if `text` is `null`
+    public M3Snackbar(String text) {
+        setText(text);
+    }
+
     /// The required supporting text.
     ///
     /// Callers and bound sources must not assign `null` or a blank string.
@@ -55,43 +65,6 @@ public final class M3Snackbar {
             requireNonBlankText(get());
         }
     };
-
-    /// The optional text-action label.
-    ///
-    /// Empty and blank values hide the action button. Callers and bound sources must not assign `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "") {
-        /// Rejects null action labels while allowing blank labels to omit the action.
-        @Override
-        protected void invalidated() {
-            Objects.requireNonNull(get(), "actionText");
-        }
-    };
-
-    /// The callback invoked when the visible text action is activated.
-    ///
-    /// A `null` value is treated as a no-op. The snackbar is dismissed after activation regardless of whether a
-    /// callback is installed.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Runnable> action =
-            new SimpleObjectProperty<>(this, "action");
-
-    /// Whether the standard close affordance is shown.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty closeButtonVisible =
-            new SimpleBooleanProperty(this, "closeButtonVisible");
-
-    /// Creates a plain snackbar message without an action or close button.
-    ///
-    /// @param text the non-blank supporting text
-    /// @throws IllegalArgumentException if `text` is blank
-    /// @throws NullPointerException     if `text` is `null`
-    public M3Snackbar(String text) {
-        setText(text);
-    }
 
     /// Returns the supporting text.
     ///
@@ -117,10 +90,25 @@ public final class M3Snackbar {
     /// The property may be bound to an observable localization source. Bound sources must not produce `null` or
     /// blank values.
     ///
+    /// The returned property is observable and bindable. Its initial value is the text supplied to the constructor.
+    ///
     /// @return the supporting-text property
     public StringProperty textProperty() {
         return text;
     }
+
+    /// The optional text-action label.
+    ///
+    /// Empty and blank values hide the action button. Callers and bound sources must not assign `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "") {
+        /// Rejects null action labels while allowing blank labels to omit the action.
+        @Override
+        protected void invalidated() {
+            Objects.requireNonNull(get(), "actionText");
+        }
+    };
 
     /// Returns the optional text-action label.
     ///
@@ -144,10 +132,21 @@ public final class M3Snackbar {
     ///
     /// The property may be bound to an observable localization source. Bound sources must not produce `null`.
     ///
+    /// The returned property is observable and bindable. Its default value is `""`.
+    ///
     /// @return the action-text property
     public StringProperty actionTextProperty() {
         return actionText;
     }
+
+    /// The callback invoked when the visible text action is activated.
+    ///
+    /// A `null` value is treated as a no-op. The snackbar is dismissed after activation regardless of whether a
+    /// callback is installed.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Runnable> action =
+            new SimpleObjectProperty<>(this, "action");
 
     /// Returns the callback invoked by text-action activation.
     ///
@@ -168,19 +167,18 @@ public final class M3Snackbar {
 
     /// Returns the property containing the optional text-action callback.
     ///
+    /// The returned property is observable and bindable. Its default value is `null`.
+    ///
     /// @return the action-callback property
     public ObjectProperty<@Nullable Runnable> actionProperty() {
         return action;
     }
 
-    /// Returns whether this message currently exposes a text action.
+    /// Whether the standard close affordance is shown.
     ///
-    /// Visibility depends only on [#getActionText()]; the callback may be `null`.
-    ///
-    /// @return `true` when the action label is non-blank
-    public boolean hasAction() {
-        return !getActionText().isBlank();
-    }
+    /// @defaultValue `false`
+    private final BooleanProperty closeButtonVisible =
+            new SimpleBooleanProperty(this, "closeButtonVisible");
 
     /// Returns whether the standard close affordance is visible.
     ///
@@ -201,9 +199,20 @@ public final class M3Snackbar {
 
     /// Returns the property controlling standard close-affordance visibility.
     ///
+    /// The returned property is observable and bindable. Its default value is `false`.
+    ///
     /// @return the close-button visibility property
     public BooleanProperty closeButtonVisibleProperty() {
         return closeButtonVisible;
+    }
+
+    /// Returns whether this message currently exposes a text action.
+    ///
+    /// Visibility depends only on [#getActionText()]; the callback may be `null`.
+    ///
+    /// @return `true` when the action label is non-blank
+    public boolean hasAction() {
+        return !getActionText().isBlank();
     }
 
     /// Validates and returns required supporting text.

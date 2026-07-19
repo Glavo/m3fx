@@ -30,6 +30,12 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the first enabled visible child matching the requested type.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children in visual traversal order
+    /// @param type     the node type eligible for selection
+    /// @return the first reachable matching child, or `null` when none exists
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T first(List<? extends Node> children, Class<T> type) {
         for (Node child : children) {
             @Nullable T selectable = selectable(child, type);
@@ -41,6 +47,12 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the last enabled visible child matching the requested type.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children in visual traversal order
+    /// @param type     the node type eligible for selection
+    /// @return the last reachable matching child, or `null` when none exists
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T last(List<? extends Node> children, Class<T> type) {
         for (int index = children.size() - 1; index >= 0; index--) {
             @Nullable T selectable = selectable(children.get(index), type);
@@ -52,6 +64,13 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the next enabled visible child after the current child, wrapping at the end.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children in traversal order
+    /// @param current  the current child, or `null` to begin before the first child
+    /// @param type     the node type eligible for selection
+    /// @return the next reachable matching child, or `null` when none exists
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T next(List<? extends Node> children, @Nullable T current, Class<T> type) {
         int childCount = children.size();
         if (childCount == 0) {
@@ -69,6 +88,13 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the previous enabled visible child before the current child, wrapping at the start.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children in traversal order
+    /// @param current  the current child, or `null` to begin after the last child
+    /// @param type     the node type eligible for selection
+    /// @return the previous reachable matching child, or `null` when none exists
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T previous(List<? extends Node> children, @Nullable T current, Class<T> type) {
         int childCount = children.size();
         if (childCount == 0) {
@@ -90,6 +116,19 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the enabled visible child reached by page navigation without wrapping around list edges.
+    ///
+    /// The page step is derived from the owner's visible viewport and a measured row height, with stable fallback
+    /// values before layout. When no valid current child is supplied, navigation begins at the first or last
+    /// reachable child according to `forward`.
+    ///
+    /// @param <T>      the requested node type
+    /// @param owner    the list-like node whose viewport determines the page size
+    /// @param children the children in traversal order
+    /// @param current  the current child, or `null`
+    /// @param type     the node type eligible for selection
+    /// @param forward  whether to move toward the end of the list
+    /// @return the page target, or `null` when no reachable matching child exists
+    /// @throws NullPointerException if `owner`, `children`, or `type` is `null`
     public static <T extends Node> @Nullable T page(
             Node owner,
             List<? extends Node> children,
@@ -127,6 +166,17 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event and selects the matching child when a key applies.
+    ///
+    /// @param <T>        the selectable node type
+    /// @param event      the key event to handle
+    /// @param children   the children in traversal order
+    /// @param current    the current selection, or `null`
+    /// @param type       the selectable node type token
+    /// @param horizontal whether Left and Right are handled
+    /// @param vertical   whether Up and Down are handled
+    /// @param selector   the operation that selects the resolved target
+    /// @return `true` when a target was selected and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, `type`, or `selector` is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             List<? extends Node> children,
@@ -140,6 +190,18 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
+    ///
+    /// @param <T>        the selectable node type
+    /// @param event      the key event to handle
+    /// @param owner      the selection container used to reveal the target
+    /// @param children   the children in traversal order
+    /// @param current    the current selection, or `null`
+    /// @param type       the selectable node type token
+    /// @param horizontal whether Left and Right are handled
+    /// @param vertical   whether Up and Down are handled
+    /// @param selector   the operation that selects the resolved target
+    /// @return `true` when a target was selected and the event was consumed
+    /// @throws NullPointerException if any non-nullable argument is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             Node owner,
@@ -157,6 +219,18 @@ public final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
     /// selection move in the same visual direction as the rendered row.
+    ///
+    /// @param <T>         the selectable node type
+    /// @param event       the key event to handle
+    /// @param children    the children in traversal order
+    /// @param current     the current selection, or `null`
+    /// @param type        the selectable node type token
+    /// @param horizontal  whether Left and Right are handled
+    /// @param vertical    whether Up and Down are handled
+    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
+    /// @param selector    the operation that selects the resolved target
+    /// @return `true` when a target was selected and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, `type`, or `selector` is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             List<? extends Node> children,
@@ -174,6 +248,19 @@ public final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
     /// selection move in the same visual direction as the rendered row.
+    ///
+    /// @param <T>         the selectable node type
+    /// @param event       the key event to handle
+    /// @param owner       the selection container used to reveal the target
+    /// @param children    the children in traversal order
+    /// @param current     the current selection, or `null`
+    /// @param type        the selectable node type token
+    /// @param horizontal  whether Left and Right are handled
+    /// @param vertical    whether Up and Down are handled
+    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
+    /// @param selector    the operation that selects the resolved target
+    /// @return `true` when a target was selected and the event was consumed
+    /// @throws NullPointerException if any non-nullable argument is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             Node owner,
@@ -221,6 +308,18 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a page navigation key event and selects the matching child when a key applies.
+    ///
+    /// Page Up and Page Down are the only recognized keys. A handled event is consumed after the target is selected,
+    /// focused, and revealed through `owner`.
+    ///
+    /// @param <T>      the selectable node type
+    /// @param event    the key event to handle
+    /// @param owner    the selection container whose viewport determines the page step
+    /// @param children the children in traversal order
+    /// @param current  the current selection, or `null`
+    /// @param type     the selectable node type token
+    /// @param selector the operation that selects the resolved target
+    /// @return `true` when a page target was selected and the event was consumed
     public static <T extends Node> boolean handlePageKeySelection(
             KeyEvent event,
             Node owner,
@@ -246,6 +345,16 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event and focuses the matching child when a key applies.
+    ///
+    /// @param <T>        the focusable node type
+    /// @param event      the key event to handle
+    /// @param children   the children in traversal order
+    /// @param current    the current focus anchor, or `null`
+    /// @param type       the focusable node type token
+    /// @param horizontal whether Left and Right are handled
+    /// @param vertical   whether Up and Down are handled
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             List<? extends Node> children,
@@ -258,6 +367,17 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
+    ///
+    /// @param <T>        the focusable node type
+    /// @param event      the key event to handle
+    /// @param owner      the container used to reveal the focused target
+    /// @param children   the children in traversal order
+    /// @param current    the current focus anchor, or `null`
+    /// @param type       the focusable node type token
+    /// @param horizontal whether Left and Right are handled
+    /// @param vertical   whether Up and Down are handled
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             Node owner,
@@ -274,6 +394,17 @@ public final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
     /// same visual direction as the rendered row.
+    ///
+    /// @param <T>         the focusable node type
+    /// @param event       the key event to handle
+    /// @param children    the children in traversal order
+    /// @param current     the current focus anchor, or `null`
+    /// @param type        the focusable node type token
+    /// @param horizontal  whether Left and Right are handled
+    /// @param vertical    whether Up and Down are handled
+    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             List<? extends Node> children,
@@ -290,6 +421,18 @@ public final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
     /// same visual direction as the rendered row.
+    ///
+    /// @param <T>         the focusable node type
+    /// @param event       the key event to handle
+    /// @param owner       the container used to reveal the focused target
+    /// @param children    the children in traversal order
+    /// @param current     the current focus anchor, or `null`
+    /// @param type        the focusable node type token
+    /// @param horizontal  whether Left and Right are handled
+    /// @param vertical    whether Up and Down are handled
+    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
+    /// @return `true` when focus moved and the event was consumed
+    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             Node owner,
@@ -334,6 +477,14 @@ public final class M3SelectionNavigation {
     }
 
     /// Handles a page navigation key event and focuses the matching child when a key applies.
+    ///
+    /// @param <T>      the focusable node type
+    /// @param event    the key event to handle
+    /// @param owner    the container whose viewport determines the page step and reveals the target
+    /// @param children the children in traversal order
+    /// @param current  the current focus anchor, or `null`
+    /// @param type     the focusable node type token
+    /// @return `true` when focus moved and the event was consumed
     public static <T extends Node> boolean handlePageKeyFocus(
             KeyEvent event,
             Node owner,
@@ -367,6 +518,12 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the focused enabled visible child matching the requested type.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children to inspect
+    /// @param type     the requested node type token
+    /// @return the focused reachable matching child, or `null`
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T focused(List<? extends Node> children, Class<T> type) {
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
@@ -381,6 +538,13 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the focused child when present, otherwise the current child when it is still navigable.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children to inspect
+    /// @param current  the current selection or focus anchor, or `null`
+    /// @param type     the requested node type token
+    /// @return the focused or current reachable child, or `null`
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T focusAnchor(
             List<? extends Node> children,
             @Nullable T current,
@@ -400,6 +564,13 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the focused child, the current child, or the first navigable child as an accessibility focus target.
+    ///
+    /// @param <T>      the requested node type
+    /// @param children the children to inspect
+    /// @param current  the current selection or focus anchor, or `null`
+    /// @param type     the requested node type token
+    /// @return the best reachable focus target, or `null`
+    /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T focusTarget(
             List<? extends Node> children,
             @Nullable T current,
@@ -413,6 +584,19 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns the next enabled visible child whose normalized text starts with the supplied prefix.
+    ///
+    /// Search begins after `current`, wraps once, and may therefore return the current item after all other children
+    /// have been considered. The supplied prefix is expected to have been normalized by
+    /// [#normalizeTypeAheadText(String)].
+    ///
+    /// @param <T>          the requested node type
+    /// @param children     the children in search order
+    /// @param current      the current child, or `null` to begin at the first child
+    /// @param type         the requested node type token
+    /// @param prefix       the nonempty normalized prefix
+    /// @param textProvider the function that supplies candidate text
+    /// @return the next matching reachable child, or `null`
+    /// @throws NullPointerException if `children`, `type`, `prefix`, or `textProvider` is `null`
     public static <T extends Node> @Nullable T typeAheadTarget(
             List<? extends Node> children,
             @Nullable T current,
@@ -443,6 +627,12 @@ public final class M3SelectionNavigation {
     }
 
     /// Returns text normalized for case-insensitive type-ahead matching.
+    ///
+    /// The result is stripped of leading and trailing whitespace and converted to lower case with [Locale#ROOT].
+    ///
+    /// @param text the text to normalize
+    /// @return the normalized text
+    /// @throws NullPointerException if `text` is `null`
     public static String normalizeTypeAheadText(String text) {
         Objects.requireNonNull(text, "text");
         return text.strip().toLowerCase(Locale.ROOT);
@@ -452,9 +642,10 @@ public final class M3SelectionNavigation {
     ///
     /// Leading whitespace is skipped and case is compared without creating a normalized copy of the candidate text.
     ///
-    /// @param text the candidate item text
+    /// @param text             the candidate item text
     /// @param normalizedPrefix the stripped lower-case prefix
     /// @return `true` when the candidate starts with the supplied prefix
+    /// @throws NullPointerException if either argument is `null`
     public static boolean matchesTypeAheadPrefix(String text, String normalizedPrefix) {
         Objects.requireNonNull(text, "text");
         Objects.requireNonNull(normalizedPrefix, "normalizedPrefix");

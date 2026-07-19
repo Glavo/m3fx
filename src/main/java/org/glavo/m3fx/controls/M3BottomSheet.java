@@ -75,12 +75,61 @@ public final class M3BottomSheet extends Control {
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
 
+    /// Creates a shown standard sheet with empty headline text and no content or actions.
+    public M3BottomSheet() {
+        this("", null);
+    }
+
+    /// Creates a shown standard sheet with the specified headline and no content or actions.
+    ///
+    /// @param headline the sheet headline text
+    /// @throws NullPointerException if `headline` is `null`
+    public M3BottomSheet(String headline) {
+        this(headline, null);
+    }
+
+    /// Creates a shown standard sheet with the specified headline and content.
+    ///
+    /// @param headline the sheet headline text
+    /// @param content  the sheet content node, or `null` for no content
+    /// @throws NullPointerException if `headline` is `null`
+    public M3BottomSheet(String headline, @Nullable Node content) {
+        initialize();
+        setHeadline(headline);
+        setContent(content);
+    }
+
     /// The headline displayed by the sheet.
     ///
-    /// The default value is the empty string. This property does not accept `null`.
+    /// The default value is the empty string. [setHeadline][#setHeadline(String)] rejects `null`.
     ///
     /// @defaultValue `""`
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
+
+    /// Returns the sheet headline.
+    ///
+    /// @return the sheet headline text
+    public final String getHeadline() {
+        return headline.get();
+    }
+
+    /// Sets the sheet headline.
+    ///
+    /// @param headline the sheet headline text
+    /// @throws NullPointerException if `headline` is `null`
+    public final void setHeadline(String headline) {
+        this.headline.set(Objects.requireNonNull(headline, "headline"));
+    }
+
+    /// Returns the observable property that stores the sheet headline.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string, and headline values are
+    /// required to be non-null.
+    ///
+    /// @return the headline property
+    public final StringProperty headlineProperty() {
+        return headline;
+    }
 
     /// The primary content node displayed by the sheet.
     ///
@@ -89,10 +138,33 @@ public final class M3BottomSheet extends Control {
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
+    /// Returns the sheet content node.
+    ///
+    /// @return the sheet content node, or `null` when no content is set
+    public final @Nullable Node getContent() {
+        return content.get();
+    }
+
+    /// Sets the sheet content node.
+    ///
+    /// @param content the sheet content node, or `null` to clear it
+    public final void setContent(@Nullable Node content) {
+        this.content.set(content);
+    }
+
+    /// Returns the observable property that stores the optional sheet content.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the content property
+    public final ObjectProperty<@Nullable Node> contentProperty() {
+        return content;
+    }
+
     /// The interaction and presentation variant of the sheet.
     ///
-    /// The default value is [M3SheetVariant#STANDARD]. The property never reports `null`; a direct `null`
-    /// assignment restores the default.
+    /// The default value is [M3SheetVariant#STANDARD]. A direct `null` assignment restores the default; bound values
+    /// must be non-null.
     ///
     /// @defaultValue [M3SheetVariant#STANDARD]
     private final ObjectProperty<M3SheetVariant> variant =
@@ -108,6 +180,31 @@ public final class M3BottomSheet extends Control {
                     focusTrap.update();
                 }
             };
+
+    /// Returns the sheet variant.
+    ///
+    /// @return the sheet variant
+    public final M3SheetVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the sheet variant.
+    ///
+    /// @param variant the sheet variant
+    /// @throws NullPointerException if `variant` is `null`
+    public final void setVariant(M3SheetVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the observable property that stores the sheet variant.
+    ///
+    /// The property can be observed and bound. Its default value is [M3SheetVariant#STANDARD], and a direct
+    /// `null` assignment restores that default.
+    ///
+    /// @return the sheet variant property
+    public final ObjectProperty<M3SheetVariant> variantProperty() {
+        return variant;
+    }
 
     /// Whether this sheet is shown and participates in layout.
     ///
@@ -126,6 +223,30 @@ public final class M3BottomSheet extends Control {
         }
     };
 
+    /// Returns whether this sheet is shown.
+    ///
+    /// @return `true` when the sheet is shown and participates in layout
+    public final boolean isShown() {
+        return shown.get();
+    }
+
+    /// Sets whether this sheet is shown.
+    ///
+    /// @param shown whether the sheet should be shown
+    public final void setShown(boolean shown) {
+        this.shown.set(shown);
+    }
+
+    /// Returns the observable property that controls whether the sheet is shown.
+    ///
+    /// The property can be observed and bound. Its default value is `true`. Changes drive the sheet's visibility,
+    /// layout participation, focus scope, and presentation transition.
+    ///
+    /// @return the shown property
+    public final BooleanProperty shownProperty() {
+        return shown;
+    }
+
     /// Whether hiding a modal sheet attempts to restore its previous external focus owner.
     ///
     /// This property has no effect for the standard variant. Restoration is attempted only while the remembered
@@ -134,6 +255,30 @@ public final class M3BottomSheet extends Control {
     /// @defaultValue `true`
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
+
+    /// Returns whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @return `true` when hiding a modal sheet restores focus to the previous focus owner
+    public final boolean isRestoreFocusOnHide() {
+        return restoreFocusOnHide.get();
+    }
+
+    /// Sets whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @param restoreFocusOnHide whether hiding a modal sheet restores focus
+    public final void setRestoreFocusOnHide(boolean restoreFocusOnHide) {
+        this.restoreFocusOnHide.set(restoreFocusOnHide);
+    }
+
+    /// Returns the observable property that controls focus restoration after a modal sheet hides.
+    ///
+    /// The property can be observed and bound. Its default value is `true`, and it has no effect for
+    /// [M3SheetVariant#STANDARD].
+    ///
+    /// @return the focus restoration property
+    public final BooleanProperty restoreFocusOnHideProperty() {
+        return restoreFocusOnHide;
+    }
 
     /// Whether the drag handle is visible.
     ///
@@ -150,171 +295,6 @@ public final class M3BottomSheet extends Control {
                 }
             };
 
-    /// The action invoked when the user activates the visible drag handle.
-    ///
-    /// The default value is `null`. A non-null handler makes the handle actionable by pointer, keyboard, and
-    /// accessibility clients; the handler is responsible for changing sheet height or state.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> dragHandleActionHandler =
-            new SimpleObjectProperty<>(this, "onDragHandleAction") {
-                /// Updates the registered drag-handle event handler.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get());
-                }
-            };
-
-    /// The live, mutable list of trailing action nodes.
-    ///
-    /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
-    /// list cannot simultaneously be children of another parent.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
-
-    /// Notifies accessibility clients when focus moves between sheet content and action children.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> isShown()
-                    ? M3Accessible.currentOrFirstFocusTarget(
-                            this,
-                            dragHandleFocusTarget(),
-                            getContent(),
-                            getActions()
-                    )
-                    : null);
-
-    /// Keeps keyboard traversal inside this sheet while it is shown as a modal surface.
-    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
-            this,
-            this::isModalFocusTrapActive,
-            this::modalFocusTargets,
-            this::hide
-    );
-
-    /// The sheet show and hide animation.
-    private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
-
-    /// The node focused before this modal sheet was shown.
-    private @Nullable Node focusOwnerBeforeShown;
-
-    /// The last processed shown state.
-    private boolean lastShown = true;
-
-    /// Creates a shown standard sheet with empty headline text and no content or actions.
-    public M3BottomSheet() {
-        this("", null);
-    }
-
-    /// Creates a shown standard sheet with the specified headline and no content or actions.
-    ///
-    /// @param headline the sheet headline text
-    /// @throws NullPointerException if `headline` is `null`
-    public M3BottomSheet(String headline) {
-        this(headline, null);
-    }
-
-    /// Creates a shown standard sheet with the specified headline and content.
-    ///
-    /// @param headline the sheet headline text
-    /// @param content the sheet content node, or `null` for no content
-    /// @throws NullPointerException if `headline` is `null`
-    public M3BottomSheet(String headline, @Nullable Node content) {
-        initialize();
-        setHeadline(headline);
-        setContent(content);
-    }
-
-    /// Returns the sheet headline.
-    ///
-    /// @return the sheet headline text
-    public final String getHeadline() {
-        return headline.get();
-    }
-
-    /// Sets the sheet headline.
-    ///
-    /// @param headline the sheet headline text
-    /// @throws NullPointerException if `headline` is `null`
-    public final void setHeadline(String headline) {
-        this.headline.set(Objects.requireNonNull(headline, "headline"));
-    }
-
-    public final StringProperty headlineProperty() {
-        return headline;
-    }
-
-    /// Returns the sheet content node.
-    ///
-    /// @return the sheet content node, or `null` when no content is set
-    public final @Nullable Node getContent() {
-        return content.get();
-    }
-
-    /// Sets the sheet content node.
-    ///
-    /// @param content the sheet content node, or `null` to clear it
-    public final void setContent(@Nullable Node content) {
-        this.content.set(content);
-    }
-
-    public final ObjectProperty<@Nullable Node> contentProperty() {
-        return content;
-    }
-
-    /// Returns the sheet variant.
-    ///
-    /// @return the sheet variant
-    public final M3SheetVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the sheet variant.
-    ///
-    /// @param variant the sheet variant
-    /// @throws NullPointerException if `variant` is `null`
-    public final void setVariant(M3SheetVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    public final ObjectProperty<M3SheetVariant> variantProperty() {
-        return variant;
-    }
-
-    /// Returns whether this sheet is shown.
-    ///
-    /// @return `true` when the sheet is shown and participates in layout
-    public final boolean isShown() {
-        return shown.get();
-    }
-
-    /// Sets whether this sheet is shown.
-    ///
-    /// @param shown whether the sheet should be shown
-    public final void setShown(boolean shown) {
-        this.shown.set(shown);
-    }
-
-    public final BooleanProperty shownProperty() {
-        return shown;
-    }
-
-    /// Returns whether modal sheet hiding restores focus to the previous focus owner.
-    ///
-    /// @return `true` when hiding a modal sheet restores focus to the previous focus owner
-    public final boolean isRestoreFocusOnHide() {
-        return restoreFocusOnHide.get();
-    }
-
-    /// Sets whether modal sheet hiding restores focus to the previous focus owner.
-    ///
-    /// @param restoreFocusOnHide whether hiding a modal sheet restores focus
-    public final void setRestoreFocusOnHide(boolean restoreFocusOnHide) {
-        this.restoreFocusOnHide.set(restoreFocusOnHide);
-    }
-
-    public final BooleanProperty restoreFocusOnHideProperty() {
-        return restoreFocusOnHide;
-    }
-
     /// Returns whether the drag handle is visible.
     ///
     /// @return `true` when the drag handle is visible
@@ -329,9 +309,29 @@ public final class M3BottomSheet extends Control {
         this.dragHandleVisible.set(dragHandleVisible);
     }
 
+    /// Returns the observable property that controls drag-handle visibility.
+    ///
+    /// The property can be observed and bound. Its default value is `true`.
+    ///
+    /// @return the drag-handle visibility property
     public final BooleanProperty dragHandleVisibleProperty() {
         return dragHandleVisible;
     }
+
+    /// The action invoked when the user activates the visible drag handle.
+    ///
+    /// The default value is `null`. A non-null handler makes the handle actionable by pointer, keyboard, and
+    /// accessibility clients; the handler is responsible for changing sheet height or state.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> dragHandleActionHandler =
+            new SimpleObjectProperty<>(this, "onDragHandleAction") {
+                /// Updates the registered drag-handle event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
 
     /// Returns the action handler invoked when the drag handle is selected.
     ///
@@ -350,12 +350,49 @@ public final class M3BottomSheet extends Control {
         dragHandleActionHandler.set(onDragHandleAction);
     }
 
-    /// Returns the drag-handle action property.
+    /// Returns the observable property that stores the drag-handle action handler.
+    ///
+    /// The property can be observed and bound. Its default value is `null`; a non-null value makes the visible
+    /// drag handle actionable.
     ///
     /// @return the drag-handle action property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onDragHandleActionProperty() {
         return dragHandleActionHandler;
     }
+
+    /// The live, mutable list of trailing action nodes.
+    ///
+    /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
+    /// list cannot simultaneously be children of another parent.
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+
+    /// Notifies accessibility clients when focus moves between sheet content and action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> isShown()
+                    ? M3Accessible.currentOrFirstFocusTarget(
+                    this,
+                    dragHandleFocusTarget(),
+                    getContent(),
+                    getActions()
+            )
+                    : null);
+
+    /// Keeps keyboard traversal inside this sheet while it is shown as a modal surface.
+    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
+            this,
+            this::isModalFocusTrapActive,
+            this::modalFocusTargets,
+            this::hide
+    );
+
+    /// The sheet show and hide animation.
+    private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
+
+    /// The node focused before this modal sheet was shown.
+    private @Nullable Node focusOwnerBeforeShown;
+
+    /// The last processed shown state.
+    private boolean lastShown = true;
 
     /// Fires the drag-handle action if the sheet can currently accept it.
     ///
@@ -409,11 +446,11 @@ public final class M3BottomSheet extends Control {
             case EXPANDED -> isShown();
             case FOCUS_NODE -> isShown()
                     ? M3Accessible.currentOrFirstFocusTarget(
-                            this,
-                            dragHandleFocusTarget(),
-                            getContent(),
-                            getActions()
-                    )
+                    this,
+                    dragHandleFocusTarget(),
+                    getContent(),
+                    getActions()
+            )
                     : null;
             case ITEM_COUNT -> M3Accessible.itemCount(dragHandleFocusTarget(), getContent(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(
@@ -583,11 +620,11 @@ public final class M3BottomSheet extends Control {
     final boolean focusAccessibleNode() {
         if (isShown() && M3Accessible.canReach(this)
                 && M3Accessible.showCurrentOrItem(
-                        this,
-                        dragHandleFocusTarget(),
-                        getContent(),
-                        getActions()
-                )) {
+                this,
+                dragHandleFocusTarget(),
+                getContent(),
+                getActions()
+        )) {
             notifyFocusNodeChanged();
             return true;
         }

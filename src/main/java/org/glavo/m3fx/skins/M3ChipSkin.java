@@ -12,8 +12,9 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Chip].
 ///
-/// The skin extends the JavaFX labeled skin foundation for the inherited leading graphic and text, then reserves
-/// a second logical slot for trailing content. No wrapper layout is allocated per chip.
+/// The skin renders the inherited leading graphic and text through the labeled skin contract and adds a second
+/// slot for trailing content. The trailing slot follows logical reading order and therefore mirrors with the chip's
+/// effective node orientation.
 @NotNullByDefault
 public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
     /// Keeps leading and trailing graphics synchronized with the control properties.

@@ -81,6 +81,13 @@ public final class M3ThemeRuntime {
     }
 
     /// Installs a theme on a scene and adds the base M3FX stylesheet.
+    ///
+    /// Reinstalling replaces the currently managed theme while preserving the root style that preceded the first
+    /// installation. The installation follows later replacements of the scene root.
+    ///
+    /// @param scene the scene that should receive the theme
+    /// @param theme the theme to install
+    /// @throws NullPointerException if `scene` or `theme` is `null`
     public static void install(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -90,7 +97,11 @@ public final class M3ThemeRuntime {
         installThemeStylesheet(scene, theme);
     }
 
-    /// Returns the theme installed on the scene root, or null when no M3FX theme is installed.
+    /// Returns the theme installed on the scene root.
+    ///
+    /// @param scene the scene to inspect
+    /// @return the installed theme, or `null` when the root has no M3FX theme metadata
+    /// @throws NullPointerException if `scene` is `null`
     public static @Nullable M3Theme getTheme(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -98,6 +109,13 @@ public final class M3ThemeRuntime {
     }
 
     /// Installs theme tokens on a root node.
+    ///
+    /// The root's preinstallation inline style is retained so that [#uninstall(Parent)] can restore it. Reinstalling
+    /// a different theme updates only M3FX-managed declarations, style classes, and metadata.
+    ///
+    /// @param root  the root that should receive theme declarations
+    /// @param theme the theme to install
+    /// @throws NullPointerException if `root` or `theme` is `null`
     public static void install(Parent root, M3Theme theme) {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(theme, "theme");
@@ -114,12 +132,21 @@ public final class M3ThemeRuntime {
         M3ThemeMetadata.setTheme(root, theme);
     }
 
-    /// Returns the theme installed on a root node, or null when no M3FX theme is installed.
+    /// Returns the theme installed on a root node.
+    ///
+    /// @param root the root to inspect
+    /// @return the installed theme, or `null` when no M3FX theme metadata is present
+    /// @throws NullPointerException if `root` is `null`
     public static @Nullable M3Theme getTheme(Parent root) {
         return M3ThemeMetadata.getTheme(root);
     }
 
     /// Adds the base M3FX stylesheet to a scene if it is not already present.
+    ///
+    /// If already present, the stylesheet is moved to its managed position after the fallback token stylesheet.
+    ///
+    /// @param scene the scene whose stylesheet list should be updated
+    /// @throws NullPointerException if `scene` is `null`
     public static void installStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -130,6 +157,14 @@ public final class M3ThemeRuntime {
     }
 
     /// Adds the generated theme stylesheet to a scene.
+    ///
+    /// Any previously managed generated theme stylesheet is removed before the replacement is inserted immediately
+    /// after the base M3FX stylesheet when possible.
+    ///
+    /// @param scene the scene whose stylesheet list should be updated
+    /// @param theme the theme whose token stylesheet should be installed
+    /// @throws NullPointerException  if `scene` or `theme` is `null`
+    /// @throws IllegalStateException if the generated stylesheet cannot be written
     public static void installThemeStylesheet(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -152,6 +187,12 @@ public final class M3ThemeRuntime {
     }
 
     /// Removes M3FX theme state and stylesheets from a scene.
+    ///
+    /// The root inline style captured by [#install(Scene, M3Theme)] is restored. Calling this method when no managed
+    /// scene installation exists still removes M3FX state directly from the current root.
+    ///
+    /// @param scene the scene to uninstall
+    /// @throws NullPointerException if `scene` is `null`
     public static void uninstall(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -163,6 +204,12 @@ public final class M3ThemeRuntime {
     }
 
     /// Removes M3FX theme tokens from a root node.
+    ///
+    /// The method restores the root's captured preinstallation inline style, removes M3FX-managed profile and
+    /// brightness classes, and clears theme metadata. Calling it repeatedly has no further effect.
+    ///
+    /// @param root the root to uninstall
+    /// @throws NullPointerException if `root` is `null`
     public static void uninstall(Parent root) {
         Objects.requireNonNull(root, "root");
 
@@ -179,6 +226,9 @@ public final class M3ThemeRuntime {
     }
 
     /// Removes the base M3FX stylesheet from a scene.
+    ///
+    /// @param scene the scene whose stylesheet list should be updated
+    /// @throws NullPointerException if `scene` is `null`
     public static void uninstallStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -191,6 +241,10 @@ public final class M3ThemeRuntime {
     /// generated stylesheet for the copied [M3Theme], while attached descendants continue to inherit lookup values
     /// from their normal ancestor chain. Excluding unrelated inline declarations prevents visual properties such as
     /// root backgrounds and padding from leaking into popup or virtualized component roots.
+    ///
+    /// @param sourceRoot the root that supplies theme metadata and managed style classes
+    /// @param targetRoot the root that should receive the copied context
+    /// @throws NullPointerException if either root is `null`
     public static void copyThemeContext(Parent sourceRoot, Parent targetRoot) {
         Objects.requireNonNull(sourceRoot, "sourceRoot");
         Objects.requireNonNull(targetRoot, "targetRoot");
@@ -232,6 +286,10 @@ public final class M3ThemeRuntime {
     }
 
     /// Applies root, profile, and brightness style classes for a theme without mutating inline token styles.
+    ///
+    /// @param root  the styleable object whose managed classes should be updated
+    /// @param theme the theme that selects the profile and brightness classes
+    /// @throws NullPointerException if `root` or `theme` is `null`
     public static void applyThemeStyleClasses(Styleable root, M3Theme theme) {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(theme, "theme");
@@ -269,6 +327,9 @@ public final class M3ThemeRuntime {
     }
 
     /// Removes root, profile, and brightness style classes managed by M3FX.
+    ///
+    /// @param root the styleable object whose managed classes should be removed
+    /// @throws NullPointerException if `root` is `null`
     public static void clearThemeStyleClasses(Styleable root) {
         Objects.requireNonNull(root, "root");
 
@@ -280,6 +341,12 @@ public final class M3ThemeRuntime {
     }
 
     /// Removes the generated theme stylesheet tracked for a scene.
+    ///
+    /// Other stylesheet entries, including generated stylesheets not installed through this runtime, are left
+    /// unchanged.
+    ///
+    /// @param scene the scene whose managed theme stylesheet should be removed
+    /// @throws NullPointerException if `scene` is `null`
     public static void uninstallThemeStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -293,11 +360,21 @@ public final class M3ThemeRuntime {
     }
 
     /// Returns the base M3FX stylesheet URL.
+    ///
+    /// @return the external-form URL of the bundled base stylesheet
     public static String stylesheetUrl() {
         return M3Stylesheets.baseStylesheet();
     }
 
     /// Returns a file URL for a generated theme stylesheet.
+    ///
+    /// Equivalent immutable theme values share one process-local generated file while that cache entry remains
+    /// reachable.
+    ///
+    /// @param theme the theme to compile
+    /// @return the file URL of the generated stylesheet
+    /// @throws NullPointerException  if `theme` is `null`
+    /// @throws IllegalStateException if the stylesheet directory or file cannot be created
     public static String themeStylesheetUrl(M3Theme theme) {
         Objects.requireNonNull(theme, "theme");
 

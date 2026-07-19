@@ -12,24 +12,26 @@ import java.util.Objects;
 
 /// Default immutable implementation of [M3MotionTokens].
 ///
-/// @param short1 the short1 duration token
-/// @param short2 the short2 duration token
-/// @param short3 the short3 duration token
-/// @param short4 the short4 duration token
-/// @param medium1 the medium1 duration token
-/// @param medium2 the medium2 duration token
-/// @param medium3 the medium3 duration token
-/// @param medium4 the medium4 duration token
-/// @param long1 the long1 duration token
-/// @param long2 the long2 duration token
-/// @param long3 the long3 duration token
-/// @param long4 the long4 duration token
-/// @param extraLong1 the extraLong1 duration token
-/// @param extraLong2 the extraLong2 duration token
-/// @param extraLong3 the extraLong3 duration token
-/// @param extraLong4 the extraLong4 duration token
-/// @param scheme the semantic motion scheme
-/// @param behavior the motion-adjacent interaction timings
+/// Duration ladder values are non-negative integer milliseconds.
+///
+/// @param short1     the short1 duration token in milliseconds
+/// @param short2     the short2 duration token in milliseconds
+/// @param short3     the short3 duration token in milliseconds
+/// @param short4     the short4 duration token in milliseconds
+/// @param medium1    the medium1 duration token in milliseconds
+/// @param medium2    the medium2 duration token in milliseconds
+/// @param medium3    the medium3 duration token in milliseconds
+/// @param medium4    the medium4 duration token in milliseconds
+/// @param long1      the long1 duration token in milliseconds
+/// @param long2      the long2 duration token in milliseconds
+/// @param long3      the long3 duration token in milliseconds
+/// @param long4      the long4 duration token in milliseconds
+/// @param extraLong1 the extraLong1 duration token in milliseconds
+/// @param extraLong2 the extraLong2 duration token in milliseconds
+/// @param extraLong3 the extraLong3 duration token in milliseconds
+/// @param extraLong4 the extraLong4 duration token in milliseconds
+/// @param scheme     the semantic motion scheme
+/// @param behavior   the motion-adjacent interaction timings
 @NotNullByDefault
 public record M3MotionTokensImpl(
         int short1,
@@ -52,6 +54,9 @@ public record M3MotionTokensImpl(
         M3MotionBehavior behavior
 ) implements M3MotionTokens {
     /// Creates motion tokens.
+    ///
+    /// @throws NullPointerException     if `scheme` or `behavior` is `null`
+    /// @throws IllegalArgumentException if any duration token is negative
     public M3MotionTokensImpl {
         validate(short1, "short1");
         validate(short2, "short2");

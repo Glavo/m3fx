@@ -16,20 +16,10 @@ import java.util.Objects;
 /// A handle is created by [M3OverlayPane#showDialog(M3Dialog)] or [M3DialogWindow#showDialog(M3Dialog)]. It remains
 /// associated with the dialog after the presentation ends, but releases its presentation backend when the dialog is
 /// fully hidden. Retaining an old handle therefore cannot close a later presentation of the same dialog.
+///
+/// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public final class M3DialogHandle {
-    /// The dialog represented by this presentation.
-    private final M3Dialog dialog;
-
-    /// Whether this presentation still occupies its host surface.
-    private boolean showing;
-
-    /// Lazily created observable view of the showing state.
-    private @Nullable ReadOnlyBooleanWrapper showingProperty;
-
-    /// The backend currently hosting this presentation, or `null` after it is hidden.
-    private @Nullable M3DialogPresentation presentation;
-
     /// Creates a detached-state handle allocated for one presentation backend before installation begins.
     ///
     /// @param dialog       the dialog represented by this handle
@@ -40,12 +30,11 @@ public final class M3DialogHandle {
         this.presentation = Objects.requireNonNull(presentation, "presentation");
     }
 
-    /// Returns the dialog represented by this presentation.
-    ///
-    /// @return the non-null dialog
-    public M3Dialog getDialog() {
-        return dialog;
-    }
+    /// Whether this presentation still occupies its host surface.
+    private boolean showing;
+
+    /// Lazily created observable view of the showing state.
+    private @Nullable ReadOnlyBooleanWrapper showingProperty;
 
     /// Returns whether this presentation still occupies its host surface.
     ///
@@ -57,7 +46,24 @@ public final class M3DialogHandle {
         return showing;
     }
 
+    /// Updates the presentation state and its observable view when one has been requested.
+    ///
+    /// @param value the new showing state
+    private void setShowing(boolean value) {
+        if (showing == value) {
+            return;
+        }
+        showing = value;
+        @Nullable ReadOnlyBooleanWrapper property = showingProperty;
+        if (property != null) {
+            property.set(value);
+        }
+    }
+
     /// Returns the read-only property reporting this presentation's visible lifecycle state.
+    ///
+    /// The property can be observed and used as a binding source. Its initial value is `false`; it remains
+    /// `true` through an accepted exit transition and returns to `false` before the hidden event is dispatched.
     ///
     /// @return the read-only showing property
     public ReadOnlyBooleanProperty showingProperty() {
@@ -67,6 +73,19 @@ public final class M3DialogHandle {
             showingProperty = property;
         }
         return property.getReadOnlyProperty();
+    }
+
+    /// The dialog represented by this presentation.
+    private final M3Dialog dialog;
+
+    /// The backend currently hosting this presentation, or `null` after it is hidden.
+    private @Nullable M3DialogPresentation presentation;
+
+    /// Returns the dialog represented by this presentation.
+    ///
+    /// @return the non-null dialog
+    public M3Dialog getDialog() {
+        return dialog;
     }
 
     /// Requests that this presentation close without selecting an action button.
@@ -100,17 +119,4 @@ public final class M3DialogHandle {
         setShowing(false);
     }
 
-    /// Updates the presentation state and its observable view when one has been requested.
-    ///
-    /// @param value the new showing state
-    private void setShowing(boolean value) {
-        if (showing == value) {
-            return;
-        }
-        showing = value;
-        @Nullable ReadOnlyBooleanWrapper property = showingProperty;
-        if (property != null) {
-            property.set(value);
-        }
-    }
 }

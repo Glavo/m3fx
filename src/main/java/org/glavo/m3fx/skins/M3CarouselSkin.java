@@ -194,9 +194,13 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         super.dispose();
     }
 
-    /// Scrolls the selected carousel item into the viewport.
+    /// Aligns the selected carousel item with the layout's focal position.
     ///
-    /// @param animated whether the viewport scroll should animate
+    /// If the viewport has not been laid out, the request is retained and applied during a later layout pass. An
+    /// invalid or empty selection has no effect. When animation is requested, the effective motion settings still
+    /// determine whether the value changes through a transition or settles immediately.
+    ///
+    /// @param animated whether to request an animated viewport transition
     public void scrollSelectedItemIntoView(boolean animated) {
         if (deferSelectedItemScrollIfNeeded(animated)) {
             requestSelectedScroll(animated);

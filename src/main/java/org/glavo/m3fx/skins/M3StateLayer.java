@@ -251,8 +251,7 @@ final class M3StateLayer extends Pane {
     /// Creates a state layer with optional interaction feedback.
     ///
     /// Focus-visible tracking and focus-indicator rendering remain active when interaction feedback is disabled.
-    /// This mode is used by components whose current specification replaces the legacy state layer and ripple with
-    /// direct geometry changes.
+    /// Components may use this mode when their interaction feedback is represented by direct geometry changes.
     ///
     /// @param interactionFeedbackEnabled whether hover overlays and ripples are rendered
     M3StateLayer(boolean interactionFeedbackEnabled) {

@@ -62,6 +62,30 @@ public final class M3FormSection extends Control {
     /// The default vertical spacing between section content nodes.
     private static final double DEFAULT_CONTENT_SPACING = 12.0;
 
+    /// Creates an empty form section with empty title and supporting text.
+    public M3FormSection() {
+        initialize();
+    }
+
+    /// Creates a form section with a title.
+    ///
+    /// @param titleText the section title text
+    /// @throws NullPointerException if `titleText` is `null`
+    public M3FormSection(String titleText) {
+        initialize();
+        setTitleText(titleText);
+    }
+
+    /// Creates a form section with a title and supporting text.
+    ///
+    /// @param titleText      the section title text
+    /// @param supportingText the supporting text displayed below the title
+    /// @throws NullPointerException if `titleText` or `supportingText` is `null`
+    public M3FormSection(String titleText, String supportingText) {
+        this(titleText);
+        setSupportingText(supportingText);
+    }
+
     /// The section title text.
     ///
     /// `null` is not permitted.
@@ -83,6 +107,30 @@ public final class M3FormSection extends Control {
                 }
             };
 
+    /// Returns the section title.
+    ///
+    /// @return the section title
+    public final String getTitleText() {
+        return titleText.get();
+    }
+
+    /// Sets the section title.
+    ///
+    /// @param titleText the section title
+    /// @throws NullPointerException if `titleText` is `null`
+    public final void setTitleText(String titleText) {
+        this.titleText.set(titleText);
+    }
+
+    /// Returns the observable, bindable section title-text property.
+    ///
+    /// The property defaults to an empty string and rejects `null` values.
+    ///
+    /// @return the section title-text property
+    public final javafx.beans.property.StringProperty titleTextProperty() {
+        return titleText;
+    }
+
     /// The section supporting text.
     ///
     /// `null` is not permitted.
@@ -103,68 +151,6 @@ public final class M3FormSection extends Control {
                 }
             };
 
-    /// The live, mutable, ordered section content list.
-    ///
-    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
-    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
-    /// parent do not satisfy the scene-graph ownership contract.
-    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
-
-    /// The listener used to refresh accessibility state when section content changes.
-    private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
-
-    /// Notifies accessibility clients when focus moves between section content children.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
-
-    /// The vertical spacing between section content nodes in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty contentSpacing;
-
-    /// Creates an empty form section with empty title and supporting text.
-    public M3FormSection() {
-        initialize();
-    }
-
-    /// Creates a form section with a title.
-    ///
-    /// @param titleText the section title text
-    /// @throws NullPointerException if `titleText` is `null`
-    public M3FormSection(String titleText) {
-        initialize();
-        setTitleText(titleText);
-    }
-
-    /// Creates a form section with a title and supporting text.
-    ///
-    /// @param titleText the section title text
-    /// @param supportingText the supporting text displayed below the title
-    /// @throws NullPointerException if `titleText` or `supportingText` is `null`
-    public M3FormSection(String titleText, String supportingText) {
-        this(titleText);
-        setSupportingText(supportingText);
-    }
-
-    /// Returns the section title.
-    ///
-    /// @return the section title
-    public final String getTitleText() {
-        return titleText.get();
-    }
-
-    /// Sets the section title.
-    ///
-    /// @param titleText the section title
-    /// @throws NullPointerException if `titleText` is `null`
-    public final void setTitleText(String titleText) {
-        this.titleText.set(titleText);
-    }
-
-    public final javafx.beans.property.StringProperty titleTextProperty() {
-        return titleText;
-    }
-
     /// Returns the section supporting text.
     ///
     /// @return the section supporting text
@@ -180,20 +166,19 @@ public final class M3FormSection extends Control {
         this.supportingText.set(supportingText);
     }
 
+    /// Returns the observable, bindable section supporting-text property.
+    ///
+    /// The property defaults to an empty string and rejects `null` values.
+    ///
+    /// @return the section supporting-text property
     public final javafx.beans.property.StringProperty supportingTextProperty() {
         return supportingText;
     }
 
-    /// Returns the live, mutable section content list in layout order.
+    /// The vertical spacing between section content nodes in logical pixels.
     ///
-    /// @return the live, mutable section content list
-    public final ObservableList<Node> getContent() {
-        return content;
-    }
-
-
-
-
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Returns the vertical spacing between section content nodes in logical pixels.
     ///
@@ -210,6 +195,12 @@ public final class M3FormSection extends Control {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
+    /// Returns the observable, bindable, styleable section content-spacing property.
+    ///
+    /// The property defaults to `12.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the section content-spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -221,6 +212,27 @@ public final class M3FormSection extends Control {
             );
         }
         return contentSpacing;
+    }
+
+    /// The live, mutable, ordered section content list.
+    ///
+    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
+    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
+    /// parent do not satisfy the scene-graph ownership contract.
+    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
+
+    /// The listener used to refresh accessibility state when section content changes.
+    private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
+
+    /// Notifies accessibility clients when focus moves between section content children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
+
+    /// Returns the live, mutable section content list in layout order.
+    ///
+    /// @return the live, mutable section content list
+    public final ObservableList<Node> getContent() {
+        return content;
     }
 
     /// Returns the user-agent stylesheet for M3FX form sections.

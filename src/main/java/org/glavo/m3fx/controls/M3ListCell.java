@@ -23,11 +23,11 @@ import java.util.Objects;
 
 /// A reusable virtualized cell used by [M3ListView].
 ///
-/// A list view creates cells through [M3ListView#cellFactoryProperty] and reuses each cell for different data items
+/// A list view creates cells through [M3ListView#cellFactoryProperty()] and reuses each cell for different data items
 /// while scrolling. Each cell creates one [M3ListItem] on its first non-empty update and retains that row for the
 /// lifetime of the cell.
 ///
-/// Subclasses customize rows by overriding [createListItem()] and [updateListItem(M3ListItem, Object)]. The update
+/// Subclasses customize rows by overriding [#createListItem()] and [#updateListItem(M3ListItem, Object)]. The update
 /// method must replace every item-dependent value because a later call may represent an unrelated data item.
 /// Applications normally customize the cell factory rather than creating cells outside an [M3ListView].
 ///
@@ -101,9 +101,9 @@ public class M3ListCell<T> extends IndexedCell<T> {
 
     /// Updates the retained row for the current virtualized item.
     ///
-    /// @param item the data item assigned to this cell, or `null` for an empty cell
+    /// @param item  the data item assigned to this cell, or `null` for an empty cell
     /// @param empty whether this cell is empty
-    /// @throws NullPointerException if `empty` is `false` and `item` is `null`, or if [createListItem] returns
+    /// @throws NullPointerException if `empty` is `false` and `item` is `null`, or if [#createListItem()] returns
     ///         `null`
     @Override
     @SuppressWarnings("DataFlowIssue")
@@ -129,7 +129,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
 
     /// Returns accessibility attributes for this virtualized cell.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`
@@ -167,8 +167,8 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// item-dependent state because the same row is subsequently reused for unrelated items. This method must not
     /// replace or reparent `listItem`.
     ///
-    /// @param listItem the reusable row node created by [createListItem()]
-    /// @param item the current non-null data item
+    /// @param listItem the reusable row node created by [#createListItem()]
+    /// @param item     the current non-null data item
     protected void updateListItem(M3ListItem listItem, T item) {
         String headline = String.valueOf(item);
         if (!listItem.getHeadlineText().equals(headline)) {

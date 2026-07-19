@@ -13,13 +13,16 @@ import java.util.Objects;
 /// Default immutable implementation of [M3MotionSpec].
 ///
 /// @param duration the animation duration
-/// @param easing the named easing curve
+/// @param easing   the named easing curve
 @NotNullByDefault
 public record M3MotionSpecImpl(
         Duration duration,
         M3MotionEasing easing
 ) implements M3MotionSpec {
-    /// Creates a motion spec implementation.
+    /// Creates a motion specification.
+    ///
+    /// @throws NullPointerException     if `duration` or `easing` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionSpecImpl {
         Objects.requireNonNull(duration, "duration");
         Objects.requireNonNull(easing, "easing");

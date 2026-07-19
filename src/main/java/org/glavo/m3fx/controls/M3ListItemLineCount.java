@@ -7,19 +7,19 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Describes the derived line count of an M3FX list item.
 ///
-/// The line count is computed from the list item's headline, overline, supporting text, and trailing supporting
-/// text. It drives the default list item height and vertical text placement.
+/// The count starts with the headline and increases for populated overline and supporting-text slots. Trailing
+/// supporting text does not affect it. The result drives the default list item height and vertical text placement.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public enum M3ListItemLineCount {
-    /// A list item with only headline content.
+    /// A one-line layout with neither overline nor supporting content.
     ONE_LINE(1),
 
-    /// A list item with headline plus either overline or supporting content.
+    /// A two-line layout with exactly one populated overline or supporting-text slot.
     TWO_LINE(2),
 
-    /// A list item with headline, overline, and supporting content.
+    /// A three-line layout with populated overline and supporting-text slots.
     THREE_LINE(3);
 
     /// The number of text lines represented by this value.

@@ -80,65 +80,6 @@ public final class M3Banner extends Control {
     /// The default spacing between action nodes.
     private static final double DEFAULT_ACTION_SPACING = 8.0;
 
-    /// The message displayed by this banner.
-    ///
-    /// The default value is the empty string. This property does not accept `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "");
-
-    /// The node displayed before the message according to the effective node orientation.
-    ///
-    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
-
-    /// The live, mutable list of nodes displayed after the message.
-    ///
-    /// The list preserves insertion order, permits neither `null` elements nor duplicate parent ownership, and
-    /// is observed for subsequent changes. Nodes in this list cannot simultaneously be children of another parent.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
-
-    /// The minimum banner height, in logical pixels.
-    ///
-    /// The default value is `80.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `80.0`
-    private @Nullable StyleableDoubleProperty containerMinHeight;
-
-    /// The padding above and below banner content, in logical pixels.
-    ///
-    /// The default value is `16.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty verticalPadding;
-
-    /// The padding at the logical start and end of banner content, in logical pixels.
-    ///
-    /// The default value is `24.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `24.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The spacing between the icon, message, and action area, in logical pixels.
-    ///
-    /// The default value is `16.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty contentSpacing;
-
-    /// The spacing between adjacent action nodes, in logical pixels.
-    ///
-    /// The default value is `8.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `8.0`
-    private @Nullable StyleableDoubleProperty actionSpacing;
-
-    /// Notifies accessibility clients when focus moves between action children.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
-
     /// Creates a banner with empty text, no icon, and no actions.
     public M3Banner() {
         this("");
@@ -153,6 +94,12 @@ public final class M3Banner extends Control {
         setText(text);
     }
 
+    /// The message displayed by this banner.
+    ///
+    /// The default value is the empty string. [setText][#setText(String)] rejects `null`.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
     /// Returns the banner message text.
     ///
@@ -169,9 +116,21 @@ public final class M3Banner extends Control {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
+    /// Returns the observable property that stores the banner message.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string.
+    ///
+    /// @return the banner message property
     public final StringProperty textProperty() {
         return text;
     }
+
+    /// The node displayed before the message according to the effective node orientation.
+    ///
+    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
 
     /// Returns the optional leading icon node.
     ///
@@ -187,19 +146,21 @@ public final class M3Banner extends Control {
         this.icon.set(icon);
     }
 
+    /// Returns the observable property that stores the optional leading icon.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the leading icon property
     public final ObjectProperty<@Nullable Node> iconProperty() {
         return icon;
     }
 
-    /// Returns the live list of trailing action nodes.
+    /// The minimum banner height, in logical pixels.
     ///
-    /// Changes to the returned list are reflected immediately by this banner. The list preserves insertion order
-    /// and rejects `null` elements.
+    /// The default value is `80.0`. Values must be finite and non-negative.
     ///
-    /// @return the live, mutable action list
-    public final ObservableList<Node> getActions() {
-        return actions;
-    }
+    /// @defaultValue `80.0`
+    private @Nullable StyleableDoubleProperty containerMinHeight;
 
     /// Returns the minimum banner container height token.
     ///
@@ -216,6 +177,12 @@ public final class M3Banner extends Control {
         containerMinHeightProperty().set(M3Css.nonNegative(containerMinHeight, "containerMinHeight"));
     }
 
+    /// Returns the styleable property that stores the minimum banner height.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-min-height`, and accepts finite,
+    /// non-negative values. Its default value is `80.0` logical pixels.
+    ///
+    /// @return the minimum banner height property
     public final StyleableDoubleProperty containerMinHeightProperty() {
         if (containerMinHeight == null) {
             containerMinHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -228,6 +195,13 @@ public final class M3Banner extends Control {
         }
         return containerMinHeight;
     }
+
+    /// The padding above and below banner content, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Returns the vertical banner content padding token.
     ///
@@ -244,6 +218,12 @@ public final class M3Banner extends Control {
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
 
+    /// Returns the styleable property that stores the vertical content padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-vertical-padding`, and accepts finite,
+    /// non-negative values. Its default value is `16.0` logical pixels.
+    ///
+    /// @return the vertical content padding property
     public final StyleableDoubleProperty verticalPaddingProperty() {
         if (verticalPadding == null) {
             verticalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -256,6 +236,13 @@ public final class M3Banner extends Control {
         }
         return verticalPadding;
     }
+
+    /// The padding at the logical start and end of banner content, in logical pixels.
+    ///
+    /// The default value is `24.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Returns the horizontal banner content padding token.
     ///
@@ -272,6 +259,12 @@ public final class M3Banner extends Control {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
+    /// Returns the styleable property that stores the horizontal content padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-horizontal-padding`, and accepts finite,
+    /// non-negative values. Its default value is `24.0` logical pixels.
+    ///
+    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -284,6 +277,13 @@ public final class M3Banner extends Control {
         }
         return horizontalPadding;
     }
+
+    /// The spacing between the icon, message, and action area, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Returns the spacing token between icon, text, and actions.
     ///
@@ -300,6 +300,12 @@ public final class M3Banner extends Control {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
+    /// Returns the styleable property that stores the spacing between content slots.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-content-spacing`, and accepts finite,
+    /// non-negative values. Its default value is `16.0` logical pixels.
+    ///
+    /// @return the content spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -312,6 +318,13 @@ public final class M3Banner extends Control {
         }
         return contentSpacing;
     }
+
+    /// The spacing between adjacent action nodes, in logical pixels.
+    ///
+    /// The default value is `8.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
+    private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Returns the spacing token between action nodes.
     ///
@@ -328,6 +341,12 @@ public final class M3Banner extends Control {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
+    /// Returns the styleable property that stores the spacing between action nodes.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-action-spacing`, and accepts finite,
+    /// non-negative values. Its default value is `8.0` logical pixels.
+    ///
+    /// @return the action spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -339,6 +358,26 @@ public final class M3Banner extends Control {
             );
         }
         return actionSpacing;
+    }
+
+    /// The live, mutable list of nodes displayed after the message.
+    ///
+    /// The list preserves insertion order, permits neither `null` elements nor duplicate parent ownership, and
+    /// is observed for subsequent changes. Nodes in this list cannot simultaneously be children of another parent.
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+
+    /// Notifies accessibility clients when focus moves between action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
+
+    /// Returns the live list of trailing action nodes.
+    ///
+    /// Changes to the returned list are reflected immediately by this banner. The list preserves insertion order
+    /// and rejects `null` elements.
+    ///
+    /// @return the live, mutable action list
+    public final ObservableList<Node> getActions() {
+        return actions;
     }
 
     /// Returns the CSS metadata for banner component tokens.

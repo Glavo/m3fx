@@ -67,6 +67,11 @@ public final class M3Surface extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
+    /// Creates an empty surface with the container color role and elevation level zero.
+    public M3Surface() {
+        initialize();
+    }
+
     /// The semantic surface color variant.
     ///
     /// Assigning `null` through the property restores [M3SurfaceVariant#CONTAINER].
@@ -84,6 +89,30 @@ public final class M3Surface extends Control {
                     updateVariantStyle();
                 }
             };
+
+    /// Returns the surface color variant.
+    ///
+    /// @return the surface color variant
+    public final M3SurfaceVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the surface color variant.
+    ///
+    /// @param variant the surface color variant
+    /// @throws NullPointerException if `variant` is `null`
+    public final void setVariant(M3SurfaceVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the `variant` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `CONTAINER`.
+    ///
+    /// @return the `variant` property
+    public final ObjectProperty<M3SurfaceVariant> variantProperty() {
+        return variant;
+    }
 
     /// The surface elevation level.
     ///
@@ -103,51 +132,6 @@ public final class M3Surface extends Control {
                 }
             };
 
-    /// The surface container corner radius in logical pixels.
-    ///
-    /// @defaultValue `12.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The uniform surface content padding in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// Creates an empty surface with the container color role and elevation level zero.
-    public M3Surface() {
-        initialize();
-    }
-
-    /// Returns the mutable content nodes displayed inside the surface.
-    ///
-    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
-    /// traversal, and accessibility immediately. Nodes become children of this surface and must satisfy normal
-    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
-    ///
-    /// @return the live mutable ordered content list
-    public final ObservableList<Node> getContent() {
-        return content;
-    }
-
-    /// Returns the surface color variant.
-    ///
-    /// @return the surface color variant
-    public final M3SurfaceVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the surface color variant.
-    ///
-    /// @param variant the surface color variant
-    /// @throws NullPointerException if `variant` is `null`
-    public final void setVariant(M3SurfaceVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    public final ObjectProperty<M3SurfaceVariant> variantProperty() {
-        return variant;
-    }
-
     /// Returns the surface elevation level.
     ///
     /// @return the surface elevation level
@@ -163,9 +147,19 @@ public final class M3Surface extends Control {
         this.elevation.set(Objects.requireNonNull(elevation, "elevation"));
     }
 
+    /// Returns the `elevation` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `LEVEL0`.
+    ///
+    /// @return the `elevation` property
     public final ObjectProperty<M3SurfaceElevation> elevationProperty() {
         return elevation;
     }
+
+    /// The surface container corner radius in logical pixels.
+    ///
+    /// @defaultValue `12.0`
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Returns the surface container shape token.
     ///
@@ -182,6 +176,12 @@ public final class M3Surface extends Control {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
+    /// Returns the `containerShape` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `12.0` logical pixels.
+    ///
+    /// @return the `containerShape` property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -194,6 +194,11 @@ public final class M3Surface extends Control {
         }
         return containerShape;
     }
+
+    /// The uniform surface content padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Returns the surface content padding token.
     ///
@@ -210,6 +215,12 @@ public final class M3Surface extends Control {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
+    /// Returns the `contentPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `contentPadding` property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -221,6 +232,17 @@ public final class M3Surface extends Control {
             );
         }
         return contentPadding;
+    }
+
+    /// Returns the mutable content nodes displayed inside the surface.
+    ///
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
+    /// traversal, and accessibility immediately. Nodes become children of this surface and must satisfy normal
+    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    ///
+    /// @return the live mutable ordered content list
+    public final ObservableList<Node> getContent() {
+        return content;
     }
 
     /// Returns the user-agent stylesheet for M3FX surfaces.
@@ -270,7 +292,7 @@ public final class M3Surface extends Control {
 
     /// Returns accessibility attributes for the surface content collection.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`
@@ -287,7 +309,7 @@ public final class M3Surface extends Control {
 
     /// Executes accessibility actions for indexed surface content children.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override

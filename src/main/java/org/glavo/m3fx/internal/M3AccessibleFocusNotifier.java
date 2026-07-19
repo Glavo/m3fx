@@ -53,8 +53,9 @@ public final class M3AccessibleFocusNotifier {
 
     /// Creates a notifier for one owner node.
     ///
-    /// @param owner the node that owns and observes the `FOCUS_NODE` attribute
+    /// @param owner             the node that owns and observes the `FOCUS_NODE` attribute
     /// @param focusNodeSupplier the supplier that returns the current accessible focus node
+    /// @throws NullPointerException if either argument is `null`
     public M3AccessibleFocusNotifier(Node owner, Supplier<@Nullable Node> focusNodeSupplier) {
         this(owner, owner, focusNodeSupplier);
     }
@@ -65,8 +66,9 @@ public final class M3AccessibleFocusNotifier {
     /// while popup content receives focus in a separate popup scene.
     ///
     /// @param notificationOwner the node that owns the `FOCUS_NODE` attribute
-    /// @param sceneOwner the node whose scene focus owner is observed
+    /// @param sceneOwner        the node whose scene focus owner is observed
     /// @param focusNodeSupplier the supplier that returns the current accessible focus node
+    /// @throws NullPointerException if any argument is `null`
     public M3AccessibleFocusNotifier(
             Node notificationOwner,
             Node sceneOwner,
@@ -81,6 +83,11 @@ public final class M3AccessibleFocusNotifier {
     }
 
     /// Creates a notifier for one owner node with a custom notification callback.
+    ///
+    /// @param owner                    the node whose scene focus owner is observed
+    /// @param focusNodeSupplier        the supplier that returns the current accessible focus node
+    /// @param focusNodeChangedNotifier the callback invoked when that node changes by identity
+    /// @throws NullPointerException if any argument is `null`
     public M3AccessibleFocusNotifier(
             Node owner,
             Supplier<@Nullable Node> focusNodeSupplier,
@@ -90,6 +97,12 @@ public final class M3AccessibleFocusNotifier {
     }
 
     /// Creates a notifier with a custom notification callback and observed scene node.
+    ///
+    /// @param notificationOwner        the node represented by the custom notification callback
+    /// @param sceneOwner               the node whose current and future scenes should be observed
+    /// @param focusNodeSupplier        the supplier that returns the current accessible focus node
+    /// @param focusNodeChangedNotifier the callback invoked when that node changes by identity
+    /// @throws NullPointerException if any argument is `null`
     public M3AccessibleFocusNotifier(
             Node notificationOwner,
             Node sceneOwner,
@@ -103,6 +116,9 @@ public final class M3AccessibleFocusNotifier {
     }
 
     /// Starts listening to the observed node's current and future scenes.
+    ///
+    /// Calling this method while the notifier is already started has no effect. If listener installation fails, all
+    /// partially installed state is removed before the exception is rethrown.
     public void start() {
         if (started) {
             return;
@@ -121,6 +137,9 @@ public final class M3AccessibleFocusNotifier {
     }
 
     /// Stops listening and clears cached focus state.
+    ///
+    /// Calling this method while the notifier is stopped has no effect. A stopped notifier may subsequently be
+    /// restarted.
     public void stop() {
         if (!started) {
             return;
@@ -132,6 +151,8 @@ public final class M3AccessibleFocusNotifier {
     }
 
     /// Refreshes cached focus state after child content changes already notified accessibility clients.
+    ///
+    /// This method updates the comparison baseline without invoking the notification callback.
     public void refresh() {
         lastFocusNode = focusNodeSupplier.get();
     }

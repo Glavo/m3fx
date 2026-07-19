@@ -37,14 +37,14 @@ import java.util.Objects;
 /// A token-aware font glyph for Material Design 3 controls.
 ///
 /// `M3Icon` is an M3FX utility control rather than a standalone interactive component. Its
-/// [glyph][#glyphProperty()] contains a character or symbol-font ligature, while [sizeProperty],
-/// [variantProperty], and the styleable font token properties determine its metrics and color role. The default
+/// [glyph][#glyphProperty()] contains a character or symbol-font ligature, while [#sizeProperty()],
+/// [#variantProperty()], and the styleable font token properties determine its metrics and color role. The default
 /// icon is empty, medium sized, uses the system font at medium weight, and uses the on-surface-variant color role.
 ///
 /// The control renders exactly one glyph and does not provide label layout, graphics, mnemonic parsing, text
 /// wrapping, or action behavior. It is centered and not focus traversable by default. Place it in an action-owning
 /// control such as [M3IconButton], [M3NavigationItem], or [M3MenuItem] when the icon is interactive. Applications
-/// that use a dedicated symbol font may set [iconFontFamilyProperty] on an individual icon or override the
+/// that use a dedicated symbol font may set [#iconFontFamilyProperty()] on an individual icon or override the
 /// corresponding CSS property for a subtree.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
@@ -66,15 +66,67 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// The layout line-box multiplier used to keep fallback font glyphs from being clipped.
     private static final double ICON_LINE_BOX_SCALE = 1.5;
 
+    /// Creates an empty icon with the default medium size and on-surface-variant color role.
+    public M3Icon() {
+        this("");
+    }
+
+    /// Creates a medium icon containing a glyph or symbol-font ligature.
+    ///
+    /// @param glyph the glyph rendered by this icon
+    /// @throws NullPointerException if `glyph` is `null`
+    public M3Icon(String glyph) {
+        initialize();
+        setGlyph(glyph);
+    }
+
+    /// Creates an icon with a glyph, size role, and color variant.
+    ///
+    /// @param glyph   the glyph rendered by this icon
+    /// @param size    the icon size role
+    /// @param variant the icon color variant
+    /// @throws NullPointerException if `glyph`, `size`, or `variant` is `null`
+    public M3Icon(String glyph, M3IconSize size, M3IconVariant variant) {
+        initialize();
+        setGlyph(glyph);
+        setSize(size);
+        setVariant(variant);
+    }
+
     /// The glyph or symbol-font ligature rendered by this icon.
     ///
     /// @defaultValue `""`
     private final StringProperty glyphValue = new SimpleStringProperty(this, "glyph", "");
 
+    /// Returns the glyph or symbol-font ligature rendered by this icon.
+    ///
+    /// @return the current non-null glyph
+    public String getGlyph() {
+        return glyphValue.get();
+    }
+
+    /// Sets the glyph or symbol-font ligature rendered by this icon.
+    ///
+    /// @param glyph the new glyph
+    /// @throws NullPointerException if `glyph` is `null`
+    public void setGlyph(String glyph) {
+        glyphValue.set(Objects.requireNonNull(glyph, "glyph"));
+    }
+
+    /// Returns the observable, bindable property containing the glyph rendered by this icon.
+    ///
+    /// The property defaults to an empty string and must contain a non-null value. Use an empty string for an icon
+    /// with no visible glyph.
+    ///
+    /// @return the glyph property
+    public StringProperty glyphProperty() {
+        return glyphValue;
+    }
+
     /// The semantic icon size role.
     ///
     /// A direct assignment of `null` is replaced with the default role. The role supplies the effective size until
-    /// [iconSizeProperty] is explicitly initialized or styled.
+    /// [#iconSizeProperty()] is explicitly initialized or styled.
     ///
     /// @defaultValue [M3IconSize#MEDIUM]
     private final ObjectProperty<M3IconSize> sizeValue =
@@ -89,6 +141,31 @@ public final class M3Icon extends Control implements M3IconGraphic {
                     updateSizeStyle();
                 }
             };
+
+    /// Returns the icon size role.
+    ///
+    /// @return the icon size role
+    public M3IconSize getSize() {
+        return sizeValue.get();
+    }
+
+    /// Sets the icon size role.
+    ///
+    /// @param size the icon size role
+    /// @throws NullPointerException if `size` is `null`
+    public void setSize(M3IconSize size) {
+        sizeValue.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the observable, bindable property containing the semantic icon size role.
+    ///
+    /// The property defaults to [M3IconSize#MEDIUM]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the icon size-role property
+    public ObjectProperty<M3IconSize> sizeProperty() {
+        return sizeValue;
+    }
 
     /// The Material color role used to paint the glyph.
     ///
@@ -108,107 +185,6 @@ public final class M3Icon extends Control implements M3IconGraphic {
                 }
             };
 
-    /// The resolved immutable font used by the glyph node.
-    private final ReadOnlyObjectWrapper<Font> resolvedIconFont = new ReadOnlyObjectWrapper<>(
-            this,
-            "iconFont",
-            Font.font(DEFAULT_ICON_FONT_FAMILY, DEFAULT_ICON_FONT_WEIGHT, DEFAULT_ICON_SIZE)
-    );
-
-    /// The styleable font family used to resolve the glyph.
-    ///
-    /// The property does not retain a directly assigned `null` value.
-    ///
-    /// @defaultValue `System`
-    private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamilyValue;
-
-    /// The styleable glyph size in logical pixels.
-    ///
-    /// The value must be finite and non-negative. Before this property is initialized, the effective value is
-    /// supplied by [sizeProperty]; once initialized, this property is the explicit size override.
-    private @Nullable StyleableDoubleProperty iconSizeValue;
-
-    /// The styleable glyph font weight.
-    ///
-    /// Values assigned through [setIconFontWeight] are rounded to the nearest supported JavaFX font weight. The
-    /// property does not retain a directly assigned `null` value.
-    ///
-    /// @defaultValue `500`
-    private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeightValue;
-
-    /// Creates an empty icon with the default medium size and on-surface-variant color role.
-    public M3Icon() {
-        this("");
-    }
-
-    /// Creates a medium icon containing a glyph or symbol-font ligature.
-    ///
-    /// @param glyph the glyph rendered by this icon
-    /// @throws NullPointerException if `glyph` is `null`
-    public M3Icon(String glyph) {
-        initialize();
-        setGlyph(glyph);
-    }
-
-    /// Creates an icon with a glyph, size role, and color variant.
-    ///
-    /// @param glyph the glyph rendered by this icon
-    /// @param size the icon size role
-    /// @param variant the icon color variant
-    /// @throws NullPointerException if `glyph`, `size`, or `variant` is `null`
-    public M3Icon(String glyph, M3IconSize size, M3IconVariant variant) {
-        initialize();
-        setGlyph(glyph);
-        setSize(size);
-        setVariant(variant);
-    }
-
-    /// Returns the glyph or symbol-font ligature rendered by this icon.
-    ///
-    /// @return the current non-null glyph
-    public String getGlyph() {
-        return glyphValue.get();
-    }
-
-    /// Sets the glyph or symbol-font ligature rendered by this icon.
-    ///
-    /// @param glyph the new glyph
-    /// @throws NullPointerException if `glyph` is `null`
-    public void setGlyph(String glyph) {
-        glyphValue.set(Objects.requireNonNull(glyph, "glyph"));
-    }
-
-    /// Returns the property containing the glyph rendered by this icon.
-    ///
-    /// The property is expected to contain a non-null string. Use an empty string for an icon with no visible glyph.
-    ///
-    /// @return the glyph property
-    public StringProperty glyphProperty() {
-        return glyphValue;
-    }
-
-    /// Returns the icon size role.
-    ///
-    /// @return the icon size role
-    public M3IconSize getSize() {
-        return sizeValue.get();
-    }
-
-    /// Sets the icon size role.
-    ///
-    /// @param size the icon size role
-    /// @throws NullPointerException if `size` is `null`
-    public void setSize(M3IconSize size) {
-        sizeValue.set(Objects.requireNonNull(size, "size"));
-    }
-
-    /// Returns the property containing the semantic icon size role.
-    ///
-    /// @return the icon size-role property
-    public ObjectProperty<M3IconSize> sizeProperty() {
-        return sizeValue;
-    }
-
     /// Returns the icon color variant.
     ///
     /// @return the icon color variant
@@ -224,29 +200,50 @@ public final class M3Icon extends Control implements M3IconGraphic {
         variantValue.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the property containing the icon color variant.
+    /// Returns the observable, bindable property containing the icon color variant.
+    ///
+    /// The property defaults to [M3IconVariant#ON_SURFACE_VARIANT]. A `null` value assigned directly through the
+    /// property is replaced with that default.
     ///
     /// @return the icon color-variant property
     public ObjectProperty<M3IconVariant> variantProperty() {
         return variantValue;
     }
 
+    /// The resolved immutable font used by the glyph node.
+    private final ReadOnlyObjectWrapper<Font> resolvedIconFont = new ReadOnlyObjectWrapper<>(
+            this,
+            "iconFont",
+            Font.font(DEFAULT_ICON_FONT_FAMILY, DEFAULT_ICON_FONT_WEIGHT, DEFAULT_ICON_SIZE)
+    );
+
     /// Returns the resolved font currently used to render the glyph.
     ///
-    /// The returned font reflects [iconFontFamilyProperty], [iconSizeProperty], and [iconFontWeightProperty]. It is
-    /// derived state and cannot be replaced independently of those token properties.
+    /// The returned font reflects [#iconFontFamilyProperty()], [#iconSizeProperty()], and
+    /// [#iconFontWeightProperty()]. It is derived state and cannot be replaced independently of those token
+    /// properties.
     ///
     /// @return the resolved icon font
     public Font getIconFont() {
         return resolvedIconFont.get();
     }
 
-    /// Returns the read-only property containing the resolved icon font.
+    /// Returns the observable read-only property containing the resolved icon font.
+    ///
+    /// The property is a binding source but cannot be set or bound as a writable target. Its initial value uses the
+    /// system font, medium weight, and the default medium icon size.
     ///
     /// @return the resolved icon-font property
     public ReadOnlyObjectProperty<Font> iconFontProperty() {
         return resolvedIconFont.getReadOnlyProperty();
     }
+
+    /// The styleable font family used to resolve the glyph.
+    ///
+    /// The property does not retain a directly assigned `null` value.
+    ///
+    /// @defaultValue `System`
+    private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamilyValue;
 
     /// Returns the icon font family token.
     ///
@@ -265,7 +262,11 @@ public final class M3Icon extends Control implements M3IconGraphic {
         iconFontFamilyProperty().set(Objects.requireNonNull(iconFontFamily, "iconFontFamily"));
     }
 
-    /// Returns the styleable property containing the icon font family token.
+    /// Returns the observable, bindable, styleable property containing the icon font family token.
+    ///
+    /// The property defaults to `System`. A `null` value assigned directly through the property is replaced with
+    /// that default. If a binding source provides `null`, the property remains `null` while the effective family
+    /// reported by [#getIconFontFamily()] falls back to `System`. CSS cannot set the property while it is bound.
     ///
     /// @return the icon font-family property
     public StyleableObjectProperty<@Nullable String> iconFontFamilyProperty() {
@@ -277,8 +278,10 @@ public final class M3Icon extends Control implements M3IconGraphic {
                     StyleableProperties.ICON_FONT_FAMILY,
                     () -> {
                         if (iconFontFamilyProperty().get() == null) {
-                            iconFontFamilyProperty().set(DEFAULT_ICON_FONT_FAMILY);
-                            return;
+                            if (!iconFontFamilyProperty().isBound()) {
+                                iconFontFamilyProperty().set(DEFAULT_ICON_FONT_FAMILY);
+                                return;
+                            }
                         }
                         updateIconFont();
                     }
@@ -287,6 +290,12 @@ public final class M3Icon extends Control implements M3IconGraphic {
         return iconFontFamilyValue;
     }
 
+    /// The styleable glyph size in logical pixels.
+    ///
+    /// The value must be finite and non-negative. Before this property is initialized, the effective value is
+    /// supplied by [#sizeProperty()]; once initialized, this property is the explicit size override.
+    private @Nullable StyleableDoubleProperty iconSizeValue;
+
     /// Returns the effective glyph size.
     ///
     /// @return the glyph size in logical pixels
@@ -294,7 +303,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
         return iconSizeValue == null ? getSize().defaultSize() : iconSizeValue.get();
     }
 
-    /// Sets an explicit glyph size, overriding the size supplied by [sizeProperty].
+    /// Sets an explicit glyph size, overriding the size supplied by [#sizeProperty()].
     ///
     /// @param iconSize the glyph size in logical pixels
     /// @throws IllegalArgumentException if `iconSize` is negative or not finite
@@ -302,7 +311,11 @@ public final class M3Icon extends Control implements M3IconGraphic {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the styleable property containing the effective glyph size.
+    /// Returns the observable, bindable, styleable property containing the effective glyph size.
+    ///
+    /// On first access, the property is initialized from the current [#sizeProperty()] role. It then accepts only
+    /// finite, non-negative logical-pixel values and acts as an explicit size override. CSS cannot set the property
+    /// while it is bound.
     ///
     /// @return the icon-size property
     public StyleableDoubleProperty iconSizeProperty() {
@@ -321,6 +334,14 @@ public final class M3Icon extends Control implements M3IconGraphic {
         return iconSizeValue;
     }
 
+    /// The styleable glyph font weight.
+    ///
+    /// Values assigned through [#setIconFontWeight(double)] are rounded to the nearest supported JavaFX font
+    /// weight. The property does not retain a directly assigned `null` value.
+    ///
+    /// @defaultValue `500`
+    private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeightValue;
+
     /// Returns the effective numeric font weight.
     ///
     /// @return the icon font weight token
@@ -331,12 +352,17 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// Sets the numeric font weight used to resolve the glyph font.
     ///
     /// @param iconFontWeight the font weight in the inclusive range `1.0` through `1000.0`
-    /// @throws IllegalArgumentException if `iconFontWeight` is less than `1.0` or greater than `1000.0`
+    /// @throws IllegalArgumentException if `iconFontWeight` is not finite, less than `1.0`, or greater than `1000.0`
     public void setIconFontWeight(double iconFontWeight) {
         iconFontWeightProperty().set(validateFontWeight(iconFontWeight));
     }
 
-    /// Returns the styleable property containing the resolved JavaFX font weight.
+    /// Returns the observable, bindable, styleable property containing the resolved JavaFX font weight.
+    ///
+    /// The property defaults to [FontWeight#MEDIUM]. A `null` value assigned directly through the property is
+    /// replaced with that default. If a binding source provides `null`, the property remains `null` while the
+    /// effective weight reported by [#getIconFontWeight()] falls back to [FontWeight#MEDIUM]. CSS cannot set the
+    /// property while it is bound.
     ///
     /// @return the icon font-weight property
     public StyleableObjectProperty<@Nullable FontWeight> iconFontWeightProperty() {
@@ -348,8 +374,10 @@ public final class M3Icon extends Control implements M3IconGraphic {
                     StyleableProperties.ICON_FONT_WEIGHT,
                     () -> {
                         if (iconFontWeightProperty().get() == null) {
-                            iconFontWeightProperty().set(DEFAULT_ICON_FONT_WEIGHT);
-                            return;
+                            if (!iconFontWeightProperty().isBound()) {
+                                iconFontWeightProperty().set(DEFAULT_ICON_FONT_WEIGHT);
+                                return;
+                            }
                         }
                         updateIconFont();
                     }
@@ -462,9 +490,10 @@ public final class M3Icon extends Control implements M3IconGraphic {
     ///
     /// @param value the numeric font weight
     /// @return the nearest JavaFX font weight
-    /// @throws IllegalArgumentException if the value is outside the inclusive range `1.0` through `1000.0`
+    /// @throws IllegalArgumentException if the value is not finite or is outside the inclusive range `1.0` through
+    ///                                  `1000.0`
     private static FontWeight validateFontWeight(double value) {
-        if (value < 1.0 || value > 1000.0) {
+        if (!Double.isFinite(value) || value < 1.0 || value > 1000.0) {
             throw new IllegalArgumentException("iconFontWeight must be between 1 and 1000");
         }
         return FontWeight.findByWeight((int) Math.round(value));

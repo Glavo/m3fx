@@ -11,18 +11,18 @@ import java.util.Objects;
 
 /// Default immutable implementation of [M3MotionBehavior].
 ///
-/// @param tooltipShowDelay the tooltip show delay
-/// @param tooltipHideDelay the tooltip hide delay
-/// @param tooltipShowDuration the plain tooltip visible duration
-/// @param richTooltipShowDuration the rich tooltip visible duration
-/// @param snackbarDisplayDuration the snackbar display duration
-/// @param subMenuHoverOpenDelay the submenu hover open delay
-/// @param typeAheadResetDelay the type-ahead search reset delay
-/// @param subMenuHoverCloseDelay the submenu hover close delay
-/// @param linearProgressIndeterminateCycleDuration the indeterminate linear progress cycle duration
+/// @param tooltipShowDelay                           the tooltip show delay
+/// @param tooltipHideDelay                           the tooltip hide delay
+/// @param tooltipShowDuration                        the plain tooltip visible duration
+/// @param richTooltipShowDuration                    the rich tooltip visible duration
+/// @param snackbarDisplayDuration                    the snackbar display duration
+/// @param subMenuHoverOpenDelay                      the submenu hover open delay
+/// @param typeAheadResetDelay                        the type-ahead search reset delay
+/// @param subMenuHoverCloseDelay                     the submenu hover close delay
+/// @param linearProgressIndeterminateCycleDuration   the indeterminate linear progress cycle duration
 /// @param circularProgressIndeterminateCycleDuration the indeterminate circular progress cycle duration
-/// @param loadingIndicatorMorphInterval the loading indicator morph segment duration
-/// @param loadingIndicatorGlobalRotationDuration the loading indicator global rotation loop duration
+/// @param loadingIndicatorMorphInterval              the loading indicator morph segment duration
+/// @param loadingIndicatorGlobalRotationDuration     the loading indicator global rotation loop duration
 @NotNullByDefault
 public record M3MotionBehaviorImpl(
         Duration tooltipShowDelay,
@@ -38,7 +38,10 @@ public record M3MotionBehaviorImpl(
         Duration loadingIndicatorMorphInterval,
         Duration loadingIndicatorGlobalRotationDuration
 ) implements M3MotionBehavior {
-    /// Creates a motion behavior implementation.
+    /// Creates motion-related interaction timings.
+    ///
+    /// @throws NullPointerException     if any duration is `null`
+    /// @throws IllegalArgumentException if any duration is negative, indefinite, or unknown
     public M3MotionBehaviorImpl {
         validate(tooltipShowDelay, "tooltipShowDelay");
         validate(tooltipHideDelay, "tooltipHideDelay");

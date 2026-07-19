@@ -17,9 +17,9 @@ import java.util.List;
 
 /// Matches and interpolates rounded polygon outlines.
 ///
-/// The geometry and matching model is a Java port of the AndroidX `graphics-shapes` `RoundedPolygon`
-/// and `Morph` algorithms used by Material 3 Expressive loading indicators. The class is internal
-/// because it intentionally exposes only the subset required by M3FX controls.
+/// The geometry follows the rounded-polygon matching model used by AndroidX `graphics-shapes` and Material 3
+/// Expressive loading indicators. Morph instances and sequences are immutable and may be shared. A [Scratch]
+/// instance is mutable and must remain confined to one animation writer at a time.
 @NotNullByDefault
 public final class M3ShapeMorph {
     /// A small distance tolerance used when comparing points.
@@ -65,7 +65,7 @@ public final class M3ShapeMorph {
     /// Creates a morph between two rounded polygons.
     ///
     /// @param start the starting polygon
-    /// @param end the ending polygon
+    /// @param end   the ending polygon
     private M3ShapeMorph(RoundedPolygon start, RoundedPolygon end) {
         List<CubicPair> matches = match(start, end);
         this.curveCount = matches.size();
@@ -83,6 +83,8 @@ public final class M3ShapeMorph {
 
     /// Returns the Material loading indicator indeterminate morph sequence.
     ///
+    /// The returned sequence is a shared immutable value.
+    ///
     /// @return the indeterminate loading indicator morph sequence
     public static Sequence loadingIndicatorIndeterminate() {
         return LOADING_INDICATOR_INDETERMINATE;
@@ -90,15 +92,21 @@ public final class M3ShapeMorph {
 
     /// Writes this morph at the requested progress to a JavaFX path using reusable scratch storage.
     ///
-    /// @param path the path to update
-    /// @param progress the morph progress from `0.0` to `1.0`
-    /// @param centerX the target center x-coordinate
-    /// @param centerY the target center y-coordinate
-    /// @param size the active indicator size in pixels
+    /// The path is updated in place. Its element list is initialized to the required move, cubic, and close elements
+    /// when its current topology does not match this morph. `progress` is not clamped; callers must supply a value in
+    /// the documented range. This method mutates scene-graph state and must be invoked on the JavaFX application
+    /// thread when the path belongs to a live scene.
+    ///
+    /// @param path          the path to update
+    /// @param progress      the morph progress from `0.0` to `1.0`
+    /// @param centerX       the target center x-coordinate
+    /// @param centerY       the target center y-coordinate
+    /// @param size          the active indicator size in logical pixels
     /// @param sequenceScale the scale factor used to keep rotating shapes inside the active size
-    /// @param extraScale the transient animation scale applied to the active shape
+    /// @param extraScale    the transient animation scale applied to the active shape
     /// @param rotationTurns the clockwise rotation in turns
-    /// @param scratch reusable temporary storage
+    /// @param scratch       reusable temporary storage
+    /// @throws NullPointerException if `path` or `scratch` is `null`
     public void writeTo(
             Path path,
             double progress,
@@ -210,9 +218,9 @@ public final class M3ShapeMorph {
 
     /// Writes one cubic's coordinates into primitive morph storage.
     ///
-    /// @param cubic the cubic to flatten
+    /// @param cubic       the cubic to flatten
     /// @param destination the destination coordinate array
-    /// @param offset the first destination index
+    /// @param offset      the first destination index
     private static void writeCubicCoordinates(Cubic cubic, double[] destination, int offset) {
         destination[offset] = cubic.anchor0X();
         destination[offset + 1] = cubic.anchor0Y();
@@ -226,7 +234,7 @@ public final class M3ShapeMorph {
 
     /// Ensures that the path contains one move, the requested cubic count, and one close element.
     ///
-    /// @param path the path to update
+    /// @param path       the path to update
     /// @param curveCount the required cubic curve count
     private static void ensurePathElements(Path path, int curveCount) {
         int required = curveCount + 2;
@@ -246,15 +254,15 @@ public final class M3ShapeMorph {
 
     /// Transforms one primitive morph point into path coordinate space.
     ///
-    /// @param sourceX the source x-coordinate
-    /// @param sourceY the source y-coordinate
-    /// @param scale the normalized-to-pixel scale
-    /// @param offsetX the unrotated x-offset
-    /// @param offsetY the unrotated y-offset
-    /// @param centerX the rotation center x-coordinate
-    /// @param centerY the rotation center y-coordinate
-    /// @param cos the rotation cosine
-    /// @param sin the rotation sine
+    /// @param sourceX     the source x-coordinate
+    /// @param sourceY     the source y-coordinate
+    /// @param scale       the normalized-to-pixel scale
+    /// @param offsetX     the unrotated x-offset
+    /// @param offsetY     the unrotated y-offset
+    /// @param centerX     the rotation center x-coordinate
+    /// @param centerY     the rotation center y-coordinate
+    /// @param cos         the rotation cosine
+    /// @param sin         the rotation sine
     /// @param destination the destination point array
     private static void transformPoint(
             double sourceX,
@@ -318,7 +326,7 @@ public final class M3ShapeMorph {
     /// Matches cubic curves from two rounded polygons using the AndroidX morph mapping algorithm.
     ///
     /// @param start the start polygon
-    /// @param end the end polygon
+    /// @param end   the end polygon
     /// @return matched start and end cubic pairs
     private static List<CubicPair> match(RoundedPolygon start, RoundedPolygon end) {
         MeasuredPolygon startMeasured = MeasuredPolygon.measure(new AngleMeasurer(start.centerX, start.centerY), start);
@@ -359,7 +367,7 @@ public final class M3ShapeMorph {
 
     /// Creates a feature mapper between two measured feature lists.
     ///
-    /// @param first the first measured feature list
+    /// @param first  the first measured feature list
     /// @param second the second measured feature list
     /// @return the bidirectional progress mapper
     private static DoubleMapper featureMapper(List<ProgressableFeature> first, List<ProgressableFeature> second) {
@@ -399,7 +407,7 @@ public final class M3ShapeMorph {
     /// Maps a smaller feature set to the best ordered subset of a larger feature set.
     ///
     /// @param smaller the smaller measured feature list
-    /// @param larger the larger measured feature list
+    /// @param larger  the larger measured feature list
     /// @return selected features from the larger list
     private static List<ProgressableFeature> doMapping(List<ProgressableFeature> smaller, List<ProgressableFeature> larger) {
         int firstIndex = 0;
@@ -443,7 +451,7 @@ public final class M3ShapeMorph {
 
     /// Returns the squared distance between two features for morph matching.
     ///
-    /// @param first the first feature
+    /// @param first  the first feature
     /// @param second the second feature
     /// @return the squared feature distance
     private static double featureDistanceSquared(Feature first, Feature second) {
@@ -566,8 +574,8 @@ public final class M3ShapeMorph {
 
     /// Rotates a point around the origin.
     ///
-    /// @param x the source x-coordinate
-    /// @param y the source y-coordinate
+    /// @param x     the source x-coordinate
+    /// @param y     the source y-coordinate
     /// @param angle the rotation angle in radians
     /// @return the rotated point
     private static Point rotate(double x, double y, double angle) {
@@ -578,8 +586,8 @@ public final class M3ShapeMorph {
 
     /// Returns a linearly interpolated point.
     ///
-    /// @param start the start point
-    /// @param end the end point
+    /// @param start    the start point
+    /// @param end      the end point
     /// @param fraction the interpolation fraction
     /// @return the interpolated point
     private static Point interpolate(Point start, Point end, double fraction) {
@@ -588,8 +596,8 @@ public final class M3ShapeMorph {
 
     /// Returns a linearly interpolated scalar.
     ///
-    /// @param start the start value
-    /// @param end the end value
+    /// @param start    the start value
+    /// @param end      the end value
     /// @param fraction the interpolation fraction
     /// @return the interpolated value
     private static double interpolate(double start, double end, double fraction) {
@@ -598,7 +606,7 @@ public final class M3ShapeMorph {
 
     /// Returns a positive modulo result.
     ///
-    /// @param value the input value
+    /// @param value   the input value
     /// @param modulus the modulus
     /// @return the positive modulo result
     private static double positiveModulo(double value, double modulus) {
@@ -647,8 +655,8 @@ public final class M3ShapeMorph {
 
     /// Returns a cartesian point for a radial coordinate.
     ///
-    /// @param radius the radius
-    /// @param angle the angle in radians
+    /// @param radius  the radius
+    /// @param angle   the angle in radians
     /// @param centerX the center x-coordinate
     /// @param centerY the center y-coordinate
     /// @return the cartesian point
@@ -658,10 +666,10 @@ public final class M3ShapeMorph {
 
     /// Finds the input that approximately minimizes a scalar function.
     ///
-    /// @param from the lower bound
-    /// @param to the upper bound
+    /// @param from      the lower bound
+    /// @param to        the upper bound
     /// @param tolerance the stop tolerance
-    /// @param function the function to minimize
+    /// @param function  the function to minimize
     /// @return the minimizing input
     private static double findMinimum(double from, double to, double tolerance, FindMinimumFunction function) {
         double a = from;
@@ -703,7 +711,7 @@ public final class M3ShapeMorph {
 
     /// Reusable temporary storage for morph path writes.
     ///
-    /// A scratch instance is mutable and should be used by only one animation writer at a time.
+    /// A scratch instance is mutable, is not thread-safe, and should be used by only one animation writer at a time.
     @NotNullByDefault
     public static final class Scratch {
         /// The temporary point coordinate array.
@@ -714,7 +722,7 @@ public final class M3ShapeMorph {
         }
     }
 
-    /// A sequence of matched polygon morphs.
+    /// An immutable sequence of matched polygon morphs.
     @NotNullByDefault
     public static final class Sequence {
         /// The matched morphs in this sequence.
@@ -725,7 +733,7 @@ public final class M3ShapeMorph {
 
         /// Creates a morph sequence.
         ///
-        /// @param morphs the matched morphs
+        /// @param morphs      the matched morphs
         /// @param scaleFactor the sequence-wide scale factor
         private Sequence(M3ShapeMorph @Unmodifiable [] morphs, double scaleFactor) {
             this.morphs = morphs;
@@ -748,8 +756,10 @@ public final class M3ShapeMorph {
 
         /// Returns a morph by index.
         ///
+        /// Indices wrap cyclically in both directions.
+        ///
         /// @param index the morph index
-        /// @return the morph at the requested index
+        /// @return the morph at the wrapped index
         public M3ShapeMorph morphAt(int index) {
             return morphs[Math.floorMod(index, morphs.length)];
         }
@@ -758,7 +768,7 @@ public final class M3ShapeMorph {
     /// A matched cubic pair.
     ///
     /// @param start the start cubic
-    /// @param end the end cubic
+    /// @param end   the end cubic
     @NotNullByDefault
     private record CubicPair(Cubic start, Cubic end) {
     }
@@ -774,7 +784,7 @@ public final class M3ShapeMorph {
     /// A measured feature and its outline progress.
     ///
     /// @param progress the feature progress
-    /// @param feature the measured feature
+    /// @param feature  the measured feature
     @NotNullByDefault
     private record ProgressableFeature(double progress, Feature feature) {
     }
@@ -867,7 +877,7 @@ public final class M3ShapeMorph {
 
     /// Corner rounding parameters.
     ///
-    /// @param radius the corner radius
+    /// @param radius    the corner radius
     /// @param smoothing the smoothing amount
     @NotNullByDefault
     private record CornerRounding(double radius, double smoothing) {
@@ -923,10 +933,10 @@ public final class M3ShapeMorph {
 
         /// Creates a cubic Bezier segment from point values.
         ///
-        /// @param anchor0 the start anchor
+        /// @param anchor0  the start anchor
         /// @param control0 the first control point
         /// @param control1 the second control point
-        /// @param anchor1 the end anchor
+        /// @param anchor1  the end anchor
         private Cubic(Point anchor0, Point control0, Point control1, Point anchor1) {
             this(anchor0.x(), anchor0.y(), control0.x(), control0.y(), control1.x(), control1.y(), anchor1.x(), anchor1.y());
         }
@@ -1027,7 +1037,7 @@ public final class M3ShapeMorph {
 
         /// Calculates the bounds of this curve.
         ///
-        /// @param bounds the destination bounds
+        /// @param bounds      the destination bounds
         /// @param approximate whether to use control-point bounds instead of exact curve extrema
         private void calculateBounds(double[] bounds, boolean approximate) {
             if (zeroLength()) {
@@ -1073,11 +1083,11 @@ public final class M3ShapeMorph {
 
         /// Adds cubic extrema to an axis range.
         ///
-        /// @param a the quadratic coefficient
-        /// @param b the linear coefficient
-        /// @param c the constant coefficient
-        /// @param min the current minimum
-        /// @param max the current maximum
+        /// @param a     the quadratic coefficient
+        /// @param b     the linear coefficient
+        /// @param c     the constant coefficient
+        /// @param min   the current minimum
+        /// @param max   the current maximum
         /// @param xAxis whether to sample x-values
         /// @return the updated range as minimum and maximum
         private double @Unmodifiable [] addExtrema(double a, double b, double c, double min, double max, boolean xAxis) {
@@ -1178,10 +1188,10 @@ public final class M3ShapeMorph {
         ///
         /// @param centerX the circle center x-coordinate
         /// @param centerY the circle center y-coordinate
-        /// @param x0 the start x-coordinate
-        /// @param y0 the start y-coordinate
-        /// @param x1 the end x-coordinate
-        /// @param y1 the end y-coordinate
+        /// @param x0      the start x-coordinate
+        /// @param y0      the start y-coordinate
+        /// @param x1      the end x-coordinate
+        /// @param y1      the end y-coordinate
         /// @return the cubic arc
         private static Cubic circularArc(double centerX, double centerY, double x0, double y0, double x1, double y1) {
             Point p0d = directionVector(x0 - centerX, y0 - centerY);
@@ -1209,7 +1219,7 @@ public final class M3ShapeMorph {
 
     /// A pair of cubics from a split operation.
     ///
-    /// @param first the first cubic
+    /// @param first  the first cubic
     /// @param second the second cubic
     @NotNullByDefault
     private record CubicSplit(Cubic first, Cubic second) {
@@ -1272,10 +1282,10 @@ public final class M3ShapeMorph {
 
             /// Creates a corner.
             ///
-            /// @param cubics the corner cubics
-            /// @param vertex the source vertex
+            /// @param cubics        the corner cubics
+            /// @param vertex        the source vertex
             /// @param roundedCenter the rounded center
-            /// @param convex whether the corner is convex
+            /// @param convex        whether the corner is convex
             private Corner(List<Cubic> cubics, Point vertex, Point roundedCenter, boolean convex) {
                 super(cubics);
                 this.vertex = vertex;
@@ -1321,8 +1331,8 @@ public final class M3ShapeMorph {
         /// Creates a rounded polygon from features.
         ///
         /// @param features the polygon features
-        /// @param centerX the polygon center x-coordinate
-        /// @param centerY the polygon center y-coordinate
+        /// @param centerX  the polygon center x-coordinate
+        /// @param centerY  the polygon center y-coordinate
         private RoundedPolygon(List<Feature> features, double centerX, double centerY) {
             this.features = List.copyOf(features);
             this.centerX = centerX;
@@ -1333,11 +1343,11 @@ public final class M3ShapeMorph {
 
         /// Creates a regular rounded polygon.
         ///
-        /// @param vertices the vertex count
-        /// @param radius the vertex radius
-        /// @param centerX the center x-coordinate
-        /// @param centerY the center y-coordinate
-        /// @param rounding the default corner rounding
+        /// @param vertices          the vertex count
+        /// @param radius            the vertex radius
+        /// @param centerX           the center x-coordinate
+        /// @param centerY           the center y-coordinate
+        /// @param rounding          the default corner rounding
         /// @param perVertexRounding the optional per-vertex rounding list
         /// @return the rounded polygon
         private static RoundedPolygon regular(
@@ -1365,10 +1375,10 @@ public final class M3ShapeMorph {
         /// Creates a rounded star polygon.
         ///
         /// @param verticesPerRadius the number of outer and inner vertices
-        /// @param radius the outer radius
-        /// @param innerRadius the inner radius
-        /// @param rounding the outer rounding
-        /// @param innerRounding the optional inner rounding
+        /// @param radius            the outer radius
+        /// @param innerRadius       the inner radius
+        /// @param rounding          the outer rounding
+        /// @param innerRounding     the optional inner rounding
         /// @return the rounded polygon
         private static RoundedPolygon star(
                 int verticesPerRadius,
@@ -1403,7 +1413,7 @@ public final class M3ShapeMorph {
 
         /// Creates a pill polygon.
         ///
-        /// @param width the pill width
+        /// @param width  the pill width
         /// @param height the pill height
         /// @return the rounded polygon
         private static RoundedPolygon pill(double width, double height) {
@@ -1429,11 +1439,11 @@ public final class M3ShapeMorph {
 
         /// Creates a rounded polygon from raw vertices.
         ///
-        /// @param vertices the raw xy vertex array
-        /// @param rounding the default corner rounding
+        /// @param vertices          the raw xy vertex array
+        /// @param rounding          the default corner rounding
         /// @param perVertexRounding the optional per-vertex rounding list
-        /// @param centerX the center x-coordinate
-        /// @param centerY the center y-coordinate
+        /// @param centerX           the center x-coordinate
+        /// @param centerY           the center y-coordinate
         /// @return the rounded polygon
         private static RoundedPolygon fromVertices(
                 double[] vertices,
@@ -1619,7 +1629,7 @@ public final class M3ShapeMorph {
 
         /// Calculates axis-aligned bounds.
         ///
-        /// @param bounds the destination bounds
+        /// @param bounds      the destination bounds
         /// @param approximate whether to use approximate cubic bounds
         private void calculateBounds(double[] bounds, boolean approximate) {
             double minX = Double.MAX_VALUE;
@@ -1661,7 +1671,7 @@ public final class M3ShapeMorph {
     /// Per-side cut adjustment values.
     ///
     /// @param roundCutRatio the round-cut ratio
-    /// @param cutRatio the smoothing cut ratio
+    /// @param cutRatio      the smoothing cut ratio
     @NotNullByDefault
     private record CutAdjust(double roundCutRatio, double cutRatio) {
     }
@@ -1699,8 +1709,8 @@ public final class M3ShapeMorph {
         /// Creates a rounded corner helper.
         ///
         /// @param previous the previous vertex
-        /// @param corner the corner vertex
-        /// @param next the next vertex
+        /// @param corner   the corner vertex
+        /// @param next     the next vertex
         /// @param rounding the rounding parameters
         private RoundedCorner(Point previous, Point corner, Point next, CornerRounding rounding) {
             this.previous = previous;
@@ -1786,12 +1796,12 @@ public final class M3ShapeMorph {
 
         /// Computes a flanking curve between a side and a circular segment.
         ///
-        /// @param actualRoundCut the active round cut
-        /// @param actualSmoothing the active smoothing amount
-        /// @param sideStart the side start point
-        /// @param circleIntersection the first circle intersection
+        /// @param actualRoundCut          the active round cut
+        /// @param actualSmoothing         the active smoothing amount
+        /// @param sideStart               the side start point
+        /// @param circleIntersection      the first circle intersection
         /// @param otherCircleIntersection the opposite circle intersection
-        /// @param actualRadius the active corner radius
+        /// @param actualRadius            the active corner radius
         /// @return the flanking cubic
         private Cubic computeFlankingCurve(
                 double actualRoundCut,
@@ -1820,9 +1830,9 @@ public final class M3ShapeMorph {
 
         /// Returns the intersection point of two infinite lines.
         ///
-        /// @param point0 the first line point
+        /// @param point0     the first line point
         /// @param direction0 the first line direction
-        /// @param point1 the second line point
+        /// @param point1     the second line point
         /// @param direction1 the second line direction
         /// @return the intersection point, or `null` if the lines are effectively parallel
         private @Nullable Point lineIntersection(Point point0, Point direction0, Point point1, Point direction1) {
@@ -1853,9 +1863,9 @@ public final class M3ShapeMorph {
 
         /// Creates a measured polygon.
         ///
-        /// @param measurer the cubic measurer
-        /// @param features the progressable features
-        /// @param sourceCubics the source cubics
+        /// @param measurer        the cubic measurer
+        /// @param features        the progressable features
+        /// @param sourceCubics    the source cubics
         /// @param outlineProgress the outline progress boundaries
         private MeasuredPolygon(
                 Measurer measurer,
@@ -1951,7 +1961,7 @@ public final class M3ShapeMorph {
         /// Measures a rounded polygon.
         ///
         /// @param measurer the cubic measurer
-        /// @param polygon the polygon to measure
+        /// @param polygon  the polygon to measure
         /// @return the measured polygon
         private static MeasuredPolygon measure(Measurer measurer, RoundedPolygon polygon) {
             List<Cubic> cubics = new ArrayList<>();
@@ -1996,7 +2006,7 @@ public final class M3ShapeMorph {
 
     /// A feature and representative cubic index.
     ///
-    /// @param feature the feature
+    /// @param feature    the feature
     /// @param cubicIndex the cubic index
     @NotNullByDefault
     private record FeatureCubicIndex(Feature feature, int cubicIndex) {
@@ -2022,9 +2032,9 @@ public final class M3ShapeMorph {
 
         /// Creates a measured cubic.
         ///
-        /// @param cubic the cubic
+        /// @param cubic         the cubic
         /// @param startProgress the start outline progress
-        /// @param endProgress the end outline progress
+        /// @param endProgress   the end outline progress
         private MeasuredCubic(Measurer measurer, Cubic cubic, double startProgress, double endProgress) {
             this.measurer = measurer;
             this.cubic = cubic;
@@ -2054,7 +2064,7 @@ public final class M3ShapeMorph {
     /// A cut segment and the next measured cubic.
     ///
     /// @param segment the emitted segment
-    /// @param next the next segment, or `null`
+    /// @param next    the next segment, or `null`
     @NotNullByDefault
     private record CutStep(MeasuredCubic segment, @Nullable MeasuredCubic next) {
     }
@@ -2070,7 +2080,7 @@ public final class M3ShapeMorph {
 
         /// Finds the cubic parameter that reaches the requested measured distance.
         ///
-        /// @param cubic the cubic
+        /// @param cubic   the cubic
         /// @param measure the target measured distance
         /// @return the cubic parameter
         double findCutPoint(Cubic cubic, double measure);
@@ -2110,7 +2120,7 @@ public final class M3ShapeMorph {
 
         /// Finds the cubic parameter that reaches a target angular distance.
         ///
-        /// @param cubic the cubic
+        /// @param cubic   the cubic
         /// @param measure the target angular distance
         /// @return the cubic parameter
         @Override
@@ -2168,7 +2178,7 @@ public final class M3ShapeMorph {
         ///
         /// @param xValues the source values
         /// @param yValues the target values
-        /// @param x the source progress
+        /// @param x       the source progress
         /// @return the mapped progress
         private static double linearMap(double[] xValues, double[] yValues, double x) {
             double progress = positiveModulo(x, 1.0);
@@ -2192,8 +2202,8 @@ public final class M3ShapeMorph {
         /// Returns whether a progress value is inside a cyclic range.
         ///
         /// @param progress the progress value
-        /// @param from the range start
-        /// @param to the range end
+        /// @param from     the range start
+        /// @param to       the range end
         /// @return whether the progress is in range
         private static boolean progressInRange(double progress, double from, double to) {
             return to >= from ? progress >= from && progress <= to : progress >= from || progress <= to;

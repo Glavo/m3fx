@@ -1,7 +1,7 @@
 .m3-navigation-rail {
     -fx-background-color: -m3-color-surface;
     -fx-padding: 16px 0px 16px 0px;
-    -m3-collapsed-container-width: 80px;
+    -m3-collapsed-container-width: 96px;
     -m3-expanded-minimum-container-width: 220px;
     -m3-expanded-container-width: 280px;
     -m3-expanded-maximum-container-width: 360px;

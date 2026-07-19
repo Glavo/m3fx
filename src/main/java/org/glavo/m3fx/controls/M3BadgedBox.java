@@ -42,73 +42,6 @@ public final class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    /// The node over which the badge is positioned.
-    ///
-    /// The default value is `null`. Replacing or clearing the content updates layout and accessibility children.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
-
-    /// The badge positioned over the content.
-    ///
-    /// The default value is `null`. Replacing or clearing the badge updates layout and accessibility children.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
-
-    /// The alignment of the badge within this container.
-    ///
-    /// The default value is [Pos#TOP_RIGHT]. Horizontal left and right positions are interpreted as logical start
-    /// and end and therefore mirror with the effective node orientation. The property never reports `null`; a
-    /// direct `null` assignment restores the default.
-    ///
-    /// @defaultValue [Pos#TOP_RIGHT]
-    private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
-        /// Restores the default badge alignment when the property is set to null.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(Pos.TOP_RIGHT);
-                return;
-            }
-            requestLayout();
-        }
-    };
-
-    /// The horizontal translation applied after badge alignment, in logical pixels.
-    ///
-    /// The default value is `0.0`. Positive values move the badge toward increasing local X coordinates.
-    ///
-    /// @defaultValue `0.0`
-    private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
-        /// Updates badge placement after the offset changes.
-        @Override
-        protected void invalidated() {
-            requestLayout();
-        }
-    };
-
-    /// The vertical translation applied after badge alignment, in logical pixels.
-    ///
-    /// The default value is `0.0`. Positive values move the badge toward increasing local Y coordinates.
-    ///
-    /// @defaultValue `0.0`
-    private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
-        /// Updates badge placement after the offset changes.
-        @Override
-        protected void invalidated() {
-            requestLayout();
-        }
-    };
-
-    /// Notifies accessibility clients when focus moves between content and badge children.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
-                    this,
-                    getContent(),
-                    getBadge()
-            ));
-
     /// Creates an empty badged box with top-end alignment and zero offsets.
     public M3BadgedBox() {
         this(null, null);
@@ -124,12 +57,19 @@ public final class M3BadgedBox extends Control {
     /// Creates a badged box with the specified content and badge.
     ///
     /// @param content the content node, or `null` for no content
-    /// @param badge the badge node, or `null` for no badge
+    /// @param badge   the badge node, or `null` for no badge
     public M3BadgedBox(@Nullable Node content, @Nullable M3Badge badge) {
         initialize();
         setContent(content);
         setBadge(badge);
     }
+
+    /// The node over which the badge is positioned.
+    ///
+    /// The default value is `null`. Replacing or clearing the content updates layout and accessibility children.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
     /// Returns the optional content node.
     ///
@@ -145,9 +85,21 @@ public final class M3BadgedBox extends Control {
         this.content.set(content);
     }
 
+    /// Returns the observable property that stores the optional content node.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the content property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
+
+    /// The badge positioned over the content.
+    ///
+    /// The default value is `null`. Replacing or clearing the badge updates layout and accessibility children.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
     /// Returns the optional badge.
     ///
@@ -163,9 +115,33 @@ public final class M3BadgedBox extends Control {
         this.badge.set(badge);
     }
 
+    /// Returns the observable property that stores the optional badge.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the badge property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
+
+    /// The alignment of the badge within this container.
+    ///
+    /// The default value is [Pos#TOP_RIGHT]. Horizontal left and right positions are interpreted as logical start
+    /// and end and therefore mirror with the effective node orientation. A direct `null` assignment restores the
+    /// default; bound values must be non-null.
+    ///
+    /// @defaultValue [Pos#TOP_RIGHT]
+    private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
+        /// Restores the default badge alignment when the property is set to null.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(Pos.TOP_RIGHT);
+                return;
+            }
+            requestLayout();
+        }
+    };
 
     /// Returns the badge alignment inside this container.
     ///
@@ -188,9 +164,28 @@ public final class M3BadgedBox extends Control {
         this.badgeAlignment.set(Objects.requireNonNull(badgeAlignment, "badgeAlignment"));
     }
 
+    /// Returns the observable property that stores the badge alignment.
+    ///
+    /// The property can be observed and bound. Its default value is [Pos#TOP_RIGHT], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the badge alignment property
     public final ObjectProperty<Pos> badgeAlignmentProperty() {
         return badgeAlignment;
     }
+
+    /// The horizontal translation applied after badge alignment, in logical pixels.
+    ///
+    /// The default value is `0.0`. Positive values move the badge toward increasing local X coordinates.
+    ///
+    /// @defaultValue `0.0`
+    private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
+        /// Updates badge placement after the offset changes.
+        @Override
+        protected void invalidated() {
+            requestLayout();
+        }
+    };
 
     /// Returns the horizontal badge translation after alignment is applied.
     ///
@@ -206,9 +201,27 @@ public final class M3BadgedBox extends Control {
         this.badgeOffsetX.set(badgeOffsetX);
     }
 
+    /// Returns the observable property that stores the horizontal badge offset.
+    ///
+    /// The property can be observed and bound. Its default value is `0.0` logical pixels.
+    ///
+    /// @return the horizontal badge offset property
     public final DoubleProperty badgeOffsetXProperty() {
         return badgeOffsetX;
     }
+
+    /// The vertical translation applied after badge alignment, in logical pixels.
+    ///
+    /// The default value is `0.0`. Positive values move the badge toward increasing local Y coordinates.
+    ///
+    /// @defaultValue `0.0`
+    private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
+        /// Updates badge placement after the offset changes.
+        @Override
+        protected void invalidated() {
+            requestLayout();
+        }
+    };
 
     /// Returns the vertical badge translation after alignment is applied.
     ///
@@ -224,9 +237,22 @@ public final class M3BadgedBox extends Control {
         this.badgeOffsetY.set(badgeOffsetY);
     }
 
+    /// Returns the observable property that stores the vertical badge offset.
+    ///
+    /// The property can be observed and bound. Its default value is `0.0` logical pixels.
+    ///
+    /// @return the vertical badge offset property
     public final DoubleProperty badgeOffsetYProperty() {
         return badgeOffsetY;
     }
+
+    /// Notifies accessibility clients when focus moves between content and badge children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
+                    this,
+                    getContent(),
+                    getBadge()
+            ));
 
     /// Returns the user-agent stylesheet for M3FX badge containers.
     @Override

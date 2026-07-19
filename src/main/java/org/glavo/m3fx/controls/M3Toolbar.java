@@ -97,6 +97,18 @@ public final class M3Toolbar extends Control {
     /// The mutable toolbar item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
+    /// Notifies accessibility clients when focus moves between toolbar actions.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
+
+    /// Updates accessibility and layout after toolbar item changes.
+    private final ListChangeListener<Node> itemsListener = this::handleItemsChanged;
+
+    /// Creates an empty horizontal floating toolbar with the standard color mapping.
+    public M3Toolbar() {
+        initialize();
+    }
+
     /// The toolbar visual variant.
     ///
     /// Assigning `null` through the property restores [M3ToolbarVariant#FLOATING].
@@ -116,6 +128,30 @@ public final class M3Toolbar extends Control {
                 }
             };
 
+    /// Returns the toolbar visual variant.
+    ///
+    /// @return the toolbar visual variant
+    public final M3ToolbarVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the toolbar visual variant.
+    ///
+    /// @param variant the toolbar visual variant
+    /// @throws NullPointerException if `variant` is `null`
+    public final void setVariant(M3ToolbarVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the `variant` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `FLOATING`.
+    ///
+    /// @return the `variant` property
+    public final ObjectProperty<M3ToolbarVariant> variantProperty() {
+        return variant;
+    }
+
     /// The toolbar color mapping.
     ///
     /// Assigning `null` through the property restores [M3ToolbarColorStyle#STANDARD].
@@ -133,6 +169,30 @@ public final class M3Toolbar extends Control {
                     updateColorStylePseudoClass();
                 }
             };
+
+    /// Returns the toolbar color style.
+    ///
+    /// @return the toolbar color style
+    public final M3ToolbarColorStyle getColorStyle() {
+        return colorStyle.get();
+    }
+
+    /// Sets the toolbar color style.
+    ///
+    /// @param colorStyle the toolbar color style
+    /// @throws NullPointerException if `colorStyle` is `null`
+    public final void setColorStyle(M3ToolbarColorStyle colorStyle) {
+        this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
+    }
+
+    /// Returns the `colorStyle` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `STANDARD`.
+    ///
+    /// @return the `colorStyle` property
+    public final ObjectProperty<M3ToolbarColorStyle> colorStyleProperty() {
+        return colorStyle;
+    }
 
     /// The toolbar layout orientation.
     ///
@@ -153,106 +213,6 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The horizontal toolbar container height in logical pixels.
-    ///
-    /// @defaultValue `64.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The vertical toolbar container width in logical pixels.
-    ///
-    /// @defaultValue `64.0`
-    private @Nullable StyleableDoubleProperty containerWidth;
-
-    /// The square toolbar item-slot size in logical pixels.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty itemSlotSize;
-
-    /// The floating toolbar content padding in logical pixels.
-    ///
-    /// @defaultValue `8.0`
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// The docked toolbar leading and trailing padding in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty dockedContentPadding;
-
-    /// The floating toolbar item spacing in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty itemSpacing;
-
-    /// The preferred maximum docked-toolbar item spacing in logical pixels.
-    ///
-    /// @defaultValue `32.0`
-    private @Nullable StyleableDoubleProperty dockedMaxItemSpacing;
-
-    /// Notifies accessibility clients when focus moves between toolbar actions.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
-
-    /// Updates accessibility and layout after toolbar item changes.
-    private final ListChangeListener<Node> itemsListener = this::handleItemsChanged;
-
-    /// Creates an empty horizontal floating toolbar with the standard color mapping.
-    public M3Toolbar() {
-        initialize();
-    }
-
-    /// Returns the mutable toolbar item list.
-    ///
-    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
-    /// traversal, and accessibility immediately. Nodes become children of the toolbar and must satisfy normal
-    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
-    ///
-    /// @return the live mutable toolbar item list
-    public final ObservableList<Node> getItems() {
-        return items;
-    }
-
-
-
-
-
-    /// Returns the toolbar visual variant.
-    ///
-    /// @return the toolbar visual variant
-    public final M3ToolbarVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the toolbar visual variant.
-    ///
-    /// @param variant the toolbar visual variant
-    /// @throws NullPointerException if `variant` is `null`
-    public final void setVariant(M3ToolbarVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    public final ObjectProperty<M3ToolbarVariant> variantProperty() {
-        return variant;
-    }
-
-    /// Returns the toolbar color style.
-    ///
-    /// @return the toolbar color style
-    public final M3ToolbarColorStyle getColorStyle() {
-        return colorStyle.get();
-    }
-
-    /// Sets the toolbar color style.
-    ///
-    /// @param colorStyle the toolbar color style
-    /// @throws NullPointerException if `colorStyle` is `null`
-    public final void setColorStyle(M3ToolbarColorStyle colorStyle) {
-        this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
-    }
-
-    public final ObjectProperty<M3ToolbarColorStyle> colorStyleProperty() {
-        return colorStyle;
-    }
-
     /// Returns the toolbar layout orientation.
     ///
     /// @return the toolbar layout orientation
@@ -268,9 +228,19 @@ public final class M3Toolbar extends Control {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
 
+    /// Returns the `orientation` property.
+    ///
+    /// The returned property is observable and bindable. Its default value is `HORIZONTAL`.
+    ///
+    /// @return the `orientation` property
     public final ObjectProperty<Orientation> orientationProperty() {
         return orientation;
     }
+
+    /// The horizontal toolbar container height in logical pixels.
+    ///
+    /// @defaultValue `64.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// Returns the horizontal toolbar container height token.
     ///
@@ -287,6 +257,12 @@ public final class M3Toolbar extends Control {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the `containerHeight` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `64.0` logical pixels.
+    ///
+    /// @return the `containerHeight` property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -297,6 +273,11 @@ public final class M3Toolbar extends Control {
         }
         return containerHeight;
     }
+
+    /// The vertical toolbar container width in logical pixels.
+    ///
+    /// @defaultValue `64.0`
+    private @Nullable StyleableDoubleProperty containerWidth;
 
     /// Returns the vertical toolbar container width token.
     ///
@@ -313,6 +294,12 @@ public final class M3Toolbar extends Control {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
+    /// Returns the `containerWidth` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `64.0` logical pixels.
+    ///
+    /// @return the `containerWidth` property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = createStyleableDoubleProperty(
@@ -323,6 +310,11 @@ public final class M3Toolbar extends Control {
         }
         return containerWidth;
     }
+
+    /// The square toolbar item-slot size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty itemSlotSize;
 
     /// Returns the toolbar item slot size token.
     ///
@@ -339,6 +331,12 @@ public final class M3Toolbar extends Control {
         itemSlotSizeProperty().set(M3Css.nonNegative(itemSlotSize, "itemSlotSize"));
     }
 
+    /// Returns the `itemSlotSize` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `48.0` logical pixels.
+    ///
+    /// @return the `itemSlotSize` property
     public final StyleableDoubleProperty itemSlotSizeProperty() {
         if (itemSlotSize == null) {
             itemSlotSize = createStyleableDoubleProperty(
@@ -349,6 +347,11 @@ public final class M3Toolbar extends Control {
         }
         return itemSlotSize;
     }
+
+    /// The floating toolbar content padding in logical pixels.
+    ///
+    /// @defaultValue `8.0`
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Returns the toolbar content padding token.
     ///
@@ -365,6 +368,12 @@ public final class M3Toolbar extends Control {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
+    /// Returns the `contentPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `8.0` logical pixels.
+    ///
+    /// @return the `contentPadding` property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = createStyleableDoubleProperty(
@@ -375,6 +384,11 @@ public final class M3Toolbar extends Control {
         }
         return contentPadding;
     }
+
+    /// The docked toolbar leading and trailing padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty dockedContentPadding;
 
     /// Returns the leading and trailing padding token used by docked toolbars.
     ///
@@ -391,6 +405,12 @@ public final class M3Toolbar extends Control {
         dockedContentPaddingProperty().set(M3Css.nonNegative(dockedContentPadding, "dockedContentPadding"));
     }
 
+    /// Returns the `dockedContentPadding` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `16.0` logical pixels.
+    ///
+    /// @return the `dockedContentPadding` property
     public final StyleableDoubleProperty dockedContentPaddingProperty() {
         if (dockedContentPadding == null) {
             dockedContentPadding = createStyleableDoubleProperty(
@@ -401,6 +421,11 @@ public final class M3Toolbar extends Control {
         }
         return dockedContentPadding;
     }
+
+    /// The floating toolbar item spacing in logical pixels.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Returns the toolbar item spacing token.
     ///
@@ -417,6 +442,12 @@ public final class M3Toolbar extends Control {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
+    /// Returns the `itemSpacing` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `4.0` logical pixels.
+    ///
+    /// @return the `itemSpacing` property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = createStyleableDoubleProperty(
@@ -427,6 +458,11 @@ public final class M3Toolbar extends Control {
         }
         return itemSpacing;
     }
+
+    /// The preferred maximum docked-toolbar item spacing in logical pixels.
+    ///
+    /// @defaultValue `32.0`
+    private @Nullable StyleableDoubleProperty dockedMaxItemSpacing;
 
     /// Returns the preferred maximum spacing token used between docked toolbar items.
     ///
@@ -445,6 +481,12 @@ public final class M3Toolbar extends Control {
         dockedMaxItemSpacingProperty().set(M3Css.nonNegative(dockedMaxItemSpacing, "dockedMaxItemSpacing"));
     }
 
+    /// Returns the `dockedMaxItemSpacing` property.
+    ///
+    /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
+    /// default value of `32.0` logical pixels.
+    ///
+    /// @return the `dockedMaxItemSpacing` property
     public final StyleableDoubleProperty dockedMaxItemSpacingProperty() {
         if (dockedMaxItemSpacing == null) {
             dockedMaxItemSpacing = createStyleableDoubleProperty(
@@ -454,6 +496,17 @@ public final class M3Toolbar extends Control {
             );
         }
         return dockedMaxItemSpacing;
+    }
+
+    /// Returns the mutable toolbar item list.
+    ///
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
+    /// traversal, and accessibility immediately. Nodes become children of the toolbar and must satisfy normal
+    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    ///
+    /// @return the live mutable toolbar item list
+    public final ObservableList<Node> getItems() {
+        return items;
     }
 
     /// Returns the user-agent stylesheet for M3FX toolbars.

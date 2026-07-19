@@ -19,15 +19,15 @@ import java.util.Objects;
 
 /// Default immutable implementation of [M3TokenSet].
 ///
-/// @param profile the profile that produced this token set
-/// @param density the density used to derive component metrics
-/// @param colorTokens the color tokens
+/// @param profile          the profile that produced this token set
+/// @param density          the density used to derive component metrics
+/// @param colorTokens      the color tokens
 /// @param typographyTokens the typography tokens
-/// @param shapeTokens the shape tokens
-/// @param elevationTokens the elevation tokens
-/// @param motionTokens the motion tokens
+/// @param shapeTokens      the shape tokens
+/// @param elevationTokens  the elevation tokens
+/// @param motionTokens     the motion tokens
 /// @param stateLayerTokens the state layer tokens
-/// @param componentTokens the component tokens
+/// @param componentTokens  the component tokens
 @NotNullByDefault
 public record M3TokenSetImpl(
         M3Profile profile,
@@ -40,7 +40,9 @@ public record M3TokenSetImpl(
         M3StateLayerTokens stateLayerTokens,
         M3ComponentTokens componentTokens
 ) implements M3TokenSet {
-    /// Creates a token set implementation.
+    /// Creates a complete token set.
+    ///
+    /// @throws NullPointerException if any component is `null`
     public M3TokenSetImpl {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(density, "density");

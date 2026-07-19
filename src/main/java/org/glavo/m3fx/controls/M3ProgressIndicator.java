@@ -80,58 +80,6 @@ public final class M3ProgressIndicator extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The current progress value.
-    ///
-    /// Values in the inclusive range `0.0` to `1.0` represent determinate completion. Values greater than `1.0`
-    /// are normalized to `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS].
-    ///
-    /// @defaultValue [INDETERMINATE_PROGRESS]
-    private @Nullable DoubleProperty progress;
-
-    /// The circular track and active-indicator stroke thickness, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-track-thickness`.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty trackThickness;
-
-    /// The diameter used by flat circular geometry, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`.
-    ///
-    /// @defaultValue `40.0`
-    private @Nullable StyleableDoubleProperty indicatorSize;
-
-    /// The diameter used by expressive wavy geometry, in logical pixels.
-    ///
-    /// This size applies while [waveAmplitude] is positive. The value must be finite and non-negative and is
-    /// styleable through `-m3-wave-indicator-size`.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty waveIndicatorSize;
-
-    /// The expressive wave amplitude, in logical pixels.
-    ///
-    /// A value of `0.0` selects flat geometry. The value must be finite and non-negative and is styleable through
-    /// `-m3-wave-amplitude`.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty waveAmplitude;
-
-    /// The circular wave length, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-wavelength`.
-    ///
-    /// @defaultValue `15.0`
-    private @Nullable StyleableDoubleProperty wavelength;
-
-    /// The visual gap between active progress and inactive track, in logical pixels.
-    ///
-    /// The value must be finite and non-negative and is styleable through `-m3-track-gap`.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty trackGap;
-
     /// Creates an indeterminate progress indicator.
     public M3ProgressIndicator() {
         initialize();
@@ -146,6 +94,14 @@ public final class M3ProgressIndicator extends Control {
         initialize();
         setProgress(progress);
     }
+
+    /// The current progress value.
+    ///
+    /// Values in the inclusive range `0.0` to `1.0` represent determinate completion. Values greater than `1.0`
+    /// are normalized to `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS].
+    ///
+    /// @defaultValue [INDETERMINATE_PROGRESS]
+    private @Nullable DoubleProperty progress;
 
     /// Returns the current progress value.
     ///
@@ -163,6 +119,14 @@ public final class M3ProgressIndicator extends Control {
         progressProperty().set(progress);
     }
 
+    /// Returns the observable, bindable progress property.
+    ///
+    /// The property is [INDETERMINATE_PROGRESS] by default. Directly assigned values above `1.0` are normalized to
+    /// `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS]. A binding source must provide
+    /// either [INDETERMINATE_PROGRESS] or a value in `0.0..1.0`. Valid changes update accessibility,
+    /// pseudo-class state, and layout.
+    ///
+    /// @return the progress property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -171,6 +135,9 @@ public final class M3ProgressIndicator extends Control {
                 protected void invalidated() {
                     double normalizedProgress = normalizeProgress(get());
                     if (Double.compare(normalizedProgress, get()) != 0) {
+                        if (isBound()) {
+                            return;
+                        }
                         set(normalizedProgress);
                         return;
                     }
@@ -197,12 +164,12 @@ public final class M3ProgressIndicator extends Control {
         return progress;
     }
 
-    /// Returns whether the current progress value is indeterminate.
+    /// The circular track and active-indicator stroke thickness, in logical pixels.
     ///
-    /// @return `true` when the current progress value is indeterminate
-    public final boolean isIndeterminate() {
-        return getProgress() == INDETERMINATE_PROGRESS;
-    }
+    /// The value must be finite and non-negative and is styleable through `-m3-track-thickness`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty trackThickness;
 
     /// Returns the circular indicator stroke thickness token.
     ///
@@ -219,6 +186,12 @@ public final class M3ProgressIndicator extends Control {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable track-thickness property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-track-thickness`.
+    ///
+    /// @return the track-thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -231,6 +204,13 @@ public final class M3ProgressIndicator extends Control {
         }
         return trackThickness;
     }
+
+    /// The diameter used by flat circular geometry, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty indicatorSize;
 
     /// Returns the circular indicator size token.
     ///
@@ -247,6 +227,12 @@ public final class M3ProgressIndicator extends Control {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable flat-indicator size property.
+    ///
+    /// The property is `40.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-indicator-size`.
+    ///
+    /// @return the flat-indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -259,6 +245,14 @@ public final class M3ProgressIndicator extends Control {
         }
         return indicatorSize;
     }
+
+    /// The diameter used by expressive wavy geometry, in logical pixels.
+    ///
+    /// This size applies while [#waveAmplitudeProperty()] is positive. The value must be finite and non-negative and
+    /// is styleable through `-m3-wave-indicator-size`.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty waveIndicatorSize;
 
     /// Returns the circular wavy indicator size token.
     ///
@@ -275,6 +269,12 @@ public final class M3ProgressIndicator extends Control {
         waveIndicatorSizeProperty().set(M3Css.nonNegative(waveIndicatorSize, "waveIndicatorSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable wavy-indicator size property.
+    ///
+    /// The property is `48.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-wave-indicator-size`. It is used while [#getWaveAmplitude()] is positive.
+    ///
+    /// @return the wavy-indicator size property
     public final StyleableDoubleProperty waveIndicatorSizeProperty() {
         if (waveIndicatorSize == null) {
             waveIndicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -287,6 +287,14 @@ public final class M3ProgressIndicator extends Control {
         }
         return waveIndicatorSize;
     }
+
+    /// The expressive wave amplitude, in logical pixels.
+    ///
+    /// A value of `0.0` selects flat geometry. The value must be finite and non-negative and is styleable through
+    /// `-m3-wave-amplitude`.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty waveAmplitude;
 
     /// Returns the wavy progress amplitude token.
     ///
@@ -303,6 +311,12 @@ public final class M3ProgressIndicator extends Control {
         waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable wave-amplitude property.
+    ///
+    /// The property is `0.0` logical pixels by default, which selects flat geometry. It accepts only finite
+    /// non-negative values and is styleable through `-m3-wave-amplitude`.
+    ///
+    /// @return the wave-amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
             waveAmplitude = M3Css.nonNegativeStyleableDoubleProperty(
@@ -315,6 +329,13 @@ public final class M3ProgressIndicator extends Control {
         }
         return waveAmplitude;
     }
+
+    /// The circular wave length, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-wavelength`.
+    ///
+    /// @defaultValue `15.0`
+    private @Nullable StyleableDoubleProperty wavelength;
 
     /// Returns the wavy progress wavelength token.
     ///
@@ -331,6 +352,12 @@ public final class M3ProgressIndicator extends Control {
         wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable wavelength property.
+    ///
+    /// The property is `15.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-wavelength`.
+    ///
+    /// @return the wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
             wavelength = M3Css.nonNegativeStyleableDoubleProperty(
@@ -343,6 +370,13 @@ public final class M3ProgressIndicator extends Control {
         }
         return wavelength;
     }
+
+    /// The visual gap between active progress and inactive track, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-track-gap`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty trackGap;
 
     /// Returns the gap token between active progress and track.
     ///
@@ -359,6 +393,12 @@ public final class M3ProgressIndicator extends Control {
         trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable track-gap property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-track-gap`.
+    ///
+    /// @return the track-gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
             trackGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -370,6 +410,13 @@ public final class M3ProgressIndicator extends Control {
             );
         }
         return trackGap;
+    }
+
+    /// Returns whether the current progress value is indeterminate.
+    ///
+    /// @return `true` when the current progress value is indeterminate
+    public final boolean isIndeterminate() {
+        return getProgress() == INDETERMINATE_PROGRESS;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -395,7 +442,7 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns accessibility attributes for the progress value.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`

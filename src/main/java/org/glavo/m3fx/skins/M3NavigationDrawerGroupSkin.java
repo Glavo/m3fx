@@ -26,6 +26,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
+///
+/// The skin lays out the group header above an optional child list and animates the child viewport when expanded
+/// state changes. Collapsed children are removed from the presented viewport after the transition so they do not
+/// remain reachable through picking or focus traversal.
 @NotNullByDefault
 public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDrawerGroup> {
     /// The spacing between adjacent navigation drawer destination rows.

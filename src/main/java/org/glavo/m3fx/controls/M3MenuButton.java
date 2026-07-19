@@ -35,12 +35,12 @@ import java.util.Objects;
 /// A Material Design 3 menu button backed by an M3FX menu popup.
 ///
 /// `M3MenuButton` owns one [M3Menu] and presents it in an auto-hiding popup associated with the button's window.
-/// [getMenu] always returns the same menu instance; [getItems] is a convenience view of that menu's live content
+/// [#getMenu()] always returns the same menu instance; [#getItems()] is a convenience view of that menu's live content
 /// list. Firing an enabled button toggles the popup and also delivers the button's action event.
 ///
-/// [showMenu] is non-blocking and has no effect until the button belongs to a showing window or when the popup is
+/// [#showMenu()] is non-blocking and has no effect until the button belongs to a showing window or when the popup is
 /// already visible. The popup hides when an item fires, the user dismisses it, the owner becomes unreachable, or
-/// [hideMenu] is called. Keyboard dismissal and item activation return focus to the button; a direct [hideMenu]
+/// [#hideMenu()] is called. Keyboard dismissal and item activation return focus to the button; a direct [#hideMenu()]
 /// call does not request focus.
 ///
 /// ```java
@@ -78,15 +78,6 @@ public final class M3MenuButton extends M3ButtonBase {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, menu, M3Stylesheets.controlStylesheet("menu.css"));
 
-    /// Whether this menu button popup is currently showing.
-    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing") {
-        /// Updates the showing pseudo-class used by owner-specific component styling.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SHOWING_PSEUDO_CLASS, get());
-        }
-    };
-
     /// The reusable menu popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(menu);
 
@@ -122,12 +113,40 @@ public final class M3MenuButton extends M3ButtonBase {
 
     /// Creates a menu button with text and menu items.
     ///
-    /// @param text the button text
+    /// @param text  the button text
     /// @param items the initial non-null menu content nodes
     /// @throws NullPointerException if `items` or any element of `items` is `null`
     public M3MenuButton(String text, Node... items) {
         this(text);
         getItems().addAll(items);
+    }
+
+    /// Whether this menu button popup is currently showing.
+    ///
+    /// @defaultValue `false`
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing") {
+        /// Updates the showing pseudo-class used by owner-specific component styling.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SHOWING_PSEUDO_CLASS, get());
+        }
+    };
+
+    /// Returns whether the menu popup is currently showing.
+    ///
+    /// @return `true` when the menu popup is showing
+    public final boolean isShowing() {
+        return showing.get();
+    }
+
+    /// Returns the read-only observable property that reports popup visibility.
+    ///
+    /// The property is `false` by default, becomes `true` after the popup is shown successfully, and returns to
+    /// `false` when the popup's hidden notification is received.
+    ///
+    /// @return the read-only showing property
+    public final ReadOnlyBooleanProperty showingProperty() {
+        return showing.getReadOnlyProperty();
     }
 
     /// Returns the menu owned and displayed by this button.
@@ -145,17 +164,6 @@ public final class M3MenuButton extends M3ButtonBase {
     /// @return the owned menu's live mutable content list
     public final ObservableList<Node> getItems() {
         return menu.getItems();
-    }
-
-    /// Returns whether the menu popup is currently showing.
-    ///
-    /// @return `true` when the menu popup is showing
-    public final boolean isShowing() {
-        return showing.get();
-    }
-
-    public final ReadOnlyBooleanProperty showingProperty() {
-        return showing.getReadOnlyProperty();
     }
 
     /// Sets the composite owner callback for popup-accessible focus changes.
@@ -255,7 +263,7 @@ public final class M3MenuButton extends M3ButtonBase {
 
     /// Returns accessibility attributes for the menu popup.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`
@@ -276,7 +284,7 @@ public final class M3MenuButton extends M3ButtonBase {
 
     /// Executes menu-related accessibility actions.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     /// @throws NullPointerException if `action` is `null`
     @Override

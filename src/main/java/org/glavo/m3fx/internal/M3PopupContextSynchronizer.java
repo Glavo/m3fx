@@ -29,6 +29,9 @@ import java.util.function.Supplier;
 /// for Material token lookups. This helper mirrors the owner scene stylesheet list, nearest M3FX theme root,
 /// effective node orientation, and resolved reduced-motion request into a detached popup root, then keeps that copy fresh
 /// when owner scene, stylesheet, theme, orientation, or motion settings change during the popup lifetime.
+///
+/// Construction, [start], [stop], and [sync] must be performed on the JavaFX application thread. Motion-setting
+/// notifications received on another thread are coalesced onto that thread before scene-graph state is updated.
 @NotNullByDefault
 public final class M3PopupContextSynchronizer {
     /// The control or item that owns the popup content.
@@ -71,6 +74,7 @@ public final class M3PopupContextSynchronizer {
     ///
     /// @param owner     the node that owns the popup content
     /// @param popupRoot the detached popup root to synchronize
+    /// @throws NullPointerException if `owner` or `popupRoot` is `null`
     public M3PopupContextSynchronizer(Node owner, Parent popupRoot) {
         this(
                 owner,
@@ -88,6 +92,7 @@ public final class M3PopupContextSynchronizer {
     /// @param owner             the node that owns the popup content
     /// @param popupRoot         the detached popup root to synchronize
     /// @param controlStylesheet the popup-specific control stylesheet URL
+    /// @throws NullPointerException if any argument is `null`
     public M3PopupContextSynchronizer(Node owner, Parent popupRoot, String controlStylesheet) {
         this(
                 owner,
@@ -107,6 +112,7 @@ public final class M3PopupContextSynchronizer {
     /// @param popupRoot                the detached popup root to synchronize
     /// @param stylesheetSourceSupplier supplies the stylesheet list mirrored into the popup root
     /// @param themeRootSupplier        supplies the current theme root copied into the popup root
+    /// @throws NullPointerException if any argument is `null`
     public M3PopupContextSynchronizer(
             Node owner,
             Parent popupRoot,
@@ -123,6 +129,8 @@ public final class M3PopupContextSynchronizer {
     /// @param stylesheetSourceSupplier supplies the stylesheet list mirrored into the popup root
     /// @param themeRootSupplier        supplies the current theme root copied into the popup root
     /// @param controlStylesheet        the popup-specific control stylesheet URL, or `null` when none is needed
+    /// @throws NullPointerException if `owner`, `popupRoot`, `stylesheetSourceSupplier`, or `themeRootSupplier` is
+    ///                               `null`
     public M3PopupContextSynchronizer(
             Node owner,
             Parent popupRoot,
@@ -138,6 +146,9 @@ public final class M3PopupContextSynchronizer {
     }
 
     /// Starts observing owner context and immediately synchronizes the popup root.
+    ///
+    /// Calling this method while the synchronizer is running performs an immediate synchronization without adding
+    /// duplicate listeners.
     public void start() {
         if (running) {
             sync();
@@ -163,6 +174,9 @@ public final class M3PopupContextSynchronizer {
     }
 
     /// Stops observing owner context while leaving the popup root styled with its last synchronized values.
+    ///
+    /// Calling this method while the synchronizer is stopped has no effect. A stopped synchronizer may be started
+    /// again.
     public void stop() {
         if (!running) {
             return;
@@ -178,6 +192,9 @@ public final class M3PopupContextSynchronizer {
     }
 
     /// Copies the latest owner stylesheet, theme, orientation, and motion context into the popup root.
+    ///
+    /// Reentrant calls have no effect. Suppliers are evaluated during the synchronization pass and may return
+    /// `null` as declared by their types.
     public void sync() {
         if (syncing) {
             return;

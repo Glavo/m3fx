@@ -74,9 +74,6 @@ public final class M3SnackbarPresenter extends Control {
     /// The default snackbar action button container height.
     private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
 
-    /// Backing property for the current message exposed by the overlay pane.
-    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar;
-
     /// Pending messages in FIFO display order.
     private final ObservableList<M3Snackbar> queue = M3ObservableLists.nonNullElementList("snackbar");
 
@@ -86,9 +83,6 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Optional explicit automatic-dismissal duration owned by the overlay pane.
     private final ObjectProperty<@Nullable Duration> displayDuration;
-
-    /// Backing property for the visible display phase exposed by the overlay pane.
-    private final ReadOnlyBooleanWrapper showing;
 
     /// Automatic-dismissal timer reused for every passive message.
     private final PauseTransition displayTimer = new PauseTransition();
@@ -133,27 +127,6 @@ public final class M3SnackbarPresenter extends Control {
     /// Reports changes to the rendered snackbar focus target.
     private final M3AccessibleFocusNotifier focusNotifier;
 
-    /// Lazily created snackbar container shape property.
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// Lazily created snackbar content padding property.
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// Lazily created minimum snackbar width property.
-    private @Nullable StyleableDoubleProperty containerMinWidth;
-
-    /// Lazily created maximum snackbar width property.
-    private @Nullable StyleableDoubleProperty containerMaxWidth;
-
-    /// Lazily created single-line snackbar height property.
-    private @Nullable StyleableDoubleProperty singleLineContainerHeight;
-
-    /// Lazily created two-line snackbar height property.
-    private @Nullable StyleableDoubleProperty twoLineContainerHeight;
-
-    /// Lazily created snackbar action height property.
-    private @Nullable StyleableDoubleProperty actionContainerHeight;
-
     /// Creates an empty presenter backed by state properties owned by its overlay pane.
     ///
     /// @param snackbar        current-message state to update
@@ -192,6 +165,12 @@ public final class M3SnackbarPresenter extends Control {
         focusNotifier.start();
     }
 
+    /// Backing property for the current message exposed by the overlay pane.
+    ///
+    /// The presenter updates the wrapper but does not own it; the overlay pane supplies and observes the same
+    /// wrapper for the presenter's lifetime.
+    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar;
+
     /// Returns the currently presented message.
     ///
     /// @return the current message, or `null` while idle
@@ -205,6 +184,12 @@ public final class M3SnackbarPresenter extends Control {
     public ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
         return snackbar.getReadOnlyProperty();
     }
+
+    /// Backing property for the visible display phase exposed by the overlay pane.
+    ///
+    /// The presenter updates the wrapper but does not own it; the overlay pane supplies and observes the same
+    /// wrapper for the presenter's lifetime.
+    private final ReadOnlyBooleanWrapper showing;
 
     /// Returns whether the current message is in its visible display phase.
     ///
@@ -334,6 +319,14 @@ public final class M3SnackbarPresenter extends Control {
         }
     }
 
+    /// The snackbar container corner radius, in logical pixels.
+    ///
+    /// The default value is `4.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-container-shape`.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty containerShape;
+
     /// Returns the snackbar container shape radius.
     ///
     /// @return the shape radius in logical pixels
@@ -352,6 +345,14 @@ public final class M3SnackbarPresenter extends Control {
         }
         return containerShape;
     }
+
+    /// The padding between the snackbar container and its content, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-content-padding`.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Returns the snackbar content padding.
     ///
@@ -372,6 +373,14 @@ public final class M3SnackbarPresenter extends Control {
         return contentPadding;
     }
 
+    /// The minimum snackbar container width, in logical pixels.
+    ///
+    /// The default value is `344.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-container-min-width`.
+    ///
+    /// @defaultValue `344.0`
+    private @Nullable StyleableDoubleProperty containerMinWidth;
+
     /// Returns the minimum snackbar container width.
     ///
     /// @return the minimum width in logical pixels
@@ -391,6 +400,14 @@ public final class M3SnackbarPresenter extends Control {
         return containerMinWidth;
     }
 
+    /// The maximum snackbar container width, in logical pixels.
+    ///
+    /// The default value is `672.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-container-max-width`.
+    ///
+    /// @defaultValue `672.0`
+    private @Nullable StyleableDoubleProperty containerMaxWidth;
+
     /// Returns the maximum snackbar container width.
     ///
     /// @return the maximum width in logical pixels
@@ -409,6 +426,14 @@ public final class M3SnackbarPresenter extends Control {
         }
         return containerMaxWidth;
     }
+
+    /// The snackbar container height used for a single line of supporting text, in logical pixels.
+    ///
+    /// The default value is `48.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-single-line-container-height`.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty singleLineContainerHeight;
 
     /// Returns the single-line snackbar container height.
     ///
@@ -433,6 +458,14 @@ public final class M3SnackbarPresenter extends Control {
         return singleLineContainerHeight;
     }
 
+    /// The snackbar container height used for two lines of supporting text, in logical pixels.
+    ///
+    /// The default value is `68.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-two-line-container-height`.
+    ///
+    /// @defaultValue `68.0`
+    private @Nullable StyleableDoubleProperty twoLineContainerHeight;
+
     /// Returns the two-line snackbar container height.
     ///
     /// @return the two-line height in logical pixels
@@ -453,6 +486,14 @@ public final class M3SnackbarPresenter extends Control {
         }
         return twoLineContainerHeight;
     }
+
+    /// The snackbar action button container height, in logical pixels.
+    ///
+    /// The default value is `32.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-action-container-height`.
+    ///
+    /// @defaultValue `32.0`
+    private @Nullable StyleableDoubleProperty actionContainerHeight;
 
     /// Returns the snackbar action button container height.
     ///

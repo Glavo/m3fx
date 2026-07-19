@@ -110,16 +110,6 @@ public final class M3SubMenuItem extends M3MenuItem {
                     M3Stylesheets.controlStylesheet("menu.css")
             );
 
-    /// Backing property for the public read-only submenu showing state API.
-    private final ReadOnlyBooleanWrapper subMenuShowing =
-            new ReadOnlyBooleanWrapper(this, "subMenuShowing") {
-                /// Mirrors the expanded submenu state to the Material active-state pseudo-class.
-                @Override
-                protected void invalidated() {
-                    pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, get());
-                }
-            };
-
     /// The reusable submenu popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(subMenu);
 
@@ -138,7 +128,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// The reusable pointer-hover open and close delay.
     private final PauseTransition hoverDelay = new PauseTransition();
 
-    /// The action executed when [hoverDelay] finishes.
+    /// The action executed when the hover delay finishes.
     private int hoverDelayAction;
 
     /// Updates the indicator glyph when node orientation changes.
@@ -186,6 +176,32 @@ public final class M3SubMenuItem extends M3MenuItem {
         getItems().addAll(items);
     }
 
+    /// Backing property for the public read-only submenu showing state API.
+    private final ReadOnlyBooleanWrapper subMenuShowing =
+            new ReadOnlyBooleanWrapper(this, "subMenuShowing") {
+                /// Mirrors the expanded submenu state to the Material active-state pseudo-class.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, get());
+                }
+            };
+
+    /// Returns whether the submenu popup is currently showing.
+    ///
+    /// @return `true` if the submenu popup is currently showing
+    public final boolean isSubMenuShowing() {
+        return subMenuShowing.get();
+    }
+
+    /// Returns the `subMenuShowing` property.
+    ///
+    /// The returned property is observable and read-only. Its default value is `false`.
+    ///
+    /// @return the `subMenuShowing` property
+    public final ReadOnlyBooleanProperty subMenuShowingProperty() {
+        return subMenuShowing.getReadOnlyProperty();
+    }
+
     /// Returns the submenu displayed by this item.
     ///
     /// @return the submenu displayed by this item
@@ -204,21 +220,9 @@ public final class M3SubMenuItem extends M3MenuItem {
         return subMenu.getItems();
     }
 
-
     /// Sets the menu that directly owns this submenu item.
     final void setOwnerMenu(@Nullable M3Menu ownerMenu) {
         this.ownerMenu = ownerMenu;
-    }
-
-    /// Returns whether the submenu popup is currently showing.
-    ///
-    /// @return `true` if the submenu popup is currently showing
-    public final boolean isSubMenuShowing() {
-        return subMenuShowing.get();
-    }
-
-    public final ReadOnlyBooleanProperty subMenuShowingProperty() {
-        return subMenuShowing.getReadOnlyProperty();
     }
 
     /// Shows the submenu popup beside this item.
@@ -764,7 +768,6 @@ public final class M3SubMenuItem extends M3MenuItem {
         @Nullable Scene scene = getScene();
         return scene == null ? null : scene.getRoot();
     }
-
 
     /// Creates the default trailing submenu indicator.
     private static M3InternalIcon createDefaultIndicator() {

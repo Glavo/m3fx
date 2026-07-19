@@ -24,6 +24,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3NavigationRail].
+///
+/// The skin lays out the optional header and navigation destinations in compact or expanded form. Expansion changes
+/// animate rail width and use fade-through when destination content changes layout; disabling motion applies the
+/// target layout immediately. The item viewport clips intermediate geometry during the transition.
 @NotNullByDefault
 public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// The visual expanded pseudo-class switched at the fade-through midpoint.

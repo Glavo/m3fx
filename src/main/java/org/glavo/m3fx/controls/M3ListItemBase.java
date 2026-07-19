@@ -46,13 +46,15 @@ import java.util.Objects;
 /// [M3MenuItem]. Applications create one of those permitted concrete controls rather than extending this class.
 ///
 /// A row has a required headline and optional overline, supporting text, trailing supporting text, leading node,
-/// and trailing node. Its line count is derived from the populated text slots and selects the corresponding
+/// and trailing node. Its line count starts at one for the headline and increases for populated overline and
+/// supporting-text slots; trailing supporting text does not affect it. The resulting count selects the corresponding
 /// one-, two-, or three-line height. Leading and trailing nodes are owned by the row while displayed and therefore
 /// must not belong to another parent.
 ///
-/// Calling [fire] on an enabled row delivers an [ActionEvent] to [onActionProperty] and other registered handlers.
-/// Selection is independent of action dispatch: [selectedProperty] may be set directly, while containers such as
-/// [M3ListPane] and [M3Menu] apply their configured selection policy when they handle an item action.
+/// Calling [#fire()] on an enabled row delivers an [ActionEvent] to [#onActionProperty()] and other registered
+/// handlers. Selection is independent of action dispatch: [#selectedProperty()] may be set directly, while
+/// containers such as [M3ListPane] and [M3Menu] apply their configured selection policy when they handle an item
+/// action.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
@@ -93,183 +95,6 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// The default spacing between list item content regions.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
 
-    /// The optional text displayed above the headline.
-    ///
-    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [lineCountProperty].
-    ///
-    /// @defaultValue `""`
-    private final StringProperty overlineText = new SimpleStringProperty(this, "overlineText", "");
-
-    /// The primary text of this row.
-    ///
-    /// The property does not accept `null` through [setHeadlineText]. The initial value is an empty string.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty headlineText = new SimpleStringProperty(this, "headlineText", "");
-
-    /// The optional supporting text displayed below the headline.
-    ///
-    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [lineCountProperty].
-    ///
-    /// @defaultValue `""`
-    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
-
-    /// The optional supporting text displayed at the logical trailing edge.
-    ///
-    /// Both `null` and an empty string leave the slot visually empty. Populated text contributes to
-    /// [lineCountProperty].
-    ///
-    /// @defaultValue `""`
-    private final StringProperty trailingSupportingText =
-            new SimpleStringProperty(this, "trailingSupportingText", "");
-
-    /// The optional node displayed at the logical leading edge.
-    ///
-    /// The node is owned by this row while displayed and may have only one parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
-        /// Updates accessibility slots when leading content changes.
-        @Override
-        protected void invalidated() {
-            notifyAccessibleSlotsChanged();
-        }
-    };
-
-    /// The optional node displayed at the logical trailing edge.
-    ///
-    /// The node is owned by this row while displayed and may have only one parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
-        /// Updates accessibility slots when trailing content changes.
-        @Override
-        protected void invalidated() {
-            notifyAccessibleSlotsChanged();
-        }
-    };
-
-    /// Notifies accessibility clients when focus moves between the row and its leading or trailing slots.
-    private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
-
-    /// The measurement role for [leadingProperty].
-    ///
-    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
-    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
-    ///
-    /// @defaultValue [M3ListItemSlotSize#AUTO]
-    private final ObjectProperty<M3ListItemSlotSize> leadingSlotSize =
-            new SimpleObjectProperty<>(this, "leadingSlotSize", M3ListItemSlotSize.AUTO) {
-                /// Restores the default slot size when a null value is assigned through the property.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3ListItemSlotSize.AUTO);
-                    }
-                }
-            };
-
-    /// The measurement role for [trailingProperty].
-    ///
-    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
-    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
-    ///
-    /// @defaultValue [M3ListItemSlotSize#AUTO]
-    private final ObjectProperty<M3ListItemSlotSize> trailingSlotSize =
-            new SimpleObjectProperty<>(this, "trailingSlotSize", M3ListItemSlotSize.AUTO) {
-                /// Restores the default slot size when a null value is assigned through the property.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3ListItemSlotSize.AUTO);
-                    }
-                }
-            };
-
-    /// The action handler invoked for [ActionEvent#ACTION].
-    ///
-    /// Setting a new value replaces the handler previously installed through this property. Additional handlers
-    /// registered with [addEventHandler] remain installed.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction") {
-                /// Updates the registered action event handler.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get());
-                }
-            };
-
-    /// Whether this row is selected.
-    ///
-    /// Changing the property updates visual and accessibility state but does not fire an action event. A containing
-    /// selection control may change the value again to maintain its selection policy.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
-        /// Updates selected pseudo-class state.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-        }
-    };
-
-    /// The derived line count property.
-    private final ReadOnlyObjectWrapper<M3ListItemLineCount> lineCount =
-            new ReadOnlyObjectWrapper<>(this, "lineCount", M3ListItemLineCount.ONE_LINE);
-
-    /// The preferred height of a one-line row in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `56.0`
-    private @Nullable StyleableDoubleProperty oneLineHeight;
-
-    /// The preferred height of a two-line row in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `72.0`
-    private @Nullable StyleableDoubleProperty twoLineHeight;
-
-    /// The preferred height of a three-line row in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `88.0`
-    private @Nullable StyleableDoubleProperty threeLineHeight;
-
-    /// The resting container corner radius in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The padding at the logical leading and trailing edges in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
-    /// The padding at the top and bottom edges in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `8.0`
-    private @Nullable StyleableDoubleProperty verticalPadding;
-
-    /// The spacing between the leading, text, and trailing content regions in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty contentSpacing;
-
     /// Creates an empty list item.
     protected M3ListItemBase() {
         this("");
@@ -292,6 +117,13 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         updateAccessibleText();
     }
 
+    /// The optional text displayed above the headline.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [#lineCountProperty()].
+    ///
+    /// @defaultValue `""`
+    private final StringProperty overlineText = new SimpleStringProperty(this, "overlineText", "");
+
     /// Returns the overline text.
     ///
     /// @return the overline text, or `null` when the slot is empty
@@ -306,9 +138,21 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         this.overlineText.set(overlineText);
     }
 
+    /// Returns the observable, bindable overline-text property.
+    ///
+    /// The property defaults to an empty string. Both `null` and an empty string represent an unpopulated slot.
+    ///
+    /// @return the overline-text property
     public final StringProperty overlineTextProperty() {
         return overlineText;
     }
+
+    /// The primary text of this row.
+    ///
+    /// The property must contain a non-null value.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty headlineText = new SimpleStringProperty(this, "headlineText", "");
 
     /// Returns the headline text.
     ///
@@ -325,9 +169,21 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         this.headlineText.set(Objects.requireNonNull(headlineText, "headlineText"));
     }
 
+    /// Returns the observable, bindable headline-text property.
+    ///
+    /// The property defaults to an empty string and must contain a non-null value.
+    ///
+    /// @return the headline-text property
     public final StringProperty headlineTextProperty() {
         return headlineText;
     }
+
+    /// The optional supporting text displayed below the headline.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [#lineCountProperty()].
+    ///
+    /// @defaultValue `""`
+    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
     /// Returns the supporting text.
     ///
@@ -343,9 +199,23 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         this.supportingText.set(supportingText);
     }
 
+    /// Returns the observable, bindable supporting-text property.
+    ///
+    /// The property defaults to an empty string. Both `null` and an empty string represent an unpopulated slot.
+    ///
+    /// @return the supporting-text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
+
+    /// The optional supporting text displayed at the logical trailing edge.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty. This text does not affect
+    /// [#lineCountProperty()].
+    ///
+    /// @defaultValue `""`
+    private final StringProperty trailingSupportingText =
+            new SimpleStringProperty(this, "trailingSupportingText", "");
 
     /// Returns the trailing supporting text.
     ///
@@ -361,9 +231,28 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         this.trailingSupportingText.set(trailingSupportingText);
     }
 
+    /// Returns the observable, bindable trailing supporting-text property.
+    ///
+    /// The property defaults to an empty string. Both `null` and an empty string represent an unpopulated slot,
+    /// and the value does not affect [#lineCountProperty()].
+    ///
+    /// @return the trailing supporting-text property
     public final StringProperty trailingSupportingTextProperty() {
         return trailingSupportingText;
     }
+
+    /// The optional node displayed at the logical leading edge.
+    ///
+    /// The node is owned by this row while displayed and may have only one parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
+        /// Updates accessibility slots when leading content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleSlotsChanged();
+        }
+    };
 
     /// Returns the leading content node.
     ///
@@ -379,13 +268,516 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         this.leading.set(leading);
     }
 
+    /// Returns the observable, bindable leading content-node property.
+    ///
+    /// The property defaults to `null`. A non-null node is owned by this row while displayed and may have only one
+    /// parent.
+    ///
+    /// @return the leading content-node property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
 
+    /// The optional node displayed at the logical trailing edge.
+    ///
+    /// The node is owned by this row while displayed and may have only one parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
+        /// Updates accessibility slots when trailing content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleSlotsChanged();
+        }
+    };
+
+    /// Returns the trailing content node.
+    ///
+    /// @return the trailing content node, or `null`
+    public final @Nullable Node getTrailing() {
+        return trailing.get();
+    }
+
+    /// Sets the trailing content node.
+    ///
+    /// @param trailing the trailing content node, or `null`
+    public final void setTrailing(@Nullable Node trailing) {
+        this.trailing.set(trailing);
+    }
+
+    /// Returns the observable, bindable trailing content-node property.
+    ///
+    /// The property defaults to `null`. A non-null node is owned by this row while displayed and may have only one
+    /// parent.
+    ///
+    /// @return the trailing content-node property
+    public final ObjectProperty<@Nullable Node> trailingProperty() {
+        return trailing;
+    }
+
+    /// The measurement role for [#leadingProperty()].
+    ///
+    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
+    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
+    ///
+    /// @defaultValue [M3ListItemSlotSize#AUTO]
+    private final ObjectProperty<M3ListItemSlotSize> leadingSlotSize =
+            new SimpleObjectProperty<>(this, "leadingSlotSize", M3ListItemSlotSize.AUTO) {
+                /// Restores the default slot size when a null value is assigned through the property.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ListItemSlotSize.AUTO);
+                    }
+                }
+            };
+
+    /// Returns the leading content slot size.
+    ///
+    /// @return the leading content slot size
+    public final M3ListItemSlotSize getLeadingSlotSize() {
+        return Objects.requireNonNull(leadingSlotSize.get(), "leadingSlotSize");
+    }
+
+    /// Sets the leading content slot size.
+    ///
+    /// @param leadingSlotSize the leading content slot size
+    /// @throws NullPointerException if `leadingSlotSize` is `null`
+    public final void setLeadingSlotSize(M3ListItemSlotSize leadingSlotSize) {
+        this.leadingSlotSize.set(Objects.requireNonNull(leadingSlotSize, "leadingSlotSize"));
+    }
+
+    /// Returns the observable, bindable leading slot-size property.
+    ///
+    /// The property defaults to [M3ListItemSlotSize#AUTO]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the leading slot-size property
+    public final ObjectProperty<M3ListItemSlotSize> leadingSlotSizeProperty() {
+        return leadingSlotSize;
+    }
+
+    /// The measurement role for [#trailingProperty()].
+    ///
+    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
+    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
+    ///
+    /// @defaultValue [M3ListItemSlotSize#AUTO]
+    private final ObjectProperty<M3ListItemSlotSize> trailingSlotSize =
+            new SimpleObjectProperty<>(this, "trailingSlotSize", M3ListItemSlotSize.AUTO) {
+                /// Restores the default slot size when a null value is assigned through the property.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ListItemSlotSize.AUTO);
+                    }
+                }
+            };
+
+    /// Returns the trailing content slot size.
+    ///
+    /// @return the trailing content slot size
+    public final M3ListItemSlotSize getTrailingSlotSize() {
+        return Objects.requireNonNull(trailingSlotSize.get(), "trailingSlotSize");
+    }
+
+    /// Sets the trailing content slot size.
+    ///
+    /// @param trailingSlotSize the trailing content slot size
+    /// @throws NullPointerException if `trailingSlotSize` is `null`
+    public final void setTrailingSlotSize(M3ListItemSlotSize trailingSlotSize) {
+        this.trailingSlotSize.set(Objects.requireNonNull(trailingSlotSize, "trailingSlotSize"));
+    }
+
+    /// Returns the observable, bindable trailing slot-size property.
+    ///
+    /// The property defaults to [M3ListItemSlotSize#AUTO]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the trailing slot-size property
+    public final ObjectProperty<M3ListItemSlotSize> trailingSlotSizeProperty() {
+        return trailingSlotSize;
+    }
+
+    /// The action handler invoked for [ActionEvent#ACTION].
+    ///
+    /// Setting a new value replaces the handler previously installed through this property. Additional handlers
+    /// registered with [addEventHandler] remain installed.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
+
+    /// Returns the action handler.
+    ///
+    /// @return the action handler, or `null`
+    public final @Nullable EventHandler<ActionEvent> getOnAction() {
+        return onAction.get();
+    }
+
+    /// Sets the action handler.
+    ///
+    /// @param onAction the action handler, or `null`
+    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
+        this.onAction.set(onAction);
+    }
+
+    /// Returns the observable, bindable action-handler property.
+    ///
+    /// The property defaults to `null`. Changing it replaces the handler registered for [ActionEvent#ACTION]
+    /// through this property without affecting handlers added through [addEventHandler].
+    ///
+    /// @return the action-handler property
+    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
+        return onAction;
+    }
+
+    /// Whether this row is selected.
+    ///
+    /// Changing the property updates visual and accessibility state but does not fire an action event. A containing
+    /// selection control may change the value again to maintain its selection policy.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+        }
+    };
+
+    /// Returns whether this list item is selected.
+    ///
+    /// @return `true` when this list item is selected
+    public final boolean isSelected() {
+        return selected.get();
+    }
+
+    /// Sets whether this list item is selected.
+    ///
+    /// @param selected whether this list item is selected
+    public final void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    /// Returns the observable, bindable selected-state property.
+    ///
+    /// The property defaults to `false`. Changing it does not fire an action event and remains subject to an
+    /// owning selection control's policy.
+    ///
+    /// @return the selected-state property
+    public final BooleanProperty selectedProperty() {
+        return selected;
+    }
+
+    /// The line count derived from populated overline and supporting-text slots.
+    private final ReadOnlyObjectWrapper<M3ListItemLineCount> lineCount =
+            new ReadOnlyObjectWrapper<>(this, "lineCount", M3ListItemLineCount.ONE_LINE);
+
+    /// Returns the derived list item line count.
+    ///
+    /// @return the derived list item line count
+    public final M3ListItemLineCount getLineCount() {
+        return lineCount.get();
+    }
+
+    /// Returns the observable read-only derived line-count property.
+    ///
+    /// The property initially contains [M3ListItemLineCount#ONE_LINE]. It can be used as a binding source but cannot
+    /// be set or bound as a writable target.
+    ///
+    /// @return the derived line-count property
+    public final ReadOnlyObjectProperty<M3ListItemLineCount> lineCountProperty() {
+        return lineCount.getReadOnlyProperty();
+    }
+
+    /// The preferred height of a one-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `56.0`
+    private @Nullable StyleableDoubleProperty oneLineHeight;
+
+    /// Returns the preferred one-line row height in logical pixels.
+    ///
+    /// @return the preferred one-line row height
+    public final double getOneLineHeight() {
+        return oneLineHeight == null ? DEFAULT_ONE_LINE_HEIGHT : oneLineHeight.get();
+    }
+
+    /// Sets the preferred one-line row height in logical pixels.
+    ///
+    /// @param oneLineHeight the preferred one-line row height
+    /// @throws IllegalArgumentException if `oneLineHeight` is negative or not finite
+    public final void setOneLineHeight(double oneLineHeight) {
+        oneLineHeightProperty().set(M3Css.nonNegative(oneLineHeight, "oneLineHeight"));
+    }
+
+    /// Returns the observable, bindable, styleable one-line row height property.
+    ///
+    /// The property defaults to `56.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the one-line row height property
+    public final StyleableDoubleProperty oneLineHeightProperty() {
+        if (oneLineHeight == null) {
+            oneLineHeight = createStyleableDoubleProperty(
+                    DEFAULT_ONE_LINE_HEIGHT,
+                    "oneLineHeight",
+                    StyleableProperties.ONE_LINE_HEIGHT
+            );
+        }
+        return oneLineHeight;
+    }
+
+    /// The preferred height of a two-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `72.0`
+    private @Nullable StyleableDoubleProperty twoLineHeight;
+
+    /// Returns the preferred two-line row height in logical pixels.
+    ///
+    /// @return the preferred two-line row height
+    public final double getTwoLineHeight() {
+        return twoLineHeight == null ? DEFAULT_TWO_LINE_HEIGHT : twoLineHeight.get();
+    }
+
+    /// Sets the preferred two-line row height in logical pixels.
+    ///
+    /// @param twoLineHeight the preferred two-line row height
+    /// @throws IllegalArgumentException if `twoLineHeight` is negative or not finite
+    public final void setTwoLineHeight(double twoLineHeight) {
+        twoLineHeightProperty().set(M3Css.nonNegative(twoLineHeight, "twoLineHeight"));
+    }
+
+    /// Returns the observable, bindable, styleable two-line row height property.
+    ///
+    /// The property defaults to `72.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the two-line row height property
+    public final StyleableDoubleProperty twoLineHeightProperty() {
+        if (twoLineHeight == null) {
+            twoLineHeight = createStyleableDoubleProperty(
+                    DEFAULT_TWO_LINE_HEIGHT,
+                    "twoLineHeight",
+                    StyleableProperties.TWO_LINE_HEIGHT
+            );
+        }
+        return twoLineHeight;
+    }
+
+    /// The preferred height of a three-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `88.0`
+    private @Nullable StyleableDoubleProperty threeLineHeight;
+
+    /// Returns the preferred three-line row height in logical pixels.
+    ///
+    /// @return the preferred three-line row height
+    public final double getThreeLineHeight() {
+        return threeLineHeight == null ? DEFAULT_THREE_LINE_HEIGHT : threeLineHeight.get();
+    }
+
+    /// Sets the preferred three-line row height in logical pixels.
+    ///
+    /// @param threeLineHeight the preferred three-line row height
+    /// @throws IllegalArgumentException if `threeLineHeight` is negative or not finite
+    public final void setThreeLineHeight(double threeLineHeight) {
+        threeLineHeightProperty().set(M3Css.nonNegative(threeLineHeight, "threeLineHeight"));
+    }
+
+    /// Returns the observable, bindable, styleable three-line row height property.
+    ///
+    /// The property defaults to `88.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the three-line row height property
+    public final StyleableDoubleProperty threeLineHeightProperty() {
+        if (threeLineHeight == null) {
+            threeLineHeight = createStyleableDoubleProperty(
+                    DEFAULT_THREE_LINE_HEIGHT,
+                    "threeLineHeight",
+                    StyleableProperties.THREE_LINE_HEIGHT
+            );
+        }
+        return threeLineHeight;
+    }
+
+    /// The resting container corner radius in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty containerShape;
+
+    /// Returns the resting container corner radius in logical pixels.
+    ///
+    /// @return the container corner radius
+    public final double getContainerShape() {
+        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+    }
+
+    /// Sets the resting container corner radius in logical pixels.
+    ///
+    /// @param containerShape the container corner radius
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
+    public final void setContainerShape(double containerShape) {
+        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+    }
+
+    /// Returns the observable, bindable, styleable container corner-radius property.
+    ///
+    /// The property defaults to `0.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the container corner-radius property
+    public final StyleableDoubleProperty containerShapeProperty() {
+        if (containerShape == null) {
+            containerShape = createStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE
+            );
+        }
+        return containerShape;
+    }
+
+    /// The padding at the logical leading and trailing edges in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
+
+    /// Returns the horizontal content padding in logical pixels.
+    ///
+    /// @return the horizontal content padding
+    public final double getHorizontalPadding() {
+        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
+    }
+
+    /// Sets the horizontal content padding in logical pixels.
+    ///
+    /// @param horizontalPadding the horizontal content padding
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
+    public final void setHorizontalPadding(double horizontalPadding) {
+        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
+    }
+
+    /// Returns the observable, bindable, styleable horizontal content-padding property.
+    ///
+    /// The property defaults to `16.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the horizontal content-padding property
+    public final StyleableDoubleProperty horizontalPaddingProperty() {
+        if (horizontalPadding == null) {
+            horizontalPadding = createStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING
+            );
+        }
+        return horizontalPadding;
+    }
+
+    /// The padding at the top and bottom edges in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
+    private @Nullable StyleableDoubleProperty verticalPadding;
+
+    /// Returns the vertical content padding in logical pixels.
+    ///
+    /// @return the vertical content padding
+    public final double getVerticalPadding() {
+        return verticalPadding == null ? DEFAULT_VERTICAL_PADDING : verticalPadding.get();
+    }
+
+    /// Sets the vertical content padding in logical pixels.
+    ///
+    /// @param verticalPadding the vertical content padding
+    /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
+    public final void setVerticalPadding(double verticalPadding) {
+        verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
+    }
+
+    /// Returns the observable, bindable, styleable vertical content-padding property.
+    ///
+    /// The property defaults to `8.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the vertical content-padding property
+    public final StyleableDoubleProperty verticalPaddingProperty() {
+        if (verticalPadding == null) {
+            verticalPadding = createStyleableDoubleProperty(
+                    DEFAULT_VERTICAL_PADDING,
+                    "verticalPadding",
+                    StyleableProperties.VERTICAL_PADDING
+            );
+        }
+        return verticalPadding;
+    }
+
+    /// The spacing between the leading, text, and trailing content regions in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty contentSpacing;
+
+    /// Returns the spacing between content regions in logical pixels.
+    ///
+    /// @return the content-region spacing
+    public final double getContentSpacing() {
+        return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
+    }
+
+    /// Sets the spacing between content regions in logical pixels.
+    ///
+    /// @param contentSpacing the content-region spacing
+    /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
+    public final void setContentSpacing(double contentSpacing) {
+        contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
+    }
+
+    /// Returns the observable, bindable, styleable content-region spacing property.
+    ///
+    /// The property defaults to `16.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the content-region spacing property
+    public final StyleableDoubleProperty contentSpacingProperty() {
+        if (contentSpacing == null) {
+            contentSpacing = createStyleableDoubleProperty(
+                    DEFAULT_CONTENT_SPACING,
+                    "contentSpacing",
+                    StyleableProperties.CONTENT_SPACING
+            );
+        }
+        return contentSpacing;
+    }
+
+    /// Notifies accessibility clients when focus moves between the row and its leading or trailing slots.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
+
     /// Sets the leading content node and its list item slot size.
     ///
-    /// @param leading the leading content node, or `null`
+    /// @param leading  the leading content node, or `null`
     /// @param slotSize the leading content slot size
     /// @throws NullPointerException if `slotSize` is `null`
     public final void setLeadingMedia(@Nullable Node leading, M3ListItemSlotSize slotSize) {
@@ -431,24 +823,6 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         setLeadingMedia(Objects.requireNonNull(thumbnail, "thumbnail"), M3ListItemSlotSize.WIDE_THUMBNAIL);
     }
 
-    /// Returns the trailing content node.
-    ///
-    /// @return the trailing content node, or `null`
-    public final @Nullable Node getTrailing() {
-        return trailing.get();
-    }
-
-    /// Sets the trailing content node.
-    ///
-    /// @param trailing the trailing content node, or `null`
-    public final void setTrailing(@Nullable Node trailing) {
-        this.trailing.set(trailing);
-    }
-
-    public final ObjectProperty<@Nullable Node> trailingProperty() {
-        return trailing;
-    }
-
     /// Sets the trailing content node and its list item slot size.
     ///
     /// @param trailing the trailing content node, or `null`
@@ -470,95 +844,10 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         return icon;
     }
 
-    /// Returns the leading content slot size.
-    ///
-    /// @return the leading content slot size
-    public final M3ListItemSlotSize getLeadingSlotSize() {
-        return Objects.requireNonNull(leadingSlotSize.get(), "leadingSlotSize");
-    }
-
-    /// Sets the leading content slot size.
-    ///
-    /// @param leadingSlotSize the leading content slot size
-    /// @throws NullPointerException if `leadingSlotSize` is `null`
-    public final void setLeadingSlotSize(M3ListItemSlotSize leadingSlotSize) {
-        this.leadingSlotSize.set(Objects.requireNonNull(leadingSlotSize, "leadingSlotSize"));
-    }
-
-    public final ObjectProperty<M3ListItemSlotSize> leadingSlotSizeProperty() {
-        return leadingSlotSize;
-    }
-
-    /// Returns the trailing content slot size.
-    ///
-    /// @return the trailing content slot size
-    public final M3ListItemSlotSize getTrailingSlotSize() {
-        return Objects.requireNonNull(trailingSlotSize.get(), "trailingSlotSize");
-    }
-
-    /// Sets the trailing content slot size.
-    ///
-    /// @param trailingSlotSize the trailing content slot size
-    /// @throws NullPointerException if `trailingSlotSize` is `null`
-    public final void setTrailingSlotSize(M3ListItemSlotSize trailingSlotSize) {
-        this.trailingSlotSize.set(Objects.requireNonNull(trailingSlotSize, "trailingSlotSize"));
-    }
-
-    public final ObjectProperty<M3ListItemSlotSize> trailingSlotSizeProperty() {
-        return trailingSlotSize;
-    }
-
-    /// Returns the action handler.
-    ///
-    /// @return the action handler, or `null`
-    public final @Nullable EventHandler<ActionEvent> getOnAction() {
-        return onAction.get();
-    }
-
-    /// Sets the action handler.
-    ///
-    /// @param onAction the action handler, or `null`
-    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
-        this.onAction.set(onAction);
-    }
-
-    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
-        return onAction;
-    }
-
-    /// Returns whether this list item is selected.
-    ///
-    /// @return `true` when this list item is selected
-    public final boolean isSelected() {
-        return selected.get();
-    }
-
-    /// Sets whether this list item is selected.
-    ///
-    /// @param selected whether this list item is selected
-    public final void setSelected(boolean selected) {
-        this.selected.set(selected);
-    }
-
-    public final BooleanProperty selectedProperty() {
-        return selected;
-    }
-
-    /// Returns the derived list item line count.
-    ///
-    /// @return the derived list item line count
-    public final M3ListItemLineCount getLineCount() {
-        return lineCount.get();
-    }
-
-    public final ReadOnlyObjectProperty<M3ListItemLineCount> lineCountProperty() {
-        return lineCount.getReadOnlyProperty();
-    }
-
     /// Fires this row's action event if it is enabled.
     ///
     /// The event is delivered through the normal JavaFX event dispatch chain. No event is created or delivered
-    /// while the row is disabled. This method does not directly change [selectedProperty].
+    /// while the row is disabled. This method does not directly change [#selectedProperty()].
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
@@ -567,7 +856,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
     /// Returns accessibility attributes for list item selection and position.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` if the attribute is not supported
     /// @throws NullPointerException if `attribute` is `null`
@@ -586,7 +875,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
     /// Executes accessibility actions supported by list items.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
@@ -653,188 +942,6 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         notifyAccessibleFocusChanged();
     }
 
-    /// Returns the one-line item height token.
-    ///
-    /// @return the one-line item height token
-    public final double getOneLineHeight() {
-        return oneLineHeight == null ? DEFAULT_ONE_LINE_HEIGHT : oneLineHeight.get();
-    }
-
-    /// Sets the one-line item height token.
-    ///
-    /// @param oneLineHeight the one-line item height token
-    /// @throws IllegalArgumentException if `oneLineHeight` is negative or not finite
-    public final void setOneLineHeight(double oneLineHeight) {
-        oneLineHeightProperty().set(M3Css.nonNegative(oneLineHeight, "oneLineHeight"));
-    }
-
-    public final StyleableDoubleProperty oneLineHeightProperty() {
-        if (oneLineHeight == null) {
-            oneLineHeight = createStyleableDoubleProperty(
-                    DEFAULT_ONE_LINE_HEIGHT,
-                    "oneLineHeight",
-                    StyleableProperties.ONE_LINE_HEIGHT
-            );
-        }
-        return oneLineHeight;
-    }
-
-    /// Returns the two-line item height token.
-    ///
-    /// @return the two-line item height token
-    public final double getTwoLineHeight() {
-        return twoLineHeight == null ? DEFAULT_TWO_LINE_HEIGHT : twoLineHeight.get();
-    }
-
-    /// Sets the two-line item height token.
-    ///
-    /// @param twoLineHeight the two-line item height token
-    /// @throws IllegalArgumentException if `twoLineHeight` is negative or not finite
-    public final void setTwoLineHeight(double twoLineHeight) {
-        twoLineHeightProperty().set(M3Css.nonNegative(twoLineHeight, "twoLineHeight"));
-    }
-
-    public final StyleableDoubleProperty twoLineHeightProperty() {
-        if (twoLineHeight == null) {
-            twoLineHeight = createStyleableDoubleProperty(
-                    DEFAULT_TWO_LINE_HEIGHT,
-                    "twoLineHeight",
-                    StyleableProperties.TWO_LINE_HEIGHT
-            );
-        }
-        return twoLineHeight;
-    }
-
-    /// Returns the three-line item height token.
-    ///
-    /// @return the three-line item height token
-    public final double getThreeLineHeight() {
-        return threeLineHeight == null ? DEFAULT_THREE_LINE_HEIGHT : threeLineHeight.get();
-    }
-
-    /// Sets the three-line item height token.
-    ///
-    /// @param threeLineHeight the three-line item height token
-    /// @throws IllegalArgumentException if `threeLineHeight` is negative or not finite
-    public final void setThreeLineHeight(double threeLineHeight) {
-        threeLineHeightProperty().set(M3Css.nonNegative(threeLineHeight, "threeLineHeight"));
-    }
-
-    public final StyleableDoubleProperty threeLineHeightProperty() {
-        if (threeLineHeight == null) {
-            threeLineHeight = createStyleableDoubleProperty(
-                    DEFAULT_THREE_LINE_HEIGHT,
-                    "threeLineHeight",
-                    StyleableProperties.THREE_LINE_HEIGHT
-            );
-        }
-        return threeLineHeight;
-    }
-
-    /// Returns the container shape radius token.
-    ///
-    /// @return the container shape radius token
-    public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
-    }
-
-    /// Sets the container shape radius token.
-    ///
-    /// @param containerShape the container shape radius token
-    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
-    public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
-    }
-
-    public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = createStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_SHAPE,
-                    "containerShape",
-                    StyleableProperties.CONTAINER_SHAPE
-            );
-        }
-        return containerShape;
-    }
-
-    /// Returns the horizontal content padding token.
-    ///
-    /// @return the horizontal content padding token
-    public final double getHorizontalPadding() {
-        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
-    }
-
-    /// Sets the horizontal content padding token.
-    ///
-    /// @param horizontalPadding the horizontal content padding token
-    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
-    public final void setHorizontalPadding(double horizontalPadding) {
-        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
-    }
-
-    public final StyleableDoubleProperty horizontalPaddingProperty() {
-        if (horizontalPadding == null) {
-            horizontalPadding = createStyleableDoubleProperty(
-                    DEFAULT_HORIZONTAL_PADDING,
-                    "horizontalPadding",
-                    StyleableProperties.HORIZONTAL_PADDING
-            );
-        }
-        return horizontalPadding;
-    }
-
-    /// Returns the vertical content padding token.
-    ///
-    /// @return the vertical content padding token
-    public final double getVerticalPadding() {
-        return verticalPadding == null ? DEFAULT_VERTICAL_PADDING : verticalPadding.get();
-    }
-
-    /// Sets the vertical content padding token.
-    ///
-    /// @param verticalPadding the vertical content padding token
-    /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
-    public final void setVerticalPadding(double verticalPadding) {
-        verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
-    }
-
-    public final StyleableDoubleProperty verticalPaddingProperty() {
-        if (verticalPadding == null) {
-            verticalPadding = createStyleableDoubleProperty(
-                    DEFAULT_VERTICAL_PADDING,
-                    "verticalPadding",
-                    StyleableProperties.VERTICAL_PADDING
-            );
-        }
-        return verticalPadding;
-    }
-
-    /// Returns the content spacing token.
-    ///
-    /// @return the content spacing token
-    public final double getContentSpacing() {
-        return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
-    }
-
-    /// Sets the content spacing token.
-    ///
-    /// @param contentSpacing the content spacing token
-    /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
-    public final void setContentSpacing(double contentSpacing) {
-        contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
-    }
-
-    public final StyleableDoubleProperty contentSpacingProperty() {
-        if (contentSpacing == null) {
-            contentSpacing = createStyleableDoubleProperty(
-                    DEFAULT_CONTENT_SPACING,
-                    "contentSpacing",
-                    StyleableProperties.CONTENT_SPACING
-            );
-        }
-        return contentSpacing;
-    }
-
     /// Creates the default list item skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -897,8 +1004,8 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     }
 
     /// Returns whether text contributes visible list item content.
-    private static boolean hasText(String text) {
-        return !text.isBlank();
+    private static boolean hasText(@Nullable String text) {
+        return text != null && !text.isBlank();
     }
 
     /// Updates the accessibility label from the visible list item text.
@@ -912,8 +1019,8 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     }
 
     /// Appends a non-blank text part to an accessibility label.
-    private static void appendAccessibleText(StringBuilder builder, String text) {
-        if (text.isBlank()) {
+    private static void appendAccessibleText(StringBuilder builder, @Nullable String text) {
+        if (text == null || text.isBlank()) {
             return;
         }
         if (builder.length() > 0) {

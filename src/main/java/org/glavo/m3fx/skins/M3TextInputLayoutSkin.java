@@ -11,6 +11,10 @@ import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3TextInputLayout].
+///
+/// The skin adopts the input container and supporting row owned by the control and lays them out as a vertical unit.
+/// Width constraints are delegated to that unit, while effective node orientation is propagated to keep supporting
+/// content aligned with the text-input container.
 @NotNullByDefault
 public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// The spacing between the input container and supporting row.
@@ -21,9 +25,9 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
 
     /// Creates a text input layout skin.
     ///
-    /// @param control the text input layout controlled by this skin
+    /// @param control        the text input layout controlled by this skin
     /// @param inputContainer the input container owned by the control
-    /// @param supportingRow the supporting row owned by the control
+    /// @param supportingRow  the supporting row owned by the control
     public M3TextInputLayoutSkin(M3TextInputLayout control, StackPane inputContainer, HBox supportingRow) {
         super(control);
         container.setManaged(false);

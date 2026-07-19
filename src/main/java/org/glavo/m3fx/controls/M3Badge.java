@@ -58,65 +58,6 @@ public final class M3Badge extends Control {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 4.0;
 
-    /// The raw badge text before overflow handling.
-    ///
-    /// The default value is the empty string, which selects the dot presentation. This property does not accept
-    /// `null`; [setText][#setText(String)] throws when passed `null`.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "");
-
-    /// The maximum number of UTF-16 code units retained before an overflow suffix is appended.
-    ///
-    /// The default value is `3`. The value is always at least `1`. The setter rejects non-positive values;
-    /// a non-positive value assigned directly to the property is normalized to `1`.
-    ///
-    /// @defaultValue `3`
-    private final IntegerProperty maxCharacterCount = new SimpleIntegerProperty(this, "maxCharacterCount", 3) {
-        /// Validates assigned maximum character counts.
-        @Override
-        protected void invalidated() {
-            if (get() < 1) {
-                set(1);
-            }
-        }
-    };
-
-    /// The width and height of a dot badge, in logical pixels.
-    ///
-    /// The default value is `6.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `6.0`
-    private @Nullable StyleableDoubleProperty smallSize;
-
-    /// The height of a text badge, in logical pixels.
-    ///
-    /// The default value is `16.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty largeHeight;
-
-    /// The minimum width of a text badge, in logical pixels.
-    ///
-    /// The default value is `16.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty largeMinWidth;
-
-    /// The corner radius of a text badge, in logical pixels.
-    ///
-    /// The default value is `8.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `8.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The horizontal padding on each side of text badge content, in logical pixels.
-    ///
-    /// The default value is `4.0`. Values must be finite and non-negative.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty horizontalPadding;
-
     /// Creates a dot badge with empty text and the default size tokens.
     public M3Badge() {
         this("");
@@ -144,11 +85,20 @@ public final class M3Badge extends Control {
         this(countText(count));
     }
 
+    /// The raw badge text before overflow handling.
+    ///
+    /// The default value is the empty string, which selects the dot presentation. [setText][#setText(String)]
+    /// rejects `null`. If an external binding supplies `null`, [#getText()] and rendering treat it as an empty
+    /// string while the property remains bound.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "");
+
     /// Returns the badge text.
     ///
     /// @return the raw badge text before overflow handling
     public final String getText() {
-        return text.get();
+        return Objects.requireNonNullElse(text.get(), "");
     }
 
     /// Sets the badge text.
@@ -159,17 +109,32 @@ public final class M3Badge extends Control {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
+    /// Returns the observable property that stores the raw badge text.
+    ///
+    /// The property can be observed and bound. Its default value is the empty string, which selects the dot
+    /// presentation. [#setText(String)] rejects `null`; a `null` value supplied directly or by a binding is
+    /// exposed and rendered as an empty string. Values are interpreted before overflow handling.
+    ///
+    /// @return the raw badge text property
     public final StringProperty textProperty() {
         return text;
     }
 
-    /// Returns the text representation of a non-negative count.
-    private static String countText(int count) {
-        if (count < 0) {
-            throw new IllegalArgumentException("count must be non-negative");
+    /// The maximum number of UTF-16 code units retained before an overflow suffix is appended.
+    ///
+    /// The default value is `3`. The value is always at least `1`. The setter rejects non-positive values;
+    /// a non-positive value assigned directly to the property is normalized to `1`.
+    ///
+    /// @defaultValue `3`
+    private final IntegerProperty maxCharacterCount = new SimpleIntegerProperty(this, "maxCharacterCount", 3) {
+        /// Validates assigned maximum character counts.
+        @Override
+        protected void invalidated() {
+            if (get() < 1) {
+                set(1);
+            }
         }
-        return Integer.toString(count);
-    }
+    };
 
     /// Returns the maximum display text length before an overflow suffix is used.
     ///
@@ -189,8 +154,227 @@ public final class M3Badge extends Control {
         this.maxCharacterCount.set(maxCharacterCount);
     }
 
+    /// Returns the observable property that limits retained badge text.
+    ///
+    /// The property can be observed and bound. Its default value is `3`, and values must be at least `1`.
+    /// A non-positive value assigned to an unbound property is normalized to `1`.
+    ///
+    /// @return the maximum character count property
     public final IntegerProperty maxCharacterCountProperty() {
         return maxCharacterCount;
+    }
+
+    /// The width and height of a dot badge, in logical pixels.
+    ///
+    /// The default value is `6.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `6.0`
+    private @Nullable StyleableDoubleProperty smallSize;
+
+    /// Returns the small dot badge size token.
+    ///
+    /// @return the dot badge size in logical pixels
+    public final double getSmallSize() {
+        return smallSize == null ? DEFAULT_SMALL_SIZE : smallSize.get();
+    }
+
+    /// Sets the small dot badge size token.
+    ///
+    /// @param smallSize the dot badge size in logical pixels
+    /// @throws IllegalArgumentException if `smallSize` is negative or not finite
+    public final void setSmallSize(double smallSize) {
+        smallSizeProperty().set(M3Css.nonNegative(smallSize, "smallSize"));
+    }
+
+    /// Returns the styleable property that stores the dot badge size.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-small-size`, and accepts finite,
+    /// non-negative values. Its default value is `6.0` logical pixels.
+    ///
+    /// @return the dot badge size property
+    public final StyleableDoubleProperty smallSizeProperty() {
+        if (smallSize == null) {
+            smallSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_SMALL_SIZE,
+                    this,
+                    "smallSize",
+                    StyleableProperties.SMALL_SIZE,
+                    this::requestLayout
+            );
+        }
+        return smallSize;
+    }
+
+    /// The height of a text badge, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty largeHeight;
+
+    /// Returns the large badge height token.
+    ///
+    /// @return the text badge height in logical pixels
+    public final double getLargeHeight() {
+        return largeHeight == null ? DEFAULT_LARGE_HEIGHT : largeHeight.get();
+    }
+
+    /// Sets the large badge height token.
+    ///
+    /// @param largeHeight the text badge height in logical pixels
+    /// @throws IllegalArgumentException if `largeHeight` is negative or not finite
+    public final void setLargeHeight(double largeHeight) {
+        largeHeightProperty().set(M3Css.nonNegative(largeHeight, "largeHeight"));
+    }
+
+    /// Returns the styleable property that stores the text badge height.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-large-height`, and accepts finite,
+    /// non-negative values. Its default value is `16.0` logical pixels.
+    ///
+    /// @return the text badge height property
+    public final StyleableDoubleProperty largeHeightProperty() {
+        if (largeHeight == null) {
+            largeHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_LARGE_HEIGHT,
+                    this,
+                    "largeHeight",
+                    StyleableProperties.LARGE_HEIGHT,
+                    this::requestLayout
+            );
+        }
+        return largeHeight;
+    }
+
+    /// The minimum width of a text badge, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty largeMinWidth;
+
+    /// Returns the large badge minimum width token.
+    ///
+    /// @return the text badge minimum width in logical pixels
+    public final double getLargeMinWidth() {
+        return largeMinWidth == null ? DEFAULT_LARGE_MIN_WIDTH : largeMinWidth.get();
+    }
+
+    /// Sets the large badge minimum width token.
+    ///
+    /// @param largeMinWidth the text badge minimum width in logical pixels
+    /// @throws IllegalArgumentException if `largeMinWidth` is negative or not finite
+    public final void setLargeMinWidth(double largeMinWidth) {
+        largeMinWidthProperty().set(M3Css.nonNegative(largeMinWidth, "largeMinWidth"));
+    }
+
+    /// Returns the styleable property that stores the minimum text badge width.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-large-min-width`, and accepts finite,
+    /// non-negative values. Its default value is `16.0` logical pixels.
+    ///
+    /// @return the minimum text badge width property
+    public final StyleableDoubleProperty largeMinWidthProperty() {
+        if (largeMinWidth == null) {
+            largeMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_LARGE_MIN_WIDTH,
+                    this,
+                    "largeMinWidth",
+                    StyleableProperties.LARGE_MIN_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return largeMinWidth;
+    }
+
+    /// The corner radius of a text badge, in logical pixels.
+    ///
+    /// The default value is `8.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
+    private @Nullable StyleableDoubleProperty containerShape;
+
+    /// Returns the container shape radius token.
+    ///
+    /// @return the badge container corner radius in logical pixels
+    public final double getContainerShape() {
+        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+    }
+
+    /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the badge container corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
+    public final void setContainerShape(double containerShape) {
+        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+    }
+
+    /// Returns the styleable property that stores the text badge corner radius.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-container-shape`, and accepts finite,
+    /// non-negative values. Its default value is `8.0` logical pixels.
+    ///
+    /// @return the badge corner radius property
+    public final StyleableDoubleProperty containerShapeProperty() {
+        if (containerShape == null) {
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
+        }
+        return containerShape;
+    }
+
+    /// The horizontal padding on each side of text badge content, in logical pixels.
+    ///
+    /// The default value is `4.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty horizontalPadding;
+
+    /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal padding used by text badges
+    public final double getHorizontalPadding() {
+        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
+    }
+
+    /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal padding used by text badges
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
+    public final void setHorizontalPadding(double horizontalPadding) {
+        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
+    }
+
+    /// Returns the styleable property that stores the text badge horizontal padding.
+    ///
+    /// The property can be observed and bound, is exposed to CSS as `-m3-horizontal-padding`, and accepts finite,
+    /// non-negative values. Its default value is `4.0` logical pixels.
+    ///
+    /// @return the horizontal padding property
+    public final StyleableDoubleProperty horizontalPaddingProperty() {
+        if (horizontalPadding == null) {
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    this,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING,
+                    this::requestLayout
+            );
+        }
+        return horizontalPadding;
+    }
+
+    /// Returns the text representation of a non-negative count.
+    private static String countText(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("count must be non-negative");
+        }
+        return Integer.toString(count);
     }
 
     /// Returns the text rendered by this badge after overflow handling.
@@ -211,146 +395,6 @@ public final class M3Badge extends Control {
     /// Updates the text exposed to assistive technologies.
     private void updateAccessibleText() {
         setAccessibleText(getDisplayText());
-    }
-
-    /// Returns the small dot badge size token.
-    ///
-    /// @return the dot badge size in logical pixels
-    public final double getSmallSize() {
-        return smallSize == null ? DEFAULT_SMALL_SIZE : smallSize.get();
-    }
-
-    /// Sets the small dot badge size token.
-    ///
-    /// @param smallSize the dot badge size in logical pixels
-    /// @throws IllegalArgumentException if `smallSize` is negative or not finite
-    public final void setSmallSize(double smallSize) {
-        smallSizeProperty().set(M3Css.nonNegative(smallSize, "smallSize"));
-    }
-
-    public final StyleableDoubleProperty smallSizeProperty() {
-        if (smallSize == null) {
-            smallSize = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_SMALL_SIZE,
-                    this,
-                    "smallSize",
-                    StyleableProperties.SMALL_SIZE,
-                    this::requestLayout
-            );
-        }
-        return smallSize;
-    }
-
-    /// Returns the large badge height token.
-    ///
-    /// @return the text badge height in logical pixels
-    public final double getLargeHeight() {
-        return largeHeight == null ? DEFAULT_LARGE_HEIGHT : largeHeight.get();
-    }
-
-    /// Sets the large badge height token.
-    ///
-    /// @param largeHeight the text badge height in logical pixels
-    /// @throws IllegalArgumentException if `largeHeight` is negative or not finite
-    public final void setLargeHeight(double largeHeight) {
-        largeHeightProperty().set(M3Css.nonNegative(largeHeight, "largeHeight"));
-    }
-
-    public final StyleableDoubleProperty largeHeightProperty() {
-        if (largeHeight == null) {
-            largeHeight = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_LARGE_HEIGHT,
-                    this,
-                    "largeHeight",
-                    StyleableProperties.LARGE_HEIGHT,
-                    this::requestLayout
-            );
-        }
-        return largeHeight;
-    }
-
-    /// Returns the large badge minimum width token.
-    ///
-    /// @return the text badge minimum width in logical pixels
-    public final double getLargeMinWidth() {
-        return largeMinWidth == null ? DEFAULT_LARGE_MIN_WIDTH : largeMinWidth.get();
-    }
-
-    /// Sets the large badge minimum width token.
-    ///
-    /// @param largeMinWidth the text badge minimum width in logical pixels
-    /// @throws IllegalArgumentException if `largeMinWidth` is negative or not finite
-    public final void setLargeMinWidth(double largeMinWidth) {
-        largeMinWidthProperty().set(M3Css.nonNegative(largeMinWidth, "largeMinWidth"));
-    }
-
-    public final StyleableDoubleProperty largeMinWidthProperty() {
-        if (largeMinWidth == null) {
-            largeMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_LARGE_MIN_WIDTH,
-                    this,
-                    "largeMinWidth",
-                    StyleableProperties.LARGE_MIN_WIDTH,
-                    this::requestLayout
-            );
-        }
-        return largeMinWidth;
-    }
-
-    /// Returns the container shape radius token.
-    ///
-    /// @return the badge container corner radius in logical pixels
-    public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
-    }
-
-    /// Sets the container shape radius token.
-    ///
-    /// @param containerShape the badge container corner radius in logical pixels
-    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
-    public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
-    }
-
-    public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_SHAPE,
-                    this,
-                    "containerShape",
-                    StyleableProperties.CONTAINER_SHAPE,
-                    this::requestLayout
-            );
-        }
-        return containerShape;
-    }
-
-    /// Returns the horizontal content padding token.
-    ///
-    /// @return the horizontal padding used by text badges
-    public final double getHorizontalPadding() {
-        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
-    }
-
-    /// Sets the horizontal content padding token.
-    ///
-    /// @param horizontalPadding the horizontal padding used by text badges
-    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
-    public final void setHorizontalPadding(double horizontalPadding) {
-        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
-    }
-
-    public final StyleableDoubleProperty horizontalPaddingProperty() {
-        if (horizontalPadding == null) {
-            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_HORIZONTAL_PADDING,
-                    this,
-                    "horizontalPadding",
-                    StyleableProperties.HORIZONTAL_PADDING,
-                    this::requestLayout
-            );
-        }
-        return horizontalPadding;
     }
 
     /// Creates the default badge skin.

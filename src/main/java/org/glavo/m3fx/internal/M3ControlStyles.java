@@ -13,7 +13,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/// Provides shared style-class helpers for M3FX controls.
+/// Provides the common style-class and fallback-token setup used by M3FX controls.
+///
+/// These methods modify the supplied node directly. They do not install an [org.glavo.m3fx.theme.M3Theme]; when a
+/// control is attached to an otherwise unthemed scene, they instead ensure that the bundled fallback token
+/// declarations are available to that scene.
 @NotNullByDefault
 public final class M3ControlStyles {
     /// The standard JavaFX scene root style class used by fallback token declarations.
@@ -38,6 +42,14 @@ public final class M3ControlStyles {
     }
 
     /// Initializes a component root with its base style class and standalone fallback styling.
+    ///
+    /// This method assumes that it is called once by the component constructor. Repeated calls add another scene
+    /// listener even though the style class itself is not duplicated. Use [#initializeOnce(Styleable, String)] for
+    /// externally owned nodes that may be configured repeatedly.
+    ///
+    /// @param node       the component root to initialize
+    /// @param styleClass the base style class to add
+    /// @throws NullPointerException if `node` or `styleClass` is `null`
     public static void initialize(Styleable node, String styleClass) {
         add(node, styleClass);
         if (node instanceof Node sceneNode) {
@@ -50,6 +62,10 @@ public final class M3ControlStyles {
     /// Unlike [#initialize(Styleable, String)], this method may be called repeatedly for the same node. The
     /// installation marker uses the node properties map, so M3FX controls should use the property-map-allocation-free
     /// constructor path instead.
+    ///
+    /// @param node       the externally owned component root to initialize
+    /// @param styleClass the base style class to add
+    /// @throws NullPointerException if `node` or `styleClass` is `null`
     public static void initializeOnce(Styleable node, String styleClass) {
         add(node, styleClass);
         if (node instanceof Node sceneNode
@@ -60,6 +76,12 @@ public final class M3ControlStyles {
     }
 
     /// Adds a style class without installing scene-level component infrastructure.
+    ///
+    /// No change is made when the node already contains the style class.
+    ///
+    /// @param node       the styleable object to update
+    /// @param styleClass the style class to add
+    /// @throws NullPointerException if `node` or `styleClass` is `null`
     public static void add(Styleable node, String styleClass) {
         List<String> styleClasses = node.getStyleClass();
         if (!styleClasses.contains(styleClass)) {
@@ -67,7 +89,15 @@ public final class M3ControlStyles {
         }
     }
 
-    /// Replaces one variant style class with another.
+    /// Replaces the known variant style classes with the selected style class.
+    ///
+    /// One occurrence of each known variant is removed before `selectedStyleClass` is added if absent. Existing
+    /// duplicate style-class entries are not normalized.
+    ///
+    /// @param node                the styleable object to update
+    /// @param selectedStyleClass  the variant style class that should remain selected
+    /// @param variantStyleClasses all mutually exclusive variant style classes
+    /// @throws NullPointerException if any argument is `null`
     public static void replaceVariant(Styleable node, String selectedStyleClass, String... variantStyleClasses) {
         List<String> styleClasses = node.getStyleClass();
         for (String styleClass : variantStyleClasses) {

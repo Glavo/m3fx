@@ -12,6 +12,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3PickerField].
 ///
+/// The skin presents the field's text-input layout as its sole content and sizes that layout to the snapped control
+/// bounds. The input layout is owned by the picker field and must be available when the skin is created.
+///
 /// @param <T> the value type edited by the picker field
 /// @param <P> the popup picker control type
 @NotNullByDefault
@@ -22,6 +25,8 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
     /// Creates a picker field skin.
     ///
     /// @param control the skinned picker field
+    /// @throws IllegalArgumentException if `control` is `null`
+    /// @throws IllegalStateException    if the picker field does not expose its input layout
     public M3PickerFieldSkin(M3PickerField<T, P> control) {
         super(control);
         Object item = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);

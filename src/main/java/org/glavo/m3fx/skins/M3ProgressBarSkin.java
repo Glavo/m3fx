@@ -30,6 +30,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ProgressBar].
+///
+/// The skin renders determinate and indeterminate linear progress using standard or expressive wavy geometry.
+/// Determinate value changes use the active motion profile; indeterminate activity pauses while the control has no
+/// showing window. Disabling full motion retains a basic continuously moving indeterminate presentation.
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The AndroidX Material 3 linear indeterminate cycle duration used to normalize keyframe timings.

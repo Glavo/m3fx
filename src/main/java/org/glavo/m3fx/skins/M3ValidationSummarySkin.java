@@ -45,6 +45,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3ValidationSummary].
+///
+/// The skin observes the configured form validator and presents either the valid empty state or an ordered list of
+/// invalid inputs. Activating a validation row reveals and focuses its input; row text remains synchronized with field
+/// labels, prompts, and error text while the summary is attached.
 @NotNullByDefault
 public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary> {
     /// The spacing between top-level summary content rows.
@@ -118,6 +122,8 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private @Nullable M3FormValidator observedValidator;
 
     /// Creates a validation summary skin.
+    ///
+    /// @param control the validation summary controlled by this skin
     public M3ValidationSummarySkin(M3ValidationSummary control) {
         super(control);
 

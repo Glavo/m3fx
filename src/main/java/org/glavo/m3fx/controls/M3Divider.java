@@ -47,36 +47,6 @@ public final class M3Divider extends Control {
     /// The default trailing inset.
     private static final double DEFAULT_INSET_END = 0.0;
 
-    /// The divider orientation.
-    ///
-    /// A direct `null` assignment restores [Orientation#HORIZONTAL].
-    ///
-    /// @defaultValue [Orientation#HORIZONTAL]
-    private final ObjectProperty<Orientation> orientation = new SimpleObjectProperty<>(this, "orientation", Orientation.HORIZONTAL) {
-        /// Restores the default orientation when a null value is assigned.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(Orientation.HORIZONTAL);
-            }
-        }
-    };
-
-    /// The visible divider thickness in logical pixels.
-    ///
-    /// @defaultValue `1.0`
-    private @Nullable StyleableDoubleProperty thickness;
-
-    /// The logical leading inset in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty insetStart;
-
-    /// The logical trailing inset in logical pixels.
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty insetEnd;
-
     /// Creates a horizontal divider.
     public M3Divider() {
         this(Orientation.HORIZONTAL);
@@ -91,6 +61,21 @@ public final class M3Divider extends Control {
         setFocusTraversable(false);
         setOrientation(orientation);
     }
+
+    /// The divider orientation.
+    ///
+    /// A direct `null` assignment restores [Orientation#HORIZONTAL].
+    ///
+    /// @defaultValue [Orientation#HORIZONTAL]
+    private final ObjectProperty<Orientation> orientation = new SimpleObjectProperty<>(this, "orientation", Orientation.HORIZONTAL) {
+        /// Restores the default orientation when a null value is assigned.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(Orientation.HORIZONTAL);
+            }
+        }
+    };
 
     /// Returns the divider orientation.
     ///
@@ -107,9 +92,20 @@ public final class M3Divider extends Control {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
 
+    /// Returns the observable, bindable divider orientation property.
+    ///
+    /// The property defaults to [Orientation#HORIZONTAL]. A `null` value assigned directly through the property is
+    /// replaced with that default.
+    ///
+    /// @return the divider orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         return orientation;
     }
+
+    /// The visible divider thickness in logical pixels.
+    ///
+    /// @defaultValue `1.0`
+    private @Nullable StyleableDoubleProperty thickness;
 
     /// Returns the divider thickness in logical pixels.
     ///
@@ -126,6 +122,12 @@ public final class M3Divider extends Control {
         thicknessProperty().set(M3Css.nonNegative(thickness, "thickness"));
     }
 
+    /// Returns the observable, bindable, styleable divider thickness property.
+    ///
+    /// The property defaults to `1.0` logical pixel and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the divider thickness property
     public final StyleableDoubleProperty thicknessProperty() {
         if (thickness == null) {
             thickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -138,6 +140,11 @@ public final class M3Divider extends Control {
         }
         return thickness;
     }
+
+    /// The logical leading inset in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty insetStart;
 
     /// Returns the logical leading inset in logical pixels.
     ///
@@ -154,6 +161,12 @@ public final class M3Divider extends Control {
         insetStartProperty().set(M3Css.nonNegative(insetStart, "insetStart"));
     }
 
+    /// Returns the observable, bindable, styleable logical leading inset property.
+    ///
+    /// The property defaults to `0.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the logical leading inset property
     public final StyleableDoubleProperty insetStartProperty() {
         if (insetStart == null) {
             insetStart = M3Css.nonNegativeStyleableDoubleProperty(
@@ -166,6 +179,11 @@ public final class M3Divider extends Control {
         }
         return insetStart;
     }
+
+    /// The logical trailing inset in logical pixels.
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty insetEnd;
 
     /// Returns the logical trailing inset in logical pixels.
     ///
@@ -182,6 +200,12 @@ public final class M3Divider extends Control {
         insetEndProperty().set(M3Css.nonNegative(insetEnd, "insetEnd"));
     }
 
+    /// Returns the observable, bindable, styleable logical trailing inset property.
+    ///
+    /// The property defaults to `0.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the logical trailing inset property
     public final StyleableDoubleProperty insetEndProperty() {
         if (insetEnd == null) {
             insetEnd = M3Css.nonNegativeStyleableDoubleProperty(

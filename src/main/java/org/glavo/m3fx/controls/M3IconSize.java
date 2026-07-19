@@ -14,16 +14,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview).
 @NotNullByDefault
 public enum M3IconSize {
-    /// Uses the compact 18px icon size.
+    /// Uses the compact 18-logical-pixel icon size.
     SMALL("m3-small-icon", 18.0),
 
-    /// Uses the default 24px icon size.
+    /// Uses the default 24-logical-pixel icon size.
     MEDIUM("m3-medium-icon", 24.0),
 
-    /// Uses the prominent 32px icon size.
+    /// Uses the prominent 32-logical-pixel icon size.
     LARGE("m3-large-icon", 32.0),
 
-    /// Uses the extra prominent 40px icon size.
+    /// Uses the extra prominent 40-logical-pixel icon size.
     EXTRA_LARGE("m3-extra-large-icon", 40.0);
 
     /// The style class applied for this icon size.

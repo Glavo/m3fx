@@ -14,7 +14,11 @@ import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for [M3ListCell].
+/// The default virtualized cell skin for [M3ListCell].
+///
+/// The skin presents the cell graphic as the row content, applies the owning list view's fixed-cell-size policy,
+/// and reserves trailing item spacing for every data row except the last. An empty reusable cell is measured with
+/// a stable fallback height until the virtual flow supplies row content.
 ///
 /// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
@@ -60,11 +64,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
 
     /// Computes the minimum width from the rendered row.
     ///
-    /// @param height the height that should be used if width depends on it
-    /// @param topInset the snapped top inset
-    /// @param rightInset the snapped right inset
+    /// @param height      the height that should be used if width depends on it
+    /// @param topInset    the snapped top inset
+    /// @param rightInset  the snapped right inset
     /// @param bottomInset the snapped bottom inset
-    /// @param leftInset the snapped left inset
+    /// @param leftInset   the snapped left inset
     /// @return the minimum width
     @Override
     protected double computeMinWidth(
@@ -80,11 +84,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
 
     /// Computes the minimum height from the rendered row.
     ///
-    /// @param width the width that should be used if height depends on it
-    /// @param topInset the snapped top inset
-    /// @param rightInset the snapped right inset
+    /// @param width       the width that should be used if height depends on it
+    /// @param topInset    the snapped top inset
+    /// @param rightInset  the snapped right inset
     /// @param bottomInset the snapped bottom inset
-    /// @param leftInset the snapped left inset
+    /// @param leftInset   the snapped left inset
     /// @return the minimum height
     @Override
     protected double computeMinHeight(
@@ -101,11 +105,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
 
     /// Computes the preferred width from the rendered row.
     ///
-    /// @param height the height that should be used if width depends on it
-    /// @param topInset the snapped top inset
-    /// @param rightInset the snapped right inset
+    /// @param height      the height that should be used if width depends on it
+    /// @param topInset    the snapped top inset
+    /// @param rightInset  the snapped right inset
     /// @param bottomInset the snapped bottom inset
-    /// @param leftInset the snapped left inset
+    /// @param leftInset   the snapped left inset
     /// @return the preferred width
     @Override
     protected double computePrefWidth(
@@ -121,11 +125,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
 
     /// Computes the preferred height from the rendered row.
     ///
-    /// @param width the width that should be used if height depends on it
-    /// @param topInset the snapped top inset
-    /// @param rightInset the snapped right inset
+    /// @param width       the width that should be used if height depends on it
+    /// @param topInset    the snapped top inset
+    /// @param rightInset  the snapped right inset
     /// @param bottomInset the snapped bottom inset
-    /// @param leftInset the snapped left inset
+    /// @param leftInset   the snapped left inset
     /// @return the preferred height
     @Override
     protected double computePrefHeight(
@@ -142,9 +146,9 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
 
     /// Lays out the rendered row in the full cell content area.
     ///
-    /// @param x the layout area's x coordinate
-    /// @param y the layout area's y coordinate
-    /// @param width the layout area's width
+    /// @param x      the layout area's x coordinate
+    /// @param y      the layout area's y coordinate
+    /// @param width  the layout area's width
     /// @param height the layout area's height
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
@@ -180,11 +184,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
         double rowHeight = fixedCellSize > 0.0
                 ? snapSizeY(Math.min(fixedCellSize, itemAreaHeight))
                 : snapSizeY(boundedSize(
-                        row.minHeight(rowWidth),
-                        row.prefHeight(rowWidth),
-                        row.maxHeight(rowWidth),
-                        itemAreaHeight
-                ));
+                row.minHeight(rowWidth),
+                row.prefHeight(rowWidth),
+                row.maxHeight(rowWidth),
+                itemAreaHeight
+        ));
         double rowX = alignedX(
                 x,
                 width,

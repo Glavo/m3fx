@@ -34,11 +34,12 @@ import java.util.Objects;
 /// A Material Design 3 navigation item used by bars, rails, and related navigation containers.
 ///
 /// `M3NavigationItem` is a selectable action with text, optional graphic content, and an optional [M3Badge].
-/// Calling [fire] on an enabled item sets [selectedProperty] to `true` and then delivers an action event; firing an
-/// already selected item does not clear selection. Calling [setSelected] changes state without firing an event.
+/// Calling [#fire()] on an enabled item sets [#selectedProperty()] to `true` and then delivers an action event;
+/// firing an already selected item does not clear selection. Calling [#setSelected(boolean)] changes state without
+/// firing an event.
 ///
 /// [M3NavigationBar], [M3NavigationRail], and related containers coordinate single selection and propagate their
-/// preferred [itemLayoutProperty] to each item. The default standalone item is unselected, uses vertical layout,
+/// preferred [#itemLayoutProperty()] to each item. The default standalone item is unselected, uses vertical layout,
 /// has empty text, and has no graphic or badge. Graphic and badge nodes are owned by the item while displayed and
 /// must not belong to another parent.
 ///
@@ -69,47 +70,39 @@ public final class M3NavigationItem extends ButtonBase {
     /// The default content spacing.
     private static final double DEFAULT_CONTENT_SPACING = 4.0;
 
-    /// The item container height in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `80.0`
-    private @Nullable StyleableDoubleProperty containerHeight;
+    /// Creates an unselected navigation item with empty text, vertical layout, and no graphic or badge.
+    public M3NavigationItem() {
+        this("", null);
+    }
 
-    /// The preferred item width in logical pixels.
+    /// Creates a navigation item with text.
     ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `80.0`
-    private @Nullable StyleableDoubleProperty itemWidth;
+    /// @param text the navigation item label
+    /// @throws NullPointerException if `text` is `null`
+    public M3NavigationItem(String text) {
+        this(text, null);
+    }
 
-    /// The selected indicator width in logical pixels.
+    /// Creates a navigation item with text and graphic content.
     ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `64.0`
-    private @Nullable StyleableDoubleProperty indicatorWidth;
+    /// @param text    the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
+    /// @throws NullPointerException if `text` is `null`
+    public M3NavigationItem(String text, @Nullable Node graphic) {
+        this(text, graphic, null);
+    }
 
-    /// The selected indicator height in logical pixels.
+    /// Creates a navigation item with text, graphic content, and a badge.
     ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `32.0`
-    private @Nullable StyleableDoubleProperty indicatorHeight;
-
-    /// The selected indicator corner radius in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty indicatorShape;
-
-    /// The spacing between the graphic and label in logical pixels.
-    ///
-    /// Values must be finite and non-negative.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty contentSpacing;
+    /// @param text    the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
+    /// @param badge   the badge shown over the graphic, or `null` for no badge
+    /// @throws NullPointerException if `text` is `null`
+    public M3NavigationItem(String text, @Nullable Node graphic, @Nullable M3Badge badge) {
+        super(Objects.requireNonNull(text, "text"), graphic);
+        initialize();
+        setBadge(badge);
+    }
 
     /// Whether this item represents the selected destination.
     ///
@@ -125,6 +118,30 @@ public final class M3NavigationItem extends ButtonBase {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
         }
     };
+
+    /// Returns whether this navigation item is selected.
+    ///
+    /// @return `true` when this navigation item is selected
+    public final boolean isSelected() {
+        return selected.get();
+    }
+
+    /// Sets whether this navigation item is selected.
+    ///
+    /// @param selected whether this navigation item is selected
+    public final void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    /// Returns the observable, bindable selected-state property.
+    ///
+    /// The property is `false` by default. Changes update visual and accessibility state without firing an action
+    /// event; a containing navigation control may reconcile its single-selection policy.
+    ///
+    /// @return the selected-state property
+    public final BooleanProperty selectedProperty() {
+        return selected;
+    }
 
     /// The icon and label arrangement used by this item.
     ///
@@ -146,65 +163,6 @@ public final class M3NavigationItem extends ButtonBase {
                 }
             };
 
-    /// The optional badge associated with this destination.
-    ///
-    /// The badge node is owned by this item while displayed and may have only one parent.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
-
-    /// Creates an unselected navigation item with empty text, vertical layout, and no graphic or badge.
-    public M3NavigationItem() {
-        this("", null);
-    }
-
-    /// Creates a navigation item with text.
-    ///
-    /// @param text the navigation item label
-    /// @throws NullPointerException if `text` is `null`
-    public M3NavigationItem(String text) {
-        this(text, null);
-    }
-
-    /// Creates a navigation item with text and graphic content.
-    ///
-    /// @param text the navigation item label
-    /// @param graphic the graphic node, or `null` for no graphic
-    /// @throws NullPointerException if `text` is `null`
-    public M3NavigationItem(String text, @Nullable Node graphic) {
-        this(text, graphic, null);
-    }
-
-    /// Creates a navigation item with text, graphic content, and a badge.
-    ///
-    /// @param text the navigation item label
-    /// @param graphic the graphic node, or `null` for no graphic
-    /// @param badge the badge shown over the graphic, or `null` for no badge
-    /// @throws NullPointerException if `text` is `null`
-    public M3NavigationItem(String text, @Nullable Node graphic, @Nullable M3Badge badge) {
-        super(Objects.requireNonNull(text, "text"), graphic);
-        initialize();
-        setBadge(badge);
-    }
-
-    /// Returns whether this navigation item is selected.
-    ///
-    /// @return `true` when this navigation item is selected
-    public final boolean isSelected() {
-        return selected.get();
-    }
-
-    /// Sets whether this navigation item is selected.
-    ///
-    /// @param selected whether this navigation item is selected
-    public final void setSelected(boolean selected) {
-        this.selected.set(selected);
-    }
-
-    public final BooleanProperty selectedProperty() {
-        return selected;
-    }
-
     /// Returns the icon and label arrangement.
     ///
     /// @return the current navigation item layout
@@ -222,12 +180,23 @@ public final class M3NavigationItem extends ButtonBase {
         this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
 
-    /// Returns the icon and label arrangement property.
+    /// Returns the observable, bindable icon-and-label layout property.
     ///
-    /// @return the writable navigation item layout property
+    /// The property is [M3NavigationItemLayout#VERTICAL] by default. A direct `null` assignment restores that
+    /// default; changes update the layout style class and request layout.
+    ///
+    /// @return the navigation-item layout property
     public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
         return itemLayoutState;
     }
+
+    /// The optional badge associated with this destination.
+    ///
+    /// The badge node is owned by this item while displayed and may have only one parent.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
+
     /// Returns the badge displayed over this item's graphic.
     ///
     /// @return the badge shown over the graphic, or `null` when no badge is set
@@ -242,18 +211,31 @@ public final class M3NavigationItem extends ButtonBase {
         this.badge.set(badge);
     }
 
+    /// Returns the observable, bindable badge property.
+    ///
+    /// The property is `null` by default. A non-null badge is displayed over the graphic and is owned by this item
+    /// while attached to its scene graph.
+    ///
+    /// @return the badge property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
 
-    /// Returns the navigation item container height token.
+    /// The item container height in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `80.0`
+    private @Nullable StyleableDoubleProperty containerHeight;
+
+    /// Returns the navigation item container height.
     ///
     /// @return the navigation item container height in logical pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
-    /// Sets the navigation item container height token.
+    /// Sets the navigation item container height.
     ///
     /// @param containerHeight the navigation item container height in logical pixels
     /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
@@ -261,6 +243,12 @@ public final class M3NavigationItem extends ButtonBase {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable container-height property.
+    ///
+    /// The property is `80.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-container-height`.
+    ///
+    /// @return the container-height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -274,14 +262,21 @@ public final class M3NavigationItem extends ButtonBase {
         return containerHeight;
     }
 
-    /// Returns the navigation item width token.
+    /// The preferred item width in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `80.0`
+    private @Nullable StyleableDoubleProperty itemWidth;
+
+    /// Returns the navigation item width.
     ///
     /// @return the navigation item width in logical pixels
     public final double getItemWidth() {
         return itemWidth == null ? DEFAULT_ITEM_WIDTH : itemWidth.get();
     }
 
-    /// Sets the navigation item width token.
+    /// Sets the navigation item width.
     ///
     /// @param itemWidth the navigation item width in logical pixels
     /// @throws IllegalArgumentException if `itemWidth` is negative or not finite
@@ -289,6 +284,12 @@ public final class M3NavigationItem extends ButtonBase {
         itemWidthProperty().set(M3Css.nonNegative(itemWidth, "itemWidth"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable item-width property.
+    ///
+    /// The property is `80.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-item-width`.
+    ///
+    /// @return the item-width property
     public final StyleableDoubleProperty itemWidthProperty() {
         if (itemWidth == null) {
             itemWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -302,14 +303,21 @@ public final class M3NavigationItem extends ButtonBase {
         return itemWidth;
     }
 
-    /// Returns the selected indicator width token.
+    /// The selected indicator width in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `64.0`
+    private @Nullable StyleableDoubleProperty indicatorWidth;
+
+    /// Returns the selected indicator width.
     ///
     /// @return the selected indicator width in logical pixels
     public final double getIndicatorWidth() {
         return indicatorWidth == null ? DEFAULT_INDICATOR_WIDTH : indicatorWidth.get();
     }
 
-    /// Sets the selected indicator width token.
+    /// Sets the selected indicator width.
     ///
     /// @param indicatorWidth the selected indicator width in logical pixels
     /// @throws IllegalArgumentException if `indicatorWidth` is negative or not finite
@@ -317,6 +325,12 @@ public final class M3NavigationItem extends ButtonBase {
         indicatorWidthProperty().set(M3Css.nonNegative(indicatorWidth, "indicatorWidth"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable selected-indicator-width property.
+    ///
+    /// The property is `64.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-indicator-width`.
+    ///
+    /// @return the selected-indicator-width property
     public final StyleableDoubleProperty indicatorWidthProperty() {
         if (indicatorWidth == null) {
             indicatorWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -330,14 +344,21 @@ public final class M3NavigationItem extends ButtonBase {
         return indicatorWidth;
     }
 
-    /// Returns the selected indicator height token.
+    /// The selected indicator height in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `32.0`
+    private @Nullable StyleableDoubleProperty indicatorHeight;
+
+    /// Returns the selected indicator height.
     ///
     /// @return the selected indicator height in logical pixels
     public final double getIndicatorHeight() {
         return indicatorHeight == null ? DEFAULT_INDICATOR_HEIGHT : indicatorHeight.get();
     }
 
-    /// Sets the selected indicator height token.
+    /// Sets the selected indicator height.
     ///
     /// @param indicatorHeight the selected indicator height in logical pixels
     /// @throws IllegalArgumentException if `indicatorHeight` is negative or not finite
@@ -345,6 +366,12 @@ public final class M3NavigationItem extends ButtonBase {
         indicatorHeightProperty().set(M3Css.nonNegative(indicatorHeight, "indicatorHeight"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable selected-indicator-height property.
+    ///
+    /// The property is `32.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-indicator-height`.
+    ///
+    /// @return the selected-indicator-height property
     public final StyleableDoubleProperty indicatorHeightProperty() {
         if (indicatorHeight == null) {
             indicatorHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -358,14 +385,21 @@ public final class M3NavigationItem extends ButtonBase {
         return indicatorHeight;
     }
 
-    /// Returns the selected indicator shape token.
+    /// The selected indicator corner radius in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
+    private @Nullable StyleableDoubleProperty indicatorShape;
+
+    /// Returns the selected indicator corner radius.
     ///
     /// @return the selected indicator corner radius in logical pixels
     public final double getIndicatorShape() {
         return indicatorShape == null ? DEFAULT_INDICATOR_SHAPE : indicatorShape.get();
     }
 
-    /// Sets the selected indicator shape token.
+    /// Sets the selected indicator corner radius.
     ///
     /// @param indicatorShape the selected indicator corner radius in logical pixels
     /// @throws IllegalArgumentException if `indicatorShape` is negative or not finite
@@ -373,6 +407,12 @@ public final class M3NavigationItem extends ButtonBase {
         indicatorShapeProperty().set(M3Css.nonNegative(indicatorShape, "indicatorShape"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable selected-indicator-shape property.
+    ///
+    /// The property is `16.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-indicator-shape`.
+    ///
+    /// @return the selected-indicator-shape property
     public final StyleableDoubleProperty indicatorShapeProperty() {
         if (indicatorShape == null) {
             indicatorShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -386,14 +426,21 @@ public final class M3NavigationItem extends ButtonBase {
         return indicatorShape;
     }
 
-    /// Returns the content spacing token.
+    /// The spacing between the graphic and label in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `4.0`
+    private @Nullable StyleableDoubleProperty contentSpacing;
+
+    /// Returns the spacing between the graphic and label.
     ///
     /// @return the spacing between item content nodes in logical pixels
     public final double getContentSpacing() {
         return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
     }
 
-    /// Sets the content spacing token.
+    /// Sets the spacing between the graphic and label.
     ///
     /// @param contentSpacing the spacing between item content nodes in logical pixels
     /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
@@ -401,6 +448,12 @@ public final class M3NavigationItem extends ButtonBase {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable content-spacing property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-content-spacing`.
+    ///
+    /// @return the content-spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -429,7 +482,7 @@ public final class M3NavigationItem extends ButtonBase {
 
     /// Returns accessibility attributes for the navigation item selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`
@@ -486,6 +539,7 @@ public final class M3NavigationItem extends ButtonBase {
                 M3NavigationItemLayout.HORIZONTAL.styleClass()
         );
     }
+
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double width = getItemWidth();

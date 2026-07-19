@@ -25,6 +25,10 @@ import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3RadioButton].
+///
+/// The skin combines the shared selection-control label and interaction behavior with a stroked radio ring and
+/// animated selection dot. Selection geometry is snapped and centered independently from the label so its alignment
+/// remains stable across output scales and node orientations.
 @NotNullByDefault
 public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton> {
     /// The hidden selected dot scale.

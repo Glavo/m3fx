@@ -72,14 +72,27 @@ import java.util.Objects;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public class M3Dialog implements EventTarget {
-    /// The retained Material pane rendered by this dialog.
-    private final M3DialogPane dialogPane;
+    /// Creates an empty Material dialog with a new [M3DialogPane].
+    public M3Dialog() {
+        this(new M3DialogPane());
+    }
 
-    /// Animates pane opacity during dialog entrance and exit.
-    private final M3NodeTransition presentationAnimation;
-
-    /// Owns this non-Node target's JavaFX event registrations and dispatch phases.
-    private final M3EventHandlerManager eventHandlerManager = new M3EventHandlerManager(this);
+    /// Creates a Material dialog that presents the specified pane.
+    ///
+    /// @param dialogPane the pane retained for the lifetime of this dialog
+    /// @throws NullPointerException if `dialogPane` is `null`
+    M3Dialog(M3DialogPane dialogPane) {
+        this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
+        dismissOnScrimClickValue.addListener((observable, oldValue, enabled) -> {
+            @Nullable M3DialogPresentation presentation = activePresentation;
+            if (presentation != null) {
+                presentation.setDismissOnScrimClick(enabled);
+            }
+        });
+        presentationAnimation = new M3NodeTransition(dialogPane);
+        presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
+        dialogPane.setButtonAction(this::handleButtonAction);
+    }
 
     /// Whether a primary click on the surrounding scrim requests that this dialog close.
     ///
@@ -90,6 +103,169 @@ public class M3Dialog implements EventTarget {
     /// @defaultValue `true`
     private final BooleanProperty dismissOnScrimClickValue =
             new SimpleBooleanProperty(this, "dismissOnScrimClick", true);
+
+    /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
+    ///
+    /// The value is retained independently of the current host and has no effect in [M3DialogWindow] mode.
+    ///
+    /// @return `true` when pointer activation of the scrim requests dismissal
+    public final boolean isDismissOnScrimClick() {
+        return dismissOnScrimClickValue.get();
+    }
+
+    /// Sets whether a primary click on the surrounding scrim requests that this dialog close.
+    ///
+    /// Disabling this property does not make the scrim mouse-transparent; lower content remains blocked while the
+    /// dialog is showing in an overlay. Native-window presentations have no scrim and ignore this value.
+    ///
+    /// @param dismissOnScrimClick whether pointer activation of the scrim requests dismissal
+    public final void setDismissOnScrimClick(boolean dismissOnScrimClick) {
+        dismissOnScrimClickValue.set(dismissOnScrimClick);
+    }
+
+    /// Returns the property controlling pointer dismissal through the surrounding scrim.
+    ///
+    /// The property can be observed and bound. Its default value is `true`, and it may be changed while an overlay
+    /// presentation is showing. Native-window presentations retain but do not act on its value.
+    ///
+    /// @return the scrim pointer-dismissal property
+    public final BooleanProperty dismissOnScrimClickProperty() {
+        return dismissOnScrimClickValue;
+    }
+
+    /// Returns the singleton handler invoked immediately before this dialog begins presentation.
+    ///
+    /// Additional handlers registered with [#addEventHandler(EventType, EventHandler)] are independent of this
+    /// property and run before its handler.
+    ///
+    /// @return the showing handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnShowing() {
+        return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWING);
+    }
+
+    /// Sets the singleton handler invoked immediately before this dialog begins presentation.
+    ///
+    /// @param handler the showing handler, or `null` to remove it
+    /// @throws RuntimeException if [#onShowingProperty()] is bound
+    public final void setOnShowing(@Nullable EventHandler<M3DialogEvent> handler) {
+        eventHandlerManager.setEventHandler(M3DialogEvent.SHOWING, handler);
+    }
+
+    /// Returns the property holding the singleton handler invoked immediately before presentation.
+    ///
+    /// The property can be observed and bound. Its default value is `null`. This singleton handler is independent
+    /// of additional handlers registered with [#addEventHandler(EventType, EventHandler)].
+    ///
+    /// @return the showing-handler property
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShowingProperty() {
+        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWING, "onShowing");
+    }
+
+    /// Returns the singleton handler invoked after this dialog's presentation surface has been installed.
+    ///
+    /// @return the shown handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnShown() {
+        return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWN);
+    }
+
+    /// Sets the singleton handler invoked after this dialog's presentation surface has been installed.
+    ///
+    /// @param handler the shown handler, or `null` to remove it
+    /// @throws RuntimeException if [#onShownProperty()] is bound
+    public final void setOnShown(@Nullable EventHandler<M3DialogEvent> handler) {
+        eventHandlerManager.setEventHandler(M3DialogEvent.SHOWN, handler);
+    }
+
+    /// Returns the property holding the singleton handler invoked after the presentation surface is installed.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the shown-handler property
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShownProperty() {
+        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWN, "onShown");
+    }
+
+    /// Returns the singleton handler invoked before an accepted close transition.
+    ///
+    /// @return the hiding handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnHiding() {
+        return eventHandlerManager.getEventHandler(M3DialogEvent.HIDING);
+    }
+
+    /// Sets the singleton handler invoked before an accepted close transition.
+    ///
+    /// @param handler the hiding handler, or `null` to remove it
+    /// @throws RuntimeException if [#onHidingProperty()] is bound
+    public final void setOnHiding(@Nullable EventHandler<M3DialogEvent> handler) {
+        eventHandlerManager.setEventHandler(M3DialogEvent.HIDING, handler);
+    }
+
+    /// Returns the property holding the singleton handler invoked before an accepted close transition.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the hiding-handler property
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidingProperty() {
+        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.HIDING, "onHiding");
+    }
+
+    /// Returns the singleton handler invoked after this dialog's layer has been removed.
+    ///
+    /// @return the hidden handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnHidden() {
+        return eventHandlerManager.getEventHandler(M3DialogEvent.HIDDEN);
+    }
+
+    /// Sets the singleton handler invoked after this dialog's layer has been removed.
+    ///
+    /// @param handler the hidden handler, or `null` to remove it
+    /// @throws RuntimeException if [#onHiddenProperty()] is bound
+    public final void setOnHidden(@Nullable EventHandler<M3DialogEvent> handler) {
+        eventHandlerManager.setEventHandler(M3DialogEvent.HIDDEN, handler);
+    }
+
+    /// Returns the property holding the singleton handler invoked after the presentation surface is removed.
+    ///
+    /// The property can be observed and bound. Its default value is `null`.
+    ///
+    /// @return the hidden-handler property
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiddenProperty() {
+        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.HIDDEN, "onHidden");
+    }
+
+    /// Returns the singleton handler invoked for cancellable close requests.
+    ///
+    /// @return the close-request handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnCloseRequest() {
+        return eventHandlerManager.getEventHandler(M3DialogEvent.CLOSE_REQUEST);
+    }
+
+    /// Sets the singleton handler invoked for cancellable close requests.
+    ///
+    /// @param handler the close-request handler, or `null` to remove it
+    /// @throws RuntimeException if [#onCloseRequestProperty()] is bound
+    public final void setOnCloseRequest(@Nullable EventHandler<M3DialogEvent> handler) {
+        eventHandlerManager.setEventHandler(M3DialogEvent.CLOSE_REQUEST, handler);
+    }
+
+    /// Returns the property holding the singleton handler invoked for cancellable close requests.
+    ///
+    /// The property can be observed and bound. Its default value is `null`. A handler may consume the event to
+    /// reject the close request.
+    ///
+    /// @return the close-request-handler property
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequestProperty() {
+        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.CLOSE_REQUEST, "onCloseRequest");
+    }
+
+    /// The retained Material pane rendered by this dialog.
+    private final M3DialogPane dialogPane;
+
+    /// Animates pane opacity during dialog entrance and exit.
+    private final M3NodeTransition presentationAnimation;
+
+    /// Owns this non-Node target's JavaFX event registrations and dispatch phases.
+    private final M3EventHandlerManager eventHandlerManager = new M3EventHandlerManager(this);
 
     /// The handle for the current presentation, or `null` while this dialog is detached.
     private @Nullable M3DialogHandle activeHandle;
@@ -138,62 +314,11 @@ public class M3Dialog implements EventTarget {
     /// Whether the presentation background has completed the active exit transition.
     private boolean backgroundExitFinished;
 
-    /// Creates an empty Material dialog with a new [M3DialogPane].
-    public M3Dialog() {
-        this(new M3DialogPane());
-    }
-
-    /// Creates a Material dialog around a specialized package-owned pane.
-    ///
-    /// @param dialogPane the pane retained for the lifetime of this dialog
-    /// @throws NullPointerException if `dialogPane` is `null`
-    M3Dialog(M3DialogPane dialogPane) {
-        this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
-        dismissOnScrimClickValue.addListener((observable, oldValue, enabled) -> {
-            @Nullable M3DialogPresentation presentation = activePresentation;
-            if (presentation != null) {
-                presentation.setDismissOnScrimClick(enabled);
-            }
-        });
-        presentationAnimation = new M3NodeTransition(dialogPane);
-        presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
-        dialogPane.setButtonAction(this::handleButtonAction);
-    }
-
     /// Returns this dialog's retained Material pane.
     ///
     /// @return the non-null dialog pane
     public final M3DialogPane getDialogPane() {
         return dialogPane;
-    }
-
-    /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
-    ///
-    /// The value is retained independently of the current host and has no effect in [M3DialogWindow] mode.
-    ///
-    /// @return `true` when pointer activation of the scrim requests dismissal
-    public final boolean isDismissOnScrimClick() {
-        return dismissOnScrimClickValue.get();
-    }
-
-    /// Sets whether a primary click on the surrounding scrim requests that this dialog close.
-    ///
-    /// Disabling this property does not make the scrim mouse-transparent; lower content remains blocked while the
-    /// dialog is showing in an overlay. Native-window presentations have no scrim and ignore this value.
-    ///
-    /// @param dismissOnScrimClick whether pointer activation of the scrim requests dismissal
-    public final void setDismissOnScrimClick(boolean dismissOnScrimClick) {
-        dismissOnScrimClickValue.set(dismissOnScrimClick);
-    }
-
-    /// Returns the property controlling pointer dismissal through the surrounding scrim.
-    ///
-    /// The property may be changed while an overlay presentation is showing. Native-window presentations retain but
-    /// do not act on its value.
-    ///
-    /// @return the scrim pointer-dismissal property
-    public final BooleanProperty dismissOnScrimClickProperty() {
-        return dismissOnScrimClickValue;
     }
 
     /// Creates and presents an in-scene overlay presentation.
@@ -652,119 +777,6 @@ public class M3Dialog implements EventTarget {
             EventHandler<? super E> eventFilter
     ) {
         eventHandlerManager.removeEventFilter(eventType, eventFilter);
-    }
-
-    /// Returns the singleton handler invoked immediately before this dialog begins presentation.
-    ///
-    /// Additional handlers registered with [#addEventHandler(EventType, EventHandler)] are independent of this
-    /// property and run before its handler.
-    ///
-    /// @return the showing handler, or `null` when none is installed
-    public final @Nullable EventHandler<M3DialogEvent> getOnShowing() {
-        return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWING);
-    }
-
-    /// Sets the singleton handler invoked immediately before this dialog begins presentation.
-    ///
-    /// @param handler the showing handler, or `null` to remove it
-    /// @throws RuntimeException if [#onShowingProperty()] is bound
-    public final void setOnShowing(@Nullable EventHandler<M3DialogEvent> handler) {
-        eventHandlerManager.setEventHandler(M3DialogEvent.SHOWING, handler);
-    }
-
-    /// Returns the property holding the singleton handler invoked immediately before presentation.
-    ///
-    /// @return the showing-handler property
-    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShowingProperty() {
-        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWING, "onShowing");
-    }
-
-    /// Returns the singleton handler invoked after this dialog's presentation surface has been installed.
-    ///
-    /// @return the shown handler, or `null` when none is installed
-    public final @Nullable EventHandler<M3DialogEvent> getOnShown() {
-        return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWN);
-    }
-
-    /// Sets the singleton handler invoked after this dialog's presentation surface has been installed.
-    ///
-    /// @param handler the shown handler, or `null` to remove it
-    /// @throws RuntimeException if [#onShownProperty()] is bound
-    public final void setOnShown(@Nullable EventHandler<M3DialogEvent> handler) {
-        eventHandlerManager.setEventHandler(M3DialogEvent.SHOWN, handler);
-    }
-
-    /// Returns the property holding the singleton handler invoked after the presentation surface is installed.
-    ///
-    /// @return the shown-handler property
-    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShownProperty() {
-        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWN, "onShown");
-    }
-
-    /// Returns the singleton handler invoked before an accepted close transition.
-    ///
-    /// @return the hiding handler, or `null` when none is installed
-    public final @Nullable EventHandler<M3DialogEvent> getOnHiding() {
-        return eventHandlerManager.getEventHandler(M3DialogEvent.HIDING);
-    }
-
-    /// Sets the singleton handler invoked before an accepted close transition.
-    ///
-    /// @param handler the hiding handler, or `null` to remove it
-    /// @throws RuntimeException if [#onHidingProperty()] is bound
-    public final void setOnHiding(@Nullable EventHandler<M3DialogEvent> handler) {
-        eventHandlerManager.setEventHandler(M3DialogEvent.HIDING, handler);
-    }
-
-    /// Returns the property holding the singleton handler invoked before an accepted close transition.
-    ///
-    /// @return the hiding-handler property
-    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidingProperty() {
-        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.HIDING, "onHiding");
-    }
-
-    /// Returns the singleton handler invoked after this dialog's layer has been removed.
-    ///
-    /// @return the hidden handler, or `null` when none is installed
-    public final @Nullable EventHandler<M3DialogEvent> getOnHidden() {
-        return eventHandlerManager.getEventHandler(M3DialogEvent.HIDDEN);
-    }
-
-    /// Sets the singleton handler invoked after this dialog's layer has been removed.
-    ///
-    /// @param handler the hidden handler, or `null` to remove it
-    /// @throws RuntimeException if [#onHiddenProperty()] is bound
-    public final void setOnHidden(@Nullable EventHandler<M3DialogEvent> handler) {
-        eventHandlerManager.setEventHandler(M3DialogEvent.HIDDEN, handler);
-    }
-
-    /// Returns the property holding the singleton handler invoked after the presentation surface is removed.
-    ///
-    /// @return the hidden-handler property
-    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiddenProperty() {
-        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.HIDDEN, "onHidden");
-    }
-
-    /// Returns the singleton handler invoked for cancellable close requests.
-    ///
-    /// @return the close-request handler, or `null` when none is installed
-    public final @Nullable EventHandler<M3DialogEvent> getOnCloseRequest() {
-        return eventHandlerManager.getEventHandler(M3DialogEvent.CLOSE_REQUEST);
-    }
-
-    /// Sets the singleton handler invoked for cancellable close requests.
-    ///
-    /// @param handler the close-request handler, or `null` to remove it
-    /// @throws RuntimeException if [#onCloseRequestProperty()] is bound
-    public final void setOnCloseRequest(@Nullable EventHandler<M3DialogEvent> handler) {
-        eventHandlerManager.setEventHandler(M3DialogEvent.CLOSE_REQUEST, handler);
-    }
-
-    /// Returns the property holding the singleton handler invoked for cancellable close requests.
-    ///
-    /// @return the close-request-handler property
-    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequestProperty() {
-        return eventHandlerManager.eventHandlerProperty(M3DialogEvent.CLOSE_REQUEST, "onCloseRequest");
     }
 
 }

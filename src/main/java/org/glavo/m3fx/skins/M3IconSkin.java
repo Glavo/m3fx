@@ -11,8 +11,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Icon].
 ///
-/// The skin owns one unmanaged [Text] node. Glyph content and the resolved icon font are bound to the control,
-/// while the glyph fill is resolved by the icon stylesheet from the control's Material color-role style class.
+/// The skin renders the glyph with the control's resolved icon font and centers its visual bounds independently of
+/// the text baseline. Glyph content and font changes remain observable through bindings, while the icon stylesheet
+/// resolves the fill from the control's Material color-role style class.
 @NotNullByDefault
 public final class M3IconSkin extends SkinBase<M3Icon> {
     /// The layout line-box multiplier used by [M3Icon].
@@ -24,7 +25,7 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
     /// Creates an icon skin.
     ///
     /// @param control the icon controlled by this skin
-    /// @throws NullPointerException if `control` is `null`
+    /// @throws IllegalArgumentException if `control` is `null`
     public M3IconSkin(M3Icon control) {
         super(control);
         initializeGlyph(control);

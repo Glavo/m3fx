@@ -57,109 +57,167 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
         initialize();
     }
 
-    /// Returns the text input variant.
+    /// Returns the Material text-input variant.
+    ///
+    /// @return the current variant
     @Override
     public final M3TextInputVariant getVariant() {
         return support.getVariant();
     }
 
-    /// Sets the text input variant.
+    /// Sets the Material text-input variant.
+    ///
+    /// @param variant the variant to use
+    /// @throws NullPointerException if `variant` is `null`
     @Override
     public final void setVariant(M3TextInputVariant variant) {
         support.setVariant(variant);
     }
 
-    /// Returns the text input variant property.
+    /// Returns the observable, bindable text-input variant property.
+    ///
+    /// The property is [M3TextInputVariant#FILLED] by default. A direct `null` assignment restores that default;
+    /// changes update the control's variant style classes.
+    ///
+    /// @return the text-input variant property
     @Override
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
         return support.variantProperty();
     }
 
     /// Returns whether this field renders its error state.
+    ///
+    /// @return `true` when the error state is rendered
     @Override
     public final boolean isError() {
         return support.isError();
     }
 
     /// Sets whether this field renders its error state.
+    ///
+    /// @param error whether to render the error state
     @Override
     public final void setError(boolean error) {
         support.setError(error);
     }
 
-    /// Returns the error state property.
+    /// Returns the observable, bindable error-state property.
+    ///
+    /// The property is `false` by default. Changes update the error pseudo-class.
+    ///
+    /// @return the error-state property
     @Override
     public final BooleanProperty errorProperty() {
         return support.errorProperty();
     }
 
-    /// Returns the preferred container height token.
+    /// Returns the preferred container height.
+    ///
+    /// @return the preferred height in logical pixels
     @Override
     public final double getContainerHeight() {
         return support.getContainerHeight();
     }
 
-    /// Sets the preferred container height token.
+    /// Sets the preferred container height.
+    ///
+    /// @param containerHeight the finite, non-negative height in logical pixels
+    /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
     @Override
     public final void setContainerHeight(double containerHeight) {
         support.setContainerHeight(containerHeight);
     }
 
-    /// Returns the preferred container height token property.
+    /// Returns the observable, bindable, CSS-styleable preferred-height property.
+    ///
+    /// The property is `56.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-container-height`. Changes update unbound minimum and preferred heights.
+    ///
+    /// @return the preferred-height property
     @Override
     public final StyleableDoubleProperty containerHeightProperty() {
         return support.containerHeightProperty();
     }
 
-    /// Returns the container shape radius token.
+    /// Returns the container corner radius.
+    ///
+    /// @return the corner radius in logical pixels
     @Override
     public final double getContainerShape() {
         return support.getContainerShape();
     }
 
-    /// Sets the container shape radius token.
+    /// Sets the container corner radius.
+    ///
+    /// @param containerShape the finite, non-negative corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     @Override
     public final void setContainerShape(double containerShape) {
         support.setContainerShape(containerShape);
     }
 
-    /// Returns the container shape radius token property.
+    /// Returns the observable, bindable, CSS-styleable container-shape property.
+    ///
+    /// The property is `4.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-container-shape`.
+    ///
+    /// @return the container-shape property
     @Override
     public final StyleableDoubleProperty containerShapeProperty() {
         return support.containerShapeProperty();
     }
 
-    /// Returns the horizontal content padding token.
+    /// Returns the horizontal content padding.
+    ///
+    /// @return the horizontal padding in logical pixels
     @Override
     public final double getHorizontalPadding() {
         return support.getHorizontalPadding();
     }
 
-    /// Sets the horizontal content padding token.
+    /// Sets the horizontal content padding.
+    ///
+    /// @param horizontalPadding the finite, non-negative padding in logical pixels
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     @Override
     public final void setHorizontalPadding(double horizontalPadding) {
         support.setHorizontalPadding(horizontalPadding);
     }
 
-    /// Returns the horizontal content padding token property.
+    /// Returns the observable, bindable, CSS-styleable horizontal-padding property.
+    ///
+    /// The property is `16.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-horizontal-padding`. Changes update unbound control padding.
+    ///
+    /// @return the horizontal-padding property
     @Override
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         return support.horizontalPaddingProperty();
     }
 
-    /// Returns the vertical content padding token.
+    /// Returns the vertical content padding.
+    ///
+    /// @return the vertical padding in logical pixels
     @Override
     public final double getVerticalPadding() {
         return support.getVerticalPadding();
     }
 
-    /// Sets the vertical content padding token.
+    /// Sets the vertical content padding.
+    ///
+    /// @param verticalPadding the finite, non-negative padding in logical pixels
+    /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
     @Override
     public final void setVerticalPadding(double verticalPadding) {
         support.setVerticalPadding(verticalPadding);
     }
 
-    /// Returns the vertical content padding token property.
+    /// Returns the observable, bindable, CSS-styleable vertical-padding property.
+    ///
+    /// The property is `8.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-vertical-padding`. Changes update unbound control padding.
+    ///
+    /// @return the vertical-padding property
     @Override
     public final StyleableDoubleProperty verticalPaddingProperty() {
         return support.verticalPaddingProperty();
@@ -173,12 +231,16 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
     }
 
     /// Returns the CSS metadata for this control.
+    ///
+    /// @return the immutable CSS metadata list for this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
     /// Returns the user-agent stylesheet for M3FX text input controls.
+    ///
+    /// @return the user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("text-field.css");
@@ -196,34 +258,34 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3PasswordField, Number> CONTAINER_HEIGHT =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-container-height",
-                M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
-                M3PasswordField::containerHeightProperty
-        );
+                        "-m3-container-height",
+                        M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
+                        M3PasswordField::containerHeightProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3PasswordField, Number> CONTAINER_SHAPE =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-container-shape",
-                M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
-                M3PasswordField::containerShapeProperty
-        );
+                        "-m3-container-shape",
+                        M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
+                        M3PasswordField::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3PasswordField, Number> HORIZONTAL_PADDING =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-horizontal-padding",
-                M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
-                M3PasswordField::horizontalPaddingProperty
-        );
+                        "-m3-horizontal-padding",
+                        M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
+                        M3PasswordField::horizontalPaddingProperty
+                );
 
         /// CSS metadata for the vertical padding token.
         private static final CssMetaData<M3PasswordField, Number> VERTICAL_PADDING =
                 M3TextInputSupport.createSizeCssMetaData(
-                "-m3-vertical-padding",
-                M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
-                M3PasswordField::verticalPaddingProperty
-        );
+                        "-m3-vertical-padding",
+                        M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
+                        M3PasswordField::verticalPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(

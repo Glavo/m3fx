@@ -19,6 +19,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /// Keeps keyboard traversal inside one modal Material surface while it is active in a scene.
+///
+/// Lifecycle methods must be invoked on the JavaFX application thread. Installation follows the owner across scene
+/// and window changes and is idempotent; uninstalling releases all scene and window listeners installed by the trap.
 @NotNullByDefault
 public final class M3ModalFocusTrap {
     /// Opaque scene property key for active traps ordered from oldest to most recently activated.
@@ -65,10 +68,11 @@ public final class M3ModalFocusTrap {
 
     /// Creates a modal focus trap.
     ///
-    /// @param owner the modal owner node
-    /// @param activeSupplier supplies whether the trap is active
+    /// @param owner                the modal owner node
+    /// @param activeSupplier       supplies whether the trap is active
     /// @param focusTargetsSupplier supplies focus targets in traversal order
-    /// @param escapeAction the optional Escape dismissal action
+    /// @param escapeAction         the optional Escape dismissal action
+    /// @throws NullPointerException if `owner`, `activeSupplier`, or `focusTargetsSupplier` is `null`
     public M3ModalFocusTrap(
             Node owner,
             BooleanSupplier activeSupplier,
@@ -82,6 +86,9 @@ public final class M3ModalFocusTrap {
     }
 
     /// Starts tracking owner scene changes.
+    ///
+    /// If this trap is already installed, the current scene registration is refreshed without adding duplicate
+    /// listeners.
     public void install() {
         if (installed) {
             update();
@@ -103,6 +110,8 @@ public final class M3ModalFocusTrap {
     }
 
     /// Stops tracking owner scene changes and removes any installed scene filter.
+    ///
+    /// Calling this method when the trap is not installed has no effect.
     public void uninstall() {
         if (!installed) {
             return;
@@ -115,6 +124,8 @@ public final class M3ModalFocusTrap {
     }
 
     /// Synchronizes the installed scene filter with the current active state.
+    ///
+    /// This method is intended to be called after [install] whenever the value supplied by `activeSupplier` changes.
     public void update() {
         @Nullable Scene scene = activeSupplier.getAsBoolean() ? owner.getScene() : null;
         @Nullable Scene targetScene = scene != null && windowShowing(scene) ? scene : null;

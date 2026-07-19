@@ -68,36 +68,6 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// The default selected radio dot size.
     private static final double DEFAULT_SELECTED_DOT_SIZE = 10.0;
 
-    /// The styleable touch target size token.
-    private @Nullable StyleableDoubleProperty touchTargetSize;
-
-    /// The styleable state layer size token.
-    private @Nullable StyleableDoubleProperty stateLayerSize;
-
-    /// The styleable radio indicator container size token.
-    private @Nullable StyleableDoubleProperty containerSize;
-
-    /// The styleable selected radio dot size token.
-    private @Nullable StyleableDoubleProperty selectedDotSize;
-
-    /// Whether this radio button is selected.
-    ///
-    /// Setting this property to `true` selects this toggle in [#getToggleGroup()], if present, and clears the
-    /// group's previous selection. Setting it to `false` clears the group's selection when this button is the
-    /// selected toggle. Direct property mutation and binding participate in the same group synchronization.
-    ///
-    /// @defaultValue `false`
-    private @Nullable BooleanProperty selected;
-
-    /// The toggle group that coordinates this radio button's selection.
-    ///
-    /// A `null` value leaves the radio button independent. Changing the property removes the button from the old
-    /// group and adds it to the new group. The property remains synchronized when group membership is changed
-    /// through [ToggleGroup#getToggles()].
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
-
     /// Creates an unselected radio button with an empty label and no toggle group.
     public M3RadioButton() {
         initialize();
@@ -111,6 +81,23 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         initialize();
     }
 
+    /// Whether this radio button is selected.
+    ///
+    /// Setting this property to `true` selects this toggle in [#getToggleGroup()], if present, and clears the
+    /// group's previous selection. Setting it to `false` clears the group's selection when this button is the
+    /// selected toggle. Direct property mutation and binding participate in the same group synchronization.
+    ///
+    /// @defaultValue `false`
+    private @Nullable BooleanProperty selected;
+
+    /// Returns whether this radio button is selected.
+    ///
+    /// @return `true` when this radio button is selected
+    @Override
+    public final boolean isSelected() {
+        return selected != null && selected.get();
+    }
+
     /// Sets whether this radio button is selected.
     ///
     /// If the button belongs to a toggle group, selecting it updates the group's selected toggle. Clearing the
@@ -122,14 +109,12 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         selectedProperty().set(selected);
     }
 
-    /// Returns whether this radio button is selected.
+    /// Returns the observable, bindable selected-state property.
     ///
-    /// @return `true` when this radio button is selected
-    @Override
-    public final boolean isSelected() {
-        return selected != null && selected.get();
-    }
-
+    /// The property is `false` by default. Changes update pseudo-class and accessibility state and synchronize the
+    /// selected toggle of [#getToggleGroup()], when present.
+    ///
+    /// @return the selected-state property
     @Override
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
@@ -168,6 +153,23 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return selected;
     }
 
+    /// The toggle group that coordinates this radio button's selection.
+    ///
+    /// A `null` value leaves the radio button independent. Changing the property removes the button from the old
+    /// group and adds it to the new group. The property remains synchronized when group membership is changed
+    /// through [ToggleGroup#getToggles()].
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
+
+    /// Returns the toggle group that manages this radio button.
+    ///
+    /// @return the toggle group that manages this radio button, or `null`
+    @Override
+    public final @Nullable ToggleGroup getToggleGroup() {
+        return toggleGroup == null ? null : toggleGroup.get();
+    }
+
     /// Sets the toggle group that manages this radio button.
     ///
     /// Assigning a new group updates membership in both the old and new groups. Passing `null` removes the radio
@@ -179,23 +181,21 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         toggleGroupProperty().set(toggleGroup);
     }
 
-    /// Returns the toggle group that manages this radio button.
+    /// Returns the observable, bindable toggle-group property.
     ///
-    /// @return the toggle group that manages this radio button, or `null`
-    @Override
-    public final @Nullable ToggleGroup getToggleGroup() {
-        return toggleGroup == null ? null : toggleGroup.get();
-    }
-
+    /// The property is `null` by default. Changes keep this toggle's membership synchronized with the old and new
+    /// groups, including membership changes made through [ToggleGroup#getToggles()].
+    ///
+    /// @return the toggle-group property
     @Override
     public final ObjectProperty<@Nullable ToggleGroup> toggleGroupProperty() {
         if (toggleGroup == null) {
             toggleGroup = new ObjectPropertyBase<>() {
-    /// The toggle group from which this control is currently being migrated.
-    private @Nullable ToggleGroup oldGroup;
+                /// The previously synchronized toggle group.
+                private @Nullable ToggleGroup oldGroup;
 
-    /// Whether a toggle-group migration is currently updating both group models.
-    private boolean updatingGroup;
+                /// Guards against reentrant toggle-group membership synchronization.
+                private boolean updatingGroup;
 
                 /// Keeps JavaFX ToggleGroup membership synchronized with this property.
                 @Override
@@ -240,6 +240,13 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return toggleGroup;
     }
 
+    /// The preferred square touch-target size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-touch-target-size`.
+    ///
+    /// @defaultValue `48.0`
+    private @Nullable StyleableDoubleProperty touchTargetSize;
+
     /// Returns the preferred square touch-target size.
     ///
     /// @return the touch-target size in logical pixels
@@ -255,6 +262,12 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable touch-target size property.
+    ///
+    /// The property is `48.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-touch-target-size`.
+    ///
+    /// @return the touch-target size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -268,21 +281,34 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return touchTargetSize;
     }
 
+    /// The bounded state-layer size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-state-layer-size`.
+    ///
+    /// @defaultValue `40.0`
+    private @Nullable StyleableDoubleProperty stateLayerSize;
+
     /// Returns the bounded indicator state layer size token.
     ///
-    /// @return the state layer size in pixels
+    /// @return the state layer size in logical pixels
     public final double getStateLayerSize() {
         return stateLayerSize == null ? DEFAULT_STATE_LAYER_SIZE : stateLayerSize.get();
     }
 
     /// Sets the bounded indicator state layer size token.
     ///
-    /// @param stateLayerSize the state layer size in pixels
+    /// @param stateLayerSize the state layer size in logical pixels
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStateLayerSize(double stateLayerSize) {
         stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable state-layer size property.
+    ///
+    /// The property is `40.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-state-layer-size`.
+    ///
+    /// @return the state-layer size property
     public final StyleableDoubleProperty stateLayerSizeProperty() {
         if (stateLayerSize == null) {
             stateLayerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -296,21 +322,34 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return stateLayerSize;
     }
 
+    /// The radio indicator container size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-container-size`.
+    ///
+    /// @defaultValue `20.0`
+    private @Nullable StyleableDoubleProperty containerSize;
+
     /// Returns the radio indicator container size token.
     ///
-    /// @return the radio indicator container size in pixels
+    /// @return the radio indicator container size in logical pixels
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the radio indicator container size token.
     ///
-    /// @param containerSize the radio indicator container size in pixels
+    /// @param containerSize the radio indicator container size in logical pixels
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable indicator-container size property.
+    ///
+    /// The property is `20.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-container-size`.
+    ///
+    /// @return the indicator-container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = createSizeProperty(
@@ -322,21 +361,34 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return containerSize;
     }
 
+    /// The selected-dot size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-selected-dot-size`.
+    ///
+    /// @defaultValue `10.0`
+    private @Nullable StyleableDoubleProperty selectedDotSize;
+
     /// Returns the selected radio dot size token.
     ///
-    /// @return the selected radio dot size in pixels
+    /// @return the selected radio dot size in logical pixels
     public final double getSelectedDotSize() {
         return selectedDotSize == null ? DEFAULT_SELECTED_DOT_SIZE : selectedDotSize.get();
     }
 
     /// Sets the selected radio dot size token.
     ///
-    /// @param selectedDotSize the selected radio dot size in pixels
+    /// @param selectedDotSize the selected radio dot size in logical pixels
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSelectedDotSize(double selectedDotSize) {
         selectedDotSizeProperty().set(M3Css.nonNegative(selectedDotSize, "selectedDotSize"));
     }
 
+    /// Returns the observable, bindable, CSS-styleable selected-dot size property.
+    ///
+    /// The property is `10.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-selected-dot-size`.
+    ///
+    /// @return the selected-dot size property
     public final StyleableDoubleProperty selectedDotSizeProperty() {
         if (selectedDotSize == null) {
             selectedDotSize = createSizeProperty(
@@ -386,7 +438,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
 
     /// Returns accessibility attributes for radio button selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     /// @throws NullPointerException if `attribute` is `null`

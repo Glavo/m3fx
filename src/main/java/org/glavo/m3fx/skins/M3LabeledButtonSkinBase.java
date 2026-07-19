@@ -44,7 +44,11 @@ import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// A base animated skin for M3FX labeled button controls.
+/// Base skin for M3FX controls that combine [ButtonBase] behavior with labeled content.
+///
+/// The skin supplies pointer and keyboard arming, bounded state-layer and ripple feedback, CSS-resolved elevation
+/// transitions, and container-shape motion. Subclasses may override [#pressedScale(boolean)] to add depth-style
+/// scale motion without replacing the common interaction lifecycle.
 @NotNullByDefault
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
     /// The scale applied by controls that opt into depth-style pressed motion.
@@ -112,7 +116,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
     };
 
-    /// Creates an animated labeled button skin.
+    /// Creates an animated labeled button skin and installs its interaction observers.
+    ///
+    /// @param control the button controlled by this skin
     M3LabeledButtonSkinBase(C control) {
         super(control);
         effectTransition = new M3CssEffectTransition(control, control);
@@ -136,6 +142,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     }
 
     /// Applies a concrete content paint to this skin's state layer and ripple.
+    ///
+    /// @param paint the paint used by state and ripple overlays
     protected final void setStateLayerPaint(Paint paint) {
         stateLayer.setContentPaint(paint);
     }

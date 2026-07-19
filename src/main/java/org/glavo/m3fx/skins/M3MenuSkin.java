@@ -14,6 +14,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3Menu].
+///
+/// The skin presents menu children in their observable-list order and maintains first/last structural pseudo-classes
+/// for each contiguous run of selectable menu items. Non-item children delimit those runs and participate in layout
+/// without receiving item structure state.
 @NotNullByDefault
 public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox, Node> {
     /// The pseudo-class applied to the first direct menu item.

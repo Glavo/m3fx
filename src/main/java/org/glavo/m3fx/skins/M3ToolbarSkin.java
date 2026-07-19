@@ -18,6 +18,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.List;
 
 /// The default Material Design 3 skin for [M3Toolbar].
+///
+/// The skin arranges toolbar items in logical order and applies the active docked or floating variant's spacing and
+/// alignment. Items retain their own preferred sizes; remaining horizontal space is distributed by the toolbar row
+/// without changing the public item list.
 @NotNullByDefault
 public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
     /// The item slot container.

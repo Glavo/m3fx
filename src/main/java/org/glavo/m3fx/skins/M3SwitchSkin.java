@@ -20,6 +20,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Switch].
+///
+/// The skin combines shared selection-control interaction with a track, movable thumb, and optional thumb icon.
+/// Pointer dragging updates the thumb presentation before committing selection on release; keyboard activation and
+/// programmatic selection use the same selected-state transition.
 @NotNullByDefault
 public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The minimum pointer movement before a track press becomes a handle drag.
@@ -120,6 +124,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     };
 
     /// Creates a switch skin.
+    ///
+    /// @param control the switch controlled by this skin
     public M3SwitchSkin(M3Switch control) {
         super(control);
         box.getStyleClass().addAll("box", "m3-switch-track");

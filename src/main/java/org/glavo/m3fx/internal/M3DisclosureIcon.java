@@ -39,21 +39,6 @@ public final class M3DisclosureIcon extends Control {
     /// The default disclosure icon viewport size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
 
-    /// Whether the disclosure target is expanded.
-    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
-        /// Updates expanded pseudo-class state.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
-        }
-    };
-
-    /// Whether the icon uses down/up expand-collapse directions instead of logical horizontal disclosure.
-    private final BooleanProperty vertical = new SimpleBooleanProperty(this, "vertical");
-
-    /// The styleable disclosure icon viewport size.
-    private @Nullable StyleableDoubleProperty iconSize;
-
     /// Creates a collapsed disclosure icon.
     public M3DisclosureIcon() {
         this(false);
@@ -67,6 +52,19 @@ public final class M3DisclosureIcon extends Control {
         setFocusTraversable(false);
         setExpanded(expanded);
     }
+
+    /// Whether the disclosure target is expanded.
+    ///
+    /// The default value is `false`. Changing the property updates the `:expanded` pseudo-class.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
+        /// Updates expanded pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
+        }
+    };
 
     /// Returns whether the disclosure target is expanded.
     ///
@@ -82,9 +80,19 @@ public final class M3DisclosureIcon extends Control {
         this.expanded.set(expanded);
     }
 
+    /// Returns the property that indicates whether the disclosure target is expanded.
+    ///
+    /// @return the expanded property
     public final BooleanProperty expandedProperty() {
         return expanded;
     }
+
+    /// Whether the icon uses down/up expand-collapse directions instead of logical horizontal disclosure.
+    ///
+    /// The default value is `false`.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty vertical = new SimpleBooleanProperty(this, "vertical");
 
     /// Returns whether this icon points down when collapsed and up when expanded.
     ///
@@ -100,24 +108,39 @@ public final class M3DisclosureIcon extends Control {
         this.vertical.set(vertical);
     }
 
+    /// Returns the property that selects vertical expand-collapse directions.
+    ///
+    /// @return the vertical-direction property
     public final BooleanProperty verticalProperty() {
         return vertical;
     }
 
+    /// The disclosure icon viewport size, in logical pixels.
+    ///
+    /// The default value is `24.0`. Values must be finite and non-negative. This property is exposed to CSS as
+    /// `-m3-disclosure-icon-size`.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty iconSize;
+
     /// Returns the disclosure icon viewport size.
     ///
-    /// @return the icon viewport size in pixels
+    /// @return the icon viewport size in logical pixels
     public final double getIconSize() {
         return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
     }
 
     /// Sets the disclosure icon viewport size.
     ///
-    /// @param iconSize the icon viewport size in pixels
+    /// @param iconSize the icon viewport size in logical pixels
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
+    /// Returns the styleable property that stores the disclosure icon viewport size.
+    ///
+    /// @return the icon size property, in logical pixels
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(

@@ -61,7 +61,7 @@ import java.util.Objects;
 /// model but are not reachable until the group expands.
 ///
 /// The default drawer is empty, uses [M3NavigationDrawerVariant#STANDARD], and requires one selected destination
-/// whenever a reachable item exists. [getItems] is a live mutable top-level list, while [getSelectedItems] is a live,
+/// whenever a reachable item exists. [#getItems()] is a live mutable top-level list, while [#getSelectedItems()] is a live,
 /// unmodifiable observable view. When content exceeds the available height, it can be scrolled vertically.
 ///
 /// The surrounding application is responsible for positioning a standard drawer. For a modal drawer, it is also
@@ -114,57 +114,12 @@ public final class M3NavigationDrawer extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    /// The currently selected navigation drawer item.
-    private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
-            new ReadOnlyObjectWrapper<>(this, "selectedItem");
-
     /// The selected drawer list items in child order.
     private final ObservableList<M3ListItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected drawer list item view.
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
-
-    /// The spacing between adjacent top-level drawer entries in logical pixels.
-    ///
-    /// Values must be finite and non-negative. This spacing does not alter the child spacing inside a
-    /// [M3NavigationDrawerGroup].
-    ///
-    /// @defaultValue `0.0`
-    private @Nullable StyleableDoubleProperty itemSpacing;
-
-    /// The drawer presentation and color treatment.
-    ///
-    /// A direct assignment of `null` is replaced with [M3NavigationDrawerVariant#STANDARD].
-    ///
-    /// @defaultValue [M3NavigationDrawerVariant#STANDARD]
-    private final ObjectProperty<M3NavigationDrawerVariant> drawerVariant =
-            new SimpleObjectProperty<>(this, "variant", M3NavigationDrawerVariant.STANDARD) {
-                /// Updates variant pseudo-classes when the variant changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3NavigationDrawerVariant.STANDARD);
-                        return;
-                    }
-                    updateVariantPseudoClasses();
-                }
-            };
-
-    /// Whether selection may be empty while a reachable destination exists.
-    ///
-    /// Setting the value to `false` selects the first reachable destination if selection is empty.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
-        /// Restores a selected item when empty selection is disabled.
-        @Override
-        protected void invalidated() {
-            if (!get()) {
-                selectFirstItemIfNeeded();
-            }
-        }
-    };
 
     /// Cached direct drawer content with expanded groups flattened into visible rows.
     private final ObservableList<Node> flattenedItems = FXCollections.observableArrayList();
@@ -230,17 +185,23 @@ public final class M3NavigationDrawer extends Control {
         initialize();
     }
 
-    /// Returns the live mutable top-level drawer content.
+    /// The drawer presentation and color treatment.
     ///
-    /// Mutations are observed immediately and insertion order determines top-level layout and traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent. Child destinations of a
-    /// [M3NavigationDrawerGroup] are ordered at the position of their group.
+    /// A direct assignment of `null` is replaced with [M3NavigationDrawerVariant#STANDARD].
     ///
-    /// @return the live mutable top-level content list
-    public final ObservableList<Node> getItems() {
-        return items;
-    }
+    /// @defaultValue [M3NavigationDrawerVariant#STANDARD]
+    private final ObjectProperty<M3NavigationDrawerVariant> drawerVariant =
+            new SimpleObjectProperty<>(this, "variant", M3NavigationDrawerVariant.STANDARD) {
+                /// Updates variant pseudo-classes when the variant changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationDrawerVariant.STANDARD);
+                        return;
+                    }
+                    updateVariantPseudoClasses();
+                }
+            };
 
     /// Returns the navigation drawer presentation variant.
     ///
@@ -257,22 +218,21 @@ public final class M3NavigationDrawer extends Control {
         drawerVariant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the navigation drawer variant property.
+    /// Returns the observable, bindable navigation-drawer variant property.
     ///
-    /// @return the drawer variant property
+    /// The property is [M3NavigationDrawerVariant#STANDARD] by default. A direct `null` assignment restores that
+    /// default; changes update the drawer's variant pseudo-classes.
+    ///
+    /// @return the navigation-drawer variant property
     public final ObjectProperty<M3NavigationDrawerVariant> variantProperty() {
         return drawerVariant;
     }
 
-
-    /// Returns an unmodifiable observable view of selected destinations in hierarchy order.
+    /// The currently selected navigation drawer item.
     ///
-    /// The returned view is live and contains zero or one item.
-    ///
-    /// @return the live unmodifiable selected-item view
-    public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
-        return selectedItemsView;
-    }
+    /// @defaultValue `null`
+    private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
+            new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
     /// Returns the selected drawer list item.
     ///
@@ -281,17 +241,30 @@ public final class M3NavigationDrawer extends Control {
         return selectedItem.get();
     }
 
+    /// Returns the observable, read-only selected-item property.
+    ///
+    /// The property is `null` by default and tracks the selected reachable destination in the flattened drawer
+    /// hierarchy. It becomes `null` when no item is selected.
+    ///
+    /// @return the read-only selected-item property
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
-    /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
+    /// Whether selection may be empty while a reachable destination exists.
     ///
-    /// @return the flattened child index of the selected drawer list item, or `-1` when no item is selected
-    public final int getSelectedIndex() {
-        @Nullable M3ListItem item = getSelectedItem();
-        return item == null ? -1 : flattenedContent().indexOf(item);
-    }
+    /// Setting the value to `false` selects the first reachable destination if selection is empty.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
+        /// Restores a selected item when empty selection is disabled.
+        @Override
+        protected void invalidated() {
+            if (!get()) {
+                selectFirstItemIfNeeded();
+            }
+        }
+    };
 
     /// Returns whether this drawer allows all list items to be unselected.
     ///
@@ -307,14 +280,91 @@ public final class M3NavigationDrawer extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
+    /// Returns the observable, bindable empty-selection policy property.
+    ///
+    /// The property is `false` by default. Setting it to `false` while selection is empty selects the first
+    /// reachable destination, when one exists.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
+    }
+
+    /// The spacing between adjacent top-level drawer entries in logical pixels.
+    ///
+    /// Values must be finite and non-negative. This spacing does not alter the child spacing inside a
+    /// [M3NavigationDrawerGroup].
+    ///
+    /// @defaultValue `0.0`
+    private @Nullable StyleableDoubleProperty itemSpacing;
+
+    /// Returns the spacing between top-level drawer items.
+    ///
+    /// @return the spacing between top-level drawer items in logical pixels
+    public final double getItemSpacing() {
+        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
+    }
+
+    /// Sets the spacing between top-level drawer items.
+    ///
+    /// @param itemSpacing the spacing between top-level drawer items in logical pixels
+    /// @throws IllegalArgumentException if `itemSpacing` is negative or not finite
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the observable, bindable, CSS-styleable top-level item-spacing property.
+    ///
+    /// The property is `0.0` logical pixels by default, accepts only finite non-negative values, and is styleable
+    /// through `-m3-item-spacing`. Changes request layout.
+    ///
+    /// @return the top-level item-spacing property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacing == null) {
+            itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    this,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING,
+                    this::requestLayout
+            );
+        }
+        return itemSpacing;
+    }
+
+    /// Returns the live mutable top-level drawer content.
+    ///
+    /// Mutations are observed immediately and insertion order determines top-level layout and traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent. Child destinations of a
+    /// [M3NavigationDrawerGroup] are ordered at the position of their group.
+    ///
+    /// @return the live mutable top-level content list
+    public final ObservableList<Node> getItems() {
+        return items;
+    }
+
+    /// Returns an unmodifiable observable view of selected destinations in hierarchy order.
+    ///
+    /// The returned view is live and contains zero or one item.
+    ///
+    /// @return the live unmodifiable selected-item view
+    public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
+        return selectedItemsView;
+    }
+
+    /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
+    ///
+    /// @return the flattened child index of the selected drawer list item, or `-1` when no item is selected
+    public final int getSelectedIndex() {
+        @Nullable M3ListItem item = getSelectedItem();
+        return item == null ? -1 : flattenedContent().indexOf(item);
     }
 
     /// Selects a drawer list item that belongs to this drawer.
     ///
     /// @param item the drawer list item to select
-    /// @throws NullPointerException if `item` is `null`
+    /// @throws NullPointerException     if `item` is `null`
     /// @throws IllegalArgumentException if `item` is not a reachable member of this drawer
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
@@ -331,7 +381,7 @@ public final class M3NavigationDrawer extends Control {
     ///
     /// @param index the flattened child index of the drawer list item
     /// @throws IndexOutOfBoundsException if `index` is outside the visible flattened content
-    /// @throws IllegalArgumentException if the indexed node is not a selectable [M3ListItem]
+    /// @throws IllegalArgumentException  if the indexed node is not a selectable [M3ListItem]
     public final void selectIndex(int index) {
         Node child = flattenedContent().get(index);
         if (child instanceof M3ListItem item) {
@@ -385,34 +435,6 @@ public final class M3NavigationDrawer extends Control {
         if (previousItem != null) {
             selectItem(previousItem);
         }
-    }
-
-    /// Returns the spacing between top-level drawer items.
-    ///
-    /// @return the spacing between top-level drawer items in logical pixels
-    public final double getItemSpacing() {
-        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
-    }
-
-    /// Sets the spacing between top-level drawer items.
-    ///
-    /// @param itemSpacing the spacing between top-level drawer items in logical pixels
-    /// @throws IllegalArgumentException if `itemSpacing` is negative or not finite
-    public final void setItemSpacing(double itemSpacing) {
-        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
-    }
-
-    public final StyleableDoubleProperty itemSpacingProperty() {
-        if (itemSpacing == null) {
-            itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ITEM_SPACING,
-                    this,
-                    "itemSpacing",
-                    StyleableProperties.ITEM_SPACING,
-                    this::requestLayout
-            );
-        }
-        return itemSpacing;
     }
 
     /// Clears the current selection if empty selection is allowed.

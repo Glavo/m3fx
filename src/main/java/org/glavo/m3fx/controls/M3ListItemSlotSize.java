@@ -16,15 +16,15 @@ public enum M3ListItemSlotSize {
     /// Uses the node's computed size without clipping.
     AUTO,
 
-    /// Uses a 24px icon slot.
+    /// Uses a 24-logical-pixel icon slot.
     ICON,
 
-    /// Uses a 40px avatar slot.
+    /// Uses a 40-logical-pixel avatar slot.
     AVATAR,
 
-    /// Uses a 56px square thumbnail slot.
+    /// Uses a 56-logical-pixel square thumbnail slot.
     THUMBNAIL,
 
-    /// Uses a 64px by 56px thumbnail slot.
+    /// Uses a thumbnail slot measuring 64 by 56 logical pixels.
     WIDE_THUMBNAIL
 }

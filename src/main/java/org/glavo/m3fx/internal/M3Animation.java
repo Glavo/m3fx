@@ -20,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// Internal helpers for honoring the M3FX motion settings around JavaFX animations.
+///
+/// Methods that start, stop, or reconfigure an [Animation] must be invoked on the JavaFX application thread.
 @NotNullByDefault
 public final class M3Animation {
     /// The fallback motion scheme used when no M3FX theme is installed.
@@ -36,6 +38,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose local, inherited, or global motion settings should be resolved
     /// @return `true` when animations should play for the owner
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean areAnimationsEnabled(Node owner) {
         return !M3MotionSettings.shouldReduceMotion(Objects.requireNonNull(owner, "owner"));
     }
@@ -44,6 +47,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose theme motion scheme should be resolved
     /// @return the resolved motion scheme
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionScheme motionScheme(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
@@ -54,6 +58,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose theme motion behavior should be resolved
     /// @return the resolved motion behavior
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionBehavior motionBehavior(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
@@ -64,6 +69,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved fast effects motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec fastEffects(Node owner) {
         return motionScheme(owner).fastEffects();
     }
@@ -72,6 +78,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved default effects motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec defaultEffects(Node owner) {
         return motionScheme(owner).defaultEffects();
     }
@@ -80,6 +87,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved slow effects motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec slowEffects(Node owner) {
         return motionScheme(owner).slowEffects();
     }
@@ -88,6 +96,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved fast spatial motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec fastSpatial(Node owner) {
         return motionScheme(owner).fastSpatial();
     }
@@ -96,6 +105,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved default spatial motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec defaultSpatial(Node owner) {
         return motionScheme(owner).defaultSpatial();
     }
@@ -104,6 +114,7 @@ public final class M3Animation {
     ///
     /// @param owner the node whose motion scheme should be resolved
     /// @return the resolved slow spatial motion spec
+    /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec slowSpatial(Node owner) {
         return motionScheme(owner).slowSpatial();
     }
@@ -112,6 +123,7 @@ public final class M3Animation {
     ///
     /// @param owner      the node whose animation settings should be honored
     /// @param transition the transition to play or finish
+    /// @throws NullPointerException if `owner` or `transition` is `null`
     public static void playFromStart(Node owner, M3FiniteTransition transition) {
         Objects.requireNonNull(transition, "transition").playFromStart(owner);
     }
@@ -119,6 +131,7 @@ public final class M3Animation {
     /// Finishes a finite transition synchronously and invokes its completion handler.
     ///
     /// @param transition the transition to settle at its final state
+    /// @throws NullPointerException if `transition` is `null`
     public static void finish(M3FiniteTransition transition) {
         Objects.requireNonNull(transition, "transition");
         transition.stop();
@@ -129,6 +142,7 @@ public final class M3Animation {
     /// Finishes a finite transition only when it is currently running.
     ///
     /// @param transition the transition to inspect
+    /// @throws NullPointerException if `transition` is `null`
     public static void finishIfRunning(M3FiniteTransition transition) {
         Objects.requireNonNull(transition, "transition");
         if (transition.getStatus() == Animation.Status.RUNNING) {
@@ -146,6 +160,7 @@ public final class M3Animation {
     /// @param transition       the pause transition to update
     /// @param duration         the new transition duration
     /// @param restartIfRunning whether a running transition should restart after the duration changes
+    /// @throws NullPointerException if `transition` or `duration` is `null`
     public static void updatePauseDuration(
             PauseTransition transition,
             Duration duration,

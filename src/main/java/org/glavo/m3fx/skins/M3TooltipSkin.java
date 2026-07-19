@@ -19,6 +19,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Tooltip].
+///
+/// The skin renders tooltip text and graphic content in the popup scene, mirrors style classes and sizing constraints
+/// from the tooltip, and installs the tooltip's optional local theme into that scene. Theme changes resize an already
+/// showing popup after CSS has been applied.
 @NotNullByDefault
 public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// The minimum plain tooltip container height from the Material specification.
@@ -42,6 +46,8 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     private @Nullable String installedThemeStylesheet;
 
     /// Creates a tooltip skin.
+    ///
+    /// @param tooltip the tooltip rendered by this skin
     public M3TooltipSkin(M3Tooltip tooltip) {
         super(tooltip);
 

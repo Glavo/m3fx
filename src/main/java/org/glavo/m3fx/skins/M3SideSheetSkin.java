@@ -20,6 +20,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3SideSheet].
+///
+/// The skin composes the optional headline, close action, and application content into the sheet surface. Header
+/// elements participate in layout only while present, and logical start/end placement follows the control's effective
+/// node orientation.
 @NotNullByDefault
 public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// The internal sheet layout root.

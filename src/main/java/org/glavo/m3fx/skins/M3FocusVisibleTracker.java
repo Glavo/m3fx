@@ -19,7 +19,11 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
 
-/// Tracks focus-visible changes for Material state feedback.
+/// Tracks focus-visible state for Material interaction feedback.
+///
+/// Native JavaFX focus-visible state is used when exposed by the running JavaFX version. Otherwise, trackers share
+/// a scene-level input-modality observer and mark focused owners after keyboard interaction. [#install()] and
+/// [#uninstall()] are idempotent and must delimit the tracker's active lifetime.
 @NotNullByDefault
 final class M3FocusVisibleTracker {
     /// Resolves JavaFX native focus-visible support when it is available at runtime.
@@ -37,7 +41,7 @@ final class M3FocusVisibleTracker {
     /// The owner node whose focus-visible state is tracked.
     private final Node owner;
 
-    /// Called after focus visibility changes.
+    /// Called after an installed tracker reevaluates focus-visible state.
     private final Runnable invalidation;
 
     /// Handles native JavaFX focus-visible changes when native support is available.
@@ -52,12 +56,19 @@ final class M3FocusVisibleTracker {
     /// Whether this tracker is currently installed.
     private boolean installed;
 
-    /// Creates a focus-visible tracker.
+    /// Creates a focus-visible tracker using the focus-visible capability available at runtime.
+    ///
+    /// @param owner        the node whose focus-visible pseudo-class is maintained
+    /// @param invalidation the callback invoked after installed state is reevaluated
     M3FocusVisibleTracker(Node owner, Runnable invalidation) {
         this(owner, invalidation, nativeFocusVisibleProperty(owner));
     }
 
     /// Creates a focus-visible tracker with an explicit native focus-visible property.
+    ///
+    /// @param owner                      the node whose focus-visible pseudo-class is maintained
+    /// @param invalidation               the callback invoked after installed state is reevaluated
+    /// @param nativeFocusVisibleProperty the native focus-visible property, or `null` to use fallback tracking
     M3FocusVisibleTracker(
             Node owner,
             Runnable invalidation,
