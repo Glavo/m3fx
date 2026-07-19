@@ -29,8 +29,9 @@ import org.jetbrains.annotations.Nullable;
 ///
 /// A transition that is interrupted by a change to [#showingProperty()] continues from the current visual values.
 /// If reduced motion is requested for this node before or during playback, the current state settles
-/// synchronously. Changing the inherited [Node#visibleProperty()] or [Node#managedProperty()] is independent of the
-/// showing state and may prevent this region from being rendered or laid out.
+/// synchronously. A transition also settles if this node leaves the scene in which that run started. Changing the
+/// inherited [Node#visibleProperty()] or [Node#managedProperty()] is independent of the showing state and may prevent
+/// this region from being rendered or laid out.
 ///
 /// This class is a layout container rather than a Material component and does not install a user-agent stylesheet.
 /// Its public properties and animation-control methods must be accessed on the JavaFX Application Thread once the

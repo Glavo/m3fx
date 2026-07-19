@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies the reusable value, visibility, and existing-container layout animation APIs.
+/// Verifies reusable value, visibility, retained-content, and existing-container layout animation APIs.
 @NotNullByDefault
 final class M3LayoutAnimationTest {
     /// Starts the JavaFX toolkit before animation tests create scene-graph objects.
@@ -123,6 +125,210 @@ final class M3LayoutAnimationTest {
         }));
     }
 
+    /// Verifies content replacement retains at most one outgoing node and animates the reported content size.
+    @Test
+    void animatedContentOwnsTransitionVisualsAndReleasesOutgoingNodes() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Region first = fixedRegion(80.0, 32.0);
+            first.setOpacity(0.7);
+            first.setScaleX(1.2);
+            first.setScaleY(0.8);
+            first.setTranslateX(6.0);
+
+            M3AnimatedContent animatedContent = new M3AnimatedContent(first);
+            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
+            animatedContent.setEnterMotionSpec(slow);
+            animatedContent.setExitMotionSpec(slow);
+            animatedContent.setSizeMotionSpec(slow);
+
+            Pane root = new Pane(animatedContent);
+            new Scene(root);
+            root.applyCss();
+            root.layout();
+
+            Region second = fixedRegion(160.0, 64.0);
+            second.setOpacity(0.6);
+            second.setScaleX(0.9);
+            second.setScaleY(1.1);
+            second.setTranslateY(4.0);
+            animatedContent.setContent(second);
+
+            assertTrue(animatedContent.isTransitioning());
+            assertNotNull(first.getParent());
+            assertNotNull(second.getParent());
+            assertEquals(80.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+            assertEquals(32.0, animatedContent.prefHeight(-1.0), 1.0e-6);
+
+            animatedContent.finish();
+
+            assertFalse(animatedContent.isTransitioning());
+            assertNull(first.getParent());
+            assertNotNull(second.getParent());
+            assertEquals(160.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+            assertEquals(64.0, animatedContent.prefHeight(-1.0), 1.0e-6);
+            assertEquals(0.7, first.getOpacity(), 0.0);
+            assertEquals(1.2, first.getScaleX(), 0.0);
+            assertEquals(0.8, first.getScaleY(), 0.0);
+            assertEquals(6.0, first.getTranslateX(), 0.0);
+            assertEquals(0.6, second.getOpacity(), 0.0);
+            assertEquals(0.9, second.getScaleX(), 0.0);
+            assertEquals(1.1, second.getScaleY(), 0.0);
+            assertEquals(4.0, second.getTranslateY(), 0.0);
+
+            animatedContent.setContent(null);
+            animatedContent.finish();
+            assertNull(second.getParent());
+            assertEquals(0.0, animatedContent.prefWidth(-1.0), 0.0);
+            assertEquals(0.0, animatedContent.prefHeight(-1.0), 0.0);
+        }));
+    }
+
+    /// Verifies rapid target reversal reuses the outgoing holder without resetting the target node.
+    @Test
+    void animatedContentReversesToOutgoingContentAndHonorsSizePolicy() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Region first = fixedRegion(72.0, 28.0);
+            Region second = fixedRegion(180.0, 56.0);
+            M3AnimatedContent animatedContent = new M3AnimatedContent(first);
+            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
+            animatedContent.setEnterMotionSpec(slow);
+            animatedContent.setExitMotionSpec(slow);
+            animatedContent.setSizeMotionSpec(slow);
+
+            Pane root = new Pane(animatedContent);
+            new Scene(root);
+            root.applyCss();
+            root.layout();
+
+            animatedContent.setContent(second);
+            animatedContent.setContent(first);
+
+            assertSame(first, animatedContent.getContent());
+            assertNotNull(first.getParent());
+            assertNotNull(second.getParent());
+            assertTrue(animatedContent.isTransitioning());
+
+            animatedContent.finish();
+            assertNotNull(first.getParent());
+            assertNull(second.getParent());
+            assertEquals(72.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+
+            animatedContent.setSizeAnimationEnabled(false);
+            animatedContent.setContent(second);
+            assertTrue(animatedContent.isTransitioning());
+            assertEquals(180.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+            animatedContent.snapToCurrentState();
+            assertNull(first.getParent());
+            assertNotNull(second.getParent());
+
+            Region third = fixedRegion(128.0, 44.0);
+            animatedContent.setContent(first);
+            animatedContent.setContent(third);
+            assertNull(second.getParent());
+            assertNotNull(first.getParent());
+            assertNotNull(third.getParent());
+            animatedContent.finish();
+            assertNull(first.getParent());
+            assertNotNull(third.getParent());
+        }));
+    }
+
+    /// Verifies animated-content transition properties enforce their documented value contracts.
+    @Test
+    void animatedContentValidatesConfigurationProperties() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AnimatedContent animatedContent = new M3AnimatedContent();
+
+            assertThrows(IllegalArgumentException.class, () -> animatedContent.setEnterScale(0.0));
+            assertThrows(IllegalArgumentException.class, () -> animatedContent.setExitScale(Double.NaN));
+            animatedContent.alignmentProperty().set(null);
+            assertEquals(javafx.geometry.Pos.TOP_LEFT, animatedContent.getAlignment());
+        });
+    }
+
+    /// Verifies first attachment, reduced motion, and active-scene detachment settle content lifecycle correctly.
+    @Test
+    void animatedContentHandlesAttachmentAndReducedMotionLifecycle() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3AnimatedContent animatedContent = new M3AnimatedContent();
+            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
+            animatedContent.setEnterMotionSpec(slow);
+            animatedContent.setExitMotionSpec(slow);
+            animatedContent.setSizeMotionSpec(slow);
+            Pane root = new Pane(animatedContent);
+            Scene scene = new Scene(root);
+            root.applyCss();
+            root.layout();
+
+            Region first = fixedRegion(96.0, 40.0);
+            animatedContent.setContent(first);
+            assertTrue(animatedContent.isTransitioning());
+            assertEquals(0.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+
+            scene.setRoot(new Pane());
+            assertFalse(animatedContent.isTransitioning());
+            assertEquals(96.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+
+            Pane nextRoot = new Pane(animatedContent);
+            scene.setRoot(nextRoot);
+            M3MotionSettings.setReducedMotionRequested(nextRoot, true);
+            Region second = fixedRegion(144.0, 52.0);
+            animatedContent.setContent(second);
+
+            assertFalse(animatedContent.isTransitioning());
+            assertNull(first.getParent());
+            assertNotNull(second.getParent());
+            assertEquals(144.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+        }));
+    }
+
+    /// Verifies an existing target node can invalidate and retarget the animated preferred size.
+    @Test
+    void animatedContentRemeasuresCurrentNodeWithoutReplacingIt() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Region content = fixedRegion(84.0, 30.0);
+            M3AnimatedContent animatedContent = new M3AnimatedContent(content);
+            animatedContent.setSizeMotionSpec(
+                    M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
+            );
+            Pane root = new Pane(animatedContent);
+            new Scene(root);
+            root.applyCss();
+            root.layout();
+
+            content.setMinWidth(196.0);
+            content.setPrefWidth(196.0);
+            animatedContent.layout();
+
+            assertTrue(animatedContent.isTransitioning());
+            assertEquals(84.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+            animatedContent.finish();
+            assertEquals(196.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+            assertSame(content, animatedContent.getContent());
+        }));
+    }
+
+    /// Verifies finite property animations settle when their owner leaves the scene that started the run.
+    @Test
+    void finiteAnimationSettlesWhenOwnerLeavesStartingScene() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            SimpleDoubleProperty value = new SimpleDoubleProperty(0.0);
+            M3DoubleAnimatable animatable = new M3DoubleAnimatable(owner, value, 0.01);
+            animatable.animateTo(
+                    12.0,
+                    M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
+            );
+
+            assertTrue(animatable.isRunning());
+            scene.setRoot(new Pane());
+
+            assertFalse(animatable.isRunning());
+            assertEquals(12.0, value.get(), 0.0);
+        }));
+    }
+
     /// Verifies layout animation preserves rendered position, supports retargeting, and retains user transforms.
     @Test
     void layoutTransitionAnimatesExistingChildPlacementWithoutRelayoutPulses() {
@@ -207,5 +413,13 @@ final class M3LayoutAnimationTest {
             competing.start();
             competing.stop();
         });
+    }
+
+    /// Creates a region whose minimum and preferred dimensions are fixed for layout assertions.
+    private static Region fixedRegion(double width, double height) {
+        Region region = new Region();
+        region.setMinSize(width, height);
+        region.setPrefSize(width, height);
+        return region;
     }
 }

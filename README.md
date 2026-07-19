@@ -201,6 +201,19 @@ M3AnimatedVisibility details = new M3AnimatedVisibility(detailsPane);
 details.setShowing(expanded);
 ```
 
+`M3AnimatedContent` performs retained-node replacement. The outgoing node remains attached until its exit effect
+finishes, the target node enters above it, and the container's preferred size follows the target. Assigning an
+outgoing node again reverses the transition from its current visual state:
+
+```java
+M3AnimatedContent content = new M3AnimatedContent(summaryPane);
+content.setContent(detailsPane);
+```
+
+The container reuses two private holders and one shared transition, so rapid target changes cannot accumulate an
+unbounded list of stale nodes or pulse receivers. Configure enter, exit, and size motion independently through its
+JavaFX properties; disable clipping or size animation only when the surrounding layout requires it.
+
 `M3LayoutTransition` observes an existing `Parent` and animates direct-child `layoutX` and `layoutY` changes through
 private transforms. Start it after assigning the container to its lifecycle, and dispose it when that lifecycle is
 permanently released:
@@ -212,9 +225,9 @@ buttonRow.setAlignment(Pos.CENTER_RIGHT);
 placement.dispose();
 ```
 
-All three APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
-Layout transitions animate placement only; content replacement, shared elements, child entry and removal, and
-intermediate size remeasurement remain separate concerns rather than implicit behavior of every layout pane.
+All four APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
+Layout transitions animate placement only; shared elements and general child entry, removal, or remeasurement
+remain separate concerns rather than implicit behavior of every layout pane.
 
 ## Per-Control Configuration
 

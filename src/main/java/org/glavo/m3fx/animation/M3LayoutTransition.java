@@ -45,8 +45,9 @@ import java.util.Objects;
 ///
 /// All lifecycle and property methods must be invoked on the JavaFX Application Thread once the parent is attached
 /// to a showing scene. Effective reduced-motion settings are resolved from the parent for each run and are observed
-/// while that run is active. Layout direction requires no special configuration because actual JavaFX layout
-/// coordinates are animated.
+/// while that run is active. An active placement run settles when the parent leaves the scene where the run started;
+/// observation remains active until [#stop()] or [#dispose()] is called. Layout direction requires no special
+/// configuration because actual JavaFX layout coordinates are animated.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault

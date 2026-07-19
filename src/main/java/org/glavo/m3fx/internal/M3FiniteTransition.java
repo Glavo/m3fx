@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,11 +15,16 @@ import java.util.Objects;
 /// Base transition whose final values can be applied synchronously without starting a JavaFX pulse.
 ///
 /// JavaFX does not guarantee that jumping a stopped custom [Transition] to its total duration invokes
-/// `interpolate(1)`. M3FX finite transitions expose this operation so reduced-motion paths can settle reliably.
+/// `interpolate(1)`. M3FX finite transitions expose this operation so reduced-motion paths can settle reliably. A
+/// run that begins with its owner attached to a [Scene] also settles if the owner leaves or moves to another scene,
+/// preventing detached content from retaining an active JavaFX pulse receiver.
 @NotNullByDefault
 public abstract class M3FiniteTransition extends Transition {
     /// The owner whose resolved motion setting controls the current run.
     private @Nullable Node motionOwner;
+
+    /// The scene containing the owner when the current run began, or `null` for an unattached run.
+    private @Nullable Scene motionScene;
 
     /// Observes runtime motion changes only while this transition is running.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
@@ -28,6 +34,7 @@ public abstract class M3FiniteTransition extends Transition {
         statusProperty().addListener((observable, oldStatus, newStatus) -> {
             if (newStatus == Animation.Status.STOPPED) {
                 stopMotionObservation();
+                motionScene = null;
             }
         });
     }
@@ -46,6 +53,7 @@ public abstract class M3FiniteTransition extends Transition {
         }
 
         startMotionObservation(checkedOwner);
+        motionScene = checkedOwner.getScene();
         super.playFromStart();
     }
 
@@ -73,7 +81,8 @@ public abstract class M3FiniteTransition extends Transition {
         @Nullable Node owner = motionOwner;
         if (owner != null
                 && getStatus() == Animation.Status.RUNNING
-                && !M3Animation.areAnimationsEnabled(owner)) {
+                && (motionScene != null && owner.getScene() != motionScene
+                || !M3Animation.areAnimationsEnabled(owner))) {
             M3Animation.finish(this);
         }
     }

@@ -24,8 +24,9 @@ import java.util.Objects;
 ///
 /// The owner supplies the effective [motion setting][M3MotionSettings] for each run. If reduced motion is requested
 /// before or during a run, the property is set to the target value synchronously and the status becomes
-/// [Animation.Status#STOPPED]. The owner does not have to be the node whose property is animated, but it should be
-/// in the same themed subtree so that motion policy is resolved consistently.
+/// [Animation.Status#STOPPED]. A run that begins while the owner is attached to a scene also finishes synchronously
+/// if that owner leaves or moves to another scene. The owner does not have to be the node whose property is animated,
+/// but it should be in the same themed subtree so that motion policy is resolved consistently.
 ///
 /// The value property must remain writable while a run is active. A caller may observe or bind from it, but must not
 /// bind it or independently write it until the run has stopped. All methods that start, stop, or finish an animation

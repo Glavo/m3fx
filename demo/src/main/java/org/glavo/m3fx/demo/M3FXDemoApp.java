@@ -35,6 +35,7 @@ import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.animation.M3LayoutTransition;
@@ -3331,6 +3332,21 @@ public final class M3FXDemoApp extends Application {
         });
         VBox visibilityExample = new VBox(12.0, animatedVisibility, toggleVisibility);
 
+        M3AnimatedContent animatedContent = new M3AnimatedContent(createMotionContent(false));
+        animatedContent.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        M3Button replaceContent = new M3Button("Show expanded content", M3ButtonVariant.FILLED);
+        replaceContent.setOnAction(event -> {
+            @Nullable Node current = animatedContent.getContent();
+            boolean expanded = current == null || current.prefWidth(-1.0) < 400.0;
+            animatedContent.setContent(createMotionContent(expanded));
+            replaceContent.setText(expanded ? "Show compact content" : "Show expanded content");
+        });
+        M3Button finishReplacement = new M3Button("Finish transition", M3ButtonVariant.OUTLINED);
+        finishReplacement.setOnAction(event -> animatedContent.finish());
+        HBox contentActions = new HBox(12.0, replaceContent, finishReplacement);
+        contentActions.setAlignment(Pos.CENTER_LEFT);
+        VBox contentExample = new VBox(12.0, animatedContent, contentActions);
+
         M3Button firstItem = new M3Button("Plan", M3ButtonVariant.TONAL);
         M3Button secondItem = new M3Button("Build", M3ButtonVariant.TONAL);
         M3Button thirdItem = new M3Button("Review", M3ButtonVariant.TONAL);
@@ -3363,8 +3379,27 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
                 createFullWidthShowcaseGroup("Animated Visibility", visibilityExample),
+                createFullWidthShowcaseGroup("Animated Content And Size", contentExample),
                 createFullWidthShowcaseGroup("Existing Layout Container", layoutExample)
         );
+    }
+
+    /// Creates one compact or expanded node for the animated-content showcase.
+    private static M3Surface createMotionContent(boolean expanded) {
+        Label headline = new Label(expanded ? "Expanded workspace" : "Compact summary");
+        headline.getStyleClass().add("demo-group-title");
+        Label supporting = new Label(expanded
+                ? "Incoming and outgoing nodes coexist while the container follows the new preferred size. "
+                + "Repeated clicks retarget every active channel from its current visual state."
+                : "Replace this summary without resetting an in-progress transition.");
+        supporting.setWrapText(true);
+        supporting.setPrefWidth(expanded ? 440.0 : 260.0);
+
+        VBox content = new VBox(8.0, headline, supporting);
+        M3Surface surface = new M3Surface();
+        surface.getContent().add(content);
+        surface.setPrefWidth(expanded ? 520.0 : 340.0);
+        return surface;
     }
 
     /// Creates the tooltip component page.

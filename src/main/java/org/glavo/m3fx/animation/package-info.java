@@ -12,7 +12,8 @@
 /// inherited through the JavaFX parent chain; a descendant cannot cancel an ancestor request.
 ///
 /// [M3DoubleAnimatable] provides allocation-stable, interruptible animation of a writable double property.
-/// [M3AnimatedVisibility] owns enter and exit visuals for one content node, while [M3LayoutTransition] adds
+/// [M3AnimatedVisibility] owns enter and exit visuals for one content node. [M3AnimatedContent] retains incoming
+/// and outgoing nodes while animating replacement and preferred size, while [M3LayoutTransition] adds
 /// transform-based child placement motion to an existing JavaFX layout container. These runtime APIs resolve
 /// reduced-motion policy from their owner nodes and do not require specialized animated layout subclasses.
 ///
