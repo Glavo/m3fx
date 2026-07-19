@@ -9,6 +9,7 @@ import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +48,7 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
         protected void invalidated() {
             pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+            M3Accessible.notifyToggleStateChanged(M3SelectableChip.this);
         }
     };
 
@@ -80,13 +81,13 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case SELECTED -> isSelected();
-            case TOGGLE_STATE -> isSelected()
-                    ? AccessibleAttribute.ToggleState.CHECKED
-                    : AccessibleAttribute.ToggleState.UNCHECKED;
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
+        if (M3Accessible.isToggleStateAttribute(attribute)) {
+            return M3Accessible.toggleState(isSelected());
+        }
+        if (attribute == AccessibleAttribute.SELECTED) {
+            return isSelected();
+        }
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     /// Toggles this chip and fires its action event.

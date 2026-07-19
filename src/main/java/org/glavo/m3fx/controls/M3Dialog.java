@@ -722,7 +722,6 @@ public class M3Dialog implements EventTarget {
     /// @param eventHandler the handler to register
     /// @param <E>          the event class accepted by the handler
     /// @throws NullPointerException if `eventType` or `eventHandler` is `null`
-    @Override
     public final <E extends Event> void addEventHandler(
             EventType<E> eventType,
             EventHandler<? super E> eventHandler
@@ -738,7 +737,6 @@ public class M3Dialog implements EventTarget {
     /// @param eventHandler the handler to remove
     /// @param <E>          the event class accepted by the handler
     /// @throws NullPointerException if `eventType` or `eventHandler` is `null`
-    @Override
     public final <E extends Event> void removeEventHandler(
             EventType<E> eventType,
             EventHandler<? super E> eventHandler
@@ -755,7 +753,6 @@ public class M3Dialog implements EventTarget {
     /// @param eventFilter the filter to register
     /// @param <E>         the event class accepted by the filter
     /// @throws NullPointerException if `eventType` or `eventFilter` is `null`
-    @Override
     public final <E extends Event> void addEventFilter(
             EventType<E> eventType,
             EventHandler<? super E> eventFilter
@@ -771,7 +768,6 @@ public class M3Dialog implements EventTarget {
     /// @param eventFilter the filter to remove
     /// @param <E>         the event class accepted by the filter
     /// @throws NullPointerException if `eventType` or `eventFilter` is `null`
-    @Override
     public final <E extends Event> void removeEventFilter(
             EventType<E> eventType,
             EventHandler<? super E> eventFilter

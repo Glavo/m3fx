@@ -18,6 +18,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3ListCell;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -90,13 +91,13 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.PARENT, new M3FormSection().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormRow().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3ValidationSummary().getAccessibleRole());
-        assertEquals(AccessibleRole.DIALOG, new M3DialogPane().getAccessibleRole());
+        assertEquals(M3Accessible.dialogRole(), new M3DialogPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
         assertTrue(actionCard.isFocusTraversable());
         assertEquals(AccessibleRole.PARENT, new M3Banner().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3OverlayPane().getAccessibleRole());
-        assertEquals(AccessibleRole.DIALOG, new M3SideSheet().getAccessibleRole());
+        assertEquals(M3Accessible.dialogRole(), new M3SideSheet().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
         assertEquals("Dismiss", new M3Scrim().getAccessibleText());
@@ -277,13 +278,13 @@ final class M3ControlAccessibilityTest {
         M3CheckBox checkBox = new M3CheckBox("Checkbox");
         checkBox.setAllowIndeterminate(true);
 
-        assertToggleState(checkBox, false, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(checkBox, false, false);
         checkBox.executeAccessibleAction(AccessibleAction.FIRE);
-        assertToggleState(checkBox, false, true, AccessibleAttribute.ToggleState.INDETERMINATE);
+        assertToggleState(checkBox, false, true);
         checkBox.executeAccessibleAction(AccessibleAction.FIRE);
-        assertToggleState(checkBox, true, false, AccessibleAttribute.ToggleState.CHECKED);
+        assertToggleState(checkBox, true, false);
         checkBox.executeAccessibleAction(AccessibleAction.FIRE);
-        assertToggleState(checkBox, false, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(checkBox, false, false);
     }
 
     /// Verifies that disabled action controls ignore accessible fire actions.
@@ -725,64 +726,72 @@ final class M3ControlAccessibilityTest {
 
     /// Verifies an accessible fire action toggles a two-state selectable control.
     private static void assertAccessibleFireToggles(Node control, BooleanSupplier selected) {
-        assertToggleState(control, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(control, false);
         control.executeAccessibleAction(AccessibleAction.FIRE);
         assertTrue(selected.getAsBoolean(),
                 () -> control.getClass().getSimpleName() + " should become selected after FIRE");
-        assertToggleState(control, true, AccessibleAttribute.ToggleState.CHECKED);
+        assertToggleState(control, true);
         control.executeAccessibleAction(AccessibleAction.FIRE);
         assertFalse(selected.getAsBoolean(),
                 () -> control.getClass().getSimpleName() + " should become unselected after a second FIRE");
-        assertToggleState(control, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(control, false);
     }
 
     /// Verifies an accessible fire action selects a radio-style control.
     private static void assertAccessibleFireSelects(Node control, BooleanSupplier selected) {
-        assertToggleState(control, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(control, false);
         control.executeAccessibleAction(AccessibleAction.FIRE);
         assertTrue(selected.getAsBoolean(),
                 () -> control.getClass().getSimpleName() + " should become selected after FIRE");
-        assertToggleState(control, true, AccessibleAttribute.ToggleState.CHECKED);
+        assertToggleState(control, true);
         control.executeAccessibleAction(AccessibleAction.FIRE);
         assertTrue(selected.getAsBoolean(),
                 () -> control.getClass().getSimpleName() + " should remain selected after repeated FIRE");
-        assertToggleState(control, true, AccessibleAttribute.ToggleState.CHECKED);
+        assertToggleState(control, true);
     }
 
     /// Verifies a disabled selectable node does not change selection from accessibility fire.
     private static void assertDisabledAccessibleFireDoesNotToggle(Node control, BooleanSupplier selected) {
         control.setDisable(true);
-        assertToggleState(control, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(control, false);
         control.executeAccessibleAction(AccessibleAction.FIRE);
         assertFalse(selected.getAsBoolean(),
                 () -> control.getClass().getSimpleName() + " should ignore FIRE while disabled");
-        assertToggleState(control, false, AccessibleAttribute.ToggleState.UNCHECKED);
+        assertToggleState(control, false);
     }
 
     /// Verifies a selectable control exposes the expected selected and toggle-state attributes.
     private static void assertToggleState(
             Node control,
-            boolean selected,
-            AccessibleAttribute.ToggleState toggleState
+            boolean selected
     ) {
         assertEquals(selected, control.queryAccessibleAttribute(AccessibleAttribute.SELECTED),
                 () -> control.getClass().getSimpleName() + " selected accessibility state is wrong");
-        assertEquals(toggleState, control.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE),
-                () -> control.getClass().getSimpleName() + " toggle accessibility state is wrong");
+        assertOptionalToggleState(control, selected, false);
     }
 
     /// Verifies a checkbox exposes the expected selected, indeterminate, and toggle-state attributes.
     private static void assertToggleState(
             M3CheckBox checkBox,
             boolean selected,
-            boolean indeterminate,
-            AccessibleAttribute.ToggleState toggleState
+            boolean indeterminate
     ) {
         assertEquals(selected, checkBox.queryAccessibleAttribute(AccessibleAttribute.SELECTED),
                 "Checkbox selected accessibility state is wrong");
         assertEquals(indeterminate, checkBox.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE),
                 "Checkbox indeterminate accessibility state is wrong");
-        assertEquals(toggleState, checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE),
-                "Checkbox toggle accessibility state is wrong");
+        assertOptionalToggleState(checkBox, selected, indeterminate);
+    }
+
+    /// Verifies the optional aggregate toggle-state attribute on JavaFX releases that provide it.
+    private static void assertOptionalToggleState(Node control, boolean selected, boolean indeterminate) {
+        AccessibleAttribute toggleStateAttribute = M3Accessible.attribute("TOGGLE_STATE");
+        if (toggleStateAttribute != null) {
+            assertEquals(
+                    M3Accessible.toggleState(selected, indeterminate),
+                    control.queryAccessibleAttribute(toggleStateAttribute),
+                    () -> control.getClass().getSimpleName() + " toggle accessibility state is wrong"
+            );
+        }
     }
 }

@@ -18,7 +18,6 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -97,7 +96,7 @@ public class M3DialogPane extends Control {
     /// Header and content text default to empty strings; graphic and content nodes default to `null`.
     public M3DialogPane() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.DIALOG);
+        setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());

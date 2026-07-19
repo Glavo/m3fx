@@ -21,6 +21,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -125,7 +126,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
                     boolean selected = get();
                     pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
                     notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-                    notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+                    M3Accessible.notifyToggleStateChanged(M3RadioButton.this);
 
                     ToggleGroup group = getToggleGroup();
                     if (group != null) {
@@ -445,13 +446,13 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case SELECTED -> isSelected();
-            case TOGGLE_STATE -> isSelected()
-                    ? AccessibleAttribute.ToggleState.CHECKED
-                    : AccessibleAttribute.ToggleState.UNCHECKED;
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
+        if (M3Accessible.isToggleStateAttribute(attribute)) {
+            return M3Accessible.toggleState(isSelected());
+        }
+        if (attribute == AccessibleAttribute.SELECTED) {
+            return isSelected();
+        }
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     /// Adds base style classes.

@@ -14,7 +14,6 @@ import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
@@ -458,7 +457,7 @@ public final class M3SideSheet extends Control {
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.DIALOG);
+        setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());

@@ -18,6 +18,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -97,7 +98,7 @@ public final class M3SegmentedButton extends ButtonBase {
         protected void invalidated() {
             pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+            M3Accessible.notifyToggleStateChanged(M3SegmentedButton.this);
         }
     };
 
@@ -301,13 +302,13 @@ public final class M3SegmentedButton extends ButtonBase {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case SELECTED -> isSelected();
-            case TOGGLE_STATE -> isSelected()
-                    ? AccessibleAttribute.ToggleState.CHECKED
-                    : AccessibleAttribute.ToggleState.UNCHECKED;
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
+        if (M3Accessible.isToggleStateAttribute(attribute)) {
+            return M3Accessible.toggleState(isSelected());
+        }
+        if (attribute == AccessibleAttribute.SELECTED) {
+            return isSelected();
+        }
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     /// Toggles and fires this segmented button.

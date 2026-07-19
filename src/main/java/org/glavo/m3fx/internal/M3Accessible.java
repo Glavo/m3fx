@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.collections.ObservableList;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -33,6 +34,34 @@ import java.util.function.Predicate;
 /// actions must be called on the JavaFX Application Thread.
 @NotNullByDefault
 public final class M3Accessible {
+    /// The optional toggle-state attribute introduced after the minimum supported JavaFX release.
+    private static final @Nullable AccessibleAttribute TOGGLE_STATE_ATTRIBUTE = attribute("TOGGLE_STATE");
+
+    /// The optional checked value returned for the toggle-state attribute.
+    private static final @Nullable Object CHECKED_TOGGLE_STATE =
+            toggleStateConstant("CHECKED");
+
+    /// The optional unchecked value returned for the toggle-state attribute.
+    private static final @Nullable Object UNCHECKED_TOGGLE_STATE =
+            toggleStateConstant("UNCHECKED");
+
+    /// The optional indeterminate value returned for the toggle-state attribute.
+    private static final @Nullable Object INDETERMINATE_TOGGLE_STATE =
+            toggleStateConstant("INDETERMINATE");
+
+    /// The dialog role used by the running JavaFX release.
+    private static final AccessibleRole DIALOG_ROLE;
+
+    static {
+        AccessibleRole dialogRole;
+        try {
+            dialogRole = AccessibleRole.valueOf("DIALOG");
+        } catch (IllegalArgumentException e) {
+            dialogRole = AccessibleRole.PARENT;
+        }
+        DIALOG_ROLE = dialogRole;
+    }
+
     /// The node property key used to provide an accessibility index before a skin attaches nodes.
     private static final IdentityKey ACCESSIBLE_INDEX_ITEMS_KEY =
             new IdentityKey(M3Accessible.class.getName() + ".accessibleIndexItems");
@@ -135,6 +164,49 @@ public final class M3Accessible {
         }
     }
 
+    /// Returns whether an attribute is the optional toggle-state attribute of the running JavaFX release.
+    ///
+    /// @param attribute the attribute to test
+    /// @return `true` when the attribute represents toggle state
+    /// @throws NullPointerException if `attribute` is `null`
+    public static boolean isToggleStateAttribute(AccessibleAttribute attribute) {
+        return Objects.requireNonNull(attribute, "attribute") == TOGGLE_STATE_ATTRIBUTE;
+    }
+
+    /// Returns the optional accessibility value for a binary toggle state.
+    ///
+    /// @param selected whether the control is selected
+    /// @return the runtime toggle-state value, or `null` when unsupported
+    public static @Nullable Object toggleState(boolean selected) {
+        return selected ? CHECKED_TOGGLE_STATE : UNCHECKED_TOGGLE_STATE;
+    }
+
+    /// Returns the optional accessibility value for a three-state toggle.
+    ///
+    /// @param selected      whether the control is selected
+    /// @param indeterminate whether the control is indeterminate
+    /// @return the runtime toggle-state value, or `null` when unsupported
+    public static @Nullable Object toggleState(boolean selected, boolean indeterminate) {
+        return indeterminate ? INDETERMINATE_TOGGLE_STATE : toggleState(selected);
+    }
+
+    /// Notifies accessibility clients of a toggle-state change when the running JavaFX release supports it.
+    ///
+    /// @param node the node whose toggle state changed
+    /// @throws NullPointerException if `node` is `null`
+    public static void notifyToggleStateChanged(Node node) {
+        notifyAttribute(node, TOGGLE_STATE_ATTRIBUTE);
+    }
+
+    /// Returns the dialog accessibility role supported by the running JavaFX release.
+    ///
+    /// JavaFX releases without a dedicated dialog role use [AccessibleRole#PARENT].
+    ///
+    /// @return the dialog-compatible accessibility role
+    public static AccessibleRole dialogRole() {
+        return DIALOG_ROLE;
+    }
+
     /// Notifies an optional accessibility attribute when the running JavaFX version provides it.
     ///
     /// A `null` attribute is ignored.
@@ -147,6 +219,24 @@ public final class M3Accessible {
         if (attribute != null) {
             node.notifyAccessibleAttributeChanged(attribute);
         }
+    }
+
+    /// Resolves one value of the optional aggregate toggle-state attribute.
+    private static @Nullable Object toggleStateConstant(String constantName) {
+        Objects.requireNonNull(constantName, "constantName");
+        if (TOGGLE_STATE_ATTRIBUTE == null) {
+            return null;
+        }
+        Object @Nullable [] constants = TOGGLE_STATE_ATTRIBUTE.getReturnType().getEnumConstants();
+        if (constants == null) {
+            return null;
+        }
+        for (Object constant : constants) {
+            if (constant instanceof Enum<?> enumConstant && enumConstant.name().equals(constantName)) {
+                return constant;
+            }
+        }
+        return null;
     }
 
     /// Returns the child requested by an accessibility index parameter.
