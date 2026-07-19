@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.skins;
 
+import org.glavo.m3fx.internal.animation.M3DoubleTransition;
+
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;

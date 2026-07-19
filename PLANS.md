@@ -31,6 +31,12 @@ policies, centered split panes, fixed side panes, physical safety insets, logica
 coordination, and focus repair when an active region becomes hidden. The Catalog uses this scaffold as a real
 application integration path.
 
+The exported motion foundation now includes an interruptible scalar animatable, an owned-content visibility
+container, and a FLIP-style placement transition that can be installed on existing JavaFX parents. They share the
+same spring, theme, and reduced-motion infrastructure as component skins, avoid per-pulse allocation, and are
+demonstrated by the Demo's Motion page. Animated content replacement, size remeasurement, entry and removal, and
+shared-element overlay transitions remain future layers rather than responsibilities of specialized layout panes.
+
 The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable
 builders, and composite controls own the properties and events they expose. The API is not frozen until the final

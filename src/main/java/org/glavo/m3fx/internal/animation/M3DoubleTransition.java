@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.skins;
+package org.glavo.m3fx.internal.animation;
 
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
@@ -21,7 +21,7 @@ import java.util.Objects;
 /// Each call to [#configure(M3MotionSpec, double)] captures the property's current value, allowing one transition
 /// instance to be retargeted without replacing the property or allocating key frames.
 @NotNullByDefault
-final class M3DoubleTransition extends M3FiniteTransition {
+public final class M3DoubleTransition extends M3FiniteTransition {
     /// The fraction interval used to estimate velocity for duration-based fallback curves.
     private static final double VELOCITY_SAMPLE_FRACTION = 1.0e-4;
 
@@ -29,13 +29,13 @@ final class M3DoubleTransition extends M3FiniteTransition {
     private static final double MIN_SPRING_DURATION_SECONDS = 1.0e-3;
 
     /// A visibility threshold suitable for values normalized to the closed unit interval.
-    static final double NORMALIZED_VISIBILITY_THRESHOLD = 5.0e-4;
+    public static final double NORMALIZED_VISIBILITY_THRESHOLD = 5.0e-4;
 
     /// A visibility threshold suitable for logical-pixel positions.
-    static final double PIXEL_VISIBILITY_THRESHOLD = 5.0e-1;
+    public static final double PIXEL_VISIBILITY_THRESHOLD = 5.0e-1;
 
     /// A visibility threshold suitable for angular values expressed in degrees.
-    static final double ANGLE_VISIBILITY_THRESHOLD = 5.0e-1;
+    public static final double ANGLE_VISIBILITY_THRESHOLD = 5.0e-1;
 
     /// The property whose value is animated.
     private final DoubleProperty property;
@@ -73,7 +73,7 @@ final class M3DoubleTransition extends M3FiniteTransition {
     /// @param visibilityThreshold the finite, positive value delta at which a spring is visually settled
     /// @throws NullPointerException     if `property` is `null`
     /// @throws IllegalArgumentException if `visibilityThreshold` is not finite and positive
-    M3DoubleTransition(DoubleProperty property, double visibilityThreshold) {
+    public M3DoubleTransition(DoubleProperty property, double visibilityThreshold) {
         this(property, visibilityThreshold, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
@@ -86,7 +86,7 @@ final class M3DoubleTransition extends M3FiniteTransition {
     /// @throws NullPointerException     if `property` is `null`
     /// @throws IllegalArgumentException if the threshold is not finite and positive, either bound is `NaN`, or the
     ///                                  lower bound is greater than the upper bound
-    M3DoubleTransition(
+    public M3DoubleTransition(
             DoubleProperty property,
             double visibilityThreshold,
             double minimumValue,
@@ -115,7 +115,7 @@ final class M3DoubleTransition extends M3FiniteTransition {
     /// @throws NullPointerException     if `spec` is `null`
     /// @throws IllegalArgumentException if `targetValue` is non-finite or outside this transition's configured
     ///                                  bounds
-    void configure(M3MotionSpec spec, double targetValue) {
+    public void configure(M3MotionSpec spec, double targetValue) {
         M3MotionSpec checkedSpec = Objects.requireNonNull(spec, "spec");
         if (!Double.isFinite(targetValue) || targetValue < minimumValue || targetValue > maximumValue) {
             throw new IllegalArgumentException("targetValue must be finite and inside the configured bounds");
@@ -150,12 +150,12 @@ final class M3DoubleTransition extends M3FiniteTransition {
         double value = spring == null
                 ? startValue + (targetValue - startValue) * fraction
                 : M3SpringSolver.value(
-                        startValue,
-                        targetValue,
-                        initialVelocity,
-                        Math.max(0.0, fraction) * runDurationSeconds,
-                        spring
-                );
+                startValue,
+                targetValue,
+                initialVelocity,
+                Math.max(0.0, fraction) * runDurationSeconds,
+                spring
+        );
         property.set(clamp(value));
     }
 

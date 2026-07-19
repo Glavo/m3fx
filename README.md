@@ -178,6 +178,44 @@ unmanaged rather than detached, preserving selection, scrolling, bindings, and o
 and trailing pane roles follow `NodeOrientation`; physical safety insets remain physical. `breakpointOverride` is
 intended for previews, tests, or an application policy that intentionally differs from assigned width.
 
+## Motion And Layout Transitions
+
+M3FX adds animation behavior to ordinary JavaFX properties and layout containers instead of introducing animated
+copies of `VBox`, `HBox`, and every other pane. `M3DoubleAnimatable` retargets a writable property without allocating
+key frames and preserves spring velocity when an active target changes:
+
+```java
+M3DoubleAnimatable position = new M3DoubleAnimatable(
+        card,
+        card.translateXProperty(),
+        0.5
+);
+position.animateTo(240.0);
+```
+
+`M3AnimatedVisibility` hosts one content node without taking ownership of that node's visual properties. Its
+showing state is observable and can be reversed while a transition is running:
+
+```java
+M3AnimatedVisibility details = new M3AnimatedVisibility(detailsPane);
+details.setShowing(expanded);
+```
+
+`M3LayoutTransition` observes an existing `Parent` and animates direct-child `layoutX` and `layoutY` changes through
+private transforms. Start it after assigning the container to its lifecycle, and dispose it when that lifecycle is
+permanently released:
+
+```java
+M3LayoutTransition placement = new M3LayoutTransition(buttonRow);
+placement.start();
+buttonRow.setAlignment(Pos.CENTER_RIGHT);
+placement.dispose();
+```
+
+All three APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
+Layout transitions animate placement only; content replacement, shared elements, child entry and removal, and
+intermediate size remeasurement remain separate concerns rather than implicit behavior of every layout pane.
+
 ## Per-Control Configuration
 
 Use JavaFX properties for component semantics, behavior, and common geometry:

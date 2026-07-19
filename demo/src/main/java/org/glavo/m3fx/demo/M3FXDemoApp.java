@@ -35,6 +35,9 @@ import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
+import org.glavo.m3fx.animation.M3DoubleAnimatable;
+import org.glavo.m3fx.animation.M3LayoutTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3AvatarVariant;
@@ -546,6 +549,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", DemoMaterialDocs.FORMS, this::createFormsPage),
+                new DemoPage("Motion", "Motion", ADDITIONAL_DEMOS_GROUP, "Interruptible value, visibility, and layout transitions", DemoMaterialDocs.MOTION, this::createMotionPage),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", DemoMaterialDocs.TYPOGRAPHY, this::createTypographyPage),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, this::createIconsPage),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", DemoMaterialDocs.AVATARS, this::createAvatarsPage),
@@ -3280,6 +3284,87 @@ public final class M3FXDemoApp extends Application {
         form.setMaxWidth(760.0);
 
         return createGallery(createShowcaseGroup("Structured Form", form));
+    }
+
+    /// Creates the reusable Material motion API demo page.
+    private Node createMotionPage() {
+        M3Button movingTarget = new M3Button("Moving target", M3ButtonVariant.TONAL);
+        M3DoubleAnimatable horizontalPosition = new M3DoubleAnimatable(
+                movingTarget,
+                movingTarget.translateXProperty(),
+                0.5
+        );
+        StackPane valueTrack = new StackPane(movingTarget);
+        valueTrack.getStyleClass().add("demo-flow");
+        valueTrack.setAlignment(Pos.CENTER_LEFT);
+        valueTrack.setMinHeight(96.0);
+        valueTrack.setPrefWidth(560.0);
+        valueTrack.setMaxWidth(560.0);
+
+        M3Button moveButton = new M3Button("Change target", M3ButtonVariant.FILLED);
+        moveButton.setOnAction(event -> horizontalPosition.animateTo(
+                horizontalPosition.getTargetValue() < 140.0 ? 320.0 : 0.0
+        ));
+        M3Button snapButton = new M3Button("Snap to start", M3ButtonVariant.OUTLINED);
+        snapButton.setOnAction(event -> horizontalPosition.snapTo(0.0));
+        HBox valueActions = new HBox(12.0, moveButton, snapButton);
+        valueActions.setAlignment(Pos.CENTER_LEFT);
+        VBox valueExample = new VBox(12.0, valueTrack, valueActions);
+
+        Label visibilityHeadline = new Label("Animated content remains interactive while shown");
+        visibilityHeadline.getStyleClass().add("demo-group-title");
+        Label visibilitySupporting = new Label(
+                "The wrapper owns visual transition properties without changing the content node."
+        );
+        visibilitySupporting.setWrapText(true);
+        M3Surface visibilitySurface = new M3Surface();
+        visibilitySurface.setPrefWidth(520.0);
+        visibilitySurface.setMaxWidth(520.0);
+        visibilitySurface.getContent().add(new VBox(8.0, visibilityHeadline, visibilitySupporting));
+
+        M3AnimatedVisibility animatedVisibility = new M3AnimatedVisibility(visibilitySurface);
+        M3Button toggleVisibility = new M3Button("Hide content", M3ButtonVariant.FILLED);
+        toggleVisibility.setOnAction(event -> {
+            boolean show = !animatedVisibility.isShowing();
+            animatedVisibility.setShowing(show);
+            toggleVisibility.setText(show ? "Hide content" : "Show content");
+        });
+        VBox visibilityExample = new VBox(12.0, animatedVisibility, toggleVisibility);
+
+        M3Button firstItem = new M3Button("Plan", M3ButtonVariant.TONAL);
+        M3Button secondItem = new M3Button("Build", M3ButtonVariant.TONAL);
+        M3Button thirdItem = new M3Button("Review", M3ButtonVariant.TONAL);
+        HBox layoutTrack = new HBox(12.0, firstItem, secondItem, thirdItem);
+        layoutTrack.getStyleClass().add("demo-flow");
+        layoutTrack.setAlignment(Pos.CENTER_LEFT);
+        layoutTrack.setMinHeight(112.0);
+        layoutTrack.setPrefWidth(560.0);
+        layoutTrack.setMaxWidth(560.0);
+
+        M3LayoutTransition layoutTransition = new M3LayoutTransition(layoutTrack);
+        layoutTrack.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null) {
+                layoutTransition.stop();
+            } else {
+                Platform.runLater(() -> {
+                    if (layoutTrack.getScene() != null) {
+                        layoutTransition.start();
+                    }
+                });
+            }
+        });
+
+        M3Button changeLayout = new M3Button("Change alignment", M3ButtonVariant.FILLED);
+        changeLayout.setOnAction(event -> layoutTrack.setAlignment(
+                layoutTrack.getAlignment() == Pos.CENTER_LEFT ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT
+        ));
+        VBox layoutExample = new VBox(12.0, layoutTrack, changeLayout);
+
+        return createGallery(
+                createFullWidthShowcaseGroup("Interruptible Value", valueExample),
+                createFullWidthShowcaseGroup("Animated Visibility", visibilityExample),
+                createFullWidthShowcaseGroup("Existing Layout Container", layoutExample)
+        );
     }
 
     /// Creates the tooltip component page.

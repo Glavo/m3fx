@@ -26,6 +26,9 @@ final class DemoMaterialDocs {
     /// The Material Design interaction states documentation URL.
     static final String INTERACTION_STATES = ROOT + "foundations/interaction/states/overview";
 
+    /// The Material Design motion overview URL.
+    static final String MOTION = styleUrl("motion");
+
     /// The app bars component documentation URL.
     static final String APP_BARS = componentUrl("app-bars");
 
