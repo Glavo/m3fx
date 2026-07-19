@@ -63,7 +63,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
 
     /// Returns the component tokens.
     ///
-    /// @return the component-specific metric token group
+    /// @return the component-specific token group
     M3ComponentTokens componentTokens();
 
     /// Creates a builder initialized with the profile defaults and supplied color scheme and density.

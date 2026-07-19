@@ -10,7 +10,6 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
-import javafx.collections.MapChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.scene.AccessibleAttribute;
@@ -30,20 +29,17 @@ import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
-import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Predicate;
 
 /// The default virtualized skin for [M3ListView].
 ///
 /// The skin materializes only the rows needed by the viewport, styles the virtual flow scroll bars, and coordinates
-/// scrolling, logical row focus, and accessibility focus with the control's focused index. Materialized row nodes
-/// receive the same effective theme context as the list view even though the virtual flow owns their scene-graph
-/// ancestry.
+/// scrolling, logical row focus, and accessibility focus with the control's focused index. Materialized rows remain
+/// descendants of the list view and inherit its nearest theme scope through the normal JavaFX CSS cascade.
 ///
 /// @param <T> the item type rendered by the skinned list view
 @NotNullByDefault
@@ -89,21 +85,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private final ChangeListener<@Nullable Scene> sceneListener =
             (observable, oldScene, newScene) -> handleSceneChanged(newScene);
 
-    /// Refreshes visible row theme context when the list view moves under a different parent theme root.
-    private final ChangeListener<@Nullable Parent> parentListener =
-            (observable, oldParent, newParent) -> refreshThemeObserversAndVisibleRows();
-
-    /// Refreshes visible row theme context when the current scene root is replaced.
-    private final ChangeListener<Parent> sceneRootListener =
-            (observable, oldRoot, newRoot) -> refreshThemeObserversAndVisibleRows();
-
-    /// Refreshes visible row theme context when observed theme metadata changes.
-    private final MapChangeListener<Object, Object> themeRootPropertiesListener = this::handleThemeRootPropertiesChanged;
-
-    /// Refreshes observed theme roots when an observed ancestor moves in the scene graph.
-    private final ChangeListener<@Nullable Parent> ancestorParentListener =
-            (observable, oldParent, newParent) -> refreshThemeObserversAndVisibleRows();
-
     /// Handles wheel and trackpad scrolling through Material motion.
     private final EventHandler<ScrollEvent> smoothScrollHandler = this::handleSmoothScroll;
 
@@ -132,18 +113,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// The focused row index whose attached item has been reported as the accessibility focus node.
     private int materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
 
-    /// The scene currently observed for root replacement.
-    private @Nullable Scene observedThemeScene;
-
-    /// The scene root currently observed for scene-level theme changes.
-    private @Nullable Parent observedSceneRoot;
-
-    /// List view ancestors currently observed for local theme installation or removal.
-    private ArrayList<Parent> observedThemeAncestors = new ArrayList<>();
-
-    /// Reusable storage for collecting the current list-view theme ancestor chain.
-    private ArrayList<Parent> themeAncestorsScratch = new ArrayList<>();
-
     /// Creates a virtualized list view skin.
     ///
     /// @param control the skinned virtualized list view
@@ -170,8 +139,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         control.focusedProperty().addListener(focusedInvalidation);
         focusVisibleTracker.install();
         control.sceneProperty().addListener(sceneListener);
-        control.parentProperty().addListener(parentListener);
-        refreshThemeObservers();
         refreshItemCount();
     }
 
@@ -190,10 +157,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.focusedProperty().removeListener(focusedInvalidation);
         focusVisibleTracker.uninstall();
         listView.sceneProperty().removeListener(sceneListener);
-        listView.parentProperty().removeListener(parentListener);
-        updateObservedThemeScene(null);
-        updateObservedSceneRoot(null);
-        clearObservedThemeAncestors();
         flow.fixedCellSizeProperty().unbind();
         flow.releaseCells();
         flow.setCellFactory(null);
@@ -325,7 +288,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Updates virtualized row state after the list view enters or leaves a scene.
     private void handleSceneChanged(@Nullable Scene scene) {
-        refreshThemeObserversAndVisibleRows();
         if (scene == null) {
             focusRequestPending = false;
             focusRetryScheduled = false;
@@ -334,109 +296,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         }
 
         flow.refreshCells();
-        getSkinnable().requestLayout();
-    }
-
-    /// Handles observed theme metadata changes by refreshing visible row context.
-    private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
-            refreshThemeObserversAndVisibleRows();
-        }
-    }
-
-    /// Refreshes observed roots and reapplies theme context to visible rows.
-    private void refreshThemeObserversAndVisibleRows() {
-        refreshThemeObservers();
-        refreshVisibleCellThemeContexts();
-    }
-
-    /// Refreshes scene-root and ancestor observers that can affect copied row theme context.
-    private void refreshThemeObservers() {
-        M3ListView<T> listView = getSkinnable();
-        @Nullable Scene scene = listView.getScene();
-        updateObservedThemeScene(scene);
-        updateObservedSceneRoot(scene == null ? null : scene.getRoot());
-        updateObservedThemeAncestors();
-    }
-
-    /// Updates the scene observed for root replacement.
-    private void updateObservedThemeScene(@Nullable Scene scene) {
-        if (observedThemeScene == scene) {
-            return;
-        }
-        if (observedThemeScene != null) {
-            observedThemeScene.rootProperty().removeListener(sceneRootListener);
-        }
-        observedThemeScene = scene;
-        if (observedThemeScene != null) {
-            observedThemeScene.rootProperty().addListener(sceneRootListener);
-        }
-    }
-
-    /// Updates the scene root observed for scene-level theme changes.
-    private void updateObservedSceneRoot(@Nullable Parent sceneRoot) {
-        if (observedSceneRoot == sceneRoot) {
-            return;
-        }
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().removeListener(themeRootPropertiesListener);
-        }
-        observedSceneRoot = sceneRoot;
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().addListener(themeRootPropertiesListener);
-        }
-    }
-
-    /// Updates ancestors observed for local theme changes.
-    private void updateObservedThemeAncestors() {
-        themeAncestorsScratch.clear();
-        @Nullable Parent current = getSkinnable();
-        while (current != null) {
-            if (current != observedSceneRoot) {
-                themeAncestorsScratch.add(current);
-            }
-            current = current.getParent();
-        }
-
-        boolean unchanged = observedThemeAncestors.size() == themeAncestorsScratch.size();
-        for (int index = 0; unchanged && index < observedThemeAncestors.size(); index++) {
-            unchanged = observedThemeAncestors.get(index) == themeAncestorsScratch.get(index);
-        }
-        if (unchanged) {
-            themeAncestorsScratch.clear();
-            return;
-        }
-
-        for (Parent parent : observedThemeAncestors) {
-            parent.getProperties().removeListener(themeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
-        }
-        for (Parent parent : themeAncestorsScratch) {
-            parent.getProperties().addListener(themeRootPropertiesListener);
-            parent.parentProperty().addListener(ancestorParentListener);
-        }
-
-        ArrayList<Parent> previousAncestors = observedThemeAncestors;
-        observedThemeAncestors = themeAncestorsScratch;
-        themeAncestorsScratch = previousAncestors;
-        themeAncestorsScratch.clear();
-    }
-
-    /// Stops observing previously tracked local theme ancestors.
-    private void clearObservedThemeAncestors() {
-        for (Parent parent : observedThemeAncestors) {
-            parent.getProperties().removeListener(themeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
-        }
-        observedThemeAncestors.clear();
-    }
-
-    /// Reapplies copied theme context to every currently materialized row item.
-    private void refreshVisibleCellThemeContexts() {
-        if (!isSceneRefreshable()) {
-            return;
-        }
-        flow.refreshCellThemeContexts();
         getSkinnable().requestLayout();
     }
 
@@ -904,15 +763,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             for (M3ListCell<T> cell : getCells()) {
                 cell.refreshSelection();
                 cell.refreshFocus();
-            }
-        }
-
-        /// Reapplies copied theme context to all currently attached cells.
-        private void refreshCellThemeContexts() {
-            requestCellLayout();
-            requestLayout();
-            for (M3ListCell<T> cell : getCells()) {
-                cell.refreshThemeContext();
             }
         }
 

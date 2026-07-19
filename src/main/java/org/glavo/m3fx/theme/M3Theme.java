@@ -35,7 +35,10 @@ public sealed interface M3Theme permits M3ThemeImpl {
 
     /// Returns the Material Design 3 token profile.
     ///
-    /// @return the profile that determines the color specification and component token family; never `null`
+    /// The value identifies the preset from which defaults were selected. Explicit token-group replacements may
+    /// differ from that preset.
+    ///
+    /// @return the retained profile identity; never `null`
     default M3Profile profile() {
         return tokens().profile();
     }
@@ -141,6 +144,9 @@ public sealed interface M3Theme permits M3ThemeImpl {
 
     /// Creates a theme from an existing MonetFX color scheme and profile.
     ///
+    /// The profile supplies default token families, including component geometry and semantic color-role mappings.
+    /// The color scheme is retained as supplied and is not regenerated using the profile's MonetFX settings.
+    ///
     /// @param profile the component token profile to use
     /// @param colorScheme the immutable MonetFX color scheme to use without re-deriving its colors
     /// @return a new theme using standard density
@@ -152,7 +158,8 @@ public sealed interface M3Theme permits M3ThemeImpl {
     /// Creates a theme from an existing MonetFX color scheme, profile, and density.
     ///
     /// The color scheme is retained as the source of color roles. It is not regenerated to match `profile`;
-    /// callers are responsible for supplying a scheme whose color specification is appropriate for that profile.
+    /// callers may intentionally combine a color scheme with a different component-token preset. Token groups may
+    /// be replaced afterward through [M3TokenSet.builder(M3TokenSet)][M3TokenSet#builder(M3TokenSet)].
     ///
     /// @param profile the component token profile to use
     /// @param colorScheme the immutable MonetFX color scheme to use

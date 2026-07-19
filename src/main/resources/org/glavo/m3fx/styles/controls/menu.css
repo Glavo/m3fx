@@ -1,15 +1,9 @@
 .m3-menu {
-    -m3-menu-container-color: -m3-color-surface-container;
-    -m3-menu-vibrant-container-color: -m3-color-tertiary-container;
     -fx-background-color: -m3-menu-container-color;
     -fx-background-insets: 0;
     -fx-min-width: 112px;
     -fx-max-width: 280px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
-}
-
-.m3-profile-expressive .m3-menu {
-    -m3-menu-container-color: -m3-color-surface-container-low;
 }
 
 .m3-menu:vibrant {
@@ -28,10 +22,6 @@
     -fx-text-fill: -m3-color-on-surface-variant;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-}
-
-.m3-profile-expressive .m3-menu-section-header {
-    -fx-padding: 12px 16px 4px 16px;
 }
 
 .m3-menu-section-header:vibrant {

@@ -6,7 +6,7 @@ The library provides JavaFX controls, skins, themes, generated Material token st
 
 ## Status
 
-M3FX implements the baseline Material Design 3 profile and an opt-in Material 3 Expressive profile. The profile-aware token model covers color, typography, shape, motion, component geometry, progress and loading indicators, navigation, forms, pickers, menus, and surfaces.
+M3FX implements the baseline Material Design 3 profile and an opt-in Material 3 Expressive profile. The token model covers color, typography, shape, motion, component geometry and semantic color roles, progress and loading indicators, navigation, forms, pickers, menus, and surfaces.
 
 The demo and catalog applications exercise both profiles in light, dark, left-to-right, right-to-left, and reduced-motion configurations.
 
@@ -174,7 +174,47 @@ VBox themedSection = new VBox();
 M3ThemeManager.install(themedSection, sectionTheme);
 ```
 
-Use CSS for brand colors, specialized typography, or visual treatments outside the component property model. Color, typography, and elevation remain theme-token concerns rather than being duplicated as properties on every control.
+`M3Profile` selects default token families; it is not a capability gate. Explicit component tokens are honored
+independently of the profile retained by the token set. For example, one control or subtree can use Expressive
+component geometry and semantic color-role mappings while the application keeps its baseline color scheme and
+other token groups:
+
+```java
+M3Theme baseline = M3Theme.defaultTheme();
+M3ComponentTokens expressiveDefaults = M3ComponentTokens.builder(
+        M3Profile.EXPRESSIVE_2025,
+        M3ShapeTokens.expressive(),
+        baseline.density()
+).build();
+M3ComponentTokens buttonComponents = M3ComponentTokens.builder(baseline.tokens().componentTokens())
+        .filledButton(expressiveDefaults.filledButton())
+        .buttonSizing(expressiveDefaults.buttonSizing())
+        .build();
+M3Theme expressiveControlTheme = M3Theme.fromTokenSet(
+        M3TokenSet.builder(baseline.tokens())
+                .motionTokens(M3MotionTokens.expressive())
+                .componentTokens(buttonComponents)
+                .build()
+);
+
+M3Button emphasizedAction = new M3Button("Continue");
+M3ThemeManager.install(emphasizedAction, expressiveControlTheme);
+```
+
+Color generation is independent when a prebuilt MonetFX `ColorScheme` is supplied through
+`M3Theme.fromColorScheme(...)`; M3FX retains that scheme instead of regenerating it for the selected profile.
+Use CSS for individual brand-color overrides, specialized typography, or visual treatments outside the component
+property model:
+
+```css
+.save-action {
+    -m3-color-primary: #006A6A;
+    -m3-color-on-primary: white;
+}
+```
+
+Color, typography, and elevation remain theme-token or CSS concerns rather than being duplicated as properties on
+every control.
 
 A card becomes an interactive whole only when it has an action handler:
 

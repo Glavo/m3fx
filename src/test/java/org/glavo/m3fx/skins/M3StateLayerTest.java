@@ -8,6 +8,7 @@ import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -16,7 +17,6 @@ import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
-import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -192,7 +192,7 @@ final class M3StateLayerTest {
             Pane owner = new Pane();
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
-            Scene scene = new Scene(owner, 100.0, 40.0);
+            new Scene(owner, 100.0, 40.0);
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
             M3MotionSettings.setReducedMotionRequested(owner, false);
@@ -287,6 +287,31 @@ final class M3StateLayerTest {
             assertTrue(focusIndicator.getStyle().contains("-fx-border-width: 4.0px"));
             assertTrue(focusIndicator.getStyle().contains("27.0px"));
             assertFalse(stateLayer.isFocusIndicatorOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that a control-local CSS token overrides the theme's focus-indicator color.
+    @Test
+    void focusIndicatorColorUsesInheritedCssToken() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            owner.setStyle(owner.getStyle() + " -m3-state-focus-indicator-color: rgb(1,2,3);");
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            owner.applyCss();
+
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
+            assertEquals(
+                    Color.rgb(1, 2, 3),
+                    focusIndicator.getBorder().getStrokes().get(0).getTopStroke()
+            );
         });
     }
 

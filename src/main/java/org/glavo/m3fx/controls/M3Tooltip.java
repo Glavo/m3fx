@@ -47,9 +47,7 @@ import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
-import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,9 +98,6 @@ public class M3Tooltip extends PopupControl {
 
     /// The owner node currently supplying popup context.
     private @Nullable Node popupContextOwner;
-
-    /// The tooltip style before theme declarations were added.
-    private @Nullable String baseStyle;
 
     /// Whether the current theme value was inherited from the target node hierarchy.
     private boolean themeInherited;
@@ -423,6 +418,7 @@ public class M3Tooltip extends PopupControl {
     /// inheritance from the owner node on the next context synchronization.
     ///
     /// @param theme the explicit theme, or `null` to inherit from the owner
+    /// @throws IllegalStateException if the explicit theme stylesheet cannot be made available to JavaFX
     public final void setTheme(@Nullable M3Theme theme) {
         applyingInheritedTheme = false;
         this.theme.set(theme);
@@ -624,16 +620,11 @@ public class M3Tooltip extends PopupControl {
         }
     }
 
-    /// Applies or clears inline theme declarations on the tooltip.
+    /// Applies or clears the explicit theme context represented by this tooltip.
     private void applyTheme(@Nullable M3Theme theme) {
         updateExplicitThemeRoot(theme);
         if (theme == null) {
             M3ThemeRuntime.clearThemeStyleClasses(this);
-            String currentBaseStyle = baseStyle;
-            if (currentBaseStyle != null) {
-                setStyle(currentBaseStyle);
-                baseStyle = null;
-            }
             if (isShowing()) {
                 @Nullable Node ownerNode = getOwnerNode();
                 if (ownerNode != null) {
@@ -643,17 +634,7 @@ public class M3Tooltip extends PopupControl {
             return;
         }
 
-        String resolvedBaseStyle = baseStyle;
-        if (resolvedBaseStyle == null) {
-            resolvedBaseStyle = getStyle();
-            baseStyle = resolvedBaseStyle;
-        }
         M3ThemeRuntime.applyThemeStyleClasses(this, theme);
-        String themeStyle = M3ThemeCssCompiler.rootStyleDeclarations(theme);
-        if (usesPlainContainerStyle()) {
-            themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
-        }
-        setStyle(mergeStyles(resolvedBaseStyle, themeStyle));
         if (isShowing()) {
             @Nullable Node ownerNode = getOwnerNode();
             if (ownerNode != null) {
@@ -669,42 +650,6 @@ public class M3Tooltip extends PopupControl {
         } else {
             M3ThemeRuntime.uninstall(explicitThemeRoot);
         }
-    }
-
-    /// Merges existing tooltip style declarations with generated theme declarations.
-    private static String mergeStyles(String baseStyle, String themeStyle) {
-        if (baseStyle.isBlank()) {
-            return themeStyle;
-        }
-        return baseStyle.stripTrailing() + " " + themeStyle;
-    }
-
-    /// Returns whether the tooltip root should receive plain tooltip container metrics.
-    ///
-    /// Subclasses that provide rich content return `false` so rich container tokens remain in effect.
-    ///
-    /// @return `true` for the compact plain-tooltip container style
-    protected boolean usesPlainContainerStyle() {
-        return true;
-    }
-
-    /// Creates inline CSS for plain tooltip container metrics.
-    private static String plainContainerStyle(M3ComponentTokens.TooltipTokens tokens) {
-        return "-fx-background-radius: "
-                + pixels(tokens.plainContainerShape())
-                + "; -fx-padding: "
-                + pixels(tokens.plainVerticalPadding())
-                + " "
-                + pixels(tokens.plainHorizontalPadding())
-                + ";";
-    }
-
-    /// Formats a CSS pixel value.
-    private static String pixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 
     /// Synchronizes the popup scene root style classes with the owner theme context.

@@ -63,17 +63,17 @@
 }
 
 .m3-navigation-item:selected .m3-navigation-item-label {
-    -fx-text-fill: -m3-color-on-surface;
+    -fx-text-fill: -m3-navigation-bar-selected-label-color;
 }
 
 .m3-navigation-item .m3-state-layer,
 .m3-navigation-item .m3-ripple {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-background-color: -m3-navigation-bar-state-layer-color;
 }
 
 .m3-navigation-item:selected .m3-state-layer,
 .m3-navigation-item:selected .m3-ripple {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-background-color: -m3-navigation-bar-state-layer-color;
 }
 
 .m3-navigation-item:hover .m3-state-layer {
@@ -91,22 +91,6 @@
 
 .m3-navigation-item:disabled {
     -fx-opacity: 0.38;
-}
-
-.m3-profile-expressive .m3-navigation-bar {
-    -fx-min-height: 64px;
-    -fx-pref-height: 64px;
-    -m3-item-spacing: 6px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
-}
-
-.m3-profile-expressive .m3-navigation-item:selected .m3-navigation-item-label {
-    -fx-text-fill: -m3-color-secondary;
-}
-
-.m3-profile-expressive .m3-navigation-item .m3-state-layer,
-.m3-profile-expressive .m3-navigation-item .m3-ripple {
-    -fx-background-color: -m3-color-on-secondary-container;
 }
 
 .m3-navigation-bar .m3-navigation-item-horizontal.m3-navigation-item {

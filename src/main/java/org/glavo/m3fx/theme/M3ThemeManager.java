@@ -19,9 +19,9 @@ import org.jetbrains.annotations.Nullable;
 ///
 /// Installation is replaceable and idempotent. Installing another theme on the same target replaces the previous
 /// M3FX theme rather than accumulating theme state. [uninstall(Scene)][#uninstall(Scene)] and
-/// [uninstall(Parent)][#uninstall(Parent)] restore the root style and managed style-class membership captured by the
-/// corresponding installation. Applications should therefore avoid replacing a themed root's complete inline
-/// style while the installation is active if that change must survive uninstallation.
+/// [uninstall(Parent)][#uninstall(Parent)] restore managed style-class membership and remove the generated theme
+/// stylesheet associated with the corresponding installation. Installation never rewrites application-owned
+/// inline style.
 ///
 /// These methods mutate JavaFX scene-graph state. They must be called on the JavaFX Application Thread once the
 /// affected scene graph is live, following the same threading rules as [Scene] and [Parent].
@@ -55,10 +55,16 @@ public final class M3ThemeManager {
     /// The style class maintained on every root with an installed M3FX theme.
     public static final String ROOT_STYLE_CLASS = "m3-root";
 
-    /// The style class maintained on roots using the baseline Material Design 3 profile.
+    /// The semantic style class maintained on roots retaining the baseline Material Design 3 profile identity.
+    ///
+    /// M3FX does not use this class as a component capability gate. Generated component rules are compiled from
+    /// explicit component tokens; applications may use this class as an optional CSS hook.
     public static final String BASELINE_PROFILE_STYLE_CLASS = "m3-profile-baseline";
 
-    /// The style class maintained on roots using the Material Design 3 Expressive profile.
+    /// The semantic style class maintained on roots retaining the Material Design 3 Expressive profile identity.
+    ///
+    /// M3FX does not use this class as a component capability gate. Generated component rules are compiled from
+    /// explicit component tokens; applications may use this class as an optional CSS hook.
     public static final String EXPRESSIVE_PROFILE_STYLE_CLASS = "m3-profile-expressive";
 
     /// The style class maintained on roots using a light color scheme.
@@ -88,11 +94,14 @@ public final class M3ThemeManager {
     ///
     /// A local theme takes precedence over inherited theme declarations for the subtree rooted at `root`.
     /// Reinstalling replaces the previous local theme. The installation remains attached to `root` if that
-    /// parent is moved elsewhere in the scene graph.
+    /// parent is moved elsewhere in the scene graph. When `root` is also controlled by [install(Scene,M3Theme)], the
+    /// scene theme remains visible while the local installation is retained beneath it. The local theme becomes
+    /// effective if the scene theme is uninstalled or the scene replaces its root.
     ///
     /// @param root  the root of the local theme scope
     /// @param theme the Material theme to install
-    /// @throws NullPointerException if `root` or `theme` is `null`
+    /// @throws NullPointerException  if `root` or `theme` is `null`
+    /// @throws IllegalStateException if the theme stylesheet cannot be made available to JavaFX
     public static void install(Parent root, M3Theme theme) {
         M3ThemeRuntime.install(root, theme);
     }
@@ -119,7 +128,7 @@ public final class M3ThemeManager {
         return M3ThemeRuntime.getTheme(root);
     }
 
-    /// Removes the scene installation and restores the root state captured when it was installed.
+    /// Removes the scene installation and restores managed root state captured when it was installed.
     ///
     /// The M3FX stylesheets associated with the scene installation are removed. Calling this method when no scene
     /// theme is installed has no effect beyond clearing directly installed M3FX state from the current root.
@@ -132,8 +141,10 @@ public final class M3ThemeManager {
 
     /// Removes the directly installed M3FX theme from a parent.
     ///
-    /// This method is idempotent. The parent's captured pre-installation style is restored and descendants then
-    /// resolve any theme inherited from an enclosing scope.
+    /// This method is idempotent. Theme metadata and semantic style-class membership that existed before the local
+    /// installation are restored, while application-owned inline style remains unchanged. Descendants then resolve
+    /// any theme inherited from an enclosing scope. If a scene installation currently controls the same root, only
+    /// the retained local installation is removed and the scene theme remains visible.
     ///
     /// @param root the local theme root from which to remove the theme
     /// @throws NullPointerException if `root` is `null`

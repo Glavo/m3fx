@@ -4,6 +4,7 @@
 package org.glavo.m3fx.internal;
 
 import javafx.scene.Scene;
+import javafx.scene.SubScene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.FxTestUtils;
@@ -28,9 +29,9 @@ final class M3ThemeResolverTest {
         FxTestUtils.startToolkit();
     }
 
-    /// Verifies that a scene-installed theme controls scene-attached nodes.
+    /// Verifies that a scene-installed theme controls attached nodes without a closer local scope.
     @Test
-    void sceneThemeTakesPrecedenceForAttachedNodes() {
+    void sceneThemeControlsAttachedNodesWithoutLocalScope() {
         Pane root = new Pane();
         Pane child = new Pane();
         root.getChildren().add(child);
@@ -43,6 +44,29 @@ final class M3ThemeResolverTest {
 
         assertSame(sceneTheme, M3ThemeResolver.findTheme(scene));
         assertSame(sceneTheme, M3ThemeResolver.findTheme(child));
+    }
+
+    /// Verifies that the nearest local theme overrides the containing scene theme.
+    @Test
+    void nearestLocalThemeTakesPrecedenceOverSceneTheme() {
+        Pane root = new Pane();
+        Pane localRoot = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(localRoot);
+        localRoot.getChildren().add(child);
+        Scene scene = new Scene(root);
+        M3Theme sceneTheme = M3Theme.defaultTheme();
+        M3Theme localTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+
+        M3ThemeManager.install(scene, sceneTheme);
+        M3ThemeManager.install(localRoot, localTheme);
+
+        assertSame(localTheme, M3ThemeResolver.findTheme(child));
+        assertSame(localRoot, M3ThemeResolver.findThemeRoot(child));
     }
 
     /// Verifies that detached nodes resolve themes from their parent chain.
@@ -61,9 +85,9 @@ final class M3ThemeResolverTest {
         assertSame(root, M3ThemeResolver.findThemeRoot(child));
     }
 
-    /// Verifies that scene roots are preferred as popup theme sources when a scene theme is installed.
+    /// Verifies that popup theme lookup honors a local scope inside a themed scene.
     @Test
-    void sceneRootSuppliesPopupThemeContext() {
+    void localRootSuppliesPopupThemeContextInsideThemedScene() {
         Pane root = new Pane();
         Pane localRoot = new Pane();
         Pane child = new Pane();
@@ -76,7 +100,7 @@ final class M3ThemeResolverTest {
         M3ThemeManager.install(scene, sceneTheme);
         M3ThemeManager.install(localRoot, localTheme);
 
-        assertSame(root, M3ThemeResolver.findThemeRoot(child));
+        assertSame(localRoot, M3ThemeResolver.findThemeRoot(child));
     }
 
     /// Verifies that local parent themes supply popup context when the scene has no installed theme.
@@ -87,12 +111,37 @@ final class M3ThemeResolverTest {
         Pane child = new Pane();
         root.getChildren().add(localRoot);
         localRoot.getChildren().add(child);
-        Scene scene = new Scene(root);
+        new Scene(root);
         M3Theme localTheme = M3Theme.defaultTheme();
 
         M3ThemeManager.install(localRoot, localTheme);
 
         assertSame(localRoot, M3ThemeResolver.findThemeRoot(child));
+    }
+
+    /// Verifies that SubScene content falls back to the containing scene theme after checking local scopes.
+    @Test
+    void subSceneContentResolvesLocalThenSceneTheme() {
+        Pane child = new Pane();
+        Pane subSceneRoot = new Pane(child);
+        SubScene subScene = new SubScene(subSceneRoot, 160.0, 90.0);
+        Pane sceneRoot = new Pane(subScene);
+        Scene scene = new Scene(sceneRoot);
+        M3Theme sceneTheme = M3Theme.defaultTheme();
+        M3Theme localTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+        M3ThemeManager.install(scene, sceneTheme);
+
+        assertSame(sceneTheme, M3ThemeResolver.findTheme(child));
+        assertSame(sceneRoot, M3ThemeResolver.findThemeRoot(child));
+
+        M3ThemeManager.install(subSceneRoot, localTheme);
+
+        assertSame(localTheme, M3ThemeResolver.findTheme(child));
+        assertSame(subSceneRoot, M3ThemeResolver.findThemeRoot(child));
     }
 
 

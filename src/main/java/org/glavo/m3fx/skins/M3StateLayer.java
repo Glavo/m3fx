@@ -31,7 +31,6 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
-import org.glavo.monetfx.ColorRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,9 +57,6 @@ final class M3StateLayer extends Pane {
 
     /// The fallback state layer tokens used when no theme is installed.
     private static final M3StateLayerTokens FALLBACK_TOKENS = M3StateLayerTokens.baseline();
-
-    /// The baseline secondary color used by focus indicators when no theme is installed.
-    private static final Color FALLBACK_FOCUS_INDICATOR_COLOR = Color.rgb(98, 91, 113);
 
     /// The class applied to state layer containers.
     static final String STYLE_CLASS = "m3-state-layer-container";
@@ -100,10 +96,6 @@ final class M3StateLayer extends Pane {
 
     /// The explicitly resolved content paint used by controls that cannot retain CSS lookups while detached.
     private @Nullable Paint contentPaint;
-
-    /// The color currently applied to the keyboard focus indicator.
-    private @Nullable Color focusIndicatorColor;
-
 
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
@@ -943,9 +935,6 @@ final class M3StateLayer extends Pane {
         Node owner = stateOwner;
         @Nullable M3Theme theme = owner == null ? null : M3ThemeResolver.findTheme(owner);
         M3StateLayerTokens tokens = theme == null ? FALLBACK_TOKENS : theme.tokens().stateLayerTokens();
-        Color indicatorColor = theme == null
-                ? FALLBACK_FOCUS_INDICATOR_COLOR
-                : theme.tokens().colorTokens().get(ColorRole.SECONDARY);
         double offset = owner != null && usesInnerFocusIndicatorOffset(owner)
                 ? tokens.focusIndicatorInnerOffset()
                 : tokens.focusIndicatorOuterOffset();
@@ -971,8 +960,7 @@ final class M3StateLayer extends Pane {
                 && Double.compare(focusIndicatorBottomRightRadius, adjustedBottomRight) == 0
                 && Double.compare(focusIndicatorBottomLeftRadius, adjustedBottomLeft) == 0
                 && Double.compare(focusIndicatorInset, inwardOffset) == 0
-                && Double.compare(focusIndicatorThickness, thickness) == 0
-                && indicatorColor.equals(focusIndicatorColor)) {
+                && Double.compare(focusIndicatorThickness, thickness) == 0) {
             return;
         }
 
@@ -984,7 +972,6 @@ final class M3StateLayer extends Pane {
         focusIndicatorBottomLeftRadius = adjustedBottomLeft;
         focusIndicatorInset = inwardOffset;
         focusIndicatorThickness = thickness;
-        focusIndicatorColor = indicatorColor;
         focusIndicator.setStyle("-fx-background-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "
@@ -992,7 +979,6 @@ final class M3StateLayer extends Pane {
                 + formatPixels(adjustedBottomLeft) + "; "
                 + "-fx-border-insets: " + formatPixels(inwardOffset) + "; "
                 + "-fx-border-width: " + formatPixels(thickness) + "; "
-                + "-fx-border-color: " + formatColor(indicatorColor) + "; "
                 + "-fx-border-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "

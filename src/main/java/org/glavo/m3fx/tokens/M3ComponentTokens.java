@@ -4,16 +4,17 @@
 package org.glavo.m3fx.tokens;
 
 import org.glavo.m3fx.internal.tokens.M3ComponentTokensImpl;
+import org.glavo.monetfx.ColorRole;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
 /// Defines the immutable component-level Material Design 3 token groups used by M3FX controls.
 ///
-/// Component tokens collect the shape, size, padding, spacing, and other geometry associated with individual
-/// controls. Unless a record component states otherwise, numeric geometry is expressed in JavaFX logical pixels;
-/// opacity values are dimensionless. Each nested record is an immutable value object and validates the constraints
-/// documented by its canonical constructor.
+/// Component tokens collect the shape, size, padding, spacing, semantic color-role mappings, and other values
+/// associated with individual controls. Unless a record component states otherwise, numeric geometry is expressed
+/// in JavaFX logical pixels; opacity values are dimensionless. Each nested record is an immutable value object and
+/// validates the constraints documented by its canonical constructor.
 ///
 /// [builder(M3Profile,M3ShapeTokens,M3Density)] creates a complete snapshot derived from a profile, shape scale,
 /// and density. [builder(M3ComponentTokens)] copies an existing snapshot for selective replacement. Derived token
@@ -257,7 +258,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param profile the Material token profile
     /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density the density adjustment applied to component metrics
+    /// @param density the density adjustment applied to component geometry
     /// @return a mutable component-token builder
     /// @throws NullPointerException if `profile`, `shapeTokens`, or `density` is `null`
     static M3ComponentTokensBuilder builder(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
@@ -422,9 +423,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Creates component tokens for a profile.
     ///
-    /// @param profile     the Material profile whose component metrics should be generated
+    /// @param profile     the Material profile whose component defaults should be generated
     /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density     the density adjustment applied to generated component metrics
+    /// @param density     the density adjustment applied to generated component geometry
     /// @return a component token set generated from the supplied profile, shape scale, and density
     private static M3ComponentTokens defaultsForProfile(
             M3Profile profile,
@@ -740,6 +741,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 shapeTokens.full(),
                                 shapeTokens.medium(),
                                 expressive ? shapeTokens.small() : shapeTokens.full(),
+                                expressive ? shapeTokens.small() : shapeTokens.medium(),
                                 density.apply(12.0),
                                 density.apply(12.0),
                                 density.apply(8.0),
@@ -751,6 +753,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 shapeTokens.full(),
                                 shapeTokens.medium(),
                                 expressive ? shapeTokens.small() : shapeTokens.full(),
+                                expressive ? shapeTokens.small() : shapeTokens.medium(),
                                 buttonHorizontalPadding,
                                 textButtonHorizontalPadding,
                                 density.apply(8.0),
@@ -762,6 +765,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 shapeTokens.full(),
                                 shapeTokens.large(),
                                 expressive ? shapeTokens.medium() : shapeTokens.full(),
+                                expressive ? shapeTokens.medium() : shapeTokens.large(),
                                 density.apply(24.0),
                                 density.apply(24.0),
                                 density.apply(8.0),
@@ -773,6 +777,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 shapeTokens.full(),
                                 shapeTokens.extraLarge(),
                                 expressive ? shapeTokens.large() : shapeTokens.full(),
+                                expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
                                 density.apply(48.0),
                                 density.apply(48.0),
                                 density.apply(12.0),
@@ -784,6 +789,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 shapeTokens.full(),
                                 shapeTokens.extraLarge(),
                                 expressive ? shapeTokens.large() : shapeTokens.full(),
+                                expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
                                 density.apply(64.0),
                                 density.apply(64.0),
                                 density.apply(16.0),
@@ -799,9 +805,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(40.0),
                                 shapeTokens.full(),
                                 density.apply(12.0),
-                                density.apply(8.0),
-                                density.apply(12.0),
-                                shapeTokens.full(),
+                                expressive ? density.apply(8.0) : shapeTokens.full(),
+                                expressive ? density.apply(8.0) : density.apply(12.0),
+                                expressive ? density.apply(12.0) : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : density.apply(12.0),
                                 density.apply(1.0)
                         ),
                         new IconButtonSizeTokens(
@@ -812,9 +819,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(52.0),
                                 shapeTokens.full(),
                                 density.apply(12.0),
-                                density.apply(8.0),
-                                density.apply(12.0),
-                                shapeTokens.full(),
+                                expressive ? density.apply(8.0) : shapeTokens.full(),
+                                expressive ? density.apply(8.0) : density.apply(12.0),
+                                expressive ? density.apply(12.0) : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : density.apply(12.0),
                                 density.apply(1.0)
                         ),
                         new IconButtonSizeTokens(
@@ -825,9 +833,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(72.0),
                                 shapeTokens.full(),
                                 density.apply(16.0),
-                                density.apply(12.0),
-                                density.apply(16.0),
-                                shapeTokens.full(),
+                                expressive ? density.apply(12.0) : shapeTokens.full(),
+                                expressive ? density.apply(12.0) : density.apply(16.0),
+                                expressive ? density.apply(16.0) : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : density.apply(16.0),
                                 density.apply(1.0)
                         ),
                         new IconButtonSizeTokens(
@@ -838,9 +847,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(128.0),
                                 shapeTokens.full(),
                                 density.apply(28.0),
-                                density.apply(16.0),
-                                density.apply(28.0),
-                                shapeTokens.full(),
+                                expressive ? density.apply(16.0) : shapeTokens.full(),
+                                expressive ? density.apply(16.0) : density.apply(28.0),
+                                expressive ? density.apply(28.0) : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : density.apply(28.0),
                                 density.apply(2.0)
                         ),
                         new IconButtonSizeTokens(
@@ -851,9 +861,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(184.0),
                                 shapeTokens.full(),
                                 density.apply(28.0),
-                                density.apply(16.0),
-                                density.apply(28.0),
-                                shapeTokens.full(),
+                                expressive ? density.apply(16.0) : shapeTokens.full(),
+                                expressive ? density.apply(16.0) : density.apply(28.0),
+                                expressive ? density.apply(28.0) : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : density.apply(28.0),
                                 density.apply(3.0)
                         )
                 ),
@@ -907,10 +918,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 density.apply(18.0)
                         ),
                         density.apply(4.0),
-                        density.apply(8.0)
+                        density.apply(8.0),
+                        density.apply(expressive ? 16.0 : 14.0)
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
-                createButtonGroupTokens(density, shapeTokens, density.apply(expressive ? 10.0 : 8.0)),
+                createButtonGroupTokens(
+                        density,
+                        shapeTokens,
+                        density.apply(expressive ? 10.0 : 8.0),
+                        expressive
+                ),
                 createSplitButtonTokens(density),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
@@ -959,7 +976,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         menuItemContainerShape,
                         menuFirstItemContainerShape,
                         menuLastItemContainerShape,
+                        new MenuColorTokens(
+                                expressive ? ColorRole.SURFACE_CONTAINER_LOW : ColorRole.SURFACE_CONTAINER,
+                                ColorRole.ON_SURFACE,
+                                expressive ? ColorRole.TERTIARY_CONTAINER : ColorRole.SECONDARY_CONTAINER,
+                                expressive ? ColorRole.ON_TERTIARY_CONTAINER : ColorRole.ON_SECONDARY_CONTAINER,
+                                expressive ? 0.38 : 1.0,
+                                ColorRole.TERTIARY_CONTAINER,
+                                ColorRole.ON_TERTIARY_CONTAINER,
+                                ColorRole.ON_TERTIARY_CONTAINER,
+                                ColorRole.TERTIARY,
+                                ColorRole.ON_TERTIARY,
+                                expressive ? ColorRole.TERTIARY : ColorRole.ON_TERTIARY_CONTAINER
+                        ),
+                        density.apply(expressive ? 20.0 : 24.0),
                         menuItemHorizontalPadding,
+                        density.apply(expressive ? 16.0 : 12.0),
                         menuItemContentSpacing,
                         menuItemSpacing
                 ),
@@ -1198,7 +1230,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.full(),
                         navigationContentSpacing,
                         navigationHorizontalPadding,
-                        navigationBarItemSpacing
+                        navigationBarItemSpacing,
+                        new NavigationBarColorTokens(
+                                expressive ? ColorRole.SECONDARY : ColorRole.ON_SURFACE,
+                                expressive ? ColorRole.ON_SECONDARY_CONTAINER : ColorRole.ON_SURFACE
+                        ),
+                        expressive
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
@@ -1245,6 +1282,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         listItemVerticalPadding,
                         listItemContentSpacing,
                         density.apply(2.0),
+                        expressive ? shapeTokens.extraSmall() : 0.0,
+                        expressive ? shapeTokens.medium() : 0.0,
+                        expressive ? shapeTokens.large() : 0.0,
+                        expressive ? shapeTokens.extraSmall() : 0.0,
                         listSectionHeaderHeight,
                         listSectionHeaderHorizontalPadding
                 )
@@ -1259,11 +1300,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param density                the density transform applied to layout lengths
     /// @param shapeTokens            the shape system used by connected inner-corner aliases
     /// @param iconToggleGroupSpacing the resolved spacing between icon toggle group children
+    /// @param expressive              whether Expressive connected-button state shapes should be generated
     /// @return the button-group size token scale
     private static ButtonGroupTokens createButtonGroupTokens(
             M3Density density,
             M3ShapeTokens shapeTokens,
-            double iconToggleGroupSpacing
+            double iconToggleGroupSpacing,
+            boolean expressive
     ) {
         double connectedSpacing = density.apply(2.0);
         return new ButtonGroupTokens(
@@ -1273,7 +1316,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         18.0,
                         connectedSpacing,
                         shapeTokens.small(),
-                        shapeTokens.extraSmall()
+                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
+                        expressive
                 ),
                 createButtonGroupSizeTokens(
                         density,
@@ -1281,7 +1325,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         12.0,
                         connectedSpacing,
                         shapeTokens.small(),
-                        shapeTokens.extraSmall()
+                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
+                        expressive
                 ),
                 createButtonGroupSizeTokens(
                         density,
@@ -1289,7 +1334,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         8.0,
                         connectedSpacing,
                         shapeTokens.small(),
-                        shapeTokens.extraSmall()
+                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
+                        expressive
                 ),
                 createButtonGroupSizeTokens(
                         density,
@@ -1297,7 +1343,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         8.0,
                         connectedSpacing,
                         shapeTokens.large(),
-                        shapeTokens.medium()
+                        expressive ? shapeTokens.medium() : shapeTokens.large(),
+                        expressive
                 ),
                 createButtonGroupSizeTokens(
                         density,
@@ -1305,7 +1352,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         8.0,
                         connectedSpacing,
                         shapeTokens.largeIncreased(),
-                        shapeTokens.large()
+                        expressive ? shapeTokens.large() : shapeTokens.largeIncreased(),
+                        expressive
                 ),
                 -1.0,
                 iconToggleGroupSpacing
@@ -1320,6 +1368,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param connectedSpacing            the resolved spacing between connected-group items
     /// @param connectedInnerCorner        the resting connected inner corner
     /// @param connectedPressedInnerCorner the pressed connected inner corner
+    /// @param expressive                  whether the selected state expands to a full-height inner corner
     /// @return the size-specific button-group tokens
     private static ButtonGroupSizeTokens createButtonGroupSizeTokens(
             M3Density density,
@@ -1327,7 +1376,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double standardSpacing,
             double connectedSpacing,
             double connectedInnerCorner,
-            double connectedPressedInnerCorner
+            double connectedPressedInnerCorner,
+            boolean expressive
     ) {
         double resolvedContainerHeight = density.apply(containerHeight);
         return new ButtonGroupSizeTokens(
@@ -1337,7 +1387,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 connectedSpacing,
                 connectedInnerCorner,
                 connectedPressedInnerCorner,
-                resolvedContainerHeight / 2.0
+                expressive ? resolvedContainerHeight / 2.0 : connectedInnerCorner
         );
     }
 
@@ -1481,7 +1531,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param iconSize              the icon glyph size
     /// @param roundContainerShape   the round resting container shape
     /// @param squareContainerShape  the rounded-square resting container shape
-    /// @param pressedContainerShape the pressed container shape
+    /// @param pressedRoundContainerShape  the pressed shape for round buttons
+    /// @param pressedSquareContainerShape the pressed shape for square buttons
     /// @param horizontalPadding     the leading and trailing padding for non-text variants
     /// @param textHorizontalPadding the leading and trailing padding for text variants
     /// @param iconLabelSpace        the spacing between an icon and label
@@ -1492,7 +1543,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double iconSize,
             double roundContainerShape,
             double squareContainerShape,
-            double pressedContainerShape,
+            double pressedRoundContainerShape,
+            double pressedSquareContainerShape,
             double horizontalPadding,
             double textHorizontalPadding,
             double iconLabelSpace,
@@ -1502,14 +1554,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         ///
         /// @throws IllegalArgumentException if one of the following values is negative:
         ///         `containerHeight`, `iconSize`, `roundContainerShape`, `squareContainerShape`,
-        ///         `pressedContainerShape`, `horizontalPadding`, `textHorizontalPadding`, `iconLabelSpace`,
+        ///         `pressedRoundContainerShape`, `pressedSquareContainerShape`, `horizontalPadding`,
+        ///         `textHorizontalPadding`, `iconLabelSpace`,
         ///         `outlineWidth`
         public ButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(iconSize, "iconSize");
             validateNonNegative(roundContainerShape, "roundContainerShape");
             validateNonNegative(squareContainerShape, "squareContainerShape");
-            validateNonNegative(pressedContainerShape, "pressedContainerShape");
+            validateNonNegative(pressedRoundContainerShape, "pressedRoundContainerShape");
+            validateNonNegative(pressedSquareContainerShape, "pressedSquareContainerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(textHorizontalPadding, "textHorizontalPadding");
             validateNonNegative(iconLabelSpace, "iconLabelSpace");
@@ -1555,7 +1609,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param wideWidth                    the wide visual container width
     /// @param roundContainerShape          the round resting container shape
     /// @param squareContainerShape         the square resting container shape
-    /// @param pressedContainerShape        the pressed container shape
+    /// @param pressedRoundContainerShape   the pressed shape for round icon buttons
+    /// @param pressedSquareContainerShape  the pressed shape for square icon buttons
     /// @param selectedRoundContainerShape  the selected shape for round toggle icon buttons
     /// @param selectedSquareContainerShape the selected shape for square toggle icon buttons
     /// @param outlineWidth                 the outlined variant stroke width
@@ -1568,7 +1623,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double wideWidth,
             double roundContainerShape,
             double squareContainerShape,
-            double pressedContainerShape,
+            double pressedRoundContainerShape,
+            double pressedSquareContainerShape,
             double selectedRoundContainerShape,
             double selectedSquareContainerShape,
             double outlineWidth
@@ -1577,7 +1633,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         ///
         /// @throws IllegalArgumentException if one of the following values is negative:
         ///         `containerHeight`, `iconSize`, `narrowWidth`, `defaultWidth`,
-        ///         `wideWidth`, `roundContainerShape`, `squareContainerShape`, `pressedContainerShape`,
+        ///         `wideWidth`, `roundContainerShape`, `squareContainerShape`,
+        ///         `pressedRoundContainerShape`, `pressedSquareContainerShape`,
         ///         `selectedRoundContainerShape`, `selectedSquareContainerShape`, `outlineWidth`
         public IconButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
@@ -1587,7 +1644,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(wideWidth, "wideWidth");
             validateNonNegative(roundContainerShape, "roundContainerShape");
             validateNonNegative(squareContainerShape, "squareContainerShape");
-            validateNonNegative(pressedContainerShape, "pressedContainerShape");
+            validateNonNegative(pressedRoundContainerShape, "pressedRoundContainerShape");
+            validateNonNegative(pressedSquareContainerShape, "pressedSquareContainerShape");
             validateNonNegative(selectedRoundContainerShape, "selectedRoundContainerShape");
             validateNonNegative(selectedSquareContainerShape, "selectedSquareContainerShape");
             validateNonNegative(outlineWidth, "outlineWidth");
@@ -1604,6 +1662,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param menuCloseButton   the 56-pixel FAB menu close button tokens
     /// @param menuActionSpacing the vertical spacing between expanded FAB menu actions
     /// @param menuCloseSpacing  the vertical spacing between the last action and close button
+    /// @param regularLabelFontSize the label font size of a regular extended FAB
     @NotNullByDefault
     record FabTokens(
             FabSizeTokens small,
@@ -1613,7 +1672,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             FabSizeTokens menuItem,
             FabSizeTokens menuCloseButton,
             double menuActionSpacing,
-            double menuCloseSpacing
+            double menuCloseSpacing,
+            double regularLabelFontSize
     ) {
         /// Creates floating action button tokens.
         ///
@@ -1621,7 +1681,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         ///         `small`, `regular`, `medium`, `large`,
         ///         `menuItem`, `menuCloseButton`
         /// @throws IllegalArgumentException if one of the following values is negative:
-        ///         `menuActionSpacing`, `menuCloseSpacing`
+        ///         `menuActionSpacing`, `menuCloseSpacing`, `regularLabelFontSize`
         public FabTokens {
             Objects.requireNonNull(small, "small");
             Objects.requireNonNull(regular, "regular");
@@ -1629,6 +1689,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             Objects.requireNonNull(large, "large");
             validateNonNegative(menuActionSpacing, "menuActionSpacing");
             validateNonNegative(menuCloseSpacing, "menuCloseSpacing");
+            validateNonNegative(regularLabelFontSize, "regularLabelFontSize");
             Objects.requireNonNull(menuItem, "menuItem");
             Objects.requireNonNull(menuCloseButton, "menuCloseButton");
         }
@@ -2016,7 +2077,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param innerCornerShape           the inner-corner radius at grouped-menu boundaries
     /// @param firstItemContainerShape    the first direct menu item state container corner radius
     /// @param lastItemContainerShape     the last direct menu item state container corner radius
+    /// @param colors                      the semantic color-role mappings used by menus
+    /// @param itemIconSize               the leading and trailing icon size
     /// @param itemHorizontalPadding      the horizontal item content padding
+    /// @param sectionHeaderHorizontalPadding the horizontal section-header padding
     /// @param itemContentSpacing         the spacing between item content regions
     /// @param itemSpacing                the vertical spacing between direct menu items
     @NotNullByDefault
@@ -2030,16 +2094,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double innerCornerShape,
             double firstItemContainerShape,
             double lastItemContainerShape,
+            MenuColorTokens colors,
+            double itemIconSize,
             double itemHorizontalPadding,
+            double sectionHeaderHorizontalPadding,
             double itemContentSpacing,
             double itemSpacing
     ) {
         /// Validates menu tokens.
         ///
+        /// @throws NullPointerException if `colors` is `null`
         /// @throws IllegalArgumentException if one of the following values is negative:
         ///         `containerShape`, `containerPadding`, `itemHeight`, `itemContainerShape`,
         ///         `selectedItemContainerShape`, `activeItemContainerShape`, `innerCornerShape`, `firstItemContainerShape`,
-        ///         `lastItemContainerShape`, `itemHorizontalPadding`, `itemContentSpacing`, `itemSpacing`
+        ///         `lastItemContainerShape`, `itemIconSize`, `itemHorizontalPadding`,
+        ///         `sectionHeaderHorizontalPadding`, `itemContentSpacing`, `itemSpacing`
         public MenuTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(containerPadding, "containerPadding");
@@ -2050,9 +2119,62 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(innerCornerShape, "innerCornerShape");
             validateNonNegative(firstItemContainerShape, "firstItemContainerShape");
             validateNonNegative(lastItemContainerShape, "lastItemContainerShape");
+            Objects.requireNonNull(colors, "colors");
+            validateNonNegative(itemIconSize, "itemIconSize");
             validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
+            validateNonNegative(sectionHeaderHorizontalPadding, "sectionHeaderHorizontalPadding");
             validateNonNegative(itemContentSpacing, "itemContentSpacing");
             validateNonNegative(itemSpacing, "itemSpacing");
+        }
+    }
+
+    /// Semantic color-role mappings used by menus.
+    ///
+    /// Each role is resolved against the [M3ColorTokens] in the same complete token set when a theme is compiled.
+    /// This preserves dynamic color schemes while allowing menu color semantics to be selected independently of
+    /// the token set's retained [M3Profile].
+    ///
+    /// @param containerRole                         the standard menu container role
+    /// @param itemStateLayerRole                    the standard item interaction-state role
+    /// @param selectedItemContainerRole             the standard selected-item container role
+    /// @param selectedItemContentRole               the standard selected-item content role
+    /// @param selectedDisabledContainerOpacity      the opacity of a disabled selected-item container
+    /// @param vibrantContainerRole                  the vibrant menu container role
+    /// @param vibrantItemContentRole                the vibrant item content role
+    /// @param vibrantItemStateLayerRole             the vibrant item interaction-state role
+    /// @param vibrantSelectedItemContainerRole      the vibrant selected-item container role
+    /// @param vibrantSelectedItemContentRole        the vibrant selected-item content role
+    /// @param vibrantInteractionIconRole            the vibrant interacting icon role
+    @NotNullByDefault
+    record MenuColorTokens(
+            ColorRole containerRole,
+            ColorRole itemStateLayerRole,
+            ColorRole selectedItemContainerRole,
+            ColorRole selectedItemContentRole,
+            double selectedDisabledContainerOpacity,
+            ColorRole vibrantContainerRole,
+            ColorRole vibrantItemContentRole,
+            ColorRole vibrantItemStateLayerRole,
+            ColorRole vibrantSelectedItemContainerRole,
+            ColorRole vibrantSelectedItemContentRole,
+            ColorRole vibrantInteractionIconRole
+    ) {
+        /// Creates menu color-role tokens.
+        ///
+        /// @throws NullPointerException if any color role is `null`
+        /// @throws IllegalArgumentException if `selectedDisabledContainerOpacity` is outside `[0, 1]`
+        public MenuColorTokens {
+            Objects.requireNonNull(containerRole, "containerRole");
+            Objects.requireNonNull(itemStateLayerRole, "itemStateLayerRole");
+            Objects.requireNonNull(selectedItemContainerRole, "selectedItemContainerRole");
+            Objects.requireNonNull(selectedItemContentRole, "selectedItemContentRole");
+            validateOpacity(selectedDisabledContainerOpacity);
+            Objects.requireNonNull(vibrantContainerRole, "vibrantContainerRole");
+            Objects.requireNonNull(vibrantItemContentRole, "vibrantItemContentRole");
+            Objects.requireNonNull(vibrantItemStateLayerRole, "vibrantItemStateLayerRole");
+            Objects.requireNonNull(vibrantSelectedItemContainerRole, "vibrantSelectedItemContainerRole");
+            Objects.requireNonNull(vibrantSelectedItemContentRole, "vibrantSelectedItemContentRole");
+            Objects.requireNonNull(vibrantInteractionIconRole, "vibrantInteractionIconRole");
         }
     }
 
@@ -3100,6 +3222,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param contentSpacing    the spacing between item icon and label
     /// @param horizontalPadding the horizontal padding around items
     /// @param itemSpacing       the spacing between adjacent navigation item target areas
+    /// @param colors            the semantic color-role mappings used by navigation items
+    /// @param elevated          whether the bar uses the elevated container treatment
     @NotNullByDefault
     record NavigationBarTokens(
             double containerHeight,
@@ -3109,10 +3233,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double indicatorShape,
             double contentSpacing,
             double horizontalPadding,
-            double itemSpacing
+            double itemSpacing,
+            NavigationBarColorTokens colors,
+            boolean elevated
     ) {
         /// Creates navigation bar tokens.
         ///
+        /// @throws NullPointerException if `colors` is `null`
         /// @throws IllegalArgumentException if one of the following values is negative:
         ///         `containerHeight`, `itemWidth`, `indicatorWidth`, `indicatorHeight`,
         ///         `indicatorShape`, `contentSpacing`, `horizontalPadding`, `itemSpacing`
@@ -3125,6 +3252,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
+            Objects.requireNonNull(colors, "colors");
+        }
+    }
+
+    /// Semantic color-role mappings used by navigation bars.
+    ///
+    /// @param selectedLabelRole the selected destination label role
+    /// @param stateLayerRole    the destination interaction-state role
+    @NotNullByDefault
+    record NavigationBarColorTokens(
+            ColorRole selectedLabelRole,
+            ColorRole stateLayerRole
+    ) {
+        /// Creates navigation bar color-role tokens.
+        ///
+        /// @throws NullPointerException if either color role is `null`
+        public NavigationBarColorTokens {
+            Objects.requireNonNull(selectedLabelRole, "selectedLabelRole");
+            Objects.requireNonNull(stateLayerRole, "stateLayerRole");
         }
     }
 
@@ -3275,6 +3421,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param verticalPadding                the vertical content padding
     /// @param contentSpacing                 the spacing between content regions
     /// @param segmentedGap                   the gap between adjacent segmented list items
+    /// @param segmentedContainerShape        the resting segmented-item container radius
+    /// @param segmentedHoverContainerShape   the hovered segmented-item container radius
+    /// @param segmentedActiveContainerShape  the focused, pressed, or selected segmented-item container radius
+    /// @param segmentedDisabledContainerShape the disabled segmented-item container radius
     /// @param sectionHeaderHeight            the preferred list section header height
     /// @param sectionHeaderHorizontalPadding the horizontal list section header padding
     @NotNullByDefault
@@ -3287,6 +3437,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double verticalPadding,
             double contentSpacing,
             double segmentedGap,
+            double segmentedContainerShape,
+            double segmentedHoverContainerShape,
+            double segmentedActiveContainerShape,
+            double segmentedDisabledContainerShape,
             double sectionHeaderHeight,
             double sectionHeaderHorizontalPadding
     ) {
@@ -3295,6 +3449,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// @throws IllegalArgumentException if one of the following values is negative:
         ///         `oneLineHeight`, `twoLineHeight`, `threeLineHeight`, `containerShape`,
         ///         `horizontalPadding`, `verticalPadding`, `contentSpacing`, `segmentedGap`,
+        ///         `segmentedContainerShape`, `segmentedHoverContainerShape`, `segmentedActiveContainerShape`,
+        ///         `segmentedDisabledContainerShape`,
         ///         `sectionHeaderHeight`, `sectionHeaderHorizontalPadding`
         public ListItemTokens {
             validateNonNegative(oneLineHeight, "oneLineHeight");
@@ -3305,6 +3461,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(verticalPadding, "verticalPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(segmentedGap, "segmentedGap");
+            validateNonNegative(segmentedContainerShape, "segmentedContainerShape");
+            validateNonNegative(segmentedHoverContainerShape, "segmentedHoverContainerShape");
+            validateNonNegative(segmentedActiveContainerShape, "segmentedActiveContainerShape");
+            validateNonNegative(segmentedDisabledContainerShape, "segmentedDisabledContainerShape");
             validateNonNegative(sectionHeaderHeight, "sectionHeaderHeight");
             validateNonNegative(sectionHeaderHorizontalPadding, "sectionHeaderHorizontalPadding");
         }

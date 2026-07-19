@@ -38,17 +38,20 @@ import static org.glavo.m3fx.theme.M3ThemeManager.ROOT_STYLE_CLASS;
 /// This runtime is the integration point between a JavaFX application and the Material Design 3 token
 /// system. Installing a theme on a [Scene] adds the M3FX user-agent stylesheet, writes generated token CSS to a
 /// scene stylesheet, and applies root style classes such as light or dark brightness and baseline or expressive
-/// profile. Installing on a [Parent] only writes inline root declarations, which is useful for detached popup
-/// content or embedded controls that already share the scene stylesheet.
+/// profile. Installing on a [Parent] creates a branch-local theme scope by combining root declarations with a
+/// generated parent stylesheet. JavaFX gives that stylesheet precedence over scene stylesheets for the parent and
+/// its descendants while still allowing later application-owned parent stylesheets to override M3FX defaults.
 ///
-/// Theme installation is reversible. `uninstall` restores the root style captured before installation and
-/// removes generated stylesheets tracked by the manager. Use [copyThemeContext] for popup roots whose scene is
+/// Theme installation is reversible. `uninstall` restores managed style classes and theme metadata and removes
+/// generated stylesheets tracked by the manager. Application-owned inline styles are never rewritten. Use
+/// [copyThemeContext] for popup roots whose scene is
 /// created outside the main window so they keep the same [Material Design](https://m3.material.io/) color and
 /// typography context as their owner.
 @NotNullByDefault
 public final class M3ThemeRuntime {
-    /// The property key that stores the root style before M3FX theme declarations were added.
-    private static final String BASE_STYLE_PROPERTY_KEY = M3ThemeRuntime.class.getName() + ".baseStyle";
+    /// The property key that stores state owned by a local parent theme installation.
+    private static final String LOCAL_THEME_INSTALLATION_PROPERTY_KEY =
+            M3ThemeRuntime.class.getName() + ".localThemeInstallation";
 
     /// The process-local directory used for generated theme stylesheets.
     private static final Path THEME_STYLESHEET_DIRECTORY = Path.of(
@@ -110,26 +113,26 @@ public final class M3ThemeRuntime {
 
     /// Installs theme tokens on a root node.
     ///
-    /// The root's preinstallation inline style is retained so that [#uninstall(Parent)] can restore it. Reinstalling
-    /// a different theme updates only M3FX-managed declarations, style classes, and metadata.
+    /// Reinstalling a different theme updates only the generated local stylesheet, managed style classes, and
+    /// metadata. The root's inline style is not changed. Application stylesheets already present on the parent
+    /// remain after the managed stylesheet and may therefore override generated token declarations.
     ///
     /// @param root  the root that should receive theme declarations
     /// @param theme the theme to install
+    /// If `root` is also controlled by an active scene installation, the local theme is retained beneath the scene
+    /// theme and becomes effective when the scene installation releases that root.
+    ///
     /// @throws NullPointerException if `root` or `theme` is `null`
     public static void install(Parent root, M3Theme theme) {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(theme, "theme");
-
-        applyThemeStyleClasses(root, theme);
-
-        if (!root.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
-            root.getProperties().put(BASE_STYLE_PROPERTY_KEY, root.getStyle());
+        @Nullable SceneThemeInstallation sceneInstallation = activeSceneInstallation(root);
+        if (sceneInstallation != null) {
+            sceneInstallation.installLocalTheme(root, theme);
+            return;
         }
 
-        Object baseStyleValue = root.getProperties().get(BASE_STYLE_PROPERTY_KEY);
-        String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
-        root.setStyle(mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme)));
-        M3ThemeMetadata.setTheme(root, theme);
+        installLocalTheme(root, theme);
     }
 
     /// Returns the theme installed on a root node.
@@ -205,24 +208,41 @@ public final class M3ThemeRuntime {
 
     /// Removes M3FX theme tokens from a root node.
     ///
-    /// The method restores the root's captured preinstallation inline style, removes M3FX-managed profile and
-    /// brightness classes, and clears theme metadata. Calling it repeatedly has no further effect.
+    /// The method removes the generated local stylesheet, M3FX-managed profile and brightness classes, and theme
+    /// metadata. It does not modify application-owned inline style. Calling it repeatedly has no further effect.
     ///
     /// @param root the root to uninstall
+    /// If `root` is also controlled by an active scene installation, only the retained local theme is removed; the
+    /// active scene theme remains applied.
+    ///
     /// @throws NullPointerException if `root` is `null`
     public static void uninstall(Parent root) {
         Objects.requireNonNull(root, "root");
-
-        clearThemeStyleClasses(root);
-        @Nullable Object baseStyleValue = root.hasProperties()
-                ? root.getProperties().remove(BASE_STYLE_PROPERTY_KEY)
-                : null;
-        if (baseStyleValue instanceof String baseStyle) {
-            root.setStyle(baseStyle);
-        } else if (M3ThemeMetadata.hasTheme(root)) {
-            root.setStyle("");
+        @Nullable SceneThemeInstallation sceneInstallation = activeSceneInstallation(root);
+        if (sceneInstallation != null) {
+            sceneInstallation.uninstallLocalTheme(root);
+            return;
         }
-        M3ThemeMetadata.clearTheme(root);
+
+        uninstallLocalTheme(root);
+    }
+
+    /// Installs or replaces a local theme without consulting scene ownership.
+    private static void installLocalTheme(Parent root, M3Theme theme) {
+        installLocalThemeStylesheet(root, theme);
+        applyThemeStyleClasses(root, theme);
+        M3ThemeMetadata.setTheme(root, theme);
+    }
+
+    /// Removes a local theme without consulting scene ownership.
+    private static void uninstallLocalTheme(Parent root) {
+        @Nullable LocalThemeInstallation installation = removeLocalThemeInstallation(root);
+        if (installation != null) {
+            installation.uninstall(root);
+        } else {
+            clearThemeStyleClasses(root);
+            M3ThemeMetadata.clearTheme(root);
+        }
     }
 
     /// Removes the base M3FX stylesheet from a scene.
@@ -461,6 +481,165 @@ public final class M3ThemeRuntime {
         stylesheets.add(Math.min(targetIndex, stylesheets.size()), stylesheet);
     }
 
+    /// Installs the generated stylesheet that gives a local theme complete component-token coverage.
+    ///
+    /// Parent stylesheets outrank scene stylesheets for descendants of that parent. Keeping the generated theme
+    /// stylesheet at the beginning of the local list lets later application-owned parent stylesheets continue to
+    /// override M3FX defaults.
+    ///
+    /// @param root  the local theme root
+    /// @param theme the theme whose generated rules should apply to the local branch
+    private static void installLocalThemeStylesheet(Parent root, M3Theme theme) {
+        String stylesheet = themeStylesheetUrl(theme);
+        @Nullable LocalThemeInstallation installation = localThemeInstallation(root);
+        @Nullable LocalThemeStylesheet previous = installation == null ? null : installation.stylesheet();
+        List<String> stylesheets = root.getStylesheets();
+
+        if (previous != null && previous.owned() && !previous.url().equals(stylesheet)) {
+            stylesheets.remove(previous.url());
+        }
+
+        if (previous != null && previous.url().equals(stylesheet) && stylesheets.contains(stylesheet)) {
+            if (previous.owned()) {
+                moveOrAdd(stylesheets, stylesheet, 0);
+            }
+            return;
+        }
+
+        boolean owned = !stylesheets.contains(stylesheet);
+        if (owned) {
+            stylesheets.add(0, stylesheet);
+        }
+        LocalThemeStylesheet nextStylesheet = new LocalThemeStylesheet(stylesheet, owned);
+        if (installation == null) {
+            installation = new LocalThemeInstallation(root, nextStylesheet);
+            root.getProperties().put(LOCAL_THEME_INSTALLATION_PROPERTY_KEY, installation);
+        } else {
+            installation.setStylesheet(nextStylesheet);
+        }
+    }
+
+    /// Returns the local theme installation associated directly with a parent.
+    ///
+    /// @param root the parent to inspect
+    /// @return the local installation, or `null` when the parent has no directly installed local theme
+    private static @Nullable LocalThemeInstallation localThemeInstallation(Parent root) {
+        @Nullable Object value = root.hasProperties()
+                ? root.getProperties().get(LOCAL_THEME_INSTALLATION_PROPERTY_KEY)
+                : null;
+        return value instanceof LocalThemeInstallation installation ? installation : null;
+    }
+
+    /// Returns the generated stylesheet associated with a directly installed local theme.
+    ///
+    /// @param root the parent to inspect
+    /// @return the local stylesheet metadata, or `null` when no local installation exists
+    private static @Nullable LocalThemeStylesheet localThemeStylesheet(Parent root) {
+        @Nullable LocalThemeInstallation installation = localThemeInstallation(root);
+        return installation == null ? null : installation.stylesheet();
+    }
+
+    /// Removes and returns a local theme installation from a parent.
+    ///
+    /// @param root the parent whose local installation should be removed
+    /// @return the removed installation, or `null` when none was present
+    private static @Nullable LocalThemeInstallation removeLocalThemeInstallation(Parent root) {
+        @Nullable Object value = root.hasProperties()
+                ? root.getProperties().remove(LOCAL_THEME_INSTALLATION_PROPERTY_KEY)
+                : null;
+        return value instanceof LocalThemeInstallation installation ? installation : null;
+    }
+
+    /// Captures direct theme metadata and semantic style-class membership for later restoration.
+    ///
+    /// @param rootStyleClassPresent              whether the root style class was present
+    /// @param baselineProfileStyleClassPresent   whether the baseline profile class was present
+    /// @param expressiveProfileStyleClassPresent whether the Expressive profile class was present
+    /// @param lightBrightnessStyleClassPresent   whether the light brightness class was present
+    /// @param darkBrightnessStyleClassPresent    whether the dark brightness class was present
+    /// @param theme                              the directly associated theme, or `null` when none existed
+    @NotNullByDefault
+    private record ThemeContextSnapshot(
+            boolean rootStyleClassPresent,
+            boolean baselineProfileStyleClassPresent,
+            boolean expressiveProfileStyleClassPresent,
+            boolean lightBrightnessStyleClassPresent,
+            boolean darkBrightnessStyleClassPresent,
+            @Nullable M3Theme theme
+    ) {
+        /// Captures direct theme context from a parent.
+        private static ThemeContextSnapshot capture(Parent root) {
+            return new ThemeContextSnapshot(
+                    root.getStyleClass().contains(ROOT_STYLE_CLASS),
+                    root.getStyleClass().contains(BASELINE_PROFILE_STYLE_CLASS),
+                    root.getStyleClass().contains(EXPRESSIVE_PROFILE_STYLE_CLASS),
+                    root.getStyleClass().contains(LIGHT_BRIGHTNESS_STYLE_CLASS),
+                    root.getStyleClass().contains(DARK_BRIGHTNESS_STYLE_CLASS),
+                    M3ThemeMetadata.getTheme(root)
+            );
+        }
+
+        /// Restores this direct theme context to a parent.
+        private void restore(Parent root) {
+            setStyleClassPresent(root, ROOT_STYLE_CLASS, rootStyleClassPresent);
+            setStyleClassPresent(root, BASELINE_PROFILE_STYLE_CLASS, baselineProfileStyleClassPresent);
+            setStyleClassPresent(root, EXPRESSIVE_PROFILE_STYLE_CLASS, expressiveProfileStyleClassPresent);
+            setStyleClassPresent(root, LIGHT_BRIGHTNESS_STYLE_CLASS, lightBrightnessStyleClassPresent);
+            setStyleClassPresent(root, DARK_BRIGHTNESS_STYLE_CLASS, darkBrightnessStyleClassPresent);
+            if (theme != null) {
+                M3ThemeMetadata.setTheme(root, theme);
+            } else {
+                M3ThemeMetadata.clearTheme(root);
+            }
+        }
+    }
+
+    /// Retains application-owned theme context while a local theme temporarily replaces it.
+    @NotNullByDefault
+    private static final class LocalThemeInstallation {
+        /// The direct theme context that existed before installation.
+        private final ThemeContextSnapshot previousContext;
+
+        /// The generated stylesheet currently associated with this installation.
+        private LocalThemeStylesheet stylesheet;
+
+        /// Captures the root context and initial generated stylesheet for a new local installation.
+        private LocalThemeInstallation(Parent root, LocalThemeStylesheet stylesheet) {
+            previousContext = ThemeContextSnapshot.capture(root);
+            this.stylesheet = Objects.requireNonNull(stylesheet, "stylesheet");
+        }
+
+        /// Returns the generated stylesheet currently associated with this installation.
+        private LocalThemeStylesheet stylesheet() {
+            return stylesheet;
+        }
+
+        /// Replaces generated stylesheet ownership after a local theme reinstall.
+        private void setStylesheet(LocalThemeStylesheet stylesheet) {
+            this.stylesheet = Objects.requireNonNull(stylesheet, "stylesheet");
+        }
+
+        /// Removes owned stylesheet state and restores the root context captured before installation.
+        private void uninstall(Parent root) {
+            if (stylesheet.owned()) {
+                root.getStylesheets().remove(stylesheet.url());
+            }
+            previousContext.restore(root);
+        }
+    }
+
+    /// Describes one generated stylesheet associated with a local parent theme.
+    ///
+    /// @param url   the generated stylesheet URL
+    /// @param owned whether M3FX inserted the URL into the parent stylesheet list
+    @NotNullByDefault
+    private record LocalThemeStylesheet(String url, boolean owned) {
+        /// Creates validated local stylesheet metadata.
+        private LocalThemeStylesheet {
+            Objects.requireNonNull(url, "url");
+        }
+    }
+
     /// Installs a scene-owned theme and observes scene root replacement.
     private static void installSceneTheme(Scene scene, M3Theme theme) {
         Object value = scene.getProperties().get(SCENE_THEME_INSTALLATION_KEY);
@@ -487,12 +666,14 @@ public final class M3ThemeRuntime {
         return false;
     }
 
-    /// Merges existing root style declarations with generated theme declarations.
-    private static String mergeStyles(String baseStyle, String themeStyle) {
-        if (baseStyle.isBlank()) {
-            return themeStyle;
+    /// Returns the scene installation that currently owns the supplied parent as its root.
+    private static @Nullable SceneThemeInstallation activeSceneInstallation(Parent root) {
+        @Nullable Scene scene = root.getScene();
+        if (scene == null || scene.getRoot() != root || !scene.hasProperties()) {
+            return null;
         }
-        return baseStyle.stripTrailing() + " " + themeStyle;
+        @Nullable Object value = scene.getProperties().get(SCENE_THEME_INSTALLATION_KEY);
+        return value instanceof SceneThemeInstallation installation ? installation : null;
     }
 
     /// Adds or removes one managed style class only when its desired state differs.
@@ -536,9 +717,35 @@ public final class M3ThemeRuntime {
 
             this.theme = theme;
             if (currentSnapshot != null && currentSnapshot.references(root)) {
-                applyTheme(root, theme, currentSnapshot.baseStyle);
+                applyTheme(root, theme);
             } else {
                 installRoot(root, theme);
+            }
+        }
+
+        /// Installs a local theme beneath the scene override without changing the visible scene theme.
+        private void installLocalTheme(Parent root, M3Theme localTheme) {
+            updateLocalTheme(root, () -> M3ThemeRuntime.installLocalTheme(root, localTheme));
+        }
+
+        /// Removes the local theme beneath the scene override without changing the visible scene theme.
+        private void uninstallLocalTheme(Parent root) {
+            updateLocalTheme(root, () -> M3ThemeRuntime.uninstallLocalTheme(root));
+        }
+
+        /// Updates retained local state, then captures it again beneath the active scene override.
+        private void updateLocalTheme(Parent root, Runnable update) {
+            @Nullable M3Theme currentTheme = theme;
+            @Nullable RootThemeSnapshot currentSnapshot = snapshot;
+            if (currentTheme == null || currentSnapshot == null || !currentSnapshot.references(root)) {
+                throw new IllegalStateException("Scene theme installation does not control the supplied root");
+            }
+
+            restoreSnapshot();
+            try {
+                update.run();
+            } finally {
+                installRoot(root, currentTheme);
             }
         }
 
@@ -565,18 +772,13 @@ public final class M3ThemeRuntime {
         /// Applies the scene theme to one root after saving its previous theme state.
         private void installRoot(Parent root, M3Theme theme) {
             restoreSnapshot();
-            RootThemeSnapshot nextSnapshot = new RootThemeSnapshot(root);
-            snapshot = nextSnapshot;
-            applyTheme(root, theme, nextSnapshot.baseStyle);
+            snapshot = new RootThemeSnapshot(root);
+            applyTheme(root, theme);
         }
 
-        /// Applies one theme over the root style captured before scene theme installation.
-        private static void applyTheme(Parent root, M3Theme theme, String baseStyle) {
+        /// Applies one theme's metadata and semantic style classes to the scene root.
+        private static void applyTheme(Parent root, M3Theme theme) {
             applyThemeStyleClasses(root, theme);
-            String themedStyle = mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme));
-            if (!Objects.equals(root.getStyle(), themedStyle)) {
-                root.setStyle(themedStyle);
-            }
             M3ThemeMetadata.setTheme(root, theme);
         }
 
@@ -596,41 +798,28 @@ public final class M3ThemeRuntime {
         /// A weak reference to the root whose state was captured.
         private final WeakReference<Parent> rootReference;
 
-        /// The inline style before scene-level theme declarations were added.
-        private final String baseStyle;
+        /// The direct theme context that existed before the scene override.
+        private final ThemeContextSnapshot previousContext;
 
-        /// Whether the root had explicit theme metadata before the scene override.
-        private final boolean hadTheme;
+        /// The local generated stylesheet temporarily suspended by the scene installation.
+        private final @Nullable LocalThemeStylesheet localThemeStylesheet;
 
-        /// The root theme metadata before the scene override.
-        private final @Nullable M3Theme theme;
-
-        /// Whether the root had the managed root style class.
-        private final boolean hadRootStyleClass;
-
-        /// Whether the root had the managed baseline profile style class.
-        private final boolean hadBaselineProfileStyleClass;
-
-        /// Whether the root had the managed expressive profile style class.
-        private final boolean hadExpressiveProfileStyleClass;
-
-        /// Whether the root had the managed light brightness style class.
-        private final boolean hadLightBrightnessStyleClass;
-
-        /// Whether the root had the managed dark brightness style class.
-        private final boolean hadDarkBrightnessStyleClass;
+        /// The index from which the local generated stylesheet was removed.
+        private final int localThemeStylesheetIndex;
 
         /// Captures current root theme state.
         private RootThemeSnapshot(Parent root) {
             rootReference = new WeakReference<>(root);
-            baseStyle = root.getStyle();
-            theme = M3ThemeMetadata.getTheme(root);
-            hadTheme = theme != null;
-            hadRootStyleClass = root.getStyleClass().contains(ROOT_STYLE_CLASS);
-            hadBaselineProfileStyleClass = root.getStyleClass().contains(BASELINE_PROFILE_STYLE_CLASS);
-            hadExpressiveProfileStyleClass = root.getStyleClass().contains(EXPRESSIVE_PROFILE_STYLE_CLASS);
-            hadLightBrightnessStyleClass = root.getStyleClass().contains(LIGHT_BRIGHTNESS_STYLE_CLASS);
-            hadDarkBrightnessStyleClass = root.getStyleClass().contains(DARK_BRIGHTNESS_STYLE_CLASS);
+            previousContext = ThemeContextSnapshot.capture(root);
+            localThemeStylesheet = M3ThemeRuntime.localThemeStylesheet(root);
+            if (localThemeStylesheet != null && localThemeStylesheet.owned()) {
+                localThemeStylesheetIndex = root.getStylesheets().indexOf(localThemeStylesheet.url());
+                if (localThemeStylesheetIndex >= 0) {
+                    root.getStylesheets().remove(localThemeStylesheetIndex);
+                }
+            } else {
+                localThemeStylesheetIndex = -1;
+            }
         }
 
         /// Returns whether this snapshot belongs to the supplied root.
@@ -644,18 +833,15 @@ public final class M3ThemeRuntime {
             if (root == null) {
                 return;
             }
-            if (!Objects.equals(root.getStyle(), baseStyle)) {
-                root.setStyle(baseStyle);
-            }
-            setStyleClassPresent(root, ROOT_STYLE_CLASS, hadRootStyleClass);
-            setStyleClassPresent(root, BASELINE_PROFILE_STYLE_CLASS, hadBaselineProfileStyleClass);
-            setStyleClassPresent(root, EXPRESSIVE_PROFILE_STYLE_CLASS, hadExpressiveProfileStyleClass);
-            setStyleClassPresent(root, LIGHT_BRIGHTNESS_STYLE_CLASS, hadLightBrightnessStyleClass);
-            setStyleClassPresent(root, DARK_BRIGHTNESS_STYLE_CLASS, hadDarkBrightnessStyleClass);
-            if (hadTheme && theme != null) {
-                M3ThemeMetadata.setTheme(root, theme);
-            } else {
-                M3ThemeMetadata.clearTheme(root);
+            previousContext.restore(root);
+            if (localThemeStylesheet != null
+                    && localThemeStylesheet.owned()
+                    && localThemeStylesheetIndex >= 0
+                    && !root.getStylesheets().contains(localThemeStylesheet.url())) {
+                root.getStylesheets().add(
+                        Math.min(localThemeStylesheetIndex, root.getStylesheets().size()),
+                        localThemeStylesheet.url()
+                );
             }
         }
     }

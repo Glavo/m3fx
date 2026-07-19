@@ -5,7 +5,6 @@ package org.glavo.m3fx.internal.tokens;
 
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3ComponentTokens.*;
-import org.glavo.m3fx.tokens.M3Profile;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Locale;
@@ -74,35 +73,26 @@ public final class M3ComponentTokenCssCompiler {
         return builder.toString().trim();
     }
 
-    /// Converts component tokens into JavaFX CSS rules including all profile-dependent state rules.
+    /// Converts component tokens into JavaFX CSS rules.
     ///
-    /// This overload is intended for isolated component-token inspection. Complete themes should use
-    /// [controlStyleRules(M3ComponentTokens, M3Profile)] so Baseline themes omit Expressive-only shape morphs.
+    /// Interaction behavior is represented completely by the supplied component tokens. The compiler does not
+    /// consult a theme profile, so applications may combine component groups derived from different Material
+    /// presets without losing state-specific shape values.
     ///
     /// @param tokens the component token set to compile
     /// @return JavaFX CSS rules that apply these component tokens to M3FX controls
     public static String controlStyleRules(M3ComponentTokens tokens) {
-        return controlStyleRules(tokens, M3Profile.EXPRESSIVE_2025);
-    }
-
-    /// Converts component tokens into JavaFX CSS rules for one Material profile.
-    ///
-    /// @param tokens  the component token set to compile
-    /// @param profile the profile that controls availability of profile-specific state rules
-    /// @return JavaFX CSS rules that apply these component tokens to M3FX controls
-    public static String controlStyleRules(M3ComponentTokens tokens, M3Profile profile) {
         Objects.requireNonNull(tokens, "tokens");
-        boolean expressive = Objects.requireNonNull(profile, "profile") == M3Profile.EXPRESSIVE_2025;
         StringBuilder builder = new StringBuilder();
         appendButtonRule(builder, ".m3-filled-button", tokens.filledButton());
         appendButtonRule(builder, ".m3-tonal-button", tokens.tonalButton());
         appendButtonRule(builder, ".m3-outlined-button", tokens.outlinedButton());
         appendButtonRule(builder, ".m3-text-button", tokens.textButton());
         appendButtonRule(builder, ".m3-elevated-button", tokens.elevatedButton());
-        appendButtonSizeRules(builder, tokens.buttonSizing(), expressive);
-        appendIconButtonRules(builder, tokens.iconButton(), expressive);
+        appendButtonSizeRules(builder, tokens.buttonSizing());
+        appendIconButtonRules(builder, tokens.iconButton());
         appendIconRules(builder, tokens.icon());
-        appendConnectedButtonRules(builder, tokens.buttonGroup(), expressive);
+        appendConnectedButtonRules(builder, tokens.buttonGroup());
         appendSplitButtonRules(builder, tokens.splitButton());
         appendGroupSpacingRule(
                 builder,
@@ -159,6 +149,7 @@ public final class M3ComponentTokenCssCompiler {
                 ".m3-fab.m3-fab-menu-close",
                 tokens.floatingActionButton().menuCloseButton()
         );
+        appendRegularFabLabelRule(builder, tokens.floatingActionButton());
         appendButtonRule(builder, ".m3-segmented-button", tokens.segmentedButton());
         appendSegmentedButtonPositionRules(builder, tokens.segmentedButton());
         appendTabRule(builder, tokens.tab());
@@ -179,7 +170,9 @@ public final class M3ComponentTokenCssCompiler {
         appendValidationSummaryItemRule(builder, tokens.validationSummary());
         appendMenuRule(builder, tokens.menu());
         appendMenuContainerRule(builder, tokens.menu());
+        appendMenuSectionHeaderRule(builder, tokens.menu());
         appendMenuItemRule(builder, tokens.menu());
+        appendMenuItemIconRule(builder, tokens.menu());
         appendMenuEdgeItemRules(builder, tokens.menu());
         appendSelectedMenuItemRule(builder, tokens.menu());
         appendSearchBarRule(builder, tokens.search());
@@ -250,7 +243,7 @@ public final class M3ComponentTokenCssCompiler {
         appendNavigationRailItemRule(builder, tokens.navigationRail());
         appendNavigationRailIndicatorRule(builder, tokens.navigationRail());
         appendListItemRule(builder, tokens.listItem());
-        appendSegmentedListRule(builder, tokens.listItem(), expressive);
+        appendSegmentedListRule(builder, tokens.listItem());
         appendListSectionHeaderRule(builder, tokens.listItem());
         appendNavigationDrawerRule(builder, tokens.navigationDrawer());
         appendNavigationDrawerItemRule(builder, tokens.navigationDrawer());
@@ -299,8 +292,13 @@ public final class M3ComponentTokenCssCompiler {
         );
         append(
                 builder,
-                "-m3-" + prefix + "-pressed-container-shape",
-                pixels(tokens.pressedContainerShape())
+                "-m3-" + prefix + "-pressed-round-container-shape",
+                pixels(tokens.pressedRoundContainerShape())
+        );
+        append(
+                builder,
+                "-m3-" + prefix + "-pressed-square-container-shape",
+                pixels(tokens.pressedSquareContainerShape())
         );
         append(
                 builder,
@@ -330,6 +328,7 @@ public final class M3ComponentTokenCssCompiler {
         append(builder, "menu-item", tokens.menuItem());
         append(builder, "menu-close-button", tokens.menuCloseButton());
         append(builder, "-m3-fab-menu-close-spacing", pixels(tokens.menuCloseSpacing()));
+        append(builder, "-m3-fab-regular-label-font-size", pixels(tokens.regularLabelFontSize()));
     }
 
     /// Appends one floating action button size token set.
@@ -369,7 +368,16 @@ public final class M3ComponentTokenCssCompiler {
         append(builder, "-m3-" + prefix + "-wide-width", pixels(tokens.wideWidth()));
         append(builder, "-m3-" + prefix + "-round-container-shape", pixels(tokens.roundContainerShape()));
         append(builder, "-m3-" + prefix + "-square-container-shape", pixels(tokens.squareContainerShape()));
-        append(builder, "-m3-" + prefix + "-pressed-container-shape", pixels(tokens.pressedContainerShape()));
+        append(
+                builder,
+                "-m3-" + prefix + "-pressed-round-container-shape",
+                pixels(tokens.pressedRoundContainerShape())
+        );
+        append(
+                builder,
+                "-m3-" + prefix + "-pressed-square-container-shape",
+                pixels(tokens.pressedSquareContainerShape())
+        );
         append(
                 builder,
                 "-m3-" + prefix + "-selected-round-container-shape",
@@ -627,7 +635,13 @@ public final class M3ComponentTokenCssCompiler {
                 "-m3-menu-last-item-container-shape",
                 pixels(tokens.lastItemContainerShape())
         );
+        append(builder, "-m3-menu-item-icon-size", pixels(tokens.itemIconSize()));
         append(builder, "-m3-menu-item-horizontal-padding", pixels(tokens.itemHorizontalPadding()));
+        append(
+                builder,
+                "-m3-menu-section-header-horizontal-padding",
+                pixels(tokens.sectionHeaderHorizontalPadding())
+        );
         append(builder, "-m3-menu-item-content-spacing", pixels(tokens.itemContentSpacing()));
         append(builder, "-m3-menu-item-spacing", pixels(tokens.itemSpacing()));
     }
@@ -1126,6 +1140,22 @@ public final class M3ComponentTokenCssCompiler {
         append(builder, "-m3-list-item-vertical-padding", pixels(tokens.verticalPadding()));
         append(builder, "-m3-list-item-content-spacing", pixels(tokens.contentSpacing()));
         append(builder, "-m3-list-segmented-gap", pixels(tokens.segmentedGap()));
+        append(builder, "-m3-list-segmented-container-shape", pixels(tokens.segmentedContainerShape()));
+        append(
+                builder,
+                "-m3-list-segmented-hover-container-shape",
+                pixels(tokens.segmentedHoverContainerShape())
+        );
+        append(
+                builder,
+                "-m3-list-segmented-active-container-shape",
+                pixels(tokens.segmentedActiveContainerShape())
+        );
+        append(
+                builder,
+                "-m3-list-segmented-disabled-container-shape",
+                pixels(tokens.segmentedDisabledContainerShape())
+        );
         append(builder, "-m3-list-section-header-height", pixels(tokens.sectionHeaderHeight()));
         append(
                 builder,
@@ -1148,22 +1178,20 @@ public final class M3ComponentTokenCssCompiler {
     /// Appends generated metrics and state shapes for every Material button size.
     private static void appendButtonSizeRules(
             StringBuilder builder,
-            ButtonSizingTokens tokens,
-            boolean expressive
+            ButtonSizingTokens tokens
     ) {
-        appendButtonSizeRules(builder, ".m3-button-extra-small", tokens.extraSmall(), expressive);
-        appendButtonSizeRules(builder, ".m3-button-small", tokens.small(), expressive);
-        appendButtonSizeRules(builder, ".m3-button-medium", tokens.medium(), expressive);
-        appendButtonSizeRules(builder, ".m3-button-large", tokens.large(), expressive);
-        appendButtonSizeRules(builder, ".m3-button-extra-large", tokens.extraLarge(), expressive);
+        appendButtonSizeRules(builder, ".m3-button-extra-small", tokens.extraSmall());
+        appendButtonSizeRules(builder, ".m3-button-small", tokens.small());
+        appendButtonSizeRules(builder, ".m3-button-medium", tokens.medium());
+        appendButtonSizeRules(builder, ".m3-button-large", tokens.large());
+        appendButtonSizeRules(builder, ".m3-button-extra-large", tokens.extraLarge());
     }
 
     /// Appends generated metrics and shapes for one Material button size.
     private static void appendButtonSizeRules(
             StringBuilder builder,
             String sizeSelector,
-            ButtonSizeTokens tokens,
-            boolean expressive
+            ButtonSizeTokens tokens
     ) {
         String selector = ".m3-button" + sizeSelector;
         beginRule(builder, selector);
@@ -1189,17 +1217,21 @@ public final class M3ComponentTokenCssCompiler {
         appendShapeDeclarations(builder, tokens.squareContainerShape());
         endRule(builder);
 
-        if (expressive) {
-            beginRule(
-                    builder,
-                    selector + ".m3-button-round:armed, "
-                            + selector + ".m3-button-round:pressed, "
-                            + selector + ".m3-button-square:armed, "
-                            + selector + ".m3-button-square:pressed"
-            );
-            appendShapeDeclarations(builder, tokens.pressedContainerShape());
-            endRule(builder);
-        }
+        beginRule(
+                builder,
+                selector + ".m3-button-round:armed, "
+                        + selector + ".m3-button-round:pressed"
+        );
+        appendShapeDeclarations(builder, tokens.pressedRoundContainerShape());
+        endRule(builder);
+
+        beginRule(
+                builder,
+                selector + ".m3-button-square:armed, "
+                        + selector + ".m3-button-square:pressed"
+        );
+        appendShapeDeclarations(builder, tokens.pressedSquareContainerShape());
+        endRule(builder);
     }
 
     /// Appends generated icon size rules.
@@ -1220,8 +1252,7 @@ public final class M3ComponentTokenCssCompiler {
     /// Appends generated icon button size, width, and shape rules.
     private static void appendIconButtonRules(
             StringBuilder builder,
-            IconButtonTokens tokens,
-            boolean expressive
+            IconButtonTokens tokens
     ) {
         appendIconButtonSizeRules(builder, ".m3-icon-button-extra-small", tokens.extraSmall());
         appendIconButtonSizeRules(builder, ".m3-icon-button-small", tokens.small());
@@ -1229,11 +1260,11 @@ public final class M3ComponentTokenCssCompiler {
         appendIconButtonSizeRules(builder, ".m3-icon-button-large", tokens.large());
         appendIconButtonSizeRules(builder, ".m3-icon-button-extra-large", tokens.extraLarge());
 
-        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-small", tokens.extraSmall(), expressive);
-        appendIconButtonShapeRules(builder, ".m3-icon-button-small", tokens.small(), expressive);
-        appendIconButtonShapeRules(builder, ".m3-icon-button-medium", tokens.medium(), expressive);
-        appendIconButtonShapeRules(builder, ".m3-icon-button-large", tokens.large(), expressive);
-        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-large", tokens.extraLarge(), expressive);
+        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-small", tokens.extraSmall());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-small", tokens.small());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-medium", tokens.medium());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-large", tokens.large());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-large", tokens.extraLarge());
     }
 
     /// Appends generated icon button metrics for one size class.
@@ -1277,8 +1308,7 @@ public final class M3ComponentTokenCssCompiler {
     private static void appendIconButtonShapeRules(
             StringBuilder builder,
             String selector,
-            IconButtonSizeTokens tokens,
-            boolean expressive
+            IconButtonSizeTokens tokens
     ) {
         String iconButtonSelector = ".m3-button.m3-icon-button" + selector;
         String toggleButtonSelector = ".m3-icon-toggle-button" + selector;
@@ -1290,29 +1320,33 @@ public final class M3ComponentTokenCssCompiler {
         appendShapeDeclarations(builder, tokens.squareContainerShape());
         endRule(builder);
 
-        if (expressive) {
-            beginRule(builder, toggleButtonSelector + ".m3-icon-button-round:selected");
-            appendShapeDeclarations(builder, tokens.selectedRoundContainerShape());
-            endRule(builder);
+        beginRule(builder, toggleButtonSelector + ".m3-icon-button-round:selected");
+        appendShapeDeclarations(builder, tokens.selectedRoundContainerShape());
+        endRule(builder);
 
-            beginRule(builder, toggleButtonSelector + ".m3-icon-button-square:selected");
-            appendShapeDeclarations(builder, tokens.selectedSquareContainerShape());
-            endRule(builder);
+        beginRule(builder, toggleButtonSelector + ".m3-icon-button-square:selected");
+        appendShapeDeclarations(builder, tokens.selectedSquareContainerShape());
+        endRule(builder);
 
-            beginRule(
-                    builder,
-                    iconButtonSelector + ".m3-icon-button-round:armed, "
-                            + iconButtonSelector + ".m3-icon-button-round:pressed, "
-                            + iconButtonSelector + ".m3-icon-button-square:armed, "
-                            + iconButtonSelector + ".m3-icon-button-square:pressed, "
-                            + toggleButtonSelector + ".m3-icon-button-round:armed, "
-                            + toggleButtonSelector + ".m3-icon-button-round:pressed, "
-                            + toggleButtonSelector + ".m3-icon-button-square:armed, "
-                            + toggleButtonSelector + ".m3-icon-button-square:pressed"
-            );
-            appendShapeDeclarations(builder, tokens.pressedContainerShape());
-            endRule(builder);
-        }
+        beginRule(
+                builder,
+                iconButtonSelector + ".m3-icon-button-round:armed, "
+                        + iconButtonSelector + ".m3-icon-button-round:pressed, "
+                        + toggleButtonSelector + ".m3-icon-button-round:armed, "
+                        + toggleButtonSelector + ".m3-icon-button-round:pressed"
+        );
+        appendShapeDeclarations(builder, tokens.pressedRoundContainerShape());
+        endRule(builder);
+
+        beginRule(
+                builder,
+                iconButtonSelector + ".m3-icon-button-square:armed, "
+                        + iconButtonSelector + ".m3-icon-button-square:pressed, "
+                        + toggleButtonSelector + ".m3-icon-button-square:armed, "
+                        + toggleButtonSelector + ".m3-icon-button-square:pressed"
+        );
+        appendShapeDeclarations(builder, tokens.pressedSquareContainerShape());
+        endRule(builder);
     }
 
     /// Appends generated shape declarations shared by icon button shape states.
@@ -1345,6 +1379,13 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-fx-graphic-text-gap", pixels(tokens.iconLabelSpace()));
         appendDeclaration(builder, "-fx-background-radius", pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-border-radius", pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends regular extended FAB label typography owned by the component token group.
+    private static void appendRegularFabLabelRule(StringBuilder builder, FabTokens tokens) {
+        beginRule(builder, ".m3-regular-fab");
+        appendDeclaration(builder, "-fx-font-size", pixels(tokens.regularLabelFontSize()));
         endRule(builder);
     }
 
@@ -1424,23 +1465,20 @@ public final class M3ComponentTokenCssCompiler {
     /// Appends standard and connected button-group rules for every Material size role.
     private static void appendConnectedButtonRules(
             StringBuilder builder,
-            ButtonGroupTokens groupTokens,
-            boolean expressive
+            ButtonGroupTokens groupTokens
     ) {
         appendButtonGroupSizeRules(
                 builder,
                 ".m3-button-group-extra-small",
-                groupTokens.extraSmall(),
-                expressive
+                groupTokens.extraSmall()
         );
-        appendButtonGroupSizeRules(builder, ".m3-button-group-small", groupTokens.small(), expressive);
-        appendButtonGroupSizeRules(builder, ".m3-button-group-medium", groupTokens.medium(), expressive);
-        appendButtonGroupSizeRules(builder, ".m3-button-group-large", groupTokens.large(), expressive);
+        appendButtonGroupSizeRules(builder, ".m3-button-group-small", groupTokens.small());
+        appendButtonGroupSizeRules(builder, ".m3-button-group-medium", groupTokens.medium());
+        appendButtonGroupSizeRules(builder, ".m3-button-group-large", groupTokens.large());
         appendButtonGroupSizeRules(
                 builder,
                 ".m3-button-group-extra-large",
-                groupTokens.extraLarge(),
-                expressive
+                groupTokens.extraLarge()
         );
     }
 
@@ -1452,8 +1490,7 @@ public final class M3ComponentTokenCssCompiler {
     private static void appendButtonGroupSizeRules(
             StringBuilder builder,
             String sizeSelector,
-            ButtonGroupSizeTokens tokens,
-            boolean expressive
+            ButtonGroupSizeTokens tokens
     ) {
         String groupSelector = ".m3-button-group" + sizeSelector;
         String outerRadius = pixels(tokens.containerHeight() / 2.0);
@@ -1511,29 +1548,29 @@ public final class M3ComponentTokenCssCompiler {
                 outerRadius,
                 pixels(tokens.connectedInnerCorner())
         );
-        if (expressive) {
-            appendConnectedButtonStateShapeRules(
-                    builder,
-                    connectedSelector,
-                    ":selected",
-                    outerRadius,
-                    pixels(tokens.connectedSelectedInnerCorner())
-            );
-            appendConnectedButtonStateShapeRules(
-                    builder,
-                    connectedSelector,
-                    ":armed",
-                    outerRadius,
-                    pixels(tokens.connectedPressedInnerCorner())
-            );
-            appendConnectedButtonStateShapeRules(
-                    builder,
-                    connectedSelector,
-                    ":pressed",
-                    outerRadius,
-                    pixels(tokens.connectedPressedInnerCorner())
-            );
-        }
+        String selectedInnerRadius = pixels(tokens.connectedSelectedInnerCorner());
+        String pressedInnerRadius = pixels(tokens.connectedPressedInnerCorner());
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":selected",
+                outerRadius,
+                selectedInnerRadius
+        );
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":armed",
+                outerRadius,
+                pressedInnerRadius
+        );
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":pressed",
+                outerRadius,
+                pressedInnerRadius
+        );
     }
 
     /// Appends position-specific connected-button shapes for one interaction state.
@@ -1915,6 +1952,14 @@ public final class M3ComponentTokenCssCompiler {
         endRule(builder);
     }
 
+    /// Appends a menu section-header token CSS rule.
+    private static void appendMenuSectionHeaderRule(StringBuilder builder, MenuTokens tokens) {
+        String horizontalPadding = pixels(tokens.sectionHeaderHorizontalPadding());
+        beginRule(builder, ".m3-menu-section-header");
+        appendDeclaration(builder, "-fx-padding", "12px " + horizontalPadding + " 4px " + horizontalPadding);
+        endRule(builder);
+    }
+
     /// Appends a menu item token CSS rule.
     private static void appendMenuItemRule(StringBuilder builder, MenuTokens tokens) {
         beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item");
@@ -1926,6 +1971,17 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-m3-horizontal-padding", pixels(tokens.itemHorizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", pixels(0.0));
         appendDeclaration(builder, "-m3-content-spacing", pixels(tokens.itemContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a menu item icon-size token CSS rule.
+    private static void appendMenuItemIconRule(StringBuilder builder, MenuTokens tokens) {
+        beginRule(
+                builder,
+                ".m3-menu-item .m3-list-item-leading .m3-icon-graphic, "
+                        + ".m3-menu-item .m3-list-item-trailing .m3-icon-graphic"
+        );
+        appendDeclaration(builder, "-m3-icon-size", pixels(tokens.itemIconSize()));
         endRule(builder);
     }
 
@@ -2937,6 +2993,13 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-fx-pref-height", pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-item-spacing", pixels(tokens.itemSpacing()));
+        appendDeclaration(
+                builder,
+                "-fx-effect",
+                tokens.elevated()
+                        ? "dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2)"
+                        : "null"
+        );
         endRule(builder);
 
         double densityScale = tokens.indicatorHeight() / 32.0;
@@ -3139,30 +3202,25 @@ public final class M3ComponentTokenCssCompiler {
         endRule(builder);
     }
 
-    /// Appends the gap and profile-specific shapes used by static and virtualized segmented lists.
+    /// Appends the gap and state shapes used by static and virtualized segmented lists.
     private static void appendSegmentedListRule(
             StringBuilder builder,
-            ListItemTokens tokens,
-            boolean expressive
+            ListItemTokens tokens
     ) {
         beginRule(builder, ".m3-list-pane.m3-segmented-list,\n.m3-list-view.m3-segmented-list");
         appendDeclaration(builder, "-m3-list-item-spacing", pixels(tokens.segmentedGap()));
         endRule(builder);
 
-        if (!expressive) {
-            return;
-        }
-
         beginRule(builder, ".m3-segmented-list .m3-list-item");
-        appendDeclaration(builder, "-m3-container-shape", "-m3-shape-corner-extra-small");
+        appendDeclaration(builder, "-m3-container-shape", pixels(tokens.segmentedContainerShape()));
         endRule(builder);
 
         beginRule(builder, ".m3-segmented-list .m3-list-item:hover");
-        appendDeclaration(builder, "-m3-container-shape", "-m3-shape-corner-medium");
+        appendDeclaration(builder, "-m3-container-shape", pixels(tokens.segmentedHoverContainerShape()));
         endRule(builder);
 
         beginRule(builder, ".m3-segmented-list .m3-list-item:disabled");
-        appendDeclaration(builder, "-m3-container-shape", "-m3-shape-corner-extra-small");
+        appendDeclaration(builder, "-m3-container-shape", pixels(tokens.segmentedDisabledContainerShape()));
         endRule(builder);
 
         beginRule(
@@ -3173,7 +3231,7 @@ public final class M3ComponentTokenCssCompiler {
                         + ".m3-segmented-list .m3-list-item:selected, "
                         + ".m3-segmented-list .m3-list-item:selected:disabled"
         );
-        appendDeclaration(builder, "-m3-container-shape", "-m3-shape-corner-large");
+        appendDeclaration(builder, "-m3-container-shape", pixels(tokens.segmentedActiveContainerShape()));
         endRule(builder);
     }
 

@@ -8,7 +8,7 @@ import org.glavo.m3fx.internal.tokens.M3ComponentTokenCssCompiler;
 import org.glavo.m3fx.internal.tokens.M3TokenCssCompiler;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3ColorTokens;
-import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.m3fx.tokens.M3TokenSet;
 import org.glavo.monetfx.ColorRole;
@@ -30,7 +30,7 @@ public final class M3ThemeCssCompiler {
     /// Compiles the root declarations for a theme.
     ///
     /// @param theme the theme to compile
-    /// @return JavaFX inline CSS declarations
+    /// @return JavaFX CSS declarations suitable for a generated root rule
     public static String rootStyleDeclarations(M3Theme theme) {
         return rootStyleDeclarations(Objects.requireNonNull(theme, "theme").tokens());
     }
@@ -46,7 +46,7 @@ public final class M3ThemeCssCompiler {
     /// Compiles root-level declarations for a complete token set.
     ///
     /// @param tokens the token set to compile
-    /// @return JavaFX inline CSS declarations
+    /// @return JavaFX CSS declarations suitable for a generated root rule
     public static String rootStyleDeclarations(M3TokenSet tokens) {
         return M3TokenCssCompiler.styleDeclarations(tokens.colorTokens())
                 + " "
@@ -64,7 +64,7 @@ public final class M3ThemeCssCompiler {
                 + " "
                 + M3ComponentTokenCssCompiler.styleDeclarations(tokens.componentTokens())
                 + " "
-                + menuColorStyleDeclarations(tokens.profile(), tokens.colorTokens());
+                + componentColorStyleDeclarations(tokens.componentTokens(), tokens.colorTokens());
     }
 
     /// Compiles component selector rules for a complete token set.
@@ -74,7 +74,7 @@ public final class M3ThemeCssCompiler {
     public static String controlStyleRules(M3TokenSet tokens) {
         return M3TokenCssCompiler.controlStyleRules(tokens.typographyTokens())
                 + "\n\n"
-                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens(), tokens.profile())
+                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens())
                 + "\n\n"
                 + M3TokenCssCompiler.controlStyleRules(tokens.stateLayerTokens())
                 + "\n\n"
@@ -136,27 +136,42 @@ public final class M3ThemeCssCompiler {
         return String.format(Locale.ROOT, "%.3f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
     }
 
-    /// Compiles menu color mappings selected by the active Material profile.
-    private static String menuColorStyleDeclarations(M3Profile profile, M3ColorTokens colorTokens) {
-        boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
-        String standardContainer = expressive ? "-m3-color-surface-container-low" : "-m3-color-surface-container";
-        String standardSelectedContainer = expressive ? "-m3-color-tertiary-container" : "-m3-color-secondary-container";
-        String standardSelectedContent = expressive
-                ? "-m3-color-on-tertiary-container"
-                : "-m3-color-on-secondary-container";
-        Color selectedContainerColor = colorTokens.get(expressive
-                ? ColorRole.TERTIARY_CONTAINER
-                : ColorRole.SECONDARY_CONTAINER);
-        return "-m3-menu-container-color: " + standardContainer + "; "
-                + "-m3-menu-item-state-layer-color: -m3-color-on-surface; "
-                + "-m3-menu-selected-item-container-color: " + standardSelectedContainer + "; "
-                + "-m3-menu-selected-item-content-color: " + standardSelectedContent + "; "
+    /// Compiles component color-role mappings as inherited CSS values.
+    private static String componentColorStyleDeclarations(
+            M3ComponentTokens componentTokens,
+            M3ColorTokens colorTokens
+    ) {
+        M3ComponentTokens.MenuColorTokens menu = componentTokens.menu().colors();
+        M3ComponentTokens.NavigationBarColorTokens navigationBar = componentTokens.navigationBar().colors();
+        Color selectedContainerColor = colorTokens.get(menu.selectedItemContainerRole());
+        return "-m3-menu-container-color: " + colorRoleVariable(menu.containerRole()) + "; "
+                + "-m3-menu-item-state-layer-color: " + colorRoleVariable(menu.itemStateLayerRole()) + "; "
+                + "-m3-menu-selected-item-container-color: "
+                + colorRoleVariable(menu.selectedItemContainerRole()) + "; "
+                + "-m3-menu-selected-item-content-color: "
+                + colorRoleVariable(menu.selectedItemContentRole()) + "; "
                 + "-m3-menu-selected-disabled-container-color: "
-                + toRgba(selectedContainerColor, expressive ? 0.38 : 1.0) + "; "
-                + "-m3-menu-vibrant-container-color: -m3-color-tertiary-container; "
-                + "-m3-menu-vibrant-item-content-color: -m3-color-on-tertiary-container; "
-                + "-m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container; "
-                + "-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary; "
-                + "-m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;";
+                + toRgba(selectedContainerColor, menu.selectedDisabledContainerOpacity()) + "; "
+                + "-m3-menu-vibrant-container-color: "
+                + colorRoleVariable(menu.vibrantContainerRole()) + "; "
+                + "-m3-menu-vibrant-item-content-color: "
+                + colorRoleVariable(menu.vibrantItemContentRole()) + "; "
+                + "-m3-menu-vibrant-item-state-layer-color: "
+                + colorRoleVariable(menu.vibrantItemStateLayerRole()) + "; "
+                + "-m3-menu-vibrant-selected-item-container-color: "
+                + colorRoleVariable(menu.vibrantSelectedItemContainerRole()) + "; "
+                + "-m3-menu-vibrant-selected-item-content-color: "
+                + colorRoleVariable(menu.vibrantSelectedItemContentRole()) + "; "
+                + "-m3-menu-vibrant-interaction-icon-color: "
+                + colorRoleVariable(menu.vibrantInteractionIconRole()) + "; "
+                + "-m3-navigation-bar-selected-label-color: "
+                + colorRoleVariable(navigationBar.selectedLabelRole()) + "; "
+                + "-m3-navigation-bar-state-layer-color: "
+                + colorRoleVariable(navigationBar.stateLayerRole()) + ";";
+    }
+
+    /// Returns the generated Material CSS variable for a MonetFX color role.
+    private static String colorRoleVariable(ColorRole role) {
+        return role.getVariableName("-m3-color");
     }
 }

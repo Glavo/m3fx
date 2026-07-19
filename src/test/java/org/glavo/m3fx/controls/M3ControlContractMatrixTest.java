@@ -91,6 +91,7 @@ import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.glavo.m3fx.skins.M3AvatarSkin;
@@ -403,7 +404,6 @@ final class M3ControlContractMatrixTest {
     /// Asserts that a root has the expected installed theme metadata and classes.
     private static void assertThemedRoot(Parent root, M3Theme theme) {
         assertSame(theme, M3ThemeManager.getTheme(root));
-        assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertTrue(root.getStyleClass().contains(theme.profile() == M3Profile.EXPRESSIVE_2025
                 ? M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS
@@ -3031,12 +3031,8 @@ final class M3ControlContractMatrixTest {
                         };
                         M3IconToggleButton round = roundButtons.get(index);
                         M3IconToggleButton square = squareButtons.get(index);
-                        double selectedRoundShape = expressive
-                                ? tokens.selectedRoundContainerShape()
-                                : tokens.roundContainerShape();
-                        double selectedSquareShape = expressive
-                                ? tokens.selectedSquareContainerShape()
-                                : tokens.squareContainerShape();
+                        double selectedRoundShape = tokens.selectedRoundContainerShape();
+                        double selectedSquareShape = tokens.selectedSquareContainerShape();
 
                         assertTrue(round.isSelected());
                         assertTrue(square.isSelected());
@@ -3046,12 +3042,8 @@ final class M3ControlContractMatrixTest {
                         round.arm();
                         square.arm();
                         root.applyCss();
-                        double pressedRoundShape = expressive
-                                ? tokens.pressedContainerShape()
-                                : selectedRoundShape;
-                        double pressedSquareShape = expressive
-                                ? tokens.pressedContainerShape()
-                                : selectedSquareShape;
+                        double pressedRoundShape = tokens.pressedRoundContainerShape();
+                        double pressedSquareShape = tokens.pressedSquareContainerShape();
                         assertEquals(pressedRoundShape, round.getContainerShape(), 0.0001);
                         assertEquals(pressedSquareShape, square.getContainerShape(), 0.0001);
 
@@ -10343,7 +10335,7 @@ final class M3ControlContractMatrixTest {
         );
     }
 
-    /// Verifies that tooltips can apply and clear inline theme declarations.
+    /// Verifies that tooltip themes preserve application inline style and expose semantic context classes.
     @Test
     void tooltipAppliesAndClearsTheme() {
         M3Tooltip tooltip = new M3Tooltip("Details");
@@ -10353,8 +10345,7 @@ final class M3ControlContractMatrixTest {
         tooltip.setTheme(theme);
 
         assertEquals(theme, tooltip.getTheme());
-        assertTrue(tooltip.getStyle().contains("-fx-opacity: 0.9;"));
-        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+        assertEquals("-fx-opacity: 0.9;", tooltip.getStyle());
         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
@@ -10386,7 +10377,7 @@ final class M3ControlContractMatrixTest {
         M3Tooltip.uninstall(uninstalledTarget, uninstalledTooltip);
 
         assertEquals(theme, attachedTooltip.getTheme());
-        assertTrue(attachedTooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(attachedTooltip.getStyle().isEmpty());
         assertTrue(attachedTooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertTrue(attachedTooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertNull(delayedTooltip.getTheme());
@@ -10395,7 +10386,7 @@ final class M3ControlContractMatrixTest {
         root.getChildren().add(uninstalledTarget);
 
         assertEquals(theme, delayedTooltip.getTheme());
-        assertTrue(delayedTooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(delayedTooltip.getStyle().isEmpty());
         assertTrue(delayedTooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertTrue(delayedTooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertNull(uninstalledTooltip.getTheme());
@@ -10415,7 +10406,7 @@ final class M3ControlContractMatrixTest {
         M3Tooltip tooltip = installTooltip(target, "Installed");
 
         assertSame(localTheme, tooltip.getTheme());
-        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(tooltip.getStyle().isEmpty());
         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
     }
@@ -10437,7 +10428,7 @@ final class M3ControlContractMatrixTest {
         new Scene(root);
 
         assertSame(localTheme, tooltip.getTheme());
-        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(tooltip.getStyle().isEmpty());
     }
 
     /// Verifies that installed tooltips follow scene theme changes after installation.
@@ -25300,15 +25291,17 @@ final class M3ControlContractMatrixTest {
                         )
                 );
 
-                assertSame(baselineTheme, M3ThemeManager.getTheme(row));
+                assertSame(baselineTheme, M3ThemeResolver.findTheme(row));
+                assertNull(M3ThemeManager.getTheme(row));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
 
                 M3ThemeManager.install(scene, expressiveDarkTheme);
                 root.applyCss();
                 root.layout();
 
-                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(row));
-                assertTrue(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                assertTrue(row.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertSame(expressiveDarkTheme, M3ThemeResolver.findTheme(row));
+                assertNull(M3ThemeManager.getTheme(row));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
             } finally {
                 stage.close();
             }
@@ -25350,20 +25343,23 @@ final class M3ControlContractMatrixTest {
                         )
                 );
 
-                assertSame(baselineTheme, M3ThemeManager.getTheme(row));
+                assertSame(baselineTheme, M3ThemeResolver.findTheme(row));
+                assertNull(M3ThemeManager.getTheme(row));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
 
                 M3ThemeManager.install(localRoot, expressiveDarkTheme);
                 root.applyCss();
                 root.layout();
 
-                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(row));
-                assertTrue(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                assertTrue(row.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertSame(expressiveDarkTheme, M3ThemeResolver.findTheme(row));
+                assertNull(M3ThemeManager.getTheme(row));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
 
                 M3ThemeManager.uninstall(localRoot);
                 root.applyCss();
                 root.layout();
 
+                assertNull(M3ThemeResolver.findTheme(row));
                 assertNull(M3ThemeManager.getTheme(row));
                 assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
                 assertFalse(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));

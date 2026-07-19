@@ -363,12 +363,6 @@ public final class M3RichTooltip extends M3Tooltip {
         return null;
     }
 
-    /// Returns whether the tooltip root should receive plain tooltip container metrics.
-    @Override
-    protected boolean usesPlainContainerStyle() {
-        return false;
-    }
-
     /// Returns the first or last reachable action node for keyboard traversal.
     private @Nullable Node interactiveFocusTarget(boolean backward) {
         int index = backward ? actions.getChildren().size() - 1 : 0;

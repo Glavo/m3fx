@@ -11,6 +11,7 @@ import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.internal.tokens.M3ComponentTokenCssCompiler;
 import org.glavo.m3fx.internal.tokens.M3TokenCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
+import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
@@ -452,7 +453,7 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
                 ".m3-button-group.m3-button-group-extra-large.m3-connected-button-group"
         ));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
                 ".m3-grouped-button.m3-button-group-first:pressed"
         ));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-tab-active-indicator"));
@@ -535,9 +536,9 @@ final class M3TokenFactoryTest {
         assertTrue(missing.isEmpty(), () -> "Missing component token values in generated control rules: " + missing);
     }
 
-    /// Verifies that Baseline themes omit interaction shapes reserved for the Expressive profile.
+    /// Verifies that component tokens, rather than profile identity, control interactions and semantic colors.
     @Test
-    void profileControlsGeneratedExpressiveShapeRules() {
+    void componentTokensControlGeneratedInteractionAndColorRules() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
         M3TokenSet baseline = M3TokenSet.builder(
                 M3Profile.BASELINE_2021,
@@ -552,7 +553,7 @@ final class M3TokenFactoryTest {
 
         String baselineRules = M3ThemeCssCompiler.controlStyleRules(baseline);
         String expressiveRules = M3ThemeCssCompiler.controlStyleRules(expressive);
-        List<String> expressiveOnlySelectors = List.of(
+        List<String> stateSelectors = List.of(
                 ".m3-button.m3-button-small.m3-button-round:armed",
                 ".m3-button.m3-icon-button.m3-icon-button-small.m3-icon-button-round:armed",
                 ".m3-icon-toggle-button.m3-icon-button-small.m3-icon-button-round:selected",
@@ -561,10 +562,29 @@ final class M3TokenFactoryTest {
                 ".m3-segmented-list .m3-list-item:hover"
         );
 
-        for (String selector : expressiveOnlySelectors) {
-            assertFalse(baselineRules.contains(selector), () -> "Baseline rule should omit " + selector);
-            assertTrue(expressiveRules.contains(selector), () -> "Expressive rule should include " + selector);
+        for (String selector : stateSelectors) {
+            assertTrue(baselineRules.contains(selector), () -> "Baseline tokens should emit " + selector);
+            assertTrue(expressiveRules.contains(selector), () -> "Expressive tokens should emit " + selector);
         }
+
+        M3TokenSet baselineWithExpressiveComponents = M3TokenSet.builder(baseline)
+                .componentTokens(expressive.componentTokens())
+                .build();
+        String mixedDeclarations = M3ThemeCssCompiler.rootStyleDeclarations(baselineWithExpressiveComponents);
+        assertTrue(
+                M3ThemeCssCompiler.controlStyleRules(baselineWithExpressiveComponents).contains(
+                        M3ComponentTokenCssCompiler.controlStyleRules(expressive.componentTokens())
+                )
+        );
+        assertEquals(M3Profile.BASELINE_2021, baselineWithExpressiveComponents.profile());
+        assertTrue(mixedDeclarations.contains("-m3-menu-container-color: -m3-color-surface-container-low"));
+        assertTrue(mixedDeclarations.contains(
+                "-m3-menu-selected-item-container-color: -m3-color-tertiary-container"
+        ));
+        assertTrue(mixedDeclarations.contains("-m3-navigation-bar-selected-label-color: -m3-color-secondary"));
+        assertFalse(mixedDeclarations.contains(
+                "-m3-navigation-bar-selected-label-color: -m3-color-on-surface;"
+        ));
     }
 
     /// Verifies that generated component custom properties are consumed by production controls or stylesheets.
@@ -641,7 +661,8 @@ final class M3TokenFactoryTest {
                                 new M3ComponentTokens.FabSizeTokens(120.0, 32.0, 25.0, 26.0, 8.0, 27.0),
                                 new M3ComponentTokens.FabSizeTokens(58.0, 29.0, 20.0, 19.0, 0.0, 19.0),
                                 15.0,
-                                16.0
+                                16.0,
+                                17.0
                         ))
                 .icon(new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0))
                 .buttonGroup(createButtonGroupTokens())
@@ -662,7 +683,22 @@ final class M3TokenFactoryTest {
                                 18.0,
                                 12.0,
                                 13.0,
+                                new M3ComponentTokens.MenuColorTokens(
+                                        ColorRole.SURFACE_CONTAINER,
+                                        ColorRole.ON_SURFACE,
+                                        ColorRole.SECONDARY_CONTAINER,
+                                        ColorRole.ON_SECONDARY_CONTAINER,
+                                        1.0,
+                                        ColorRole.TERTIARY_CONTAINER,
+                                        ColorRole.ON_TERTIARY_CONTAINER,
+                                        ColorRole.ON_TERTIARY_CONTAINER,
+                                        ColorRole.TERTIARY,
+                                        ColorRole.ON_TERTIARY,
+                                        ColorRole.ON_TERTIARY_CONTAINER
+                                ),
+                                19.0,
                                 14.0,
+                                20.0,
                                 15.0,
                                 16.0
                         ))
@@ -821,7 +857,14 @@ final class M3TokenFactoryTest {
                         ))
                 .bottomAppBar(new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0))
                 .toolbar(new M3ComponentTokens.ToolbarTokens(63.0, 64.0, 25.0, 49.0, 8.0, 12.0, 3.0, 24.0))
-                .navigationBar(new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0, 10.0))
+                .navigationBar(new M3ComponentTokens.NavigationBarTokens(
+                        67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0, 10.0,
+                        new M3ComponentTokens.NavigationBarColorTokens(
+                                ColorRole.ON_SURFACE,
+                                ColorRole.ON_SURFACE
+                        ),
+                        true
+                ))
                 .navigationRail(new M3ComponentTokens.NavigationRailTokens(72.0, 64.0, 220.0, 280.0, 360.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 9.0, 10.0, 11.0, 44.0, 20.0, 19.0, 18.0))
                 .navigationDrawer(new M3ComponentTokens.NavigationDrawerTokens(
                                 78.0,
@@ -837,9 +880,10 @@ final class M3TokenFactoryTest {
                                 44.0,
                                 20.0,
                                 24.0
-                        ))
+                ))
                 .listItem(new M3ComponentTokens.ListItemTokens(
-                        58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 3.0, 32.0, 19.0
+                        58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 3.0,
+                        12.0, 13.0, 14.0, 15.0, 32.0, 19.0
                 ))
                 .build();
     }
@@ -847,11 +891,11 @@ final class M3TokenFactoryTest {
     /// Creates button size tokens with distinctive values for generated output assertions.
     private static M3ComponentTokens.ButtonSizingTokens createButtonSizingTokens() {
         return new M3ComponentTokens.ButtonSizingTokens(
-                new M3ComponentTokens.ButtonSizeTokens(32.0, 20.0, 999.0, 12.0, 8.0, 12.0, 11.0, 8.0, 1.0),
-                new M3ComponentTokens.ButtonSizeTokens(40.0, 20.0, 999.0, 12.0, 8.0, 16.0, 15.0, 8.0, 1.0),
-                new M3ComponentTokens.ButtonSizeTokens(56.0, 24.0, 999.0, 16.0, 12.0, 24.0, 23.0, 8.0, 1.0),
-                new M3ComponentTokens.ButtonSizeTokens(96.0, 32.0, 999.0, 28.0, 16.0, 48.0, 47.0, 12.0, 2.0),
-                new M3ComponentTokens.ButtonSizeTokens(136.0, 40.0, 999.0, 28.0, 16.0, 64.0, 63.0, 16.0, 3.0)
+                new M3ComponentTokens.ButtonSizeTokens(32.0, 20.0, 999.0, 12.0, 8.0, 9.0, 12.0, 11.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(40.0, 20.0, 999.0, 12.0, 8.0, 9.0, 16.0, 15.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(56.0, 24.0, 999.0, 16.0, 12.0, 13.0, 24.0, 23.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(96.0, 32.0, 999.0, 28.0, 16.0, 17.0, 48.0, 47.0, 12.0, 2.0),
+                new M3ComponentTokens.ButtonSizeTokens(136.0, 40.0, 999.0, 28.0, 16.0, 17.0, 64.0, 63.0, 16.0, 3.0)
         );
     }
 
@@ -890,11 +934,11 @@ final class M3TokenFactoryTest {
     /// Creates icon button tokens with distinctive size values.
     private static M3ComponentTokens.IconButtonTokens createIconButtonTokens() {
         return new M3ComponentTokens.IconButtonTokens(
-                new M3ComponentTokens.IconButtonSizeTokens(32.0, 20.0, 28.0, 32.0, 40.0, 999.0, 12.0, 8.0, 12.0, 999.0, 1.0),
-                new M3ComponentTokens.IconButtonSizeTokens(40.0, 24.0, 32.0, 40.0, 52.0, 999.0, 12.0, 8.0, 12.0, 999.0, 1.0),
-                new M3ComponentTokens.IconButtonSizeTokens(56.0, 24.0, 48.0, 56.0, 72.0, 999.0, 16.0, 12.0, 16.0, 999.0, 1.0),
-                new M3ComponentTokens.IconButtonSizeTokens(96.0, 32.0, 64.0, 96.0, 128.0, 999.0, 28.0, 16.0, 28.0, 999.0, 2.0),
-                new M3ComponentTokens.IconButtonSizeTokens(136.0, 40.0, 104.0, 136.0, 184.0, 999.0, 28.0, 16.0, 28.0, 999.0, 3.0)
+                new M3ComponentTokens.IconButtonSizeTokens(32.0, 20.0, 28.0, 32.0, 40.0, 999.0, 12.0, 8.0, 9.0, 12.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(40.0, 24.0, 32.0, 40.0, 52.0, 999.0, 12.0, 8.0, 9.0, 12.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(56.0, 24.0, 48.0, 56.0, 72.0, 999.0, 16.0, 12.0, 13.0, 16.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(96.0, 32.0, 64.0, 96.0, 128.0, 999.0, 28.0, 16.0, 17.0, 28.0, 999.0, 2.0),
+                new M3ComponentTokens.IconButtonSizeTokens(136.0, 40.0, 104.0, 136.0, 184.0, 999.0, 28.0, 16.0, 17.0, 28.0, 999.0, 3.0)
         );
     }
 
@@ -964,6 +1008,10 @@ final class M3TokenFactoryTest {
             parameterTypes[i] = components[i].getType();
             if (parameterTypes[i] == double.class) {
                 arguments[i] = values.next(components[i].getName());
+            } else if (parameterTypes[i] == boolean.class) {
+                arguments[i] = true;
+            } else if (parameterTypes[i].isEnum()) {
+                arguments[i] = parameterTypes[i].getEnumConstants()[0];
             } else if (Record.class.isAssignableFrom(parameterTypes[i])) {
                 arguments[i] = createRecord(parameterTypes[i].asSubclass(Record.class), values);
             } else {
@@ -989,7 +1037,9 @@ final class M3TokenFactoryTest {
             boolean optionalProgressConfiguration = property.equals("-m3-progress-linear-wave-amplitude")
                     || property.equals("-m3-progress-circular-wave-amplitude");
             boolean derivedDatePickerGeometry = property.equals("-m3-date-picker-day-state-layer-size");
-            if (!optionalProgressConfiguration && !derivedDatePickerGeometry && !controlStyleRules.contains(value)) {
+            if (!optionalProgressConfiguration
+                    && !derivedDatePickerGeometry
+                    && !controlStyleRules.contains(value)) {
                 missing.add(property + ": " + value);
             }
         }
@@ -1056,8 +1106,7 @@ final class M3TokenFactoryTest {
         try (Stream<Path> files = Files.walk(root)) {
             sourceFiles = files
                     .filter(Files::isRegularFile)
-                    .filter(file -> excludedAbsolute == null
-                            || !file.toAbsolutePath().normalize().equals(excludedAbsolute))
+                    .filter(file -> !file.toAbsolutePath().normalize().equals(excludedAbsolute))
                     .toList();
         }
 

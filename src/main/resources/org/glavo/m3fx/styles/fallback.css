@@ -135,6 +135,11 @@
     -m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container;
     -m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary;
     -m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;
+    -m3-menu-vibrant-interaction-icon-color: -m3-color-on-tertiary-container;
+    -m3-menu-item-icon-size: 24px;
+    -m3-menu-section-header-horizontal-padding: 12px;
+    -m3-navigation-bar-selected-label-color: -m3-color-on-surface;
+    -m3-navigation-bar-state-layer-color: -m3-color-on-surface;
 }
 
 .m3-internal-icon-path {

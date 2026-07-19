@@ -223,7 +223,7 @@ final class M3ThemeTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-checkbox:hover"));
         assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-loading-indicator"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item:disabled"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item:disabled"));
         assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:focus-visible .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-card:actionable:focus-visible .m3-state-layer"
@@ -756,7 +756,7 @@ final class M3ThemeTest {
         assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
         assertSame(theme, M3ThemeManager.getTheme(root));
-        assertTrue(root.getStyle().contains("-m3-color-primary"));
+        assertTrue(root.getStyle().isEmpty());
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(0));
         assertTrue(M3ThemeRuntime.stylesheetUrl().endsWith("/styles/base.css"));
@@ -918,6 +918,198 @@ final class M3ThemeTest {
         assertEquals(0, scene.getStylesheets().size());
     }
 
+    /// Verifies that a local theme owns only its generated stylesheet and preserves application stylesheet order.
+    @Test
+    void managesGeneratedStylesheetForLocalThemeScope() {
+        Pane root = new Pane();
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        );
+        String applicationStylesheet = "file:/application.css";
+        root.getStylesheets().add(applicationStylesheet);
+
+        M3ThemeManager.install(root, baselineTheme);
+
+        String baselineStylesheet = M3ThemeRuntime.themeStylesheetUrl(baselineTheme);
+        assertEquals(2, root.getStylesheets().size());
+        assertEquals(baselineStylesheet, root.getStylesheets().get(0));
+        assertEquals(applicationStylesheet, root.getStylesheets().get(1));
+
+        M3ThemeManager.install(root, expressiveTheme);
+
+        String expressiveStylesheet = M3ThemeRuntime.themeStylesheetUrl(expressiveTheme);
+        assertEquals(2, root.getStylesheets().size());
+        assertEquals(expressiveStylesheet, root.getStylesheets().get(0));
+        assertEquals(applicationStylesheet, root.getStylesheets().get(1));
+        assertFalse(root.getStylesheets().contains(baselineStylesheet));
+
+        M3ThemeManager.uninstall(root);
+
+        assertEquals(1, root.getStylesheets().size());
+        assertEquals(applicationStylesheet, root.getStylesheets().get(0));
+        assertNull(M3ThemeManager.getTheme(root));
+    }
+
+    /// Verifies that uninstalling a local theme does not remove a matching application-owned stylesheet.
+    @Test
+    void preservesPreexistingLocalThemeStylesheet() {
+        Pane root = new Pane();
+        M3Theme theme = M3Theme.defaultTheme();
+        String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
+        root.getStylesheets().add(stylesheet);
+
+        M3ThemeManager.install(root, theme);
+        M3ThemeManager.uninstall(root);
+
+        assertEquals(1, root.getStylesheets().size());
+        assertEquals(stylesheet, root.getStylesheets().get(0));
+    }
+
+    /// Verifies that a local theme restores semantic classes and metadata that it did not own.
+    @Test
+    void restoresPreexistingLocalThemeContext() {
+        Pane source = new Pane();
+        Pane root = new Pane();
+        M3Theme previousTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+        M3Theme replacementTheme = M3Theme.defaultTheme();
+        M3ThemeManager.install(source, previousTheme);
+        M3ThemeRuntime.copyThemeContext(source, root);
+
+        M3ThemeManager.install(root, replacementTheme);
+
+        assertSame(replacementTheme, M3ThemeManager.getTheme(root));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+        M3ThemeManager.uninstall(root);
+
+        assertSame(previousTheme, M3ThemeManager.getTheme(root));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+        M3ThemeManager.uninstall(source);
+    }
+
+    /// Verifies that a scene installation temporarily overrides and then restores a local root installation.
+    @Test
+    void restoresLocalRootThemeAfterSceneThemeUninstall() {
+        Pane root = new Pane();
+        M3Theme localTheme = M3Theme.defaultTheme();
+        M3Theme sceneTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+        M3ThemeManager.install(root, localTheme);
+        String localStylesheet = M3ThemeRuntime.themeStylesheetUrl(localTheme);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, sceneTheme);
+
+        assertSame(sceneTheme, M3ThemeManager.getTheme(root));
+        assertFalse(root.getStylesheets().contains(localStylesheet));
+
+        M3ThemeManager.uninstall(scene);
+
+        assertSame(localTheme, M3ThemeManager.getTheme(root));
+        assertEquals(localStylesheet, root.getStylesheets().get(0));
+
+        M3ThemeManager.uninstall(root);
+    }
+
+    /// Verifies that scene ownership coordinates local theme updates on the same root.
+    @Test
+    void sceneThemeCoordinatesLocalThemeMutationOnManagedRoot() {
+        Pane root = new Pane();
+        Scene scene = new Scene(root);
+        M3Theme sceneTheme = M3Theme.defaultTheme();
+        M3Theme localTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+        M3ThemeManager.install(scene, sceneTheme);
+
+        M3ThemeManager.install(root, localTheme);
+        assertSame(sceneTheme, M3ThemeManager.getTheme(root));
+
+        M3ThemeManager.uninstall(scene);
+        assertSame(localTheme, M3ThemeManager.getTheme(root));
+
+        M3ThemeManager.install(scene, sceneTheme);
+        M3ThemeManager.uninstall(root);
+        assertSame(sceneTheme, M3ThemeManager.getTheme(root));
+
+        M3ThemeManager.uninstall(scene);
+        assertNull(M3ThemeManager.getTheme(root));
+    }
+
+    /// Verifies that nearest local component tokens win in both profile directions.
+    @Test
+    void localThemeComponentTokensOverrideSceneProfile() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            button.setSize(M3ButtonSize.SMALL);
+            Pane localRoot = new Pane(button);
+            Pane sceneRoot = new Pane(localRoot);
+            Scene scene = new Scene(sceneRoot);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+
+            M3ThemeManager.install(scene, baselineTheme);
+            M3ThemeManager.install(localRoot, expressiveTheme);
+            button.arm();
+            sceneRoot.applyCss();
+
+            assertEquals(
+                    expressiveTheme.tokens().componentTokens().buttonSizing().small()
+                            .pressedRoundContainerShape(),
+                    button.getContainerShape(),
+                    0.0001
+            );
+
+            M3ThemeManager.install(scene, expressiveTheme);
+            M3ThemeManager.install(localRoot, baselineTheme);
+            sceneRoot.applyCss();
+
+            assertEquals(
+                    baselineTheme.tokens().componentTokens().buttonSizing().small()
+                            .pressedRoundContainerShape(),
+                    button.getContainerShape(),
+                    0.0001
+            );
+
+            M3ThemeManager.uninstall(localRoot);
+            sceneRoot.applyCss();
+
+            assertEquals(
+                    expressiveTheme.tokens().componentTokens().buttonSizing().small()
+                            .pressedRoundContainerShape(),
+                    button.getContainerShape(),
+                    0.0001
+            );
+
+            button.disarm();
+            M3ThemeManager.uninstall(scene);
+        });
+    }
+
     /// Verifies that installed theme stylesheets keep application styles later in the cascade.
     @Test
     void installsThemeStylesheetsBeforeApplicationStylesheets() throws Exception {
@@ -945,6 +1137,51 @@ final class M3ThemeTest {
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
+    }
+
+    /// Verifies that scene and local installations leave generated token declarations in the CSS cascade.
+    @Test
+    void applicationCssOverridesSceneAndLocalThemeTokens() throws Exception {
+        String applicationStylesheet = temporaryStylesheet("""
+                .m3-root.test-scene-token-override {
+                    -m3-color-primary: #010203;
+                    -fx-background-color: -m3-color-primary;
+                }
+
+                .m3-root.test-local-token-override {
+                    -m3-color-primary: #040506;
+                    -fx-background-color: -m3-color-primary;
+                }
+                """);
+
+        FxTestUtils.runOnFxThread(() -> {
+            Pane localRoot = new Pane();
+            localRoot.getStyleClass().add("test-local-token-override");
+            localRoot.getStylesheets().add(applicationStylesheet);
+            Pane sceneRoot = new Pane(localRoot);
+            sceneRoot.getStyleClass().add("test-scene-token-override");
+            Scene scene = new Scene(sceneRoot);
+            scene.getStylesheets().add(applicationStylesheet);
+            M3Theme theme = M3Theme.defaultTheme();
+
+            M3ThemeManager.install(scene, theme);
+            M3ThemeManager.install(localRoot, theme);
+            sceneRoot.applyCss();
+
+            assertEquals(
+                    Color.web("#010203"),
+                    sceneRoot.getBackground().getFills().get(0).getFill()
+            );
+            assertEquals(
+                    Color.web("#040506"),
+                    localRoot.getBackground().getFills().get(0).getFill()
+            );
+            assertTrue(sceneRoot.getStyle().isEmpty());
+            assertTrue(localRoot.getStyle().isEmpty());
+
+            M3ThemeManager.uninstall(localRoot);
+            M3ThemeManager.uninstall(scene);
+        });
     }
 
     /// Verifies that transient item style classes do not allocate hidden scene infrastructure on application nodes.
@@ -1089,7 +1326,7 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, theme);
         assertEquals(2, scene.getStylesheets().size());
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertTrue(root.getStyle().contains("-m3-color-primary"));
+        assertEquals("-fx-padding: 4px;", root.getStyle());
 
         M3ThemeManager.uninstall(scene);
         M3ThemeManager.uninstall(scene);

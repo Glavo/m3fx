@@ -114,11 +114,6 @@
     -fx-graphic-text-gap: 16px;
 }
 
-.m3-profile-expressive .m3-regular-fab {
-    -fx-font-size: 16px;
-    -fx-font-weight: 500;
-}
-
 .m3-fab.m3-surface-fab,
 .m3-fab.m3-surface-fab:hover,
 .m3-fab.m3-surface-fab:focused,

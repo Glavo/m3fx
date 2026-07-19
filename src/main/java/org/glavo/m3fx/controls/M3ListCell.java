@@ -8,14 +8,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
-import javafx.scene.Parent;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Skin;
-import org.glavo.m3fx.internal.M3ThemeResolver;
-import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
-import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -119,7 +115,6 @@ public class M3ListCell<T> extends IndexedCell<T> {
         if (itemNode == null) {
             itemNode = Objects.requireNonNull(createListItem(), "createListItem result");
             installListItem(itemNode);
-            copyThemeContext(itemNode);
         }
         updateListItem(itemNode, value);
         setGraphic(itemNode);
@@ -176,17 +171,6 @@ public class M3ListCell<T> extends IndexedCell<T> {
         }
     }
 
-    /// Copies the current list view theme context into a virtualized row for early CSS passes.
-    private void copyThemeContext(M3ListItem itemNode) {
-        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(getListView());
-        if (themeRoot != null) {
-            M3ThemeRuntime.copyThemeContext(themeRoot, itemNode);
-        } else {
-            M3ThemeRuntime.clearThemeStyleClasses(itemNode);
-            M3ThemeMetadata.clearTheme(itemNode);
-        }
-    }
-
     /// Installs the row retained for the lifetime of this cell.
     private void installListItem(M3ListItem listItem) {
         this.listItem = listItem;
@@ -208,15 +192,6 @@ public class M3ListCell<T> extends IndexedCell<T> {
         updateSelected(selected);
         if (listItem != null && !listItem.selectedProperty().isBound()) {
             listItem.setSelected(selected);
-        }
-    }
-
-    /// Reapplies the current list view theme context to the rendered row item.
-    public void refreshThemeContext() {
-        if (listItem != null) {
-            copyThemeContext(listItem);
-            listItem.applyCss();
-            listItem.layout();
         }
     }
 
