@@ -225,6 +225,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 @NotNullByDefault
 @Tier3Test
 final class M3FXDemoVisualMatrixTest {
+    /// The default style class for icon buttons.
+    private static final String ICON_BUTTON_STYLE_CLASS = "m3-icon-button";
+
+    /// The default style class for toggle icon buttons.
+    private static final String ICON_TOGGLE_BUTTON_STYLE_CLASS = "m3-icon-toggle-button";
+
     /// Reused JavaFX robot that captures the pixels of the visible demo window.
     private static @Nullable Robot screenCaptureRobot;
 
@@ -365,8 +371,8 @@ final class M3FXDemoVisualMatrixTest {
     private static final @Unmodifiable Set<String> CENTERED_TARGET_STYLE_CLASSES = Set.of(
             M3DatePicker.DAY_CELL_STYLE_CLASS,
             M3TimePicker.CELL_STYLE_CLASS,
-            M3IconButton.STYLE_CLASS,
-            M3IconToggleButton.STYLE_CLASS
+            ICON_BUTTON_STYLE_CLASS,
+            ICON_TOGGLE_BUTTON_STYLE_CLASS
     );
 
     /// Demo pages that should use SVG icons instead of text-only icon controls in interactive slots.
@@ -640,7 +646,7 @@ final class M3FXDemoVisualMatrixTest {
                     "Icon Buttons",
                     "icon-toggle-button",
                     "toggle icon button",
-                    root -> firstVisibleNodeWithStyle(root, M3IconToggleButton.STYLE_CLASS)
+                    root -> firstVisibleNodeWithStyle(root, ICON_TOGGLE_BUTTON_STYLE_CLASS)
             ),
             new InteractionTargetCase(
                     "Text Fields",
@@ -8084,7 +8090,7 @@ final class M3FXDemoVisualMatrixTest {
 
             Node target = Objects.requireNonNull(firstVisibleNodeWithStyle(
                     scene.getRoot(),
-                    M3IconToggleButton.STYLE_CLASS
+                    ICON_TOGGLE_BUTTON_STYLE_CLASS
             ), "toggle icon button");
             scrollAncestorScrollPanesNodeIntoView(target);
             scene.getRoot().applyCss();

@@ -48,8 +48,8 @@ import java.util.Objects;
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public final class M3IconToggleButton extends ButtonBase {
-    /// The base style class for M3FX toggle icon buttons.
-    public static final String STYLE_CLASS = "m3-icon-toggle-button";
+    /// The default style class for this control.
+    private static final String DEFAULT_STYLE_CLASS = "m3-icon-toggle-button";
 
     /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
     private static final PseudoClass BUTTON_GRAPHIC_PSEUDO_CLASS = PseudoClass.getPseudoClass("button-graphic");
@@ -547,7 +547,7 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

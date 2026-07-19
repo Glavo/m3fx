@@ -196,6 +196,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Verifies the shared behavioral, styling, skin, and rendering contracts of M3FX controls.
 @NotNullByDefault
 final class M3ControlContractMatrixTest {
+    /// The style class shared by controls in the button family.
+    private static final String BUTTON_BASE_STYLE_CLASS = "m3-button-base";
+
+    /// The default style class for command buttons.
+    private static final String BUTTON_STYLE_CLASS = "m3-button";
+
+    /// The default style class for icon buttons.
+    private static final String ICON_BUTTON_STYLE_CLASS = "m3-icon-button";
+
+    /// The default style class for toggle icon buttons.
+    private static final String ICON_TOGGLE_BUTTON_STYLE_CLASS = "m3-icon-toggle-button";
+
+    /// The default style class for menu buttons.
+    private static final String MENU_BUTTON_STYLE_CLASS = "m3-menu-button";
+
     /// The pulse count used after a rich tooltip popup takes pointer ownership.
     private static final int RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES = 2;
 
@@ -916,7 +931,7 @@ final class M3ControlContractMatrixTest {
         AtomicInteger actions = new AtomicInteger();
         M3Button button = createButton("Button", M3ButtonVariant.FILLED, event -> actions.incrementAndGet());
 
-        assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(BUTTON_STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.FILLED.styleClass()));
 
         button.setVariant(M3ButtonVariant.OUTLINED);
@@ -11274,7 +11289,7 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(M3IconToggleButtonVariant.TONAL, button.getVariant());
         assertTrue(button.isSelected());
-        assertTrue(button.getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(ICON_TOGGLE_BUTTON_STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.styleClass()));
 
         button.setVariant(M3IconToggleButtonVariant.OUTLINED);
@@ -35852,15 +35867,15 @@ final class M3ControlContractMatrixTest {
         fab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
         fab.setSize(M3FloatingActionButtonSize.REGULAR);
 
-        assertTrue(button.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(BUTTON_BASE_STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(BUTTON_STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.styleClass()));
-        assertTrue(iconButton.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
-        assertTrue(iconButton.getStyleClass().contains(M3IconButton.STYLE_CLASS));
-        assertFalse(iconButton.getStyleClass().contains(M3Button.STYLE_CLASS));
-        assertTrue(menuButton.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
-        assertTrue(menuButton.getStyleClass().contains(M3MenuButton.STYLE_CLASS));
-        assertFalse(menuButton.getStyleClass().contains(M3Button.STYLE_CLASS));
+        assertTrue(iconButton.getStyleClass().contains(BUTTON_BASE_STYLE_CLASS));
+        assertTrue(iconButton.getStyleClass().contains(ICON_BUTTON_STYLE_CLASS));
+        assertFalse(iconButton.getStyleClass().contains(BUTTON_STYLE_CLASS));
+        assertTrue(menuButton.getStyleClass().contains(BUTTON_BASE_STYLE_CLASS));
+        assertTrue(menuButton.getStyleClass().contains(MENU_BUTTON_STYLE_CLASS));
+        assertFalse(menuButton.getStyleClass().contains(BUTTON_STYLE_CLASS));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
@@ -35943,8 +35958,8 @@ final class M3ControlContractMatrixTest {
         assertTrue(richTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
-        assertTrue(new M3IconButton(new M3Icon("A")).getStyleClass().contains(M3IconButton.STYLE_CLASS));
-        assertTrue(new M3IconToggleButton("A").getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
+        assertTrue(new M3IconButton(new M3Icon("A")).getStyleClass().contains(ICON_BUTTON_STYLE_CLASS));
+        assertTrue(new M3IconToggleButton("A").getStyleClass().contains(ICON_TOGGLE_BUTTON_STYLE_CLASS));
         assertTrue(new M3IconToggleButtonGroup().getStyleClass().contains(M3IconToggleButtonGroup.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
@@ -35954,7 +35969,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
         assertTrue(new M3SubMenuItem("Export").getStyleClass().contains(M3SubMenuItem.STYLE_CLASS));
         assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
-        assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
+        assertTrue(new M3MenuButton("More").getStyleClass().contains(MENU_BUTTON_STYLE_CLASS));
         assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
         assertTrue(searchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
         assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));

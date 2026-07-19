@@ -18,8 +18,8 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
 @NotNullByDefault
 public final class M3Button extends M3ButtonBase {
-    /// The style class identifying ordinary M3FX command buttons.
-    public static final String STYLE_CLASS = "m3-button";
+    /// The default style class for this control.
+    private static final String DEFAULT_STYLE_CLASS = "m3-button";
 
     /// Creates a filled button with empty text and no graphic.
     public M3Button() {
@@ -58,6 +58,6 @@ public final class M3Button extends M3ButtonBase {
     /// @throws NullPointerException if `variant` is `null`
     public M3Button(String text, @Nullable Node graphic, M3ButtonVariant variant) {
         super(text, graphic, variant);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
     }
 }

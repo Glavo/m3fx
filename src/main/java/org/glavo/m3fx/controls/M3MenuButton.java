@@ -53,8 +53,8 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3MenuButton extends M3ButtonBase {
-    /// The base style class for M3FX menu buttons.
-    public static final String STYLE_CLASS = "m3-menu-button";
+    /// The default style class for this control.
+    private static final String DEFAULT_STYLE_CLASS = "m3-menu-button";
 
     /// The showing pseudo-class used while the owned menu popup is visible.
     private static final PseudoClass SHOWING_PSEUDO_CLASS = PseudoClass.getPseudoClass("showing");
@@ -307,7 +307,7 @@ public final class M3MenuButton extends M3ButtonBase {
 
     /// Adds base style classes and configures popup behavior.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU_BUTTON);
         M3Accessible.installAccessibleActionRoute(
                 this,

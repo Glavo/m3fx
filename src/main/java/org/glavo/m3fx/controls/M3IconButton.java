@@ -35,8 +35,8 @@ import java.util.Objects;
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public final class M3IconButton extends M3ButtonBase {
-    /// The base style class for M3FX icon buttons.
-    public static final String STYLE_CLASS = "m3-icon-button";
+    /// The default style class for this control.
+    private static final String DEFAULT_STYLE_CLASS = "m3-icon-button";
 
     /// The default icon button width role.
     private static final M3IconButtonWidth DEFAULT_WIDTH = M3IconButtonWidth.DEFAULT;
@@ -54,7 +54,7 @@ public final class M3IconButton extends M3ButtonBase {
     /// @param graphic the graphic displayed by the icon button, or `null`
     public M3IconButton(@Nullable Node graphic) {
         super("", graphic);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setVariant(M3ButtonVariant.TEXT);
         initializeIconMetrics();
     }
