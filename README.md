@@ -203,18 +203,16 @@ M3ThemeManager.install(emphasizedAction, expressiveControlTheme);
 
 Color generation is independent when a prebuilt MonetFX `ColorScheme` is supplied through
 `M3Theme.fromColorScheme(...)`; M3FX retains that scheme instead of regenerating it for the selected profile.
-Use the type-safe color properties for local component overrides. A `null` base-color slot contributes no local
-declaration, so the component variant and active theme continue to resolve that role. Base colors remain in the CSS
-cascade for all states; provide a disabled replacement when the disabled state should use a different local color:
+Use the type-safe color properties for local component overrides. Each property is independently observable and
+bindable. A `null` value contributes no local declaration, so the component variant and active theme continue to
+resolve that role. Base colors remain in the CSS cascade for all states; provide a disabled replacement when the
+disabled state should use a different local color:
 
 ```java
 M3Button action = new M3Button("Save", M3ButtonVariant.FILLED);
-action.setColors(new M3ButtonColors(
-        Color.web("#006A6A"),
-        Color.WHITE,
-        null,
-        Color.web("#7A7A7A")
-));
+action.setContainerColor(Color.web("#006A6A"));
+action.setContentColor(Color.WHITE);
+action.setDisabledContentColor(Color.web("#7A7A7A"));
 
 M3Icon icon = new M3Icon("favorite");
 icon.setTint(Color.web("#9C4146"));
@@ -222,9 +220,10 @@ M3SVGIcon svgIcon = new M3SVGIcon(path, viewBox);
 svgIcon.setTint(Color.web("#9C4146"));
 ```
 
-The same local-color pattern is available through `M3Card.setColors(...)` and `M3Surface.setColors(...)`. These
-overrides remain attached to the control when the application switches its global theme; roles without a local
-declaration continue to follow that new theme. Use a local `M3ThemeManager.install(...)` call when an entire
+The same `containerColorProperty()` and `contentColorProperty()` pattern is available on `M3Card` and `M3Surface`;
+buttons and cards additionally expose disabled color properties. These properties remain attached to the control
+when the application switches its global theme and can be cleared with `null`. Roles without
+a local declaration continue to follow the new theme. Use a local `M3ThemeManager.install(...)` call when an entire
 subtree needs a different token set. Use CSS for brand-wide typography, outline treatments, and visual details
 outside the typed component color model:
 

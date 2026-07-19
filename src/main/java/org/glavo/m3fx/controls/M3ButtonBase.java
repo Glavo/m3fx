@@ -20,6 +20,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -44,8 +45,9 @@ import java.util.Objects;
 /// setting either property alone does not install a scene-wide keyboard accelerator.
 ///
 /// New buttons are filled, small, round, focus traversable, mnemonic-parsing, and neither default nor cancel.
-/// Their token-backed geometry can be changed through the styleable properties or CSS. [#colorsProperty()] provides
-/// optional, type-safe color overrides for one button while leaving null color slots connected to the active theme.
+/// Their token-backed geometry can be changed through the styleable properties or CSS. The container, content, and
+/// disabled color properties provide optional, type-safe overrides for one button while absent values remain
+/// connected to the active theme.
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
@@ -258,47 +260,183 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return buttonShape;
     }
 
-    /// The explicit color overrides for this button, or `null` to use its variant and active theme.
+    /// The explicit container color for this button.
     ///
-    /// Assigning a value changes only the non-null components in that value. The colors remain effective across
-    /// variant and theme changes until this property is cleared. The default value is `null`.
+    /// A `null` value leaves the container under the control of the button variant, active theme, and application
+    /// stylesheets. A non-null value remains effective across variant and theme changes.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3ButtonColors> colors =
-            new SimpleObjectProperty<>(this, "colors") {
-                /// Rebuilds the branch-local color declarations after the immutable value changes.
+    private @Nullable ObjectProperty<@Nullable Color> containerColor;
+
+    /// Returns the explicit container color.
+    ///
+    /// @return the container color, or `null` to use normal color resolution
+    public final @Nullable Color getContainerColor() {
+        return containerColor == null ? null : containerColor.get();
+    }
+
+    /// Sets the explicit container color.
+    ///
+    /// @param color the container color, or `null` to use normal color resolution
+    public final void setContainerColor(@Nullable Color color) {
+        if (containerColor != null || color != null) {
+            containerColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit container color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable container-color property
+    public final ObjectProperty<@Nullable Color> containerColorProperty() {
+        if (containerColor == null) {
+            containerColor = new SimpleObjectProperty<>(this, "containerColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
                 @Override
                 protected void invalidated() {
-                    M3ComponentColorStyles.applyButtonColors(M3ButtonBase.this, get());
+                    updateLocalColors();
                 }
             };
-
-    /// Returns the explicit button color overrides.
-    ///
-    /// @return the color overrides, or `null` when the variant and active theme determine every color
-    public final @Nullable M3ButtonColors getColors() {
-        return colors.get();
+        }
+        return containerColor;
     }
 
-    /// Sets explicit button color overrides.
+    /// The explicit content and interaction-layer color for this button.
     ///
-    /// Non-null components in the supplied value take precedence over the button variant and active theme. Other
-    /// declarations continue through the normal CSS cascade. Set this property to `null` to remove all managed
-    /// overrides.
+    /// The value colors text, icon graphics, disclosure graphics, state layers, and ripples. A `null` value leaves
+    /// those roles under normal variant, theme, and CSS resolution.
     ///
-    /// @param colors the color overrides, or `null` to restore variant and theme color resolution
-    public final void setColors(@Nullable M3ButtonColors colors) {
-        this.colors.set(colors);
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> contentColor;
+
+    /// Returns the explicit content color.
+    ///
+    /// @return the content color, or `null` to use normal color resolution
+    public final @Nullable Color getContentColor() {
+        return contentColor == null ? null : contentColor.get();
     }
 
-    /// Returns the observable property that stores explicit button color overrides.
+    /// Sets the explicit content color.
     ///
-    /// The property can be observed and bound. Its default value is `null`. Replacing its immutable value updates
-    /// the button's local declarations without modifying the application's inline style.
+    /// @param color the content color, or `null` to use normal color resolution
+    public final void setContentColor(@Nullable Color color) {
+        if (contentColor != null || color != null) {
+            contentColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit content color.
     ///
-    /// @return the nullable button-colors property
-    public final ObjectProperty<@Nullable M3ButtonColors> colorsProperty() {
-        return colors;
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable content-color property
+    public final ObjectProperty<@Nullable Color> contentColorProperty() {
+        if (contentColor == null) {
+            contentColor = new SimpleObjectProperty<>(this, "contentColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return contentColor;
+    }
+
+    /// The explicit disabled container color for this button.
+    ///
+    /// A non-null value replaces the disabled container treatment and is interpreted as the final rendered color,
+    /// including its opacity. A `null` value retains normal disabled-state cascading.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> disabledContainerColor;
+
+    /// Returns the explicit disabled container color.
+    ///
+    /// @return the disabled container color, or `null` to use normal color resolution
+    public final @Nullable Color getDisabledContainerColor() {
+        return disabledContainerColor == null ? null : disabledContainerColor.get();
+    }
+
+    /// Sets the explicit disabled container color.
+    ///
+    /// @param color the final disabled container color, or `null` to use normal color resolution
+    public final void setDisabledContainerColor(@Nullable Color color) {
+        if (disabledContainerColor != null || color != null) {
+            disabledContainerColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit disabled container color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable disabled-container-color property
+    public final ObjectProperty<@Nullable Color> disabledContainerColorProperty() {
+        if (disabledContainerColor == null) {
+            disabledContainerColor = new SimpleObjectProperty<>(this, "disabledContainerColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return disabledContainerColor;
+    }
+
+    /// The explicit disabled content color for this button.
+    ///
+    /// A non-null value replaces the disabled text and icon treatment and is interpreted as the final rendered
+    /// color, including its opacity. A `null` value retains normal disabled-state cascading.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> disabledContentColor;
+
+    /// Returns the explicit disabled content color.
+    ///
+    /// @return the disabled content color, or `null` to use normal color resolution
+    public final @Nullable Color getDisabledContentColor() {
+        return disabledContentColor == null ? null : disabledContentColor.get();
+    }
+
+    /// Sets the explicit disabled content color.
+    ///
+    /// @param color the final disabled content color, or `null` to use normal color resolution
+    public final void setDisabledContentColor(@Nullable Color color) {
+        if (disabledContentColor != null || color != null) {
+            disabledContentColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit disabled content color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable disabled-content-color property
+    public final ObjectProperty<@Nullable Color> disabledContentColorProperty() {
+        if (disabledContentColor == null) {
+            disabledContentColor = new SimpleObjectProperty<>(this, "disabledContentColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return disabledContentColor;
+    }
+
+    /// Rebuilds the optional component-local color declarations from the current property values.
+    private void updateLocalColors() {
+        M3ComponentColorStyles.applyButtonColors(
+                this,
+                getContainerColor(),
+                getContentColor(),
+                getDisabledContainerColor(),
+                getDisabledContentColor()
+        );
     }
 
     /// The preferred button container height, in logical pixels.

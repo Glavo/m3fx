@@ -23,6 +23,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.paint.Color;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -48,9 +49,10 @@ import java.util.Objects;
 /// Passive cards are not focus targets and do not display hover, pressed, or ripple feedback.
 ///
 /// The control exposes token-backed container shape, content padding, outline width, and variant state so cards can
-/// participate in the same theme and density system as other M3FX controls. [#colorsProperty()] can override selected
-/// colors on one card without disconnecting its remaining colors from that system. Applications that implement card
-/// reordering can set the dragged property for the duration of the drag gesture to apply the Material dragged state.
+/// participate in the same theme and density system as other M3FX controls. Its container, content, and disabled
+/// color properties can override individual roles without disconnecting the remaining colors from that system.
+/// Applications that implement card reordering can set the dragged property for the duration of the drag gesture to
+/// apply the Material dragged state.
 ///
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
@@ -268,45 +270,183 @@ public final class M3Card extends Control {
         return variant;
     }
 
-    /// The explicit card color overrides, or `null` to use the variant and active theme.
+    /// The explicit card container color.
     ///
-    /// Non-null components in the immutable value remain effective across variant and theme changes. The default
-    /// value is `null`.
+    /// A `null` value leaves the container under the control of the card variant, active theme, and application
+    /// stylesheets. A non-null value remains effective across variant and theme changes.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3CardColors> colors =
-            new SimpleObjectProperty<>(this, "colors") {
-                /// Rebuilds the branch-local card color declarations.
+    private @Nullable ObjectProperty<@Nullable Color> containerColor;
+
+    /// Returns the explicit card container color.
+    ///
+    /// @return the container color, or `null` to use normal color resolution
+    public final @Nullable Color getContainerColor() {
+        return containerColor == null ? null : containerColor.get();
+    }
+
+    /// Sets the explicit card container color.
+    ///
+    /// @param color the container color, or `null` to use normal color resolution
+    public final void setContainerColor(@Nullable Color color) {
+        if (containerColor != null || color != null) {
+            containerColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit card container color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable container-color property
+    public final ObjectProperty<@Nullable Color> containerColorProperty() {
+        if (containerColor == null) {
+            containerColor = new SimpleObjectProperty<>(this, "containerColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
                 @Override
                 protected void invalidated() {
-                    M3ComponentColorStyles.applyCardColors(M3Card.this, get());
+                    updateLocalColors();
                 }
             };
-
-    /// Returns the explicit card color overrides.
-    ///
-    /// @return the overrides, or `null` when the variant and active theme determine every card color
-    public final @Nullable M3CardColors getColors() {
-        return colors.get();
+        }
+        return containerColor;
     }
 
-    /// Sets explicit card color overrides.
+    /// The explicit card content and interaction-layer color.
     ///
-    /// Components not replaced by the supplied value continue through the normal CSS cascade. Set the property
-    /// itself to `null` to remove all managed overrides.
+    /// The value is exposed to descendants through the M3FX on-surface lookups and colors the card state layer and
+    /// ripple. A `null` value retains normal variant, theme, and CSS resolution.
     ///
-    /// @param colors the overrides, or `null` to restore variant and theme color resolution
-    public final void setColors(@Nullable M3CardColors colors) {
-        this.colors.set(colors);
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> contentColor;
+
+    /// Returns the explicit card content color.
+    ///
+    /// @return the content color, or `null` to use normal color resolution
+    public final @Nullable Color getContentColor() {
+        return contentColor == null ? null : contentColor.get();
     }
 
-    /// Returns the observable property that stores explicit card color overrides.
+    /// Sets the explicit card content color.
     ///
-    /// The property can be observed and bound. Its default value is `null`.
+    /// @param color the content color, or `null` to use normal color resolution
+    public final void setContentColor(@Nullable Color color) {
+        if (contentColor != null || color != null) {
+            contentColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit card content color.
     ///
-    /// @return the nullable card-colors property
-    public final ObjectProperty<@Nullable M3CardColors> colorsProperty() {
-        return colors;
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable content-color property
+    public final ObjectProperty<@Nullable Color> contentColorProperty() {
+        if (contentColor == null) {
+            contentColor = new SimpleObjectProperty<>(this, "contentColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return contentColor;
+    }
+
+    /// The explicit disabled card container color.
+    ///
+    /// A non-null value replaces the disabled container treatment and is interpreted as the final rendered color,
+    /// including its opacity. A `null` value retains normal disabled-state cascading.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> disabledContainerColor;
+
+    /// Returns the explicit disabled card container color.
+    ///
+    /// @return the disabled container color, or `null` to use normal color resolution
+    public final @Nullable Color getDisabledContainerColor() {
+        return disabledContainerColor == null ? null : disabledContainerColor.get();
+    }
+
+    /// Sets the explicit disabled card container color.
+    ///
+    /// @param color the final disabled container color, or `null` to use normal color resolution
+    public final void setDisabledContainerColor(@Nullable Color color) {
+        if (disabledContainerColor != null || color != null) {
+            disabledContainerColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit disabled card container color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable disabled-container-color property
+    public final ObjectProperty<@Nullable Color> disabledContainerColorProperty() {
+        if (disabledContainerColor == null) {
+            disabledContainerColor = new SimpleObjectProperty<>(this, "disabledContainerColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return disabledContainerColor;
+    }
+
+    /// The explicit disabled card content color.
+    ///
+    /// A non-null value replaces the disabled descendant-content treatment and is interpreted as the final rendered
+    /// color, including its opacity. A `null` value retains normal disabled-state cascading.
+    ///
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> disabledContentColor;
+
+    /// Returns the explicit disabled card content color.
+    ///
+    /// @return the disabled content color, or `null` to use normal color resolution
+    public final @Nullable Color getDisabledContentColor() {
+        return disabledContentColor == null ? null : disabledContentColor.get();
+    }
+
+    /// Sets the explicit disabled card content color.
+    ///
+    /// @param color the final disabled content color, or `null` to use normal color resolution
+    public final void setDisabledContentColor(@Nullable Color color) {
+        if (disabledContentColor != null || color != null) {
+            disabledContentColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit disabled card content color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable disabled-content-color property
+    public final ObjectProperty<@Nullable Color> disabledContentColorProperty() {
+        if (disabledContentColor == null) {
+            disabledContentColor = new SimpleObjectProperty<>(this, "disabledContentColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return disabledContentColor;
+    }
+
+    /// Rebuilds the optional component-local color declarations from the current property values.
+    private void updateLocalColors() {
+        M3ComponentColorStyles.applyCardColors(
+                this,
+                getContainerColor(),
+                getContentColor(),
+                getDisabledContainerColor(),
+                getDisabledContentColor()
+        );
     }
 
     /// The card corner radius, in logical pixels.

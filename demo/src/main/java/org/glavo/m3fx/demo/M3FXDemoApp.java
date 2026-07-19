@@ -46,14 +46,12 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
-import org.glavo.m3fx.controls.M3ButtonColors;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3ButtonShape;
 import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
-import org.glavo.m3fx.controls.M3CardColors;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
@@ -140,7 +138,6 @@ import org.glavo.m3fx.controls.M3SuggestionChip;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
-import org.glavo.m3fx.controls.M3SurfaceColors;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3Switch;
@@ -1117,12 +1114,9 @@ public final class M3FXDemoApp extends Application {
         ));
 
         M3Button localColors = new M3Button("Local colors", M3ButtonVariant.FILLED);
-        localColors.setColors(new M3ButtonColors(
-                Color.web("#006A6A"),
-                Color.web("#FFFFFF"),
-                null,
-                Color.web("#7A7A7A")
-        ));
+        localColors.setContainerColor(Color.web("#006A6A"));
+        localColors.setContentColor(Color.web("#FFFFFF"));
+        localColors.setDisabledContentColor(Color.web("#7A7A7A"));
 
         return createGallery(
                 createShowcaseGroup(
@@ -2759,7 +2753,8 @@ public final class M3FXDemoApp extends Application {
         M3Surface secondary = createSurface("Secondary", M3SurfaceVariant.SECONDARY_CONTAINER, M3SurfaceElevation.LEVEL2);
         M3Surface tertiary = createSurface("Tertiary", M3SurfaceVariant.TERTIARY_CONTAINER, M3SurfaceElevation.LEVEL2);
         M3Surface localColors = createSurface("Local surface", M3SurfaceVariant.SURFACE, M3SurfaceElevation.LEVEL1);
-        localColors.setColors(new M3SurfaceColors(Color.web("#E8F5E9"), Color.web("#1B5E20")));
+        localColors.setContainerColor(Color.web("#E8F5E9"));
+        localColors.setContentColor(Color.web("#1B5E20"));
 
         return createGallery(
                 createShowcaseGroup("Surface Tones", surface, container, high),
@@ -2830,12 +2825,8 @@ public final class M3FXDemoApp extends Application {
                 "Container and content are local; disabled roles retain their normal cascade.",
                 M3CardVariant.FILLED
         );
-        localColors.setColors(new M3CardColors(
-                Color.web("#FFF3E0"),
-                Color.web("#4E2600"),
-                null,
-                null
-        ));
+        localColors.setContainerColor(Color.web("#FFF3E0"));
+        localColors.setContentColor(Color.web("#4E2600"));
 
         return createGallery(
                 createShowcaseGroup("Variants", filled, outlined, elevated),

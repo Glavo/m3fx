@@ -6,9 +6,6 @@ package org.glavo.m3fx.internal.theme;
 import javafx.collections.ObservableList;
 import javafx.scene.Parent;
 import javafx.scene.paint.Color;
-import org.glavo.m3fx.controls.M3ButtonColors;
-import org.glavo.m3fx.controls.M3CardColors;
-import org.glavo.m3fx.controls.M3SurfaceColors;
 import org.glavo.m3fx.internal.IdentityKey;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -62,32 +59,70 @@ public final class M3ComponentColorStyles {
 
     /// Applies optional explicit colors to an M3FX button root.
     ///
-    /// @param button the button receiving branch-local colors
-    /// @param colors the color overrides, or `null` to remove them
+    /// @param button                 the button receiving branch-local colors
+    /// @param containerColor         the optional container color
+    /// @param contentColor           the optional content and interaction-layer color
+    /// @param disabledContainerColor the optional disabled container color
+    /// @param disabledContentColor   the optional disabled content color
     /// @throws NullPointerException if `button` is `null`
-    public static void applyButtonColors(Parent button, @Nullable M3ButtonColors colors) {
+    public static void applyButtonColors(
+            Parent button,
+            @Nullable Color containerColor,
+            @Nullable Color contentColor,
+            @Nullable Color disabledContainerColor,
+            @Nullable Color disabledContentColor
+    ) {
         Objects.requireNonNull(button, "button");
-        apply(button, BUTTON_COLORS_KEY, BUTTON_COLORS_STYLE_CLASS, buttonStylesheet(colors));
+        apply(
+                button,
+                BUTTON_COLORS_KEY,
+                BUTTON_COLORS_STYLE_CLASS,
+                buttonStylesheet(containerColor, contentColor, disabledContainerColor, disabledContentColor)
+        );
     }
 
     /// Applies optional explicit colors to an M3FX card root.
     ///
-    /// @param card   the card receiving branch-local colors
-    /// @param colors the color overrides, or `null` to remove them
+    /// @param card                   the card receiving branch-local colors
+    /// @param containerColor         the optional container color
+    /// @param contentColor           the optional content and interaction-layer color
+    /// @param disabledContainerColor the optional disabled container color
+    /// @param disabledContentColor   the optional disabled content color
     /// @throws NullPointerException if `card` is `null`
-    public static void applyCardColors(Parent card, @Nullable M3CardColors colors) {
+    public static void applyCardColors(
+            Parent card,
+            @Nullable Color containerColor,
+            @Nullable Color contentColor,
+            @Nullable Color disabledContainerColor,
+            @Nullable Color disabledContentColor
+    ) {
         Objects.requireNonNull(card, "card");
-        apply(card, CARD_COLORS_KEY, CARD_COLORS_STYLE_CLASS, cardStylesheet(colors));
+        apply(
+                card,
+                CARD_COLORS_KEY,
+                CARD_COLORS_STYLE_CLASS,
+                cardStylesheet(containerColor, contentColor, disabledContainerColor, disabledContentColor)
+        );
     }
 
     /// Applies optional explicit colors to an M3FX surface root.
     ///
-    /// @param surface the surface receiving branch-local colors
-    /// @param colors  the color overrides, or `null` to remove them
+    /// @param surface        the surface receiving branch-local colors
+    /// @param containerColor the optional container color
+    /// @param contentColor   the optional content color
     /// @throws NullPointerException if `surface` is `null`
-    public static void applySurfaceColors(Parent surface, @Nullable M3SurfaceColors colors) {
+    public static void applySurfaceColors(
+            Parent surface,
+            @Nullable Color containerColor,
+            @Nullable Color contentColor
+    ) {
         Objects.requireNonNull(surface, "surface");
-        apply(surface, SURFACE_COLORS_KEY, SURFACE_COLORS_STYLE_CLASS, surfaceStylesheet(colors));
+        apply(
+                surface,
+                SURFACE_COLORS_KEY,
+                SURFACE_COLORS_STYLE_CLASS,
+                surfaceStylesheet(containerColor, contentColor)
+        );
     }
 
     /// Applies an optional explicit tint to an icon root.
@@ -106,19 +141,20 @@ public final class M3ComponentColorStyles {
     /// Creates the optional button override stylesheet.
     ///
     /// @return complete CSS, or `null` when no component is overridden
-    private static @Nullable String buttonStylesheet(@Nullable M3ButtonColors colors) {
-        if (colors == null || allNull(
-                colors.containerColor(),
-                colors.contentColor(),
-                colors.disabledContainerColor(),
-                colors.disabledContentColor()
-        )) {
+    private static @Nullable String buttonStylesheet(
+            @Nullable Color containerColor,
+            @Nullable Color contentColor,
+            @Nullable Color disabledContainerColor,
+            @Nullable Color disabledContentColor
+    ) {
+        if (containerColor == null
+                && contentColor == null
+                && disabledContainerColor == null
+                && disabledContentColor == null) {
             return null;
         }
 
         StringBuilder css = new StringBuilder(768);
-        @Nullable Color containerColor = colors.containerColor();
-        @Nullable Color contentColor = colors.contentColor();
         if (containerColor != null || contentColor != null) {
             css.append(".m3-button.m3-custom-button-colors,")
                     .append(".m3-button.m3-custom-button-colors:hover,")
@@ -138,8 +174,6 @@ public final class M3ComponentColorStyles {
                     .append('}');
         }
 
-        @Nullable Color disabledContainerColor = colors.disabledContainerColor();
-        @Nullable Color disabledContentColor = colors.disabledContentColor();
         if (disabledContainerColor != null || disabledContentColor != null) {
             css.append(".m3-button.m3-custom-button-colors:disabled {");
             if (disabledContainerColor != null) {
@@ -159,18 +193,20 @@ public final class M3ComponentColorStyles {
     /// Creates the optional card override stylesheet.
     ///
     /// @return complete CSS, or `null` when no component is overridden
-    private static @Nullable String cardStylesheet(@Nullable M3CardColors colors) {
-        if (colors == null || allNull(
-                colors.containerColor(),
-                colors.contentColor(),
-                colors.disabledContainerColor(),
-                colors.disabledContentColor()
-        )) {
+    private static @Nullable String cardStylesheet(
+            @Nullable Color containerColor,
+            @Nullable Color contentColor,
+            @Nullable Color disabledContainerColor,
+            @Nullable Color disabledContentColor
+    ) {
+        if (containerColor == null
+                && contentColor == null
+                && disabledContainerColor == null
+                && disabledContentColor == null) {
             return null;
         }
 
         StringBuilder css = new StringBuilder(640);
-        @Nullable Color contentColor = colors.contentColor();
         if (contentColor != null) {
             appendScopedContentRule(css, ".m3-card.m3-custom-card-colors", contentColor);
             css.append(".m3-card.m3-custom-card-colors > .m3-card-container > .m3-state-layer-container .m3-state-layer,")
@@ -178,18 +214,15 @@ public final class M3ComponentColorStyles {
                     .append("-fx-background-color:").append(cssColor(contentColor)).append(";")
                     .append('}');
         }
-        @Nullable Color containerColor = colors.containerColor();
         if (containerColor != null) {
             css.append(".m3-card.m3-custom-card-colors > .m3-card-container {")
                     .append("-fx-background-color:").append(cssColor(containerColor)).append(";")
                     .append('}');
         }
 
-        @Nullable Color disabledContentColor = colors.disabledContentColor();
         if (disabledContentColor != null) {
             appendScopedContentRule(css, ".m3-card.m3-custom-card-colors:disabled", disabledContentColor);
         }
-        @Nullable Color disabledContainerColor = colors.disabledContainerColor();
         if (disabledContainerColor != null) {
             css.append(".m3-card.m3-custom-card-colors:disabled > .m3-card-container {")
                     .append("-fx-background-color:").append(cssColor(disabledContainerColor)).append(";")
@@ -201,17 +234,18 @@ public final class M3ComponentColorStyles {
     /// Creates the optional surface override stylesheet.
     ///
     /// @return complete CSS, or `null` when no component is overridden
-    private static @Nullable String surfaceStylesheet(@Nullable M3SurfaceColors colors) {
-        if (colors == null || allNull(colors.containerColor(), colors.contentColor())) {
+    private static @Nullable String surfaceStylesheet(
+            @Nullable Color containerColor,
+            @Nullable Color contentColor
+    ) {
+        if (containerColor == null && contentColor == null) {
             return null;
         }
 
         StringBuilder css = new StringBuilder(320);
-        @Nullable Color contentColor = colors.contentColor();
         if (contentColor != null) {
             appendScopedContentRule(css, ".m3-surface.m3-custom-surface-colors", contentColor);
         }
-        @Nullable Color containerColor = colors.containerColor();
         if (containerColor != null) {
             css.append(".m3-surface.m3-custom-surface-colors > .m3-surface-container {")
                     .append("-fx-background-color:").append(cssColor(containerColor)).append(";")
@@ -239,16 +273,6 @@ public final class M3ComponentColorStyles {
         css.append("-fx-text-fill:").append(value).append(';')
                 .append("-m3-button-icon-color:").append(value).append(';')
                 .append("-m3-disclosure-icon-color:").append(value).append(';');
-    }
-
-    /// Returns whether every supplied color is absent.
-    private static boolean allNull(@Nullable Color... colors) {
-        for (@Nullable Color color : colors) {
-            if (color != null) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /// Serializes a JavaFX color as an exact CSS RGBA function.

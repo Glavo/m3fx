@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Region;
@@ -16,6 +17,7 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -41,9 +43,9 @@ final class M3ComponentColorConfigurationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Verifies partial button colors, disabled colors, replacement, and complete removal.
+    /// Verifies independent, bindable button colors, disabled colors, and complete removal.
     @Test
-    void buttonColorsOverrideOnlySpecifiedRolesAndRemainReversible() {
+    void buttonColorPropertiesAreIndependentBindableAndReversible() {
         FxTestUtils.runOnFxThread(() -> {
             Color container = Color.web("#275DAD");
             Color content = Color.web("#F8FAFF");
@@ -52,10 +54,19 @@ final class M3ComponentColorConfigurationTest {
             M3Button button = new M3Button("Save", M3ButtonVariant.FILLED);
             button.setStyle("-fx-translate-x: 0;");
 
-            assertNull(button.getColors());
-            assertSame(button, button.colorsProperty().getBean());
+            assertNull(button.getContainerColor());
+            assertNull(button.getContentColor());
+            assertNull(button.getDisabledContainerColor());
+            assertNull(button.getDisabledContentColor());
+            assertSame(button, button.containerColorProperty().getBean());
+            assertSame(button, button.contentColorProperty().getBean());
+            assertSame(button, button.disabledContainerColorProperty().getBean());
+            assertSame(button, button.disabledContentColorProperty().getBean());
 
-            button.setColors(new M3ButtonColors(container, content, disabledContainer, disabledContent));
+            button.setContainerColor(container);
+            button.setContentColor(content);
+            button.setDisabledContainerColor(disabledContainer);
+            button.setDisabledContentColor(disabledContent);
             StackPane root = materialRoot(button);
             applyCss(root);
             assertColor(container, backgroundFill(button));
@@ -82,13 +93,26 @@ final class M3ComponentColorConfigurationTest {
             assertTrue(text == null || Math.abs(text.getOpacity() - 1.0) < 0.0001);
 
             button.setDisable(false);
-            button.setColors(new M3ButtonColors(null, Color.web("#FFDAD6"), null, null));
+            button.setContainerColor(null);
+            button.setContentColor(Color.web("#FFDAD6"));
+            button.setDisabledContainerColor(null);
+            button.setDisabledContentColor(null);
             applyCss(root);
             assertColor(Color.web("#FFDAD6"), button.getTextFill());
             assertNotEquals(container, backgroundFill(button));
             assertEquals(1, button.getStylesheets().size());
 
-            button.setColors(null);
+            SimpleObjectProperty<@Nullable Color> boundContainer = new SimpleObjectProperty<>(Color.DARKGREEN);
+            button.containerColorProperty().bind(boundContainer);
+            applyCss(root);
+            assertColor(Color.DARKGREEN, backgroundFill(button));
+            boundContainer.set(Color.DARKBLUE);
+            applyCss(root);
+            assertColor(Color.DARKBLUE, backgroundFill(button));
+            button.containerColorProperty().unbind();
+
+            button.setContainerColor(null);
+            button.setContentColor(null);
             applyCss(root);
             assertTrue(button.getStylesheets().isEmpty());
             assertNotEquals(Color.web("#FFDAD6"), button.getTextFill());
@@ -96,12 +120,16 @@ final class M3ComponentColorConfigurationTest {
         });
     }
 
-    /// Verifies that an all-inheriting immutable value installs no local stylesheet.
+    /// Verifies that null setters and explicitly created null properties install no local stylesheet.
     @Test
-    void emptyButtonColorsAreEquivalentToNoOverride() {
+    void nullButtonColorPropertiesAreEquivalentToNoOverride() {
         FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Inherit");
-            button.setColors(new M3ButtonColors(null, null, null, null));
+            button.setContainerColor(null);
+            button.setContentColor(null);
+            button.setDisabledContainerColor(null);
+            button.setDisabledContentColor(null);
+            button.containerColorProperty().set(null);
 
             assertTrue(button.getStylesheets().isEmpty());
             assertTrue(button.getStyleClass().stream().noneMatch("m3-custom-button-colors"::equals));
@@ -112,24 +140,23 @@ final class M3ComponentColorConfigurationTest {
     @Test
     void restoredButtonColorEntriesRemainOwnedByTheProperty() {
         FxTestUtils.runOnFxThread(() -> {
-            M3ButtonColors colors = new M3ButtonColors(Color.RED, Color.WHITE, null, null);
             M3Button source = new M3Button("Source");
-            source.setColors(colors);
+            source.setContainerColor(Color.RED);
             String stylesheet = source.getStylesheets().get(0);
 
             M3Button button = new M3Button("Restore");
             button.getStyleClass().add("m3-custom-button-colors");
             button.getStylesheets().add(stylesheet);
-            button.setColors(colors);
+            button.setContainerColor(Color.RED);
 
             button.getStyleClass().remove("m3-custom-button-colors");
             button.getStylesheets().remove(stylesheet);
-            button.setColors(new M3ButtonColors(Color.RED, Color.WHITE, null, null));
+            button.setContainerColor(Color.color(1.0, 0.0, 0.0));
 
             assertTrue(button.getStyleClass().contains("m3-custom-button-colors"));
             assertTrue(button.getStylesheets().contains(stylesheet));
 
-            button.setColors(null);
+            button.setContainerColor(null);
             assertTrue(button.getStyleClass().stream().noneMatch("m3-custom-button-colors"::equals));
             assertTrue(button.getStylesheets().isEmpty());
         });
@@ -144,7 +171,8 @@ final class M3ComponentColorConfigurationTest {
             M3SVGIcon svgIcon = new M3SVGIcon("M 0 0 L 24 0 L 12 24 Z");
             svgIcon.setViewBox(new javafx.geometry.Rectangle2D(0, 0, 24, 24));
             M3IconButton button = new M3IconButton(fontIcon);
-            button.setColors(new M3ButtonColors(Color.web("#EADDFF"), Color.web("#21005D"), null, null));
+            button.setContainerColor(Color.web("#EADDFF"));
+            button.setContentColor(Color.web("#21005D"));
             StackPane root = materialRoot(button, svgIcon);
 
             fontIcon.setTint(tint);
@@ -175,11 +203,17 @@ final class M3ComponentColorConfigurationTest {
             Color disabledContent = Color.rgb(31, 31, 31, 0.38);
             M3Icon icon = new M3Icon("C");
             M3Card card = new M3Card(icon, M3CardVariant.OUTLINED);
-            card.setColors(new M3CardColors(container, content, disabledContainer, disabledContent));
+            card.setContainerColor(container);
+            card.setContentColor(content);
+            card.setDisabledContainerColor(disabledContainer);
+            card.setDisabledContentColor(disabledContent);
             StackPane root = materialRoot(card);
 
             applyCss(root);
-            assertSame(card, card.colorsProperty().getBean());
+            assertSame(card, card.containerColorProperty().getBean());
+            assertSame(card, card.contentColorProperty().getBean());
+            assertSame(card, card.disabledContainerColorProperty().getBean());
+            assertSame(card, card.disabledContentColorProperty().getBean());
             assertColor(container, backgroundFill(region(card, ".m3-card-container")));
             assertColor(content, ((Text) icon.lookup(".m3-icon-glyph")).getFill());
             assertColor(content, backgroundFill(region(card, ".m3-state-layer")));
@@ -189,7 +223,10 @@ final class M3ComponentColorConfigurationTest {
             assertColor(disabledContainer, backgroundFill(region(card, ".m3-card-container")));
             assertColor(disabledContent, ((Text) icon.lookup(".m3-icon-glyph")).getFill());
 
-            card.setColors(null);
+            card.setContainerColor(null);
+            card.setContentColor(null);
+            card.setDisabledContainerColor(null);
+            card.setDisabledContentColor(null);
             applyCss(root);
             assertTrue(card.getStylesheets().isEmpty());
             assertNotEquals(disabledContainer, backgroundFill(region(card, ".m3-card-container")));
@@ -205,11 +242,13 @@ final class M3ComponentColorConfigurationTest {
             M3Icon icon = new M3Icon("S");
             M3Surface surface = new M3Surface();
             surface.getContent().add(icon);
-            surface.setColors(new M3SurfaceColors(container, content));
+            surface.setContainerColor(container);
+            surface.setContentColor(content);
             StackPane root = materialRoot(surface);
 
             applyCss(root);
-            assertSame(surface, surface.colorsProperty().getBean());
+            assertSame(surface, surface.containerColorProperty().getBean());
+            assertSame(surface, surface.contentColorProperty().getBean());
             assertColor(container, backgroundFill(region(surface, ".m3-surface-container")));
             assertColor(content, ((Text) icon.lookup(".m3-icon-glyph")).getFill());
 
@@ -218,7 +257,8 @@ final class M3ComponentColorConfigurationTest {
             assertColor(container, backgroundFill(region(surface, ".m3-surface-container")));
             assertColor(content, ((Text) icon.lookup(".m3-icon-glyph")).getFill());
 
-            surface.setColors(null);
+            surface.setContainerColor(null);
+            surface.setContentColor(null);
             applyCss(root);
             assertTrue(surface.getStylesheets().isEmpty());
             assertNotEquals(container, backgroundFill(region(surface, ".m3-surface-container")));

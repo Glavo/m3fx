@@ -20,6 +20,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.paint.Color;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -46,7 +47,7 @@ import java.util.Objects;
 ///
 /// A new surface uses the container color role, elevation level zero, a 12-pixel shape radius, and 16-pixel content
 /// padding. Color role and elevation are semantic properties; shape and padding are styleable logical-pixel
-/// properties. [#colorsProperty()] optionally overrides container or content color for this surface alone.
+/// properties. The container and content color properties optionally override those roles for this surface alone.
 ///
 /// See [Material Design](https://m3.material.io/) and
 /// [Material color roles](https://m3.material.io/styles/color/roles).
@@ -115,45 +116,93 @@ public final class M3Surface extends Control {
         return variant;
     }
 
-    /// The explicit surface color overrides, or `null` to use the variant and active theme.
+    /// The explicit surface container color.
     ///
-    /// Non-null components in the immutable value remain effective across variant and theme changes. The default
-    /// value is `null`.
+    /// A `null` value leaves the container under the control of the surface variant, active theme, and application
+    /// stylesheets. A non-null value remains effective across variant and theme changes.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3SurfaceColors> colors =
-            new SimpleObjectProperty<>(this, "colors") {
-                /// Rebuilds the branch-local surface color declarations.
+    private @Nullable ObjectProperty<@Nullable Color> containerColor;
+
+    /// Returns the explicit surface container color.
+    ///
+    /// @return the container color, or `null` to use normal color resolution
+    public final @Nullable Color getContainerColor() {
+        return containerColor == null ? null : containerColor.get();
+    }
+
+    /// Sets the explicit surface container color.
+    ///
+    /// @param color the container color, or `null` to use normal color resolution
+    public final void setContainerColor(@Nullable Color color) {
+        if (containerColor != null || color != null) {
+            containerColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit surface container color.
+    ///
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable container-color property
+    public final ObjectProperty<@Nullable Color> containerColorProperty() {
+        if (containerColor == null) {
+            containerColor = new SimpleObjectProperty<>(this, "containerColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
                 @Override
                 protected void invalidated() {
-                    M3ComponentColorStyles.applySurfaceColors(M3Surface.this, get());
+                    updateLocalColors();
                 }
             };
-
-    /// Returns the explicit surface color overrides.
-    ///
-    /// @return the overrides, or `null` when the variant and active theme determine both colors
-    public final @Nullable M3SurfaceColors getColors() {
-        return colors.get();
+        }
+        return containerColor;
     }
 
-    /// Sets explicit surface color overrides.
+    /// The explicit surface content color.
     ///
-    /// Null components continue to inherit from the surface variant and active theme. Set the property itself to
-    /// `null` to remove all managed overrides.
+    /// The value is exposed to descendants through the M3FX on-surface lookups. A `null` value leaves those lookups
+    /// under normal variant, theme, and CSS resolution.
     ///
-    /// @param colors the overrides, or `null` to restore variant and theme color resolution
-    public final void setColors(@Nullable M3SurfaceColors colors) {
-        this.colors.set(colors);
+    /// @defaultValue `null`
+    private @Nullable ObjectProperty<@Nullable Color> contentColor;
+
+    /// Returns the explicit surface content color.
+    ///
+    /// @return the content color, or `null` to use normal color resolution
+    public final @Nullable Color getContentColor() {
+        return contentColor == null ? null : contentColor.get();
     }
 
-    /// Returns the observable property that stores explicit surface color overrides.
+    /// Sets the explicit surface content color.
     ///
-    /// The property can be observed and bound. Its default value is `null`.
+    /// @param color the content color, or `null` to use normal color resolution
+    public final void setContentColor(@Nullable Color color) {
+        if (contentColor != null || color != null) {
+            contentColorProperty().set(color);
+        }
+    }
+
+    /// Returns the observable property that stores the explicit surface content color.
     ///
-    /// @return the nullable surface-colors property
-    public final ObjectProperty<@Nullable M3SurfaceColors> colorsProperty() {
-        return colors;
+    /// The property's default value is `null`.
+    ///
+    /// @return the nullable content-color property
+    public final ObjectProperty<@Nullable Color> contentColorProperty() {
+        if (contentColor == null) {
+            contentColor = new SimpleObjectProperty<>(this, "contentColor") {
+                /// Rebuilds the branch-local declarations when the color changes.
+                @Override
+                protected void invalidated() {
+                    updateLocalColors();
+                }
+            };
+        }
+        return contentColor;
+    }
+
+    /// Rebuilds the optional component-local color declarations from the current property values.
+    private void updateLocalColors() {
+        M3ComponentColorStyles.applySurfaceColors(this, getContainerColor(), getContentColor());
     }
 
     /// The surface elevation level.
