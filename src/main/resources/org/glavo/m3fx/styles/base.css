@@ -27,9 +27,8 @@
     -fx-border-color: -m3-state-focus-indicator-color;
 }
 
-.m3-button:hover .m3-state-layer,
+.m3-button-base:hover .m3-state-layer,
 .m3-chip:hover .m3-state-layer,
-.m3-icon-button:hover .m3-state-layer,
 .m3-icon-toggle-button:hover .m3-state-layer,
 .m3-fab:hover .m3-state-layer,
 .m3-segmented-button:hover .m3-state-layer,
@@ -44,9 +43,8 @@
     -fx-opacity: 0.08;
 }
 
-.m3-button:focus-visible .m3-state-layer,
+.m3-button-base:focus-visible .m3-state-layer,
 .m3-chip:focus-visible .m3-state-layer,
-.m3-icon-button:focus-visible .m3-state-layer,
 .m3-icon-toggle-button:focus-visible .m3-state-layer,
 .m3-fab:focus-visible .m3-state-layer,
 .m3-segmented-button:focus-visible .m3-state-layer,
@@ -61,9 +59,8 @@
     -fx-opacity: 0.10;
 }
 
-.m3-button:pressed .m3-state-layer,
+.m3-button-base:pressed .m3-state-layer,
 .m3-chip:pressed .m3-state-layer,
-.m3-icon-button:pressed .m3-state-layer,
 .m3-icon-toggle-button:pressed .m3-state-layer,
 .m3-fab:pressed .m3-state-layer,
 .m3-segmented-button:pressed .m3-state-layer,

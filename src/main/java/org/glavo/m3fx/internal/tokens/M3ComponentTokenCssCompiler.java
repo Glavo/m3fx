@@ -1219,7 +1219,7 @@ public final class M3ComponentTokenCssCompiler {
             String sizeSelector,
             ButtonSizeTokens tokens
     ) {
-        String selector = ".m3-button" + sizeSelector;
+        String selector = ".m3-button-base" + sizeSelector;
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-container-height", pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-button-icon-size", pixels(tokens.iconSize()));
@@ -1299,7 +1299,7 @@ public final class M3ComponentTokenCssCompiler {
             String selector,
             IconButtonSizeTokens tokens
     ) {
-        String iconButtonSelector = ".m3-button.m3-icon-button" + selector;
+        String iconButtonSelector = ".m3-button-base.m3-icon-button" + selector;
         String toggleButtonSelector = ".m3-icon-toggle-button" + selector;
         beginRule(
                 builder,
@@ -1336,7 +1336,7 @@ public final class M3ComponentTokenCssCompiler {
             String selector,
             IconButtonSizeTokens tokens
     ) {
-        String iconButtonSelector = ".m3-button.m3-icon-button" + selector;
+        String iconButtonSelector = ".m3-button-base.m3-icon-button" + selector;
         String toggleButtonSelector = ".m3-icon-toggle-button" + selector;
         beginRule(builder, iconButtonSelector + ".m3-icon-button-round");
         appendShapeDeclarations(builder, tokens.roundContainerShape());
@@ -1741,14 +1741,14 @@ public final class M3ComponentTokenCssCompiler {
         );
         endRule(builder);
 
-        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu");
+        beginRule(builder, ownerSelector + " .m3-menu-button.m3-split-button-menu");
         appendDeclaration(builder, "-m3-container-height", pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-horizontal-padding", "0px");
         appendDeclaration(builder, "-fx-min-width", pixels(menuWidth));
         appendDeclaration(builder, "-fx-pref-width", pixels(menuWidth));
         endRule(builder);
 
-        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu:left-edge");
+        beginRule(builder, ownerSelector + " .m3-menu-button.m3-split-button-menu:left-edge");
         appendDeclaration(
                 builder,
                 "-fx-padding",
@@ -1759,7 +1759,7 @@ public final class M3ComponentTokenCssCompiler {
         );
         endRule(builder);
 
-        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu:right-edge");
+        beginRule(builder, ownerSelector + " .m3-menu-button.m3-split-button-menu:right-edge");
         appendDeclaration(
                 builder,
                 "-fx-padding",
@@ -1771,28 +1771,28 @@ public final class M3ComponentTokenCssCompiler {
         endRule(builder);
 
         String indicatorSelector =
-                ownerSelector + " .m3-button.m3-split-button-menu .m3-disclosure-icon";
+                ownerSelector + " .m3-menu-button.m3-split-button-menu .m3-disclosure-icon";
         beginRule(builder, indicatorSelector);
         appendDeclaration(builder, "-m3-disclosure-icon-size", pixels(tokens.menuIconSize()));
         endRule(builder);
 
         beginRule(
                 builder,
-                ownerSelector + " .m3-button.m3-split-button-menu:left-edge .m3-disclosure-icon"
+                ownerSelector + " .m3-menu-button.m3-split-button-menu:left-edge .m3-disclosure-icon"
         );
         appendDeclaration(builder, "-fx-translate-x", pixels(tokens.menuIconOffset()));
         endRule(builder);
 
         beginRule(
                 builder,
-                ownerSelector + " .m3-button.m3-split-button-menu:right-edge .m3-disclosure-icon"
+                ownerSelector + " .m3-menu-button.m3-split-button-menu:right-edge .m3-disclosure-icon"
         );
         appendDeclaration(builder, "-fx-translate-x", pixels(-tokens.menuIconOffset()));
         endRule(builder);
 
         beginRule(
                 builder,
-                ownerSelector + " .m3-button.m3-split-button-menu:showing .m3-disclosure-icon"
+                ownerSelector + " .m3-menu-button.m3-split-button-menu:showing .m3-disclosure-icon"
         );
         appendDeclaration(builder, "-fx-translate-x", "0px");
         endRule(builder);

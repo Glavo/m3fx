@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.scene.Node;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,42 +18,46 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
 @NotNullByDefault
 public final class M3Button extends M3ButtonBase {
+    /// The style class identifying ordinary M3FX command buttons.
+    public static final String STYLE_CLASS = "m3-button";
+
     /// Creates a filled button with empty text and no graphic.
     public M3Button() {
-        super();
+        this("", null, M3ButtonVariant.FILLED);
     }
 
     /// Creates a filled button with the specified text and no graphic.
     ///
     /// @param text the text displayed by the button
     public M3Button(String text) {
-        super(text);
+        this(text, null, M3ButtonVariant.FILLED);
     }
 
     /// Creates a filled button with the specified text and graphic.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param graphic the graphic displayed with the text, or `null` for no graphic
     public M3Button(String text, @Nullable Node graphic) {
-        super(text, graphic);
+        this(text, graphic, M3ButtonVariant.FILLED);
     }
 
     /// Creates a button with the specified text and variant and no graphic.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param variant the Material button variant
     /// @throws NullPointerException if `variant` is `null`
     public M3Button(String text, M3ButtonVariant variant) {
-        super(text, variant);
+        this(text, null, variant);
     }
 
     /// Creates a button with the specified text, graphic, and variant.
     ///
-    /// @param text the text displayed by the button
+    /// @param text    the text displayed by the button
     /// @param graphic the graphic displayed with the text, or `null` for no graphic
     /// @param variant the Material button variant
     /// @throws NullPointerException if `variant` is `null`
     public M3Button(String text, @Nullable Node graphic, M3ButtonVariant variant) {
         super(text, graphic, variant);
+        M3ControlStyles.add(this, STYLE_CLASS);
     }
 }

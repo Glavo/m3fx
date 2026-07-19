@@ -137,10 +137,10 @@ final class M3TokenFactoryTest {
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-thickness: 4px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-outer-offset: 3px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-inner-offset: -3px"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button:focus-visible .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button-base:focus-visible .m3-state-layer"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-tab:focus-visible .m3-state-layer"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button:pressed .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button-base:pressed .m3-state-layer"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains("-fx-opacity: 0.13"));
         assertFalse(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(":disabled"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-elevated-button:hover"));
@@ -554,8 +554,8 @@ final class M3TokenFactoryTest {
         String baselineRules = M3ThemeCssCompiler.controlStyleRules(baseline);
         String expressiveRules = M3ThemeCssCompiler.controlStyleRules(expressive);
         List<String> stateSelectors = List.of(
-                ".m3-button.m3-button-small.m3-button-round:armed",
-                ".m3-button.m3-icon-button.m3-icon-button-small.m3-icon-button-round:armed",
+                ".m3-button-base.m3-button-small.m3-button-round:armed",
+                ".m3-button-base.m3-icon-button.m3-icon-button-small.m3-icon-button-round:armed",
                 ".m3-icon-toggle-button.m3-icon-button-small.m3-icon-button-round:selected",
                 ".m3-button-group.m3-button-group-small.m3-connected-button-group "
                         + ".m3-grouped-button.m3-button-group-first:selected",

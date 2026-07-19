@@ -212,7 +212,7 @@ final class M3ThemeTest {
                 ".m3-button-group.m3-button-group-small.m3-connected-button-group "
                         + ".m3-grouped-button.m3-button-group-first"
         ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-button.m3-split-button-menu"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-menu-button.m3-split-button-menu"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-large-icon"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-display-medium-text"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-body-small-text"));
@@ -1276,7 +1276,7 @@ final class M3ThemeTest {
         Pane root = new Pane(button);
         Scene scene = new Scene(root);
         String applicationStylesheet = temporaryStylesheet("""
-                .m3-button.m3-icon-button.test-seed-button {
+                .m3-button-base.m3-icon-button.test-seed-button {
                     -m3-container-height: 32px;
                     -m3-container-width: 32px;
                     -m3-container-shape: 999px;

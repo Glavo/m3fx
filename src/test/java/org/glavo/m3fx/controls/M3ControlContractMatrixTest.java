@@ -35845,13 +35845,22 @@ final class M3ControlContractMatrixTest {
     void actionControlsExposeStyleClasses() {
         M3Button button = new M3Button("Button");
         button.setVariant(M3ButtonVariant.OUTLINED);
+        M3IconButton iconButton = new M3IconButton();
+        M3MenuButton menuButton = new M3MenuButton("More");
 
         M3FloatingActionButton fab = new M3FloatingActionButton("+");
         fab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
         fab.setSize(M3FloatingActionButtonSize.REGULAR);
 
+        assertTrue(button.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.styleClass()));
+        assertTrue(iconButton.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
+        assertTrue(iconButton.getStyleClass().contains(M3IconButton.STYLE_CLASS));
+        assertFalse(iconButton.getStyleClass().contains(M3Button.STYLE_CLASS));
+        assertTrue(menuButton.getStyleClass().contains(M3ButtonBase.BASE_STYLE_CLASS));
+        assertTrue(menuButton.getStyleClass().contains(M3MenuButton.STYLE_CLASS));
+        assertFalse(menuButton.getStyleClass().contains(M3Button.STYLE_CLASS));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));

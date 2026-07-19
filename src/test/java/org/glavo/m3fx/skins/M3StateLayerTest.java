@@ -13,6 +13,7 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonBase;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.theme.M3Theme;
@@ -48,7 +49,7 @@ final class M3StateLayerTest {
     void stateLayerAnimatesOwnerStateHoverOpacity() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -73,7 +74,7 @@ final class M3StateLayerTest {
     void disabledMotionAppliesOwnerStateHoverOpacityImmediately() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
@@ -97,7 +98,7 @@ final class M3StateLayerTest {
     void stateLayerSettlesOwnerStateOpacityWhenAnimationsAreDisabledAtRuntime() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -130,7 +131,7 @@ final class M3StateLayerTest {
     void stateLayerUsesInstalledThemeStateTokens() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
@@ -221,7 +222,7 @@ final class M3StateLayerTest {
     void stateLayerUsesFocusVisibleInsteadOfPlainFocus() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
@@ -248,7 +249,7 @@ final class M3StateLayerTest {
     void focusVisibleRendersOuterFocusIndicatorForButtonLikeControls() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
@@ -295,7 +296,7 @@ final class M3StateLayerTest {
     void focusIndicatorColorUsesInheritedCssToken() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -361,7 +362,7 @@ final class M3StateLayerTest {
     void focusIndicatorOpacityAnimatesWithMotionEnabled() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            owner.getStyleClass().add("m3-button");
+            owner.getStyleClass().add(M3ButtonBase.BASE_STYLE_CLASS);
             M3MotionSettings.setReducedMotionRequested(owner, false);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);

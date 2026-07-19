@@ -425,8 +425,8 @@ public final class M3TokenCssCompiler {
 
     /// Returns selectors for controls that expose hover state layer feedback.
     private static String hoverStateSelectors() {
-        return ".m3-button:hover .m3-state-layer, .m3-chip:hover .m3-state-layer, "
-                + ".m3-icon-button:hover .m3-state-layer, .m3-icon-toggle-button:hover .m3-state-layer, "
+        return ".m3-button-base:hover .m3-state-layer, .m3-chip:hover .m3-state-layer, "
+                + ".m3-icon-toggle-button:hover .m3-state-layer, "
                 + ".m3-fab:hover .m3-state-layer, "
                 + ".m3-segmented-button:hover .m3-state-layer, .m3-checkbox:hover .m3-state-layer, "
                 + ".m3-radio-button:hover .m3-state-layer, .m3-switch:hover .m3-state-layer, "
@@ -440,8 +440,7 @@ public final class M3TokenCssCompiler {
 
     /// Returns selectors for controls that expose focus state layer feedback.
     private static String focusStateSelectors() {
-        return ".m3-button:focus-visible .m3-state-layer, .m3-chip:focus-visible .m3-state-layer, "
-                + ".m3-icon-button:focus-visible .m3-state-layer, "
+        return ".m3-button-base:focus-visible .m3-state-layer, .m3-chip:focus-visible .m3-state-layer, "
                 + ".m3-icon-toggle-button:focus-visible .m3-state-layer, .m3-fab:focus-visible .m3-state-layer, "
                 + ".m3-segmented-button:focus-visible .m3-state-layer, .m3-checkbox:focus-visible .m3-state-layer, "
                 + ".m3-radio-button:focus-visible .m3-state-layer, .m3-switch:focus-visible .m3-state-layer, "
@@ -455,8 +454,8 @@ public final class M3TokenCssCompiler {
 
     /// Returns selectors for controls that expose pressed state layer feedback.
     private static String pressedStateSelectors() {
-        return ".m3-button:pressed .m3-state-layer, .m3-chip:pressed .m3-state-layer, "
-                + ".m3-icon-button:pressed .m3-state-layer, .m3-icon-toggle-button:pressed .m3-state-layer, "
+        return ".m3-button-base:pressed .m3-state-layer, .m3-chip:pressed .m3-state-layer, "
+                + ".m3-icon-toggle-button:pressed .m3-state-layer, "
                 + ".m3-fab:pressed .m3-state-layer, "
                 + ".m3-segmented-button:pressed .m3-state-layer, .m3-checkbox:pressed .m3-state-layer, "
                 + ".m3-radio-button:pressed .m3-state-layer, .m3-switch:pressed .m3-state-layer, "

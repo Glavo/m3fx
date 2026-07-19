@@ -101,25 +101,25 @@
     -fx-padding: 0 -m3-split-button-action-leading-space 0 -m3-split-button-action-trailing-space;
 }
 
-.m3-split-button .m3-button.m3-split-button-menu {
+.m3-split-button .m3-menu-button.m3-split-button-menu {
     -m3-container-height: -m3-split-button-container-height;
     -m3-horizontal-padding: 0px;
     -fx-min-width: -m3-split-button-menu-width;
     -fx-pref-width: -m3-split-button-menu-width;
 }
 
-.m3-split-button .m3-button.m3-split-button-menu .m3-disclosure-icon {
+.m3-split-button .m3-menu-button.m3-split-button-menu .m3-disclosure-icon {
     -m3-disclosure-icon-size: -m3-split-button-menu-icon-size;
 }
 
-.m3-split-button .m3-button.m3-split-button-menu:left-edge .m3-disclosure-icon {
+.m3-split-button .m3-menu-button.m3-split-button-menu:left-edge .m3-disclosure-icon {
     -fx-translate-x: -m3-split-button-menu-icon-offset;
 }
 
-.m3-split-button .m3-button.m3-split-button-menu:right-edge .m3-disclosure-icon {
+.m3-split-button .m3-menu-button.m3-split-button-menu:right-edge .m3-disclosure-icon {
     -fx-translate-x: -m3-split-button-menu-icon-right-offset;
 }
 
-.m3-split-button .m3-button.m3-split-button-menu:showing .m3-disclosure-icon {
+.m3-split-button .m3-menu-button.m3-split-button-menu:showing .m3-disclosure-icon {
     -fx-translate-x: 0;
 }

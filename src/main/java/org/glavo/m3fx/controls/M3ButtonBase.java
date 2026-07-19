@@ -53,8 +53,11 @@ import java.util.Objects;
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
-    /// The base style class for all M3FX buttons.
-    public static final String STYLE_CLASS = "m3-button";
+    /// The style class shared by all controls in the M3FX button family.
+    ///
+    /// Concrete button classes add their own style class in addition to this class. CSS that intentionally applies
+    /// to every [M3ButtonBase] subtype should select this class rather than a concrete control's style class.
+    public static final String BASE_STYLE_CLASS = "m3-button-base";
 
     /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
     private static final PseudoClass BUTTON_GRAPHIC_PSEUDO_CLASS = PseudoClass.getPseudoClass("button-graphic");
@@ -671,7 +674,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, BASE_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

@@ -234,6 +234,10 @@ typed component model:
 }
 ```
 
+The button family shares the `.m3-button-base` style class. Concrete controls add a distinct identity class:
+`.m3-button`, `.m3-icon-button`, or `.m3-menu-button`. Use the base class only for rules that deliberately apply to
+every button subtype.
+
 This boundary keeps commonly configured component paints type-safe without duplicating the complete theme color
 scheme on every control.
 
