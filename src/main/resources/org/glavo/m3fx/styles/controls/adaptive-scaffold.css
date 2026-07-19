@@ -1,0 +1,14 @@
+.m3-adaptive-scaffold {
+    -fx-background-color: -m3-color-surface;
+}
+
+.m3-adaptive-scaffold > .m3-scaffold-top-bar,
+.m3-adaptive-scaffold > .m3-scaffold-bottom-bar,
+.m3-adaptive-scaffold > .m3-scaffold-navigation-bar,
+.m3-adaptive-scaffold > .m3-scaffold-navigation-rail,
+.m3-adaptive-scaffold > .m3-scaffold-trailing-rail,
+.m3-adaptive-scaffold > .m3-scaffold-leading-pane,
+.m3-adaptive-scaffold > .m3-scaffold-main-pane,
+.m3-adaptive-scaffold > .m3-scaffold-trailing-pane {
+    -fx-background-color: transparent;
+}

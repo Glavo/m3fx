@@ -6,7 +6,8 @@
 /// [org.glavo.m3fx.animation] provides the public motion scheme and the per-node reduced-motion policy.
 ///
 /// JavaFX Controls and Graphics are transitive requirements because exported M3FX APIs expose JavaFX nodes,
-/// properties, paints, and animation types. MonetFX is transitive because [org.glavo.m3fx.theme.M3Theme] exposes its
+/// properties, paints, and animation types. [org.glavo.m3fx.layout] provides adaptive breakpoint and scaffold
+/// APIs. MonetFX is transitive because [org.glavo.m3fx.theme.M3Theme] exposes its
 /// dynamic color scheme. JetBrains annotations are a compile-time-only requirement used to publish nullability and
 /// immutability contracts.
 ///
@@ -21,6 +22,7 @@ module org.glavo.m3fx {
 
     exports org.glavo.m3fx.animation;
     exports org.glavo.m3fx.controls;
+    exports org.glavo.m3fx.layout;
     exports org.glavo.m3fx.theme;
     exports org.glavo.m3fx.tokens;
 

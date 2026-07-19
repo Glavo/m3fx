@@ -10,7 +10,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -33,6 +32,7 @@ import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -91,7 +91,7 @@ public final class M3FXCatalogApp extends Application {
     private final M3OverlayPane root = new M3OverlayPane();
 
     /// The persistent app-bar and route-content scaffold.
-    private final BorderPane scaffold = new BorderPane();
+    private final M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
 
     /// The shared Material top app bar.
     private final M3TopAppBar topAppBar = new M3TopAppBar("M3FX");
@@ -191,13 +191,13 @@ public final class M3FXCatalogApp extends Application {
     /// Configures the shared top app bar and route host.
     private void configureScaffold() {
         scaffold.getStyleClass().add("catalog-scaffold");
+        scaffold.setContentMargin(0.0);
         topAppBar.getStyleClass().add("catalog-top-app-bar");
-        scaffold.setTop(topAppBar);
+        scaffold.setTopBar(topAppBar);
 
         routeHost.setAlignment(Pos.TOP_CENTER);
         routeHost.getStyleClass().add("catalog-route-host");
-        scaffold.setCenter(routeHost);
-
+        scaffold.setMainPane(routeHost);
     }
 
     /// Configures the modal theme settings sheet and its coordinated scrim.

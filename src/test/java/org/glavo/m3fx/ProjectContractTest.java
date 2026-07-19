@@ -66,6 +66,7 @@ final class ProjectContractTest {
     private static final @Unmodifiable Set<String> EXPECTED_EXPORTED_API_PACKAGES = Set.of(
             "org.glavo.m3fx.animation",
             "org.glavo.m3fx.controls",
+            "org.glavo.m3fx.layout",
             "org.glavo.m3fx.theme",
             "org.glavo.m3fx.tokens"
     );

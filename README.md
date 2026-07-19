@@ -152,6 +152,32 @@ suspending snackbar interaction until the modal layer is hidden.
 
 `M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Theme stylesheet compilation is an internal implementation detail, so applications should use the manager instead of constructing generated stylesheet URLs.
 
+## Adaptive Layout
+
+`M3AdaptiveScaffold` arranges a stable top bar, contextual bottom bar, compact navigation bar, expanded navigation
+rail, optional trailing rail, and one to three logical content panes. Its breakpoint follows the width actually
+assigned by JavaFX, so resizing or moving a window does not require an application-level screen classifier:
+
+```java
+M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+scaffold.setTopBar(topAppBar);
+scaffold.setNavigationBar(compactNavigation);
+scaffold.setNavigationRail(expandedNavigation);
+scaffold.setLeadingPane(messageList);
+scaffold.setMainPane(messageDetail);
+```
+
+The standard breakpoints are `COMPACT`, `MEDIUM`, `EXPANDED`, `LARGE`, and `EXTRA_LARGE`. Automatic pane layout
+uses one pane below 840 logical pixels and two panes at wider sizes when the corresponding slots are populated.
+Automatic navigation selects an available bar or rail for the current width and pane count. Set
+`paneLayoutProperty()` or `navigationLayoutProperty()` when an application needs an explicit policy, and use
+`activePaneProperty()` to select the content shown by a single-pane layout.
+
+Each slot owns a stable internal container. Content that becomes ineffective at a breakpoint is hidden and
+unmanaged rather than detached, preserving selection, scrolling, bindings, and other scene-graph state. Leading
+and trailing pane roles follow `NodeOrientation`; physical safety insets remain physical. `breakpointOverride` is
+intended for previews, tests, or an application policy that intentionally differs from assigned width.
+
 ## Per-Control Configuration
 
 Use JavaFX properties for component semantics, behavior, and common geometry:
@@ -269,6 +295,7 @@ Implemented component families include:
 - Text fields, password fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
 - Checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
 - Lists, virtualized list views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
+- Adaptive breakpoints and scaffolds with stable bars, navigation regions, logical rails, and one- to three-pane layouts.
 
 Controls use custom skins and avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface. Text input controls intentionally retain JavaFX text-input bases to preserve editing, selection, clipboard, IME, and multiline behavior.
 

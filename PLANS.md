@@ -25,6 +25,12 @@ The remaining risk is concentrated in specification fidelity and runtime quality
 The current component set includes the six Material carousel layouts. Full-screen carousels use vertical,
 viewport-sized pagination; the remaining layouts retain horizontal Material keyline behavior.
 
+The exported layout foundation now models all five Material width breakpoints and provides an adaptive scaffold
+with stable top, bottom, navigation, rail, and one- to three-pane slots. It supports automatic and explicit pane
+policies, centered split panes, fixed side panes, physical safety insets, logical RTL placement, navigation
+coordination, and focus repair when an active region becomes hidden. The Catalog uses this scaffold as a real
+application integration path.
+
 The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable
 builders, and composite controls own the properties and events they expose. The API is not frozen until the final
@@ -47,6 +53,8 @@ The audit must cover:
 - Standard, Expressive, and reduced-motion behavior, including interruption and release transitions.
 - Composition between related components such as button groups, split buttons, text-field adornments, menus,
   pickers, navigation containers, feedback overlays, loading indicators, and carousels.
+- Canonical responsive compositions built on the adaptive scaffold, including list-detail and supporting-pane
+  behavior at every breakpoint, without adding device-type assumptions to the layout API.
 
 Close discovered defects by component family so that implementation, demo coverage, and focused regression tests
 land together.
