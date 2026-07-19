@@ -48,23 +48,30 @@ public final class M3ThemeCssCompiler {
     /// @param tokens the token set to compile
     /// @return JavaFX CSS declarations suitable for a generated root rule
     public static String rootStyleDeclarations(M3TokenSet tokens) {
-        return M3TokenCssCompiler.styleDeclarations(tokens.colorTokens())
-                + " "
-                + M3TokenCssCompiler.styleDeclarations(tokens.typographyTokens())
-                + " "
-                + M3TokenCssCompiler.styleDeclarations(tokens.shapeTokens())
-                + " "
-                + M3TokenCssCompiler.styleDeclarations(tokens.elevationTokens())
-                + " "
-                + M3TokenCssCompiler.styleDeclarations(tokens.motionTokens())
-                + " "
-                + M3TokenCssCompiler.styleDeclarations(tokens.stateLayerTokens())
-                + " "
-                + stateColorStyleDeclarations(tokens.colorTokens(), tokens.stateLayerTokens())
-                + " "
-                + M3ComponentTokenCssCompiler.styleDeclarations(tokens.componentTokens())
-                + " "
-                + componentColorStyleDeclarations(tokens.componentTokens(), tokens.colorTokens());
+        StringBuilder builder = new StringBuilder();
+        appendRootStyleDeclarations(builder, tokens);
+        return builder.toString();
+    }
+
+    /// Appends root-level declarations for a complete token set to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendRootStyleDeclarations(StringBuilder builder, M3TokenSet tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
+        int start = builder.length();
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.colorTokens());
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.typographyTokens());
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.shapeTokens());
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.elevationTokens());
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.motionTokens());
+        M3TokenCssCompiler.appendStyleDeclarations(builder, tokens.stateLayerTokens());
+        appendStateColorStyleDeclarations(builder, tokens.colorTokens(), tokens.stateLayerTokens());
+        M3ComponentTokenCssCompiler.appendStyleDeclarations(builder, tokens.componentTokens());
+        appendComponentColorStyleDeclarations(builder, tokens.componentTokens(), tokens.colorTokens());
+        stripTrailingWhitespace(builder, start);
     }
 
     /// Compiles component selector rules for a complete token set.
@@ -72,17 +79,30 @@ public final class M3ThemeCssCompiler {
     /// @param tokens the token set to compile
     /// @return JavaFX CSS rules
     public static String controlStyleRules(M3TokenSet tokens) {
-        return M3TokenCssCompiler.controlStyleRules(tokens.typographyTokens())
-                + "\n\n"
-                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens())
-                + "\n\n"
-                + M3TokenCssCompiler.controlStyleRules(tokens.stateLayerTokens())
-                + "\n\n"
-                + M3TokenCssCompiler.controlStyleRules(tokens.elevationTokens());
+        StringBuilder builder = new StringBuilder();
+        appendControlStyleRules(builder, tokens);
+        return builder.toString();
     }
 
-    /// Compiles state-dependent colors that combine role colors with state opacities.
-    private static String stateColorStyleDeclarations(
+    /// Appends component selector rules for a complete token set to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendControlStyleRules(StringBuilder builder, M3TokenSet tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
+        int start = builder.length();
+        M3TokenCssCompiler.appendControlStyleRules(builder, tokens.typographyTokens());
+        M3ComponentTokenCssCompiler.appendControlStyleRules(builder, tokens.componentTokens());
+        M3TokenCssCompiler.appendControlStyleRules(builder, tokens.stateLayerTokens());
+        M3TokenCssCompiler.appendControlStyleRules(builder, tokens.elevationTokens());
+        stripTrailingWhitespace(builder, start);
+    }
+
+    /// Appends state-dependent colors that combine role colors with state opacities.
+    private static void appendStateColorStyleDeclarations(
+            StringBuilder builder,
             M3ColorTokens colorTokens,
             M3StateLayerTokens stateLayerTokens
     ) {
@@ -99,33 +119,62 @@ public final class M3ThemeCssCompiler {
                 onSurface,
                 stateLayerTokens.hoverOpacity()
         );
-        return "-m3-state-disabled-container-color: "
-                + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
-                + "-m3-button-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
-                + "-m3-chip-leading-icon-color: " + toRgba(primary, 1.0) + "; "
-                + "-m3-chip-trailing-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
-                + "-m3-disclosure-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
-                + "-m3-state-disabled-content-color: "
-                + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "
-                + "-m3-button-disabled-container-color: " + toRgba(onSurface, 0.10) + "; "
-                + "-m3-list-item-disabled-state-layer-color: " + toRgba(onSurface, 0.10) + "; "
-                + "-m3-filled-card-disabled-container-color: "
-                + toRgba(surfaceVariant, stateLayerTokens.disabledContentOpacity()) + "; "
-                + "-m3-elevated-card-disabled-container-color: "
-                + toRgba(surface, stateLayerTokens.disabledContentOpacity()) + "; "
-                + "-m3-outlined-card-disabled-outline-color: "
-                + toRgba(outline, stateLayerTokens.disabledContainerOpacity()) + "; "
-                + "-m3-text-field-disabled-container-color: " + toRgba(onSurface, 0.04) + "; "
-                + "-m3-text-field-hover-container-color: " + toRgba(textFieldHoverContainer, 1.0) + "; "
-                + "-m3-text-input-trailing-icon-color: " + toRgba(error, 1.0) + ";";
+        appendRgbaDeclaration(
+                builder,
+                "-m3-state-disabled-container-color",
+                onSurface,
+                stateLayerTokens.disabledContainerOpacity()
+        );
+        appendRgbaDeclaration(builder, "-m3-button-icon-color", onSurfaceVariant, 1.0);
+        appendRgbaDeclaration(builder, "-m3-chip-leading-icon-color", primary, 1.0);
+        appendRgbaDeclaration(builder, "-m3-chip-trailing-icon-color", onSurfaceVariant, 1.0);
+        appendRgbaDeclaration(builder, "-m3-disclosure-icon-color", onSurfaceVariant, 1.0);
+        appendRgbaDeclaration(
+                builder,
+                "-m3-state-disabled-content-color",
+                onSurface,
+                stateLayerTokens.disabledContentOpacity()
+        );
+        appendRgbaDeclaration(builder, "-m3-button-disabled-container-color", onSurface, 0.10);
+        appendRgbaDeclaration(builder, "-m3-list-item-disabled-state-layer-color", onSurface, 0.10);
+        appendRgbaDeclaration(
+                builder,
+                "-m3-filled-card-disabled-container-color",
+                surfaceVariant,
+                stateLayerTokens.disabledContentOpacity()
+        );
+        appendRgbaDeclaration(
+                builder,
+                "-m3-elevated-card-disabled-container-color",
+                surface,
+                stateLayerTokens.disabledContentOpacity()
+        );
+        appendRgbaDeclaration(
+                builder,
+                "-m3-outlined-card-disabled-outline-color",
+                outline,
+                stateLayerTokens.disabledContainerOpacity()
+        );
+        appendRgbaDeclaration(builder, "-m3-text-field-disabled-container-color", onSurface, 0.04);
+        appendRgbaDeclaration(builder, "-m3-text-field-hover-container-color", textFieldHoverContainer, 1.0);
+        appendRgbaDeclaration(builder, "-m3-text-input-trailing-icon-color", error, 1.0);
     }
 
-    /// Converts one color and opacity to a JavaFX CSS rgba paint.
-    private static String toRgba(Color color, double opacity) {
+    /// Appends one color declaration as a JavaFX CSS rgba paint.
+    private static void appendRgbaDeclaration(StringBuilder builder, String name, Color color, double opacity) {
         int red = (int) Math.round(color.getRed() * 255.0);
         int green = (int) Math.round(color.getGreen() * 255.0);
         int blue = (int) Math.round(color.getBlue() * 255.0);
-        return "rgba(" + red + "," + green + "," + blue + "," + format(opacity) + ")";
+        builder.append(name)
+                .append(": rgba(")
+                .append(red)
+                .append(',')
+                .append(green)
+                .append(',')
+                .append(blue)
+                .append(',')
+                .append(format(opacity))
+                .append("); ");
     }
 
     /// Formats one decimal with stable locale-independent output.
@@ -136,38 +185,83 @@ public final class M3ThemeCssCompiler {
         return String.format(Locale.ROOT, "%.3f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
     }
 
-    /// Compiles component color-role mappings as inherited CSS values.
-    private static String componentColorStyleDeclarations(
+    /// Appends component color-role mappings as inherited CSS values.
+    private static void appendComponentColorStyleDeclarations(
+            StringBuilder builder,
             M3ComponentTokens componentTokens,
             M3ColorTokens colorTokens
     ) {
         M3ComponentTokens.MenuColorTokens menu = componentTokens.menu().colors();
         M3ComponentTokens.NavigationBarColorTokens navigationBar = componentTokens.navigationBar().colors();
         Color selectedContainerColor = colorTokens.get(menu.selectedItemContainerRole());
-        return "-m3-menu-container-color: " + colorRoleVariable(menu.containerRole()) + "; "
-                + "-m3-menu-item-state-layer-color: " + colorRoleVariable(menu.itemStateLayerRole()) + "; "
-                + "-m3-menu-selected-item-container-color: "
-                + colorRoleVariable(menu.selectedItemContainerRole()) + "; "
-                + "-m3-menu-selected-item-content-color: "
-                + colorRoleVariable(menu.selectedItemContentRole()) + "; "
-                + "-m3-menu-selected-disabled-container-color: "
-                + toRgba(selectedContainerColor, menu.selectedDisabledContainerOpacity()) + "; "
-                + "-m3-menu-vibrant-container-color: "
-                + colorRoleVariable(menu.vibrantContainerRole()) + "; "
-                + "-m3-menu-vibrant-item-content-color: "
-                + colorRoleVariable(menu.vibrantItemContentRole()) + "; "
-                + "-m3-menu-vibrant-item-state-layer-color: "
-                + colorRoleVariable(menu.vibrantItemStateLayerRole()) + "; "
-                + "-m3-menu-vibrant-selected-item-container-color: "
-                + colorRoleVariable(menu.vibrantSelectedItemContainerRole()) + "; "
-                + "-m3-menu-vibrant-selected-item-content-color: "
-                + colorRoleVariable(menu.vibrantSelectedItemContentRole()) + "; "
-                + "-m3-menu-vibrant-interaction-icon-color: "
-                + colorRoleVariable(menu.vibrantInteractionIconRole()) + "; "
-                + "-m3-navigation-bar-selected-label-color: "
-                + colorRoleVariable(navigationBar.selectedLabelRole()) + "; "
-                + "-m3-navigation-bar-state-layer-color: "
-                + colorRoleVariable(navigationBar.stateLayerRole()) + ";";
+        appendDeclaration(builder, "-m3-menu-container-color", colorRoleVariable(menu.containerRole()));
+        appendDeclaration(builder, "-m3-menu-item-state-layer-color", colorRoleVariable(menu.itemStateLayerRole()));
+        appendDeclaration(
+                builder,
+                "-m3-menu-selected-item-container-color",
+                colorRoleVariable(menu.selectedItemContainerRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-menu-selected-item-content-color",
+                colorRoleVariable(menu.selectedItemContentRole())
+        );
+        appendRgbaDeclaration(
+                builder,
+                "-m3-menu-selected-disabled-container-color",
+                selectedContainerColor,
+                menu.selectedDisabledContainerOpacity()
+        );
+        appendDeclaration(builder, "-m3-menu-vibrant-container-color", colorRoleVariable(menu.vibrantContainerRole()));
+        appendDeclaration(
+                builder,
+                "-m3-menu-vibrant-item-content-color",
+                colorRoleVariable(menu.vibrantItemContentRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-menu-vibrant-item-state-layer-color",
+                colorRoleVariable(menu.vibrantItemStateLayerRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-menu-vibrant-selected-item-container-color",
+                colorRoleVariable(menu.vibrantSelectedItemContainerRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-menu-vibrant-selected-item-content-color",
+                colorRoleVariable(menu.vibrantSelectedItemContentRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-menu-vibrant-interaction-icon-color",
+                colorRoleVariable(menu.vibrantInteractionIconRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-navigation-bar-selected-label-color",
+                colorRoleVariable(navigationBar.selectedLabelRole())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-navigation-bar-state-layer-color",
+                colorRoleVariable(navigationBar.stateLayerRole())
+        );
+    }
+
+    /// Appends one CSS declaration to the destination buffer.
+    private static void appendDeclaration(StringBuilder builder, String name, String value) {
+        builder.append(name).append(": ").append(value).append("; ");
+    }
+
+    /// Removes trailing whitespace appended by one compiler section without touching earlier buffer content.
+    private static void stripTrailingWhitespace(StringBuilder builder, int start) {
+        int end = builder.length();
+        while (end > start && Character.isWhitespace(builder.charAt(end - 1))) {
+            end--;
+        }
+        builder.setLength(end);
     }
 
     /// Returns the generated Material CSS variable for a MonetFX color role.

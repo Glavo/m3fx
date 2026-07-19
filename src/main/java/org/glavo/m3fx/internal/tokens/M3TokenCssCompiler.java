@@ -32,25 +32,39 @@ public final class M3TokenCssCompiler {
     /// @return inline JavaFX CSS declarations for all supported color roles
     /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3ColorTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
-        for (ColorRole role : tokens.roles()) {
-            String color = toRgb(tokens.get(role));
-            append(builder, role.getVariableName(MONET_COLOR_PREFIX), color);
-            append(builder, role.getVariableName(MATERIAL_COLOR_PREFIX), color);
-        }
+        appendStyleDeclarations(builder, tokens);
         return builder.toString().trim();
     }
 
-    /// Converts a color into a JavaFX CSS rgb value.
+    /// Appends color-token declarations to an existing CSS buffer.
     ///
-    /// @param color the JavaFX color to convert
-    /// @return a JavaFX CSS `rgb(r,g,b)` color value
-    private static String toRgb(Color color) {
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the color token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3ColorTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
+        for (ColorRole role : tokens.roles()) {
+            Color color = tokens.get(role);
+            appendColor(builder, role.getVariableName(MONET_COLOR_PREFIX), color);
+            appendColor(builder, role.getVariableName(MATERIAL_COLOR_PREFIX), color);
+        }
+    }
+
+    /// Appends one color declaration as a JavaFX CSS `rgb(r,g,b)` value.
+    private static void appendColor(StringBuilder builder, String name, Color color) {
         int red = (int) Math.round(color.getRed() * 255.0);
         int green = (int) Math.round(color.getGreen() * 255.0);
         int blue = (int) Math.round(color.getBlue() * 255.0);
-        return "rgb(" + red + "," + green + "," + blue + ")";
+        builder.append(name)
+                .append(": rgb(")
+                .append(red)
+                .append(',')
+                .append(green)
+                .append(',')
+                .append(blue)
+                .append("); ");
     }
 
     /// Converts typography tokens into inline JavaFX CSS declarations.
@@ -59,8 +73,19 @@ public final class M3TokenCssCompiler {
     /// @return inline JavaFX CSS declarations for every Material type scale
     /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3TypographyTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendStyleDeclarations(builder, tokens);
+        return builder.toString().trim();
+    }
+
+    /// Appends typography-token declarations to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the typography token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3TypographyTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         append(builder, "display-large", tokens.displayLarge());
         append(builder, "display-medium", tokens.displayMedium());
         append(builder, "display-small", tokens.displaySmall());
@@ -76,7 +101,6 @@ public final class M3TokenCssCompiler {
         append(builder, "body-large", tokens.bodyLarge());
         append(builder, "body-medium", tokens.bodyMedium());
         append(builder, "body-small", tokens.bodySmall());
-        return builder.toString().trim();
     }
 
     /// Converts typography tokens into JavaFX CSS rules for M3FX text controls.
@@ -85,8 +109,19 @@ public final class M3TokenCssCompiler {
     /// @return JavaFX CSS rules for the M3FX type-scale style classes
     /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3TypographyTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendControlStyleRules(builder, tokens);
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends typography selector rules to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the typography token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendControlStyleRules(StringBuilder builder, M3TypographyTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         appendRule(builder, ".m3-display-large-text", tokens.displayLarge());
         appendRule(builder, ".m3-display-medium-text", tokens.displayMedium());
         appendRule(builder, ".m3-display-small-text", tokens.displaySmall());
@@ -102,7 +137,6 @@ public final class M3TokenCssCompiler {
         appendRule(builder, ".m3-body-large-text", tokens.bodyLarge());
         appendRule(builder, ".m3-body-medium-text", tokens.bodyMedium());
         appendRule(builder, ".m3-body-small-text", tokens.bodySmall());
-        return builder.toString().stripTrailing();
     }
 
     /// Appends declarations for a typography token.
@@ -133,14 +167,14 @@ public final class M3TokenCssCompiler {
         builder.append("    ").append(name).append(": ").append(value).append(";\n");
     }
 
-    /// Converts shape tokens into inline JavaFX CSS declarations.
+    /// Appends shape-token declarations to an existing CSS buffer.
     ///
-    /// @param tokens the shape token set to compile
-    /// @return inline JavaFX CSS declarations for this shape token set
-    /// @throws NullPointerException if `tokens` is `null`
-    public static String styleDeclarations(M3ShapeTokens tokens) {
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the shape token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3ShapeTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        StringBuilder builder = new StringBuilder();
         append(builder, "-m3-shape-corner-none", pixels(tokens.none()));
         append(builder, "-m3-shape-corner-extra-small", pixels(tokens.extraSmall()));
         append(builder, "-m3-shape-corner-small", pixels(tokens.small()));
@@ -151,24 +185,22 @@ public final class M3TokenCssCompiler {
         append(builder, "-m3-shape-corner-extra-large-increased", pixels(tokens.extraLargeIncreased()));
         append(builder, "-m3-shape-corner-extra-extra-large", pixels(tokens.extraExtraLarge()));
         append(builder, "-m3-shape-corner-full", pixels(tokens.full()));
-        return builder.toString().trim();
     }
 
-    /// Converts elevation tokens into inline JavaFX CSS declarations.
+    /// Appends elevation-token declarations to an existing CSS buffer.
     ///
-    /// @param tokens the elevation token set to compile
-    /// @return inline JavaFX CSS declarations for these elevation tokens
-    /// @throws NullPointerException if `tokens` is `null`
-    public static String styleDeclarations(M3ElevationTokens tokens) {
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the elevation token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3ElevationTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        StringBuilder builder = new StringBuilder();
         append(builder, "-m3-elevation-level0", pixels(tokens.level0()));
         append(builder, "-m3-elevation-level1", pixels(tokens.level1()));
         append(builder, "-m3-elevation-level2", pixels(tokens.level2()));
         append(builder, "-m3-elevation-level3", pixels(tokens.level3()));
         append(builder, "-m3-elevation-level4", pixels(tokens.level4()));
         append(builder, "-m3-elevation-level5", pixels(tokens.level5()));
-        return builder.toString().trim();
     }
 
     /// Converts elevation tokens into JavaFX CSS rules for M3FX controls.
@@ -177,8 +209,19 @@ public final class M3TokenCssCompiler {
     /// @return JavaFX CSS rules for M3FX controls using these elevation tokens
     /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3ElevationTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendControlStyleRules(builder, tokens);
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends elevation selector rules to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the elevation token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendControlStyleRules(StringBuilder builder, M3ElevationTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         appendShadowRule(builder, ".m3-elevated-button", tokens.level3(), tokens.level1());
         appendShadowRule(builder, ".m3-elevated-button:hover", tokens.level4(), tokens.level2());
         appendShadowRule(builder, ".m3-elevated-button:focus-visible, .m3-elevated-button:armed, .m3-elevated-button:pressed", tokens.level3(), tokens.level1());
@@ -217,7 +260,6 @@ public final class M3TokenCssCompiler {
         appendShadowRule(builder, ".m3-top-app-bar:scrolled-under", tokens.level2(), Math.max(tokens.level1(), tokens.level2() - tokens.level1()));
         appendShadowRule(builder, ".m3-toolbar-floating", tokens.level3(), Math.max(tokens.level1(), tokens.level3() - tokens.level2()));
         appendShadowRule(builder, ".m3-dialog-pane, .m3-snackbar-container", tokens.level3(), Math.max(tokens.level1(), tokens.level3() - tokens.level2()));
-        return builder.toString().stripTrailing();
     }
 
     /// Appends an effect reset CSS rule.
@@ -242,8 +284,19 @@ public final class M3TokenCssCompiler {
     /// @return inline JavaFX CSS declarations for these motion tokens
     /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3MotionTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendStyleDeclarations(builder, tokens);
+        return builder.toString().trim();
+    }
+
+    /// Appends motion-token declarations to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the motion token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3MotionTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         appendCoarseDurationStyleDeclarations(builder, tokens);
         appendSchemeStyleDeclarations(builder, tokens);
         appendBehaviorStyleDeclarations(builder, tokens);
@@ -263,7 +316,6 @@ public final class M3TokenCssCompiler {
         append(builder, "-m3-motion-duration-extra-long2", tokens.extraLong2() + "ms");
         append(builder, "-m3-motion-duration-extra-long3", tokens.extraLong3() + "ms");
         append(builder, "-m3-motion-duration-extra-long4", tokens.extraLong4() + "ms");
-        return builder.toString().trim();
     }
 
     /// Appends coarse duration alias declarations.
@@ -321,17 +373,29 @@ public final class M3TokenCssCompiler {
     /// @return root-level JavaFX CSS declarations for this state layer token set
     /// @throws NullPointerException if `tokens` is `null`
     public static String styleDeclarations(M3StateLayerTokens tokens) {
+        StringBuilder builder = new StringBuilder();
+        appendStyleDeclarations(builder, tokens);
+        return builder.toString().trim();
+    }
+
+    /// Appends state-layer declarations to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the state-layer token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3StateLayerTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        return "-m3-state-hover-opacity: " + format(tokens.hoverOpacity()) + "; "
-                + "-m3-state-focus-opacity: " + format(tokens.focusOpacity()) + "; "
-                + "-m3-state-pressed-opacity: " + format(tokens.pressedOpacity()) + "; "
-                + "-m3-state-dragged-opacity: " + format(tokens.draggedOpacity()) + "; "
-                + "-m3-state-disabled-container-opacity: " + format(tokens.disabledContainerOpacity()) + "; "
-                + "-m3-state-disabled-content-opacity: " + format(tokens.disabledContentOpacity()) + "; "
-                + "-m3-state-focus-indicator-color: -m3-color-secondary; "
-                + "-m3-state-focus-indicator-thickness: " + pixels(tokens.focusIndicatorThickness()) + "; "
-                + "-m3-state-focus-indicator-outer-offset: " + pixels(tokens.focusIndicatorOuterOffset()) + "; "
-                + "-m3-state-focus-indicator-inner-offset: " + pixels(tokens.focusIndicatorInnerOffset()) + ";";
+        append(builder, "-m3-state-hover-opacity", format(tokens.hoverOpacity()));
+        append(builder, "-m3-state-focus-opacity", format(tokens.focusOpacity()));
+        append(builder, "-m3-state-pressed-opacity", format(tokens.pressedOpacity()));
+        append(builder, "-m3-state-dragged-opacity", format(tokens.draggedOpacity()));
+        append(builder, "-m3-state-disabled-container-opacity", format(tokens.disabledContainerOpacity()));
+        append(builder, "-m3-state-disabled-content-opacity", format(tokens.disabledContentOpacity()));
+        append(builder, "-m3-state-focus-indicator-color", "-m3-color-secondary");
+        append(builder, "-m3-state-focus-indicator-thickness", pixels(tokens.focusIndicatorThickness()));
+        append(builder, "-m3-state-focus-indicator-outer-offset", pixels(tokens.focusIndicatorOuterOffset()));
+        append(builder, "-m3-state-focus-indicator-inner-offset", pixels(tokens.focusIndicatorInnerOffset()));
     }
 
     /// Converts state layer tokens into JavaFX CSS rules for M3FX controls.
@@ -340,13 +404,23 @@ public final class M3TokenCssCompiler {
     /// @return JavaFX CSS rules for controls that render interaction state layers
     /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3StateLayerTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendControlStyleRules(builder, tokens);
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends state-layer selector rules to an existing CSS buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the state-layer token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendControlStyleRules(StringBuilder builder, M3StateLayerTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         appendOpacityRule(builder, hoverStateSelectors(), tokens.hoverOpacity());
         appendOpacityRule(builder, focusStateSelectors(), tokens.focusOpacity());
         appendOpacityRule(builder, pressedStateSelectors(), tokens.pressedOpacity());
         appendOpacityRule(builder, ".m3-card:dragged .m3-state-layer", tokens.draggedOpacity());
-        return builder.toString().stripTrailing();
     }
 
     /// Returns selectors for controls that expose hover state layer feedback.

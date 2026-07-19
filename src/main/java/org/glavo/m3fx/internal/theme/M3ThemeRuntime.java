@@ -66,6 +66,9 @@ public final class M3ThemeRuntime {
     /// Opaque scene property key for the active scene-root theme installation.
     private static final Object SCENE_THEME_INSTALLATION_KEY = new Object();
 
+    /// Initial buffer size for a generated theme stylesheet, chosen to avoid most growth without retaining memory.
+    private static final int THEME_STYLESHEET_INITIAL_CAPACITY = 64 * 1024;
+
     /// Generated stylesheet URLs keyed by immutable theme values.
     private static final Map<M3Theme, String> GENERATED_THEME_STYLESHEETS =
             Collections.synchronizedMap(new WeakHashMap<>());
@@ -443,10 +446,12 @@ public final class M3ThemeRuntime {
 
     /// Creates the complete generated stylesheet for a theme.
     private static String themeStylesheet(M3Theme theme) {
-        return "." + ROOT_STYLE_CLASS + " { "
-                + M3ThemeCssCompiler.rootStyleDeclarations(theme)
-                + " }\n\n"
-                + M3ThemeCssCompiler.controlStyleRules(theme);
+        StringBuilder builder = new StringBuilder(THEME_STYLESHEET_INITIAL_CAPACITY);
+        builder.append('.').append(ROOT_STYLE_CLASS).append(" { ");
+        M3ThemeCssCompiler.appendRootStyleDeclarations(builder, theme.tokens());
+        builder.append(" }\n\n");
+        M3ThemeCssCompiler.appendControlStyleRules(builder, theme.tokens());
+        return builder.toString();
     }
 
     /// Computes the SHA-256 digest for generated stylesheet content.

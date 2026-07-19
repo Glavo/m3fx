@@ -22,8 +22,22 @@ public final class M3ComponentTokenCssCompiler {
     /// @param tokens the component token set to compile
     /// @return inline JavaFX CSS declarations for all component tokens
     public static String styleDeclarations(M3ComponentTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendStyleDeclarations(builder, tokens);
+        return builder.toString().trim();
+    }
+
+    /// Appends component-token declarations to an existing CSS buffer.
+    ///
+    /// Existing buffer content is preserved. The appended section may end in whitespace so that another token
+    /// compiler can continue writing without introducing a separator allocation.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the component token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendStyleDeclarations(StringBuilder builder, M3ComponentTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         append(builder, "button-filled", tokens.filledButton());
         append(builder, "button-tonal", tokens.tonalButton());
         append(builder, "button-outlined", tokens.outlinedButton());
@@ -70,7 +84,6 @@ public final class M3ComponentTokenCssCompiler {
         append(builder, tokens.navigationRail());
         append(builder, tokens.navigationDrawer());
         append(builder, tokens.listItem());
-        return builder.toString().trim();
     }
 
     /// Converts component tokens into JavaFX CSS rules.
@@ -82,8 +95,22 @@ public final class M3ComponentTokenCssCompiler {
     /// @param tokens the component token set to compile
     /// @return JavaFX CSS rules that apply these component tokens to M3FX controls
     public static String controlStyleRules(M3ComponentTokens tokens) {
-        Objects.requireNonNull(tokens, "tokens");
         StringBuilder builder = new StringBuilder();
+        appendControlStyleRules(builder, tokens);
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends component selector rules to an existing CSS buffer.
+    ///
+    /// Existing buffer content is preserved. The appended section may end in whitespace so another rule compiler
+    /// can continue writing directly to the same buffer.
+    ///
+    /// @param builder the destination CSS buffer
+    /// @param tokens  the component token set to compile
+    /// @throws NullPointerException if `builder` or `tokens` is `null`
+    public static void appendControlStyleRules(StringBuilder builder, M3ComponentTokens tokens) {
+        Objects.requireNonNull(builder, "builder");
+        Objects.requireNonNull(tokens, "tokens");
         appendButtonRule(builder, ".m3-filled-button", tokens.filledButton());
         appendButtonRule(builder, ".m3-tonal-button", tokens.tonalButton());
         appendButtonRule(builder, ".m3-outlined-button", tokens.outlinedButton());
@@ -257,7 +284,6 @@ public final class M3ComponentTokenCssCompiler {
                 ".m3-navigation-drawer .m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child",
                 tokens.navigationDrawer()
         );
-        return builder.toString().stripTrailing();
     }
 
     /// Appends button token declarations.
