@@ -13,15 +13,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +28,7 @@ import static org.glavo.m3fx.theme.M3ThemeManager.ROOT_STYLE_CLASS;
 /// Implements the internal M3FX theme installation and rendering backend.
 ///
 /// This runtime is the integration point between a JavaFX application and the Material Design 3 token
-/// system. Installing a theme on a [Scene] adds the M3FX user-agent stylesheet, writes generated token CSS to a
+/// system. Installing a theme on a [Scene] adds the M3FX user-agent stylesheet, exposes generated token CSS through a
 /// scene stylesheet, and applies root style classes such as light or dark brightness and baseline or expressive
 /// profile. Installing on a [Parent] creates a branch-local theme scope by combining root declarations with a
 /// generated parent stylesheet. JavaFX gives that stylesheet precedence over scene stylesheets for the parent and
@@ -53,13 +45,6 @@ public final class M3ThemeRuntime {
     private static final String LOCAL_THEME_INSTALLATION_PROPERTY_KEY =
             M3ThemeRuntime.class.getName() + ".localThemeInstallation";
 
-    /// The process-local directory used for generated theme stylesheets.
-    private static final Path THEME_STYLESHEET_DIRECTORY = Path.of(
-            System.getProperty("java.io.tmpdir"),
-            "m3fx-theme-stylesheets",
-            Long.toString(ProcessHandle.current().pid())
-    );
-
     /// Opaque scene property key for the generated theme stylesheet URL.
     private static final Object THEME_STYLESHEET_KEY = new Object();
 
@@ -70,17 +55,7 @@ public final class M3ThemeRuntime {
     private static final int THEME_STYLESHEET_INITIAL_CAPACITY = 64 * 1024;
 
     /// Generated stylesheet URLs keyed by immutable theme values.
-    private static final Map<M3Theme, String> GENERATED_THEME_STYLESHEETS =
-            Collections.synchronizedMap(new WeakHashMap<>());
-
-    static {
-        Thread cleanupThread = new Thread(
-                M3ThemeRuntime::deleteGeneratedThemeStylesheets,
-                "M3FX theme stylesheet cleanup"
-        );
-        cleanupThread.setContextClassLoader(null);
-        Runtime.getRuntime().addShutdownHook(cleanupThread);
-    }
+    private static final Map<M3Theme, String> GENERATED_THEME_STYLESHEETS = new WeakHashMap<>();
 
     /// Prevents utility class instantiation.
     private M3ThemeRuntime() {
@@ -169,8 +144,7 @@ public final class M3ThemeRuntime {
     ///
     /// @param scene the scene whose stylesheet list should be updated
     /// @param theme the theme whose token stylesheet should be installed
-    /// @throws NullPointerException  if `scene` or `theme` is `null`
-    /// @throws IllegalStateException if the generated stylesheet cannot be written
+    /// @throws NullPointerException if `scene` or `theme` is `null`
     public static void installThemeStylesheet(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -389,15 +363,14 @@ public final class M3ThemeRuntime {
         return M3Stylesheets.baseStylesheet();
     }
 
-    /// Returns a file URL for a generated theme stylesheet.
+    /// Returns a self-contained URL for a generated theme stylesheet.
     ///
-    /// Equivalent immutable theme values share one process-local generated file while that cache entry remains
-    /// reachable.
+    /// Equivalent immutable theme values share one URL while that cache entry remains reachable. The URL does not
+    /// depend on a temporary file and remains valid for as long as its external-form string is retained.
     ///
     /// @param theme the theme to compile
-    /// @return the file URL of the generated stylesheet
-    /// @throws NullPointerException  if `theme` is `null`
-    /// @throws IllegalStateException if the stylesheet directory or file cannot be created
+    /// @return the self-contained URL of the generated stylesheet
+    /// @throws NullPointerException if `theme` is `null`
     public static String themeStylesheetUrl(M3Theme theme) {
         Objects.requireNonNull(theme, "theme");
 
@@ -407,40 +380,9 @@ public final class M3ThemeRuntime {
                 return cachedUrl;
             }
 
-            String stylesheet = themeStylesheet(theme);
-            String digest = sha256(stylesheet);
-            Path file = THEME_STYLESHEET_DIRECTORY.resolve("m3fx-theme-" + digest + ".css");
-
-            try {
-                Files.createDirectories(THEME_STYLESHEET_DIRECTORY);
-                if (!Files.exists(file)) {
-                    Files.writeString(file, stylesheet, StandardCharsets.UTF_8);
-                }
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to write generated M3FX theme stylesheet", e);
-            }
-
-            String url = file.toUri().toString();
+            String url = M3StylesheetUrls.create(themeStylesheet(theme));
             GENERATED_THEME_STYLESHEETS.put(theme, url);
             return url;
-        }
-    }
-
-    /// Deletes this process's generated theme stylesheets without retaining one shutdown entry per theme.
-    private static void deleteGeneratedThemeStylesheets() {
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(THEME_STYLESHEET_DIRECTORY)) {
-            for (Path file : files) {
-                try {
-                    Files.deleteIfExists(file);
-                } catch (IOException ignored) {
-                }
-            }
-        } catch (IOException ignored) {
-        }
-
-        try {
-            Files.deleteIfExists(THEME_STYLESHEET_DIRECTORY);
-        } catch (IOException ignored) {
         }
     }
 
@@ -452,22 +394,6 @@ public final class M3ThemeRuntime {
         builder.append("}\n\n");
         M3ThemeCssCompiler.appendControlStyleRules(builder, theme.tokens());
         return builder.toString();
-    }
-
-    /// Computes the SHA-256 digest for generated stylesheet content.
-    private static String sha256(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            StringBuilder builder = new StringBuilder(hash.length * 2);
-            for (byte item : hash) {
-                builder.append(Character.forDigit((item >> 4) & 0x0f, 16));
-                builder.append(Character.forDigit(item & 0x0f, 16));
-            }
-            return builder.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Missing SHA-256 message digest", e);
-        }
     }
 
     /// Moves an existing stylesheet or adds a new stylesheet at the requested index.

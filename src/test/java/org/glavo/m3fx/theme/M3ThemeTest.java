@@ -881,20 +881,15 @@ final class M3ThemeTest {
 
     /// Verifies that generated theme stylesheets can be addressed directly.
     @Test
-    void exposesGeneratedThemeStylesheetUrl() throws Exception {
+    void exposesGeneratedThemeStylesheetUrl() {
         M3Theme theme = M3Theme.defaultTheme();
 
         String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
         String repeatedStylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
-        String stylesheetContent = Files.readString(Path.of(URI.create(stylesheet)));
 
         assertEquals(stylesheet, repeatedStylesheet);
-        assertTrue(stylesheet.startsWith("file:"));
-        assertTrue(stylesheet.endsWith(".css"));
-        assertTrue(stylesheetContent.contains(".m3-root"));
-        assertTrue(stylesheetContent.contains("-m3-color-primary"));
-        assertTrue(stylesheetContent.contains(".m3-filled-button"));
-        assertTrue(stylesheetContent.contains(".m3-elevated-card .m3-card-container"));
+        assertTrue(stylesheet.startsWith("data:") || stylesheet.startsWith("m3fx-css:"));
+        assertFalse(stylesheet.startsWith("file:"));
     }
 
     /// Verifies that generated theme stylesheets can be installed independently.

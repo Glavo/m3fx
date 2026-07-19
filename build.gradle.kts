@@ -455,6 +455,16 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         requireEntry(mainEntries, "module-info.class", "Main JAR")
         requireEntry(mainEntries, "org/glavo/m3fx/controls/M3Button.class", "Main JAR")
         requireEntry(mainEntries, "org/glavo/m3fx/theme/M3Theme.class", "Main JAR")
+        requireEntry(
+            mainEntries,
+            "org/glavo/m3fx/internal/theme/M3StylesheetUrlStreamHandlerProvider.class",
+            "Main JAR"
+        )
+        requireEntry(
+            mainEntries,
+            "META-INF/services/java.net.spi.URLStreamHandlerProvider",
+            "Main JAR"
+        )
         requireEntry(mainEntries, "org/glavo/m3fx/styles/base.css", "Main JAR")
         requireEntry(mainEntries, "org/glavo/m3fx/styles/fallback.css", "Main JAR")
         requireEntry(mainEntries, "org/glavo/m3fx/styles/controls/button.css", "Main JAR")
