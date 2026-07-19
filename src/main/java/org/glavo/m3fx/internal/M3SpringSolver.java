@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Evaluates unit-mass damped springs without allocating per animation pulse.
 @NotNullByDefault
-final class M3SpringSolver {
+public final class M3SpringSolver {
     /// The tolerance used when selecting the critically damped spring equation.
     private static final double CRITICAL_DAMPING_TOLERANCE = 1.0e-6;
 
@@ -30,7 +30,7 @@ final class M3SpringSolver {
     /// @param elapsedSeconds  the non-negative elapsed time in seconds
     /// @param spring          the physical spring parameters
     /// @return the spring value at `elapsedSeconds`
-    static double value(
+    public static double value(
             double start,
             double target,
             double initialVelocity,
@@ -48,7 +48,7 @@ final class M3SpringSolver {
     /// @param elapsedSeconds  the non-negative elapsed time in seconds
     /// @param spring          the physical spring parameters
     /// @return the value velocity at `elapsedSeconds`, in units per second
-    static double velocity(
+    public static double velocity(
             double start,
             double target,
             double initialVelocity,
@@ -100,7 +100,7 @@ final class M3SpringSolver {
     /// @param spring              the physical spring parameters
     /// @return the non-negative estimated duration in seconds, or `NaN` when no finite estimate is available
     /// @throws IllegalArgumentException if `visibilityThreshold` is non-finite or not greater than zero
-    static double estimateDurationSeconds(
+    public static double estimateDurationSeconds(
             double initialDisplacement,
             double initialVelocity,
             double visibilityThreshold,

@@ -66,7 +66,12 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     };
 
     /// The finite expanded-width transition.
-    private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(expansionProgress);
+    private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(
+            expansionProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// Whether destination content is currently using the rail fade-through transition.
     private boolean transitionActive;
@@ -341,9 +346,9 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
 
     /// Applies an expanded-state target, optionally using Material spatial motion.
     private void updateExpandedState(boolean expanded, boolean animate) {
-        expansionAnimation.stop();
         double target = expanded ? 1.0 : 0.0;
         if (!animate || Double.compare(expansionProgress.get(), target) == 0) {
+            expansionAnimation.stop();
             clearTransitionVisuals();
             expansionProgress.set(target);
             applyItemLayout(expanded ? M3NavigationItemLayout.HORIZONTAL : M3NavigationItemLayout.VERTICAL);

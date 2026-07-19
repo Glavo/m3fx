@@ -63,7 +63,12 @@ final class M3CarouselTrack extends HBox {
     };
 
     /// Reusable focal-width transition.
-    private final M3DoubleTransition selectionTransition = new M3DoubleTransition(selectionProgress);
+    private final M3DoubleTransition selectionTransition = new M3DoubleTransition(
+            selectionProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// Styleable Material corner radius applied to item masks.
     private final StyleableDoubleProperty itemShape =

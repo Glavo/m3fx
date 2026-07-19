@@ -74,13 +74,23 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     private final DoubleProperty thumbPosition = new SimpleDoubleProperty(this, "thumbPosition");
 
     /// The thumb position animation.
-    private final M3DoubleTransition selectionAnimation = new M3DoubleTransition(thumbPosition);
+    private final M3DoubleTransition selectionAnimation = new M3DoubleTransition(
+            thumbPosition,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The animated fraction of the pressed handle size.
     private final DoubleProperty pressedProgress = new SimpleDoubleProperty(this, "pressedProgress");
 
     /// The pressed handle size animation.
-    private final M3DoubleTransition pressedAnimation = new M3DoubleTransition(pressedProgress);
+    private final M3DoubleTransition pressedAnimation = new M3DoubleTransition(
+            pressedProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// Applies animated thumb position changes directly to the internal nodes.
     private final InvalidationListener thumbPositionListener = observable -> layoutThumb();
@@ -276,7 +286,6 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Animates the thumb to the selected or unselected position.
     private void animateThumbPosition(boolean selected) {
-        selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         selectionAnimation.configure(spec, selected ? 1.0 : 0.0);
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);

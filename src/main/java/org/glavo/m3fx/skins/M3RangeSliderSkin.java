@@ -103,10 +103,20 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
             new SimpleDoubleProperty(this, "displayedHighPosition");
 
     /// The reusable lower-handle transition.
-    private final M3DoubleTransition lowValueAnimation = new M3DoubleTransition(displayedLowPosition);
+    private final M3DoubleTransition lowValueAnimation = new M3DoubleTransition(
+            displayedLowPosition,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The reusable upper-handle transition.
-    private final M3DoubleTransition highValueAnimation = new M3DoubleTransition(displayedHighPosition);
+    private final M3DoubleTransition highValueAnimation = new M3DoubleTransition(
+            displayedHighPosition,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The handle currently owned by a pointer drag.
     private Thumb activeThumb = Thumb.NONE;

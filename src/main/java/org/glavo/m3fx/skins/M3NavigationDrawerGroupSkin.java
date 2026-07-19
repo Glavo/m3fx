@@ -60,7 +60,12 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     };
 
     /// The expansion and collapse animation for child rows.
-    private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(expansionProgress);
+    private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(
+            expansionProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// Whether the currently configured expansion animation targets the expanded state.
     private boolean expansionAnimationTargetExpanded;
@@ -255,13 +260,13 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// Applies the expanded state, using animation when the group is attached to a scene.
     private void setExpandedState(boolean expanded, boolean animate) {
-        expansionAnimation.stop();
         if (expanded) {
             mountChildItems();
         }
 
         double targetProgress = expanded ? 1.0 : 0.0;
         if (!animate || Double.compare(expansionProgress.get(), targetProgress) == 0) {
+            expansionAnimation.stop();
             expansionProgress.set(targetProgress);
             if (!expanded) {
                 unmountChildItems();

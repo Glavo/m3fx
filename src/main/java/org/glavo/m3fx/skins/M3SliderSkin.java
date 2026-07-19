@@ -105,7 +105,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private final DoubleProperty displayedPosition = new SimpleDoubleProperty(this, "displayedPosition");
 
     /// The displayed value transition animation.
-    private final M3DoubleTransition valueAnimation = new M3DoubleTransition(displayedPosition);
+    private final M3DoubleTransition valueAnimation = new M3DoubleTransition(
+            displayedPosition,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The latest content x-coordinate supplied by the skin layout pass.
     private double layoutX;
@@ -1303,7 +1308,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return;
         }
 
-        valueAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(slider);
         valueAnimation.configure(spec, targetPosition);
         M3Animation.playFromStart(slider, valueAnimation);

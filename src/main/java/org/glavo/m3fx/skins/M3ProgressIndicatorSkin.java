@@ -100,7 +100,12 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
     /// The determinate progress transition.
-    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
+    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(
+            displayedProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The animated active arc start fraction.
     private double indeterminateStartFraction;
@@ -375,8 +380,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
-        determinateAnimation.stop();
         if (!animate || reducedMotion) {
+            determinateAnimation.stop();
             displayedProgress.set(targetProgress);
             return;
         }

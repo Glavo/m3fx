@@ -38,11 +38,21 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// The reusable selected-item horizontal scroll transition.
     private final M3DoubleTransition horizontalScrollAnimation =
-            new M3DoubleTransition(viewport.hvalueProperty());
+            new M3DoubleTransition(
+                    viewport.hvalueProperty(),
+                    M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+                    0.0,
+                    1.0
+            );
 
     /// The reusable selected-item vertical scroll transition.
     private final M3DoubleTransition verticalScrollAnimation =
-            new M3DoubleTransition(viewport.vvalueProperty());
+            new M3DoubleTransition(
+                    viewport.vvalueProperty(),
+                    M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+                    0.0,
+                    1.0
+            );
 
     /// Refreshes keyline geometry and active scrolling when inherited reduced-motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver;
@@ -365,9 +375,15 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// Animates or directly sets the viewport value for the active scrolling axis.
     private void animateOrSetScrollValue(double targetValue, boolean animated) {
-        stopScrollAnimation();
         boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
+        M3DoubleTransition animation = vertical ? verticalScrollAnimation : horizontalScrollAnimation;
+        if (vertical) {
+            horizontalScrollAnimation.stop();
+        } else {
+            verticalScrollAnimation.stop();
+        }
         if (!animated || getSkinnable().getScene() == null) {
+            animation.stop();
             settingScrollValue = true;
             try {
                 if (vertical) {
@@ -382,7 +398,6 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
 
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
-        M3DoubleTransition animation = vertical ? verticalScrollAnimation : horizontalScrollAnimation;
         animation.configure(spec, targetValue);
         M3Animation.playFromStart(getSkinnable(), animation);
     }

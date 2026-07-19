@@ -99,7 +99,12 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// @param control the top app bar controlled by this skin
     public M3TopAppBarSkin(M3TopAppBar control) {
         super(control);
-        collapseAnimation = new M3DoubleTransition(control.collapseProgressProperty());
+        collapseAnimation = new M3DoubleTransition(
+                control.collapseProgressProperty(),
+                M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+                0.0,
+                1.0
+        );
 
         navigationSlot.setManaged(false);
         titleLabel.setManaged(false);
@@ -382,8 +387,8 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// Starts or settles the flexible collapse transition for the current scroll-under state.
     private void updateCollapseTarget(boolean animate) {
         M3TopAppBar control = getSkinnable();
-        collapseAnimation.stop();
         if (control.collapseProgressProperty().isBound()) {
+            collapseAnimation.stop();
             updateTransitionVisuals();
             return;
         }
@@ -393,6 +398,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
                 || variant == M3TopAppBarVariant.LARGE_FLEXIBLE;
         double target = flexible && control.isScrolledUnder() ? 1.0 : 0.0;
         if (!animate || !isVisibleInWindow() || Double.compare(control.getCollapseProgress(), target) == 0) {
+            collapseAnimation.stop();
             control.setCollapseProgress(target);
             updateTransitionVisuals();
             return;

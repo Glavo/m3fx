@@ -115,7 +115,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
     /// The determinate progress transition.
-    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
+    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(
+            displayedProgress,
+            M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD,
+            0.0,
+            1.0
+    );
 
     /// The first indeterminate segment start fraction.
     private double firstIndeterminateStart;
@@ -733,8 +738,8 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
-        determinateAnimation.stop();
         if (!animate || reducedMotion) {
+            determinateAnimation.stop();
             displayedProgress.set(targetProgress);
             return;
         }

@@ -45,7 +45,10 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private final SVGPath arrow = new SVGPath();
 
     /// The rotation animation played when expanded state changes.
-    private final M3DoubleTransition rotationAnimation = new M3DoubleTransition(arrow.rotateProperty());
+    private final M3DoubleTransition rotationAnimation = new M3DoubleTransition(
+            arrow.rotateProperty(),
+            M3DoubleTransition.ANGLE_VISIBILITY_THRESHOLD
+    );
 
     /// Applies expanded-state changes to the arrow rotation.
     private final ChangeListener<Boolean> expandedListener =
@@ -171,7 +174,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
 
     /// Animates the arrow rotation to match the expanded state.
     private void animateExpandedState(boolean expanded) {
-        rotationAnimation.stop();
         M3MotionSpec spec = getSkinnable().isVertical()
                 ? VERTICAL_ROTATION_SPEC
                 : M3Animation.fastSpatial(getSkinnable());

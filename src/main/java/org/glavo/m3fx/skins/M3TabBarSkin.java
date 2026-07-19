@@ -95,7 +95,12 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
         };
 
         /// The reusable selection-reveal animation.
-        private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(scrollOffset);
+        private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(
+                scrollOffset,
+                M3DoubleTransition.PIXEL_VISIBILITY_THRESHOLD,
+                0.0,
+                Double.POSITIVE_INFINITY
+        );
 
         /// Reacts to tab selection by revealing the selected item.
         private final ChangeListener<@Nullable M3Tab> selectedTabListener =
@@ -415,8 +420,8 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
             if (Math.abs(target - scrollOffset.get()) <= POSITION_EPSILON) {
                 return;
             }
-            scrollAnimation.stop();
             if (!animated || control.getScene() == null) {
+                scrollAnimation.stop();
                 scrollOffset.set(target);
                 return;
             }
