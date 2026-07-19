@@ -18,7 +18,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3SpringSolver;
+import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,14 +56,8 @@ public final class M3LayoutTransition {
     private static final IdentityKey ACTIVE_TRANSITION_KEY =
             new IdentityKey(M3LayoutTransition.class.getName() + ".activeTransition");
 
-    /// The fraction interval used to estimate velocity for duration-based motion.
-    private static final double VELOCITY_SAMPLE_FRACTION = 1.0e-4;
-
     /// The position delta below which a physical spring is visually settled, in logical pixels.
     private static final double POSITION_VISIBILITY_THRESHOLD = 5.0e-1;
-
-    /// The shortest non-zero spring run accepted by a JavaFX transition, in seconds.
-    private static final double MIN_SPRING_DURATION_SECONDS = 1.0e-3;
 
     /// The parent whose direct children are observed.
     private final Parent parent;
@@ -400,23 +394,11 @@ public final class M3LayoutTransition {
         /// Whether coordinate changes should animate rather than establish an initial baseline.
         private boolean armed;
 
-        /// The horizontal translation at the beginning of the current shared run.
-        private double startX;
+        /// The reusable horizontal translation channel.
+        private final M3ScalarChannel horizontal = new M3ScalarChannel(POSITION_VISIBILITY_THRESHOLD);
 
-        /// The vertical translation at the beginning of the current shared run.
-        private double startY;
-
-        /// The retained horizontal velocity at the beginning of the current shared run.
-        private double initialVelocityX;
-
-        /// The retained vertical velocity at the beginning of the current shared run.
-        private double initialVelocityY;
-
-        /// The time at which the horizontal channel settles, in seconds.
-        private double durationX;
-
-        /// The time at which the vertical channel settles, in seconds.
-        private double durationY;
+        /// The reusable vertical translation channel.
+        private final M3ScalarChannel vertical = new M3ScalarChannel(POSITION_VISIBILITY_THRESHOLD);
 
         /// Installs state for one child.
         private ChildState(Node node, boolean armed) {
@@ -439,60 +421,36 @@ public final class M3LayoutTransition {
     /// Shared finite animation that advances every child translation without per-node pulse receivers.
     @NotNullByDefault
     private final class LayoutAnimation extends M3FiniteTransition {
-        /// The specification configured for the current or most recent run.
-        private @Nullable M3MotionSpec currentSpec;
-
-        /// The physical parameters used by the current run, or `null` for duration-based interpolation.
-        private @Nullable M3SpringParameters springParameters;
-
         /// The duration of the longest child channel in the current run, in seconds.
         private double runDurationSeconds;
 
         /// Reconfigures the shared run from every child's current rendered position.
         private void retarget(M3MotionSpec spec) {
             M3MotionSpec checkedSpec = Objects.requireNonNull(spec, "spec");
-            double elapsedSeconds = Math.max(0.0, getCurrentTime().toSeconds());
-            @Nullable M3MotionSpec previousSpec = currentSpec;
-            @Nullable M3SpringParameters previousSpring = springParameters;
+            double elapsedSeconds = getStatus() == Animation.Status.RUNNING
+                    ? Math.max(0.0, getCurrentTime().toSeconds())
+                    : Double.POSITIVE_INFINITY;
 
-            for (ChildState state : childStates) {
-                state.initialVelocityX = currentVelocity(
-                        previousSpec,
-                        previousSpring,
-                        state.startX,
-                        state.initialVelocityX,
-                        state.durationX,
-                        elapsedSeconds
-                );
-                state.initialVelocityY = currentVelocity(
-                        previousSpec,
-                        previousSpring,
-                        state.startY,
-                        state.initialVelocityY,
-                        state.durationY,
-                        elapsedSeconds
-                );
+            //noinspection ForLoopReplaceableByForEach
+            for (int index = 0; index < childStates.size(); index++) {
+                ChildState state = childStates.get(index);
+                state.horizontal.configure(state.translation.getX(), 0.0, checkedSpec, elapsedSeconds);
+                state.vertical.configure(state.translation.getY(), 0.0, checkedSpec, elapsedSeconds);
             }
 
             stop();
-            currentSpec = checkedSpec;
-            springParameters = checkedSpec.springParameters();
             runDurationSeconds = 0.0;
 
-            for (ChildState state : childStates) {
-                state.startX = state.translation.getX();
-                state.startY = state.translation.getY();
-                state.durationX = channelDuration(
-                        state.startX,
-                        state.initialVelocityX,
-                        checkedSpec
+            //noinspection ForLoopReplaceableByForEach
+            for (int index = 0; index < childStates.size(); index++) {
+                ChildState state = childStates.get(index);
+                runDurationSeconds = Math.max(
+                        runDurationSeconds,
+                        Math.max(
+                                state.horizontal.getDurationSeconds(),
+                                state.vertical.getDurationSeconds()
+                        )
                 );
-                state.durationY = channelDuration(
-                        state.startY,
-                        state.initialVelocityY,
-                        checkedSpec
-                );
-                runDurationSeconds = Math.max(runDurationSeconds, Math.max(state.durationX, state.durationY));
             }
 
             if (runDurationSeconds <= 0.0) {
@@ -507,104 +465,14 @@ public final class M3LayoutTransition {
         /// Applies the current shared fraction to every child channel.
         @Override
         protected void interpolate(double fraction) {
-            @Nullable M3MotionSpec spec = currentSpec;
-            if (spec == null) {
-                return;
-            }
             double elapsedSeconds = Math.max(0.0, fraction) * runDurationSeconds;
             // Avoid allocating an ArrayList iterator on every animation pulse.
             //noinspection ForLoopReplaceableByForEach
             for (int index = 0; index < childStates.size(); index++) {
                 ChildState state = childStates.get(index);
-                state.translation.setX(channelValue(
-                        spec,
-                        state.startX,
-                        state.initialVelocityX,
-                        state.durationX,
-                        elapsedSeconds,
-                        fraction
-                ));
-                state.translation.setY(channelValue(
-                        spec,
-                        state.startY,
-                        state.initialVelocityY,
-                        state.durationY,
-                        elapsedSeconds,
-                        fraction
-                ));
+                state.translation.setX(state.horizontal.valueAt(elapsedSeconds));
+                state.translation.setY(state.vertical.valueAt(elapsedSeconds));
             }
-        }
-
-        /// Returns one channel's target-zero value at the supplied shared time.
-        private double channelValue(
-                M3MotionSpec spec,
-                double start,
-                double initialVelocity,
-                double durationSeconds,
-                double elapsedSeconds,
-                double fraction
-        ) {
-            if (durationSeconds <= 0.0 || fraction >= 1.0 || elapsedSeconds >= durationSeconds) {
-                return 0.0;
-            }
-            @Nullable M3SpringParameters spring = spec.springParameters();
-            if (spring == null) {
-                return spec.interpolator().interpolate(start, 0.0, fraction);
-            }
-            return M3SpringSolver.value(start, 0.0, initialVelocity, elapsedSeconds, spring);
-        }
-
-        /// Returns one channel's retained velocity from the preceding run.
-        private double currentVelocity(
-                @Nullable M3MotionSpec spec,
-                @Nullable M3SpringParameters spring,
-                double start,
-                double initialVelocity,
-                double durationSeconds,
-                double elapsedSeconds
-        ) {
-            if (spec == null
-                    || getStatus() == Animation.Status.STOPPED
-                    || durationSeconds <= 0.0
-                    || elapsedSeconds >= durationSeconds) {
-                return 0.0;
-            }
-            if (spring != null) {
-                return M3SpringSolver.velocity(start, 0.0, initialVelocity, elapsedSeconds, spring);
-            }
-
-            double fraction = elapsedSeconds / durationSeconds;
-            double lowerFraction = Math.max(0.0, fraction - VELOCITY_SAMPLE_FRACTION);
-            double upperFraction = Math.min(1.0, fraction + VELOCITY_SAMPLE_FRACTION);
-            if (Double.compare(lowerFraction, upperFraction) == 0) {
-                return 0.0;
-            }
-            double lowerValue = spec.interpolator().interpolate(start, 0.0, lowerFraction);
-            double upperValue = spec.interpolator().interpolate(start, 0.0, upperFraction);
-            return (upperValue - lowerValue) / ((upperFraction - lowerFraction) * durationSeconds);
-        }
-
-        /// Computes the finite settling duration of one target-zero child channel.
-        private double channelDuration(double start, double initialVelocity, M3MotionSpec spec) {
-            if (Double.compare(start, 0.0) == 0 && Double.compare(initialVelocity, 0.0) == 0) {
-                return 0.0;
-            }
-            @Nullable M3SpringParameters spring = spec.springParameters();
-            if (spring == null) {
-                return spec.duration().toSeconds();
-            }
-            double durationSeconds = M3SpringSolver.estimateDurationSeconds(
-                    start,
-                    initialVelocity,
-                    POSITION_VISIBILITY_THRESHOLD,
-                    spring
-            );
-            if (!Double.isFinite(durationSeconds)) {
-                return spec.duration().toSeconds();
-            }
-            return durationSeconds <= 0.0
-                    ? 0.0
-                    : Math.max(MIN_SPRING_DURATION_SECONDS, durationSeconds);
         }
     }
 }

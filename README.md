@@ -193,6 +193,21 @@ M3DoubleAnimatable position = new M3DoubleAnimatable(
 position.animateTo(240.0);
 ```
 
+`M3StateTransition<S>` coordinates several writable double properties from one typed state while using one shared
+pulse receiver. The current state changes only after every channel settles; the target state can be changed or
+bound while a run is active:
+
+```java
+M3StateTransition<Boolean> expansion = new M3StateTransition<>(card, false);
+expansion.addDouble(card.translateXProperty(), expanded -> expanded ? 240.0 : 0.0, 0.5);
+expansion.addDouble(card.scaleXProperty(), expanded -> expanded ? 1.08 : 1.0, 0.0005);
+expansion.addDouble(card.scaleYProperty(), expanded -> expanded ? 1.08 : 1.0, 0.0005);
+expansion.setTargetState(true);
+```
+
+State mappings are evaluated only when a target changes and must return finite values. Registered properties must
+remain writable and must not be independently changed while the transition is running.
+
 `M3AnimatedVisibility` retains one content node without taking ownership of that node's visual properties. Its
 showing target can be reversed while a transition is running, while `stateProperty()` distinguishes `ENTERING`,
 `VISIBLE`, `EXITING`, and `HIDDEN`. Exit keeps the node mounted until opacity, scale, and animated container size
@@ -228,7 +243,7 @@ buttonRow.setAlignment(Pos.CENTER_RIGHT);
 placement.dispose();
 ```
 
-All four APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
+All five APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
 Layout transitions animate placement only; shared elements and general child entry, removal, or remeasurement
 remain separate concerns rather than implicit behavior of every layout pane.
 

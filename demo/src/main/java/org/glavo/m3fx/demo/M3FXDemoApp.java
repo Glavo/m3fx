@@ -40,6 +40,7 @@ import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.animation.M3LayoutTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3AvatarVariant;
 import org.glavo.m3fx.controls.M3AssistChip;
@@ -550,7 +551,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", DemoMaterialDocs.FORMS, this::createFormsPage),
-                new DemoPage("Motion", "Motion", ADDITIONAL_DEMOS_GROUP, "Interruptible value, visibility, and layout transitions", DemoMaterialDocs.MOTION, this::createMotionPage),
+                new DemoPage("Motion", "Motion", ADDITIONAL_DEMOS_GROUP, "Typed state, retained content, and interruptible layout motion", DemoMaterialDocs.MOTION, this::createMotionPage),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", DemoMaterialDocs.TYPOGRAPHY, this::createTypographyPage),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, this::createIconsPage),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", DemoMaterialDocs.AVATARS, this::createAvatarsPage),
@@ -3312,6 +3313,63 @@ public final class M3FXDemoApp extends Application {
         valueActions.setAlignment(Pos.CENTER_LEFT);
         VBox valueExample = new VBox(12.0, valueTrack, valueActions);
 
+        Label coordinatedHeadline = new Label("One state, four visual channels");
+        coordinatedHeadline.getStyleClass().add("demo-group-title");
+        Label coordinatedSupporting = new Label("Position, scale, and opacity share one interruptible transition.");
+        M3Surface coordinatedSurface = new M3Surface();
+        coordinatedSurface.setPrefSize(220.0, 88.0);
+        coordinatedSurface.setMaxSize(220.0, 88.0);
+        coordinatedSurface.getContent().add(new VBox(6.0, coordinatedHeadline, coordinatedSupporting));
+
+        StackPane coordinatedTrack = new StackPane(coordinatedSurface);
+        coordinatedTrack.getStyleClass().add("demo-flow");
+        coordinatedTrack.setAlignment(Pos.CENTER_LEFT);
+        coordinatedTrack.setMinHeight(128.0);
+        coordinatedTrack.setPrefWidth(560.0);
+        coordinatedTrack.setMaxWidth(560.0);
+
+        M3StateTransition<Boolean> stateTransition = new M3StateTransition<>(coordinatedSurface, false);
+        stateTransition.addDouble(
+                coordinatedSurface.translateXProperty(),
+                expanded -> expanded ? 300.0 : 0.0,
+                0.5
+        );
+        stateTransition.addDouble(
+                coordinatedSurface.scaleXProperty(),
+                expanded -> expanded ? 1.08 : 1.0,
+                5.0e-4
+        );
+        stateTransition.addDouble(
+                coordinatedSurface.scaleYProperty(),
+                expanded -> expanded ? 1.08 : 1.0,
+                5.0e-4
+        );
+        stateTransition.addDouble(
+                coordinatedSurface.opacityProperty(),
+                expanded -> expanded ? 1.0 : 0.72,
+                0.01
+        );
+
+        Label stateLabel = new Label("Current: compact / target: compact");
+        Runnable updateStateLabel = () -> stateLabel.setText(
+                "Current: " + (stateTransition.getCurrentState() ? "expanded" : "compact")
+                        + " / target: " + (stateTransition.getTargetState() ? "expanded" : "compact")
+        );
+        stateTransition.currentStateProperty().addListener(
+                (observable, oldState, newState) -> updateStateLabel.run()
+        );
+        stateTransition.targetStateProperty().addListener(
+                (observable, oldState, newState) -> updateStateLabel.run()
+        );
+
+        M3Button changeState = new M3Button("Change state", M3ButtonVariant.FILLED);
+        changeState.setOnAction(event -> stateTransition.setTargetState(!stateTransition.getTargetState()));
+        M3Button finishState = new M3Button("Finish transition", M3ButtonVariant.OUTLINED);
+        finishState.setOnAction(event -> stateTransition.finish());
+        HBox stateActions = new HBox(12.0, changeState, finishState, stateLabel);
+        stateActions.setAlignment(Pos.CENTER_LEFT);
+        VBox stateExample = new VBox(12.0, coordinatedTrack, stateActions);
+
         Label visibilityHeadline = new Label("Content remains mounted until exit completes");
         visibilityHeadline.getStyleClass().add("demo-group-title");
         Label visibilitySupporting = new Label(
@@ -3385,6 +3443,7 @@ public final class M3FXDemoApp extends Application {
 
         return createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
+                createFullWidthShowcaseGroup("Coordinated State Transition", stateExample),
                 createFullWidthShowcaseGroup("Animated Visibility", visibilityExample),
                 createFullWidthShowcaseGroup("Animated Content And Size", contentExample),
                 createFullWidthShowcaseGroup("Existing Layout Container", layoutExample)

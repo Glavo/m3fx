@@ -24,7 +24,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3SpringSolver;
+import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,12 +80,6 @@ public final class M3AnimatedContent extends Region {
 
     /// The visibility threshold used for size spring channels, in logical pixels.
     private static final double SIZE_VISIBILITY_THRESHOLD = 5.0e-1;
-
-    /// The fraction interval used to estimate velocity for duration-based motion.
-    private static final double VELOCITY_SAMPLE_FRACTION = 1.0e-4;
-
-    /// The shortest non-zero spring run accepted by a JavaFX transition, in seconds.
-    private static final double MIN_SPRING_DURATION_SECONDS = 1.0e-3;
 
     /// The private viewport that owns clipping and the two reusable holders.
     private final Pane viewport = new Pane();
@@ -837,10 +831,10 @@ public final class M3AnimatedContent extends Region {
         private final StackPane holder = new StackPane();
 
         /// The holder opacity channel.
-        private final ScalarChannel opacity = new ScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
+        private final M3ScalarChannel opacity = new M3ScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
 
         /// The holder uniform-scale channel.
-        private final ScalarChannel scale = new ScalarChannel(SCALE_VISIBILITY_THRESHOLD);
+        private final M3ScalarChannel scale = new M3ScalarChannel(SCALE_VISIBILITY_THRESHOLD);
 
         /// Creates an empty inactive holder.
         private HolderState() {
@@ -894,10 +888,10 @@ public final class M3AnimatedContent extends Region {
     @NotNullByDefault
     private final class ContentAnimation extends M3FiniteTransition {
         /// The animated content-width channel.
-        private final ScalarChannel width = new ScalarChannel(SIZE_VISIBILITY_THRESHOLD);
+        private final M3ScalarChannel width = new M3ScalarChannel(SIZE_VISIBILITY_THRESHOLD);
 
         /// The animated content-height channel.
-        private final ScalarChannel height = new ScalarChannel(SIZE_VISIBILITY_THRESHOLD);
+        private final M3ScalarChannel height = new M3ScalarChannel(SIZE_VISIBILITY_THRESHOLD);
 
         /// The duration of the longest active channel, in seconds.
         private double runDurationSeconds;
@@ -906,7 +900,7 @@ public final class M3AnimatedContent extends Region {
         private void retarget() {
             double elapsedSeconds = getStatus() == Animation.Status.RUNNING
                     ? Math.max(0.0, getCurrentTime().toSeconds())
-                    : 0.0;
+                    : Double.POSITIVE_INFINITY;
 
             M3MotionSpec enterSpec = resolveEnterSpec();
             M3MotionSpec exitSpec = resolveExitSpec();
@@ -927,10 +921,10 @@ public final class M3AnimatedContent extends Region {
 
             stop();
             runDurationSeconds = Math.max(
-                    Math.max(firstState.opacity.durationSeconds, firstState.scale.durationSeconds),
+                    Math.max(firstState.opacity.getDurationSeconds(), firstState.scale.getDurationSeconds()),
                     Math.max(
-                            Math.max(secondState.opacity.durationSeconds, secondState.scale.durationSeconds),
-                            Math.max(width.durationSeconds, height.durationSeconds)
+                            Math.max(secondState.opacity.getDurationSeconds(), secondState.scale.getDurationSeconds()),
+                            Math.max(width.getDurationSeconds(), height.getDurationSeconds())
                     )
             );
 
@@ -1013,126 +1007,4 @@ public final class M3AnimatedContent extends Region {
         }
     }
 
-    /// Stores one scalar channel's reusable interpolation and velocity state.
-    @NotNullByDefault
-    private static final class ScalarChannel {
-        /// The delta at which a physical spring is considered visually settled.
-        private final double visibilityThreshold;
-
-        /// The specification configured for this channel's current run.
-        private @Nullable M3MotionSpec motionSpec;
-
-        /// The spring parameters for the current run, or `null` for duration interpolation.
-        private @Nullable M3SpringParameters springParameters;
-
-        /// The value at the start of the current run.
-        private double startValue;
-
-        /// The value at the end of the current run.
-        private double targetValue;
-
-        /// The velocity retained at the start of the current run, in value units per second.
-        private double initialVelocity;
-
-        /// The settling duration of the current run, in seconds.
-        private double durationSeconds;
-
-        /// Creates a reusable scalar channel.
-        private ScalarChannel(double visibilityThreshold) {
-            this.visibilityThreshold = visibilityThreshold;
-        }
-
-        /// Reconfigures this channel while retaining its current physical velocity.
-        private void configure(double currentValue, double targetValue, M3MotionSpec spec, double elapsedSeconds) {
-            double retainedVelocity = velocityAt(elapsedSeconds);
-            motionSpec = Objects.requireNonNull(spec, "spec");
-            springParameters = spec.springParameters();
-            startValue = currentValue;
-            this.targetValue = targetValue;
-            initialVelocity = retainedVelocity;
-            durationSeconds = estimateDuration(spec);
-        }
-
-        /// Clears motion history and establishes one settled value.
-        private void reset(double value) {
-            motionSpec = null;
-            springParameters = null;
-            startValue = value;
-            targetValue = value;
-            initialVelocity = 0.0;
-            durationSeconds = 0.0;
-        }
-
-        /// Returns this channel's value at the supplied elapsed time.
-        private double valueAt(double elapsedSeconds) {
-            @Nullable M3MotionSpec spec = motionSpec;
-            if (spec == null || durationSeconds <= 0.0 || elapsedSeconds >= durationSeconds) {
-                return targetValue;
-            }
-            @Nullable M3SpringParameters spring = springParameters;
-            if (spring != null) {
-                return M3SpringSolver.value(
-                        startValue,
-                        targetValue,
-                        initialVelocity,
-                        elapsedSeconds,
-                        spring
-                );
-            }
-            return spec.interpolator().interpolate(
-                    startValue,
-                    targetValue,
-                    elapsedSeconds / durationSeconds
-            );
-        }
-
-        /// Returns this channel's velocity at the supplied elapsed time.
-        private double velocityAt(double elapsedSeconds) {
-            @Nullable M3MotionSpec spec = motionSpec;
-            if (spec == null || durationSeconds <= 0.0 || elapsedSeconds >= durationSeconds) {
-                return 0.0;
-            }
-            @Nullable M3SpringParameters spring = springParameters;
-            if (spring != null) {
-                return M3SpringSolver.velocity(
-                        startValue,
-                        targetValue,
-                        initialVelocity,
-                        elapsedSeconds,
-                        spring
-                );
-            }
-
-            double fraction = elapsedSeconds / durationSeconds;
-            double lowerFraction = Math.max(0.0, fraction - VELOCITY_SAMPLE_FRACTION);
-            double upperFraction = Math.min(1.0, fraction + VELOCITY_SAMPLE_FRACTION);
-            if (Double.compare(lowerFraction, upperFraction) == 0) {
-                return 0.0;
-            }
-            double lowerValue = spec.interpolator().interpolate(startValue, targetValue, lowerFraction);
-            double upperValue = spec.interpolator().interpolate(startValue, targetValue, upperFraction);
-            return (upperValue - lowerValue) / ((upperFraction - lowerFraction) * durationSeconds);
-        }
-
-        /// Computes the finite duration of this channel's configured run.
-        private double estimateDuration(M3MotionSpec spec) {
-            if (Double.compare(startValue, targetValue) == 0 && Double.compare(initialVelocity, 0.0) == 0) {
-                return 0.0;
-            }
-            @Nullable M3SpringParameters spring = springParameters;
-            if (spring == null) {
-                return spec.duration().toSeconds();
-            }
-            double duration = M3SpringSolver.estimateDurationSeconds(
-                    startValue - targetValue,
-                    initialVelocity,
-                    visibilityThreshold,
-                    spring
-            );
-            if (!Double.isFinite(duration)) {
-                return spec.duration().toSeconds();
-            }
-            return duration <= 0.0 ? 0.0 : Math.max(MIN_SPRING_DURATION_SECONDS, duration);
-        }
-    }
 }

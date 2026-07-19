@@ -5,6 +5,7 @@ package org.glavo.m3fx.animation;
 
 import javafx.animation.Animation;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -86,6 +87,158 @@ final class M3LayoutAnimationTest {
         });
     }
 
+    /// Verifies typed state, coordinated channels, property-driven retargeting, and synchronous completion.
+    @Test
+    void stateTransitionCoordinatesTypedDoubleChannels() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            new Scene(owner);
+            SimpleDoubleProperty opacity = new SimpleDoubleProperty(-1.0);
+            SimpleDoubleProperty translation = new SimpleDoubleProperty(-1.0);
+            M3StateTransition<Boolean> transition = new M3StateTransition<>(owner, false);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+
+            transition.addDouble(opacity, expanded -> expanded ? 1.0 : 0.4, 0.01);
+            transition.addDouble(translation, expanded -> expanded ? 72.0 : 0.0, 0.5);
+
+            assertSame(owner, transition.getOwner());
+            assertFalse(transition.getCurrentState());
+            assertFalse(transition.getTargetState());
+            assertEquals(0.4, opacity.get(), 0.0);
+            assertEquals(0.0, translation.get(), 0.0);
+            assertFalse(transition.isRunning());
+
+            transition.setTargetState(true);
+
+            assertTrue(transition.isRunning());
+            assertFalse(transition.getCurrentState());
+            assertTrue(transition.getTargetState());
+            assertEquals(Animation.Status.RUNNING, transition.statusProperty().get());
+
+            transition.setTargetState(false);
+            assertFalse(transition.isRunning());
+            assertFalse(transition.getCurrentState());
+            assertEquals(0.4, opacity.get(), 0.0);
+            assertEquals(0.0, translation.get(), 0.0);
+
+            transition.setTargetState(true);
+            assertTrue(transition.isRunning());
+            transition.finish();
+
+            assertFalse(transition.isRunning());
+            assertTrue(transition.getCurrentState());
+            assertTrue(transition.currentStateProperty().get());
+            assertEquals(1.0, opacity.get(), 0.0);
+            assertEquals(72.0, translation.get(), 0.0);
+
+            transition.targetStateProperty().set(false);
+            assertTrue(transition.isRunning());
+            assertFalse(transition.getTargetState());
+            transition.snapTo(false);
+
+            assertFalse(transition.isRunning());
+            assertFalse(transition.getCurrentState());
+            assertEquals(0.4, opacity.get(), 0.0);
+            assertEquals(0.0, translation.get(), 0.0);
+        }));
+    }
+
+    /// Verifies target validation is atomic and registration constraints fail before animation begins.
+    @Test
+    void stateTransitionRejectsBrokenChannelsAtomically() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            SimpleDoubleProperty first = new SimpleDoubleProperty();
+            SimpleDoubleProperty second = new SimpleDoubleProperty();
+            M3StateTransition<Integer> transition = new M3StateTransition<>(owner, 0);
+            transition.addDouble(first, state -> state, 0.01);
+            transition.addDouble(second, state -> state == 2 ? Double.NaN : state * 2.0, 0.01);
+
+            assertThrows(IllegalArgumentException.class, () -> transition.setTargetState(2));
+            assertEquals(0, transition.getCurrentState());
+            assertEquals(0, transition.getTargetState());
+            assertEquals(0.0, first.get(), 0.0);
+            assertEquals(0.0, second.get(), 0.0);
+
+            assertThrows(IllegalArgumentException.class, () -> transition.targetStateProperty().set(2));
+            assertEquals(0, transition.getTargetState());
+            assertEquals(0.0, first.get(), 0.0);
+            assertEquals(0.0, second.get(), 0.0);
+
+            assertThrows(IllegalArgumentException.class, () -> transition.addDouble(first, state -> state, 0.01));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> transition.addDouble(new SimpleDoubleProperty(), state -> state, 0.0)
+            );
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> transition.addDouble(
+                            new SimpleDoubleProperty(Double.POSITIVE_INFINITY),
+                            state -> state,
+                            0.01
+                    )
+            );
+
+            SimpleDoubleProperty bound = new SimpleDoubleProperty();
+            bound.bind(new SimpleDoubleProperty(1.0));
+            assertThrows(IllegalStateException.class, () -> transition.addDouble(bound, state -> state, 0.01));
+
+            transition.targetStateProperty().bind(new SimpleObjectProperty<>(0));
+            assertThrows(IllegalStateException.class, () -> transition.setTargetState(1));
+            assertThrows(IllegalStateException.class, () -> transition.snapTo(1));
+            transition.targetStateProperty().unbind();
+        });
+    }
+
+    /// Verifies active channel mutation, reduced motion, and scene detachment settle shared state correctly.
+    @Test
+    void stateTransitionHandlesChannelAndOwnerLifecycle() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            SimpleDoubleProperty first = new SimpleDoubleProperty();
+            SimpleDoubleProperty second = new SimpleDoubleProperty(8.0);
+            M3StateTransition<Boolean> transition = new M3StateTransition<>(owner, false);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            transition.addDouble(first, expanded -> expanded ? 40.0 : 0.0, 0.5);
+
+            transition.setTargetState(true);
+            transition.addDouble(second, expanded -> expanded ? 80.0 : 8.0, 0.5);
+            assertTrue(transition.isRunning());
+            assertTrue(transition.removeDouble(first));
+            assertFalse(transition.removeDouble(first));
+            transition.finish();
+
+            assertEquals(0.0, first.get(), 0.0);
+            assertEquals(80.0, second.get(), 0.0);
+            assertTrue(transition.getCurrentState());
+
+            transition.setTargetState(false);
+            assertTrue(transition.isRunning());
+            scene.setRoot(new Pane());
+
+            assertFalse(transition.isRunning());
+            assertFalse(transition.getCurrentState());
+            assertEquals(8.0, second.get(), 0.0);
+
+            Pane reducedOwner = new Pane();
+            M3MotionSettings.setReducedMotionRequested(reducedOwner, true);
+            SimpleDoubleProperty reducedValue = new SimpleDoubleProperty();
+            M3StateTransition<Boolean> reduced = new M3StateTransition<>(reducedOwner, false);
+            reduced.addDouble(reducedValue, expanded -> expanded ? 24.0 : 0.0, 0.5);
+            reduced.setTargetState(true);
+
+            assertFalse(reduced.isRunning());
+            assertTrue(reduced.getCurrentState());
+            assertEquals(24.0, reducedValue.get(), 0.0);
+
+            reduced.setTargetState(false);
+            reduced.clearChannels();
+            assertFalse(reduced.isRunning());
+            assertFalse(reduced.getCurrentState());
+        }));
+    }
+
     /// Verifies the complete visibility lifecycle, rapid reversal, detachment, and content-owned visual properties.
     @Test
     void animatedVisibilityTracksLifecycleAndOwnsOnlyPrivateVisuals() {
@@ -122,8 +275,8 @@ final class M3LayoutAnimationTest {
             assertEquals(80.0, visibility.prefWidth(-1.0), 1.0e-6);
 
             visibility.setShowing(true);
-            assertSame(M3VisibilityState.ENTERING, visibility.getState());
-            assertTrue(visibility.isTransitioning());
+            assertSame(M3VisibilityState.VISIBLE, visibility.getState());
+            assertFalse(visibility.isTransitioning());
             assertNotNull(content.getParent());
             visibility.finish();
 
