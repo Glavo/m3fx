@@ -15,6 +15,8 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3SpringParameters;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -23,6 +25,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -133,6 +136,41 @@ final class M3AnimationTest {
 
             assertEquals(Duration.millis(100.0), transition.getDuration());
             assertEquals(Animation.Status.STOPPED, transition.getStatus());
+        });
+    }
+
+    /// Verifies a scale spring ends at its channel threshold instead of waiting for its fallback horizon.
+    @Test
+    void nodeSpringUsesPhysicalScaleSettlingDuration() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane node = new Pane();
+            node.setScaleY(0.92);
+            M3MotionSpec spec = M3MotionScheme.expressive().defaultSpatial();
+            M3NodeTransition transition = new M3NodeTransition(node);
+
+            transition.configure(
+                    spec,
+                    node.getOpacity(),
+                    node.getScaleX(),
+                    1.0,
+                    node.getTranslateX(),
+                    node.getTranslateY()
+            );
+
+            M3SpringParameters spring =
+                    Objects.requireNonNull(spec.springParameters(), "spring parameters");
+            double expectedSeconds = M3SpringSolver.estimateDurationSeconds(
+                    -0.08,
+                    0.0,
+                    5.0e-4,
+                    spring
+            );
+            assertEquals(expectedSeconds * 1000.0, transition.getCycleDuration().toMillis(), 1.0e-6);
+            assertTrue(transition.getCycleDuration().lessThan(spec.duration()));
+
+            M3Animation.finish(transition);
+
+            assertEquals(1.0, node.getScaleY(), 0.0);
         });
     }
 

@@ -98,12 +98,12 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     private static M3MotionSpec spring(
             double dampingRatio,
             double stiffness,
-            Duration settlingDuration,
+            Duration fallbackDuration,
             M3MotionEasing fallbackEasing
     ) {
         return M3MotionSpec.spring(
                 new M3SpringParameters(dampingRatio, stiffness),
-                settlingDuration,
+                fallbackDuration,
                 fallbackEasing
         );
     }
