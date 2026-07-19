@@ -457,6 +457,7 @@ public final class M3SideSheet extends Control {
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        // JavaFX 14 has no DIALOG role; the helper returns PARENT there.
         setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);

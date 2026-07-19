@@ -126,6 +126,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
                     boolean selected = get();
                     pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
                     notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+                    // JavaFX 14 has no aggregate TOGGLE_STATE attribute; the helper is a no-op there.
                     M3Accessible.notifyToggleStateChanged(M3RadioButton.this);
 
                     ToggleGroup group = getToggleGroup();
@@ -446,6 +447,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
+        // JavaFX 14 has no TOGGLE_STATE enum constant, so test the optional runtime value first.
         if (M3Accessible.isToggleStateAttribute(attribute)) {
             return M3Accessible.toggleState(isSelected());
         }

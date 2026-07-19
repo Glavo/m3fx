@@ -19826,20 +19826,23 @@ final class M3ControlContractMatrixTest {
         assertTrue(checkBox.isIndeterminate());
         assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("indeterminate")));
         assertEquals(true, checkBox.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
-        assertOptionalToggleState(checkBox, false, true);
+        assertEquals(AccessibleAttribute.ToggleState.INDETERMINATE,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
 
         checkBox.fire();
 
         assertTrue(checkBox.isSelected());
         assertFalse(checkBox.isIndeterminate());
-        assertOptionalToggleState(checkBox, true, false);
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
 
         checkBox.fire();
 
         assertFalse(checkBox.isSelected());
         assertFalse(checkBox.isIndeterminate());
         assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("determinate")));
-        assertOptionalToggleState(checkBox, false, false);
+        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
     }
 
     /// Verifies that radio indicators use circular Material styling.
@@ -36040,15 +36043,19 @@ final class M3ControlContractMatrixTest {
         M3NavigationItem navigationItem = createNavigationItem("Home", true);
 
         assertEquals(true, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertOptionalToggleState(chip, true, false);
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
         chip.setSelected(false);
         assertEquals(false, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertOptionalToggleState(chip, false, false);
+        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
+                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
 
         assertEquals(true, iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertOptionalToggleState(iconToggleButton, true, false);
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
         assertEquals(true, segmentedButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertOptionalToggleState(segmentedButton, true, false);
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                segmentedButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
         assertEquals(true, tab.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
         assertEquals(true, navigationItem.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
     }
@@ -43148,18 +43155,6 @@ final class M3ControlContractMatrixTest {
         button.setWidthRole(widthRole);
         button.setButtonShape(shape);
         return button;
-    }
-
-    /// Verifies the optional aggregate toggle-state attribute when the active JavaFX runtime provides it.
-    private static void assertOptionalToggleState(Node control, boolean selected, boolean indeterminate) {
-        AccessibleAttribute toggleStateAttribute = M3Accessible.attribute("TOGGLE_STATE");
-        if (toggleStateAttribute != null) {
-            assertEquals(
-                    M3Accessible.toggleState(selected, indeterminate),
-                    control.queryAccessibleAttribute(toggleStateAttribute),
-                    () -> control.getClass().getSimpleName() + " toggle accessibility state is wrong"
-            );
-        }
     }
 
     /// Verifies resolved icon button geometry and icon metrics.
