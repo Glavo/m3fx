@@ -15,18 +15,20 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.FontConverter;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3IconPaints;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -219,26 +221,26 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// component. Clearing the tint restores those normal rules without changing the semantic variant.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Color> tintValue =
-            new SimpleObjectProperty<>(this, "tint") {
-                /// Updates the branch-local tint declaration.
-                @Override
-                protected void invalidated() {
-                    M3ComponentColorStyles.applyIconTint(M3Icon.this, get());
-                }
-            };
+    private final StyleableObjectProperty<@Nullable Paint> tintValue =
+            M3Css.styleableObjectProperty(
+                    null,
+                    this,
+                    "tint",
+                    StyleableProperties.TINT,
+                    this::requestLayout
+            );
 
     /// Returns the explicit icon tint.
     ///
     /// @return the tint, or `null` when semantic color resolution is active
-    public @Nullable Color getTint() {
+    public @Nullable Paint getTint() {
         return tintValue.get();
     }
 
     /// Sets the explicit icon tint.
     ///
     /// @param tint the tint to apply, or `null` to restore semantic color resolution
-    public void setTint(@Nullable Color tint) {
+    public void setTint(@Nullable Paint tint) {
         tintValue.set(tint);
     }
 
@@ -247,7 +249,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// The property can be observed and bound. Its default value is `null`.
     ///
     /// @return the nullable tint property
-    public ObjectProperty<@Nullable Color> tintProperty() {
+    public StyleableObjectProperty<@Nullable Paint> tintProperty() {
         return tintValue;
     }
 
@@ -461,6 +463,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// Initializes style classes, accessibility, and resolved token state.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3IconPaints.initializeSemanticPaint(this, StyleableProperties.ICON_COLOR);
         getStyleClass().add(M3IconGraphic.STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
@@ -543,6 +546,38 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// CSS metadata for M3FX icon tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the semantic icon paint resolved from the selected variant.
+        private static final CssMetaData<M3Icon, @Nullable Paint> ICON_COLOR =
+                new CssMetaData<>("-m3-icon-color", PaintConverter.getInstance(), Color.BLACK) {
+                    /// Returns whether CSS may assign the semantic icon paint.
+                    @Override
+                    public boolean isSettable(M3Icon control) {
+                        return M3Css.isSettable(M3IconPaints.semanticPaintProperty(control));
+                    }
+
+                    /// Returns the semantic icon paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3Icon control) {
+                        return M3IconPaints.semanticPaintProperty(control);
+                    }
+                };
+
+        /// CSS metadata for an explicit icon tint.
+        private static final CssMetaData<M3Icon, @Nullable Paint> TINT =
+                new CssMetaData<>("-m3-icon-tint", PaintConverter.getInstance(), null) {
+                    /// Returns whether CSS may assign the explicit tint.
+                    @Override
+                    public boolean isSettable(M3Icon control) {
+                        return M3Css.isSettable(control.tintProperty());
+                    }
+
+                    /// Returns the explicit tint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3Icon control) {
+                        return control.tintProperty();
+                    }
+                };
+
         /// CSS metadata for the icon font family token.
         private static final CssMetaData<M3Icon, @Nullable String> ICON_FONT_FAMILY =
                 new CssMetaData<>(
@@ -627,6 +662,8 @@ public final class M3Icon extends Control implements M3IconGraphic {
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
                     new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ICON_COLOR);
+            styleables.add(TINT);
             styleables.add(ICON_FONT_FAMILY);
             styleables.add(ICON_SIZE);
             styleables.add(ICON_FONT_WEIGHT);

@@ -10,7 +10,9 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
@@ -21,6 +23,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -28,7 +31,6 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +49,8 @@ import java.util.Objects;
 ///
 /// A new surface uses the container color role, elevation level zero, a 12-pixel shape radius, and 16-pixel content
 /// padding. Color role and elevation are semantic properties; shape and padding are styleable logical-pixel
-/// properties. The container and content color properties optionally override those roles for this surface alone.
+/// properties. The styleable container-paint property can override that role for this surface alone; descendant
+/// content colors continue to resolve from the active theme and application CSS.
 ///
 /// See [Material Design](https://m3.material.io/) and
 /// [Material color roles](https://m3.material.io/styles/color/roles).
@@ -61,6 +64,9 @@ public final class M3Surface extends Control {
 
     /// The default surface content padding.
     private static final double DEFAULT_CONTENT_PADDING = 16.0;
+
+    /// The fallback container paint used before CSS resolves a surface variant.
+    private static final Paint DEFAULT_CONTAINER_COLOR = Color.TRANSPARENT;
 
     /// The mutable content nodes displayed inside the surface.
     private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
@@ -116,93 +122,46 @@ public final class M3Surface extends Control {
         return variant;
     }
 
-    /// The explicit surface container color.
+    /// The styleable paint used for the surface container.
     ///
-    /// A `null` value leaves the container under the control of the surface variant, active theme, and application
-    /// stylesheets. A non-null value remains effective across variant and theme changes.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> containerColor;
+    /// CSS exposes this property as `-m3-container-color`. Before CSS is applied, its effective value is
+    /// transparent.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> containerColor;
 
-    /// Returns the explicit surface container color.
+    /// Returns the paint used for the surface container.
     ///
-    /// @return the container color, or `null` to use normal color resolution
-    public final @Nullable Color getContainerColor() {
-        return containerColor == null ? null : containerColor.get();
+    /// @return the effective non-null container paint
+    public final Paint getContainerColor() {
+        return containerColor == null
+                ? DEFAULT_CONTAINER_COLOR
+                : Objects.requireNonNullElse(containerColor.get(), DEFAULT_CONTAINER_COLOR);
     }
 
-    /// Sets the explicit surface container color.
+    /// Sets the paint used for the surface container.
     ///
-    /// @param color the container color, or `null` to use normal color resolution
-    public final void setContainerColor(@Nullable Color color) {
-        if (containerColor != null || color != null) {
-            containerColorProperty().set(color);
-        }
+    /// @param color the non-null container paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setContainerColor(Paint color) {
+        containerColorProperty().set(Objects.requireNonNull(color, "color"));
     }
 
-    /// Returns the observable property that stores the explicit surface container color.
+    /// Returns the styleable property containing the surface container paint.
     ///
-    /// The property's default value is `null`.
+    /// If a binding supplies `null`, rendering falls back to transparent until a non-null value is supplied. CSS
+    /// cannot set the property while it is bound.
     ///
-    /// @return the nullable container-color property
-    public final ObjectProperty<@Nullable Color> containerColorProperty() {
+    /// @return the container-color property
+    public final StyleableObjectProperty<@Nullable Paint> containerColorProperty() {
         if (containerColor == null) {
-            containerColor = new SimpleObjectProperty<>(this, "containerColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
+            containerColor = M3Css.styleableObjectProperty(
+                    DEFAULT_CONTAINER_COLOR,
+                    this,
+                    "containerColor",
+                    StyleableProperties.CONTAINER_COLOR,
+                    this::requestLayout
+            );
         }
         return containerColor;
-    }
-
-    /// The explicit surface content color.
-    ///
-    /// The value is exposed to descendants through the M3FX on-surface lookups. A `null` value leaves those lookups
-    /// under normal variant, theme, and CSS resolution.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> contentColor;
-
-    /// Returns the explicit surface content color.
-    ///
-    /// @return the content color, or `null` to use normal color resolution
-    public final @Nullable Color getContentColor() {
-        return contentColor == null ? null : contentColor.get();
-    }
-
-    /// Sets the explicit surface content color.
-    ///
-    /// @param color the content color, or `null` to use normal color resolution
-    public final void setContentColor(@Nullable Color color) {
-        if (contentColor != null || color != null) {
-            contentColorProperty().set(color);
-        }
-    }
-
-    /// Returns the observable property that stores the explicit surface content color.
-    ///
-    /// The property's default value is `null`.
-    ///
-    /// @return the nullable content-color property
-    public final ObjectProperty<@Nullable Color> contentColorProperty() {
-        if (contentColor == null) {
-            contentColor = new SimpleObjectProperty<>(this, "contentColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
-        }
-        return contentColor;
-    }
-
-    /// Rebuilds the optional component-local color declarations from the current property values.
-    private void updateLocalColors() {
-        M3ComponentColorStyles.applySurfaceColors(this, getContainerColor(), getContentColor());
     }
 
     /// The surface elevation level.
@@ -515,6 +474,26 @@ public final class M3Surface extends Control {
     /// CSS metadata for M3FX surface tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the surface container paint.
+        private static final CssMetaData<M3Surface, @Nullable Paint> CONTAINER_COLOR =
+                new CssMetaData<>(
+                        "-m3-container-color",
+                        PaintConverter.getInstance(),
+                        DEFAULT_CONTAINER_COLOR
+                ) {
+                    /// Returns whether CSS may assign the container paint.
+                    @Override
+                    public boolean isSettable(M3Surface control) {
+                        return M3Css.isSettable(control.containerColorProperty());
+                    }
+
+                    /// Returns the styleable container paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3Surface control) {
+                        return control.containerColorProperty();
+                    }
+                };
+
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3Surface, Number> CONTAINER_SHAPE =
                 new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
@@ -552,6 +531,7 @@ public final class M3Surface extends Control {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(CONTAINER_COLOR);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(CONTENT_PADDING);
             STYLEABLES = Collections.unmodifiableList(styleables);

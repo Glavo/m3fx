@@ -148,6 +148,21 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         stateLayer.setContentPaint(paint);
     }
 
+    /// Applies a concrete container paint beneath labeled content and interaction feedback.
+    ///
+    /// @param paint the paint clipped to the current button shape, or `null` to expose the CSS background
+    protected final void setContainerPaint(@Nullable Paint paint) {
+        Background background = getSkinnable().getBackground();
+        CornerRadii radii = CornerRadii.EMPTY;
+        Insets insets = Insets.EMPTY;
+        if (background != null && !background.getFills().isEmpty()) {
+            BackgroundFill fill = background.getFills().get(background.getFills().size() - 1);
+            radii = fill.getRadii();
+            insets = fill.getInsets();
+        }
+        stateLayer.setContainerPaint(paint, radii, insets);
+    }
+
     /// Stops the animation before the skin is disposed.
     @Override
     public void dispose() {

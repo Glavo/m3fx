@@ -16,7 +16,13 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
@@ -35,6 +41,9 @@ public class M3CardSkin extends SkinBase<M3Card> {
 
     /// The container that hosts the card content.
     private final StackPane container = new StackPane();
+
+    /// The concrete container paint rendered between the CSS surface and card content.
+    private final Region containerPaintLayer = new Region();
 
     /// The bounded state layer for card feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
@@ -58,11 +67,14 @@ public class M3CardSkin extends SkinBase<M3Card> {
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
     /// Updates hosted card content after content changes.
-    private final ChangeListener<Node> contentListener =
+    private final ChangeListener<@Nullable Node> contentListener =
             (observable, oldValue, newValue) -> updateContent(newValue);
 
     /// Applies token changes to the card surface.
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
+
+    /// Requests layout when the styleable container paint changes.
+    private final InvalidationListener paintInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Updates interaction infrastructure when direct action or dragged state changes.
     private final InvalidationListener interactionStateInvalidation = observable -> updateInteractionState();
@@ -83,6 +95,12 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Whether state and elevation transitions are currently installed.
     private boolean interactionTransitionsInstalled;
 
+    /// The paint represented by the current concrete container background.
+    private @Nullable Paint renderedContainerPaint;
+
+    /// The corner radius represented by the current concrete container background.
+    private double renderedContainerRadius = Double.NaN;
+
     /// Creates a card skin.
     ///
     /// @param control the card controlled by this skin
@@ -90,12 +108,16 @@ public class M3CardSkin extends SkinBase<M3Card> {
         super(control);
         effectTransition = new M3CssEffectTransition(control, container);
         container.getStyleClass().add("m3-card-container");
+        containerPaintLayer.getStyleClass().add(M3StateLayer.CONTAINER_PAINT_STYLE_CLASS);
+        containerPaintLayer.setManaged(false);
+        containerPaintLayer.setMouseTransparent(true);
         getChildren().setAll(container);
         updateContent(control.getContent());
         updateTokenStyles();
         installInteractionHandlers(control);
         control.contentProperty().addListener(contentListener);
         control.containerShapeProperty().addListener(tokenInvalidation);
+        control.containerColorProperty().addListener(paintInvalidation);
         control.contentPaddingProperty().addListener(tokenInvalidation);
         control.outlineWidthProperty().addListener(tokenInvalidation);
         control.onActionProperty().addListener(interactionStateInvalidation);
@@ -112,6 +134,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
         uninstallInteractionTransitions();
         card.contentProperty().removeListener(contentListener);
         card.containerShapeProperty().removeListener(tokenInvalidation);
+        card.containerColorProperty().removeListener(paintInvalidation);
         card.contentPaddingProperty().removeListener(tokenInvalidation);
         card.outlineWidthProperty().removeListener(tokenInvalidation);
         card.onActionProperty().removeListener(interactionStateInvalidation);
@@ -131,15 +154,16 @@ public class M3CardSkin extends SkinBase<M3Card> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         container.resizeRelocate(x, y, width, height);
+        layoutContainerPaint(width, height);
         stateLayer.layoutLayer(0.0, 0.0, width, height, getSkinnable().getContainerShape());
     }
 
     /// Updates the content hosted by this skin.
     private void updateContent(@Nullable Node content) {
         if (content == null) {
-            container.getChildren().setAll(stateLayer);
+            container.getChildren().setAll(containerPaintLayer, stateLayer);
         } else {
-            container.getChildren().setAll(content, stateLayer);
+            container.getChildren().setAll(containerPaintLayer, content, stateLayer);
         }
     }
 
@@ -152,14 +176,40 @@ public class M3CardSkin extends SkinBase<M3Card> {
         container.setStyle("-fx-background-radius: " + shape
                 + "; -fx-border-radius: " + shape
                 + "; -fx-border-width: " + outlineWidth + ";");
+        card.requestLayout();
+    }
+
+    /// Sizes and paints the concrete container inside the current CSS border.
+    private void layoutContainerPaint(double width, double height) {
+        M3Card card = getSkinnable();
+        @Nullable Border border = container.getBorder();
+        Insets insets = border == null ? Insets.EMPTY : border.getInsets();
+        double paintWidth = Math.max(0.0, width - insets.getLeft() - insets.getRight());
+        double paintHeight = Math.max(0.0, height - insets.getTop() - insets.getBottom());
+        containerPaintLayer.resizeRelocate(insets.getLeft(), insets.getTop(), paintWidth, paintHeight);
+        double inset = Math.max(
+                Math.max(insets.getTop(), insets.getRight()),
+                Math.max(insets.getBottom(), insets.getLeft())
+        );
+        double radius = Math.max(0.0, card.getContainerShape() - inset);
+        Paint paint = card.getContainerColor();
+        if (paint.equals(renderedContainerPaint)
+                && Double.compare(radius, renderedContainerRadius) == 0) {
+            return;
+        }
+        renderedContainerPaint = paint;
+        renderedContainerRadius = radius;
+        containerPaintLayer.setBackground(new Background(
+                new BackgroundFill(paint, new CornerRadii(radius), Insets.EMPTY)
+        ));
     }
 
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 
     /// Installs feedback handlers for pointer and keyboard interactions.

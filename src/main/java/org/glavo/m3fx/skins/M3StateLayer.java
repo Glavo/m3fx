@@ -11,9 +11,13 @@ import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -37,6 +41,9 @@ import org.jetbrains.annotations.Nullable;
 /// A bounded Material Design 3 state layer with ripple animation support.
 @NotNullByDefault
 final class M3StateLayer extends Pane {
+    /// Style class assigned to direct component container-paint regions.
+    static final String CONTAINER_PAINT_STYLE_CLASS = "m3-container-paint";
+
     /// Whether this layer renders hover, pressed, and ripple feedback in addition to keyboard focus.
     private final boolean interactionFeedbackEnabled;
 
@@ -87,6 +94,9 @@ final class M3StateLayer extends Pane {
 
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
+
+    /// The optional component container paint rendered beneath interaction feedback.
+    private final Region containerPaintLayer = new Region();
 
     /// The animated bounded ripple node.
     private final Region ripple = new Region();
@@ -249,17 +259,21 @@ final class M3StateLayer extends Pane {
     M3StateLayer(boolean interactionFeedbackEnabled) {
         this.interactionFeedbackEnabled = interactionFeedbackEnabled;
         getStyleClass().add(STYLE_CLASS);
+        containerPaintLayer.getStyleClass().add(CONTAINER_PAINT_STYLE_CLASS);
         overlay.getStyleClass().add(OVERLAY_STYLE_CLASS);
         ripple.getStyleClass().add(RIPPLE_STYLE_CLASS);
         focusIndicator.getStyleClass().add(FOCUS_INDICATOR_STYLE_CLASS);
         setMouseTransparent(true);
         setManaged(false);
+        containerPaintLayer.setManaged(false);
         overlay.setManaged(false);
         ripple.setManaged(false);
         focusIndicator.setManaged(false);
+        containerPaintLayer.setMouseTransparent(true);
         overlay.setMouseTransparent(true);
         ripple.setMouseTransparent(true);
         focusIndicator.setMouseTransparent(true);
+        containerPaintLayer.setVisible(false);
         overlay.setOpacity(0.0);
         ripple.setOpacity(0.0);
         focusIndicator.setOpacity(0.0);
@@ -284,7 +298,7 @@ final class M3StateLayer extends Pane {
                 new ClosePath()
         );
         clippedContent.setClip(clip);
-        getChildren().addAll(clippedContent, focusIndicator);
+        getChildren().addAll(containerPaintLayer, clippedContent, focusIndicator);
     }
 
     /// Installs opacity transitions driven by the owner node's interaction states.
@@ -380,6 +394,7 @@ final class M3StateLayer extends Pane {
         double bottomRight = resolvedShapeRadius(width, height, bottomRightRadius);
         double bottomLeft = resolvedShapeRadius(width, height, bottomLeftRadius);
         resizeRelocate(x, y, width, height);
+        containerPaintLayer.resizeRelocate(0.0, 0.0, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
         updateFocusIndicatorShape(0.0, 0.0, width, height, topLeft, topRight, bottomRight, bottomLeft);
         updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
@@ -480,18 +495,62 @@ final class M3StateLayer extends Pane {
         ripple.pseudoClassStateChanged(pseudoClass, active);
     }
 
+    /// Applies an optional concrete paint beneath this layer's interaction feedback.
+    ///
+    /// The supplied radii and insets mirror the owning control's current background geometry. A `null` value
+    /// removes the container layer and leaves the owning control's normal CSS background visible.
+    ///
+    /// @param paint  the container paint, or `null` to remove the concrete container layer
+    /// @param radii  the corner radii of the owning control's current background
+    /// @param insets the insets of the owning control's current background
+    void setContainerPaint(@Nullable Paint paint, CornerRadii radii, Insets insets) {
+        if (paint == null) {
+            containerPaintLayer.setBackground(null);
+            containerPaintLayer.setVisible(false);
+            return;
+        }
+        Background background = containerPaintLayer.getBackground();
+        if (background != null
+                && background.getFills().size() == 1
+                && paint.equals(background.getFills().get(0).getFill())
+                && radii.equals(background.getFills().get(0).getRadii())
+                && insets.equals(background.getFills().get(0).getInsets())) {
+            containerPaintLayer.setVisible(true);
+            return;
+        }
+        containerPaintLayer.setBackground(new Background(
+                new BackgroundFill(paint, radii, insets)
+        ));
+        containerPaintLayer.setVisible(true);
+    }
+
     /// Applies a concrete content paint to the persistent overlay and ripple.
     ///
     /// This is intended for popup-owned controls whose token lookup ancestry can disappear before JavaFX completes
     /// a CSS pulse. The concrete paint preserves the last resolved theme color without retaining the popup owner.
     void setContentPaint(Paint paint) {
         Paint currentPaint = contentPaint;
-        if (paint.equals(currentPaint)) {
+        if (paint.equals(currentPaint)
+                && hasSingleBackgroundFill(overlay, paint)
+                && hasSingleBackgroundFill(ripple, paint)) {
             return;
         }
         contentPaint = paint;
-        overlay.setStyle("");
+        if (!overlay.getStyle().isEmpty()) {
+            overlay.setStyle("");
+        }
+        if (!ripple.getStyle().isEmpty()) {
+            ripple.setStyle("");
+        }
         updateContentBackgrounds();
+    }
+
+    /// Returns whether a region has exactly one background fill with the requested paint.
+    private static boolean hasSingleBackgroundFill(Region region, Paint paint) {
+        Background background = region.getBackground();
+        return background != null
+                && background.getFills().size() == 1
+                && paint.equals(background.getFills().get(0).getFill());
     }
 
     /// Sets the resting overlay opacity contributed by a persistent semantic state.
@@ -916,9 +975,12 @@ final class M3StateLayer extends Pane {
         if (paint == null) {
             return;
         }
-        String cssPaint = formatPaint(paint);
-        overlay.setStyle("-fx-background-color: " + cssPaint + ";");
-        ripple.setStyle("-fx-background-color: " + cssPaint + "; -fx-background-radius: 999px;");
+        overlay.setBackground(new Background(
+                new BackgroundFill(paint, CornerRadii.EMPTY, Insets.EMPTY)
+        ));
+        ripple.setBackground(new Background(
+                new BackgroundFill(paint, new CornerRadii(999.0), Insets.EMPTY)
+        ));
     }
 
     /// Updates the keyboard focus indicator ring to follow the component shape and focus offset token.
@@ -1073,19 +1135,6 @@ final class M3StateLayer extends Pane {
         if (clip.getElements().get(index) != target) {
             clip.getElements().set(index, target);
         }
-    }
-
-    /// Formats a JavaFX paint for use in a concrete inline CSS declaration.
-    private static String formatPaint(Paint paint) {
-        return paint instanceof Color color ? formatColor(color) : paint.toString();
-    }
-
-    /// Formats a JavaFX color as an inline CSS rgba value.
-    private static String formatColor(Color color) {
-        int red = (int) Math.round(color.getRed() * 255.0);
-        int green = (int) Math.round(color.getGreen() * 255.0);
-        int blue = (int) Math.round(color.getBlue() * 255.0);
-        return "rgba(" + red + "," + green + "," + blue + "," + color.getOpacity() + ")";
     }
 
     /// Formats a CSS pixel value.

@@ -1,9 +1,22 @@
 .m3-card {
+    -m3-container-color: transparent;
     -m3-container-shape: 12px;
     -m3-content-padding: 16px;
     -m3-outline-width: 1px;
     -fx-background-color: transparent;
     -fx-cursor: default;
+}
+
+.m3-filled-card {
+    -m3-container-color: -m3-color-surface-container-highest;
+}
+
+.m3-elevated-card {
+    -m3-container-color: -m3-color-surface-container-low;
+}
+
+.m3-outlined-card {
+    -m3-container-color: -m3-color-surface;
 }
 
 .m3-card:actionable {
@@ -109,13 +122,25 @@
     -fx-effect: null;
 }
 
+.m3-card.m3-filled-card:disabled {
+    -m3-container-color: -m3-filled-card-disabled-container-color;
+}
+
 .m3-card.m3-elevated-card:disabled .m3-card-container {
     -fx-background-color: -m3-elevated-card-disabled-container-color;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+}
+
+.m3-card.m3-elevated-card:disabled {
+    -m3-container-color: -m3-elevated-card-disabled-container-color;
 }
 
 .m3-card.m3-outlined-card:disabled .m3-card-container {
     -fx-background-color: -m3-color-surface;
     -fx-border-color: -m3-outlined-card-disabled-outline-color;
     -fx-effect: null;
+}
+
+.m3-card.m3-outlined-card:disabled {
+    -m3-container-color: -m3-color-surface;
 }

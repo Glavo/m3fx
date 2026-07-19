@@ -203,16 +203,13 @@ M3ThemeManager.install(emphasizedAction, expressiveControlTheme);
 
 Color generation is independent when a prebuilt MonetFX `ColorScheme` is supplied through
 `M3Theme.fromColorScheme(...)`; M3FX retains that scheme instead of regenerating it for the selected profile.
-Use the type-safe color properties for local component overrides. Each property is independently observable and
-bindable. A `null` value contributes no local declaration, so the component variant and active theme continue to
-resolve that role. Base colors remain in the CSS cascade for all states; provide a disabled replacement when the
-disabled state should use a different local color:
+Use the type-safe, styleable paint properties for local component overrides. Button container and content paints
+accept any JavaFX `Paint`, remain observable and bindable, and continue to apply when the global theme changes:
 
 ```java
 M3Button action = new M3Button("Save", M3ButtonVariant.FILLED);
 action.setContainerColor(Color.web("#006A6A"));
 action.setContentColor(Color.WHITE);
-action.setDisabledContentColor(Color.web("#7A7A7A"));
 
 M3Icon icon = new M3Icon("favorite");
 icon.setTint(Color.web("#9C4146"));
@@ -220,22 +217,25 @@ M3SVGIcon svgIcon = new M3SVGIcon(path, viewBox);
 svgIcon.setTint(Color.web("#9C4146"));
 ```
 
-The same `containerColorProperty()` and `contentColorProperty()` pattern is available on `M3Card` and `M3Surface`;
-buttons and cards additionally expose disabled color properties. These properties remain attached to the control
-when the application switches its global theme and can be cleared with `null`. Roles without
-a local declaration continue to follow the new theme. Use a local `M3ThemeManager.install(...)` call when an entire
-subtree needs a different token set. Use CSS for brand-wide typography, outline treatments, and visual details
-outside the typed component color model:
+`M3Card` and `M3Surface` expose `containerColorProperty()` because the control owns that rendered surface.
+They deliberately do not expose a content-color property: arbitrary descendant nodes do not share one JavaFX
+paint contract. Configure a complete subtree with `M3ThemeManager.install(...)`, or style the relevant descendant
+controls directly. Disabled colors remain part of the Material state-token cascade rather than a parallel set of
+properties.
+
+The same paints can be configured in CSS through `-m3-container-color`, `-m3-content-color`, and
+`-m3-icon-tint`. Use CSS for brand-wide colors, typography, outline treatments, and visual details outside the
+typed component model:
 
 ```css
 .save-action {
-    -m3-color-primary: #006A6A;
-    -m3-color-on-primary: white;
+    -m3-container-color: #006A6A;
+    -m3-content-color: white;
 }
 ```
 
-Colors that must follow a subtree-wide token set should still be expressed through a local theme. This keeps the
-public properties focused on common component semantics without duplicating every CSS token on every control.
+This boundary keeps commonly configured component paints type-safe without duplicating the complete theme color
+scheme on every control.
 
 A card becomes an interactive whole only when it has an action handler:
 

@@ -12,18 +12,21 @@ import javafx.beans.property.StringProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.FillRule;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3IconPaints;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3SVGIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -304,26 +307,26 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// component. Clearing it restores those normal rules without changing the semantic variant.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Color> tintValue =
-            new SimpleObjectProperty<>(this, "tint") {
-                /// Updates the branch-local tint declaration.
-                @Override
-                protected void invalidated() {
-                    M3ComponentColorStyles.applyIconTint(M3SVGIcon.this, get());
-                }
-            };
+    private final StyleableObjectProperty<@Nullable Paint> tintValue =
+            M3Css.styleableObjectProperty(
+                    null,
+                    this,
+                    "tint",
+                    StyleableProperties.TINT,
+                    this::requestLayout
+            );
 
     /// Returns the explicit SVG icon tint.
     ///
     /// @return the tint, or `null` when semantic color resolution is active
-    public @Nullable Color getTint() {
+    public @Nullable Paint getTint() {
         return tintValue.get();
     }
 
     /// Sets the explicit SVG icon tint.
     ///
     /// @param tint the tint to apply, or `null` to restore semantic color resolution
-    public void setTint(@Nullable Color tint) {
+    public void setTint(@Nullable Paint tint) {
         tintValue.set(tint);
     }
 
@@ -332,7 +335,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// The property can be observed and bound. Its default value is `null`.
     ///
     /// @return the nullable tint property
-    public ObjectProperty<@Nullable Color> tintProperty() {
+    public StyleableObjectProperty<@Nullable Paint> tintProperty() {
         return tintValue;
     }
 
@@ -448,6 +451,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// Initializes style classes, accessibility, and token roles.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3IconPaints.initializeSemanticPaint(this, StyleableProperties.ICON_COLOR);
         getStyleClass().add(M3IconGraphic.STYLE_CLASS);
         setAccessibleRole(AccessibleRole.NODE);
         setFocusTraversable(false);
@@ -500,6 +504,38 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// CSS metadata for the SVG icon size token.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the semantic SVG path paint resolved from the selected variant.
+        private static final CssMetaData<M3SVGIcon, @Nullable Paint> ICON_COLOR =
+                new CssMetaData<>("-m3-icon-color", PaintConverter.getInstance(), Color.BLACK) {
+                    /// Returns whether CSS may assign the semantic path paint.
+                    @Override
+                    public boolean isSettable(M3SVGIcon control) {
+                        return M3Css.isSettable(M3IconPaints.semanticPaintProperty(control));
+                    }
+
+                    /// Returns the semantic path paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3SVGIcon control) {
+                        return M3IconPaints.semanticPaintProperty(control);
+                    }
+                };
+
+        /// CSS metadata for an explicit SVG path tint.
+        private static final CssMetaData<M3SVGIcon, @Nullable Paint> TINT =
+                new CssMetaData<>("-m3-icon-tint", PaintConverter.getInstance(), null) {
+                    /// Returns whether CSS may assign the explicit tint.
+                    @Override
+                    public boolean isSettable(M3SVGIcon control) {
+                        return M3Css.isSettable(control.tintProperty());
+                    }
+
+                    /// Returns the explicit tint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3SVGIcon control) {
+                        return control.tintProperty();
+                    }
+                };
+
         /// CSS metadata for the icon size token.
         private static final CssMetaData<M3SVGIcon, Number> ICON_SIZE =
                 new CssMetaData<>("-m3-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
@@ -528,6 +564,8 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
                     new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ICON_COLOR);
+            styleables.add(TINT);
             styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

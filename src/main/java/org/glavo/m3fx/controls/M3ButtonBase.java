@@ -11,7 +11,9 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -21,10 +23,11 @@ import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3IconPaints;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.theme.M3ComponentColorStyles;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -45,9 +48,8 @@ import java.util.Objects;
 /// setting either property alone does not install a scene-wide keyboard accelerator.
 ///
 /// New buttons are filled, small, round, focus traversable, mnemonic-parsing, and neither default nor cancel.
-/// Their token-backed geometry can be changed through the styleable properties or CSS. The container, content, and
-/// disabled color properties provide optional, type-safe overrides for one button while absent values remain
-/// connected to the active theme.
+/// Their token-backed geometry and base paints can be changed through styleable properties or CSS. Disabled-state
+/// treatment remains part of the Material token cascade rather than a separate Java property.
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
@@ -80,6 +82,12 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// The default icon glyph size.
     private static final double DEFAULT_ICON_SIZE = 20.0;
+
+    /// The fallback container paint used before CSS resolves a button variant.
+    private static final Paint DEFAULT_CONTAINER_COLOR = Color.TRANSPARENT;
+
+    /// The fallback content paint used before CSS resolves a button variant.
+    private static final Paint DEFAULT_CONTENT_COLOR = Color.BLACK;
 
     /// Creates a filled, small, round button with empty text and no graphic.
     protected M3ButtonBase() {
@@ -260,183 +268,93 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return buttonShape;
     }
 
-    /// The explicit container color for this button.
+    /// The styleable paint used for the button container.
     ///
-    /// A `null` value leaves the container under the control of the button variant, active theme, and application
-    /// stylesheets. A non-null value remains effective across variant and theme changes.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> containerColor;
+    /// CSS exposes this property as `-m3-container-color`. Before CSS is applied, its effective value is
+    /// transparent.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> containerColor;
 
-    /// Returns the explicit container color.
+    /// Returns the paint used for the button container.
     ///
-    /// @return the container color, or `null` to use normal color resolution
-    public final @Nullable Color getContainerColor() {
-        return containerColor == null ? null : containerColor.get();
+    /// @return the effective non-null container paint
+    public final Paint getContainerColor() {
+        return containerColor == null
+                ? DEFAULT_CONTAINER_COLOR
+                : Objects.requireNonNullElse(containerColor.get(), DEFAULT_CONTAINER_COLOR);
     }
 
-    /// Sets the explicit container color.
+    /// Sets the paint used for the button container.
     ///
-    /// @param color the container color, or `null` to use normal color resolution
-    public final void setContainerColor(@Nullable Color color) {
-        if (containerColor != null || color != null) {
-            containerColorProperty().set(color);
-        }
+    /// A direct assignment takes precedence over user-agent token rules. Application stylesheets may configure the
+    /// same value through `-m3-container-color`.
+    ///
+    /// @param color the non-null container paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setContainerColor(Paint color) {
+        containerColorProperty().set(Objects.requireNonNull(color, "color"));
     }
 
-    /// Returns the observable property that stores the explicit container color.
+    /// Returns the styleable property containing the button container paint.
     ///
-    /// The property's default value is `null`.
+    /// If a binding supplies `null`, rendering falls back to transparent until a non-null value is supplied. CSS
+    /// cannot set the property while it is bound.
     ///
-    /// @return the nullable container-color property
-    public final ObjectProperty<@Nullable Color> containerColorProperty() {
+    /// @return the container-color property
+    public final StyleableObjectProperty<@Nullable Paint> containerColorProperty() {
         if (containerColor == null) {
-            containerColor = new SimpleObjectProperty<>(this, "containerColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
+            containerColor = M3Css.styleableObjectProperty(
+                    DEFAULT_CONTAINER_COLOR,
+                    this,
+                    "containerColor",
+                    StyleableProperties.CONTAINER_COLOR,
+                    this::requestLayout
+            );
         }
         return containerColor;
     }
 
-    /// The explicit content and interaction-layer color for this button.
+    /// The styleable paint used for button text, direct M3FX icon graphics, and interaction feedback.
     ///
-    /// The value colors text, icon graphics, disclosure graphics, state layers, and ripples. A `null` value leaves
-    /// those roles under normal variant, theme, and CSS resolution.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> contentColor;
+    /// CSS exposes this property as `-m3-content-color`. Before CSS is applied, its effective value is black.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> contentColor;
 
-    /// Returns the explicit content color.
+    /// Returns the paint used for button content and interaction feedback.
     ///
-    /// @return the content color, or `null` to use normal color resolution
-    public final @Nullable Color getContentColor() {
-        return contentColor == null ? null : contentColor.get();
+    /// @return the effective non-null content paint
+    public final Paint getContentColor() {
+        return contentColor == null
+                ? DEFAULT_CONTENT_COLOR
+                : Objects.requireNonNullElse(contentColor.get(), DEFAULT_CONTENT_COLOR);
     }
 
-    /// Sets the explicit content color.
+    /// Sets the paint used for button content and interaction feedback.
     ///
-    /// @param color the content color, or `null` to use normal color resolution
-    public final void setContentColor(@Nullable Color color) {
-        if (contentColor != null || color != null) {
-            contentColorProperty().set(color);
-        }
+    /// @param color the non-null content paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setContentColor(Paint color) {
+        contentColorProperty().set(Objects.requireNonNull(color, "color"));
     }
 
-    /// Returns the observable property that stores the explicit content color.
+    /// Returns the styleable property containing the button content paint.
     ///
-    /// The property's default value is `null`.
+    /// If a binding supplies `null`, rendering falls back to black until a non-null value is supplied. CSS cannot
+    /// set the property while it is bound.
     ///
-    /// @return the nullable content-color property
-    public final ObjectProperty<@Nullable Color> contentColorProperty() {
+    /// @return the content-color property
+    public final StyleableObjectProperty<@Nullable Paint> contentColorProperty() {
         if (contentColor == null) {
-            contentColor = new SimpleObjectProperty<>(this, "contentColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
+            contentColor = M3Css.styleableObjectProperty(
+                    DEFAULT_CONTENT_COLOR,
+                    this,
+                    "contentColor",
+                    StyleableProperties.CONTENT_COLOR,
+                    () -> {
+                        updateManagedIconGraphicColor();
+                        requestLayout();
+                    }
+            );
         }
         return contentColor;
-    }
-
-    /// The explicit disabled container color for this button.
-    ///
-    /// A non-null value replaces the disabled container treatment and is interpreted as the final rendered color,
-    /// including its opacity. A `null` value retains normal disabled-state cascading.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> disabledContainerColor;
-
-    /// Returns the explicit disabled container color.
-    ///
-    /// @return the disabled container color, or `null` to use normal color resolution
-    public final @Nullable Color getDisabledContainerColor() {
-        return disabledContainerColor == null ? null : disabledContainerColor.get();
-    }
-
-    /// Sets the explicit disabled container color.
-    ///
-    /// @param color the final disabled container color, or `null` to use normal color resolution
-    public final void setDisabledContainerColor(@Nullable Color color) {
-        if (disabledContainerColor != null || color != null) {
-            disabledContainerColorProperty().set(color);
-        }
-    }
-
-    /// Returns the observable property that stores the explicit disabled container color.
-    ///
-    /// The property's default value is `null`.
-    ///
-    /// @return the nullable disabled-container-color property
-    public final ObjectProperty<@Nullable Color> disabledContainerColorProperty() {
-        if (disabledContainerColor == null) {
-            disabledContainerColor = new SimpleObjectProperty<>(this, "disabledContainerColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
-        }
-        return disabledContainerColor;
-    }
-
-    /// The explicit disabled content color for this button.
-    ///
-    /// A non-null value replaces the disabled text and icon treatment and is interpreted as the final rendered
-    /// color, including its opacity. A `null` value retains normal disabled-state cascading.
-    ///
-    /// @defaultValue `null`
-    private @Nullable ObjectProperty<@Nullable Color> disabledContentColor;
-
-    /// Returns the explicit disabled content color.
-    ///
-    /// @return the disabled content color, or `null` to use normal color resolution
-    public final @Nullable Color getDisabledContentColor() {
-        return disabledContentColor == null ? null : disabledContentColor.get();
-    }
-
-    /// Sets the explicit disabled content color.
-    ///
-    /// @param color the final disabled content color, or `null` to use normal color resolution
-    public final void setDisabledContentColor(@Nullable Color color) {
-        if (disabledContentColor != null || color != null) {
-            disabledContentColorProperty().set(color);
-        }
-    }
-
-    /// Returns the observable property that stores the explicit disabled content color.
-    ///
-    /// The property's default value is `null`.
-    ///
-    /// @return the nullable disabled-content-color property
-    public final ObjectProperty<@Nullable Color> disabledContentColorProperty() {
-        if (disabledContentColor == null) {
-            disabledContentColor = new SimpleObjectProperty<>(this, "disabledContentColor") {
-                /// Rebuilds the branch-local declarations when the color changes.
-                @Override
-                protected void invalidated() {
-                    updateLocalColors();
-                }
-            };
-        }
-        return disabledContentColor;
-    }
-
-    /// Rebuilds the optional component-local color declarations from the current property values.
-    private void updateLocalColors() {
-        M3ComponentColorStyles.applyButtonColors(
-                this,
-                getContainerColor(),
-                getContentColor(),
-                getDisabledContainerColor(),
-                getDisabledContentColor()
-        );
     }
 
     /// The preferred button container height, in logical pixels.
@@ -856,6 +774,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         if (managedIconGraphic != currentIconNode) {
             if (managedIconGraphic != null) {
                 managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
+                M3IconPaints.setInheritedPaint(managedIconGraphic, null);
             }
             managedIconGraphic = currentIconNode;
             if (currentIconNode != null) {
@@ -865,11 +784,59 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         if (currentIcon != null) {
             currentIcon.setIconSize(getIconSize());
         }
+        updateManagedIconGraphicColor();
+    }
+
+    /// Applies the current button content paint to a direct M3FX icon graphic.
+    private void updateManagedIconGraphicColor() {
+        if (managedIconGraphic != null) {
+            M3IconPaints.setInheritedPaint(managedIconGraphic, getContentColor());
+        }
     }
 
     /// CSS metadata for M3FX button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the button container paint.
+        private static final CssMetaData<M3ButtonBase, @Nullable Paint> CONTAINER_COLOR =
+                new CssMetaData<>(
+                        "-m3-container-color",
+                        PaintConverter.getInstance(),
+                        DEFAULT_CONTAINER_COLOR
+                ) {
+                    /// Returns whether CSS may assign the property.
+                    @Override
+                    public boolean isSettable(M3ButtonBase control) {
+                        return M3Css.isSettable(control.containerColorProperty());
+                    }
+
+                    /// Returns the styleable container paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3ButtonBase control) {
+                        return control.containerColorProperty();
+                    }
+                };
+
+        /// CSS metadata for the button content paint.
+        private static final CssMetaData<M3ButtonBase, @Nullable Paint> CONTENT_COLOR =
+                new CssMetaData<>(
+                        "-m3-content-color",
+                        PaintConverter.getInstance(),
+                        DEFAULT_CONTENT_COLOR
+                ) {
+                    /// Returns whether CSS may assign the property.
+                    @Override
+                    public boolean isSettable(M3ButtonBase control) {
+                        return M3Css.isSettable(control.contentColorProperty());
+                    }
+
+                    /// Returns the styleable content paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3ButtonBase control) {
+                        return control.contentColorProperty();
+                    }
+                };
+
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3ButtonBase, Number> CONTAINER_HEIGHT =
                 new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
@@ -939,6 +906,8 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
+            styleables.add(CONTAINER_COLOR);
+            styleables.add(CONTENT_COLOR);
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);

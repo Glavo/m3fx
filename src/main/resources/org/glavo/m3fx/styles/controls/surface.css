@@ -1,4 +1,5 @@
 .m3-surface {
+    -m3-container-color: transparent;
     -m3-container-shape: 12px;
     -m3-content-padding: 16px;
     -fx-background-color: transparent;
@@ -12,6 +13,7 @@
 }
 
 .m3-surface-variant-surface {
+    -m3-container-color: -m3-color-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -20,6 +22,7 @@
 }
 
 .m3-surface-variant-container-lowest {
+    -m3-container-color: -m3-color-surface-container-lowest;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -28,6 +31,7 @@
 }
 
 .m3-surface-variant-container-low {
+    -m3-container-color: -m3-color-surface-container-low;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -36,6 +40,7 @@
 }
 
 .m3-surface-variant-container {
+    -m3-container-color: -m3-color-surface-container;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -44,6 +49,7 @@
 }
 
 .m3-surface-variant-container-high {
+    -m3-container-color: -m3-color-surface-container-high;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -52,6 +58,7 @@
 }
 
 .m3-surface-variant-container-highest {
+    -m3-container-color: -m3-color-surface-container-highest;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -60,6 +67,7 @@
 }
 
 .m3-surface-variant-primary-container {
+    -m3-container-color: -m3-color-primary-container;
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
@@ -68,6 +76,7 @@
 }
 
 .m3-surface-variant-secondary-container {
+    -m3-container-color: -m3-color-secondary-container;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
@@ -76,6 +85,7 @@
 }
 
 .m3-surface-variant-tertiary-container {
+    -m3-container-color: -m3-color-tertiary-container;
     -fx-text-fill: -m3-color-on-tertiary-container;
 }
 

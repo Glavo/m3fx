@@ -1116,7 +1116,6 @@ public final class M3FXDemoApp extends Application {
         M3Button localColors = new M3Button("Local colors", M3ButtonVariant.FILLED);
         localColors.setContainerColor(Color.web("#006A6A"));
         localColors.setContentColor(Color.web("#FFFFFF"));
-        localColors.setDisabledContentColor(Color.web("#7A7A7A"));
 
         return createGallery(
                 createShowcaseGroup(
@@ -2752,14 +2751,14 @@ public final class M3FXDemoApp extends Application {
         M3Surface primary = createSurface("Primary", M3SurfaceVariant.PRIMARY_CONTAINER, M3SurfaceElevation.LEVEL2);
         M3Surface secondary = createSurface("Secondary", M3SurfaceVariant.SECONDARY_CONTAINER, M3SurfaceElevation.LEVEL2);
         M3Surface tertiary = createSurface("Tertiary", M3SurfaceVariant.TERTIARY_CONTAINER, M3SurfaceElevation.LEVEL2);
-        M3Surface localColors = createSurface("Local surface", M3SurfaceVariant.SURFACE, M3SurfaceElevation.LEVEL1);
+        M3Surface localColors =
+                createSurface("Local container", M3SurfaceVariant.SURFACE, M3SurfaceElevation.LEVEL1);
         localColors.setContainerColor(Color.web("#E8F5E9"));
-        localColors.setContentColor(Color.web("#1B5E20"));
 
         return createGallery(
                 createShowcaseGroup("Surface Tones", surface, container, high),
                 createShowcaseGroup("Container Colors", primary, secondary, tertiary),
-                createShowcaseGroup("Local Colors", localColors)
+                createShowcaseGroup("Local Container Paint", localColors)
         );
     }
 
@@ -2820,19 +2819,18 @@ public final class M3FXDemoApp extends Application {
         disabled.setDisable(true);
 
         M3Card localColors = createSampleCard(
-                "Local colors",
-                "Partial override",
-                "Container and content are local; disabled roles retain their normal cascade.",
+                "Local container",
+                "Container override",
+                "Content and interaction colors continue to follow the active theme.",
                 M3CardVariant.FILLED
         );
         localColors.setContainerColor(Color.web("#FFF3E0"));
-        localColors.setContentColor(Color.web("#4E2600"));
 
         return createGallery(
                 createShowcaseGroup("Variants", filled, outlined, elevated),
                 createShowcaseGroup("Passive Cards With Actions", media, elevatedMedia, outlinedMedia),
                 createShowcaseGroup("States", dragged, disabled),
-                createShowcaseGroup("Local Colors", localColors)
+                createShowcaseGroup("Local Container Paint", localColors)
         );
     }
 

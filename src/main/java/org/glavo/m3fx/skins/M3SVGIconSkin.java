@@ -4,13 +4,17 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.property.ObjectProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.SkinBase;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.transform.Affine;
 import org.glavo.m3fx.controls.M3SVGIcon;
+import org.glavo.m3fx.internal.M3IconPaints;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +31,15 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     /// The transform mapping source viewport coordinates into the icon's logical-pixel viewport.
     private final Affine viewportTransform = new Affine();
 
+    /// The semantic paint selected by the icon variant and CSS.
+    private final ObjectProperty<@Nullable Paint> semanticPaint;
+
+    /// The paint supplied while this icon occupies a containing component's graphic slot.
+    private final ObjectProperty<@Nullable Paint> inheritedPaint;
+
+    /// Updates the path whenever one of its paint channels changes.
+    private final InvalidationListener paintInvalidation = observable -> updatePathPaint();
+
     /// Requests layout when effective node orientation changes.
     private final InvalidationListener orientationListener;
 
@@ -36,16 +49,25 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     /// @throws IllegalArgumentException if `control` is `null`
     public M3SVGIconSkin(M3SVGIcon control) {
         super(control);
+        semanticPaint = M3IconPaints.semanticPaintProperty(control);
+        inheritedPaint = M3IconPaints.inheritedPaintProperty(control);
         orientationListener = observable -> control.requestLayout();
         initializePath(control);
+        semanticPaint.addListener(paintInvalidation);
+        inheritedPaint.addListener(paintInvalidation);
+        control.tintProperty().addListener(paintInvalidation);
         control.effectiveNodeOrientationProperty().addListener(orientationListener);
         getChildren().setAll(path);
+        updatePathPaint();
     }
 
     /// Releases bindings, listeners, and child nodes owned by this skin.
     @Override
     public void dispose() {
         M3SVGIcon control = getSkinnable();
+        semanticPaint.removeListener(paintInvalidation);
+        inheritedPaint.removeListener(paintInvalidation);
+        control.tintProperty().removeListener(paintInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(orientationListener);
         path.contentProperty().unbind();
         path.fillRuleProperty().unbind();
@@ -181,6 +203,7 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
                 : targetX - sourceX * scale);
         viewportTransform.setTy(targetY - sourceY * scale);
         path.setVisible(true);
+        updatePathPaint();
     }
 
     /// Initializes the rendered path and binds it to control state.
@@ -209,5 +232,16 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
                 && Double.isFinite(height)
                 && width > 0.0
                 && height > 0.0;
+    }
+
+    /// Resolves and applies the highest-precedence SVG path paint.
+    private void updatePathPaint() {
+        @Nullable Paint tint = getSkinnable().getTint();
+        @Nullable Paint inherited = inheritedPaint.get();
+        @Nullable Paint semantic = semanticPaint.get();
+        Paint paint = tint != null ? tint : inherited != null ? inherited : semantic != null ? semantic : Color.BLACK;
+        if (!paint.equals(path.getFill())) {
+            path.setFill(paint);
+        }
     }
 }

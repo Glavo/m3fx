@@ -7,6 +7,8 @@
 .m3-button.m3-text-button:top-app-bar-leading:pressed {
     -m3-disclosure-icon-color: -m3-color-on-surface;
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface;
@@ -19,6 +21,8 @@
 .m3-button.m3-text-button:top-app-bar-trailing:pressed {
     -m3-disclosure-icon-color: -m3-color-on-surface-variant;
     -m3-button-icon-color: -m3-color-on-surface-variant;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -38,6 +42,7 @@
 .m3-button.m3-text-button:top-app-bar-trailing:disabled {
     -m3-disclosure-icon-color: -m3-color-on-surface;
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -48,6 +53,8 @@
 .m3-button.m3-text-button:toolbar-action:pressed {
     -m3-disclosure-icon-color: -m3-color-on-surface-variant;
     -m3-button-icon-color: -m3-color-on-surface-variant;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -60,6 +67,7 @@
 .m3-button.m3-text-button:toolbar-action:vibrant:pressed {
     -m3-disclosure-icon-color: -m3-color-on-primary-container;
     -m3-button-icon-color: -m3-color-on-primary-container;
+    -m3-content-color: -m3-color-on-primary-container;
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
@@ -86,12 +94,15 @@
 .m3-button.m3-text-button:toolbar-action:disabled .m3-icon-graphic,
 .m3-button.m3-text-button:toolbar-action:vibrant:disabled .m3-icon-graphic {
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
 
 .m3-button {
     -m3-button-icon-color: -m3-color-primary;
     -m3-disclosure-icon-color: -m3-color-primary;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-primary;
     -m3-container-height: 40px;
     -m3-container-shape: 999px;
     -m3-horizontal-padding: 24px;
@@ -117,6 +128,8 @@
 .m3-button.m3-filled-button:pressed {
     -m3-disclosure-icon-color: -m3-color-on-primary;
     -m3-button-icon-color: -m3-color-on-primary;
+    -m3-container-color: -m3-color-primary;
+    -m3-content-color: -m3-color-on-primary;
     -fx-background-color: -m3-color-primary;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -136,6 +149,8 @@
 .m3-button.m3-tonal-button:pressed {
     -m3-disclosure-icon-color: -m3-color-on-secondary-container;
     -m3-button-icon-color: -m3-color-on-secondary-container;
+    -m3-container-color: -m3-color-secondary-container;
+    -m3-content-color: -m3-color-on-secondary-container;
     -fx-background-color: -m3-color-secondary-container;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -155,6 +170,8 @@
 .m3-button.m3-outlined-button:pressed {
     -m3-disclosure-icon-color: -m3-color-primary;
     -m3-button-icon-color: -m3-color-primary;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-primary;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: -m3-color-outline;
@@ -175,6 +192,8 @@
 .m3-button.m3-text-button:pressed {
     -m3-disclosure-icon-color: -m3-color-primary;
     -m3-button-icon-color: -m3-color-primary;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-primary;
     -m3-horizontal-padding: 12px;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
@@ -194,6 +213,8 @@
 .m3-button.m3-snackbar-action:armed,
 .m3-button.m3-snackbar-action:pressed {
     -m3-button-icon-color: -m3-color-inverse-primary;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-inverse-primary;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-effect: null;
@@ -210,6 +231,7 @@
 .m3-icon-button.m3-snackbar-close:focused,
 .m3-icon-button.m3-snackbar-close:armed,
 .m3-icon-button.m3-snackbar-close:pressed {
+    -m3-content-color: -m3-color-inverse-on-surface;
     -fx-text-fill: -m3-color-inverse-on-surface;
 }
 
@@ -227,6 +249,8 @@
 .m3-button.m3-elevated-button:pressed {
     -m3-disclosure-icon-color: -m3-color-primary;
     -m3-button-icon-color: -m3-color-primary;
+    -m3-container-color: -m3-color-surface-container-low;
+    -m3-content-color: -m3-color-primary;
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -362,6 +386,7 @@
 }
 
 .m3-icon-button {
+    -m3-content-color: -m3-color-on-surface-variant;
     -m3-container-height: 40px;
     -m3-container-width: 40px;
     -m3-horizontal-padding: 0px;
@@ -410,6 +435,8 @@
 .m3-icon-button.m3-text-button:focused,
 .m3-icon-button.m3-text-button:armed,
 .m3-icon-button.m3-text-button:pressed {
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
@@ -418,6 +445,8 @@
 .m3-icon-button.m3-outlined-button:focused,
 .m3-icon-button.m3-outlined-button:armed,
 .m3-icon-button.m3-outlined-button:pressed {
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-border-color: -m3-color-outline-variant;
     -fx-border-width: 1px;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -540,6 +569,7 @@
 .m3-icon-button:disabled {
     -m3-disclosure-icon-color: -m3-color-on-surface;
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-cursor: default;
     -fx-effect: null;
     -fx-opacity: 1;
@@ -556,6 +586,8 @@
 .m3-button.m3-text-button:disabled,
 .m3-button.m3-elevated-button:disabled {
     -m3-disclosure-icon-color: -m3-color-on-surface;
+    -m3-container-color: -m3-button-disabled-container-color;
+    -m3-content-color: -m3-color-on-surface;
     -fx-background-color: -m3-button-disabled-container-color;
     -fx-border-color: transparent;
     -fx-effect: null;
@@ -564,6 +596,8 @@
 
 .m3-button.m3-outlined-button:disabled {
     -m3-disclosure-icon-color: -m3-color-on-surface;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline-variant;
     -fx-effect: null;
@@ -572,6 +606,7 @@
 
 .m3-icon-button.m3-text-button:disabled,
 .m3-button.m3-snackbar-action:disabled {
+    -m3-container-color: transparent;
     -fx-background-color: transparent;
 }
 
@@ -584,6 +619,7 @@
 .m3-text-input-leading:disabled > .m3-icon-button:disabled,
 .m3-text-input-trailing:disabled > .m3-button:disabled,
 .m3-text-input-trailing:disabled > .m3-icon-button:disabled {
+    -m3-container-color: transparent;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-opacity: 1;
