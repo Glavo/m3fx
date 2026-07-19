@@ -34,10 +34,12 @@ import java.util.function.Predicate;
 @NotNullByDefault
 public final class M3Accessible {
     /// The node property key used to provide an accessibility index before a skin attaches nodes.
-    private static final Object ACCESSIBLE_INDEX_ITEMS_KEY = new Object();
+    private static final IdentityKey ACCESSIBLE_INDEX_ITEMS_KEY =
+            new IdentityKey(M3Accessible.class.getName() + ".accessibleIndexItems");
 
     /// The node property key used to provide direct accessibility focus and reveal routes.
-    private static final Object ACCESSIBLE_ACTION_ROUTE_KEY = new Object();
+    private static final IdentityKey ACCESSIBLE_ACTION_ROUTE_KEY =
+            new IdentityKey(M3Accessible.class.getName() + ".accessibleActionRoute");
 
     /// Prevents utility class instantiation.
     private M3Accessible() {

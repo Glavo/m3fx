@@ -4,6 +4,7 @@
 package org.glavo.m3fx.internal.theme;
 
 import javafx.scene.Parent;
+import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -15,7 +16,8 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3ThemeMetadata {
     /// The JavaFX properties map key used for installed theme metadata.
-    private static final String THEME_PROPERTY_KEY = "org.glavo.m3fx.theme.M3ThemeManager.theme";
+    private static final IdentityKey THEME_PROPERTY_KEY =
+            new IdentityKey("org.glavo.m3fx.theme.M3ThemeManager.theme");
 
     /// Prevents utility class instantiation.
     private M3ThemeMetadata() {
@@ -73,6 +75,6 @@ public final class M3ThemeMetadata {
     /// @param key the properties map key to inspect
     /// @return `true` when the key identifies installed theme metadata
     public static boolean isThemePropertyKey(Object key) {
-        return Objects.equals(THEME_PROPERTY_KEY, key);
+        return THEME_PROPERTY_KEY == key;
     }
 }

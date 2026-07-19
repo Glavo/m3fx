@@ -31,10 +31,12 @@ import java.util.function.Consumer;
 @NotNullByDefault
 public final class M3MotionSettingsObserver {
     /// Opaque owner property key for the shared owner coordinator.
-    private static final Object OWNER_OBSERVER_KEY = new Object();
+    private static final IdentityKey OWNER_OBSERVER_KEY =
+            new IdentityKey(M3MotionSettingsObserver.class.getName() + ".ownerObserver");
 
     /// Opaque scene property key for the shared motion-settings dispatcher.
-    private static final Object SCENE_OBSERVER_KEY = new Object();
+    private static final IdentityKey SCENE_OBSERVER_KEY =
+            new IdentityKey(M3MotionSettingsObserver.class.getName() + ".sceneObserver");
 
     /// Internal listeners notified when global settings or one local motion-context subtree changes.
     private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> MOTION_CONTEXT_CHANGE_LISTENERS =

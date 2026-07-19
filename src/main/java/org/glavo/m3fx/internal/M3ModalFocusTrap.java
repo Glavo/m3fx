@@ -25,7 +25,8 @@ import java.util.function.Supplier;
 @NotNullByDefault
 public final class M3ModalFocusTrap {
     /// Opaque scene property key for active traps ordered from oldest to most recently activated.
-    private static final Object ACTIVE_TRAPS_KEY = new Object();
+    private static final IdentityKey ACTIVE_TRAPS_KEY =
+            new IdentityKey(M3ModalFocusTrap.class.getName() + ".activeTraps");
 
     /// The modal surface that owns focus traversal.
     private final Node owner;

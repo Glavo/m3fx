@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import org.glavo.m3fx.internal.IdentityKey;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,10 +34,12 @@ final class M3FocusVisibleTracker {
     static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
     /// Opaque scene property key for the fallback input tracker.
-    private static final Object SCENE_INPUT_TRACKER_KEY = new Object();
+    private static final IdentityKey SCENE_INPUT_TRACKER_KEY =
+            new IdentityKey(M3FocusVisibleTracker.class.getName() + ".sceneInputTracker");
 
     /// Opaque owner property key for fallback focus-visible trackers.
-    private static final Object OWNER_TRACKERS_KEY = new Object();
+    private static final IdentityKey OWNER_TRACKERS_KEY =
+            new IdentityKey(M3FocusVisibleTracker.class.getName() + ".ownerTrackers");
 
     /// The owner node whose focus-visible state is tracked.
     private final Node owner;

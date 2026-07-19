@@ -24,10 +24,12 @@ public final class M3ControlStyles {
     private static final String ROOT_STYLE_CLASS = "root";
 
     /// The node property key used to mark repeatable fallback stylesheet listener installation.
-    private static final Object FALLBACK_STYLESHEET_LISTENER_KEY = new Object();
+    private static final IdentityKey FALLBACK_STYLESHEET_LISTENER_KEY =
+            new IdentityKey(M3ControlStyles.class.getName() + ".fallbackStylesheetListener");
 
     /// The scene property key used to retain the single fallback stylesheet installation for that scene.
-    private static final Object FALLBACK_STYLESHEET_INSTALLATION_KEY = new Object();
+    private static final IdentityKey FALLBACK_STYLESHEET_INSTALLATION_KEY =
+            new IdentityKey(M3ControlStyles.class.getName() + ".fallbackStylesheetInstallation");
 
     /// The shared listener that installs fallback tokens when any marked control enters a scene.
     private static final ChangeListener<@Nullable Scene> FALLBACK_SCENE_LISTENER =

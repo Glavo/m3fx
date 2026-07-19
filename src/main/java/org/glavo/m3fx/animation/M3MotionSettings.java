@@ -6,6 +6,7 @@ package org.glavo.m3fx.animation;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Node;
+import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,8 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3MotionSettings {
     /// The key used to store node-local reduced-motion requests.
-    private static final Object REDUCED_MOTION_REQUEST_KEY = new Object();
+    private static final IdentityKey REDUCED_MOTION_REQUEST_KEY =
+            new IdentityKey(M3MotionSettings.class.getName() + ".reducedMotionRequest");
 
     /// Prevents instantiation.
     private M3MotionSettings() {

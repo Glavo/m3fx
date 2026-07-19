@@ -13,7 +13,8 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3TooltipRegistry {
     /// The node property key used to store tooltip activation handlers.
-    private static final String INSTALLATION_KEY = M3TooltipRegistry.class.getName() + ".installation";
+    private static final IdentityKey INSTALLATION_KEY =
+            new IdentityKey(M3TooltipRegistry.class.getName() + ".installation");
 
     /// Prevents utility class instantiation.
     private M3TooltipRegistry() {

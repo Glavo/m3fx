@@ -21,9 +21,10 @@ import javafx.scene.control.TreeView;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -46,7 +47,8 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3ScrollPanes {
     /// The node property key used to store the installed smooth scroll state.
-    private static final Object SMOOTH_SCROLL_STATE_KEY = new Object();
+    private static final IdentityKey SMOOTH_SCROLL_STATE_KEY =
+            new IdentityKey(M3ScrollPanes.class.getName() + ".smoothScrollState");
 
     /// The default wheel line distance used when a platform reports text-line scroll units.
     private static final double DEFAULT_LINE_SCROLL_PIXELS = 40.0;

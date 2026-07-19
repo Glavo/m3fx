@@ -26,15 +26,16 @@ public final class M3PopupStyles {
     public static final String FALLBACK_ROOT_STYLE_CLASS = "m3-fallback-root";
 
     /// The property key that stores a popup root style before copied theme declarations are applied.
-    private static final String BASE_STYLE_PROPERTY_KEY = M3PopupStyles.class.getName() + ".baseStyle";
+    private static final IdentityKey BASE_STYLE_PROPERTY_KEY =
+            new IdentityKey(M3PopupStyles.class.getName() + ".baseStyle");
 
     /// The property key that stores the last source stylesheet snapshot copied into a popup root.
-    private static final String SOURCE_STYLESHEETS_PROPERTY_KEY =
-            M3PopupStyles.class.getName() + ".sourceStylesheets";
+    private static final IdentityKey SOURCE_STYLESHEETS_PROPERTY_KEY =
+            new IdentityKey(M3PopupStyles.class.getName() + ".sourceStylesheets");
 
     /// The property key that stores the generated stylesheet added for a copied local theme.
-    private static final String COPIED_THEME_STYLESHEET_PROPERTY_KEY =
-            M3PopupStyles.class.getName() + ".copiedThemeStylesheet";
+    private static final IdentityKey COPIED_THEME_STYLESHEET_PROPERTY_KEY =
+            new IdentityKey(M3PopupStyles.class.getName() + ".copiedThemeStylesheet");
 
     /// Prevents utility class instantiation.
     private M3PopupStyles() {

@@ -8,6 +8,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.css.Styleable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -42,14 +43,16 @@ import static org.glavo.m3fx.theme.M3ThemeManager.ROOT_STYLE_CLASS;
 @NotNullByDefault
 public final class M3ThemeRuntime {
     /// The property key that stores state owned by a local parent theme installation.
-    private static final String LOCAL_THEME_INSTALLATION_PROPERTY_KEY =
-            M3ThemeRuntime.class.getName() + ".localThemeInstallation";
+    private static final IdentityKey LOCAL_THEME_INSTALLATION_PROPERTY_KEY =
+            new IdentityKey(M3ThemeRuntime.class.getName() + ".localThemeInstallation");
 
     /// Opaque scene property key for the generated theme stylesheet URL.
-    private static final Object THEME_STYLESHEET_KEY = new Object();
+    private static final IdentityKey THEME_STYLESHEET_KEY =
+            new IdentityKey(M3ThemeRuntime.class.getName() + ".themeStylesheet");
 
     /// Opaque scene property key for the active scene-root theme installation.
-    private static final Object SCENE_THEME_INSTALLATION_KEY = new Object();
+    private static final IdentityKey SCENE_THEME_INSTALLATION_KEY =
+            new IdentityKey(M3ThemeRuntime.class.getName() + ".sceneThemeInstallation");
 
     /// Initial buffer size for a generated theme stylesheet, chosen to avoid most growth without retaining memory.
     private static final int THEME_STYLESHEET_INITIAL_CAPACITY = 64 * 1024;

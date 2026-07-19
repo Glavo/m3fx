@@ -24,10 +24,12 @@ import java.util.function.Supplier;
 @NotNullByDefault
 public final class M3AccessibleFocusNotifier {
     /// Opaque scene property key for the shared focus-owner dispatcher.
-    private static final Object SCENE_DISPATCHER_KEY = new Object();
+    private static final IdentityKey SCENE_DISPATCHER_KEY =
+            new IdentityKey(M3AccessibleFocusNotifier.class.getName() + ".sceneDispatcher");
 
     /// Opaque node property key for notifiers registered under one physical focus subtree.
-    private static final Object NODE_NOTIFIERS_KEY = new Object();
+    private static final IdentityKey NODE_NOTIFIERS_KEY =
+            new IdentityKey(M3AccessibleFocusNotifier.class.getName() + ".nodeNotifiers");
 
     /// The node whose scene focus owner should be observed.
     private final Node sceneOwner;

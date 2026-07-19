@@ -25,28 +25,36 @@ import java.util.Set;
 @NotNullByDefault
 public final class M3Css {
     /// Tracks the last minimum width written by M3FX metric helpers.
-    private static final Object MIN_WIDTH_KEY = new Object();
+    private static final IdentityKey MIN_WIDTH_KEY =
+            new IdentityKey(M3Css.class.getName() + ".minWidth");
 
     /// Tracks the last preferred width written by M3FX metric helpers.
-    private static final Object PREF_WIDTH_KEY = new Object();
+    private static final IdentityKey PREF_WIDTH_KEY =
+            new IdentityKey(M3Css.class.getName() + ".prefWidth");
 
     /// Tracks the last maximum width written by M3FX metric helpers.
-    private static final Object MAX_WIDTH_KEY = new Object();
+    private static final IdentityKey MAX_WIDTH_KEY =
+            new IdentityKey(M3Css.class.getName() + ".maxWidth");
 
     /// Tracks the last minimum height written by M3FX metric helpers.
-    private static final Object MIN_HEIGHT_KEY = new Object();
+    private static final IdentityKey MIN_HEIGHT_KEY =
+            new IdentityKey(M3Css.class.getName() + ".minHeight");
 
     /// Tracks the last preferred height written by M3FX metric helpers.
-    private static final Object PREF_HEIGHT_KEY = new Object();
+    private static final IdentityKey PREF_HEIGHT_KEY =
+            new IdentityKey(M3Css.class.getName() + ".prefHeight");
 
     /// Tracks the last maximum height written by M3FX metric helpers.
-    private static final Object MAX_HEIGHT_KEY = new Object();
+    private static final IdentityKey MAX_HEIGHT_KEY =
+            new IdentityKey(M3Css.class.getName() + ".maxHeight");
 
     /// Tracks the last padding written by M3FX metric helpers.
-    private static final Object PADDING_KEY = new Object();
+    private static final IdentityKey PADDING_KEY =
+            new IdentityKey(M3Css.class.getName() + ".padding");
 
     /// Tracks helper-owned metrics that were skipped while application bindings were active.
-    private static final Object SUSPENDED_METRICS_KEY = new Object();
+    private static final IdentityKey SUSPENDED_METRICS_KEY =
+            new IdentityKey(M3Css.class.getName() + ".suspendedMetrics");
 
     /// Prevents utility class instantiation.
     private M3Css() {
@@ -245,7 +253,7 @@ public final class M3Css {
     /// Returns whether an M3FX helper still owns one numeric Region metric.
     private static boolean shouldWriteMetric(
             Region region,
-            Object key,
+            IdentityKey key,
             boolean bound,
             double currentValue,
             double defaultValue
@@ -273,7 +281,7 @@ public final class M3Css {
     /// Returns whether an M3FX helper still owns one object-valued Region metric.
     private static boolean shouldWriteMetric(
             Region region,
-            Object key,
+            IdentityKey key,
             boolean bound,
             Object currentValue,
             Object defaultValue
@@ -297,14 +305,14 @@ public final class M3Css {
 
     /// Records a skipped helper-owned metric while an application binding is active.
     @SuppressWarnings("unchecked")
-    private static void rememberSuspendedMetricIfOwned(Region region, Object key, boolean owned) {
+    private static void rememberSuspendedMetricIfOwned(Region region, IdentityKey key, boolean owned) {
         if (!owned) {
             return;
         }
         Object value = region.getProperties().get(SUSPENDED_METRICS_KEY);
-        Set<Object> suspendedMetrics;
+        Set<IdentityKey> suspendedMetrics;
         if (value instanceof Set<?> existing) {
-            suspendedMetrics = (Set<Object>) existing;
+            suspendedMetrics = (Set<IdentityKey>) existing;
         } else {
             suspendedMetrics = Collections.newSetFromMap(new IdentityHashMap<>());
             region.getProperties().put(SUSPENDED_METRICS_KEY, suspendedMetrics);
@@ -313,7 +321,7 @@ public final class M3Css {
     }
 
     /// Returns and clears whether a skipped helper-owned metric should be restored after unbinding.
-    private static boolean consumeSuspendedMetric(Region region, Object key) {
+    private static boolean consumeSuspendedMetric(Region region, IdentityKey key) {
         if (!region.hasProperties()) {
             return false;
         }
@@ -328,12 +336,12 @@ public final class M3Css {
     }
 
     /// Records one numeric Region metric written by an M3FX helper.
-    private static void rememberMetric(Region region, Object key, double value) {
+    private static void rememberMetric(Region region, IdentityKey key, double value) {
         region.getProperties().put(key, value);
     }
 
     /// Records one object-valued Region metric written by an M3FX helper.
-    private static void rememberMetric(Region region, Object key, Object value) {
+    private static void rememberMetric(Region region, IdentityKey key, Object value) {
         region.getProperties().put(key, value);
     }
 
