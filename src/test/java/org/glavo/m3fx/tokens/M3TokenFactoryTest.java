@@ -122,7 +122,7 @@ final class M3TokenFactoryTest {
         assertEquals(210, motion.medium1());
         assertEquals(420, motion.long2());
         assertEquals(840, motion.extraLong2());
-        assertEquals(M3MotionEasing.STANDARD, motion.defaultEffects().easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, motion.defaultEffects().easing());
         assertEquals(Duration.millis(500.0), motion.behavior().tooltipShowDelay());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-font-family: \"Demo\""));
@@ -438,8 +438,8 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-duration-long2: 460ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet)
                 .contains("-m3-motion-duration-extra-long2: 920ms"));
-        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-effects-easing: standard"));
-        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-spatial-duration: 350ms"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-effects-easing: default-effects"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-spatial-duration: 500ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-sub-menu-hover-open-delay: 200ms"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-height: 51px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-body-large-text"));
@@ -631,11 +631,11 @@ final class M3TokenFactoryTest {
         assertEquals(20, motion.short2());
         assertEquals(50, motion.medium1());
         assertEquals(100, motion.long2());
-        assertEquals(M3MotionEasing.EMPHASIZED, motion.defaultEffects().easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, motion.defaultEffects().easing());
         assertEquals(150.0, motion.behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
-        assertEquals(400.0, motion.defaultSpatial().duration().toMillis(), 0.0001);
-        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-effects-easing: emphasized"));
-        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertEquals(500.0, motion.defaultSpatial().duration().toMillis(), 0.0001);
+        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-effects-easing: default-effects"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-spatial-duration: 500ms"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
     }
 

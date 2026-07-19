@@ -47,6 +47,27 @@ public final class M3Motion {
     /// The Material Design 3 emphasized decelerate easing curve.
     public static final Interpolator EMPHASIZED_DECELERATE = new CubicInterpolator(0.05, 0.7, 0.1, 1.0);
 
+    /// The finite fallback curve for Standard spatial springs.
+    public static final Interpolator STANDARD_SPATIAL = new CubicInterpolator(0.27, 1.06, 0.18, 1.0);
+
+    /// The finite fallback curve for the Expressive fast spatial spring.
+    public static final Interpolator EXPRESSIVE_FAST_SPATIAL = new CubicInterpolator(0.42, 1.67, 0.21, 0.90);
+
+    /// The finite fallback curve for the Expressive default spatial spring.
+    public static final Interpolator EXPRESSIVE_DEFAULT_SPATIAL = new CubicInterpolator(0.38, 1.21, 0.22, 1.0);
+
+    /// The finite fallback curve for the Expressive slow spatial spring.
+    public static final Interpolator EXPRESSIVE_SLOW_SPATIAL = new CubicInterpolator(0.39, 1.29, 0.35, 0.98);
+
+    /// The finite fallback curve for fast effects springs.
+    public static final Interpolator FAST_EFFECTS = new CubicInterpolator(0.31, 0.94, 0.34, 1.0);
+
+    /// The finite fallback curve for default effects springs.
+    public static final Interpolator DEFAULT_EFFECTS = new CubicInterpolator(0.34, 0.80, 0.34, 1.0);
+
+    /// The finite fallback curve for slow effects springs.
+    public static final Interpolator SLOW_EFFECTS = new CubicInterpolator(0.34, 0.88, 0.34, 1.0);
+
     /// The short1 duration token, equal to 50 milliseconds.
     public static final Duration SHORT1 = Duration.millis(50.0);
 

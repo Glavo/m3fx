@@ -37,7 +37,28 @@ public enum M3MotionEasing {
     EMPHASIZED_ACCELERATE("emphasized-accelerate", M3Motion.EMPHASIZED_ACCELERATE),
 
     /// Uses the emphasized decelerate Material Design 3 easing curve.
-    EMPHASIZED_DECELERATE("emphasized-decelerate", M3Motion.EMPHASIZED_DECELERATE);
+    EMPHASIZED_DECELERATE("emphasized-decelerate", M3Motion.EMPHASIZED_DECELERATE),
+
+    /// Uses the finite fallback curve for Standard spatial springs.
+    STANDARD_SPATIAL("standard-spatial", M3Motion.STANDARD_SPATIAL),
+
+    /// Uses the finite fallback curve for the Expressive fast spatial spring.
+    EXPRESSIVE_FAST_SPATIAL("expressive-fast-spatial", M3Motion.EXPRESSIVE_FAST_SPATIAL),
+
+    /// Uses the finite fallback curve for the Expressive default spatial spring.
+    EXPRESSIVE_DEFAULT_SPATIAL("expressive-default-spatial", M3Motion.EXPRESSIVE_DEFAULT_SPATIAL),
+
+    /// Uses the finite fallback curve for the Expressive slow spatial spring.
+    EXPRESSIVE_SLOW_SPATIAL("expressive-slow-spatial", M3Motion.EXPRESSIVE_SLOW_SPATIAL),
+
+    /// Uses the finite fallback curve for fast effects springs.
+    FAST_EFFECTS("fast-effects", M3Motion.FAST_EFFECTS),
+
+    /// Uses the finite fallback curve for default effects springs.
+    DEFAULT_EFFECTS("default-effects", M3Motion.DEFAULT_EFFECTS),
+
+    /// Uses the finite fallback curve for slow effects springs.
+    SLOW_EFFECTS("slow-effects", M3Motion.SLOW_EFFECTS);
 
     /// The stable CSS token name for this easing curve.
     private final String tokenName;

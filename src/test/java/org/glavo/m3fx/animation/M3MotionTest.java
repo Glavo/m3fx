@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,18 +74,36 @@ final class M3MotionTest {
         M3MotionScheme standard = M3MotionScheme.standard();
         M3MotionScheme expressive = M3MotionScheme.expressive();
 
-        assertEquals(M3Motion.SHORT1, standard.fastEffects().duration());
-        assertEquals(M3Motion.SHORT3, standard.fastSpatial().duration());
+        assertEquals(M3Motion.SHORT3, standard.fastEffects().duration());
+        assertEquals(M3Motion.MEDIUM3, standard.fastSpatial().duration());
         assertEquals(M3Motion.SHORT4, standard.defaultEffects().duration());
-        assertEquals(M3MotionEasing.STANDARD, standard.defaultEffects().easing());
-        assertEquals(M3Motion.MEDIUM3, standard.defaultSpatial().duration());
-        assertEquals(M3MotionEasing.STANDARD, standard.defaultSpatial().easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, standard.defaultEffects().easing());
+        assertEquals(M3Motion.LONG2, standard.defaultSpatial().duration());
+        assertEquals(M3MotionEasing.STANDARD_SPATIAL, standard.defaultSpatial().easing());
+        assertEquals(new M3SpringParameters(0.9, 700.0), standard.defaultSpatial().springParameters());
 
-        assertEquals(M3Motion.MEDIUM1, expressive.defaultEffects().duration());
-        assertEquals(M3MotionEasing.EMPHASIZED, expressive.defaultEffects().easing());
-        assertEquals(M3Motion.MEDIUM4, expressive.defaultSpatial().duration());
-        assertEquals(M3MotionEasing.EMPHASIZED, expressive.defaultSpatial().easing());
-        assertSame(M3Motion.EMPHASIZED, expressive.defaultSpatial().interpolator());
+        assertEquals(M3Motion.SHORT4, expressive.defaultEffects().duration());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, expressive.defaultEffects().easing());
+        assertEquals(M3Motion.LONG2, expressive.defaultSpatial().duration());
+        assertEquals(M3MotionEasing.EXPRESSIVE_DEFAULT_SPATIAL, expressive.defaultSpatial().easing());
+        assertEquals(new M3SpringParameters(0.8, 380.0), expressive.defaultSpatial().springParameters());
+        assertSame(M3Motion.EXPRESSIVE_DEFAULT_SPATIAL, expressive.defaultSpatial().interpolator());
+    }
+
+    /// Verifies spring parameter validation and duration-based specification identity.
+    @Test
+    void springSpecificationsExposeValidatedPhysicalParameters() {
+        M3MotionSpec tween = M3MotionSpec.of(M3Motion.SHORT4, M3MotionEasing.STANDARD);
+        M3MotionSpec spring = M3MotionSpec.spring(
+                new M3SpringParameters(0.8, 380.0),
+                M3Motion.LONG2,
+                M3MotionEasing.EXPRESSIVE_DEFAULT_SPATIAL
+        );
+
+        assertNull(tween.springParameters());
+        assertEquals(new M3SpringParameters(0.8, 380.0), spring.springParameters());
+        assertThrows(IllegalArgumentException.class, () -> new M3SpringParameters(0.0, 380.0));
+        assertThrows(IllegalArgumentException.class, () -> new M3SpringParameters(0.8, Double.NaN));
     }
 
     /// Verifies that standard and expressive motion behavior timings remain distinct where needed.

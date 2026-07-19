@@ -135,10 +135,11 @@ final class M3ThemeTest {
 
         assertEquals(M3Profile.BASELINE_2021, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
-        assertEquals(M3MotionEasing.STANDARD, theme.tokens().motionTokens().defaultEffects().easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, theme.tokens().motionTokens().defaultEffects().easing());
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-monet-primary"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-color-primary"));
-        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-effects-easing: standard"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme)
+                .contains("-m3-motion-default-effects-easing: default-effects"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-label-large-font-size"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-display-medium-font-size"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-body-small-line-height"));
@@ -295,13 +296,14 @@ final class M3ThemeTest {
 
         assertEquals(M3Profile.EXPRESSIVE_2025, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
-        assertEquals(M3MotionEasing.EMPHASIZED, theme.tokens().motionTokens().defaultEffects().easing());
-        assertEquals(400.0, theme.tokens().motionTokens().defaultSpatial().duration().toMillis(), 0.0001);
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, theme.tokens().motionTokens().defaultEffects().easing());
+        assertEquals(500.0, theme.tokens().motionTokens().defaultSpatial().duration().toMillis(), 0.0001);
         assertEquals(150.0, theme.tokens().motionTokens().behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-monet-primary"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-color-primary"));
-        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-effects-easing: emphasized"));
-        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme)
+                .contains("-m3-motion-default-effects-easing: default-effects"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-spatial-duration: 500ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-filled-container-height: 40px"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-filled-horizontal-padding: 16px"));

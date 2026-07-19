@@ -6,18 +6,22 @@ package org.glavo.m3fx.internal.animation;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3SpringParameters;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /// Default immutable implementation of [M3MotionSpec].
 ///
-/// @param duration the animation duration
-/// @param easing   the named easing curve
+/// @param duration         the animation duration
+/// @param easing           the named easing curve
+/// @param springParameters the physical spring parameters, or `null` for duration-based motion
 @NotNullByDefault
 public record M3MotionSpecImpl(
         Duration duration,
-        M3MotionEasing easing
+        M3MotionEasing easing,
+        @Nullable M3SpringParameters springParameters
 ) implements M3MotionSpec {
     /// Creates a motion specification.
     ///

@@ -402,24 +402,32 @@ final class M3DialogPresentationTest {
         });
     }
 
-    /// Verifies animated dismissal retains the overlay until the scrim has completed its opacity transition.
+    /// Verifies animated dismissal retains the overlay until content effects, spatial motion, and scrim fade settle.
     @Tier2Test
     @Test
-    void dialogWaitsForScrimFadeBeforeRemovingOverlay() throws InterruptedException {
+    void dialogWaitsForPresentationMotionBeforeRemovingOverlay() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable StackPane> ownerContentReference = new AtomicReference<>();
         AtomicReference<@Nullable M3OverlayPane> overlayRootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Dialog> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable M3DialogHandle> handleReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Scrim> scrimReference = new AtomicReference<>();
-        AtomicBoolean observedIntermediateOpacity = new AtomicBoolean();
+        AtomicBoolean observedIntermediateScrimOpacity = new AtomicBoolean();
+        AtomicBoolean observedIntermediatePaneOpacity = new AtomicBoolean();
+        AtomicBoolean observedIntermediatePaneScale = new AtomicBoolean();
         AtomicReference<Double> minimumAttachedOpacity = new AtomicReference<>(Double.POSITIVE_INFINITY);
+        AtomicReference<Double> minimumAttachedScale = new AtomicReference<>(Double.POSITIVE_INFINITY);
 
         try {
             FxTestUtils.runOnFxThreadWhen(
                     () -> {
                         M3Scrim scrim = scrimReference.get();
-                        return scrim != null && scrim.getOpacity() >= scrim.getVisibleOpacity() - 0.001;
+                        M3Dialog dialog = dialogReference.get();
+                        return scrim != null
+                                && dialog != null
+                                && scrim.getOpacity() >= scrim.getVisibleOpacity() - 0.001
+                                && dialog.getDialogPane().getOpacity() >= 0.999
+                                && dialog.getDialogPane().getScaleY() >= 0.999;
                     },
                     () -> {
                         Stage stage = new Stage();
@@ -452,7 +460,23 @@ final class M3DialogPresentationTest {
                             double value = opacity.doubleValue();
                             minimumAttachedOpacity.accumulateAndGet(value, Math::min);
                             if (value > 0.001 && value < scrim.getVisibleOpacity() - 0.001) {
-                                observedIntermediateOpacity.set(true);
+                                observedIntermediateScrimOpacity.set(true);
+                            }
+                        });
+                        M3DialogPane pane = dialog.getDialogPane();
+                        pane.opacityProperty().addListener((observable, oldOpacity, opacity) -> {
+                            if (pane.getParent() != null && opacity.doubleValue() > 0.001 && opacity.doubleValue() < 0.999) {
+                                observedIntermediatePaneOpacity.set(true);
+                            }
+                        });
+                        pane.scaleYProperty().addListener((observable, oldScale, scale) -> {
+                            if (pane.getParent() == null) {
+                                return;
+                            }
+                            double value = scale.doubleValue();
+                            minimumAttachedScale.accumulateAndGet(value, Math::min);
+                            if (value > 0.921 && value < 0.999) {
+                                observedIntermediatePaneScale.set(true);
                             }
                         });
 
@@ -488,11 +512,20 @@ final class M3DialogPresentationTest {
                         M3Dialog dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
                         M3DialogHandle handle = Objects.requireNonNull(handleReference.get(), "dialog handle");
 
-                        assertTrue(observedIntermediateOpacity.get(),
+                        assertTrue(observedIntermediateScrimOpacity.get(),
                                 "scrim exit should include at least one intermediate opacity");
+                        assertTrue(observedIntermediatePaneOpacity.get(),
+                                "dialog exit should include an intermediate effects value");
+                        assertTrue(observedIntermediatePaneScale.get(),
+                                "dialog exit should include an intermediate vertical spatial value");
                         assertTrue(minimumAttachedOpacity.get() <= 0.001,
                                 () -> "overlay detached before scrim reached zero opacity: "
                                         + minimumAttachedOpacity.get());
+                        assertTrue(minimumAttachedScale.get() <= 0.921,
+                                () -> "overlay detached before dialog spatial motion settled: "
+                                        + minimumAttachedScale.get());
+                        assertEquals(1.0, dialog.getDialogPane().getOpacity(), 0.0001);
+                        assertEquals(1.0, dialog.getDialogPane().getScaleY(), 0.0001);
                         assertNull(dialog.getDialogPane().getParent());
                         assertStableEmptyOverlay(
                                 handle,

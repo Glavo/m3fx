@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.util.Duration;
 import org.glavo.m3fx.internal.animation.M3MotionSchemeImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -13,7 +14,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// fast, default, and slow roles allow a control to select a duration according to the scope and prominence of the
 /// change without depending on profile-specific numeric values.
 ///
-/// A scheme is immutable and may be shared. [standard] and [expressive] provide complete built-in schemes;
+/// A scheme is immutable and may be shared. [standard] and [expressive] provide complete spring-based schemes;
 /// [builder][#builder()] creates a mutable copy for replacing individual roles.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
@@ -70,12 +71,12 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// @return the baseline M3FX motion scheme
     static M3MotionScheme standard() {
         return new M3MotionSchemeImpl(
-                M3MotionSpec.of(M3Motion.SHORT1, M3MotionEasing.STANDARD),
-                M3MotionSpec.of(M3Motion.SHORT4, M3MotionEasing.STANDARD),
-                M3MotionSpec.of(M3Motion.MEDIUM2, M3MotionEasing.STANDARD),
-                M3MotionSpec.of(M3Motion.SHORT3, M3MotionEasing.STANDARD),
-                M3MotionSpec.of(M3Motion.MEDIUM3, M3MotionEasing.STANDARD),
-                M3MotionSpec.of(M3Motion.LONG2, M3MotionEasing.STANDARD)
+                spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
+                spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
+                spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
+                spring(0.9, 1400.0, M3Motion.MEDIUM3, M3MotionEasing.STANDARD_SPATIAL),
+                spring(0.9, 700.0, M3Motion.LONG2, M3MotionEasing.STANDARD_SPATIAL),
+                spring(0.9, 300.0, Duration.millis(750.0), M3MotionEasing.STANDARD_SPATIAL)
         );
     }
 
@@ -84,12 +85,26 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// @return the expressive M3FX motion scheme
     static M3MotionScheme expressive() {
         return new M3MotionSchemeImpl(
-                M3MotionSpec.of(M3Motion.SHORT3, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.of(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.of(M3Motion.MEDIUM3, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.of(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED_DECELERATE),
-                M3MotionSpec.of(M3Motion.MEDIUM4, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.of(M3Motion.LONG3, M3MotionEasing.EMPHASIZED)
+                spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
+                spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
+                spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
+                spring(0.6, 800.0, M3Motion.MEDIUM3, M3MotionEasing.EXPRESSIVE_FAST_SPATIAL),
+                spring(0.8, 380.0, M3Motion.LONG2, M3MotionEasing.EXPRESSIVE_DEFAULT_SPATIAL),
+                spring(0.8, 200.0, Duration.millis(650.0), M3MotionEasing.EXPRESSIVE_SLOW_SPATIAL)
+        );
+    }
+
+    /// Creates one built-in spring role with its finite cross-platform fallback.
+    private static M3MotionSpec spring(
+            double dampingRatio,
+            double stiffness,
+            Duration settlingDuration,
+            M3MotionEasing fallbackEasing
+    ) {
+        return M3MotionSpec.spring(
+                new M3SpringParameters(dampingRatio, stiffness),
+                settlingDuration,
+                fallbackEasing
         );
     }
 }

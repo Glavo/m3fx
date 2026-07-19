@@ -89,12 +89,12 @@ final class M3AnimationTest {
         root.getChildren().add(child);
         M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
 
-        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, M3Animation.defaultEffects(child).easing());
 
         M3ThemeManager.install(root, theme);
 
-        assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(child).easing());
-        assertEquals(400.0, M3Animation.defaultSpatial(child).duration().toMillis(), 0.0001);
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, M3Animation.defaultEffects(child).easing());
+        assertEquals(500.0, M3Animation.defaultSpatial(child).duration().toMillis(), 0.0001);
         assertEquals(4000.0, M3Animation.motionBehavior(child).snackbarDisplayDuration().toMillis(), 0.0001);
         assertEquals(150.0, M3Animation.motionBehavior(child).subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertEquals(900.0, M3Animation.motionBehavior(child).typeAheadResetDelay().toMillis(), 0.0001);
@@ -112,7 +112,7 @@ final class M3AnimationTest {
 
         FxTestUtils.setMotionScheme(child, M3MotionScheme.standard());
 
-        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
+        assertEquals(M3MotionEasing.DEFAULT_EFFECTS, M3Animation.defaultEffects(child).easing());
     }
 
     /// Verifies that pause-transition duration changes restart only when the caller keeps the timer active.

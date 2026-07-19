@@ -72,6 +72,9 @@ import java.util.Objects;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public class M3Dialog implements EventTarget {
+    /// The resting-height fraction used while a dialog enters or exits along the vertical axis.
+    private static final double HIDDEN_SCALE_Y_FACTOR = 0.92;
+
     /// Creates an empty Material dialog with a new [M3DialogPane].
     public M3Dialog() {
         this(new M3DialogPane());
@@ -89,8 +92,10 @@ public class M3Dialog implements EventTarget {
                 presentation.setDismissOnScrimClick(enabled);
             }
         });
-        presentationAnimation = new M3NodeTransition(dialogPane);
-        presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
+        presentationEffectsAnimation = new M3NodeTransition(dialogPane);
+        presentationEffectsAnimation.setOnFinished(event -> handlePresentationEffectsFinished());
+        presentationSpatialAnimation = new M3NodeTransition(dialogPane);
+        presentationSpatialAnimation.setOnFinished(event -> handlePresentationSpatialFinished());
         dialogPane.setButtonAction(this::handleButtonAction);
     }
 
@@ -261,8 +266,11 @@ public class M3Dialog implements EventTarget {
     /// The retained Material pane rendered by this dialog.
     private final M3DialogPane dialogPane;
 
-    /// Animates pane opacity during dialog entrance and exit.
-    private final M3NodeTransition presentationAnimation;
+    /// Animates the pane's non-spatial channels during dialog entrance and exit.
+    private final M3NodeTransition presentationEffectsAnimation;
+
+    /// Animates the pane's vertical reveal independently from its effects channels.
+    private final M3NodeTransition presentationSpatialAnimation;
 
     /// Owns this non-Node target's JavaFX event registrations and dispatch phases.
     private final M3EventHandlerManager eventHandlerManager = new M3EventHandlerManager(this);
@@ -299,6 +307,9 @@ public class M3Dialog implements EventTarget {
     /// The pane opacity restored after presentation transitions.
     private double restingOpacity = 1.0;
 
+    /// The pane vertical scale restored after presentation transitions.
+    private double restingScaleY = 1.0;
+
     /// Whether an accepted close is currently running its exit transition.
     private boolean closing;
 
@@ -308,8 +319,11 @@ public class M3Dialog implements EventTarget {
     /// The action associated with the accepted close transition.
     private @Nullable M3Button pendingAction;
 
-    /// Whether the pane has completed the active exit transition.
-    private boolean paneExitFinished;
+    /// Whether the pane effects channel has completed the active exit transition.
+    private boolean paneEffectsExitFinished;
+
+    /// Whether the pane spatial channel has completed the active exit transition.
+    private boolean paneSpatialExitFinished;
 
     /// Whether the presentation background has completed the active exit transition.
     private boolean backgroundExitFinished;
@@ -373,13 +387,21 @@ public class M3Dialog implements EventTarget {
             nonNullPresentation.setDismissOnScrimClick(isDismissOnScrimClick());
             fireLifecycle(M3DialogEvent.SHOWING, null);
             pendingAction = null;
-            paneExitFinished = false;
+            paneEffectsExitFinished = false;
+            paneSpatialExitFinished = false;
             backgroundExitFinished = false;
             closing = false;
-            presentationAnimation.stop();
+            presentationEffectsAnimation.stop();
+            presentationSpatialAnimation.stop();
             restingOpacity = dialogPane.getOpacity();
-            if (canAnimatePresentation(nonNullPresentation.getContextRoot())) {
-                dialogPane.setOpacity(0.0);
+            restingScaleY = dialogPane.getScaleY();
+            if (shouldAnimatePresentation(nonNullPresentation.getContextRoot())) {
+                if (!dialogPane.opacityProperty().isBound()) {
+                    dialogPane.setOpacity(0.0);
+                }
+                if (!dialogPane.scaleYProperty().isBound()) {
+                    dialogPane.setScaleY(hiddenScaleY());
+                }
             }
             dialogPane.setModalActive(true);
             nonNullPresentation.install();
@@ -392,22 +414,24 @@ public class M3Dialog implements EventTarget {
                     dialogPane.requestInitialFocus();
                 }
             });
-            if (isPresented() && !closing && canAnimatePresentation()) {
+            if (isPresented() && !closing && shouldAnimatePresentation()) {
                 playEntranceAnimation();
             } else if (isPresented() && !closing) {
-                restorePaneOpacity();
+                restorePaneVisualState();
             }
             return handle;
         } finally {
             if (!presented) {
                 boolean ownsDialogState = activeHandle == handle || activePresentation == nonNullPresentation;
                 if (ownsDialogState) {
-                    presentationAnimation.stop();
+                    presentationEffectsAnimation.stop();
+                    presentationSpatialAnimation.stop();
                     dialogPane.setModalActive(false);
                     stopHostWindowObservation();
-                    restorePaneOpacity();
+                    restorePaneVisualState();
                     pendingAction = null;
-                    paneExitFinished = false;
+                    paneEffectsExitFinished = false;
+                    paneSpatialExitFinished = false;
                     backgroundExitFinished = false;
                     closing = false;
                     closeRequestPending = false;
@@ -494,8 +518,9 @@ public class M3Dialog implements EventTarget {
                 throw exception;
             }
 
-            if (canAnimatePresentation()) {
-                paneExitFinished = false;
+            if (shouldAnimatePresentation()) {
+                paneEffectsExitFinished = false;
+                paneSpatialExitFinished = false;
                 backgroundExitFinished = false;
                 M3DialogPresentation presentation =
                         Objects.requireNonNull(activePresentation, "active dialog presentation");
@@ -510,38 +535,84 @@ public class M3Dialog implements EventTarget {
         }
     }
 
-    /// Starts the pane entrance fade from its current opacity.
+    /// Starts the pane entrance using independent effects and vertical spatial motion.
     private void playEntranceAnimation() {
-        M3MotionSpec spec = M3Animation.defaultEffects(dialogPane);
-        presentationAnimation.configure(
-                spec,
-                restingOpacity,
-                dialogPane.getScaleX(),
-                dialogPane.getScaleY(),
-                dialogPane.getTranslateX(),
-                dialogPane.getTranslateY()
-        );
-        M3Animation.playFromStart(dialogPane, presentationAnimation);
+        if (!dialogPane.opacityProperty().isBound()) {
+            M3MotionSpec effectsSpec = M3Animation.fastEffects(dialogPane);
+            presentationEffectsAnimation.configure(
+                    effectsSpec,
+                    restingOpacity,
+                    dialogPane.getScaleX(),
+                    dialogPane.getScaleY(),
+                    dialogPane.getTranslateX(),
+                    dialogPane.getTranslateY()
+            );
+            M3Animation.playFromStart(dialogPane, presentationEffectsAnimation);
+        }
+        if (!dialogPane.scaleYProperty().isBound()) {
+            M3MotionSpec spatialSpec = M3Animation.defaultSpatial(dialogPane);
+            presentationSpatialAnimation.configure(
+                    spatialSpec,
+                    dialogPane.getOpacity(),
+                    dialogPane.getScaleX(),
+                    restingScaleY,
+                    dialogPane.getTranslateX(),
+                    dialogPane.getTranslateY()
+            );
+            M3Animation.playFromStart(dialogPane, presentationSpatialAnimation);
+        }
     }
 
-    /// Starts the pane exit fade while retaining its host surface.
+    /// Starts the pane exit while retaining its host surface until both semantic channels settle.
     private void playExitAnimation() {
-        M3MotionSpec spec = M3Animation.fastEffects(dialogPane);
-        presentationAnimation.configure(
-                spec,
-                0.0,
-                dialogPane.getScaleX(),
-                dialogPane.getScaleY(),
-                dialogPane.getTranslateX(),
-                dialogPane.getTranslateY()
-        );
-        M3Animation.playFromStart(dialogPane, presentationAnimation);
+        boolean animateEffects = !dialogPane.opacityProperty().isBound();
+        boolean animateSpatial = !dialogPane.scaleYProperty().isBound();
+        paneEffectsExitFinished = !animateEffects;
+        paneSpatialExitFinished = !animateSpatial;
+
+        if (animateEffects) {
+            M3MotionSpec effectsSpec = M3Animation.fastEffects(dialogPane);
+            presentationEffectsAnimation.configure(
+                    effectsSpec,
+                    0.0,
+                    dialogPane.getScaleX(),
+                    dialogPane.getScaleY(),
+                    dialogPane.getTranslateX(),
+                    dialogPane.getTranslateY()
+            );
+        }
+        if (animateSpatial) {
+            M3MotionSpec spatialSpec = M3Animation.defaultSpatial(dialogPane);
+            presentationSpatialAnimation.configure(
+                    spatialSpec,
+                    dialogPane.getOpacity(),
+                    dialogPane.getScaleX(),
+                    hiddenScaleY(),
+                    dialogPane.getTranslateX(),
+                    dialogPane.getTranslateY()
+            );
+        }
+        if (animateEffects) {
+            M3Animation.playFromStart(dialogPane, presentationEffectsAnimation);
+        }
+        if (animateSpatial) {
+            M3Animation.playFromStart(dialogPane, presentationSpatialAnimation);
+        }
+        completeHideWhenExitFinished();
     }
 
-    /// Completes an exit animation when one is active.
-    private void handlePresentationAnimationFinished() {
+    /// Records completion of the pane effects channel when an exit is active.
+    private void handlePresentationEffectsFinished() {
         if (closing) {
-            paneExitFinished = true;
+            paneEffectsExitFinished = true;
+            completeHideWhenExitFinished();
+        }
+    }
+
+    /// Records completion of the pane spatial channel when an exit is active.
+    private void handlePresentationSpatialFinished() {
+        if (closing) {
+            paneSpatialExitFinished = true;
             completeHideWhenExitFinished();
         }
     }
@@ -556,7 +627,7 @@ public class M3Dialog implements EventTarget {
 
     /// Removes the presentation after the pane and background transitions have settled.
     private void completeHideWhenExitFinished() {
-        if (closing && paneExitFinished && backgroundExitFinished) {
+        if (closing && paneEffectsExitFinished && paneSpatialExitFinished && backgroundExitFinished) {
             completeHide(pendingAction);
         }
     }
@@ -568,13 +639,15 @@ public class M3Dialog implements EventTarget {
                 Objects.requireNonNull(activePresentation, "active dialog presentation");
         activeHandle = null;
         activePresentation = null;
-        presentationAnimation.stop();
+        presentationEffectsAnimation.stop();
+        presentationSpatialAnimation.stop();
         dialogPane.setModalActive(false);
         presentation.dispose();
-        restorePaneOpacity();
+        restorePaneVisualState();
         stopHostWindowObservation();
         pendingAction = null;
-        paneExitFinished = false;
+        paneEffectsExitFinished = false;
+        paneSpatialExitFinished = false;
         backgroundExitFinished = false;
         closing = false;
         closeRequestPending = false;
@@ -588,7 +661,8 @@ public class M3Dialog implements EventTarget {
             return;
         }
 
-        presentationAnimation.stop();
+        presentationEffectsAnimation.stop();
+        presentationSpatialAnimation.stop();
         @Nullable M3Button action = pendingAction;
         boolean fireHiding = !closing;
         if (fireHiding) {
@@ -622,20 +696,28 @@ public class M3Dialog implements EventTarget {
         }
     }
 
-    /// Returns whether pane opacity can participate in presentation motion.
-    private boolean canAnimatePresentation() {
-        return !dialogPane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(dialogPane);
+    /// Returns whether the attached pane should run presentation motion.
+    private boolean shouldAnimatePresentation() {
+        return M3Animation.areAnimationsEnabled(dialogPane);
     }
 
-    /// Returns whether entrance opacity can animate using the host context available before attachment.
-    private boolean canAnimatePresentation(Parent contextRoot) {
-        return !dialogPane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(contextRoot);
+    /// Returns whether presentation motion is enabled in the host context available before attachment.
+    private boolean shouldAnimatePresentation(Parent contextRoot) {
+        return M3Animation.areAnimationsEnabled(contextRoot);
     }
 
-    /// Restores the pane opacity captured before its latest show transition.
-    private void restorePaneOpacity() {
+    /// Returns the vertical scale used at the hidden endpoint without affecting layout bounds.
+    private double hiddenScaleY() {
+        return restingScaleY * HIDDEN_SCALE_Y_FACTOR;
+    }
+
+    /// Restores pane channels captured before the latest show transition.
+    private void restorePaneVisualState() {
         if (!dialogPane.opacityProperty().isBound()) {
             dialogPane.setOpacity(restingOpacity);
+        }
+        if (!dialogPane.scaleYProperty().isBound()) {
+            dialogPane.setScaleY(restingScaleY);
         }
     }
 
