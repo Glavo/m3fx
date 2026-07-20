@@ -1,6 +1,6 @@
 .m3-dialog-window-root {
     -fx-alignment: center;
-    -fx-background-color: -m3-color-surface;
+    -fx-background-color: transparent;
 }
 
 .m3-dialog-pane {

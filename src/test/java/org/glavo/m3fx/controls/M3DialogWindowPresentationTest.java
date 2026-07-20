@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -57,7 +58,7 @@ final class M3DialogWindowPresentationTest {
 
             assertNull(window.getOwner());
             assertEquals(Modality.NONE, window.getModality());
-            assertEquals(StageStyle.DECORATED, window.getStyle());
+            assertEquals(StageStyle.TRANSPARENT, window.getStyle());
             assertFalse(window.isResizable());
             assertEquals("", window.getTitle());
             assertNull(window.getTheme());
@@ -69,6 +70,16 @@ final class M3DialogWindowPresentationTest {
                 Parent root = Objects.requireNonNull(stage.getScene(), "dialog scene").getRoot();
 
                 assertTrue(stage.isShowing());
+                assertEquals(Color.TRANSPARENT, stage.getScene().getFill());
+                StackPane windowRoot = assertInstanceOf(StackPane.class, root);
+                assertTrue(
+                        windowRoot.getBackground().getFills().stream()
+                                .allMatch(fill -> Color.TRANSPARENT.equals(fill.getFill())),
+                        () -> "dialog window root must not paint an opaque rectangle: "
+                                + windowRoot.getBackground().getFills().stream()
+                                .map(BackgroundFill::getFill)
+                                .toList()
+                );
                 assertSame(dialog, handle.getDialog());
                 assertTrue(handle.isShowing());
                 assertTrue(root.getStyleClass().contains(M3DialogWindow.STYLE_CLASS));

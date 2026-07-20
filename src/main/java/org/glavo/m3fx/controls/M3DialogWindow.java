@@ -13,6 +13,7 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -42,7 +43,7 @@ import java.util.Objects;
 ///
 /// Window owner, modality, and style follow JavaFX initialization rules and must be configured before the window is
 /// first shown. A `WINDOW_MODAL` window requires a non-null owner. The default configuration is ownerless,
-/// non-modal, decorated, and non-resizable. When [#getTheme()] is `null`, each presentation snapshots the owner's
+/// non-modal, transparent, and non-resizable. When [#getTheme()] is `null`, each presentation snapshots the owner's
 /// scene theme when available, otherwise [M3Theme#defaultTheme()] is used. Setting an explicit theme while the
 /// dialog is visible updates the dedicated scene immediately.
 ///
@@ -61,7 +62,7 @@ public final class M3DialogWindow {
     /// The style class installed on the dedicated scene root.
     public static final String STYLE_CLASS = "m3-dialog-window-root";
 
-    /// Creates an ownerless, non-modal, decorated dialog window.
+    /// Creates an ownerless, non-modal, transparent dialog window.
     ///
     /// This constructor must run on the JavaFX Application Thread after the JavaFX toolkit has started.
     ///
@@ -72,8 +73,11 @@ public final class M3DialogWindow {
         }
 
         root.getStyleClass().add(STYLE_CLASS);
+        // Local theme roots normally paint a surface; a transparent native Stage must keep this host clear.
+        root.setStyle("-fx-background-color: transparent;");
         scene = new Scene(root);
-        stage = new Stage();
+        scene.setFill(Color.TRANSPARENT);
+        stage = new Stage(StageStyle.TRANSPARENT);
         stage.setScene(scene);
         stage.setTitle("");
         stage.setResizable(false);
@@ -221,7 +225,7 @@ public final class M3DialogWindow {
 
     /// Returns the native stage style initialized for this dialog window.
     ///
-    /// @return the non-null stage style
+    /// @return the non-null stage style, which is [StageStyle#TRANSPARENT] by default
     public StageStyle getStyle() {
         return stage.getStyle();
     }
@@ -229,7 +233,8 @@ public final class M3DialogWindow {
     /// Initializes the native style of this dialog window.
     ///
     /// This method follows the JavaFX one-time initialization contract and must be called before the window has
-    /// ever been shown. Platform support and fallback behavior for conditional styles are defined by JavaFX.
+    /// ever been shown. It may replace the default [StageStyle#TRANSPARENT] style. Platform support and fallback
+    /// behavior for conditional styles are defined by JavaFX.
     ///
     /// @param style the stage style to initialize
     /// @throws IllegalStateException if called after this window has been shown or while it is showing
