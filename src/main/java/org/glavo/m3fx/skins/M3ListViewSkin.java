@@ -449,7 +449,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return;
         }
 
-        if (!animationsEnabled()) {
+        if (!isSceneRefreshable() || !animationsEnabled()) {
             smoothScrollAnimation.stop();
             finishSmoothScrollAnimation();
         } else {
@@ -486,7 +486,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         double targetPosition = scrollPositionForIndex(index);
         if (!animated
-                || getSkinnable().getScene() == null
+                || !isSceneRefreshable()
                 || !animationsEnabled()) {
             stopSmoothScrollAnimation();
             if (Double.isNaN(targetPosition)) {

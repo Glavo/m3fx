@@ -648,6 +648,10 @@ public final class M3SubMenuItem extends M3MenuItem {
 
     /// Applies changed runtime motion settings to an active pointer-hover delay.
     private void refreshMotionSettings() {
+        if (!M3PopupWindows.canShow(this)) {
+            stopHoverDelay();
+            return;
+        }
         refreshHoverDelays();
     }
 
@@ -706,7 +710,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     private void startHoverDelay(int action, Duration duration) {
         hoverDelay.stop();
         motionSettingsObserver.stop();
-        if (!M3Accessible.canReach(this)) {
+        if (!M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) {
             hoverDelayAction = NO_HOVER_ACTION;
             return;
         }

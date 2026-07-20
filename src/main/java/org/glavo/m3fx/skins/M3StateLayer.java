@@ -14,6 +14,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -28,6 +29,7 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
@@ -417,7 +419,7 @@ final class M3StateLayer extends Pane {
             return;
         }
         Node owner = animationOwner();
-        if (animationsDisabled(owner)) {
+        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             rippleAnimation.stop();
             clearRipple();
             return;
@@ -453,7 +455,7 @@ final class M3StateLayer extends Pane {
             return;
         }
         Node owner = animationOwner();
-        if (animationsDisabled(owner)) {
+        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             rippleAnimation.stop();
             clearRipple();
             return;
@@ -611,7 +613,7 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        if (animationsDisabled(owner)) {
+        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
                 stateOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
@@ -652,7 +654,7 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        if (animationsDisabled(owner)) {
+        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             overlay.setOpacity(targetOverlayOpacity);
             setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
             return;
@@ -698,6 +700,16 @@ final class M3StateLayer extends Pane {
             motionSettingsRevision = revision;
         }
         return !cachedAnimationsEnabled;
+    }
+
+    /// Returns whether the owner cannot currently receive rendered pulses.
+    private static boolean isPresentationUnavailable(Node owner) {
+        @Nullable Scene scene = owner.getScene();
+        if (scene == null) {
+            return true;
+        }
+        @Nullable Window window = scene.getWindow();
+        return window != null && !window.isShowing();
     }
 
     /// Returns the target overlay opacity for the owner interaction state.

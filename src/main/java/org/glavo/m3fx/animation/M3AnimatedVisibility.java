@@ -36,9 +36,9 @@ import java.util.Objects;
 /// [M3AnimatedContent] when old and new content should coexist during replacement.
 ///
 /// Reversing [#showingProperty()] during playback continues from the current visual values and reuses the attached
-/// content node. Reduced motion and scene detachment during a run settle synchronously at the newest target.
-/// Changing the inherited [Node#visibleProperty()] or [Node#managedProperty()] is independent of this lifecycle and
-/// may prevent the region from being rendered or laid out.
+/// content node. Reduced motion, presentation detachment, and window hiding during a run settle synchronously at the
+/// newest target. Changing the inherited [Node#visibleProperty()] or [Node#managedProperty()] is independent of this
+/// lifecycle and may prevent the region from being rendered or laid out.
 ///
 /// This class is a layout container rather than a Material component and does not install a user-agent stylesheet.
 /// Its public properties and animation-control methods must be accessed on the JavaFX Application Thread once the
@@ -148,8 +148,13 @@ public final class M3AnimatedVisibility extends Region {
                 @Override
                 protected void invalidated() {
                     double value = validateHiddenScale(get());
-                    animatedContent.setEnterScale(value);
-                    animatedContent.setExitScale(value);
+                    animatedContent.configureTransition(
+                            value,
+                            value,
+                            animatedContent.getEnterMotionSpec(),
+                            animatedContent.getExitMotionSpec(),
+                            animatedContent.getSizeMotionSpec()
+                    );
                 }
             };
 
@@ -357,8 +362,7 @@ public final class M3AnimatedVisibility extends Region {
         setPickOnBounds(false);
 
         animatedContent.setAlignment(DEFAULT_ALIGNMENT);
-        animatedContent.setEnterScale(DEFAULT_HIDDEN_SCALE);
-        animatedContent.setExitScale(DEFAULT_HIDDEN_SCALE);
+        animatedContent.configureTransition(DEFAULT_HIDDEN_SCALE, DEFAULT_HIDDEN_SCALE, null, null, null);
         getChildren().add(animatedContent);
 
         animatedContent.transitioningProperty().addListener((observable, wasTransitioning, isNowTransitioning) -> {
@@ -402,7 +406,7 @@ public final class M3AnimatedVisibility extends Region {
         animatedContent.snapToCurrentState();
         transitioning.set(false);
         state.set(target == null ? M3VisibilityState.HIDDEN : M3VisibilityState.VISIBLE);
-        requestContainerLayout();
+        requestLayout();
     }
 
     /// Returns the baseline offset of attached content at its current alignment.
@@ -473,7 +477,7 @@ public final class M3AnimatedVisibility extends Region {
         animatedContent.snapToCurrentState();
         transitioning.set(false);
         state.set(isShowing() && newContent != null ? M3VisibilityState.VISIBLE : M3VisibilityState.HIDDEN);
-        requestContainerLayout();
+        requestLayout();
     }
 
     /// Starts, reverses, or synchronously settles toward one showing target.
@@ -497,14 +501,9 @@ public final class M3AnimatedVisibility extends Region {
     /// Applies the current motion and hidden-scale configuration to the retained-content engine.
     private void configureMotion() {
         double scale = getHiddenScale();
-        animatedContent.setEnterScale(scale);
-        animatedContent.setExitScale(scale);
-
         @Nullable M3MotionSpec explicitSpec = getMotionSpec();
         M3MotionSpec resolvedSpec = explicitSpec == null ? M3Animation.defaultSpatial(this) : explicitSpec;
-        animatedContent.setEnterMotionSpec(resolvedSpec);
-        animatedContent.setExitMotionSpec(resolvedSpec);
-        animatedContent.setSizeMotionSpec(resolvedSpec);
+        animatedContent.configureTransition(scale, scale, resolvedSpec, resolvedSpec, resolvedSpec);
     }
 
     /// Completes lifecycle bookkeeping after all retained-content channels settle.
@@ -517,16 +516,7 @@ public final class M3AnimatedVisibility extends Region {
         }
         transitioning.set(animatedContent.isTransitioning());
         state.set(target == null ? M3VisibilityState.HIDDEN : M3VisibilityState.VISIBLE);
-        requestContainerLayout();
-    }
-
-    /// Requests layout from this region and its parent after the animated content size changes.
-    private void requestContainerLayout() {
         requestLayout();
-        @Nullable javafx.scene.Parent parent = getParent();
-        if (parent != null) {
-            parent.requestLayout();
-        }
     }
 
     /// Returns the horizontal snapped inset total.

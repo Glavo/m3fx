@@ -45,9 +45,9 @@ import java.util.Objects;
 ///
 /// All lifecycle and property methods must be invoked on the JavaFX Application Thread once the parent is attached
 /// to a showing scene. Effective reduced-motion settings are resolved from the parent for each run and are observed
-/// while that run is active. An active placement run settles when the parent leaves the scene where the run started;
-/// observation remains active until [#stop()] or [#dispose()] is called. Layout direction requires no special
-/// configuration because actual JavaFX layout coordinates are animated.
+/// while that run is active. An active placement run settles when the parent leaves its adopted scene or window, or
+/// when that window is hidden; observation remains active until [#stop()] or [#dispose()] is called. Layout direction
+/// requires no special configuration because actual JavaFX layout coordinates are animated.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -73,6 +73,9 @@ public final class M3LayoutTransition {
 
     /// Whether child deltas collected during one parent layout pass still need one shared retarget.
     private boolean retargetPending;
+
+    /// Whether another child delta arrived after the immediate retarget for the current event.
+    private boolean retargetDirty;
 
     /// Reusable deferred action that coalesces all remaining deltas before the next pulse.
     private final Runnable retargetFlusher = this::flushPendingRetarget;
@@ -221,6 +224,7 @@ public final class M3LayoutTransition {
 
         animation.stop();
         retargetPending = false;
+        retargetDirty = false;
         parent.getChildrenUnmodifiable().removeListener(childrenListener);
         parent.needsLayoutProperty().removeListener(needsLayoutListener);
         for (int index = childStates.size() - 1; index >= 0; index--) {
@@ -323,20 +327,26 @@ public final class M3LayoutTransition {
     /// Starts one shared retarget and schedules at most one final retarget for the current event.
     private void requestRetarget() {
         if (retargetPending) {
+            retargetDirty = true;
             return;
         }
         retargetPending = true;
+        retargetDirty = false;
         animation.retarget(resolveMotionSpec());
         Platform.runLater(retargetFlusher);
     }
 
-    /// Reconfigures the shared animation once after all changes from the current event have been collected.
+    /// Reconfigures the shared animation only when more deltas followed the immediate retarget in this event.
     private void flushPendingRetarget() {
-        if (!active || !retargetPending) {
+        if (!retargetPending) {
             return;
         }
+        boolean shouldRetarget = active && retargetDirty;
         retargetPending = false;
-        animation.retarget(resolveMotionSpec());
+        retargetDirty = false;
+        if (shouldRetarget) {
+            animation.retarget(resolveMotionSpec());
+        }
     }
 
     /// Adds a parent-coordinate FLIP delta in the private transform's coordinate system.

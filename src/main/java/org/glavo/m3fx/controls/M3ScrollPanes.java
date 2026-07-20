@@ -11,6 +11,7 @@ import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
@@ -21,6 +22,7 @@ import javafx.scene.control.TreeView;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
+import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3Animation;
@@ -41,7 +43,9 @@ import java.util.Objects;
 ///
 /// Smooth scrolling consumes wheel input only when the target pane can move in the requested direction. Scroll
 /// owners nested inside the pane keep their own input. Installation is idempotent and remains attached until
-/// [#disableSmoothScrolling(ScrollPane)] is called or the scroll pane becomes unreachable.
+/// [#disableSmoothScrolling(ScrollPane)] is called or the scroll pane becomes unreachable. An accepted movement is
+/// applied synchronously while the pane has no scene or its associated window is hidden, because no rendered pulse
+/// is available to advance the transition.
 ///
 /// See [Material Design scrolling behavior](https://m3.material.io/).
 @NotNullByDefault
@@ -355,7 +359,7 @@ public final class M3ScrollPanes {
                 return;
             }
 
-            if (animationsDisabled()) {
+            if (isPresentationUnavailable() || animationsDisabled()) {
                 animation.finish();
                 motionSettingsObserver.stop();
             } else {
@@ -365,7 +369,7 @@ public final class M3ScrollPanes {
 
         /// Starts an animation toward the accumulated target values.
         private void animateToTarget() {
-            if (animationsDisabled()) {
+            if (isPresentationUnavailable() || animationsDisabled()) {
                 animation.stop();
                 scrollPane.setHvalue(targetHValue);
                 scrollPane.setVvalue(targetVValue);
@@ -382,6 +386,16 @@ public final class M3ScrollPanes {
             );
             motionSettingsObserver.start();
             animation.playFromStart();
+        }
+
+        /// Returns whether the pane cannot currently receive rendered pulses.
+        private boolean isPresentationUnavailable() {
+            @Nullable Scene scene = scrollPane.getScene();
+            if (scene == null) {
+                return true;
+            }
+            @Nullable Window window = scene.getWindow();
+            return window != null && !window.isShowing();
         }
 
         /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.

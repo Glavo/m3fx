@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,15 +17,19 @@ import java.util.Objects;
 ///
 /// JavaFX does not guarantee that jumping a stopped custom [Transition] to its total duration invokes
 /// `interpolate(1)`. M3FX finite transitions expose this operation so reduced-motion paths can settle reliably. A
-/// run that begins with its owner attached to a [Scene] also settles if the owner leaves or moves to another scene,
-/// preventing detached content from retaining an active JavaFX pulse receiver.
+/// run adopts the first [Scene] and [Window] to which its owner is attached. It settles if the owner subsequently
+/// leaves or moves from either presentation context, or if the presenting window is hidden, preventing detached or
+/// non-visible content from retaining an active JavaFX pulse receiver.
 @NotNullByDefault
 public abstract class M3FiniteTransition extends Transition {
     /// The owner whose resolved motion setting controls the current run.
     private @Nullable Node motionOwner;
 
-    /// The scene containing the owner when the current run began, or `null` for an unattached run.
+    /// The scene adopted by the current run, or `null` until the owner enters one.
     private @Nullable Scene motionScene;
+
+    /// The window presenting the adopted scene, or `null` until that scene is assigned to a window.
+    private @Nullable Window motionWindow;
 
     /// Observes runtime motion changes only while this transition is running.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
@@ -35,14 +40,17 @@ public abstract class M3FiniteTransition extends Transition {
             if (newStatus == Animation.Status.STOPPED) {
                 stopMotionObservation();
                 motionScene = null;
+                motionWindow = null;
             }
         });
     }
 
     /// Plays this transition from the beginning while observing the owner's resolved motion setting.
     ///
-    /// The observer is registered immediately before playback and released as soon as the transition stops. Reusing
-    /// a transition therefore does not leave an idle control subscribed to scene-wide motion changes.
+    /// The observer is registered immediately before playback and released as soon as the transition stops. A run
+    /// may begin before its owner is attached; in that case, the first non-null scene and window are adopted. A run
+    /// requested for an owner in a hidden window settles synchronously. Reusing a transition therefore does not
+    /// leave an idle control subscribed to scene-wide motion changes.
     ///
     /// @param owner the node whose inherited motion setting controls this run
     final void playFromStart(Node owner) {
@@ -52,8 +60,14 @@ public abstract class M3FiniteTransition extends Transition {
             return;
         }
 
-        startMotionObservation(checkedOwner);
         motionScene = checkedOwner.getScene();
+        motionWindow = motionScene == null ? null : motionScene.getWindow();
+        if (motionWindow != null && !motionWindow.isShowing()) {
+            M3Animation.finish(this);
+            return;
+        }
+
+        startMotionObservation(checkedOwner);
         super.playFromStart();
     }
 
@@ -76,13 +90,33 @@ public abstract class M3FiniteTransition extends Transition {
         observer.start();
     }
 
-    /// Settles this transition if reduced motion is requested during playback.
+    /// Settles this transition after reduced motion or presentation lifecycle changes invalidate the current run.
     private void refreshMotionSettings() {
         @Nullable Node owner = motionOwner;
-        if (owner != null
-                && getStatus() == Animation.Status.RUNNING
-                && (motionScene != null && owner.getScene() != motionScene
-                || !M3Animation.areAnimationsEnabled(owner))) {
+        if (owner == null || getStatus() != Animation.Status.RUNNING) {
+            return;
+        }
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            M3Animation.finish(this);
+            return;
+        }
+
+        @Nullable Scene currentScene = owner.getScene();
+        if (motionScene == null) {
+            motionScene = currentScene;
+        } else if (currentScene != motionScene) {
+            M3Animation.finish(this);
+            return;
+        }
+
+        @Nullable Window currentWindow = currentScene == null ? null : currentScene.getWindow();
+        if (motionWindow == null) {
+            motionWindow = currentWindow;
+        } else if (currentWindow != motionWindow) {
+            M3Animation.finish(this);
+            return;
+        }
+        if (currentWindow != null && !currentWindow.isShowing()) {
             M3Animation.finish(this);
         }
     }

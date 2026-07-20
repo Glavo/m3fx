@@ -37,8 +37,8 @@ import java.util.function.ToDoubleFunction;
 /// run. Duration-based channels restart from their currently rendered values.
 ///
 /// The owner supplies the effective [motion setting][M3MotionSettings] and default spatial motion role. If reduced
-/// motion is requested before or during a run, all channels settle synchronously. A run that begins while the owner
-/// is attached to a scene also settles if that owner leaves or moves to another scene.
+/// motion is requested before or during a run, all channels settle synchronously. A run adopts the owner's first
+/// scene and presenting window, and settles if the owner leaves that presentation context or the window is hidden.
 ///
 /// Registered properties must remain writable and finite while a run is active. A caller may observe or bind from
 /// them, but must not bind or independently write them until the run has stopped. Target-value functions must be

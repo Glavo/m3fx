@@ -11,13 +11,18 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.transform.Scale;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -595,6 +600,103 @@ final class M3LayoutAnimationTest {
             assertFalse(animatable.isRunning());
             assertEquals(12.0, value.get(), 0.0);
         }));
+    }
+
+    /// Verifies a finite animation adopts its first scene and settles after subsequent detachment.
+    @Test
+    void finiteAnimationsAdoptFirstSceneAndSettleAfterDetachment() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane detachedOwner = new Pane();
+            SimpleDoubleProperty detachedValue = new SimpleDoubleProperty();
+            M3DoubleAnimatable detachedAnimation = new M3DoubleAnimatable(detachedOwner, detachedValue, 0.01);
+            detachedAnimation.animateTo(
+                    18.0,
+                    M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
+            );
+
+            assertTrue(detachedAnimation.isRunning());
+            Pane root = new Pane(detachedOwner);
+            new Scene(root);
+            assertTrue(detachedAnimation.isRunning());
+
+            root.getChildren().remove(detachedOwner);
+            assertFalse(detachedAnimation.isRunning());
+            assertEquals(18.0, detachedValue.get(), 0.0);
+        }));
+    }
+
+    /// Verifies finite animations settle when their presenting window is hidden or already hidden.
+    @Test
+    @Tier2Test
+    void finiteAnimationsSettleWhenWindowHides() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Stage stage = new Stage();
+            try {
+                Pane visibleOwner = new Pane();
+                stage.setScene(new Scene(visibleOwner));
+                stage.show();
+
+                SimpleDoubleProperty visibleValue = new SimpleDoubleProperty();
+                M3DoubleAnimatable visibleAnimation = new M3DoubleAnimatable(visibleOwner, visibleValue, 0.01);
+                visibleAnimation.animateTo(
+                        24.0,
+                        M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
+                );
+                assertTrue(visibleAnimation.isRunning());
+
+                stage.hide();
+                assertFalse(visibleAnimation.isRunning());
+                assertEquals(24.0, visibleValue.get(), 0.0);
+
+                SimpleDoubleProperty hiddenValue = new SimpleDoubleProperty();
+                M3DoubleAnimatable hiddenAnimation = new M3DoubleAnimatable(visibleOwner, hiddenValue, 0.01);
+                hiddenAnimation.animateTo(
+                        30.0,
+                        M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
+                );
+                assertFalse(hiddenAnimation.isRunning());
+                assertEquals(30.0, hiddenValue.get(), 0.0);
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies one placement change does not publish a redundant animation restart on the next event turn.
+    @Test
+    void layoutTransitionDoesNotRestartAfterSingleCoordinateChange() {
+        AtomicInteger runningTransitions = new AtomicInteger();
+        AtomicReference<@Nullable M3LayoutTransition> transitionReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane parent = new Pane();
+            Region child = new Region();
+            parent.getChildren().add(child);
+            new Scene(parent);
+            parent.applyCss();
+            parent.layout();
+
+            M3LayoutTransition transition = new M3LayoutTransition(parent);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            transition.statusProperty().addListener((observable, oldStatus, newStatus) -> {
+                if (newStatus == Animation.Status.RUNNING) {
+                    runningTransitions.incrementAndGet();
+                }
+            });
+            transition.start();
+            transitionReference.set(transition);
+
+            child.setLayoutX(80.0);
+            assertTrue(transition.isRunning());
+            assertEquals(1, runningTransitions.get());
+        }));
+
+        FxTestUtils.runOnFxThread(() -> {
+            M3LayoutTransition transition = transitionReference.get();
+            assertNotNull(transition);
+            assertEquals(1, runningTransitions.get());
+            transition.stop();
+        });
     }
 
     /// Verifies layout animation preserves rendered position, supports retargeting, and retains user transforms.

@@ -24,7 +24,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -305,6 +304,43 @@ final class M3ScrollPanesTest {
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
                 M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+            }
+        });
+    }
+
+    /// Verifies that hiding the presenting window settles a running smooth scroll and releases its observer.
+    @Test
+    void scrollPaneSmoothScrollingSettlesWhenWindowHides() {
+        FxTestUtils.runOnFxThread(() -> {
+            Region content = new Region();
+            content.setPrefSize(160.0, 480.0);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
+            Stage stage = new Stage();
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+            M3ScrollPanes.enableSmoothScrolling(scrollPane);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+            try {
+                ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+                scrollPane.fireEvent(event);
+
+                assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+                assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+                stage.hide();
+
+                assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+                stage.close();
             }
         });
     }

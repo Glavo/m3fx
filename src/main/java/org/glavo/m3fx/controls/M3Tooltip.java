@@ -29,8 +29,9 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
-import javafx.stage.WindowEvent;
 import javafx.stage.Screen;
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -437,7 +438,9 @@ public class M3Tooltip extends PopupControl {
     ///
     /// Installation adds the activation behavior and accessible help text used by the tooltip. If another M3FX
     /// tooltip is already installed on `node`, it is uninstalled first. Reinstalling the same instance refreshes
-    /// the installation.
+    /// the installation. Pending delayed work is cancelled if an attached node leaves its scene or if the scene's
+    /// associated window becomes hidden. A scene that has no associated window remains eligible for delayed
+    /// activation, although the popup cannot be shown until the node is presented by a showing window.
     ///
     /// @param node    the node that should own the tooltip
     /// @param tooltip the tooltip to install
@@ -880,6 +883,9 @@ public class M3Tooltip extends PopupControl {
 
         /// The action executed when the current delay finishes.
         private int timerAction;
+
+        /// Whether the current delayed action has observed the owner in a scene.
+        private boolean timerObservedScene;
 
         /// Updates tooltip activation timings when runtime motion settings change.
         private final M3MotionSettingsObserver motionSettingsObserver;
@@ -1452,6 +1458,9 @@ public class M3Tooltip extends PopupControl {
 
         /// Applies changed runtime motion settings to delayed tooltip activation timers.
         private void refreshMotionSettings() {
+            if (cancelTimerForUnavailableOwner()) {
+                return;
+            }
             if (tooltip.usesPersistentActivation()) {
                 stopTimer();
                 return;
@@ -1500,9 +1509,12 @@ public class M3Tooltip extends PopupControl {
             timer.stop();
             motionSettingsObserver.stop();
             timerAction = action;
+            timerObservedScene = node.getScene() != null;
             timer.setDuration(duration);
             motionSettingsObserver.start();
-            timer.playFromStart();
+            if (timerAction == action) {
+                timer.playFromStart();
+            }
         }
 
         /// Stops the reusable timer and clears its pending action.
@@ -1510,6 +1522,7 @@ public class M3Tooltip extends PopupControl {
             timer.stop();
             motionSettingsObserver.stop();
             timerAction = NO_TIMER_ACTION;
+            timerObservedScene = false;
         }
 
         /// Reconfigures a running timer after motion behavior changes.
@@ -1529,6 +1542,7 @@ public class M3Tooltip extends PopupControl {
             motionSettingsObserver.stop();
             int action = timerAction;
             timerAction = NO_TIMER_ACTION;
+            timerObservedScene = false;
             switch (action) {
                 case SHOW_TIMER_ACTION -> showTooltip();
                 case HIDE_TIMER_ACTION -> hideIfPointerOutside();
@@ -1536,6 +1550,31 @@ public class M3Tooltip extends PopupControl {
                 default -> {
                 }
             }
+        }
+
+        /// Cancels delayed work when its owner has left a live presentation context.
+        ///
+        /// A node that has never entered a scene and a scene without an associated window remain valid so delayed
+        /// behavior can be exercised headlessly. Once the current delay has observed a scene, detachment invalidates
+        /// it. A non-showing associated window always invalidates the delay.
+        ///
+        /// @return `true` when the delayed action was cancelled
+        private boolean cancelTimerForUnavailableOwner() {
+            @Nullable Scene scene = node.getScene();
+            if (scene == null) {
+                if (!timerObservedScene) {
+                    return false;
+                }
+            } else {
+                timerObservedScene = true;
+                @Nullable Window window = scene.getWindow();
+                if (window == null || window.isShowing()) {
+                    return false;
+                }
+            }
+
+            hideImmediately();
+            return true;
         }
 
         /// Adds popup interaction handlers to the current popup root node.

@@ -374,19 +374,20 @@ public final class M3ListView<T> extends Control {
 
     /// Whether focus-driven and programmatic scrolling requests use motion when motion is enabled.
     ///
-    /// This property does not override the effective reduced-motion policy.
+    /// This property does not override the effective reduced-motion policy. Motion is also skipped while the control
+    /// is detached or its associated window is hidden.
     ///
     /// @defaultValue `true`
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
-    /// Returns whether focus and programmatic scrolling animate the virtual flow position.
+    /// Returns whether focus and programmatic scrolling request animation of the virtual flow position.
     ///
-    /// @return `true` when focus and programmatic scrolling should animate
+    /// @return `true` when those requests prefer animation
     public final boolean isAnimatedScroll() {
         return animatedScroll.get();
     }
 
-    /// Sets whether focus and programmatic scrolling animate the virtual flow position.
+    /// Sets whether focus and programmatic scrolling request animation of the virtual flow position.
     ///
     /// @param animatedScroll whether focus and programmatic scrolling should animate
     public final void setAnimatedScroll(boolean animatedScroll) {
@@ -395,7 +396,8 @@ public final class M3ListView<T> extends Control {
 
     /// Returns the observable, bindable animated-scroll preference property.
     ///
-    /// The property defaults to `true`. The effective reduced-motion policy may still disable motion.
+    /// The property defaults to `true`. Reduced motion and presentation availability may still disable motion for an
+    /// individual request.
     ///
     /// @return the animated-scroll preference property
     public final BooleanProperty animatedScrollProperty() {
@@ -777,6 +779,9 @@ public final class M3ListView<T> extends Control {
 
     /// Scrolls the virtual flow to the supplied item index using the configured animation policy.
     ///
+    /// An installed skin applies the target synchronously when animation is disabled, the control has no scene, or
+    /// its associated window is hidden.
+    ///
     /// @param index the data item index to reveal
     /// @throws IndexOutOfBoundsException if `index` is outside the item list
     public final void scrollTo(int index) {
@@ -784,6 +789,9 @@ public final class M3ListView<T> extends Control {
     }
 
     /// Scrolls the virtual flow to the supplied item index.
+    ///
+    /// Passing `true` requests motion but does not override reduced motion or presentation availability. When motion
+    /// cannot run, an installed skin applies the target synchronously.
     ///
     /// @param index    the data item index to reveal
     /// @param animated whether the scroll should animate when animations are enabled

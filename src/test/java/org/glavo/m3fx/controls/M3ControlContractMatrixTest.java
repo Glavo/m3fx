@@ -23706,6 +23706,49 @@ final class M3ControlContractMatrixTest {
         });
     }
 
+    /// Verifies that hiding the presenting window settles virtualized list scrolling at its accumulated target.
+    @Test
+    @Tier2Test
+    void listViewSmoothScrollingSettlesWhenWindowHides() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int index = 0; index < 100; index++) {
+                listView.getItems().add(index);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(view -> listCell(view, (item, value) -> item.setHeadlineText("Row " + value)));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+            Stage stage = new Stage();
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+            M3MotionSettings.setReducedMotionRequested(listView, false);
+            try {
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                stage.hide();
+
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(listView, false);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that wheel events accumulate while virtualized list smooth scrolling is running.
     @Test
     void listViewSmoothScrollingAccumulatesWheelEventsWhileAnimationRuns() {

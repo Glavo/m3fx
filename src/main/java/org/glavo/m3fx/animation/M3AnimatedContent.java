@@ -50,9 +50,9 @@ import java.util.Objects;
 /// scene graph. Assigning `null` performs an animated removal.
 ///
 /// Enter, exit, and size channels are interruptible. Physical spring specifications retain channel velocity when a
-/// target or configuration changes. Reduced motion, scene detachment during a run, and [#snapToCurrentState()]
-/// settle synchronously and release outgoing content. Animation-control and property mutation methods must be
-/// invoked on the JavaFX Application Thread once this node is attached to a showing scene.
+/// target or configuration changes. Reduced motion, presentation detachment or window hiding during a run, and
+/// [#snapToCurrentState()] settle synchronously and release outgoing content. Animation-control and property
+/// mutation methods must be invoked on the JavaFX Application Thread once this node is attached to a showing scene.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -107,6 +107,12 @@ public final class M3AnimatedContent extends Region {
 
     /// Whether the target content requires a new preferred-size measurement.
     private boolean measurementPending;
+
+    /// Whether transition properties are being updated as one internal configuration change.
+    private boolean configuringTransition;
+
+    /// Whether an active transition must be retargeted after the current configuration change.
+    private boolean configurationRetargetPending;
 
     /// The target content width measured independently from the animated container width.
     private double targetContentWidth;
@@ -364,6 +370,46 @@ public final class M3AnimatedContent extends Region {
         return sizeMotionSpec;
     }
 
+    /// Applies one internal transition configuration and retargets active channels at most once.
+    ///
+    /// Scale values are validated before any property is changed. Each changed property remains observable through
+    /// its regular JavaFX property, while an active replacement transition sees the complete configuration as one
+    /// retarget operation.
+    ///
+    /// @param enterScale      the finite, positive initial scale for target content
+    /// @param exitScale       the finite, positive final scale for outgoing content
+    /// @param enterMotionSpec the explicit enter specification, or `null` for the theme default
+    /// @param exitMotionSpec  the explicit exit specification, or `null` for the theme default
+    /// @param sizeMotionSpec  the explicit size specification, or `null` for the theme default
+    /// @throws IllegalArgumentException if either scale is not finite and greater than zero
+    void configureTransition(
+            double enterScale,
+            double exitScale,
+            @Nullable M3MotionSpec enterMotionSpec,
+            @Nullable M3MotionSpec exitMotionSpec,
+            @Nullable M3MotionSpec sizeMotionSpec
+    ) {
+        double checkedEnterScale = validateScale(enterScale, "enterScale");
+        double checkedExitScale = validateScale(exitScale, "exitScale");
+        configuringTransition = true;
+        configurationRetargetPending = false;
+        try {
+            this.enterScale.set(checkedEnterScale);
+            this.exitScale.set(checkedExitScale);
+            this.enterMotionSpec.set(enterMotionSpec);
+            this.exitMotionSpec.set(exitMotionSpec);
+            this.sizeMotionSpec.set(sizeMotionSpec);
+        } finally {
+            configuringTransition = false;
+            if (configurationRetargetPending) {
+                configurationRetargetPending = false;
+                if (isTransitioning()) {
+                    animation.retarget();
+                }
+            }
+        }
+    }
+
     /// Whether preferred and minimum size move toward the target content size.
     private final BooleanProperty sizeAnimationEnabled =
             new SimpleBooleanProperty(this, "sizeAnimationEnabled", true) {
@@ -516,7 +562,7 @@ public final class M3AnimatedContent extends Region {
         animation.resetSizeChannels();
         updateHolderOrder();
         transitioning.set(false);
-        requestContainerLayout();
+        requestLayout();
     }
 
     /// Returns the baseline offset of the target content at its current alignment.
@@ -699,7 +745,7 @@ public final class M3AnimatedContent extends Region {
             animatedContentHeight = targetContentHeight;
             sizeInitialized = true;
             animation.resetSizeChannels();
-            requestContainerLayout();
+            requestLayout();
             return;
         }
 
@@ -747,7 +793,7 @@ public final class M3AnimatedContent extends Region {
         animation.resetSizeChannels();
         updateHolderOrder();
         transitioning.set(false);
-        requestContainerLayout();
+        requestLayout();
     }
 
     /// Detaches and resets the outgoing holder, when present.
@@ -762,22 +808,17 @@ public final class M3AnimatedContent extends Region {
     /// Retargets active channels after a transition property changes.
     private void retargetIfTransitioning() {
         if (isTransitioning()) {
-            animation.retarget();
+            if (configuringTransition) {
+                configurationRetargetPending = true;
+            } else {
+                animation.retarget();
+            }
         }
     }
 
     /// Installs or removes the clip owned by the private viewport.
     private void updateViewportClip() {
         viewport.setClip(isClipContent() ? viewportClip : null);
-    }
-
-    /// Requests layout from this region and its parent after animated dimensions change.
-    private void requestContainerLayout() {
-        requestLayout();
-        @Nullable javafx.scene.Parent parent = getParent();
-        if (parent != null) {
-            parent.requestLayout();
-        }
     }
 
     /// Returns the horizontal snapped inset total.
@@ -916,7 +957,7 @@ public final class M3AnimatedContent extends Region {
                 animatedContentWidth = targetContentWidth;
                 animatedContentHeight = targetContentHeight;
                 resetSizeChannels();
-                requestContainerLayout();
+                requestLayout();
             }
 
             stop();
@@ -970,7 +1011,7 @@ public final class M3AnimatedContent extends Region {
                     || Double.compare(animatedContentHeight, newHeight) != 0) {
                 animatedContentWidth = newWidth;
                 animatedContentHeight = newHeight;
-                requestContainerLayout();
+                requestLayout();
             }
         }
 

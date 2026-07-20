@@ -128,6 +128,49 @@ final class M3StateLayerTest {
         });
     }
 
+    /// Verifies hiding the presenting window settles persistent feedback and clears transient ripple work.
+    @Test
+    @Tier2Test
+    void stateLayerSettlesAnimationsWhenWindowHides() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add(BUTTON_BASE_STYLE_CLASS);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            Stage stage = new Stage();
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
+            try {
+                Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+                owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+                stateLayer.animateOverlayOpacityFromOwnerState();
+                stateLayer.playRipple(20.0, 20.0);
+
+                assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
+                assertTrue(stateLayer.isRippleAnimationRunning());
+
+                stage.hide();
+
+                assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
+                assertFalse(stateLayer.isRippleAnimationRunning());
+                assertTrue(overlay.getOpacity() > 0.0);
+                assertEquals(0.0, ripple.getOpacity(), 0.0001);
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(owner, false);
+                stateLayer.uninstallStateTransitions();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that installed theme tokens control runtime state layer opacity.
     @Test
     void stateLayerUsesInstalledThemeStateTokens() {
