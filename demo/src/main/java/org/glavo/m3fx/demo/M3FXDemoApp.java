@@ -8,6 +8,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
@@ -21,8 +22,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -168,6 +170,10 @@ import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.layout.M3AdaptiveScaffold;
+import org.glavo.m3fx.layout.M3Breakpoint;
+import org.glavo.m3fx.layout.M3PaneLayout;
+import org.glavo.m3fx.layout.M3PaneRole;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -210,6 +216,9 @@ public final class M3FXDemoApp extends Application {
 
     /// The size used only when registering the bundled demo font with JavaFX.
     private static final double DEMO_FONT_LOAD_SIZE = 12.0;
+
+    /// The pseudo-class applied while the demo header uses its wrapped two-row layout.
+    private static final PseudoClass STACKED_HEADER_PSEUDO_CLASS = PseudoClass.getPseudoClass("stacked");
 
     /// Progress track heights shown in the progress demo page.
     private static final @Unmodifiable List<Double> PROGRESS_TRACK_HEIGHTS = List.of(2.0, 4.0, 6.0, 8.0, 12.0);
@@ -306,6 +315,24 @@ public final class M3FXDemoApp extends Application {
     /// The stable root that owns dialogs, snackbars, and other in-scene overlays.
     private @Nullable M3OverlayPane overlayPane;
 
+    /// The adaptive scaffold that owns the demo header, navigation, and page content.
+    private @Nullable M3AdaptiveScaffold adaptiveScaffold;
+
+    /// The header action that opens navigation while the persistent drawer is unavailable.
+    private @Nullable M3IconButton navigationButton;
+
+    /// The active modal navigation presentation, or `null` while no drawer overlay is shown.
+    private @Nullable M3OverlayPane.OverlayHandle navigationOverlayHandle;
+
+    /// The scrim used by the active modal navigation presentation.
+    private @Nullable M3Scrim navigationOverlayScrim;
+
+    /// The coordinated slide transition used by the active modal navigation presentation.
+    private @Nullable M3StateTransition<Boolean> navigationOverlayTransition;
+
+    /// Whether the active modal navigation presentation is already running its exit transition.
+    private boolean navigationOverlayClosing;
+
     /// Starts the demo application.
     @Override
     public void start(Stage stage) {
@@ -314,18 +341,18 @@ public final class M3FXDemoApp extends Application {
             System.getProperties().putIfAbsent("prism.lcdtext", "false");
         }
 
-        BorderPane scaffold = new BorderPane();
-        scaffold.getStyleClass().add("demo-root");
         M3OverlayPane root = new M3OverlayPane();
-        root.setContent(scaffold);
+        root.getStyleClass().add("demo-root");
         overlayPane = root;
         applyDemoFont(root);
 
         List<DemoPage> createdPages = createPages();
         pages = createdPages;
 
-        scaffold.setTop(createHeader());
-        scaffold.setCenter(createContent(createdPages));
+        M3AdaptiveScaffold scaffold = createContent(createdPages);
+        scaffold.setTopBar(createHeader(root, scaffold));
+        root.setContent(scaffold);
+        updateAdaptiveLayout();
 
         Scene scene = new Scene(root, 1180.0, 820.0);
         scene.getStylesheets().add(demoStylesheetUrl());
@@ -335,8 +362,8 @@ public final class M3FXDemoApp extends Application {
         showPage(createdPages.get(0));
 
         stage.setTitle("M3FX Demo");
-        stage.setMinWidth(960.0);
-        stage.setMinHeight(680.0);
+        stage.setMinWidth(360.0);
+        stage.setMinHeight(520.0);
         stage.setScene(scene);
         stage.show();
         installWindowsScaleTransitionRepair(stage);
@@ -431,19 +458,21 @@ public final class M3FXDemoApp extends Application {
         return font == null ? null : font.getFamily();
     }
 
-    /// Creates the header with theme controls.
-    private Node createHeader() {
+    /// Creates the adaptive header with global presentation controls.
+    ///
+    /// @param root     the demo root whose orientation is controlled by the direction switch
+    /// @param scaffold the adaptive scaffold whose breakpoint controls header wrapping
+    /// @return the assembled header
+    private Node createHeader(M3OverlayPane root, M3AdaptiveScaffold scaffold) {
         VBox titleBox = new VBox(2.0);
         titleBox.getStyleClass().add("demo-title-box");
+        titleBox.setMinWidth(0.0);
 
         Label title = new Label("M3FX");
         title.getStyleClass().add("demo-title");
         Label subtitle = new Label("Material Design 3 controls for JavaFX");
         subtitle.getStyleClass().add("demo-subtitle");
         titleBox.getChildren().addAll(title, subtitle);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         HBox seedButtons = new HBox(8.0);
         seedButtons.getStyleClass().add("demo-seed-buttons");
@@ -492,18 +521,83 @@ public final class M3FXDemoApp extends Application {
             refreshCurrentPage();
         });
 
-        HBox header = new HBox(
+        M3Switch directionSwitch = new M3Switch("RTL");
+        directionSwitch.getStyleClass().add("demo-direction-switch");
+        directionSwitch.setAccessibleText("Use right-to-left layout");
+        directionSwitch.setSelected(root.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT);
+        directionSwitch.setOnAction(event -> {
+            hideNavigationDrawer(false);
+            root.setNodeOrientation(directionSwitch.isSelected()
+                    ? NodeOrientation.RIGHT_TO_LEFT
+                    : NodeOrientation.LEFT_TO_RIGHT);
+        });
+        root.effectiveNodeOrientationProperty().addListener((observable, oldOrientation, newOrientation) -> {
+            hideNavigationDrawer(false);
+            boolean rightToLeft = newOrientation == NodeOrientation.RIGHT_TO_LEFT;
+            if (directionSwitch.isSelected() != rightToLeft) {
+                directionSwitch.setSelected(rightToLeft);
+            }
+        });
+
+        M3IconButton menuButton = createIconButton("menu");
+        menuButton.getStyleClass().add("demo-navigation-button");
+        menuButton.setAccessibleText("Open component navigation");
+        menuButton.setOnAction(event -> showNavigationDrawer());
+        navigationButton = menuButton;
+
+        FlowPane controls = new FlowPane(
+                Orientation.HORIZONTAL,
                 18.0,
-                titleBox,
-                spacer,
+                12.0
+        );
+        controls.getStyleClass().add("demo-header-controls");
+        controls.getChildren().addAll(
                 seedButtons,
                 profileButton,
                 densityButton,
                 animationsSwitch,
+                directionSwitch,
                 brightnessButton
         );
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox primaryRow = new HBox(18.0);
+        primaryRow.getStyleClass().add("demo-header-primary-row");
+
+        VBox header = new VBox(12.0);
         header.getStyleClass().add("demo-header");
-        header.setAlignment(Pos.CENTER_LEFT);
+        header.setFillWidth(true);
+
+        Runnable updateHeaderAlignment = () -> {
+            Pos alignment = header.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                    ? Pos.CENTER_RIGHT
+                    : Pos.CENTER_LEFT;
+            primaryRow.setAlignment(alignment);
+            controls.setAlignment(alignment);
+        };
+        header.effectiveNodeOrientationProperty().addListener(
+                (observable, oldOrientation, newOrientation) -> updateHeaderAlignment.run()
+        );
+
+        Runnable updateHeaderLayout = () -> {
+            boolean stacked = scaffold.getBreakpoint() != M3Breakpoint.EXTRA_LARGE;
+            header.getChildren().clear();
+            primaryRow.getChildren().clear();
+            primaryRow.getChildren().addAll(menuButton, titleBox, spacer);
+            if (stacked) {
+                header.getChildren().addAll(primaryRow, controls);
+            } else {
+                primaryRow.getChildren().add(controls);
+                header.getChildren().add(primaryRow);
+            }
+            header.pseudoClassStateChanged(STACKED_HEADER_PSEUDO_CLASS, stacked);
+            updateHeaderAlignment.run();
+        };
+        scaffold.breakpointProperty().addListener(
+                (observable, oldBreakpoint, newBreakpoint) -> updateHeaderLayout.run()
+        );
+        updateHeaderLayout.run();
         return header;
     }
 
@@ -560,16 +654,24 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
-    /// Creates the main content shell with sidebar and page host.
+    /// Creates the adaptive main content shell with sidebar and page host.
     ///
     /// @param pages the pages shown by the sidebar and content host
     /// @return the assembled demo content shell
-    private Node createContent(List<DemoPage> pages) {
-        BorderPane shell = new BorderPane();
-        shell.getStyleClass().add("demo-shell");
-        shell.setLeft(createSidebar(pages));
-        shell.setCenter(createPageScrollPane());
-        return shell;
+    private M3AdaptiveScaffold createContent(List<DemoPage> pages) {
+        M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+        scaffold.getStyleClass().addAll("demo-shell", "demo-adaptive-scaffold");
+        scaffold.setContentMargin(0.0);
+        scaffold.setPaneSpacing(0.0);
+        scaffold.setFixedLeadingPaneWidth(320.0);
+        scaffold.setLeadingPane(createSidebar(pages));
+        scaffold.setMainPane(createPageScrollPane());
+        scaffold.setActivePane(M3PaneRole.MAIN);
+        scaffold.breakpointProperty().addListener(
+                (observable, oldBreakpoint, newBreakpoint) -> updateAdaptiveLayout()
+        );
+        adaptiveScaffold = scaffold;
+        return scaffold;
     }
 
     /// Creates the component sidebar.
@@ -593,6 +695,195 @@ public final class M3FXDemoApp extends Application {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         sidebarScrollPane = scrollPane;
         return scrollPane;
+    }
+
+    /// Applies the current Material breakpoint to persistent navigation and the header navigation action.
+    private void updateAdaptiveLayout() {
+        M3AdaptiveScaffold scaffold = adaptiveScaffold;
+        ScrollPane sidebar = sidebarScrollPane;
+        if (scaffold == null || sidebar == null) {
+            return;
+        }
+
+        boolean persistentNavigation = usesPersistentNavigation(scaffold.getBreakpoint());
+        M3IconButton menuButton = navigationButton;
+        if (menuButton != null) {
+            menuButton.setManaged(!persistentNavigation);
+            menuButton.setVisible(!persistentNavigation);
+        }
+
+        if (persistentNavigation) {
+            hideNavigationDrawer(false);
+            if (scaffold.getLeadingPane() != sidebar) {
+                scaffold.setLeadingPane(sidebar);
+            }
+            scaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
+        } else {
+            scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+            if (scaffold.getLeadingPane() == sidebar) {
+                scaffold.setLeadingPane(null);
+            }
+        }
+    }
+
+    /// Returns whether a breakpoint has enough width for the persistent component drawer.
+    ///
+    /// @param breakpoint the current Material width breakpoint
+    /// @return `true` for expanded and wider layouts
+    private static boolean usesPersistentNavigation(M3Breakpoint breakpoint) {
+        return switch (breakpoint) {
+            case COMPACT, MEDIUM -> false;
+            case EXPANDED, LARGE, EXTRA_LARGE -> true;
+        };
+    }
+
+    /// Shows the component drawer as a modal leading-edge overlay in compact and medium layouts.
+    private void showNavigationDrawer() {
+        M3AdaptiveScaffold scaffold = adaptiveScaffold;
+        M3OverlayPane overlay = overlayPane;
+        ScrollPane sidebar = sidebarScrollPane;
+        M3NavigationDrawer drawer = sidebarDrawer;
+        if (scaffold == null
+                || overlay == null
+                || sidebar == null
+                || drawer == null
+                || usesPersistentNavigation(scaffold.getBreakpoint())) {
+            return;
+        }
+
+        M3OverlayPane.OverlayHandle existingHandle = navigationOverlayHandle;
+        if (existingHandle != null && existingHandle.isShowing()) {
+            return;
+        }
+
+        scaffold.setLeadingPane(null);
+        drawer.setVariant(M3NavigationDrawerVariant.MODAL);
+        if (!sidebar.getStyleClass().contains("demo-modal-sidebar-scroll-pane")) {
+            sidebar.getStyleClass().add("demo-modal-sidebar-scroll-pane");
+        }
+
+        boolean rightToLeft = overlay.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        double hiddenOffset = rightToLeft ? 320.0 : -320.0;
+
+        M3Scrim scrim = new M3Scrim();
+        scrim.setAccessibleText("Close component navigation");
+        scrim.setShown(false);
+
+        StackPane modalLayer = new StackPane(scrim, sidebar);
+        modalLayer.getStyleClass().add("demo-modal-navigation-layer");
+        modalLayer.setPickOnBounds(true);
+        StackPane.setAlignment(sidebar, rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+
+        M3StateTransition<Boolean> transition = new M3StateTransition<>(modalLayer, false);
+        transition.addDouble(
+                sidebar.translateXProperty(),
+                shown -> shown ? 0.0 : hiddenOffset,
+                0.5
+        );
+
+        M3OverlayPane.OverlayHandle handle = overlay.showModalOverlay(modalLayer);
+        navigationOverlayHandle = handle;
+        navigationOverlayScrim = scrim;
+        navigationOverlayTransition = transition;
+        navigationOverlayClosing = false;
+
+        scrim.setOnAction(event -> hideNavigationDrawer(true));
+        modalLayer.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                hideNavigationDrawer(true);
+                event.consume();
+            }
+        });
+
+        Platform.runLater(() -> {
+            if (navigationOverlayHandle != handle || !handle.isShowing()) {
+                return;
+            }
+            scrim.show();
+            transition.setTargetState(true);
+            drawer.requestFocus();
+            DemoPage page = currentPage;
+            if (page != null) {
+                scrollSidebarPageIntoViewLater(page);
+            }
+        });
+    }
+
+    /// Hides the compact or medium modal component drawer.
+    ///
+    /// @param animated whether to run the drawer and scrim exit transitions
+    private void hideNavigationDrawer(boolean animated) {
+        M3OverlayPane.OverlayHandle handle = navigationOverlayHandle;
+        if (handle == null) {
+            return;
+        }
+        if (animated && navigationOverlayClosing) {
+            return;
+        }
+
+        M3Scrim scrim = navigationOverlayScrim;
+        M3StateTransition<Boolean> transition = navigationOverlayTransition;
+        if (!animated || scrim == null || transition == null) {
+            if (transition != null) {
+                transition.snapTo(false);
+            }
+            finishNavigationDrawerClose(handle);
+            return;
+        }
+
+        navigationOverlayClosing = true;
+        scrim.hide();
+        transition.statusProperty().addListener((observable, oldStatus, newStatus) -> {
+            if (newStatus == Animation.Status.STOPPED) {
+                finishNavigationDrawerCloseWhenSettled(handle, scrim, transition);
+            }
+        });
+        scrim.visibleProperty().addListener(
+                (observable, oldVisible, newVisible) ->
+                        finishNavigationDrawerCloseWhenSettled(handle, scrim, transition)
+        );
+        transition.setTargetState(false);
+        finishNavigationDrawerCloseWhenSettled(handle, scrim, transition);
+    }
+
+    /// Releases a closing drawer only after both the surface translation and scrim fade have settled.
+    ///
+    /// @param handle     the presentation being closed
+    /// @param scrim      the presentation scrim
+    /// @param transition the drawer slide transition
+    private void finishNavigationDrawerCloseWhenSettled(
+            M3OverlayPane.OverlayHandle handle,
+            M3Scrim scrim,
+            M3StateTransition<Boolean> transition
+    ) {
+        if (navigationOverlayClosing && !scrim.isVisible() && !transition.isRunning()) {
+            finishNavigationDrawerClose(handle);
+        }
+    }
+
+    /// Releases one completed modal drawer presentation and restores persistent-drawer styling.
+    ///
+    /// @param handle the presentation that completed its exit
+    private void finishNavigationDrawerClose(M3OverlayPane.OverlayHandle handle) {
+        if (navigationOverlayHandle != handle) {
+            return;
+        }
+
+        handle.hide();
+        navigationOverlayHandle = null;
+        navigationOverlayScrim = null;
+        navigationOverlayTransition = null;
+        navigationOverlayClosing = false;
+
+        ScrollPane sidebar = sidebarScrollPane;
+        if (sidebar != null) {
+            sidebar.setTranslateX(0.0);
+            sidebar.getStyleClass().remove("demo-modal-sidebar-scroll-pane");
+        }
+        M3NavigationDrawer drawer = sidebarDrawer;
+        if (drawer != null) {
+            drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
+        }
     }
 
     /// Creates sidebar groups from ordered demo pages.
@@ -684,7 +975,7 @@ public final class M3FXDemoApp extends Application {
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         return scrollPane;
     }
 
@@ -711,6 +1002,7 @@ public final class M3FXDemoApp extends Application {
             scrollPane.setVvalue(0.0);
         }
         scrollSidebarPageIntoViewLater(page);
+        hideNavigationDrawer(true);
     }
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.
@@ -723,6 +1015,7 @@ public final class M3FXDemoApp extends Application {
 
         VBox heading = new VBox(8.0, title, subtitle);
         heading.getStyleClass().add("demo-page-heading");
+        heading.setMinWidth(0.0);
         HBox.setHgrow(heading, Priority.ALWAYS);
 
         HBox header = new HBox(16.0, heading);

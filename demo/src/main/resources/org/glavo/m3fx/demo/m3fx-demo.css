@@ -9,8 +9,21 @@
     -fx-border-width: 0 0 1px 0;
 }
 
+.demo-header:stacked {
+    -fx-padding: 16px 24px 16px 24px;
+}
+
+.demo-header-primary-row,
+.demo-header-controls {
+    -fx-alignment: center-left;
+}
+
 .demo-title-box {
     -fx-alignment: center-left;
+}
+
+.demo-title-box:rtl {
+    -fx-alignment: center-right;
 }
 
 .demo-title {
@@ -49,6 +62,22 @@
     -fx-background-color: -m3-color-surface;
 }
 
+.m3-adaptive-scaffold.demo-adaptive-scaffold {
+    -fx-background-color: -m3-color-surface;
+}
+
+.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-header {
+    -fx-padding: 12px 16px 12px 16px;
+}
+
+.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-title {
+    -fx-font-size: 24px;
+}
+
+.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-subtitle {
+    -fx-font-size: 12px;
+}
+
 .demo-sidebar-scroll-pane {
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background: -m3-color-surface-container-low;
@@ -61,6 +90,31 @@
 
 .demo-sidebar-scroll-pane > .viewport {
     -fx-background-color: -m3-color-surface-container-low;
+}
+
+.demo-sidebar-scroll-pane:rtl {
+    -fx-border-color: transparent transparent transparent -m3-color-outline-variant;
+    -fx-border-width: 0 0 0 1px;
+}
+
+.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane,
+.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane:rtl {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.demo-modal-navigation-layer {
+    -fx-alignment: center-left;
+}
+
+.demo-modal-navigation-layer:rtl {
+    -fx-alignment: center-right;
 }
 
 .m3-navigation-drawer.demo-sidebar-drawer {
@@ -122,13 +176,29 @@
     -fx-fill-width: true;
 }
 
+.m3-adaptive-scaffold.demo-adaptive-scaffold:medium .demo-page {
+    -fx-padding: 24px;
+}
+
+.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-page {
+    -fx-padding: 16px;
+}
+
 .demo-page-header {
     -fx-alignment: center-left;
     -fx-spacing: 16px;
 }
 
+.demo-page-header:rtl {
+    -fx-alignment: center-right;
+}
+
 .demo-page-heading {
     -fx-spacing: 8px;
+}
+
+.demo-page-heading:rtl {
+    -fx-alignment: center-right;
 }
 
 .demo-page-title {
@@ -228,6 +298,10 @@
 
 .demo-top-app-bar-preview-text {
     -fx-alignment: center-left;
+}
+
+.demo-top-app-bar-preview-text:rtl {
+    -fx-alignment: center-right;
 }
 
 .demo-top-app-bar-preview-headline {
@@ -451,6 +525,11 @@
     -fx-alignment: center-left;
 }
 
+.demo-card-header:rtl,
+.demo-card-text:rtl {
+    -fx-alignment: center-right;
+}
+
 .demo-card-overline {
     -fx-font-size: 12px;
     -fx-font-weight: 700;
@@ -485,6 +564,10 @@
 
 .demo-card-actions {
     -fx-alignment: center-right;
+}
+
+.demo-card-actions:rtl {
+    -fx-alignment: center-left;
 }
 
 .demo-list {
@@ -532,6 +615,10 @@
     -fx-alignment: top-left;
 }
 
+.demo-dialog-content:rtl {
+    -fx-alignment: top-right;
+}
+
 .demo-dialog-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;
@@ -544,6 +631,10 @@
 
 .demo-dialog-scroll-content {
     -fx-padding: 0 4px 0 0;
+}
+
+.demo-dialog-scroll-content:rtl {
+    -fx-padding: 0 0 0 4px;
 }
 
 .demo-dialog-body-line {
