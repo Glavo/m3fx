@@ -59,18 +59,46 @@ final class M3FocusVisibleTrackerTest {
             try {
                 assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
+                pane.requestFocus();
+                assertTrue(pane.isFocused());
                 nativeFocusVisible.set(true);
                 assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
                 nativeFocusVisible.set(false);
                 assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
-                pane.requestFocus();
                 root.fireEvent(keyPressedEvent(KeyCode.A));
                 assertFalse(
                         pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS),
                         "native focus-visible state must not be overridden by fallback scene modality"
                 );
+            } finally {
+                tracker.uninstall();
+            }
+        });
+    }
+
+    /// Verifies that focus loss clears Material focus feedback even before a native property catches up.
+    @Test
+    void nativeFocusVisibleStateCannotOutliveOwnerFocus() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane first = focusablePane();
+            Pane second = focusablePane();
+            HBox root = new HBox(first, second);
+            show(root, 160.0, 48.0);
+            SimpleBooleanProperty nativeFocusVisible = new SimpleBooleanProperty(false);
+            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(first, () -> {}, nativeFocusVisible);
+            tracker.install();
+            try {
+                first.requestFocus();
+                nativeFocusVisible.set(true);
+                assertTrue(first.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                second.requestFocus();
+
+                assertFalse(first.isFocused());
+                assertTrue(nativeFocusVisible.get(), "the test deliberately retains a stale native value");
+                assertFalse(first.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
             } finally {
                 tracker.uninstall();
             }

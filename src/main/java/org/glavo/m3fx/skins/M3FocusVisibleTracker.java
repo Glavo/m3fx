@@ -53,6 +53,10 @@ final class M3FocusVisibleTracker {
     /// The native JavaFX focus-visible property, or `null` when the runtime does not expose it.
     private final @Nullable ReadOnlyBooleanProperty nativeFocusVisibleProperty;
 
+    /// Handles owner focus changes for both native and fallback focus-visible tracking.
+    private final ChangeListener<Boolean> focusedListener =
+            (observable, oldValue, newValue) -> updateFocusVisible();
+
     /// The fallback observation, created only on runtimes without native focus-visible support.
     private @Nullable FallbackObservation fallbackObservation;
 
@@ -93,6 +97,7 @@ final class M3FocusVisibleTracker {
 
         installed = true;
         boolean initiallyFocusVisible = owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
+        owner.focusedProperty().addListener(focusedListener);
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
@@ -115,6 +120,7 @@ final class M3FocusVisibleTracker {
         }
 
         installed = false;
+        owner.focusedProperty().removeListener(focusedListener);
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
@@ -136,7 +142,8 @@ final class M3FocusVisibleTracker {
 
     /// Updates the focus-visible pseudo-class from the current modality and focus state.
     private void updateFocusVisible(boolean notify) {
-        boolean focusVisible = isNativeFocusVisible() || owner.isFocused() && isFallbackKeyboardInteraction();
+        boolean focusVisible = owner.isFocused()
+                && (isNativeFocusVisible() || isFallbackKeyboardInteraction());
         owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
         if (notify) {
             invalidation.run();
@@ -201,10 +208,6 @@ final class M3FocusVisibleTracker {
     /// Owns the listeners and scene registration needed only by fallback focus-visible tracking.
     @NotNullByDefault
     private final class FallbackObservation {
-        /// Handles owner focus changes.
-        private final ChangeListener<Boolean> focusedListener =
-                (observable, oldValue, newValue) -> updateFocusVisible();
-
         /// Handles owner scene changes.
         private final ChangeListener<@Nullable Scene> sceneListener = (observable, oldScene, newScene) -> {
             detachFromScene();
@@ -218,7 +221,6 @@ final class M3FocusVisibleTracker {
         /// Installs the fallback owner listeners and scene registration.
         private void install() {
             owner.sceneProperty().addListener(sceneListener);
-            owner.focusedProperty().addListener(focusedListener);
             attachToScene(owner.getScene());
         }
 
@@ -226,7 +228,6 @@ final class M3FocusVisibleTracker {
         private void uninstall() {
             detachFromScene();
             owner.sceneProperty().removeListener(sceneListener);
-            owner.focusedProperty().removeListener(focusedListener);
         }
 
         /// Registers the outer tracker with one scene input tracker.
