@@ -37,7 +37,7 @@ final class M3FocusVisibleTracker {
     private static final IdentityKey SCENE_INPUT_TRACKER_KEY =
             new IdentityKey(M3FocusVisibleTracker.class.getName() + ".sceneInputTracker");
 
-    /// Opaque owner property key for fallback focus-visible trackers.
+    /// Opaque owner property key for installed focus-visible trackers.
     private static final IdentityKey OWNER_TRACKERS_KEY =
             new IdentityKey(M3FocusVisibleTracker.class.getName() + ".ownerTrackers");
 
@@ -57,11 +57,18 @@ final class M3FocusVisibleTracker {
     private final ChangeListener<Boolean> focusedListener =
             (observable, oldValue, newValue) -> updateFocusVisible();
 
+    /// Handles owner eligibility changes that may invalidate visible focus feedback.
+    private final ChangeListener<Boolean> eligibilityListener =
+            (observable, oldValue, newValue) -> updateFocusVisible();
+
     /// The fallback observation, created only on runtimes without native focus-visible support.
     private @Nullable FallbackObservation fallbackObservation;
 
     /// Whether this tracker is currently installed.
     private boolean installed;
+
+    /// Whether this tracker currently contributes keyboard-visible focus to its owner.
+    private boolean focusVisible;
 
     /// Creates a focus-visible tracker using the focus-visible capability available at runtime.
     ///
@@ -97,7 +104,10 @@ final class M3FocusVisibleTracker {
 
         installed = true;
         boolean initiallyFocusVisible = owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
+        addOwnerTracker(owner, this);
         owner.focusedProperty().addListener(focusedListener);
+        owner.disabledProperty().addListener(eligibilityListener);
+        owner.visibleProperty().addListener(eligibilityListener);
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
@@ -108,8 +118,9 @@ final class M3FocusVisibleTracker {
             observation.install();
         }
         updateFocusVisible(false);
-        if (initiallyFocusVisible) {
-            owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, true);
+        if (nativeFocusVisibleProperty == null && initiallyFocusVisible && owner.isFocused()) {
+            focusVisible = true;
+            applyOwnerFocusVisibleState(owner);
         }
     }
 
@@ -119,8 +130,9 @@ final class M3FocusVisibleTracker {
             return;
         }
 
-        installed = false;
         owner.focusedProperty().removeListener(focusedListener);
+        owner.disabledProperty().removeListener(eligibilityListener);
+        owner.visibleProperty().removeListener(eligibilityListener);
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
@@ -132,7 +144,17 @@ final class M3FocusVisibleTracker {
                 observation.uninstall();
             }
         }
-        owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, false);
+        installed = false;
+        focusVisible = false;
+        removeOwnerTracker(owner, this);
+        applyOwnerFocusVisibleState(owner);
+    }
+
+    /// Reevaluates state after owner eligibility changes outside the focus properties.
+    void refresh() {
+        if (installed) {
+            updateFocusVisible();
+        }
     }
 
     /// Updates the focus-visible pseudo-class from the current modality and focus state.
@@ -142,9 +164,11 @@ final class M3FocusVisibleTracker {
 
     /// Updates the focus-visible pseudo-class from the current modality and focus state.
     private void updateFocusVisible(boolean notify) {
-        boolean focusVisible = owner.isFocused()
+        focusVisible = owner.isFocused()
+                && !owner.isDisabled()
+                && owner.isVisible()
                 && (isNativeFocusVisible() || isFallbackKeyboardInteraction());
-        owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
+        applyOwnerFocusVisibleState(owner);
         if (notify) {
             invalidation.run();
         }
@@ -237,7 +261,7 @@ final class M3FocusVisibleTracker {
             }
 
             scene = newScene;
-            fallbackTracker(newScene).add(M3FocusVisibleTracker.this);
+            fallbackTracker(newScene).add();
         }
 
         /// Unregisters the outer tracker from its current scene input tracker.
@@ -249,7 +273,7 @@ final class M3FocusVisibleTracker {
 
             scene = null;
             @Nullable SceneInputTracker tracker = sceneInputTracker(currentScene);
-            if (tracker != null && tracker.remove(M3FocusVisibleTracker.this)) {
+            if (tracker != null && tracker.remove()) {
                 currentScene.getProperties().remove(SCENE_INPUT_TRACKER_KEY);
             }
         }
@@ -290,12 +314,11 @@ final class M3FocusVisibleTracker {
         }
 
         /// Adds one focus-visible tracker to this scene.
-        private void add(M3FocusVisibleTracker tracker) {
+        private void add() {
             if (trackerCount++ == 0) {
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
                 scene.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
             }
-            addOwnerTracker(tracker.owner, tracker);
         }
 
         /// Updates this scene's fallback modality and all registered trackers for its focus owner.
@@ -308,20 +331,16 @@ final class M3FocusVisibleTracker {
 
             Object value = focusOwner.getProperties().get(OWNER_TRACKERS_KEY);
             if (value instanceof M3FocusVisibleTracker tracker) {
-                tracker.updateFocusVisible();
+                tracker.updateFallbackFocusVisible();
             } else if (value instanceof M3FocusVisibleTracker[] trackers) {
                 for (M3FocusVisibleTracker tracker : trackers) {
-                    tracker.updateFocusVisible();
+                    tracker.updateFallbackFocusVisible();
                 }
             }
         }
 
         /// Removes one focus-visible tracker and returns whether this scene tracker is empty.
-        private boolean remove(M3FocusVisibleTracker tracker) {
-            if (!removeOwnerTracker(tracker.owner, tracker)) {
-                return false;
-            }
-
+        private boolean remove() {
             if (--trackerCount != 0) {
                 return false;
             }
@@ -331,51 +350,77 @@ final class M3FocusVisibleTracker {
             return true;
         }
 
-        /// Adds one tracker to the compact owner-node registry.
-        private static void addOwnerTracker(Node owner, M3FocusVisibleTracker tracker) {
-            Object value = owner.getProperties().get(OWNER_TRACKERS_KEY);
-            if (value == null) {
-                owner.getProperties().put(OWNER_TRACKERS_KEY, tracker);
-            } else if (value instanceof M3FocusVisibleTracker current) {
-                owner.getProperties().put(OWNER_TRACKERS_KEY, new M3FocusVisibleTracker[]{current, tracker});
-            } else if (value instanceof M3FocusVisibleTracker[] trackers) {
-                M3FocusVisibleTracker[] expanded = Arrays.copyOf(trackers, trackers.length + 1);
-                expanded[trackers.length] = tracker;
-                owner.getProperties().put(OWNER_TRACKERS_KEY, expanded);
+    }
+
+    /// Reevaluates this tracker after fallback scene input without invalidating native-only trackers.
+    private void updateFallbackFocusVisible() {
+        if (fallbackObservation != null) {
+            updateFocusVisible();
+        }
+    }
+
+    /// Applies the combined contribution from every installed tracker on an owner.
+    private static void applyOwnerFocusVisibleState(Node owner) {
+        Object value = owner.hasProperties() ? owner.getProperties().get(OWNER_TRACKERS_KEY) : null;
+        boolean focusVisible = value instanceof M3FocusVisibleTracker tracker
+                ? tracker.installed && tracker.focusVisible
+                : value instanceof M3FocusVisibleTracker[] trackers && anyFocusVisible(trackers);
+        owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
+    }
+
+    /// Returns whether an owner registry contains an installed focus-visible contributor.
+    private static boolean anyFocusVisible(M3FocusVisibleTracker[] trackers) {
+        for (M3FocusVisibleTracker tracker : trackers) {
+            if (tracker.installed && tracker.focusVisible) {
+                return true;
             }
         }
+        return false;
+    }
 
-        /// Removes one tracker from the compact owner-node registry.
-        private static boolean removeOwnerTracker(Node owner, M3FocusVisibleTracker tracker) {
-            if (!owner.hasProperties()) {
-                return false;
+    /// Adds one tracker to the compact owner-node registry.
+    private static void addOwnerTracker(Node owner, M3FocusVisibleTracker tracker) {
+        Object value = owner.getProperties().get(OWNER_TRACKERS_KEY);
+        if (value == null) {
+            owner.getProperties().put(OWNER_TRACKERS_KEY, tracker);
+        } else if (value instanceof M3FocusVisibleTracker current) {
+            owner.getProperties().put(OWNER_TRACKERS_KEY, new M3FocusVisibleTracker[]{current, tracker});
+        } else if (value instanceof M3FocusVisibleTracker[] trackers) {
+            M3FocusVisibleTracker[] expanded = Arrays.copyOf(trackers, trackers.length + 1);
+            expanded[trackers.length] = tracker;
+            owner.getProperties().put(OWNER_TRACKERS_KEY, expanded);
+        }
+    }
+
+    /// Removes one tracker from the compact owner-node registry.
+    private static void removeOwnerTracker(Node owner, M3FocusVisibleTracker tracker) {
+        if (!owner.hasProperties()) {
+            return;
+        }
+
+        Object value = owner.getProperties().get(OWNER_TRACKERS_KEY);
+        if (value == tracker) {
+            owner.getProperties().remove(OWNER_TRACKERS_KEY);
+            return;
+        }
+        if (!(value instanceof M3FocusVisibleTracker[] trackers)) {
+            return;
+        }
+
+        for (int index = 0; index < trackers.length; index++) {
+            if (trackers[index] != tracker) {
+                continue;
             }
 
-            Object value = owner.getProperties().get(OWNER_TRACKERS_KEY);
-            if (value == tracker) {
-                owner.getProperties().remove(OWNER_TRACKERS_KEY);
-                return true;
+            if (trackers.length == 2) {
+                owner.getProperties().put(OWNER_TRACKERS_KEY, trackers[1 - index]);
+            } else {
+                M3FocusVisibleTracker[] compacted = new M3FocusVisibleTracker[trackers.length - 1];
+                System.arraycopy(trackers, 0, compacted, 0, index);
+                System.arraycopy(trackers, index + 1, compacted, index, trackers.length - index - 1);
+                owner.getProperties().put(OWNER_TRACKERS_KEY, compacted);
             }
-            if (!(value instanceof M3FocusVisibleTracker[] trackers)) {
-                return false;
-            }
-
-            for (int index = 0; index < trackers.length; index++) {
-                if (trackers[index] != tracker) {
-                    continue;
-                }
-
-                if (trackers.length == 2) {
-                    owner.getProperties().put(OWNER_TRACKERS_KEY, trackers[1 - index]);
-                } else {
-                    M3FocusVisibleTracker[] compacted = new M3FocusVisibleTracker[trackers.length - 1];
-                    System.arraycopy(trackers, 0, compacted, 0, index);
-                    System.arraycopy(trackers, index + 1, compacted, index, trackers.length - index - 1);
-                    owner.getProperties().put(OWNER_TRACKERS_KEY, compacted);
-                }
-                return true;
-            }
-            return false;
+            return;
         }
     }
 }

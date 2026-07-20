@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.SetChangeListener;
@@ -76,11 +77,19 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
     /// Clears transient feedback when the control becomes disabled.
-    private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
-        if (newValue) {
-            mousePressed = false;
-            spaceKeyPressed = false;
-            stateLayer.releaseRipple();
+    private final ChangeListener<Boolean> disabledListener;
+
+    /// Cancels keyboard ownership when outer search-bar focus moves away before Space is released.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears gesture ownership when the search bar leaves its scene before release.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
         }
     };
 
@@ -112,12 +121,22 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         trailingBox.setAlignment(Pos.CENTER);
         TextField editor = editor(control);
         editorFocusVisibleTracker = new M3FocusVisibleTracker(editor, this::updateEditorFocusVisible);
+        disabledListener = (observable, oldValue, newValue) -> {
+            if (newValue) {
+                mousePressed = false;
+                spaceKeyPressed = false;
+                stateLayer.cancelRipple();
+            }
+            updateEditorFocusVisible();
+        };
         HBox.setHgrow(editor, Priority.ALWAYS);
 
         control.leadingProperty().addListener(leadingListener);
         control.getTrailingActions().addListener(trailingActionsListener);
         editor.getPseudoClassStates().addListener(editorPseudoClassListener);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -139,6 +158,8 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         control.getTrailingActions().removeListener(trailingActionsListener);
         editor(control).getPseudoClassStates().removeListener(editorPseudoClassListener);
         control.disabledProperty().removeListener(disabledListener);
+        control.focusedProperty().removeListener(focusedListener);
+        control.sceneProperty().removeListener(sceneInvalidation);
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -295,7 +316,9 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
             return;
         }
         mousePressed = false;
-        stateLayer.releaseRipple();
+        if (!spaceKeyPressed) {
+            stateLayer.releaseRipple();
+        }
     }
 
     /// Starts keyboard ripple feedback when the search-bar container owns activation.
@@ -322,7 +345,28 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
             return;
         }
         spaceKeyPressed = false;
-        stateLayer.releaseRipple();
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+        }
+    }
+
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+        }
+    }
+
+    /// Clears transient pointer and keyboard feedback.
+    private void resetInteractionState() {
+        mousePressed = false;
+        spaceKeyPressed = false;
+        stateLayer.cancelRipple();
     }
 
     /// Sizes interaction feedback to the complete search-bar container rather than its padded content bounds.

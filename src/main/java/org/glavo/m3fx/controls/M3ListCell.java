@@ -211,6 +211,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// Updates logical focus pseudo-class state for this virtualized row.
     public void refreshFocus() {
         boolean focusVisible = !isEmpty()
+                && !getListView().isDisabled()
                 && getListView().isIndexFocused(getIndex())
                 && getListView().getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
         pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);

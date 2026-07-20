@@ -71,15 +71,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Reconfigures cell measurement after item height or spacing changes.
     private final InvalidationListener cellMetricsInvalidation = observable -> flow.refreshCellMetrics();
 
-    /// Updates logical focused-row visuals when the list view focus owner state changes.
-    private final InvalidationListener focusedInvalidation = observable -> refreshCells();
-
     /// Tracks keyboard-visible focus for virtualized row focus indicators.
     ///
     /// Virtual rows use logical list focus rather than becoming the JavaFX scene focus owner, so this deliberately
     /// uses scene-modality tracking instead of the list view's native focus-visible property.
     private final M3FocusVisibleTracker focusVisibleTracker =
             new M3FocusVisibleTracker(getSkinnable(), this::refreshCells, null);
+
+    /// Updates logical row focus when focus or disabled eligibility changes.
+    private final InvalidationListener focusEligibilityInvalidation = observable -> {
+        focusVisibleTracker.refresh();
+        refreshCells();
+    };
 
     /// Suspends virtualized cell refreshes while the list view is detached and refreshes after reattachment.
     private final ChangeListener<@Nullable Scene> sceneListener =
@@ -136,7 +139,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
         control.itemSpacingProperty().addListener(cellMetricsInvalidation);
         control.fixedCellSizeProperty().addListener(cellMetricsInvalidation);
-        control.focusedProperty().addListener(focusedInvalidation);
+        control.focusedProperty().addListener(focusEligibilityInvalidation);
+        control.disabledProperty().addListener(focusEligibilityInvalidation);
         focusVisibleTracker.install();
         control.sceneProperty().addListener(sceneListener);
         refreshItemCount();
@@ -154,7 +158,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
         listView.itemSpacingProperty().removeListener(cellMetricsInvalidation);
         listView.fixedCellSizeProperty().removeListener(cellMetricsInvalidation);
-        listView.focusedProperty().removeListener(focusedInvalidation);
+        listView.focusedProperty().removeListener(focusEligibilityInvalidation);
+        listView.disabledProperty().removeListener(focusEligibilityInvalidation);
         focusVisibleTracker.uninstall();
         listView.sceneProperty().removeListener(sceneListener);
         flow.fixedCellSizeProperty().unbind();

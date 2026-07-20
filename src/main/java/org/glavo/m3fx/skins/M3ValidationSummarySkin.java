@@ -489,26 +489,36 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Plays pointer feedback for an invalid item press.
-    private void handleItemMousePressed(M3StateLayer stateLayer, MouseEvent event) {
-        if (event.getButton() == MouseButton.PRIMARY) {
-            stateLayer.playRipple(event.getX(), event.getY());
-            event.consume();
+    private void handleItemMousePressed(ValidationItemRow item, MouseEvent event) {
+        if (item.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
+            return;
         }
+
+        item.pointerPressed = true;
+        item.stateLayer.playRipple(event.getX(), event.getY());
+        event.consume();
     }
 
     /// Releases pointer feedback and focuses the related invalid input when release stays inside the row.
-    private void handleItemMouseReleased(Node item, M3StateLayer stateLayer, M3TextInputLayout input, MouseEvent event) {
-        if (event.getButton() == MouseButton.PRIMARY) {
-            stateLayer.releaseRipple();
-            if (item.contains(event.getX(), event.getY())) {
-                getSkinnable().focusInput(input);
-            }
-            event.consume();
+    private void handleItemMouseReleased(ValidationItemRow item, MouseEvent event) {
+        if (!item.pointerPressed || event.getButton() != MouseButton.PRIMARY) {
+            return;
         }
+
+        item.pointerPressed = false;
+        item.stateLayer.releaseRipple();
+        if (!item.isDisabled() && item.contains(event.getX(), event.getY())) {
+            getSkinnable().focusInput(item.input);
+        }
+        event.consume();
     }
 
     /// Handles activation and in-summary keyboard traversal for one invalid item row.
     private void handleItemKeyPressed(ValidationItemRow item, M3TextInputLayout input, KeyEvent event) {
+        if (item.isDisabled()) {
+            return;
+        }
+
         switch (event.getCode()) {
             case ENTER, SPACE -> {
                 item.stateLayer.playCenteredRipple();
@@ -599,7 +609,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
     /// A cached validation row that owns its content nodes, event routing, and state-layer lifecycle.
     @NotNullByDefault
-    private final class ValidationItemRow extends StackPane implements EventHandler<Event> {
+    private final class ValidationItemRow extends StackPane implements EventHandler<Event>, InvalidationListener {
         /// The invalid input represented by this row.
         private final M3TextInputLayout input;
 
@@ -614,6 +624,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         /// The text column shared by the field label and validation error.
         private final VBox text = new VBox(ITEM_TEXT_SPACING, label, error);
+
+        /// Whether this row owns an unfinished primary pointer press.
+        private boolean pointerPressed;
 
         /// Creates one reusable validation row for an invalid input.
         ///
@@ -645,6 +658,8 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             addEventHandler(MouseEvent.MOUSE_PRESSED, this);
             addEventHandler(MouseEvent.MOUSE_RELEASED, this);
             addEventHandler(KeyEvent.KEY_PRESSED, this);
+            disabledProperty().addListener(this);
+            sceneProperty().addListener(this);
         }
 
         /// Lays out the bounded state layer after ordinary row content.
@@ -660,19 +675,33 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         @Override
         public void handle(Event event) {
             if (event.getEventType() == MouseEvent.MOUSE_PRESSED) {
-                handleItemMousePressed(stateLayer, (MouseEvent) event);
+                handleItemMousePressed(this, (MouseEvent) event);
             } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED) {
-                handleItemMouseReleased(this, stateLayer, input, (MouseEvent) event);
+                handleItemMouseReleased(this, (MouseEvent) event);
             } else if (event.getEventType() == KeyEvent.KEY_PRESSED) {
                 handleItemKeyPressed(this, input, (KeyEvent) event);
             }
         }
 
+        /// Cancels pointer ownership when this row can no longer complete its gesture.
+        ///
+        /// @param observable the changed disabled or scene property
+        @Override
+        public void invalidated(Observable observable) {
+            if (isDisabled() || getScene() == null) {
+                pointerPressed = false;
+                stateLayer.cancelRipple();
+            }
+        }
+
         /// Releases handlers, state transitions, and child references before this row leaves the cache.
         private void dispose() {
+            pointerPressed = false;
             removeEventHandler(MouseEvent.MOUSE_PRESSED, this);
             removeEventHandler(MouseEvent.MOUSE_RELEASED, this);
             removeEventHandler(KeyEvent.KEY_PRESSED, this);
+            disabledProperty().removeListener(this);
+            sceneProperty().removeListener(this);
             stateLayer.uninstallStateTransitions();
             getChildren().clear();
         }

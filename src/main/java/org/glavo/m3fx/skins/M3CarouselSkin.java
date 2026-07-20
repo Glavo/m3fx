@@ -8,6 +8,7 @@ import org.glavo.m3fx.internal.animation.M3DoubleTransition;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
@@ -101,6 +102,14 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
     };
 
+    /// Cancels direct viewport ownership when the carousel cannot continue receiving gesture events.
+    private final InvalidationListener interactionEligibilityInvalidation = observable -> {
+        M3Carousel carousel = getSkinnable();
+        if (carousel.isDisabled() || carousel.getScene() == null) {
+            cancelViewportInteraction();
+        }
+    };
+
     /// Observes viewport movement and schedules snap settling for contained layouts.
     private final ChangeListener<Number> viewportValueListener = (observable, oldValue, newValue) -> {
         boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
@@ -174,6 +183,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         control.selectedIndexProperty().addListener(selectedIndexListener);
         control.carouselLayoutProperty().addListener(carouselLayoutListener);
         control.effectiveNodeOrientationProperty().addListener(orientationListener);
+        control.disabledProperty().addListener(interactionEligibilityInvalidation);
+        control.sceneProperty().addListener(interactionEligibilityInvalidation);
         viewport.viewportBoundsProperty().addListener(viewportBoundsListener);
         viewport.hvalueProperty().addListener(viewportValueListener);
         viewport.vvalueProperty().addListener(viewportValueListener);
@@ -195,6 +206,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().selectedIndexProperty().removeListener(selectedIndexListener);
         getSkinnable().carouselLayoutProperty().removeListener(carouselLayoutListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
+        getSkinnable().disabledProperty().removeListener(interactionEligibilityInvalidation);
+        getSkinnable().sceneProperty().removeListener(interactionEligibilityInvalidation);
         viewport.viewportBoundsProperty().removeListener(viewportBoundsListener);
         viewport.hvalueProperty().removeListener(viewportValueListener);
         viewport.vvalueProperty().removeListener(viewportValueListener);

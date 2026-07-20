@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.value.ChangeListener;
@@ -73,9 +74,16 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         }
     };
 
-    /// Clears keyboard and pointer interaction state when focus leaves the control.
+    /// Cancels keyboard ownership when focus moves away before Space is released.
     private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
         if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears interaction ownership when the control leaves its scene before release.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
             resetInteractionState();
         }
     };
@@ -108,6 +116,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         installInteractionHandlers(control);
         control.disabledProperty().addListener(disabledListener);
         control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
     }
 
     /// Removes behavior handlers before the skin is disposed.
@@ -118,6 +127,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         stateLayer.uninstallStateTransitions();
         control.disabledProperty().removeListener(disabledListener);
         control.focusedProperty().removeListener(focusedListener);
+        control.sceneProperty().removeListener(sceneInvalidation);
         container.alignmentProperty().unbind();
         containerAlignment.dispose();
         container.nodeOrientationProperty().unbind();
@@ -137,8 +147,21 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     private void resetInteractionState() {
         mousePressed = false;
         spaceKeyPressed = false;
-        stateLayer.reset();
+        stateLayer.cancelRipple();
         getSkinnable().disarm();
+    }
+
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            getSkinnable().disarm();
+        }
     }
 
     /// Computes the minimum width from the internal container.
@@ -375,8 +398,10 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         boolean releasedInside = control.isArmed() && control.contains(event.getX(), event.getY());
         boolean shouldFire = completePrimaryPointerInteraction(event, releasedInside) && releasedInside;
         mousePressed = false;
-        stateLayer.releaseRipple();
-        control.disarm();
+        if (!spaceKeyPressed) {
+            stateLayer.releaseRipple();
+            control.disarm();
+        }
         if (shouldFire) {
             control.fire();
         }
@@ -432,8 +457,10 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
         boolean shouldFire = control.isArmed() && !control.isDisabled();
         spaceKeyPressed = false;
-        stateLayer.releaseRipple();
-        control.disarm();
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            control.disarm();
+        }
         if (shouldFire) {
             control.fire();
         }

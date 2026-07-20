@@ -116,6 +116,20 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
     };
 
+    /// Cancels keyboard ownership when focus moves away before the Space key is released.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears pointer and keyboard ownership when the control leaves its scene.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Creates an animated labeled button skin and installs its interaction observers.
     ///
     /// @param control the button controlled by this skin
@@ -137,6 +151,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.borderProperty().addListener(containerShapeTargetInvalidation);
         control.armedProperty().addListener(armedListener);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
         updateContainerShapeTarget();
         layoutStateLayer();
     }
@@ -175,6 +191,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().borderProperty().removeListener(containerShapeTargetInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
         getSkinnable().disabledProperty().removeListener(disabledListener);
+        getSkinnable().focusedProperty().removeListener(focusedListener);
+        getSkinnable().sceneProperty().removeListener(sceneInvalidation);
         @Nullable ContainerShapeTransition transition = containerShapeTransition;
         if (transition != null) {
             transition.dispose();
@@ -377,8 +395,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
         boolean shouldFire = button.isArmed() && button.contains(event.getX(), event.getY());
         mousePressed = false;
-        stateLayer.releaseRipple();
-        button.disarm();
+        if (!spaceKeyPressed) {
+            stateLayer.releaseRipple();
+            button.disarm();
+        }
         if (shouldFire) {
             button.fire();
         }
@@ -436,12 +456,27 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
         boolean shouldFire = button.isArmed() && !button.isDisabled();
         spaceKeyPressed = false;
-        stateLayer.releaseRipple();
-        button.disarm();
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            button.disarm();
+        }
         if (shouldFire) {
             button.fire();
         }
         event.consume();
+    }
+
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            getSkinnable().disarm();
+        }
     }
 
     /// Animates the skinnable button into or out of the pressed state.
@@ -578,7 +613,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         mousePressed = false;
         spaceKeyPressed = false;
         animation.stop();
-        stateLayer.reset();
+        stateLayer.cancelRipple();
         control.disarm();
         control.setScaleX(1.0);
         control.setScaleY(1.0);

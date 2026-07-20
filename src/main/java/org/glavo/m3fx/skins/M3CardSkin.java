@@ -86,6 +86,20 @@ public class M3CardSkin extends SkinBase<M3Card> {
         }
     };
 
+    /// Cancels a pending keyboard activation when focus moves away before Space is released.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears gesture ownership if the card leaves its scene before receiving a release event.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Whether the primary pointer currently owns card activation.
     private boolean pointerPressed;
 
@@ -123,6 +137,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
         control.onActionProperty().addListener(interactionStateInvalidation);
         control.draggedProperty().addListener(interactionStateInvalidation);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
         updateInteractionState();
     }
 
@@ -140,6 +156,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
         card.onActionProperty().removeListener(interactionStateInvalidation);
         card.draggedProperty().removeListener(interactionStateInvalidation);
         card.disabledProperty().removeListener(disabledListener);
+        card.focusedProperty().removeListener(focusedListener);
+        card.sceneProperty().removeListener(sceneInvalidation);
         card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         card.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         card.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
@@ -251,8 +269,10 @@ public class M3CardSkin extends SkinBase<M3Card> {
                 && card.getOnAction() != null
                 && card.contains(point.getX(), point.getY());
         pointerPressed = false;
-        card.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
-        stateLayer.releaseRipple();
+        if (!spaceKeyPressed) {
+            card.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
+            stateLayer.releaseRipple();
+        }
         if (fire) {
             card.fire();
         }
@@ -309,12 +329,27 @@ public class M3CardSkin extends SkinBase<M3Card> {
         M3Card card = getSkinnable();
         boolean fire = event.getTarget() == card && !card.isDisabled() && card.getOnAction() != null;
         spaceKeyPressed = false;
-        card.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
-        stateLayer.releaseRipple();
+        if (!pointerPressed) {
+            card.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
+            stateLayer.releaseRipple();
+        }
         if (fire) {
             card.fire();
         }
         event.consume();
+    }
+
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!pointerPressed) {
+            stateLayer.releaseRipple();
+            getSkinnable().pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
+        }
     }
 
     /// Returns whether an event target belongs to passive card content rather than a nested control action.
@@ -373,6 +408,6 @@ public class M3CardSkin extends SkinBase<M3Card> {
         pointerPressed = false;
         spaceKeyPressed = false;
         getSkinnable().pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
-        stateLayer.reset();
+        stateLayer.cancelRipple();
     }
 }

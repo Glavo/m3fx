@@ -1378,6 +1378,16 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             setFocusTraversable(true);
             setPickOnBounds(true);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            focusedProperty().addListener(observable -> {
+                if (!isFocused()) {
+                    dragging = false;
+                }
+            });
+            sceneProperty().addListener(observable -> {
+                if (getScene() == null) {
+                    dragging = false;
+                }
+            });
 
             background.getStyleClass().add(M3TimePicker.DIAL_BACKGROUND_STYLE_CLASS);
             selectorTrack.getStyleClass().add(M3TimePicker.DIAL_TRACK_STYLE_CLASS);
@@ -1814,6 +1824,16 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             setTextOverrun(OverrunStyle.CLIP);
             addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
             addEventHandler(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
+            focusedProperty().addListener(observable -> {
+                if (!isFocused()) {
+                    spacePressed = false;
+                }
+            });
+            disabledProperty().addListener(observable -> {
+                if (isDisabled()) {
+                    spacePressed = false;
+                }
+            });
         }
 
         /// Fires the configured label action while enabled.

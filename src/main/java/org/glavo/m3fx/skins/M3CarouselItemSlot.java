@@ -3,11 +3,14 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
-import javafx.scene.Node;
 import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -16,6 +19,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.M3Card;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// Internal mask container that preserves authored carousel content geometry while exposing a dynamic keyline width.
 ///
@@ -60,6 +64,28 @@ final class M3CarouselItemSlot extends Region {
     /// Releases centered keyboard ripple feedback.
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
+    /// Cancels keyboard feedback when the authored item loses focus before key release.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears feedback when the slot becomes disabled.
+    private final InvalidationListener disabledInvalidation = observable -> {
+        if (isDisabled()) {
+            resetInteractionState();
+        }
+    };
+
+    /// Clears gesture ownership when the authored item leaves its scene.
+    private final ChangeListener<@Nullable Scene> sceneListener =
+            (observable, oldScene, newScene) -> {
+                if (newScene == null) {
+                    resetInteractionState();
+                }
+            };
+
     /// The width assigned to content before the keyline mask is applied.
     private double contentWidth;
 
@@ -71,6 +97,9 @@ final class M3CarouselItemSlot extends Region {
 
     /// Whether an activation key currently owns the centered ripple.
     private boolean keyboardRippleActive;
+
+    /// Whether a primary pointer press currently owns ripple feedback.
+    private boolean pointerRippleActive;
 
     /// Creates a mask slot for one application-owned item.
     ///
@@ -91,6 +120,9 @@ final class M3CarouselItemSlot extends Region {
         content.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         content.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         content.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        content.focusedProperty().addListener(focusedListener);
+        content.sceneProperty().addListener(sceneListener);
+        disabledProperty().addListener(disabledInvalidation);
         getChildren().addAll(maskedContent, stateLayer);
     }
 
@@ -127,11 +159,12 @@ final class M3CarouselItemSlot extends Region {
         content.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         content.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         content.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        content.focusedProperty().removeListener(focusedListener);
+        content.sceneProperty().removeListener(sceneListener);
+        disabledProperty().removeListener(disabledInvalidation);
         disableProperty().unbind();
-        pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
-        keyboardRippleActive = false;
+        resetInteractionState();
         stateLayer.uninstallStateTransitions();
-        stateLayer.reset();
         maskedContent.setClip(null);
         maskedContent.getChildren().clear();
         getChildren().clear();
@@ -209,17 +242,42 @@ final class M3CarouselItemSlot extends Region {
             return;
         }
         Point2D localPoint = stateLayer.sceneToLocal(event.getSceneX(), event.getSceneY());
+        pointerRippleActive = true;
         pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, true);
         stateLayer.playRipple(localPoint.getX(), localPoint.getY());
     }
 
     /// Releases pointer ripple feedback after the primary button is released.
     private void handleMouseReleased(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) {
+        if (!pointerRippleActive || event.getButton() != MouseButton.PRIMARY) {
             return;
         }
+        pointerRippleActive = false;
         pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, keyboardRippleActive);
-        stateLayer.releaseRipple();
+        if (!keyboardRippleActive) {
+            stateLayer.releaseRipple();
+        }
+    }
+
+    /// Ends unfinished keyboard feedback without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!keyboardRippleActive) {
+            return;
+        }
+
+        keyboardRippleActive = false;
+        if (!pointerRippleActive) {
+            pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
+            stateLayer.releaseRipple();
+        }
+    }
+
+    /// Clears all transient pointer and keyboard feedback.
+    private void resetInteractionState() {
+        pointerRippleActive = false;
+        keyboardRippleActive = false;
+        pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
+        stateLayer.cancelRipple();
     }
 
     /// Starts one centered ripple while Enter or Space is held.
@@ -240,8 +298,10 @@ final class M3CarouselItemSlot extends Region {
             return;
         }
         keyboardRippleActive = false;
-        pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, false);
-        stateLayer.releaseRipple();
+        pseudoClassStateChanged(PRESSED_PSEUDO_CLASS, pointerRippleActive);
+        if (!pointerRippleActive) {
+            stateLayer.releaseRipple();
+        }
     }
 
     /// Returns a finite non-negative size.

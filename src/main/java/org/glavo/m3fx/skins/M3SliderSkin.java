@@ -181,6 +181,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clears transient interaction state when the slider becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
+    /// Clears direct-manipulation ownership when the slider leaves its scene.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Creates a slider skin.
     ///
     /// @param control the slider controlled by this skin
@@ -251,6 +258,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.valueChangingProperty().addListener(valueIndicatorInvalidation);
         control.pressedProperty().addListener(valueIndicatorInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
+        control.sceneProperty().addListener(sceneInvalidation);
 
         updateTrackStyle();
         updateThumbStyle();
@@ -267,7 +275,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     @Override
     public void dispose() {
         M3Slider control = getSkinnable();
-        valueAnimation.stop();
+        resetInteractionState();
         displayedPosition.removeListener(displayedPositionInvalidation);
         control.valueProperty().removeListener(valueInvalidation);
         control.minProperty().removeListener(rangeInvalidation);
@@ -298,6 +306,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         control.disabledProperty().removeListener(disabledInvalidation);
+        control.sceneProperty().removeListener(sceneInvalidation);
         stateLayer.uninstallStateTransitions();
         stateLayer.reset();
         getChildren().removeAll(
@@ -1291,11 +1300,16 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Resets interaction state when disabled during pointer or keyboard work.
     private void resetDisabledInteractionState() {
         if (getSkinnable().isDisabled()) {
-            valueAnimation.stop();
-            displayedPosition.set(valueToPosition(getSkinnable().getValue()));
-            getSkinnable().setValueChanging(false);
-            stateLayer.reset();
+            resetInteractionState();
         }
+    }
+
+    /// Clears direct-manipulation and transient feedback state.
+    private void resetInteractionState() {
+        valueAnimation.stop();
+        displayedPosition.set(valueToPosition(getSkinnable().getValue()));
+        getSkinnable().setValueChanging(false);
+        stateLayer.cancelRipple();
         updateValueIndicator();
     }
 

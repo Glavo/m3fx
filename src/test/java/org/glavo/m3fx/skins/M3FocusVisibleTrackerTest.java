@@ -105,6 +105,24 @@ final class M3FocusVisibleTrackerTest {
         });
     }
 
+    /// Verifies that installing a tracker cannot revive an orphaned pseudo-class on an unfocused owner.
+    @Test
+    void installClearsOrphanedInitialFocusVisibleState() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane pane = focusablePane();
+            pane.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> {}, null);
+
+            tracker.install();
+            try {
+                assertFalse(pane.isFocused());
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                tracker.uninstall();
+            }
+        });
+    }
+
     /// Verifies keyboard fallback modality from an untracked container is shared across focus targets.
     @Test
     void fallbackKeyboardModalityFromContainerAppliesToNextFocusedOwner() {
@@ -266,6 +284,10 @@ final class M3FocusVisibleTrackerTest {
                 assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
                 firstTracker.uninstall();
+                assertTrue(
+                        pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS),
+                        "uninstalling one tracker must retain another tracker's contribution"
+                );
                 int firstAfterUninstall = invalidations[0];
                 int secondBeforePointer = invalidations[1];
 

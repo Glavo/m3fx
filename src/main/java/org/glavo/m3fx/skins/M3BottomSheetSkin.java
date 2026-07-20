@@ -261,6 +261,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
                 && control.getOnDragHandleAction() != null;
         dragHandleSlot.setFocusTraversable(actionable);
         dragHandleSlot.setDisable(!actionable);
+        dragHandleFocusVisibleTracker.refresh();
     }
 
     /// The 48-pixel drag-handle target exposed as a keyboard and accessibility button when actionable.

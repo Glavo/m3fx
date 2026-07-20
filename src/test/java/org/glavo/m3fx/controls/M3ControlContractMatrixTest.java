@@ -1640,6 +1640,7 @@ final class M3ControlContractMatrixTest {
         HBox root = new HBox(assist, suggestion, filter, input, selectedFilter);
         Scene scene = new Scene(root, 720.0, 120.0);
         M3ThemeManager.install(scene, theme);
+        root.applyCss();
         for (M3Chip chip : List.of(assist, suggestion, filter, input, selectedFilter)) {
             chip.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         }
@@ -31889,6 +31890,7 @@ final class M3ControlContractMatrixTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         M3MotionSettings.setReducedMotionRequested(root, true);
         M3ThemeRuntime.uninstallThemeStylesheet(scene);
+        root.applyCss();
         button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
@@ -35956,8 +35958,8 @@ final class M3ControlContractMatrixTest {
         applyCss(slider);
 
         Skin<?> skin = slider.getSkin();
-        slider.setValueChanging(true);
         skin.dispose();
+        slider.setValueChanging(true);
         slider.setDisable(true);
 
         assertTrue(slider.isValueChanging());

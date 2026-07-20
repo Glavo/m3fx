@@ -205,6 +205,20 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         }
     };
 
+    /// Cancels keyboard ownership when focus moves away before Space is released.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears gesture ownership when the item leaves its scene before release.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Updates persistent active feedback while a submenu remains open.
     private final ChangeListener<Boolean> subMenuShowingListener =
             (observable, oldValue, newValue) -> updateSubMenuActiveState();
@@ -290,6 +304,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         control.getPseudoClassStates().addListener(skinnablePseudoClassListener);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
         if (control instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().addListener(subMenuShowingListener);
             updateSubMenuActiveState();
@@ -327,6 +343,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         item.getPseudoClassStates().removeListener(skinnablePseudoClassListener);
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
+        item.focusedProperty().removeListener(focusedListener);
+        item.sceneProperty().removeListener(sceneInvalidation);
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().removeListener(subMenuShowingListener);
         }
@@ -784,7 +802,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
         boolean shouldFire = !item.isDisabled() && item.contains(event.getX(), event.getY());
         mousePressed = false;
-        stateLayer.releaseRipple();
+        if (!spaceKeyPressed) {
+            stateLayer.releaseRipple();
+        }
         if (shouldFire) {
             item.fire();
         }
@@ -824,18 +844,32 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
         boolean shouldFire = !getSkinnable().isDisabled();
         spaceKeyPressed = false;
-        stateLayer.releaseRipple();
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+        }
         if (shouldFire) {
             getSkinnable().fire();
         }
         event.consume();
     }
 
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+        }
+    }
+
     /// Clears transient pointer and keyboard feedback.
     private void resetInteractionState() {
         mousePressed = false;
         spaceKeyPressed = false;
-        stateLayer.reset();
+        stateLayer.cancelRipple();
     }
 
     /// Reuses one transition while independently interpolating all four menu-item corners.

@@ -120,6 +120,13 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         }
     };
 
+    /// Cancels direct manipulation when the switch leaves its scene before pointer release.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            cancelDrag();
+        }
+    };
+
     /// Starts a pressed handle size transition when armed state changes.
     private final InvalidationListener armedInvalidation = observable -> {
         pressedAnimation.configure(
@@ -168,6 +175,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledInvalidation);
         control.focusedProperty().addListener(focusedInvalidation);
+        control.sceneProperty().addListener(sceneInvalidation);
     }
 
     /// Stops animations before the skin is disposed.
@@ -192,6 +200,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         control.selectedProperty().removeListener(selectedListener);
         control.disabledProperty().removeListener(disabledInvalidation);
         control.focusedProperty().removeListener(focusedInvalidation);
+        control.sceneProperty().removeListener(sceneInvalidation);
         cancelDrag();
         setDisplayedIcon(null);
         thumb.getChildren().clear();

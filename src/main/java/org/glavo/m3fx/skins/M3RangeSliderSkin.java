@@ -201,6 +201,13 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Clears transient state when the control becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
+    /// Clears direct-manipulation ownership when the range slider leaves its scene.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Creates a range-slider skin.
     ///
     /// @param control the range slider controlled by this skin
@@ -263,6 +270,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         control.lowValueChangingProperty().addListener(valueIndicatorInvalidation);
         control.highValueChangingProperty().addListener(valueIndicatorInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
+        control.sceneProperty().addListener(sceneInvalidation);
 
         updateTrackStyles();
         updateValueIndicator();
@@ -276,8 +284,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     @Override
     public void dispose() {
         M3RangeSlider control = getSkinnable();
-        lowValueAnimation.stop();
-        highValueAnimation.stop();
+        resetInteractionState();
         displayedLowPosition.removeListener(displayedPositionInvalidation);
         displayedHighPosition.removeListener(displayedPositionInvalidation);
         control.lowValueProperty().removeListener(lowValueInvalidation);
@@ -301,16 +308,13 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         control.lowValueChangingProperty().removeListener(valueIndicatorInvalidation);
         control.highValueChangingProperty().removeListener(valueIndicatorInvalidation);
         control.disabledProperty().removeListener(disabledInvalidation);
+        control.sceneProperty().removeListener(sceneInvalidation);
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         lowThumb.dispose();
         highThumb.dispose();
-        activeThumb = Thumb.NONE;
-        pointerDragged = false;
-        control.setLowValueChanging(false);
-        control.setHighValueChanging(false);
         getChildren().clear();
         super.dispose();
     }
@@ -1038,6 +1042,11 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         if (!getSkinnable().isDisabled()) {
             return;
         }
+        resetInteractionState();
+    }
+
+    /// Clears direct-manipulation, animation, and transient thumb state.
+    private void resetInteractionState() {
         lowValueAnimation.stop();
         highValueAnimation.stop();
         displayedLowPosition.set(valueToPosition(getSkinnable().getLowValue()));

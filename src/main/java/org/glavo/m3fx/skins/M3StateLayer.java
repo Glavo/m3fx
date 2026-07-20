@@ -170,9 +170,23 @@ final class M3StateLayer extends Pane {
     /// Whether a delegated child currently owns keyboard-visible focus for this component.
     private boolean delegatedFocusVisible;
 
-    /// Handles disabled-state changes that should animate owner-state opacity.
-    private final ChangeListener<Boolean> disabledStateListener =
-            (observable, oldValue, newValue) -> animateOverlayOpacityFromOwnerState();
+    /// Tracks keyboard-visible focus state for the owner.
+    private @Nullable M3FocusVisibleTracker focusVisibleTracker;
+
+    /// Handles disabled-state changes that should end transient feedback and update owner-state opacity.
+    private final ChangeListener<Boolean> disabledStateListener = (observable, oldValue, newValue) -> {
+        if (newValue) {
+            cancelRipple();
+        }
+        animateOverlayOpacityFromOwnerState();
+    };
+
+    /// Clears a ripple when its owner leaves the scene before receiving a release event.
+    private final ChangeListener<@Nullable Scene> ownerSceneListener = (observable, oldScene, newScene) -> {
+        if (newScene == null) {
+            cancelRipple();
+        }
+    };
 
     /// Handles relevant owner pseudo-class changes that should animate owner-state opacity.
     private final SetChangeListener<PseudoClass> pseudoClassStateListener = change -> {
@@ -192,9 +206,6 @@ final class M3StateLayer extends Pane {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, newValue);
         }
     };
-
-    /// Tracks keyboard-visible focus state for the owner.
-    private @Nullable M3FocusVisibleTracker focusVisibleTracker;
 
     /// Observes runtime motion settings while the owner is attached to a scene.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
@@ -313,6 +324,7 @@ final class M3StateLayer extends Pane {
         focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromOwnerState);
         focusVisibleTracker.install();
         owner.disabledProperty().addListener(disabledStateListener);
+        owner.sceneProperty().addListener(ownerSceneListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
         motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings, false);
         if (owner instanceof ButtonBase button) {
@@ -337,6 +349,7 @@ final class M3StateLayer extends Pane {
         }
 
         owner.disabledProperty().removeListener(disabledStateListener);
+        owner.sceneProperty().removeListener(ownerSceneListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
         M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer != null) {
@@ -491,6 +504,13 @@ final class M3StateLayer extends Pane {
         rippleAnimation.playFromStart();
     }
 
+    /// Stops active ripple work and clears its visual state without changing persistent overlay state.
+    void cancelRipple() {
+        rippleAnimation.stop();
+        clearRipple();
+        stopMotionObservationIfIdle();
+    }
+
     /// Mirrors a pseudo-class to the overlay and ripple nodes.
     void setContentPseudoClass(PseudoClass pseudoClass, boolean active) {
         overlay.pseudoClassStateChanged(pseudoClass, active);
@@ -573,9 +593,7 @@ final class M3StateLayer extends Pane {
         restingOverlayOpacity = 0.0;
         overlay.setOpacity(0.0);
         setFocusIndicatorOpacity(focusIndicator, 0.0);
-        rippleAnimation.stop();
-        clearRipple();
-        stopMotionObservationIfIdle();
+        cancelRipple();
     }
 
     /// Clears transient ripple visual state.

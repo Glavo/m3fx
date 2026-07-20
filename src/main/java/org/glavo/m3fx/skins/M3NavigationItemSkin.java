@@ -132,6 +132,20 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         }
     };
 
+    /// Cancels keyboard ownership when focus moves away before Space is released.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            cancelKeyboardInteraction();
+        }
+    };
+
+    /// Clears gesture ownership when the item leaves its scene before release.
+    private final InvalidationListener sceneInvalidation = observable -> {
+        if (getSkinnable().getScene() == null) {
+            resetInteractionState();
+        }
+    };
+
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
 
@@ -185,6 +199,8 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
+        control.sceneProperty().addListener(sceneInvalidation);
         layoutStateLayer();
     }
 
@@ -201,6 +217,8 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
+        item.focusedProperty().removeListener(focusedListener);
+        item.sceneProperty().removeListener(sceneInvalidation);
         uninstallInteractionHandlers(item);
         resetInteractionState();
         updateGraphic(null);
@@ -420,8 +438,10 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
         boolean shouldFire = item.isArmed() && item.contains(event.getX(), event.getY());
         mousePressed = false;
-        stateLayer.releaseRipple();
-        item.disarm();
+        if (!spaceKeyPressed) {
+            stateLayer.releaseRipple();
+            item.disarm();
+        }
         if (shouldFire) {
             item.fire();
         }
@@ -479,12 +499,27 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
         boolean shouldFire = item.isArmed() && !item.isDisabled();
         spaceKeyPressed = false;
-        stateLayer.releaseRipple();
-        item.disarm();
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            item.disarm();
+        }
         if (shouldFire) {
             item.fire();
         }
         event.consume();
+    }
+
+    /// Ends an unfinished Space activation without disturbing an active pointer gesture.
+    private void cancelKeyboardInteraction() {
+        if (!spaceKeyPressed) {
+            return;
+        }
+
+        spaceKeyPressed = false;
+        if (!mousePressed) {
+            stateLayer.releaseRipple();
+            getSkinnable().disarm();
+        }
     }
 
     /// Updates the label from the current item text.
@@ -554,7 +589,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         M3NavigationItem item = getSkinnable();
         mousePressed = false;
         spaceKeyPressed = false;
-        stateLayer.reset();
+        stateLayer.cancelRipple();
         item.disarm();
     }
 
