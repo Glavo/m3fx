@@ -1049,14 +1049,14 @@ final class M3FXDemoVisualMatrixTest {
     /// The long linear motion spec duration used to make animation frames visually observable in tests.
     private static final Duration OBSERVABLE_MOTION_DURATION = Duration.millis(600.0);
 
-    /// The fixed size expected for demo header seed-color icon buttons.
-    private static final double HEADER_SEED_BUTTON_SIZE = 32.0;
+    /// The fixed size expected for seed-color icon buttons in the settings dialog.
+    private static final double SETTINGS_SEED_BUTTON_SIZE = 32.0;
 
-    /// The tolerance used when checking demo header seed-color button dimensions.
-    private static final double HEADER_SEED_BUTTON_SIZE_TOLERANCE = 1.5;
+    /// The tolerance used when checking settings seed-color button dimensions.
+    private static final double SETTINGS_SEED_BUTTON_SIZE_TOLERANCE = 1.5;
 
-    /// The tolerance used when checking demo header seed-color button circular shape tokens.
-    private static final double HEADER_SEED_BUTTON_ROUNDNESS_TOLERANCE = 1.0;
+    /// The tolerance used when checking settings seed-color button circular shape tokens.
+    private static final double SETTINGS_SEED_BUTTON_ROUNDNESS_TOLERANCE = 1.0;
 
     /// The report directory used for rendered demo snapshots.
     private static final Path VISUAL_REPORT_DIRECTORY = Path.of(
@@ -1331,9 +1331,9 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(docsButton.getBoundsInParent().getHeight() > 0.0, title + " docs link height");
     }
 
-    /// Verifies that clicking demo header theme controls reapplies the theme while preserving style and shape.
+    /// Verifies that the settings dialog reapplies global presentation options without visual regressions.
     @Test
-    void headerThemeControlsReapplyThemeWithoutCssWarningsOrShapeRegression() throws InterruptedException {
+    void settingsDialogReappliesThemeWithoutCssWarningsOrShapeRegression() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -1359,23 +1359,28 @@ final class M3FXDemoVisualMatrixTest {
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
                 assertCurrentPageTitle(scene, "Buttons");
-                assertDemoHeaderThemeControlGeometry(scene, "initial header");
+                openDemoSettings(scene);
+                assertDemoSettingsControlGeometry(scene, "initial settings");
 
-                Node header = requireVisibleStyledDescendant(scene.getRoot(), "demo-header", "demo header");
-                List<M3IconButton> seedButtons = headerSeedButtons(header);
-                assertEquals(5, seedButtons.size(), "demo header seed button count");
+                Node settings = requireVisibleStyledDescendant(
+                        scene.getRoot(),
+                        "demo-settings-content",
+                        "demo settings content"
+                );
+                List<M3IconButton> seedButtons = settingsSeedButtons(settings);
+                assertEquals(5, seedButtons.size(), "demo settings seed button count");
                 for (int index = 0; index < seedButtons.size(); index++) {
-                    clickHeaderThemeControl(scene, seedButtons.get(index), "seed color " + index);
+                    clickDemoSettingControl(scene, seedButtons.get(index), "seed color " + index);
                 }
 
-                clickHeaderThemeButton(scene, "Expressive", "profile expressive");
+                clickDemoSettingButton(scene, "demo-profile-settings", "Expressive", "profile expressive");
                 assertRootStyleMode(
                         scene,
                         M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS,
                         M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS,
                         "expressive profile"
                 );
-                clickHeaderThemeButton(scene, "Baseline", "profile baseline");
+                clickDemoSettingButton(scene, "demo-profile-settings", "Standard", "profile baseline");
                 assertRootStyleMode(
                         scene,
                         M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS,
@@ -1383,21 +1388,21 @@ final class M3FXDemoVisualMatrixTest {
                         "baseline profile"
                 );
 
-                clickHeaderThemeButton(scene, "Standard", "density comfort");
-                clickHeaderThemeButton(scene, "Comfort", "density compact");
-                clickHeaderThemeButton(scene, "Compact", "density standard");
+                clickDemoSettingButton(scene, "demo-density-settings", "Comfort", "density comfort");
+                clickDemoSettingButton(scene, "demo-density-settings", "Compact", "density compact");
+                clickDemoSettingButton(scene, "demo-density-settings", "Standard", "density standard");
 
-                clickHeaderThemeSwitch(scene, "Animations", "animations disabled");
-                clickHeaderThemeSwitch(scene, "Animations", "animations enabled");
+                clickDemoSettingSwitch(scene, "Animations", "animations disabled");
+                clickDemoSettingSwitch(scene, "Animations", "animations enabled");
 
-                clickHeaderThemeButton(scene, "Dark", "dark brightness");
+                clickDemoSettingSwitch(scene, "Dark theme", "dark brightness");
                 assertRootStyleMode(
                         scene,
                         M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS,
                         M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS,
                         "dark brightness"
                 );
-                clickHeaderThemeButton(scene, "Light", "light brightness");
+                clickDemoSettingSwitch(scene, "Dark theme", "light brightness");
                 assertRootStyleMode(
                         scene,
                         M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS,
@@ -1405,7 +1410,12 @@ final class M3FXDemoVisualMatrixTest {
                         "light brightness"
                 );
 
-                assertHeaderSeedButtonsRenderCircular(scene, "after header theme toggles");
+                assertSettingsSeedButtonsRenderCircular(scene, "after settings changes");
+                M3Button done = Objects.requireNonNull(
+                        firstVisibleButtonWithText(scene.getRoot(), "Done"),
+                        "demo settings Done button"
+                );
+                done.fire();
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -2019,31 +2029,19 @@ final class M3FXDemoVisualMatrixTest {
 
                         Node page = currentDemoPage(scene, "Search");
                         List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-                        assertEquals(5, searchViews.size(), "Search page should show four official combinations and RTL");
+                        assertEquals(4, searchViews.size(), "Search page should show the four style and layout combinations");
                         M3SearchView activeView = Objects.requireNonNull(
                                 searchViews.stream()
                                         .filter(view -> view.getViewStyle() == M3SearchViewStyle.CONTAINED
-                                                && view.getViewLayout() == M3SearchViewLayout.DOCKED
-                                                && view.getNodeOrientation() != NodeOrientation.RIGHT_TO_LEFT)
+                                                && view.getViewLayout() == M3SearchViewLayout.DOCKED)
                                         .findFirst()
                                         .orElse(null),
                                 "contained docked search view"
                         );
-                        M3SearchView rtlActiveView = Objects.requireNonNull(
-                                searchViews.stream()
-                                        .filter(view -> view.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT)
-                                        .findFirst()
-                                        .orElse(null),
-                                "RTL active search view"
-                        );
 
                         List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-                        assertEquals(8, searchBars.size(),
-                                "Search page should expose three standalone bars and five embedded search bars");
-                        assertEquals(2, searchBars.stream()
-                                        .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
-                                        .count(),
-                                "Search page should render standalone and embedded RTL search bars");
+                        assertEquals(6, searchBars.size(),
+                                "Search page should expose two standalone bars and four embedded search bars");
                         searchBars.forEach(M3FXDemoVisualMatrixTest::assertSearchBarVisualGeometry);
 
                         for (M3SearchView searchView : searchViews) {
@@ -2062,18 +2060,6 @@ final class M3FXDemoVisualMatrixTest {
                         assertTrue(isNodeOrDescendant(firstResult, focusOwner),
                                 () -> "DOWN from the search editor should focus the first result: focusOwner=" + focusOwner);
 
-                        M3ListItem rtlFirstResult = assertInstanceOf(M3ListItem.class, rtlActiveView.getResults().get(0));
-                        searchViewEditor(rtlActiveView).requestFocus();
-                        searchViewEditor(rtlActiveView).fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN, false, false, false, false));
-                        scene.getRoot().applyCss();
-                        scene.getRoot().layout();
-
-                        @Nullable Node rtlFocusOwner = scene.getFocusOwner();
-                        assertNotNull(rtlFocusOwner, "RTL search result keyboard navigation should produce a focus owner");
-                        assertTrue(isNodeOrDescendant(rtlFirstResult, rtlFocusOwner),
-                                () -> "DOWN from the RTL search editor should focus the first RTL result: focusOwner="
-                                        + rtlFocusOwner);
-
                         WritableImage image = snapshotNode(activeView);
                         writeVisualSnapshot(image, Path.of(
                                 "build",
@@ -2082,15 +2068,6 @@ final class M3FXDemoVisualMatrixTest {
                                 "search-active-view.png"
                         ));
                         assertSnapshotHasVisibleContent(image, "Search active view");
-
-                        WritableImage rtlImage = snapshotNode(rtlActiveView);
-                        writeVisualSnapshot(rtlImage, Path.of(
-                                "build",
-                                "reports",
-                                "m3fx-demo-visual",
-                                "search-rtl-active-view.png"
-                        ));
-                        assertSnapshotHasVisibleContent(rtlImage, "Search RTL active view");
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -2517,9 +2494,9 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies that the Banners demo renders icons, actions, passive, narrow, and RTL states safely.
+    /// Verifies that the Banners demo renders icons, actions, passive, and narrow states safely.
     @Test
-    void bannersPageRendersIconsActionsPassiveNarrowAndRtlStates() throws InterruptedException {
+    void bannersPageRendersIconsActionsPassiveAndNarrowStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -2547,24 +2524,19 @@ final class M3FXDemoVisualMatrixTest {
                         assertVisibleText(root, "Learn", "Banners");
                         assertVisibleText(root, "Dismiss", "Banners");
                         assertVisibleText(root, "Details", "Banners");
-                        assertVisibleText(root, "Secondary", "Banners");
 
                         List<M3Banner> banners = visibleNodesOfType(page, M3Banner.class);
-                        assertEquals(6, banners.size(), "Banners page should render six banner states");
-                        assertEquals(4, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
-                                "Banners page should render four visible icon slots");
+                        assertEquals(5, banners.size(), "Banners page should render five banner states");
+                        assertEquals(3, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
+                                "Banners page should render three visible icon slots");
                         long actionButtonCount = visibleNodesOfType(page, M3Button.class).stream()
                                 .filter(button -> nearestAncestorOfType(button, M3Banner.class) != null)
                                 .count();
-                        assertEquals(8, actionButtonCount, "Banners page should render all action buttons");
+                        assertEquals(6, actionButtonCount, "Banners page should render all action buttons");
                         assertTrue(banners.stream().anyMatch(banner -> banner.getActions().isEmpty()),
                                 "Banners page should include a passive banner");
                         assertTrue(banners.stream().anyMatch(banner -> banner.getPrefWidth() <= 420.0),
                                 "Banners page should include a narrow wrapping banner");
-                        assertTrue(banners.stream().anyMatch(banner ->
-                                        banner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT),
-                                "Banners page should include a right-to-left banner");
-
                         for (M3Banner banner : banners) {
                             assertBannerDemoGeometry(banner);
                         }
@@ -2591,24 +2563,14 @@ final class M3FXDemoVisualMatrixTest {
                                                 sceneBounds
                                         )),
                                 "Banners page should render the narrow banner in a captured viewport");
-                        assertTrue(banners.stream()
-                                        .filter(banner ->
-                                                banner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT)
-                                        .anyMatch(banner -> !isOutsideSceneViewport(
-                                                banner,
-                                                banner.localToScene(banner.getLayoutBounds()),
-                                                sceneBounds
-                                        )),
-                                "Banners page should render the right-to-left banner in a captured viewport");
-
                         WritableImage responsiveImage = snapshot(scene);
                         writeVisualSnapshot(responsiveImage, Path.of(
                                 "build",
                                 "reports",
                                 "m3fx-demo-visual",
-                                "banners-responsive-rtl.png"
+                                "banners-responsive.png"
                         ));
-                        assertSnapshotHasVisibleContent(responsiveImage, "Banners responsive and RTL");
+                        assertSnapshotHasVisibleContent(responsiveImage, "Banners responsive state");
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -3322,7 +3284,9 @@ final class M3FXDemoVisualMatrixTest {
                         M3TextInputLayout validatedEmailLayout = requireTextInputLayout(layouts, "support", "Validated email");
                         assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
                         assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
-                        assertMirroredTextInputLayoutContracts(scene, layouts);
+                        if (scene.getRoot().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                            assertMirroredTextInputLayoutContracts(scene, layouts);
+                        }
                         assertFocusedTextInputStateMatrix(scene, layouts, modeName);
                         assertTextInputModeSpecificRootState(scene, modeName);
                     }));
@@ -3358,13 +3322,11 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Validation", "Text Fields");
         assertVisibleText(root, "Error", "Text Fields");
         assertVisibleText(root, "Text Areas", "Text Fields");
-        assertVisibleText(root, "Right-to-left", "Text Fields");
-
         List<M3TextInputLayout> layouts = visibleNodesOfType(
                 currentDemoPage(scene, "Text Fields"),
                 M3TextInputLayout.class
         );
-        assertTrue(layouts.size() >= 18,
+        assertTrue(layouts.size() >= 15,
                 () -> "Text Fields page should render the full Material text input state matrix, found "
                         + layouts.size());
         return layouts;
@@ -3382,55 +3344,14 @@ final class M3FXDemoVisualMatrixTest {
                 "Material text areas share field colors but keep multi-line height tokens.",
                 "Outlined text area"
         );
-        M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
-        M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
-        M3TextInputLayout rtlOutlinedActionLayout = requireTextInputLayout(
-                layouts,
-                "M3FX RTL Action",
-                "RTL outlined action"
-        );
-        M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
-        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
-                layouts,
-                "M3FX RTL multiline content keeps visual order.",
-                "RTL outlined text area"
-        );
-
         assertTextInputVariant(filledTextLayout, M3TextInputVariant.FILLED, "filled populated text input");
         assertTextInputVariant(outlinedTextLayout, M3TextInputVariant.OUTLINED, "outlined populated text input");
         assertTextInputVariant(passwordLayout, M3TextInputVariant.OUTLINED, "password text input");
         assertTextInputVariant(outlinedAreaLayout, M3TextInputVariant.OUTLINED, "outlined multiline text input");
-        assertTextInputVariant(rtlFilledLayout, M3TextInputVariant.FILLED, "mirrored filled text input");
-        assertTextInputVariant(rtlOutlinedLayout, M3TextInputVariant.OUTLINED, "mirrored outlined text input");
-        assertTextInputVariant(
-                rtlOutlinedActionLayout,
-                M3TextInputVariant.OUTLINED,
-                "mirrored outlined trailing action text input"
-        );
-        assertTextInputVariant(rtlPasswordLayout, M3TextInputVariant.OUTLINED, "mirrored password text input");
-        assertTextInputVariant(
-                rtlOutlinedAreaLayout,
-                M3TextInputVariant.OUTLINED,
-                "mirrored outlined multiline text input"
-        );
         assertTextInputCounterText(filledTextLayout, "19 / 32", "filled populated text input");
         assertTextInputCounterText(outlinedTextLayout, "4 / 24", "outlined populated text input");
-        assertTextInputCounterText(rtlFilledLayout, "15 / 32", "mirrored filled text input");
-        assertTextInputCounterText(rtlOutlinedLayout, "8 / 24", "mirrored outlined text input");
-        assertTextInputCounterText(
-                rtlOutlinedActionLayout,
-                "15 / 32",
-                "mirrored outlined trailing action text input"
-        );
-        assertTextInputCounterText(rtlOutlinedAreaLayout, "46 / 96", "mirrored outlined multiline text input");
         assertTextInputTrailingActionGeometry(passwordLayout, "password text input");
-        assertTextInputTrailingActionGeometry(
-                rtlOutlinedActionLayout,
-                "mirrored outlined trailing action text input"
-        );
-        assertTextInputTrailingActionGeometry(rtlPasswordLayout, "mirrored password text input");
         assertTextInputClearButtonGeometry(filledTextLayout, "filled populated text input");
-        assertTextInputClearButtonGeometry(rtlFilledLayout, "mirrored filled text input");
         assertTextInputErrorState(filledErrorLayout, "filled error text input");
         assertTextInputErrorState(outlinedErrorLayout, "outlined error text input");
     }
@@ -3559,12 +3480,6 @@ final class M3FXDemoVisualMatrixTest {
                 "Material text areas share field colors but keep multi-line height tokens.",
                 "Outlined text area"
         );
-        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
-                layouts,
-                "M3FX RTL multiline content keeps visual order.",
-                "RTL outlined text area"
-        );
-
         assertFocusedMultilineTextInputSurfaceContract(
                 scene,
                 filledAreaLayout,
@@ -3574,11 +3489,6 @@ final class M3FXDemoVisualMatrixTest {
                 scene,
                 outlinedAreaLayout,
                 "focused outlined multiline text input"
-        );
-        assertFocusedMultilineTextInputSurfaceContract(
-                scene,
-                rtlOutlinedAreaLayout,
-                "focused mirrored outlined multiline text input"
         );
     }
 
@@ -3634,155 +3544,149 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies that mirrored text inputs keep logical slots and text geometry separated.
     private static void assertMirroredTextInputLayoutContracts(Scene scene, List<M3TextInputLayout> layouts) {
-        M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
-        M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
-        M3TextInputLayout rtlOutlinedActionLayout = requireTextInputLayout(
+        M3TextInputLayout filledLayout = requireTextInputLayout(
                 layouts,
-                "M3FX RTL Action",
-                "RTL outlined action"
+                "support@example.com",
+                "Filled with text"
         );
-        M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
-        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
+        M3TextInputLayout outlinedLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
+        M3TextInputLayout passwordLayout = requireTextInputLayout(layouts, "", "Password");
+        M3TextInputLayout outlinedAreaLayout = requireTextInputLayout(
                 layouts,
-                "M3FX RTL multiline content keeps visual order.",
-                "RTL outlined text area"
+                "Material text areas share field colors but keep multi-line height tokens.",
+                "Outlined text area"
         );
 
-        assertRightToLeftTextInputLayoutGeometry(rtlFilledLayout, "mirrored filled text input");
-        assertRightToLeftTextInputLayoutGeometry(rtlOutlinedLayout, "mirrored outlined text input");
-        assertRightToLeftTextInputLayoutGeometry(
-                rtlOutlinedActionLayout,
-                "mirrored outlined trailing action text input"
-        );
-        assertRightToLeftTextInputLayoutGeometry(rtlPasswordLayout, "mirrored password text input");
-        assertRightToLeftTextInputLayoutGeometry(rtlOutlinedAreaLayout, "mirrored outlined multiline text input");
+        assertRightToLeftTextInputLayoutGeometry(filledLayout, "mirrored filled text input");
+        assertRightToLeftTextInputLayoutGeometry(outlinedLayout, "mirrored outlined text input");
+        assertRightToLeftTextInputLayoutGeometry(passwordLayout, "mirrored password text input");
+        assertRightToLeftTextInputLayoutGeometry(outlinedAreaLayout, "mirrored outlined multiline text input");
 
         ScrollPane pageScrollPane = demoPageScrollPane(scene);
         pageScrollPane.setVvalue(1.0);
         scene.getRoot().applyCss();
         scene.getRoot().layout();
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getLayoutBounds());
-        for (M3TextInputLayout rtlLayout : List.of(
-                rtlFilledLayout,
-                rtlOutlinedLayout,
-                rtlOutlinedActionLayout,
-                rtlPasswordLayout,
-                rtlOutlinedAreaLayout
+        for (M3TextInputLayout mirroredLayout : List.of(
+                filledLayout,
+                outlinedLayout,
+                passwordLayout,
+                outlinedAreaLayout
         )) {
-            Bounds rtlBounds = rtlLayout.localToScene(rtlLayout.getLayoutBounds());
-            assertFalse(isOutsideSceneViewport(rtlLayout, rtlBounds, sceneBounds),
-                    () -> "Mirrored text input should be visible in the scrolled capture: " + rtlBounds);
+            Bounds mirroredBounds = mirroredLayout.localToScene(mirroredLayout.getLayoutBounds());
+            assertFalse(isOutsideSceneViewport(mirroredLayout, mirroredBounds, sceneBounds),
+                    () -> "Mirrored text input should be visible in the scrolled capture: " + mirroredBounds);
         }
 
-        WritableImage rtlImage = requireSnapshotWithNodeFullyVisible(
+        WritableImage mirroredImage = requireSnapshotWithNodeFullyVisible(
                 scene,
-                rtlOutlinedLayout,
+                outlinedLayout,
                 "mirrored outlined text input"
         );
-        writeVisualSnapshot(rtlImage, Path.of(
+        writeVisualSnapshot(mirroredImage, Path.of(
                 "build",
                 "reports",
                 "m3fx-demo-visual",
                 "text-input-mirrored-layout-contracts.png"
         ));
-        assertSnapshotHasVisibleContent(rtlImage, "Mirrored text input layout contracts");
+        assertSnapshotHasVisibleContent(mirroredImage, "Mirrored text input layout contracts");
         assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                rtlImage,
-                rtlOutlinedLayout,
+                mirroredImage,
+                outlinedLayout,
                 "mirrored outlined text input"
         );
         assertTextInputFloatingLabelInkAvoidsAdornmentSlots(
-                rtlImage,
-                rtlOutlinedLayout,
+                mirroredImage,
+                outlinedLayout,
                 "mirrored outlined text input"
         );
         assertTextInputFloatingLabelInkAvoidsInputInk(
-                rtlImage,
-                rtlOutlinedLayout,
+                mirroredImage,
+                outlinedLayout,
                 "mirrored outlined text input"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Mirrored Text Fields");
 
-        TextInputControl rtlOutlinedInput = Objects.requireNonNull(
-                rtlOutlinedLayout.getInput(),
+        TextInputControl outlinedInput = Objects.requireNonNull(
+                outlinedLayout.getInput(),
                 "mirrored outlined input"
         );
-        rtlOutlinedInput.requestFocus();
+        outlinedInput.requestFocus();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
-        WritableImage focusedRtlImage = requireSnapshotWithNodeFullyVisible(
+        WritableImage focusedMirroredImage = requireSnapshotWithNodeFullyVisible(
                 scene,
-                rtlOutlinedLayout,
+                outlinedLayout,
                 "focused mirrored outlined text input"
         );
-        writeVisualSnapshot(focusedRtlImage, Path.of(
+        writeVisualSnapshot(focusedMirroredImage, Path.of(
                 "build",
                 "reports",
                 "m3fx-demo-visual",
                 "text-input-focused-rtl-outlined-contracts.png"
         ));
-        assertSnapshotHasVisibleContent(focusedRtlImage, "Focused mirrored outlined text input contracts");
+        assertSnapshotHasVisibleContent(focusedMirroredImage, "Focused mirrored outlined text input contracts");
         assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                focusedRtlImage,
-                rtlOutlinedLayout,
+                focusedMirroredImage,
+                outlinedLayout,
                 "focused mirrored outlined text input"
         );
         assertTextInputFloatingLabelInkAvoidsAdornmentSlots(
-                focusedRtlImage,
-                rtlOutlinedLayout,
+                focusedMirroredImage,
+                outlinedLayout,
                 "focused mirrored outlined text input"
         );
         assertTextInputFloatingLabelInkAvoidsInputInk(
-                focusedRtlImage,
-                rtlOutlinedLayout,
+                focusedMirroredImage,
+                outlinedLayout,
                 "focused mirrored outlined text input"
         );
-        Text focusedRtlText = Objects.requireNonNull(
-                firstVisibleText(rtlOutlinedInput),
+        Text focusedMirroredText = Objects.requireNonNull(
+                firstVisibleText(outlinedInput),
                 "focused mirrored outlined input text"
         );
         assertSingleLineTextInputHasVerticalRoom(
-                focusedRtlImage,
-                rtlOutlinedLayout,
-                rtlOutlinedInput,
-                focusedRtlText,
+                focusedMirroredImage,
+                outlinedLayout,
+                outlinedInput,
+                focusedMirroredText,
                 "Focused mirrored Text Fields"
         );
 
-        TextInputControl rtlOutlinedActionInput = Objects.requireNonNull(
-                rtlOutlinedActionLayout.getInput(),
-                "mirrored outlined trailing-action input"
+        TextInputControl passwordInput = Objects.requireNonNull(
+                passwordLayout.getInput(),
+                "mirrored password input"
         );
-        rtlOutlinedActionInput.requestFocus();
+        passwordInput.requestFocus();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
-        WritableImage focusedRtlActionImage = requireSnapshotWithNodeFullyVisible(
+        WritableImage focusedPasswordImage = requireSnapshotWithNodeFullyVisible(
                 scene,
-                rtlOutlinedActionLayout,
-                "focused mirrored outlined trailing action text input"
+                passwordLayout,
+                "focused mirrored password input"
         );
-        writeVisualSnapshot(focusedRtlActionImage, Path.of(
+        writeVisualSnapshot(focusedPasswordImage, Path.of(
                 "build",
                 "reports",
                 "m3fx-demo-visual",
                 "text-input-focused-rtl-outlined-action-contracts.png"
         ));
         assertTextInputFocusedVisualState(
-                focusedRtlActionImage,
-                rtlOutlinedActionLayout,
-                rtlOutlinedActionInput,
-                "focused mirrored outlined trailing action text input"
+                focusedPasswordImage,
+                passwordLayout,
+                passwordInput,
+                "focused mirrored password input"
         );
-        Text focusedRtlActionText = Objects.requireNonNull(
-                firstVisibleText(rtlOutlinedActionInput),
-                "focused mirrored outlined trailing-action input text"
+        Text focusedPasswordText = Objects.requireNonNull(
+                firstVisibleText(passwordInput),
+                "focused mirrored password input text"
         );
         assertSingleLineTextInputHasVerticalRoom(
-                focusedRtlActionImage,
-                rtlOutlinedActionLayout,
-                rtlOutlinedActionInput,
-                focusedRtlActionText,
-                "Focused mirrored trailing-action Text Fields"
+                focusedPasswordImage,
+                passwordLayout,
+                passwordInput,
+                focusedPasswordText,
+                "Focused mirrored password Text Fields"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
     }
@@ -8237,30 +8141,56 @@ final class M3FXDemoVisualMatrixTest {
         );
     }
 
-    /// Clicks one demo header theme button and verifies the header geometry after theme reapplication.
-    private static void clickHeaderThemeButton(Scene scene, String text, String description) {
-        Node header = requireVisibleStyledDescendant(scene.getRoot(), "demo-header", "demo header");
-        clickHeaderThemeControl(scene, requireHeaderButton(header, text, text), description);
+    /// Opens the settings dialog from the top app bar.
+    private static void openDemoSettings(Scene scene) {
+        M3IconButton settings = assertInstanceOf(
+                M3IconButton.class,
+                requireVisibleStyledDescendant(scene.getRoot(), "demo-settings-button", "settings action")
+        );
+        settings.fire();
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        requireVisibleStyledDescendant(scene.getRoot(), "demo-settings-content", "demo settings content");
     }
 
-    /// Clicks one demo header theme switch and verifies the header geometry after motion setting reapplication.
-    private static void clickHeaderThemeSwitch(Scene scene, String text, String description) {
-        Node header = requireVisibleStyledDescendant(scene.getRoot(), "demo-header", "demo header");
-        clickHeaderThemeControl(scene, requireHeaderSwitch(header, text), description);
+    /// Clicks one segmented setting and verifies the dialog geometry after theme reapplication.
+    private static void clickDemoSettingButton(
+            Scene scene,
+            String groupStyleClass,
+            String text,
+            String description
+    ) {
+        Node settings = requireVisibleStyledDescendant(
+                scene.getRoot(),
+                "demo-settings-content",
+                "demo settings content"
+        );
+        Node group = requireVisibleStyledDescendant(settings, groupStyleClass, description + " group");
+        clickDemoSettingControl(scene, requireSettingButton(group, text), description);
     }
 
-    /// Activates one demo header control and verifies the header geometry after the action reapplies settings.
-    private static void clickHeaderThemeControl(Scene scene, Node control, String description) {
+    /// Clicks one switch setting and verifies the dialog geometry after reapplication.
+    private static void clickDemoSettingSwitch(Scene scene, String text, String description) {
+        Node settings = requireVisibleStyledDescendant(
+                scene.getRoot(),
+                "demo-settings-content",
+                "demo settings content"
+        );
+        clickDemoSettingControl(scene, requireSettingSwitch(settings, text), description);
+    }
+
+    /// Activates one demo setting and verifies the settings geometry after the action is applied.
+    private static void clickDemoSettingControl(Scene scene, Node control, String description) {
         ButtonBase button = assertInstanceOf(
                 ButtonBase.class,
                 control,
-                description + " header control should be activatable"
+                description + " setting should be activatable"
         );
         button.fire();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
 
-        assertDemoHeaderThemeControlGeometry(scene, "after " + description);
+        assertDemoSettingsControlGeometry(scene, "after " + description);
     }
 
     /// Verifies the demo root contains the expected theme mode style class and not the opposite mode.
@@ -8272,33 +8202,42 @@ final class M3FXDemoVisualMatrixTest {
                 () -> description + " should remove " + absentStyleClass + ": " + styleClasses);
     }
 
-    /// Verifies the demo header controls remain usable and fixed-size after theme reapplication.
-    private static void assertDemoHeaderThemeControlGeometry(Scene scene, String description) {
+    /// Verifies the top app bar and settings controls remain usable after theme reapplication.
+    private static void assertDemoSettingsControlGeometry(Scene scene, String description) {
         Parent root = scene.getRoot();
         assertExclusiveRootThemeModes(scene, description);
 
         Node header = requireVisibleStyledDescendant(root, "demo-header", "demo header");
         assertVisibleControlBounds(header, description + " header");
+        assertVisibleControlBounds(
+                requireVisibleStyledDescendant(header, "demo-settings-button", "settings action"),
+                description + " settings action"
+        );
 
-        List<M3IconButton> seedButtons = headerSeedButtons(header);
+        Node settings = requireVisibleStyledDescendant(root, "demo-settings-content", "demo settings content");
+        assertVisibleControlBounds(settings, description + " settings content");
+        List<M3IconButton> seedButtons = settingsSeedButtons(settings);
         assertEquals(5, seedButtons.size(), description + " seed button count");
         for (M3IconButton seedButton : seedButtons) {
-            assertHeaderSeedButtonGeometry(seedButton, description);
+            assertSettingsSeedButtonGeometry(seedButton, description);
         }
 
         assertVisibleControlBounds(
-                requireHeaderButton(header, "profile button", "Expressive", "Baseline"),
+                requireSettingButton(
+                        requireVisibleStyledDescendant(settings, "demo-profile-settings", "profile settings"),
+                        "Expressive"
+                ),
                 description + " profile button"
         );
         assertVisibleControlBounds(
-                requireHeaderButton(header, "density button", "Standard", "Comfort", "Compact"),
+                requireSettingButton(
+                        requireVisibleStyledDescendant(settings, "demo-density-settings", "density settings"),
+                        "Comfort"
+                ),
                 description + " density button"
         );
-        assertVisibleControlBounds(
-                requireHeaderButton(header, "brightness button", "Dark", "Light"),
-                description + " brightness button"
-        );
-        assertVisibleControlBounds(requireHeaderSwitch(header, "Animations"), description + " animations switch");
+        assertVisibleControlBounds(requireSettingSwitch(settings, "Animations"), description + " animations switch");
+        assertVisibleControlBounds(requireSettingSwitch(settings, "Dark theme"), description + " brightness switch");
     }
 
     /// Verifies that exactly one profile and one brightness style class is installed on the demo root.
@@ -8323,10 +8262,10 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(1, brightnessModeCount, () -> description + " should expose one brightness mode: " + styleClasses);
     }
 
-    /// Returns the visible demo header seed-color buttons.
-    private static List<M3IconButton> headerSeedButtons(Node header) {
+    /// Returns the visible seed-color buttons in the settings dialog.
+    private static List<M3IconButton> settingsSeedButtons(Node settings) {
         List<M3IconButton> seedButtons = new ArrayList<>();
-        for (M3IconButton button : visibleNodesOfType(header, M3IconButton.class)) {
+        for (M3IconButton button : visibleNodesOfType(settings, M3IconButton.class)) {
             if (button.getStyleClass().contains("demo-seed-button")) {
                 seedButtons.add(button);
             }
@@ -8334,44 +8273,42 @@ final class M3FXDemoVisualMatrixTest {
         return seedButtons;
     }
 
-    /// Returns a visible demo header button with one of the requested labels.
-    private static M3Button requireHeaderButton(Node header, String description, String... textOptions) {
-        for (M3Button button : visibleNodesOfType(header, M3Button.class)) {
+    /// Returns a visible settings button with the requested label.
+    private static ButtonBase requireSettingButton(Node settings, String text) {
+        for (ButtonBase button : visibleNodesOfType(settings, ButtonBase.class)) {
             if (!button.isVisible() || !hasRenderableBounds(button)) {
                 continue;
             }
-            for (String textOption : textOptions) {
-                if (textOption.equals(button.getText())) {
-                    return button;
-                }
+            if (text.equals(button.getText())) {
+                return button;
             }
         }
-        fail("Missing demo header " + description);
+        fail("Missing demo setting button: " + text);
         throw new AssertionError("unreachable");
     }
 
-    /// Returns a visible demo header switch with the requested label.
-    private static M3Switch requireHeaderSwitch(Node header, String text) {
-        for (M3Switch switchControl : visibleNodesOfType(header, M3Switch.class)) {
+    /// Returns a visible settings switch with the requested label.
+    private static M3Switch requireSettingSwitch(Node settings, String text) {
+        for (M3Switch switchControl : visibleNodesOfType(settings, M3Switch.class)) {
             if (switchControl.isVisible()
                     && hasRenderableBounds(switchControl)
                     && text.equals(switchControl.getText())) {
                 return switchControl;
             }
         }
-        fail("Missing demo header switch: " + text);
+        fail("Missing demo setting switch: " + text);
         throw new AssertionError("unreachable");
     }
 
-    /// Verifies one demo header seed-color button keeps its fixed square layout and circular token shape.
-    private static void assertHeaderSeedButtonGeometry(M3IconButton button, String description) {
+    /// Verifies one settings seed-color button keeps its fixed square layout and circular token shape.
+    private static void assertSettingsSeedButtonGeometry(M3IconButton button, String description) {
         Bounds bounds = button.localToScene(button.getBoundsInLocal());
-        assertEquals(HEADER_SEED_BUTTON_SIZE, bounds.getWidth(), HEADER_SEED_BUTTON_SIZE_TOLERANCE,
+        assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getWidth(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
                 () -> description + " seed button width changed: " + bounds);
-        assertEquals(HEADER_SEED_BUTTON_SIZE, bounds.getHeight(), HEADER_SEED_BUTTON_SIZE_TOLERANCE,
+        assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getHeight(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
                 () -> description + " seed button height changed: " + bounds);
         assertTrue(button.getContainerShape() >= Math.min(bounds.getWidth(), bounds.getHeight()) / 2.0
-                        - HEADER_SEED_BUTTON_ROUNDNESS_TOLERANCE,
+                        - SETTINGS_SEED_BUTTON_ROUNDNESS_TOLERANCE,
                 () -> description + " seed button container shape is not circular: shape="
                         + button.getContainerShape() + ", bounds=" + bounds);
         assertEquals(0.0, button.getHorizontalPadding(), 0.01,
@@ -8379,16 +8316,20 @@ final class M3FXDemoVisualMatrixTest {
     }
 
     /// Verifies the seed-color buttons render as rounded circles in the final scene snapshot.
-    private static void assertHeaderSeedButtonsRenderCircular(Scene scene, String description) {
+    private static void assertSettingsSeedButtonsRenderCircular(Scene scene, String description) {
         WritableImage image = snapshot(scene);
-        Node header = requireVisibleStyledDescendant(scene.getRoot(), "demo-header", "demo header");
-        for (M3IconButton button : headerSeedButtons(header)) {
-            assertHeaderSeedButtonRenderedCircular(image, button, description);
+        Node settings = requireVisibleStyledDescendant(
+                scene.getRoot(),
+                "demo-settings-content",
+                "demo settings content"
+        );
+        for (M3IconButton button : settingsSeedButtons(settings)) {
+            assertSettingsSeedButtonRenderedCircular(image, button, description);
         }
     }
 
     /// Verifies that the rendered corners of a seed-color button are outside the colored circular fill.
-    private static void assertHeaderSeedButtonRenderedCircular(
+    private static void assertSettingsSeedButtonRenderedCircular(
             WritableImage image,
             M3IconButton button,
             String description
@@ -9185,15 +9126,6 @@ final class M3FXDemoVisualMatrixTest {
                                 + actionBounds + ", editor=" + editorBounds + ", searchBar=" + searchBounds);
             }
         }
-    }
-
-    /// Returns whether a search bar belongs to an explicitly mirrored demo search sample.
-    private static boolean isExplicitRightToLeftSearchBar(M3SearchBar searchBar) {
-        if (searchBar.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
-            return true;
-        }
-        @Nullable M3SearchView owner = nearestAncestorOfType(searchBar, M3SearchView.class);
-        return owner != null && owner.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
     /// Verifies that an active search view shows its default demo result rows as reachable Material list items.
@@ -13359,7 +13291,7 @@ final class M3FXDemoVisualMatrixTest {
         });
     }
 
-    /// Verifies the real Search demo page style, layout, RTL, and standalone search controls.
+    /// Verifies the real Search demo page styles, layouts, and standalone controls.
     private static void assertSearchPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Search");
@@ -13369,22 +13301,15 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Divided Docked", "Search");
         assertVisibleText(root, "Contained Full-screen", "Search");
         assertVisibleText(root, "Divided Full-screen", "Search");
-        assertVisibleText(root, "Right-to-left", "Search");
 
         List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-        assertEquals(5, searchViews.size(), "Search page should render four official combinations and RTL");
+        assertEquals(4, searchViews.size(), "Search page should render the four official combinations");
         M3SearchView containedDocked = searchViews.stream()
                 .filter(searchView -> searchView.getViewStyle() == M3SearchViewStyle.CONTAINED
-                        && searchView.getViewLayout() == M3SearchViewLayout.DOCKED
-                        && searchView.getNodeOrientation() != NodeOrientation.RIGHT_TO_LEFT)
+                        && searchView.getViewLayout() == M3SearchViewLayout.DOCKED)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("missing contained docked search view"));
-        M3SearchView rtlActive = searchViews.stream()
-                .filter(searchView -> searchView.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("missing RTL active search view"));
         assertEquals(3, containedDocked.getResults().size(), "contained docked result count");
-        assertEquals(2, rtlActive.getResults().size(), "RTL result count");
         assertEquals(2, searchViews.stream()
                 .filter(searchView -> searchView.getViewStyle() == M3SearchViewStyle.DIVIDED)
                 .count(), "divided search view count");
@@ -13397,11 +13322,7 @@ final class M3FXDemoVisualMatrixTest {
         }
 
         List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-        assertEquals(8, searchBars.size(), "Search page should render three standalone and five embedded bars");
-        assertEquals(2, searchBars.stream()
-                        .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
-                        .count(),
-                "Search page should render standalone and embedded RTL search bars");
+        assertEquals(6, searchBars.size(), "Search page should render two standalone and four embedded bars");
         for (M3SearchBar searchBar : searchBars) {
             assertSearchBarVisualGeometry(searchBar);
         }
@@ -14033,10 +13954,8 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Validation", "Text Fields");
         assertVisibleText(root, "Error", "Text Fields");
         assertVisibleText(root, "Text Areas", "Text Fields");
-        assertVisibleText(root, "Right-to-left", "Text Fields");
-
         List<M3TextInputLayout> layouts = visibleNodesOfType(page, M3TextInputLayout.class);
-        assertTrue(layouts.size() >= 18,
+        assertTrue(layouts.size() >= 15,
                 () -> "Text Fields page should render the full input matrix, found " + layouts.size());
         assertTrue(layouts.stream().anyMatch(M3TextInputLayout::isClearButtonEnabled),
                 "Text Fields page should render a clear button layout");
@@ -14044,10 +13963,6 @@ final class M3FXDemoVisualMatrixTest {
                 "Text Fields page should render error supporting text");
         assertTrue(layouts.stream().anyMatch(layout -> layout.getCharacterLimit() > 0),
                 "Text Fields page should render character counters");
-        assertTrue(layouts.stream().anyMatch(layout ->
-                        layout.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT),
-                "Text Fields page should render right-to-left inputs");
-
         List<M3TextInput> inputs = layouts.stream()
                 .map(M3TextInputLayout::getTextInput)
                 .filter(Objects::nonNull)
@@ -14116,7 +14031,7 @@ final class M3FXDemoVisualMatrixTest {
         assertDemoVectorIcons(page, "Toolbars", 20);
     }
 
-    /// Verifies the real Banners demo page icons, actions, narrow layout, and right-to-left state.
+    /// Verifies the real Banners demo page icons, actions, and narrow layout.
     private static void assertBannersPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Banners");
@@ -14124,23 +14039,20 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "With Actions", "Banners");
         assertVisibleText(root, "Without Icon", "Banners");
         assertVisibleText(root, "Passive", "Banners");
-        assertVisibleText(root, "Responsive And RTL", "Banners");
+        assertVisibleText(root, "Responsive", "Banners");
 
         List<M3Banner> banners = visibleNodesOfType(page, M3Banner.class);
-        assertEquals(6, banners.size(), "Banners page should render six banner states");
-        assertEquals(4, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
-                "Banners page should render four icon slots");
+        assertEquals(5, banners.size(), "Banners page should render five banner states");
+        assertEquals(3, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
+                "Banners page should render three icon slots");
         long actionButtonCount = visibleNodesOfType(page, M3Button.class).stream()
                 .filter(button -> nearestAncestorOfType(button, M3Banner.class) != null)
                 .count();
-        assertEquals(8, actionButtonCount, "Banners page should render all action buttons");
+        assertEquals(6, actionButtonCount, "Banners page should render all action buttons");
         assertTrue(banners.stream().anyMatch(banner -> banner.getActions().isEmpty()),
                 "Banners page should include a passive banner");
         assertTrue(banners.stream().anyMatch(banner -> banner.getPrefWidth() <= 420.0),
                 "Banners page should include a narrow banner");
-        assertTrue(banners.stream().anyMatch(banner ->
-                        banner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT),
-                "Banners page should include a right-to-left banner");
         for (M3Banner banner : banners) {
             assertBannerDemoGeometry(banner);
         }

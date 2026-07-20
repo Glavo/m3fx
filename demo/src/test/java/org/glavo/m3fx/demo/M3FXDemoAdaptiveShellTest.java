@@ -11,6 +11,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3Switch;
@@ -132,22 +133,11 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    M3Switch direction = requireVisibleStyledNode(
-                            scene.getRoot(),
-                            "demo-direction-switch",
-                            M3Switch.class
-                    );
-                    direction.fire();
+                    setRightToLeftFromSettings(scene, true);
                 },
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
-                    M3Switch direction = requireVisibleStyledNode(
-                            scene.getRoot(),
-                            "demo-direction-switch",
-                            M3Switch.class
-                    );
-                    assertTrue(direction.isSelected(), "RTL switch should report the active global direction");
                     ScrollPane sidebar = requireVisibleStyledNode(
                             scene.getRoot(),
                             "demo-sidebar-scroll-pane",
@@ -294,12 +284,7 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    M3Switch direction = requireVisibleStyledNode(
-                            scene.getRoot(),
-                            "demo-direction-switch",
-                            M3Switch.class
-                    );
-                    direction.fire();
+                    setRightToLeftFromSettings(scene, false);
                     Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
                     stage.setWidth(1180.0);
                 },
@@ -318,6 +303,37 @@ final class M3FXDemoAdaptiveShellTest {
                     );
                 }
         );
+    }
+
+    /// Changes the global layout direction through the settings dialog and then closes the dialog.
+    ///
+    /// @param scene       the active demo scene
+    /// @param rightToLeft whether the demo should use right-to-left layout
+    private static void setRightToLeftFromSettings(Scene scene, boolean rightToLeft) {
+        M3IconButton settings = requireVisibleStyledNode(
+                scene.getRoot(),
+                "demo-settings-button",
+                M3IconButton.class
+        );
+        settings.fire();
+        layout(scene);
+
+        M3Switch direction = requireVisibleStyledNode(
+                scene.getRoot(),
+                "demo-direction-switch",
+                M3Switch.class
+        );
+        if (direction.isSelected() != rightToLeft) {
+            direction.fire();
+            layout(scene);
+        }
+
+        M3Button done = Objects.requireNonNull(
+                findNode(scene.getRoot(), M3Button.class, button -> "Done".equals(button.getText())),
+                "visible Done button in demo settings"
+        );
+        done.fire();
+        layout(scene);
     }
 
     /// Applies CSS and performs one synchronous scene-root layout pass.

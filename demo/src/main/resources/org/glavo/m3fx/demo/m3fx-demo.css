@@ -2,43 +2,8 @@
     -fx-background-color: -m3-color-surface;
 }
 
-.demo-header {
-    -fx-padding: 20px 28px 18px 28px;
-    -fx-background-color: -m3-color-surface-container;
-    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
-    -fx-border-width: 0 0 1px 0;
-}
-
-.demo-header:stacked {
-    -fx-padding: 16px 24px 16px 24px;
-}
-
-.demo-header-primary-row,
-.demo-header-controls {
-    -fx-alignment: center-left;
-}
-
-.demo-title-box {
-    -fx-alignment: center-left;
-}
-
-.demo-title-box:rtl {
-    -fx-alignment: center-right;
-}
-
-.demo-title {
-    -fx-font-size: 30px;
-    -fx-font-weight: 600;
-    -fx-text-fill: -m3-color-on-surface;
-}
-
-.demo-subtitle {
-    -fx-font-size: 14px;
-    -fx-text-fill: -m3-color-on-surface-variant;
-}
-
 .demo-seed-buttons {
-    -fx-alignment: center;
+    -fx-alignment: center-left;
 }
 
 .m3-button-base.m3-icon-button.demo-seed-button {
@@ -66,30 +31,23 @@
     -fx-background-color: -m3-color-surface;
 }
 
-.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-header {
-    -fx-padding: 12px 16px 12px 16px;
-}
-
-.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-title {
-    -fx-font-size: 24px;
-}
-
-.m3-adaptive-scaffold.demo-adaptive-scaffold:compact .demo-subtitle {
-    -fx-font-size: 12px;
+.demo-settings-content,
+.demo-settings-group {
+    -fx-fill-width: true;
 }
 
 .demo-sidebar-scroll-pane {
-    -fx-background-color: -m3-color-surface-container-low;
-    -fx-background: -m3-color-surface-container-low;
+    -fx-background-color: -m3-color-surface;
+    -fx-background: -m3-color-surface;
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1px 0 0;
-    -fx-min-width: 320px;
-    -fx-pref-width: 320px;
-    -fx-max-width: 320px;
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+    -fx-max-width: 360px;
 }
 
 .demo-sidebar-scroll-pane > .viewport {
-    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-color: -m3-color-surface;
 }
 
 .demo-sidebar-scroll-pane:rtl {
@@ -118,9 +76,9 @@
 }
 
 .m3-navigation-drawer.demo-sidebar-drawer {
-    -fx-min-width: 320px;
-    -fx-pref-width: 320px;
-    -fx-max-width: 320px;
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+    -fx-max-width: 360px;
 }
 
 .m3-navigation-drawer.demo-sidebar-drawer .demo-sidebar-top-item,
