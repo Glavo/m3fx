@@ -5,6 +5,7 @@ package org.glavo.m3fx.demo;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
@@ -243,11 +244,18 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    M3IconButton settings = requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-settings-button",
+                            M3IconButton.class
+                    );
                     M3IconButton navigation = requireVisibleStyledNode(
                             scene.getRoot(),
                             "demo-navigation-button",
                             M3IconButton.class
                     );
+                    settings.requestFocus();
+                    assertTrue(settings.isFocused());
                     navigation.fire();
                 },
                 () -> {
@@ -328,11 +336,22 @@ final class M3FXDemoAdaptiveShellTest {
                             horizontalPositionChanged.get(),
                             "the modal drawer lifecycle must not expose an intermediate horizontal page jump"
                     );
-                    assertTrue(requireVisibleStyledNode(
+                    M3IconButton navigation = requireVisibleStyledNode(
                             scene.getRoot(),
                             "demo-navigation-button",
                             M3IconButton.class
-                    ).isFocused(), "closing the modal drawer must restore focus to its trigger");
+                    );
+                    M3IconButton settings = requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-settings-button",
+                            M3IconButton.class
+                    );
+                    assertTrue(settings.isFocused(), "closing the modal drawer must restore the actual prior focus");
+                    assertFalse(navigation.isFocused(), "opening the drawer must not fabricate menu-button focus");
+                    assertFalse(
+                            navigation.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focus-visible")),
+                            "the menu button must not retain keyboard-visible focus feedback"
+                    );
                 }
         );
     }

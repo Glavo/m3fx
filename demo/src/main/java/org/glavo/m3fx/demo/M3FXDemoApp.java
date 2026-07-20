@@ -594,10 +594,6 @@ public final class M3FXDemoApp extends Application {
                 0.5
         );
 
-        M3IconButton menuButton = navigationButton;
-        if (menuButton != null && menuButton.getScene() == overlay.getScene()) {
-            menuButton.requestFocus();
-        }
         M3OverlayPane.OverlayHandle handle = overlay.showModalOverlay(modalLayer);
         navigationOverlayHandle = handle;
         navigationOverlayScrim = scrim;
