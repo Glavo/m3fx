@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
@@ -18,6 +19,7 @@ import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.testing.Tier3Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
@@ -42,6 +44,13 @@ final class M3FXDemoAdaptiveShellTest {
     /// The tolerance used for scene-edge placement assertions.
     private static final double EDGE_TOLERANCE = 1.5;
 
+    /// Starts the JavaFX toolkit before the adaptive shell opens native windows.
+    @BeforeAll
+    static void startToolkit() throws InterruptedException {
+        FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
+    }
+
     /// Verifies wide and narrow navigation, global direction switching, and modal drawer dismissal as one workflow.
     @Test
     void globalDirectionAndAdaptiveNavigationRemainReachable() throws InterruptedException {
@@ -61,7 +70,7 @@ final class M3FXDemoAdaptiveShellTest {
         try {
             verifyWideLeftToRightShell(sceneReference);
             switchToRightToLeft(sceneReference);
-            resizeToMediumLayout(stageReference, sceneReference);
+            resizeToCompactLayout(stageReference, sceneReference);
             showAndDismissRightToLeftModalDrawer(sceneReference);
             restoreWideLeftToRightShell(stageReference, sceneReference);
         } finally {
@@ -148,11 +157,11 @@ final class M3FXDemoAdaptiveShellTest {
         );
     }
 
-    /// Resizes the window to the medium breakpoint and verifies the compact navigation entry point.
+    /// Resizes the window to the compact breakpoint and verifies the modal navigation entry point.
     ///
     /// @param stageReference the active-stage holder
     /// @param sceneReference the active-scene holder
-    private static void resizeToMediumLayout(
+    private static void resizeToCompactLayout(
             AtomicReference<@Nullable Stage> stageReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
@@ -174,7 +183,7 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
-                    stage.setWidth(720.0);
+                    stage.setWidth(480.0);
                 },
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -192,7 +201,7 @@ final class M3FXDemoAdaptiveShellTest {
         );
     }
 
-    /// Opens the medium-layout modal drawer, verifies its RTL edge, and dismisses it through the scrim.
+    /// Opens the compact-layout modal drawer, verifies its RTL edge, and dismisses it through the scrim.
     ///
     /// @param sceneReference the active-scene holder
     private static void showAndDismissRightToLeftModalDrawer(
@@ -231,6 +240,7 @@ final class M3FXDemoAdaptiveShellTest {
                             ScrollPane.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL modal drawer");
+                    assertEquals(NodeOrientation.RIGHT_TO_LEFT, sidebar.getEffectiveNodeOrientation());
                     assertTrue(requireVisibleScrim(scene.getRoot()).isShown());
                 }
         );

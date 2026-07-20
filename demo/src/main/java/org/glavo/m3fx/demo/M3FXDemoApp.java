@@ -571,7 +571,8 @@ public final class M3FXDemoApp extends Application {
             sidebar.getStyleClass().add("demo-modal-sidebar-scroll-pane");
         }
 
-        boolean rightToLeft = overlay.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        NodeOrientation drawerOrientation = overlay.getEffectiveNodeOrientation();
+        boolean rightToLeft = drawerOrientation == NodeOrientation.RIGHT_TO_LEFT;
         double hiddenOffset = rightToLeft ? NAVIGATION_DRAWER_WIDTH : -NAVIGATION_DRAWER_WIDTH;
 
         M3Scrim scrim = new M3Scrim();
@@ -581,6 +582,9 @@ public final class M3FXDemoApp extends Application {
         StackPane modalLayer = new StackPane(scrim, sidebar);
         modalLayer.getStyleClass().add("demo-modal-navigation-layer");
         modalLayer.setPickOnBounds(true);
+        // Keep physical edge placement and translation independent from JavaFX's RTL mirroring.
+        modalLayer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        sidebar.setNodeOrientation(drawerOrientation);
         StackPane.setAlignment(sidebar, rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
 
         M3StateTransition<Boolean> transition = new M3StateTransition<>(modalLayer, false);
@@ -687,6 +691,7 @@ public final class M3FXDemoApp extends Application {
         ScrollPane sidebar = sidebarScrollPane;
         if (sidebar != null) {
             sidebar.setTranslateX(0.0);
+            sidebar.setNodeOrientation(NodeOrientation.INHERIT);
             sidebar.getStyleClass().remove("demo-modal-sidebar-scroll-pane");
         }
         M3NavigationDrawer drawer = sidebarDrawer;
