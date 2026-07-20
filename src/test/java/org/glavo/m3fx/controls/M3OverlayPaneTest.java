@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -348,6 +349,7 @@ final class M3OverlayPaneTest {
         AtomicReference<@Nullable StackPane> secondModalReference = new AtomicReference<>();
         AtomicReference<M3OverlayPane.@Nullable OverlayHandle> firstHandleReference = new AtomicReference<>();
         AtomicReference<M3OverlayPane.@Nullable OverlayHandle> secondHandleReference = new AtomicReference<>();
+        AtomicBoolean focusWasLost = new AtomicBoolean();
 
         try {
             FxTestUtils.runOnFxThreadWhen(
@@ -374,10 +376,20 @@ final class M3OverlayPaneTest {
                         firstModalReference.set(firstModal);
                         secondModalReference.set(secondModal);
                     },
-                    () -> assertTrue(Objects.requireNonNull(
-                            backgroundActionReference.get(),
-                            "backgroundAction"
-                    ).isFocused())
+                    () -> {
+                        assertTrue(Objects.requireNonNull(
+                                backgroundActionReference.get(),
+                                "backgroundAction"
+                        ).isFocused());
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        stage.getScene().focusOwnerProperty().addListener(
+                                (observable, oldFocusOwner, newFocusOwner) -> {
+                                    if (newFocusOwner == null && stage.isShowing() && stage.isFocused()) {
+                                        focusWasLost.set(true);
+                                    }
+                                }
+                        );
+                    }
             );
 
             FxTestUtils.runOnFxThreadWhen(
@@ -445,6 +457,7 @@ final class M3OverlayPaneTest {
                                 backgroundActionReference.get(),
                                 "backgroundAction"
                         ).isFocused());
+                        assertFalse(focusWasLost.get(), "modal focus handoff must not expose a null focus owner");
                     }
             );
         } finally {

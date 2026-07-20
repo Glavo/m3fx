@@ -76,16 +76,13 @@ public final class M3OverlayPane extends Pane {
     /// Whether one deferred modal focus request is already queued.
     private boolean modalFocusRequestPending;
 
-    /// The preferred target retained for the next deferred modal focus request.
-    private @Nullable Node pendingModalFocusTarget;
-
     /// Redirects focus attempts that escape the uppermost modal overlay.
     private final ChangeListener<@Nullable Node> focusOwnerListener =
             (observable, oldFocusOwner, newFocusOwner) -> {
                 @Nullable Node topModal = topModalNode();
                 if (topModal != null
                         && (newFocusOwner == null || !M3Accessible.containsNode(topModal, newFocusOwner))) {
-                    requestModalFocusLater(null);
+                    requestModalFocusLater();
                 }
             };
 
@@ -502,7 +499,7 @@ public final class M3OverlayPane extends Pane {
             if (modal) {
                 snackbarPresenter.setModalBlocked(true);
                 notifyModalAccessibilityChanged();
-                requestModalFocusLater(null);
+                requestModalFocusLater();
             }
             requestLayout();
             completed = true;
@@ -531,19 +528,21 @@ public final class M3OverlayPane extends Pane {
         boolean wasTopModal = handle.modal && index == modalOverlays.size() - 1;
         propagateRestoreFocusOwner(handle, node, restoreFocusOwner);
         ownerList.remove(index);
+        // Hand off focus while the outgoing subtree is still attached. Otherwise Scene focus cleanup may traverse
+        // into scrollable content during the pulse before a deferred restoration request can run.
+        if (handle.modal && wasTopModal) {
+            if (modalOverlays.isEmpty()) {
+                restoreFocus(restoreFocusOwner);
+            } else {
+                requestModalFocus(restoreFocusOwner);
+            }
+        }
         getChildren().remove(node);
         handle.detach();
 
         if (handle.modal) {
             snackbarPresenter.setModalBlocked(!modalOverlays.isEmpty());
             notifyModalAccessibilityChanged();
-            if (wasTopModal) {
-                if (modalOverlays.isEmpty()) {
-                    restoreFocusLater(restoreFocusOwner);
-                } else {
-                    requestModalFocusLater(restoreFocusOwner);
-                }
-            }
         }
         requestLayout();
         return true;
@@ -599,10 +598,7 @@ public final class M3OverlayPane extends Pane {
     }
 
     /// Coalesces one deferred request to focus the uppermost modal layer.
-    private void requestModalFocusLater(@Nullable Node preferredTarget) {
-        if (preferredTarget != null) {
-            pendingModalFocusTarget = preferredTarget;
-        }
+    private void requestModalFocusLater() {
         if (modalFocusRequestPending) {
             return;
         }
@@ -610,9 +606,7 @@ public final class M3OverlayPane extends Pane {
         modalFocusRequestPending = true;
         Platform.runLater(() -> {
             modalFocusRequestPending = false;
-            @Nullable Node target = pendingModalFocusTarget;
-            pendingModalFocusTarget = null;
-            requestModalFocus(target);
+            requestModalFocus(null);
         });
     }
 
@@ -647,21 +641,18 @@ public final class M3OverlayPane extends Pane {
         }
     }
 
-    /// Restores focus after the final modal presentation has left this pane.
-    private void restoreFocusLater(@Nullable Node focusOwner) {
+    /// Restores focus before the final modal presentation releases its focused subtree.
+    private void restoreFocus(@Nullable Node focusOwner) {
         if (focusOwner == null) {
             return;
         }
         @Nullable Scene expectedScene = getScene();
-        Platform.runLater(() -> {
-            if (modalOverlays.isEmpty()
-                    && expectedScene != null
-                    && getScene() == expectedScene
-                    && focusOwner.getScene() == expectedScene
-                    && M3Accessible.canReach(focusOwner)) {
-                focusOwner.requestFocus();
-            }
-        });
+        if (modalOverlays.isEmpty()
+                && expectedScene != null
+                && focusOwner.getScene() == expectedScene
+                && M3Accessible.canReach(focusOwner)) {
+            focusOwner.requestFocus();
+        }
     }
 
     /// Returns the accessible focus target constrained to the uppermost modal subtree.
@@ -759,7 +750,10 @@ public final class M3OverlayPane extends Pane {
 
         /// Hides this presentation and releases its retained node and pane references.
         ///
-        /// Repeated calls after the presentation has been hidden have no effect.
+        /// Repeated calls after the presentation has been hidden have no effect. Hiding the uppermost modal
+        /// presentation transfers focus to the next modal layer or to the focus owner captured when this
+        /// presentation was shown, provided that target remains reachable. The transfer occurs before the outgoing
+        /// node is detached, so reachable underlying controls do not observe an intermediate loss of focus.
         ///
         /// @return `true` if this call removed the presentation; `false` if it was already hidden
         public boolean hide() {

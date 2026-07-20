@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
@@ -24,9 +25,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,6 +59,7 @@ final class M3FXDemoAdaptiveShellTest {
     void globalDirectionAndAdaptiveNavigationRemainReachable() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable AnimationTimer> viewportMonitorReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
@@ -71,10 +75,14 @@ final class M3FXDemoAdaptiveShellTest {
             verifyWideLeftToRightShell(sceneReference);
             switchToRightToLeft(sceneReference);
             resizeToCompactLayout(stageReference, sceneReference);
-            showAndDismissRightToLeftModalDrawer(sceneReference);
+            showAndDismissRightToLeftModalDrawer(sceneReference, viewportMonitorReference);
             restoreWideLeftToRightShell(stageReference, sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
+                @Nullable AnimationTimer viewportMonitor = viewportMonitorReference.getAndSet(null);
+                if (viewportMonitor != null) {
+                    viewportMonitor.stop();
+                }
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -210,10 +218,13 @@ final class M3FXDemoAdaptiveShellTest {
 
     /// Opens the compact-layout modal drawer, verifies its RTL edge, and dismisses it through the scrim.
     ///
-    /// @param sceneReference the active-scene holder
+    /// @param sceneReference           the active-scene holder
+    /// @param viewportMonitorReference the holder used to stop the per-frame viewport monitor during cleanup
     private static void showAndDismissRightToLeftModalDrawer(
-            AtomicReference<@Nullable Scene> sceneReference
+            AtomicReference<@Nullable Scene> sceneReference,
+            AtomicReference<@Nullable AnimationTimer> viewportMonitorReference
     ) throws InterruptedException {
+        AtomicBoolean horizontalPositionChanged = new AtomicBoolean();
         FxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -260,6 +271,17 @@ final class M3FXDemoAdaptiveShellTest {
                             0.0001,
                             "opening the modal drawer must preserve horizontal page position"
                     );
+                    double horizontalPosition = pageScrollPane.getHvalue();
+                    AnimationTimer viewportMonitor = new AnimationTimer() {
+                        @Override
+                        public void handle(long now) {
+                            if (Math.abs(pageScrollPane.getHvalue() - horizontalPosition) > 0.0001) {
+                                horizontalPositionChanged.set(true);
+                            }
+                        }
+                    };
+                    viewportMonitorReference.set(viewportMonitor);
+                    viewportMonitor.start();
                 }
         );
 
@@ -297,6 +319,14 @@ final class M3FXDemoAdaptiveShellTest {
                             pageScrollPane.getHvalue(),
                             0.0001,
                             "closing the modal drawer must preserve horizontal page position"
+                    );
+                    @Nullable AnimationTimer viewportMonitor = viewportMonitorReference.getAndSet(null);
+                    if (viewportMonitor != null) {
+                        viewportMonitor.stop();
+                    }
+                    assertFalse(
+                            horizontalPositionChanged.get(),
+                            "the modal drawer lifecycle must not expose an intermediate horizontal page jump"
                     );
                     assertTrue(requireVisibleStyledNode(
                             scene.getRoot(),
