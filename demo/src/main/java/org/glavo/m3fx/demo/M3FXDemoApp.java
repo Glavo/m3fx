@@ -594,6 +594,10 @@ public final class M3FXDemoApp extends Application {
                 0.5
         );
 
+        M3IconButton menuButton = navigationButton;
+        if (menuButton != null && menuButton.getScene() == overlay.getScene()) {
+            menuButton.requestFocus();
+        }
         M3OverlayPane.OverlayHandle handle = overlay.showModalOverlay(modalLayer);
         navigationOverlayHandle = handle;
         navigationOverlayScrim = scrim;
@@ -682,6 +686,9 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
+        ScrollPane page = pageScrollPane;
+        double horizontalPosition = page == null ? 0.0 : page.getHvalue();
+        double verticalPosition = page == null ? 0.0 : page.getVvalue();
         handle.hide();
         navigationOverlayHandle = null;
         navigationOverlayScrim = null;
@@ -697,6 +704,14 @@ public final class M3FXDemoApp extends Application {
         M3NavigationDrawer drawer = sidebarDrawer;
         if (drawer != null) {
             drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
+        }
+        if (page != null) {
+            Platform.runLater(() -> {
+                if (navigationOverlayHandle == null && pageScrollPane == page && page.getScene() != null) {
+                    page.setHvalue(horizontalPosition);
+                    page.setVvalue(verticalPosition);
+                }
+            });
         }
     }
 

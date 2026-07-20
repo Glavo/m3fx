@@ -197,6 +197,13 @@ final class M3FXDemoAdaptiveShellTest {
                             "demo-sidebar-scroll-pane",
                             ScrollPane.class
                     ));
+                    ScrollPane pageScrollPane = requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-scroll-pane",
+                            ScrollPane.class
+                    );
+                    pageScrollPane.setHvalue(pageScrollPane.getHmin());
+                    assertEquals(pageScrollPane.getHmin(), pageScrollPane.getHvalue(), 0.0001);
                 }
         );
     }
@@ -242,6 +249,17 @@ final class M3FXDemoAdaptiveShellTest {
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL modal drawer");
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, sidebar.getEffectiveNodeOrientation());
                     assertTrue(requireVisibleScrim(scene.getRoot()).isShown());
+                    ScrollPane pageScrollPane = requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-scroll-pane",
+                            ScrollPane.class
+                    );
+                    assertEquals(
+                            pageScrollPane.getHmin(),
+                            pageScrollPane.getHvalue(),
+                            0.0001,
+                            "opening the modal drawer must preserve horizontal page position"
+                    );
                 }
         );
 
@@ -269,6 +287,22 @@ final class M3FXDemoAdaptiveShellTest {
                             ScrollPane.class
                     ));
                     assertNull(visibleScrim(scene.getRoot()));
+                    ScrollPane pageScrollPane = requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-scroll-pane",
+                            ScrollPane.class
+                    );
+                    assertEquals(
+                            pageScrollPane.getHmin(),
+                            pageScrollPane.getHvalue(),
+                            0.0001,
+                            "closing the modal drawer must preserve horizontal page position"
+                    );
+                    assertTrue(requireVisibleStyledNode(
+                            scene.getRoot(),
+                            "demo-navigation-button",
+                            M3IconButton.class
+                    ).isFocused(), "closing the modal drawer must restore focus to its trigger");
                 }
         );
     }
