@@ -51,8 +51,8 @@ import java.util.function.Function;
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
 public final class M3RadioButton extends ButtonBase implements Toggle {
-    /// The base style class for M3FX radio buttons.
-    public static final String STYLE_CLASS = "m3-radio-button";
+    /// The default style class assigned to M3FX radio buttons.
+    private static final String DEFAULT_STYLE_CLASS = "m3-radio-button";
 
     /// The selected pseudo-class used by radio buttons.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -415,13 +415,17 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return getClassCssMetaData();
     }
 
-    /// Selects this radio button and fires its action handler when selection changes.
+    /// Toggles this radio button when it is independent, or selects it when it belongs to a group.
+    ///
+    /// Activating an already selected member of a [ToggleGroup] has no effect and does not fire an action event.
+    /// An independent radio button toggles between selected and unselected and fires after each successful change.
     @Override
     public void fire() {
-        if (!isDisabled() && !isSelected()) {
-            setSelected(true);
-            fireEvent(new ActionEvent(this, this));
+        if (isDisabled() || (getToggleGroup() != null && isSelected())) {
+            return;
         }
+        setSelected(!isSelected());
+        fireEvent(new ActionEvent(this, this));
     }
 
     /// Creates the default Material Design 3 radio button skin.
@@ -436,6 +440,14 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("selection.css");
+    }
+
+    /// Returns the initial alignment used before CSS or application code supplies another value.
+    ///
+    /// @return the initial alignment, [Pos#CENTER_LEFT]
+    @Override
+    protected Pos getInitialAlignment() {
+        return Pos.CENTER_LEFT;
     }
 
     /// Returns accessibility attributes for radio button selection state.
@@ -459,9 +471,8 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.RADIO_BUTTON);
-        setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);
         setMnemonicParsing(true);
         setPickOnBounds(true);

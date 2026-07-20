@@ -19,6 +19,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeType;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3NodeTransition;
@@ -182,10 +183,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         for (int step = 1; step < itemCount; step++) {
             int targetIndex = Math.floorMod(currentIndex + (forward ? step : -step), itemCount);
             Toggle candidate = toggles.get(targetIndex);
-            if (candidate instanceof Node target
-                    && !target.isDisabled()
-                    && target.isVisible()
-                    && target.getScene() != null) {
+            if (candidate instanceof Node target && M3Accessible.canReach(target)) {
                 group.selectToggle(candidate);
                 target.requestFocus();
                 event.consume();

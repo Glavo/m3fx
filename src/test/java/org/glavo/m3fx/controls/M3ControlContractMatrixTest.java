@@ -19527,7 +19527,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.0, lookupRegion(checkBox, ".m3-ripple").getOpacity(), 0.0001);
     }
 
-    /// Verifies that disposed selection skins unbind mirrored label properties.
+    /// Verifies that disposed selection skins release mirrored content and layout bindings.
     @Test
     void selectionControlSkinUnbindsLabelWhenDisposed() {
         M3CheckBox checkBox = new M3CheckBox("Check");
@@ -19535,11 +19535,16 @@ final class M3ControlContractMatrixTest {
         applyCss(checkBox);
 
         Labeled label = assertInstanceOf(Labeled.class, checkBox.lookup(".m3-selection-label"));
+        HBox container = assertInstanceOf(HBox.class, checkBox.lookup(".m3-selection-container"));
         assertTrue(label.textProperty().isBound());
+        assertTrue(container.alignmentProperty().isBound());
+        assertTrue(container.nodeOrientationProperty().isBound());
 
         checkBox.getSkin().dispose();
 
         assertFalse(label.textProperty().isBound());
+        assertFalse(container.alignmentProperty().isBound());
+        assertFalse(container.nodeOrientationProperty().isBound());
     }
 
     /// Verifies that switch skins position the thumb from the selected state.
@@ -19787,10 +19792,27 @@ final class M3ControlContractMatrixTest {
         assertEquals(12.0, track.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
     }
 
-    /// Verifies that radio buttons keep JavaFX ToggleGroup semantics without inheriting RadioButton.
+    /// Verifies independent and grouped radio button activation semantics.
     @Test
-    void radioButtonSupportsToggleGroupSelection() {
-        javafx.scene.control.ToggleGroup group = new javafx.scene.control.ToggleGroup();
+    void radioButtonPreservesIndependentAndToggleGroupSelectionSemantics() {
+        M3RadioButton independent = new M3RadioButton("Independent");
+        AtomicInteger independentActions = new AtomicInteger();
+        independent.setOnAction(event -> independentActions.incrementAndGet());
+
+        independent.fire();
+        assertTrue(independent.isSelected());
+        assertEquals(1, independentActions.get());
+
+        independent.fire();
+        assertFalse(independent.isSelected());
+        assertEquals(2, independentActions.get());
+
+        independent.setDisable(true);
+        independent.fire();
+        assertFalse(independent.isSelected());
+        assertEquals(2, independentActions.get());
+
+        ToggleGroup group = new ToggleGroup();
         M3RadioButton first = createRadioButton("First", true);
         M3RadioButton second = new M3RadioButton("Second");
         AtomicInteger secondActions = new AtomicInteger();
@@ -19812,6 +19834,68 @@ final class M3ControlContractMatrixTest {
 
         assertTrue(second.isSelected());
         assertEquals(1, secondActions.get());
+    }
+
+    /// Verifies that directional radio navigation skips effectively hidden and disabled group members.
+    @Test
+    void radioButtonNavigationSkipsUnreachableGroupMembers() {
+        ToggleGroup group = new ToggleGroup();
+        M3RadioButton first = createRadioButton("First", true);
+        M3RadioButton hidden = new M3RadioButton("Hidden");
+        M3RadioButton disabled = new M3RadioButton("Disabled");
+        M3RadioButton reachable = new M3RadioButton("Reachable");
+        first.setToggleGroup(group);
+        hidden.setToggleGroup(group);
+        disabled.setToggleGroup(group);
+        reachable.setToggleGroup(group);
+
+        VBox hiddenParent = new VBox(hidden);
+        hiddenParent.setVisible(false);
+        VBox disabledParent = new VBox(disabled);
+        disabledParent.setDisable(true);
+        HBox root = new HBox(first, hiddenParent, disabledParent, reachable);
+        Scene scene = new Scene(root, 480.0, 80.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        KeyEvent right = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+        first.fireEvent(right);
+
+        assertFalse(hidden.isSelected());
+        assertFalse(disabled.isSelected());
+        assertTrue(reachable.isSelected());
+        assertEquals(reachable, group.getSelectedToggle());
+    }
+
+    /// Verifies that selection control alignment remains CSS-styleable and follows logical direction.
+    @Test
+    void selectionControlAlignmentRemainsStyleableAndDirectionAware() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        VBox root = new VBox(checkBox, radioButton, switchControl);
+        Scene scene = new Scene(root, 360.0, 180.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+
+        for (ButtonBase control : new ButtonBase[]{checkBox, radioButton, switchControl}) {
+            control.setStyle("-fx-alignment: bottom-right;");
+            control.setPrefWidth(240.0);
+        }
+        root.applyCss();
+        root.layout();
+
+        for (ButtonBase control : new ButtonBase[]{checkBox, radioButton, switchControl}) {
+            HBox container = assertInstanceOf(HBox.class, control.lookup(".m3-selection-container"));
+            assertEquals(Pos.BOTTOM_RIGHT, control.getAlignment());
+            assertEquals(Pos.BOTTOM_RIGHT, container.getAlignment());
+
+            control.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            assertEquals(Pos.BOTTOM_LEFT, container.getAlignment());
+
+            control.setAlignment(Pos.TOP_CENTER);
+            assertEquals(Pos.TOP_CENTER, container.getAlignment());
+        }
     }
 
     /// Verifies that checkboxes support the indeterminate state after moving to ButtonBase.
@@ -36015,9 +36099,9 @@ final class M3ControlContractMatrixTest {
         assertTrue(new M3MenuButton("More").getStyleClass().contains(MENU_BUTTON_STYLE_CLASS));
         assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
         assertTrue(searchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
-        assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));
-        assertTrue(new M3RadioButton().getStyleClass().contains(M3RadioButton.STYLE_CLASS));
-        assertTrue(new M3Switch().getStyleClass().contains(M3Switch.STYLE_CLASS));
+        assertTrue(new M3CheckBox().getStyleClass().contains("m3-checkbox"));
+        assertTrue(new M3RadioButton().getStyleClass().contains("m3-radio-button"));
+        assertTrue(new M3Switch().getStyleClass().contains("m3-switch"));
         assertTrue(new M3Slider().getStyleClass().contains(M3Slider.STYLE_CLASS));
         assertTrue(new M3DatePicker().getStyleClass().contains(M3DatePicker.STYLE_CLASS));
         assertTrue(new M3DatePickerField().getStyleClass().contains(M3DatePickerField.STYLE_CLASS));

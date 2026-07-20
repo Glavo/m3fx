@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.ObjectBinding;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
@@ -30,6 +32,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase<C> {
     /// The root layout container.
     private final HBox container = new HBox();
+
+    /// Resolves the configured alignment against the effective node orientation.
+    private final ObjectBinding<Pos> containerAlignment;
 
     /// The indicator touch target slot.
     private final StackPane indicatorSlot = new StackPane();
@@ -84,10 +89,15 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Creates a selection control skin.
     M3SelectionControlSkinBase(C control) {
         super(control);
+        containerAlignment = Bindings.createObjectBinding(
+                () -> M3NodeLayout.logicalAlignment(control, control.getAlignment()),
+                control.alignmentProperty(),
+                control.effectiveNodeOrientationProperty()
+        );
         container.getStyleClass().add("m3-selection-container");
         indicatorSlot.getStyleClass().add("m3-selection-indicator");
         label.getStyleClass().add("m3-selection-label");
-        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        container.alignmentProperty().bind(containerAlignment);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
@@ -109,6 +119,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         control.disabledProperty().removeListener(disabledListener);
         control.focusedProperty().removeListener(focusedListener);
         container.alignmentProperty().unbind();
+        containerAlignment.dispose();
         container.nodeOrientationProperty().unbind();
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);

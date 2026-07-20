@@ -46,8 +46,8 @@ import java.util.function.Function;
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
 public final class M3CheckBox extends ButtonBase {
-    /// The base style class for M3FX checkboxes.
-    public static final String STYLE_CLASS = "m3-checkbox";
+    /// The default style class assigned to M3FX checkboxes.
+    private static final String DEFAULT_STYLE_CLASS = "m3-checkbox";
 
     /// The selected pseudo-class used by checkboxes.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -629,6 +629,14 @@ public final class M3CheckBox extends ButtonBase {
         return M3Stylesheets.controlStylesheet("selection.css");
     }
 
+    /// Returns the initial alignment used before CSS or application code supplies another value.
+    ///
+    /// @return the initial alignment, [Pos#CENTER_LEFT]
+    @Override
+    protected Pos getInitialAlignment() {
+        return Pos.CENTER_LEFT;
+    }
+
     /// Returns accessibility attributes for checkbox selection state.
     ///
     /// @throws NullPointerException if `attribute` is `null`
@@ -648,9 +656,8 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.CHECK_BOX);
-        setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);
         setMnemonicParsing(true);
         setPickOnBounds(true);

@@ -1686,10 +1686,17 @@ public final class M3FXDemoApp extends Application {
         M3CheckBox disabledIndeterminate =
                 createCheckBox("Disabled indeterminate", false, true, false, false, true);
 
+        M3CheckBox rtlChecked = createCheckBox("RTL checked", true, false, false, false, false);
+        M3CheckBox rtlIndeterminate =
+                createCheckBox("RTL indeterminate", false, true, true, false, false);
+        rtlChecked.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        rtlIndeterminate.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
         return createGallery(
                 createShowcaseGroup("Interactive States", unchecked, checked, indeterminate, threeState),
                 createShowcaseGroup("Error States", errorUnchecked, errorChecked, errorIndeterminate),
-                createShowcaseGroup("Disabled States", disabledUnchecked, disabledChecked, disabledIndeterminate)
+                createShowcaseGroup("Disabled States", disabledUnchecked, disabledChecked, disabledIndeterminate),
+                createShowcaseGroup("Right-to-left", rtlChecked, rtlIndeterminate)
         );
     }
 
@@ -1707,9 +1714,19 @@ public final class M3FXDemoApp extends Application {
         disabledUnchecked.setDisable(true);
         disabledSelected.setDisable(true);
 
+        ToggleGroup rtlGroup = new ToggleGroup();
+        M3RadioButton rtlSelected = new M3RadioButton("RTL option A");
+        M3RadioButton rtlUnselected = new M3RadioButton("RTL option B");
+        rtlSelected.setToggleGroup(rtlGroup);
+        rtlUnselected.setToggleGroup(rtlGroup);
+        rtlSelected.setSelected(true);
+        rtlSelected.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        rtlUnselected.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
         return createGallery(
                 createShowcaseGroup("Selection Group", radioOne, radioTwo),
-                createShowcaseGroup("Disabled States", disabledUnchecked, disabledSelected)
+                createShowcaseGroup("Disabled States", disabledUnchecked, disabledSelected),
+                createShowcaseGroup("Right-to-left", rtlSelected, rtlUnselected)
         );
     }
 
@@ -1746,6 +1763,16 @@ public final class M3FXDemoApp extends Application {
         bothIconsOn.setUnselectedIcon(createSwitchHandleIcon("close"));
         bothIconsOn.setSelected(true);
 
+        M3Switch rtlOff = new M3Switch("RTL off");
+        rtlOff.setSelectedIcon(createSwitchHandleIcon("check"));
+        rtlOff.setUnselectedIcon(createSwitchHandleIcon("close"));
+        rtlOff.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        M3Switch rtlOn = new M3Switch("RTL on");
+        rtlOn.setSelectedIcon(createSwitchHandleIcon("check"));
+        rtlOn.setUnselectedIcon(createSwitchHandleIcon("close"));
+        rtlOn.setSelected(true);
+        rtlOn.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
         return createGallery(
                 createShowcaseGroup("Interactive States", onSwitch, offSwitch),
                 createShowcaseGroup(
@@ -1761,7 +1788,8 @@ public final class M3FXDemoApp extends Application {
                         disabledOnSwitch,
                         disabledIconOff,
                         disabledIconOn
-                )
+                ),
+                createShowcaseGroup("Right-to-left", rtlOff, rtlOn)
         );
     }
 

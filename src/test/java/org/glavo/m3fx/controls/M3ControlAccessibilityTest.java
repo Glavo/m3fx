@@ -12,12 +12,12 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.controls.M3ListCell;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -258,8 +258,12 @@ final class M3ControlAccessibilityTest {
         M3Switch switchControl = new M3Switch("Switch");
         assertAccessibleFireToggles(switchControl, switchControl::isSelected);
 
-        M3RadioButton radioButton = new M3RadioButton("Radio");
-        assertAccessibleFireSelects(radioButton, radioButton::isSelected);
+        M3RadioButton independentRadioButton = new M3RadioButton("Independent radio");
+        assertAccessibleFireToggles(independentRadioButton, independentRadioButton::isSelected);
+
+        M3RadioButton groupedRadioButton = new M3RadioButton("Grouped radio");
+        groupedRadioButton.setToggleGroup(new ToggleGroup());
+        assertAccessibleFireSelects(groupedRadioButton, groupedRadioButton::isSelected);
 
         M3IconToggleButton iconToggleButton = new M3IconToggleButton("A");
         assertAccessibleFireToggles(iconToggleButton, iconToggleButton::isSelected);
