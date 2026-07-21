@@ -173,7 +173,7 @@ final class M3OverlayPaneTest {
         });
     }
 
-    /// Verifies modal presentation suppresses stale lower-layer hover until fresh pointer activity is observed.
+    /// Verifies modal presentation does not revive stale hover while pointer hit testing catches up.
     @Test
     void modalOverlaySuspendsTransientInteractionFeedback() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -202,6 +202,12 @@ final class M3OverlayPaneTest {
             assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
 
             backgroundAction.fireEvent(pointerMove(backgroundAction));
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
             assertTrue(stateLayer.getOpacity() > 0.0);
         });
     }
