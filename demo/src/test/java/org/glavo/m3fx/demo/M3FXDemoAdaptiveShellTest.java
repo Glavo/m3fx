@@ -263,6 +263,10 @@ final class M3FXDemoAdaptiveShellTest {
                         assertFalse(navigation.getPseudoClassStates().contains(
                                 PseudoClass.getPseudoClass("focus-visible")
                         ));
+                        PseudoClass hover = PseudoClass.getPseudoClass("hover");
+                        navigation.pseudoClassStateChanged(hover, true);
+                        assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
+                        navigation.pseudoClassStateChanged(hover, false);
                         assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
                     }
             );

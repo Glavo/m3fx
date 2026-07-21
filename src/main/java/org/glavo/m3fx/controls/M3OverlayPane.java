@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -21,9 +20,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.InputEvent;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.TouchEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -66,9 +62,6 @@ public final class M3OverlayPane extends Pane {
     /// The base style class for Material overlay panes.
     public static final String STYLE_CLASS = "m3-overlay-pane";
 
-    /// The number of pulse callbacks retained after a modal node is detached before feedback is released.
-    private static final int MODAL_INTERACTION_RELEASE_PULSES = 2;
-
     /// The built-in snackbar presentation layer.
     private final M3SnackbarPresenter snackbarPresenter;
 
@@ -77,27 +70,6 @@ public final class M3OverlayPane extends Pane {
 
     /// Modal overlays ordered from bottom to top above the snackbar layer.
     private final ArrayList<OverlayHandle> modalOverlays = new ArrayList<>();
-
-    /// Releases lower-layer transient feedback after scene-graph removal and pointer repicking have settled.
-    private final AnimationTimer modalInteractionReleaseTimer = new AnimationTimer() {
-        /// Advances the pending release barrier by one pulse.
-        @Override
-        public void handle(long now) {
-            if (!modalInteractionReleasePending) {
-                stop();
-                return;
-            }
-            if (--modalInteractionReleasePulsesRemaining <= 0) {
-                completeModalInteractionRelease();
-            }
-        }
-    };
-
-    /// Whether lower-layer transient feedback remains blocked after an outgoing top modal was detached.
-    private boolean modalInteractionReleasePending;
-
-    /// The number of pulse callbacks remaining before the pending modal feedback release.
-    private int modalInteractionReleasePulsesRemaining;
 
     /// The scene currently observed for modal focus containment.
     private @Nullable Scene observedFocusScene;
@@ -299,8 +271,7 @@ public final class M3OverlayPane extends Pane {
     ///
     /// Modal presentation blocks lower-layer input and accessibility, redirects escaped focus to the uppermost
     /// reachable modal target, and suspends lower-layer transient feedback, snackbar interaction, and snackbar
-    /// timeout progress until the final modal has been removed and scene pointer picking has settled. An explicit
-    /// new press ends this brief release barrier immediately. The overlay itself renders its scrim and supplies
+    /// timeout progress until the final modal has been removed. The overlay itself renders its scrim and supplies
     /// component-specific traversal and dismissal. Retain the returned handle for the complete presentation
     /// lifetime.
     ///
@@ -522,17 +493,12 @@ public final class M3OverlayPane extends Pane {
         @Nullable Scene scene = getScene();
         @Nullable Node previousFocusOwner = scene == null ? null : scene.getFocusOwner();
         OverlayHandle handle = new OverlayHandle(this, nonNullOverlay, modal, previousFocusOwner);
-        boolean restorePendingRelease = modal && modalInteractionReleasePending;
-
         ArrayList<OverlayHandle> targetList = modal ? modalOverlays : regularOverlays;
         int childIndex = modal ? getChildren().size() : getChildren().indexOf(snackbarPresenter);
         getChildren().add(childIndex, nonNullOverlay);
         boolean completed = false;
         try {
             targetList.add(handle);
-            if (modal) {
-                cancelModalInteractionRelease();
-            }
             updateModalInteractionBlocking();
             if (modal) {
                 notifyModalAccessibilityChanged();
@@ -547,11 +513,7 @@ public final class M3OverlayPane extends Pane {
                 getChildren().remove(nonNullOverlay);
                 M3ModalInteraction.setBlocked(nonNullOverlay, false);
                 handle.detach();
-                if (restorePendingRelease) {
-                    scheduleModalInteractionRelease();
-                } else {
-                    updateModalInteractionBlocking();
-                }
+                updateModalInteractionBlocking();
                 notifyModalAccessibilityChanged();
             }
         }
@@ -583,11 +545,7 @@ public final class M3OverlayPane extends Pane {
         M3ModalInteraction.setBlocked(node, false);
         handle.detach();
 
-        if (handle.modal && wasTopModal) {
-            scheduleModalInteractionRelease();
-        } else {
-            updateModalInteractionBlocking();
-        }
+        updateModalInteractionBlocking();
         if (handle.modal) {
             notifyModalAccessibilityChanged();
         }
@@ -597,11 +555,11 @@ public final class M3OverlayPane extends Pane {
 
     /// Applies effective modal interaction blocking to every direct presentation subtree.
     ///
-    /// The uppermost modal remains interactive after any pending release barrier completes. Content, regular
-    /// overlays, snackbars, and lower modal layers retain their layout and persistent semantic appearance while
-    /// transient hover, press, focus, and ripple feedback is suspended.
+    /// The uppermost modal remains interactive. Content, regular overlays, snackbars, and lower modal layers retain
+    /// their layout and persistent semantic appearance while transient hover, press, focus, and ripple feedback is
+    /// suspended.
     private void updateModalInteractionBlocking() {
-        boolean feedbackBlocked = !modalOverlays.isEmpty() || modalInteractionReleasePending;
+        boolean feedbackBlocked = !modalOverlays.isEmpty();
         @Nullable Node content = getContent();
         if (content != null) {
             M3ModalInteraction.setBlocked(content, feedbackBlocked);
@@ -614,41 +572,8 @@ public final class M3OverlayPane extends Pane {
 
         int topIndex = modalOverlays.size() - 1;
         for (int index = 0; index < modalOverlays.size(); index++) {
-            M3ModalInteraction.setBlocked(
-                    modalOverlays.get(index).node(),
-                    modalInteractionReleasePending || index != topIndex
-            );
+            M3ModalInteraction.setBlocked(modalOverlays.get(index).node(), index != topIndex);
         }
-    }
-
-    /// Retains lower-layer feedback until the scene has completed pointer repicking without the outgoing modal.
-    private void scheduleModalInteractionRelease() {
-        modalInteractionReleaseTimer.stop();
-        modalInteractionReleasePending = true;
-        modalInteractionReleasePulsesRemaining = MODAL_INTERACTION_RELEASE_PULSES;
-        updateModalInteractionBlocking();
-        modalInteractionReleaseTimer.start();
-    }
-
-    /// Cancels a pending release because another modal has taken ownership of interaction blocking.
-    private void cancelModalInteractionRelease() {
-        if (!modalInteractionReleasePending) {
-            return;
-        }
-        modalInteractionReleaseTimer.stop();
-        modalInteractionReleasePending = false;
-        modalInteractionReleasePulsesRemaining = 0;
-    }
-
-    /// Releases lower-layer feedback after the outgoing modal and stale pointer state have both settled.
-    private void completeModalInteractionRelease() {
-        if (!modalInteractionReleasePending) {
-            return;
-        }
-        modalInteractionReleaseTimer.stop();
-        modalInteractionReleasePending = false;
-        modalInteractionReleasePulsesRemaining = 0;
-        updateModalInteractionBlocking();
     }
 
     /// Rewrites restoration targets that would otherwise point into a removed overlay subtree.
@@ -676,9 +601,6 @@ public final class M3OverlayPane extends Pane {
 
     /// Blocks input events whose target is outside the uppermost modal subtree.
     private void filterModalInput(InputEvent event) {
-        if (modalInteractionReleasePending && startsInteraction(event)) {
-            completeModalInteractionRelease();
-        }
         @Nullable Node topModal = topModalNode();
         if (topModal == null || event.isConsumed()) {
             return;
@@ -687,13 +609,6 @@ public final class M3OverlayPane extends Pane {
         if (!(target instanceof Node targetNode) || !M3Accessible.containsNode(topModal, targetNode)) {
             event.consume();
         }
-    }
-
-    /// Returns whether an event starts an explicit interaction that may safely release stale pointer suppression.
-    private static boolean startsInteraction(InputEvent event) {
-        return event.getEventType() == MouseEvent.MOUSE_PRESSED
-                || event.getEventType() == KeyEvent.KEY_PRESSED
-                || event.getEventType() == TouchEvent.TOUCH_PRESSED;
     }
 
     /// Moves the focus-owner listener when this pane enters another scene.
@@ -866,9 +781,7 @@ public final class M3OverlayPane extends Pane {
         /// Repeated calls after the presentation has been hidden have no effect. Hiding the uppermost modal
         /// presentation transfers focus to the next modal layer or to the focus owner captured when this
         /// presentation was shown, provided that target remains reachable. The transfer occurs before the outgoing
-        /// node is detached, so reachable underlying controls do not observe an intermediate loss of focus. After
-        /// the final modal is removed, stale pointer feedback remains suppressed until scene picking settles or an
-        /// explicit new press begins.
+        /// node is detached, so reachable underlying controls do not observe an intermediate loss of focus.
         ///
         /// @return `true` if this call removed the presentation; `false` if it was already hidden
         public boolean hide() {
