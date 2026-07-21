@@ -22,12 +22,13 @@ import java.util.Arrays;
 
 /// Tracks focus-visible state for Material interaction feedback.
 ///
-/// Native JavaFX focus-visible state is used when exposed by the running JavaFX version. Otherwise, trackers share
-/// a scene-level input-modality observer and mark focused owners after keyboard interaction. [#install()] and
-/// [#uninstall()] are idempotent and must delimit the tracker's active lifetime.
+/// Native JavaFX focus-visible state is used when exposed by the running JavaFX version. JavaFX 17 does not expose
+/// that property, so trackers on the compatibility baseline share a scene-level input-modality observer and mark
+/// focused owners after keyboard interaction. [#install()] and [#uninstall()] are idempotent and must delimit the
+/// tracker's active lifetime.
 @NotNullByDefault
 final class M3FocusVisibleTracker {
-    /// Resolves JavaFX native focus-visible support when it is available at runtime.
+    /// Resolves post-JavaFX-17 native focus-visible support when it is available at runtime.
     private static final @Nullable MethodHandle FOCUS_VISIBLE_PROPERTY_HANDLE = focusVisiblePropertyHandle();
 
     /// The pseudo-class used by M3FX CSS for keyboard-visible focus feedback.
@@ -202,7 +203,7 @@ final class M3FocusVisibleTracker {
         return value instanceof SceneInputTracker tracker ? tracker : null;
     }
 
-    /// Returns a method handle for JavaFX native focus-visible support when the runtime exposes it.
+    /// Returns a method handle for the focus-visible property introduced after JavaFX 17.
     private static @Nullable MethodHandle focusVisiblePropertyHandle() {
         try {
             return MethodHandles.publicLookup().findVirtual(

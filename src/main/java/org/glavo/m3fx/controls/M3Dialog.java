@@ -804,7 +804,7 @@ public class M3Dialog implements EventTarget {
     /// @param eventHandler the handler to register
     /// @param <E>          the event class accepted by the handler
     /// @throws NullPointerException if `eventType` or `eventHandler` is `null`
-    // JavaFX 14's EventTarget does not declare this convenience method.
+    // JavaFX 17's EventTarget does not declare this convenience method.
     // @Override
     public final <E extends Event> void addEventHandler(
             EventType<E> eventType,
@@ -821,7 +821,7 @@ public class M3Dialog implements EventTarget {
     /// @param eventHandler the handler to remove
     /// @param <E>          the event class accepted by the handler
     /// @throws NullPointerException if `eventType` or `eventHandler` is `null`
-    // JavaFX 14's EventTarget does not declare this convenience method.
+    // JavaFX 17's EventTarget does not declare this convenience method.
     // @Override
     public final <E extends Event> void removeEventHandler(
             EventType<E> eventType,
@@ -839,7 +839,7 @@ public class M3Dialog implements EventTarget {
     /// @param eventFilter the filter to register
     /// @param <E>         the event class accepted by the filter
     /// @throws NullPointerException if `eventType` or `eventFilter` is `null`
-    // JavaFX 14's EventTarget does not declare this convenience method.
+    // JavaFX 17's EventTarget does not declare this convenience method.
     // @Override
     public final <E extends Event> void addEventFilter(
             EventType<E> eventType,
@@ -856,7 +856,7 @@ public class M3Dialog implements EventTarget {
     /// @param eventFilter the filter to remove
     /// @param <E>         the event class accepted by the filter
     /// @throws NullPointerException if `eventType` or `eventFilter` is `null`
-    // JavaFX 14's EventTarget does not declare this convenience method.
+    // JavaFX 17's EventTarget does not declare this convenience method.
     // @Override
     public final <E extends Event> void removeEventFilter(
             EventType<E> eventType,

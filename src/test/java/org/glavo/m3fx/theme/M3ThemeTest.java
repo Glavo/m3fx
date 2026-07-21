@@ -885,7 +885,7 @@ final class M3ThemeTest {
         String repeatedStylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
 
         assertEquals(stylesheet, repeatedStylesheet);
-        assertTrue(stylesheet.startsWith("data:") || stylesheet.startsWith("m3fx-css:"));
+        assertTrue(stylesheet.startsWith("data:text/css;charset=UTF-8;base64,"));
         assertFalse(stylesheet.startsWith("file:"));
     }
 

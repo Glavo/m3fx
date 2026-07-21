@@ -96,7 +96,7 @@ public class M3DialogPane extends Control {
     /// Header and content text default to empty strings; graphic and content nodes default to `null`.
     public M3DialogPane() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
-        // JavaFX 14 has no DIALOG role; the helper returns PARENT there.
+        // JavaFX 17 has no DIALOG role; the helper returns PARENT there.
         setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);

@@ -8,4 +8,7 @@
 /// scaffold, so they continue to respond when a desktop window is resized, tiled, or moved between displays.
 ///
 /// See [Material Design layout](https://m3.material.io/foundations/layout/overview).
+@NotNullByDefault
 package org.glavo.m3fx.layout;
+
+import org.jetbrains.annotations.NotNullByDefault;

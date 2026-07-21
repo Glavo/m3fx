@@ -77,6 +77,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -20004,23 +20005,20 @@ final class M3ControlContractMatrixTest {
         assertTrue(checkBox.isIndeterminate());
         assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("indeterminate")));
         assertEquals(true, checkBox.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
-        assertEquals(AccessibleAttribute.ToggleState.INDETERMINATE,
-                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(checkBox, false, true);
 
         checkBox.fire();
 
         assertTrue(checkBox.isSelected());
         assertFalse(checkBox.isIndeterminate());
-        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
-                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(checkBox, true, false);
 
         checkBox.fire();
 
         assertFalse(checkBox.isSelected());
         assertFalse(checkBox.isIndeterminate());
         assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("determinate")));
-        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
-                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(checkBox, false, false);
     }
 
     /// Verifies that radio indicators use circular Material styling.
@@ -36361,19 +36359,15 @@ final class M3ControlContractMatrixTest {
         M3NavigationItem navigationItem = createNavigationItem("Home", true);
 
         assertEquals(true, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
-                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(chip, true);
         chip.setSelected(false);
         assertEquals(false, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
-                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(chip, false);
 
         assertEquals(true, iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
-                iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(iconToggleButton, true);
         assertEquals(true, segmentedButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
-        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
-                segmentedButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertAggregateToggleState(segmentedButton, true);
         assertEquals(true, tab.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
         assertEquals(true, navigationItem.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
     }
@@ -42132,6 +42126,32 @@ final class M3ControlContractMatrixTest {
     /// Returns a rendered pixel from a node snapshot.
     private static Color snapshotPixel(Node node, int x, int y) {
         return FxTestUtils.callOnFxThread(() -> snapshotImageOnFxThread(node).getPixelReader().getColor(x, y));
+    }
+
+    /// Verifies the aggregate accessibility state exposed for a binary toggle when supported by the runtime.
+    private static void assertAggregateToggleState(Node control, boolean selected) {
+        @Nullable AccessibleAttribute toggleStateAttribute = M3Accessible.attribute("TOGGLE_STATE");
+        if (toggleStateAttribute == null) {
+            assertNull(M3Accessible.toggleState(selected));
+        } else {
+            assertEquals(M3Accessible.toggleState(selected),
+                    control.queryAccessibleAttribute(toggleStateAttribute));
+        }
+    }
+
+    /// Verifies the aggregate accessibility state exposed for a three-state toggle when supported by the runtime.
+    private static void assertAggregateToggleState(
+            Node control,
+            boolean selected,
+            boolean indeterminate
+    ) {
+        @Nullable AccessibleAttribute toggleStateAttribute = M3Accessible.attribute("TOGGLE_STATE");
+        if (toggleStateAttribute == null) {
+            assertNull(M3Accessible.toggleState(selected, indeterminate));
+        } else {
+            assertEquals(M3Accessible.toggleState(selected, indeterminate),
+                    control.queryAccessibleAttribute(toggleStateAttribute));
+        }
     }
 
     /// Verifies that a control reports and focuses the expected accessibility focus node.

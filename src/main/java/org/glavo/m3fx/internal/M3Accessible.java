@@ -34,11 +34,11 @@ import java.util.function.Predicate;
 /// actions must be called on the JavaFX Application Thread.
 @NotNullByDefault
 public final class M3Accessible {
-    // JavaFX 14 does not define the aggregate TOGGLE_STATE accessibility attribute.
+    // JavaFX 17 does not define the aggregate TOGGLE_STATE accessibility attribute.
     /// The optional aggregate toggle-state attribute provided by newer JavaFX releases.
     private static final @Nullable AccessibleAttribute TOGGLE_STATE_ATTRIBUTE = attribute("TOGGLE_STATE");
 
-    // JavaFX 14 cannot link the later ToggleState type, so its values remain runtime objects.
+    // JavaFX 17 cannot link the later ToggleState type, so its values remain runtime objects.
     /// The optional checked value returned for the toggle-state attribute.
     private static final @Nullable Object CHECKED_TOGGLE_STATE =
             toggleStateConstant("CHECKED");
@@ -55,7 +55,7 @@ public final class M3Accessible {
     private static final AccessibleRole DIALOG_ROLE;
 
     static {
-        // JavaFX 14 does not define AccessibleRole.DIALOG.
+        // JavaFX 17 does not define AccessibleRole.DIALOG.
         AccessibleRole dialogRole;
         try {
             dialogRole = AccessibleRole.valueOf("DIALOG");
@@ -227,7 +227,7 @@ public final class M3Accessible {
     /// Resolves one value of the optional aggregate toggle-state attribute.
     private static @Nullable Object toggleStateConstant(String constantName) {
         Objects.requireNonNull(constantName, "constantName");
-        // This is the normal compatibility path on JavaFX 14.
+        // This is the normal compatibility path on JavaFX 17.
         if (TOGGLE_STATE_ATTRIBUTE == null) {
             return null;
         }

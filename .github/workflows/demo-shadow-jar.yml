@@ -23,6 +23,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Verify JavaFX 17 compatibility
+        env:
+          GRADLE_USER_HOME: .gradle-user-home
+        run: xvfb-run -a ./gradlew test -Pm3fx.javafx.version=17 --no-daemon
+
       - name: Run core check
         if: github.event_name != 'workflow_dispatch'
         env:

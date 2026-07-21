@@ -25,7 +25,4 @@ module org.glavo.m3fx {
     exports org.glavo.m3fx.layout;
     exports org.glavo.m3fx.theme;
     exports org.glavo.m3fx.tokens;
-
-    provides java.net.spi.URLStreamHandlerProvider
-            with org.glavo.m3fx.internal.theme.M3StylesheetUrlStreamHandlerProvider;
 }

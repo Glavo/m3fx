@@ -18560,7 +18560,14 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies that a demo dialog pane resolves Material surface, action, and content geometry.
     private static void assertDialogPaneDemoGeometry(Scene scene, M3DialogPane pane) {
-        assertEquals(AccessibleRole.DIALOG, pane.getAccessibleRole());
+        // JavaFX 17 has no DIALOG role, so M3DialogPane uses PARENT on the compatibility baseline.
+        AccessibleRole expectedRole;
+        try {
+            expectedRole = AccessibleRole.valueOf("DIALOG");
+        } catch (IllegalArgumentException e) {
+            expectedRole = AccessibleRole.PARENT;
+        }
+        assertEquals(expectedRole, pane.getAccessibleRole());
         assertDialogPaneFitsOwner(scene, pane);
         assertNotNull(pane.getBackground(), "dialog pane should resolve a Material background");
         assertFalse(pane.getBackground().getFills().isEmpty(),

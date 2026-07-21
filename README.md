@@ -13,9 +13,9 @@ The demo and catalog applications exercise both profiles in light, dark, left-to
 ## Requirements
 
 - Java 17 or later for compiling and running M3FX code.
-- JavaFX modules supplied by the application.
+- JavaFX 17 or later, with modules supplied by the application.
 - JavaFX 21 is the default local build and demo version.
-- Public implementation should remain compatible with JavaFX 14 APIs unless newer APIs are guarded at runtime.
+- Public implementation remains compatible with JavaFX 17 APIs unless newer APIs are guarded at runtime.
 
 M3FX does not publish OpenJFX artifacts as Maven runtime dependencies. Applications own the JavaFX version, platform classifier, module path, and runtime-image strategy.
 

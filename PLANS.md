@@ -20,7 +20,7 @@ The remaining risk is concentrated in specification fidelity and runtime quality
 - Visual automation covers the catalog broadly, but important geometry, color, clipping, and animation defects still
   need stronger assertions than screenshot creation alone.
 - Hot animation, layout, popup, and virtualization paths require a final allocation and lifetime audit.
-- Public API, JavaFX 14 runtime compatibility, packaging, and cross-platform workflows require one final release
+- Public API, JavaFX 17 runtime compatibility, packaging, and cross-platform workflows require one final release
   review after component behavior is stable.
 
 The current component set includes the six Material carousel layouts. Full-screen carousels use vertical,
@@ -104,7 +104,7 @@ Run this only after the specification, visual, and performance audits are closed
 - Review public constructors, properties, events, CSS metadata, accessibility contracts, and extension points for
   consistency and unnecessary API surface.
 - Verify documentation against actual behavior and official Material Design references.
-- Recheck JavaFX 14 API compatibility while retaining JavaFX 21 as the default development dependency.
+- Recheck JavaFX 17 API compatibility while retaining JavaFX 21 as the default development dependency.
 - Validate the modular library, publication metadata, both sample-application shadow JARs without bundled JavaFX,
   host runtime image, Demo Native Image executables, cross-platform jlink inputs, and GitHub Actions artifacts.
 - Run the complete library, demo, and Catalog suites on supported desktop platforms and resolve all warnings,

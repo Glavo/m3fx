@@ -132,7 +132,7 @@ public final class M3Switch extends ButtonBase {
                 protected void invalidated() {
                     pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
                     notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-                    // JavaFX 14 has no aggregate TOGGLE_STATE attribute; the helper is a no-op there.
+                    // JavaFX 17 has no aggregate TOGGLE_STATE attribute; the helper is a no-op there.
                     M3Accessible.notifyToggleStateChanged(M3Switch.this);
                 }
 
@@ -651,7 +651,7 @@ public final class M3Switch extends ButtonBase {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        // JavaFX 14 has no TOGGLE_STATE enum constant, so test the optional runtime value first.
+        // JavaFX 17 has no TOGGLE_STATE enum constant, so test the optional runtime value first.
         if (M3Accessible.isToggleStateAttribute(attribute)) {
             return M3Accessible.toggleState(isSelected());
         }

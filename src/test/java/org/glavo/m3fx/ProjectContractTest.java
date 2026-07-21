@@ -79,7 +79,7 @@ final class ProjectContractTest {
     private static final Path SKINS_SOURCE_ROOT =
             Path.of("src", "main", "java", "org", "glavo", "m3fx", "skins");
 
-    /// Direct calls to JavaFX APIs introduced after the JavaFX 14 compatibility baseline.
+    /// Direct calls to JavaFX APIs introduced after the JavaFX 17 compatibility baseline.
     private static final @Unmodifiable List<String> NEWER_JAVA_FX_API_DIRECT_CALL_FRAGMENTS = List.of(
             ".focusVisibleProperty(",
             ".isFocusVisible(",
