@@ -20,6 +20,8 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.testing.Tier2Test;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -181,7 +183,8 @@ final class M3OverlayPaneTest {
             M3IconButton backgroundAction = new M3IconButton();
             M3OverlayPane overlayPane = new M3OverlayPane();
             overlayPane.setContent(new StackPane(backgroundAction));
-            new Scene(overlayPane, 320.0, 180.0);
+            Scene scene = new Scene(overlayPane, 320.0, 180.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
             overlayPane.applyCss();
             overlayPane.resize(320.0, 180.0);
             overlayPane.layout();
@@ -203,6 +206,7 @@ final class M3OverlayPaneTest {
             // Scene repicking may publish a late hover pulse after the modal node is gone. It is not pointer input.
             backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
             backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            overlayPane.applyCss();
             assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
 
             backgroundAction.fireEvent(pointerMove(backgroundAction));

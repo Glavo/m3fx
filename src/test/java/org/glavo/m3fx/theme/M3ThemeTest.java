@@ -221,15 +221,14 @@ final class M3ThemeTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-segmented-button"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-segmented-button-first"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-tab-active-indicator"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-checkbox:hover"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-checkbox:hover .m3-state-layer"));
         assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-loading-indicator"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item:disabled"));
         assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:focus-visible .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
-                ".m3-card:actionable:focus-visible .m3-state-layer"
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(
+                ".m3-button-base:hover .m3-state-layer"
         ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-card:dragged .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-dialog-pane"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-badge"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-top-app-bar"));
@@ -239,13 +238,9 @@ final class M3ThemeTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-section-header"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-form-row"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:hover .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:pressed .m3-state-layer"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:hover .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-carousel-track"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-surface"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-opacity: 0.08"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-opacity: 0.1"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-elevated-card .m3-card-container"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-elevated-card:actionable:hover .m3-card-container"

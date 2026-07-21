@@ -118,8 +118,7 @@
     -fx-opacity: 1;
 }
 
-.m3-segmented-button:disabled > .m3-segmented-button-selection-container,
-.m3-segmented-button:disabled > .m3-state-layer {
+.m3-segmented-button:disabled > .m3-segmented-button-selection-container {
     -fx-opacity: 0;
 }
 

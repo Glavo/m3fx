@@ -92,7 +92,6 @@ public final class M3ThemeCssCompiler {
         Objects.requireNonNull(tokens, "tokens");
         M3TokenCssCompiler.appendControlStyleRules(builder, tokens.typographyTokens());
         M3ComponentTokenCssCompiler.appendControlStyleRules(builder, tokens.componentTokens());
-        M3TokenCssCompiler.appendControlStyleRules(builder, tokens.stateLayerTokens());
         M3TokenCssCompiler.appendControlStyleRules(builder, tokens.elevationTokens());
     }
 

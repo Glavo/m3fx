@@ -134,15 +134,13 @@ final class M3TokenFactoryTest {
         assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-line-height: 68px"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-tracking: -0.2px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-disabled-content-opacity: 0.42"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-hover-opacity: 0.05"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-opacity: 0.11"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-pressed-opacity: 0.13"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-dragged-opacity: 0.17"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-thickness: 4px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-outer-offset: 3px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-inner-offset: -3px"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button-base:focus-visible .m3-state-layer"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-tab:focus-visible .m3-state-layer"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button-base:pressed .m3-state-layer"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains("-fx-opacity: 0.13"));
-        assertFalse(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(":disabled"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-elevated-button:hover"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-fab:hover"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-surface-elevation-level3"));
@@ -481,9 +479,8 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-date-picker-container"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-picker-field-popup"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-form-row-text-column"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-validation-summary-item:hover .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-validation-summary-item:pressed .m3-state-layer"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-button-base:hover .m3-state-layer"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-validation-summary-item:hover .m3-state-layer"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-carousel-track"));
         assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-carousel-selected-item"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-surface"));
@@ -524,7 +521,8 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
                 ".m3-outlined-card:actionable:focus-visible .m3-card-container"
         ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-opacity: 0.15"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet)
+                .contains("-m3-state-pressed-opacity: 0.15"));
     }
 
     /// Verifies that generated default component token values feed generated control rules.
