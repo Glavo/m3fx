@@ -3925,13 +3925,9 @@ final class M3FXDemoVisualMatrixTest {
                     },
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(
-                                        scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
-                                )
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
                         );
                         M3ListItem selected = Objects.requireNonNull(
                                 demoSidebarItemWithText(scene.getRoot(), "Scrims"),
@@ -3939,7 +3935,7 @@ final class M3FXDemoVisualMatrixTest {
                         );
                         assertNodeInsideNearestScrollViewport(selected, "selected Scrims sidebar item");
 
-                        sidebarScrollPane.setVvalue(1.0);
+                        sidebarViewport.setVvalue(1.0);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
 
@@ -4001,11 +3997,8 @@ final class M3FXDemoVisualMatrixTest {
                             return false;
                         }
 
-                        @Nullable Node node = firstVisibleStyledDescendant(
-                                scene.getRoot(),
-                                "demo-sidebar-scroll-pane"
-                        );
-                        if (!(node instanceof ScrollPane scrollPane)) {
+                        @Nullable ScrollPane scrollPane = demoSidebarViewport(scene.getRoot());
+                        if (scrollPane == null) {
                             return false;
                         }
                         scrollPane.setVvalue(1.0);
@@ -4036,16 +4029,31 @@ final class M3FXDemoVisualMatrixTest {
                         assertTrue(groups.stream().allMatch(M3NavigationDrawerGroup::isExpanded),
                                 "all demo sidebar drawer groups should be expanded");
 
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
+                        );
+                        assertEquals(1.0, sidebarViewport.getVvalue(), 0.001,
+                                "fully expanded sidebar should support scrolling to the bottom");
+                        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(sidebarViewport),
+                                "demo sidebar should delegate wheel input to its Material viewport");
+                        Node sidebarContent = Objects.requireNonNull(
+                                sidebarViewport.getContent(),
+                                "demo sidebar viewport content"
+                        );
+                        assertTrue(sidebarContent.getLayoutBounds().getHeight()
+                                        > sidebarViewport.getViewportBounds().getHeight(),
+                                "the Material viewport should own the expanded sidebar scroll range");
+                        ScrollPane sidebarHost = assertInstanceOf(
                                 ScrollPane.class,
                                 requireVisibleStyledDescendant(
                                         scene.getRoot(),
                                         "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
+                                        "demo sidebar host"
                                 )
                         );
-                        assertEquals(1.0, sidebarScrollPane.getVvalue(), 0.001,
-                                "fully expanded sidebar should support scrolling to the bottom");
+                        assertTrue(sidebarHost.isFitToHeight(),
+                                "the adaptive sidebar host should constrain the drawer to its viewport");
 
                         M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
                         assertEquals("Scrims", lastItem.getHeadlineText(), "last fully expanded sidebar destination");
@@ -4100,11 +4108,8 @@ final class M3FXDemoVisualMatrixTest {
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
 
-                        @Nullable Node node = firstVisibleStyledDescendant(
-                                scene.getRoot(),
-                                "demo-sidebar-scroll-pane"
-                        );
-                        if (!(node instanceof ScrollPane scrollPane)) {
+                        @Nullable ScrollPane scrollPane = demoSidebarViewport(scene.getRoot());
+                        if (scrollPane == null) {
                             return false;
                         }
 
@@ -4138,15 +4143,11 @@ final class M3FXDemoVisualMatrixTest {
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
 
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(
-                                        scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
-                                )
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
                         );
-                        sidebarScrollPane.setVvalue(0.0);
+                        sidebarViewport.setVvalue(0.0);
 
                         List<M3NavigationDrawerGroup> groups = demoSidebarDrawerGroups(scene.getRoot());
                         assertFalse(groups.isEmpty(), "demo sidebar drawer groups");
@@ -4169,15 +4170,11 @@ final class M3FXDemoVisualMatrixTest {
                     },
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(
-                                        scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
-                                )
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
                         );
-                        assertTrue(sidebarScrollPane.getVvalue() > 0.95,
+                        assertTrue(sidebarViewport.getVvalue() > 0.95,
                                 () -> "wheel scrolling during expansion should move the sidebar near the bottom: "
                                         + sidebarScrollDebug(scene));
 
@@ -4236,11 +4233,8 @@ final class M3FXDemoVisualMatrixTest {
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
 
-                        @Nullable Node node = firstVisibleStyledDescendant(
-                                scene.getRoot(),
-                                "demo-sidebar-scroll-pane"
-                        );
-                        if (!(node instanceof ScrollPane scrollPane)) {
+                        @Nullable ScrollPane scrollPane = demoSidebarViewport(scene.getRoot());
+                        if (scrollPane == null) {
                             return false;
                         }
                         if (scrollPane.getVvalue() < 0.98) {
@@ -4273,27 +4267,19 @@ final class M3FXDemoVisualMatrixTest {
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
 
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(
-                                        scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
-                                )
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
                         );
-                        sidebarScrollPane.setVvalue(0.0);
+                        sidebarViewport.setVvalue(0.0);
                     },
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        ScrollPane sidebarScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(
-                                        scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar scroll pane"
-                                )
+                        ScrollPane sidebarViewport = Objects.requireNonNull(
+                                demoSidebarViewport(scene.getRoot()),
+                                "demo sidebar viewport"
                         );
-                        assertTrue(sidebarScrollPane.getVvalue() > 0.95,
+                        assertTrue(sidebarViewport.getVvalue() > 0.95,
                                 () -> "wheel scrolling should move the sidebar near the bottom: "
                                         + sidebarScrollDebug(scene));
 
@@ -8810,14 +8796,26 @@ final class M3FXDemoVisualMatrixTest {
         return viewport == null ? null : viewport.localToScene(viewport.getBoundsInLocal());
     }
 
+    /// Returns the internal Material viewport that owns demo sidebar scrolling.
+    private static @Nullable ScrollPane demoSidebarViewport(Node root) {
+        @Nullable Node host = firstVisibleStyledDescendant(root, "demo-sidebar-scroll-pane");
+        if (!(host instanceof ScrollPane hostScrollPane)) {
+            return null;
+        }
+
+        @Nullable Node drawer = hostScrollPane.getContent();
+        @Nullable Node viewport = drawer == null ? null : drawer.lookup(".m3-navigation-drawer-viewport");
+        return viewport instanceof ScrollPane scrollPane ? scrollPane : null;
+    }
+
     /// Returns compact scroll diagnostics for the demo sidebar.
     private static String sidebarScrollDebug(@Nullable Scene scene) {
         if (scene == null) {
             return "scene=null";
         }
-        @Nullable Node node = firstVisibleStyledDescendant(scene.getRoot(), "demo-sidebar-scroll-pane");
-        if (!(node instanceof ScrollPane scrollPane)) {
-            return "sidebar scroll pane missing";
+        @Nullable ScrollPane scrollPane = demoSidebarViewport(scene.getRoot());
+        if (scrollPane == null) {
+            return "sidebar viewport missing";
         }
         @Nullable Node content = scrollPane.getContent();
         Bounds viewportBounds = scrollPane.getViewportBounds();

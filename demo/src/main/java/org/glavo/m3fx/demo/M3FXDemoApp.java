@@ -498,8 +498,8 @@ public final class M3FXDemoApp extends Application {
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
         M3ScrollPanes.style(scrollPane);
         scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> cancelSidebarScrollRetry());
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         sidebarScrollPane = scrollPane;
@@ -986,7 +986,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Scrolls the active sidebar destination into view when it is outside the current viewport.
     private void scrollSidebarPageIntoView(DemoPage page) {
-        ScrollPane scrollPane = sidebarScrollPane;
+        @Nullable ScrollPane scrollPane = sidebarDrawerViewport();
         Node content = scrollPane == null ? null : scrollPane.getContent();
         @Nullable M3ListItem item = sidebarItemForPage(page);
         if (scrollPane == null || content == null || item == null || item.getScene() == null) {
@@ -1025,6 +1025,18 @@ public final class M3FXDemoApp extends Application {
 
         double clampedTop = Math.max(0.0, Math.min(scrollableHeight, targetTop));
         scrollPane.setVvalue(clampedTop / scrollableHeight);
+    }
+
+    /// Returns the navigation drawer viewport that owns sidebar scrolling.
+    private @Nullable ScrollPane sidebarDrawerViewport() {
+        M3NavigationDrawer drawer = sidebarDrawer;
+        if (drawer == null || drawer.getScene() == null) {
+            return null;
+        }
+
+        drawer.applyCss();
+        Node viewport = drawer.lookup(".m3-navigation-drawer-viewport");
+        return viewport instanceof ScrollPane scrollPane ? scrollPane : null;
     }
 
     /// Returns the current scroll content height, including width-dependent preferred height updates.
