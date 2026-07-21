@@ -2,13 +2,19 @@ name: Build Demo Native Image
 
 on:
   workflow_dispatch:
+    inputs:
+      nik_java_version:
+        description: Liberica NIK Java feature version
+        required: true
+        default: "25"
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   native-image:
-    name: Native Demo (${{ matrix.target }})
+    name: Native Demo (${{ matrix.target }}, NIK ${{ inputs.nik_java_version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
@@ -60,7 +66,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           distribution: liberica
-          java-version: "21"
+          java-version: ${{ inputs.nik_java_version }}
           java-package: jdk+fx
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -68,6 +74,24 @@ jobs:
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
         run: ./gradlew nativeBuildDemo --no-daemon
+
+      - name: Verify Windows native executable startup
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $executable = Resolve-Path 'demo/build/distributions/native/windows-x86_64/m3fx-demo.exe'
+          $process = Start-Process -FilePath $executable -PassThru
+          try {
+            Start-Sleep -Seconds 10
+            $process.Refresh()
+            if ($process.HasExited) {
+              throw "The native demo exited during startup with code $($process.ExitCode)."
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
 
       - name: Upload native executable
         uses: actions/upload-artifact@v7

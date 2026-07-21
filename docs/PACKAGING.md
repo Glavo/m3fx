@@ -125,8 +125,9 @@ CSS, the packaged Alibaba PuHuiTi font, and the JavaFX focus-visible method reac
 shadow jar itself continues to exclude OpenJFX artifacts because JavaFX comes from Liberica NIK Full.
 
 Native Image does not cross-compile desktop executables. Run the task on each target operating system and
-architecture. The manually dispatched `Build Demo Native Image` workflow builds and uploads the staged Linux x64,
-Windows x64, and macOS AArch64 executables. Platform C toolchains are still required locally; Linux additionally
+architecture. The manually dispatched `Build Demo Native Image` workflow accepts the Liberica NIK Java feature
+version, builds and uploads the staged Linux x64, Windows x64, and macOS AArch64 executables, and performs a Windows
+startup smoke check before publishing artifacts. Platform C toolchains are still required locally; Linux additionally
 needs the JavaFX GTK, graphics, audio, and X11 development packages installed by that workflow.
 
 ## Jlink Configuration

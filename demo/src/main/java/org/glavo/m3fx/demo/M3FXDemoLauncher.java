@@ -17,6 +17,10 @@ public final class M3FXDemoLauncher {
     ///
     /// @param args command-line arguments forwarded to JavaFX
     public static void main(String[] args) {
+        if ("runtime".equals(System.getProperty("org.graalvm.nativeimage.imagecode"))) {
+            // Native Image links JavaFX statically; ignore dynamic JavaFX binaries inherited from PATH.
+            System.setProperty("java.library.path", "");
+        }
         Application.launch(M3FXDemoApp.class, args);
     }
 }
