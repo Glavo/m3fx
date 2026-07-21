@@ -82,6 +82,9 @@ public class M3Tooltip extends PopupControl {
     /// The base style class for M3FX tooltips.
     public static final String STYLE_CLASS = "m3-tooltip";
 
+    /// The style class that keeps the popup scene root transparent behind rounded tooltip content.
+    private static final String POPUP_ROOT_STYLE_CLASS = "m3-tooltip-popup-root";
+
     /// The vertical offset between an owner node and the popup.
     private static final double POPUP_VERTICAL_OFFSET = 8.0;
 
@@ -682,6 +685,7 @@ public class M3Tooltip extends PopupControl {
         }
 
         Parent popupRoot = popupScene.getRoot();
+        M3ControlStyles.add(popupRoot, POPUP_ROOT_STYLE_CLASS);
         M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
                 ownerNode,
                 popupRoot,

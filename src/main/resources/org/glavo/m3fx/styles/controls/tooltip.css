@@ -1,3 +1,7 @@
+.m3-tooltip-popup-root {
+    -fx-background-color: transparent;
+}
+
 .m3-tooltip {
     -fx-background-color: -m3-color-inverse-surface;
     -fx-background-radius: 4px;

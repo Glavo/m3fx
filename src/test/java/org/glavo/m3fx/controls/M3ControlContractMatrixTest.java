@@ -31,6 +31,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
@@ -35733,9 +35734,24 @@ final class M3ControlContractMatrixTest {
                 tooltipRoot.layout();
 
                 assertPopupRootUsesThemeClasses(tooltipRoot, M3Theme.defaultTheme());
-                WritableImage image = snapshotImageOnFxThread(tooltipRoot);
+                SnapshotParameters snapshotParameters = new SnapshotParameters();
+                snapshotParameters.setFill(Color.TRANSPARENT);
+                WritableImage image = new WritableImage(
+                        (int) Math.ceil(tooltipRoot.getLayoutBounds().getWidth()),
+                        (int) Math.ceil(tooltipRoot.getLayoutBounds().getHeight())
+                );
+                tooltipRoot.snapshot(snapshotParameters, image);
                 assertSnapshotHasColorVariety(image, 2);
                 assertSnapshotNodeContainsContrast(image, tooltipRoot, Color.WHITE, 0.2);
+                assertTrue(tooltipRoot.getStyleClass().contains("m3-tooltip-popup-root"));
+                int lastX = (int) image.getWidth() - 1;
+                int lastY = (int) image.getHeight() - 1;
+                Color topLeftCorner = image.getPixelReader().getColor(0, 0);
+                assertTrue(topLeftCorner.getOpacity() <= 0.05,
+                        () -> "top-left tooltip corner should be transparent: " + topLeftCorner);
+                assertTrue(image.getPixelReader().getColor(lastX, 0).getOpacity() <= 0.05);
+                assertTrue(image.getPixelReader().getColor(0, lastY).getOpacity() <= 0.05);
+                assertTrue(image.getPixelReader().getColor(lastX, lastY).getOpacity() <= 0.05);
                 writeVisualSnapshot(image, java.nio.file.Path.of(
                         "build",
                         "reports",
