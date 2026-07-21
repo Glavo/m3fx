@@ -51,6 +51,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.testing.Tier3Test;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -8389,6 +8390,7 @@ final class M3FXDemoVisualMatrixTest {
                     Scene scene = sceneReference.get();
                     return app != null
                             && scene != null
+                            && demoPageTransitionSettled(scene)
                             && sidebarVisualSelectionSettled(app, scene)
                             && selectedSidebarItemInsideViewport(app, scene);
                 },
@@ -8490,6 +8492,13 @@ final class M3FXDemoVisualMatrixTest {
                         && scrollPane.getContent().getStyleClass().contains("demo-page-host"))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("demo page scroll pane not found"));
+    }
+
+    /// Returns whether the shared demo page host has released its outgoing page.
+    private static boolean demoPageTransitionSettled(Scene scene) {
+        return visibleNodesOfType(scene.getRoot(), M3AnimatedContent.class).stream()
+                .filter(host -> host.getStyleClass().contains("demo-page-host"))
+                .noneMatch(M3AnimatedContent::isTransitioning);
     }
 
     /// Resets the shared demo page scroll pane before a visual page assertion.

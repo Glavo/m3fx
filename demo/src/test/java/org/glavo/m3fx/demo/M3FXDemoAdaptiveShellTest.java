@@ -22,6 +22,7 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -393,10 +394,23 @@ final class M3FXDemoAdaptiveShellTest {
                 firePrimaryClick(destination);
                 layout(scene);
 
-                Label pageTitle = requireVisibleStyledNode(
-                        scene.getRoot(),
-                        "demo-page-title",
-                        Label.class
+                M3AnimatedContent pageHost = Objects.requireNonNull(
+                        findNode(
+                                scene.getRoot(),
+                                M3AnimatedContent.class,
+                                candidate -> candidate.getStyleClass().contains("demo-page-host")
+                        ),
+                        "animated demo page host"
+                );
+                assertTrue(pageHost.isTransitioning(), "page navigation should retain an animated transition");
+                Node page = Objects.requireNonNull(pageHost.getContent(), "current demo page");
+                Label pageTitle = Objects.requireNonNull(
+                        findNode(
+                                page,
+                                Label.class,
+                                label -> label.getStyleClass().contains("demo-page-title")
+                        ),
+                        "current demo page title"
                 );
                 assertEquals("App Bars", pageTitle.getText());
                 assertEquals("App bars", app.currentPageNavigationTitle());

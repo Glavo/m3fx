@@ -29,6 +29,7 @@ import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.controls.M3Button;
@@ -141,8 +142,8 @@ public final class M3FXDemoApp extends Application {
     /// The currently shown demo page.
     private @Nullable DemoPage currentPage;
 
-    /// The page host replaced when sidebar selection changes.
-    private @Nullable StackPane pageHost;
+    /// The retained content host that transitions between demo pages.
+    private @Nullable M3AnimatedContent pageHost;
 
     /// The stable root that owns dialogs, snackbars, and other in-scene overlays.
     private @Nullable M3OverlayPane overlayPane;
@@ -191,7 +192,7 @@ public final class M3FXDemoApp extends Application {
         this.scene = scene;
         applyTheme();
         applyMotionSettings();
-        showPage(createdPages.get(0));
+        presentPage(createdPages.get(0), false);
 
         stage.setTitle("M3FX Demo");
         stage.setMinWidth(360.0);
@@ -778,8 +779,11 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the scrollable page host.
     private Node createPageScrollPane() {
-        StackPane host = new StackPane();
+        M3AnimatedContent host = new M3AnimatedContent();
         host.getStyleClass().add("demo-page-host");
+        host.setEnterScale(1.0);
+        host.setExitScale(1.0);
+        host.setSizeAnimationEnabled(false);
         pageHost = host;
 
         ScrollPane scrollPane = new ScrollPane(host);
@@ -798,13 +802,23 @@ public final class M3FXDemoApp extends Application {
     /// @throws NullPointerException     if `page` is `null`
     /// @throws IllegalArgumentException if `page` is not registered by this application
     void showPage(DemoPage page) {
+        presentPage(page, true);
+    }
+
+    /// Presents a registered component page, optionally retaining the previous page for a content transition.
+    ///
+    /// @param page     the registered destination page
+    /// @param animated whether to animate replacement of an already displayed page
+    /// @throws NullPointerException     if `page` is `null`
+    /// @throws IllegalArgumentException if `page` is not registered by this application
+    private void presentPage(DemoPage page, boolean animated) {
         Objects.requireNonNull(page, "page");
         if (!pages.contains(page)) {
             throw new IllegalArgumentException("demo page is not registered: " + page.title());
         }
 
         stopPageAnimations();
-        StackPane host = pageHost;
+        M3AnimatedContent host = pageHost;
         if (host == null) {
             return;
         }
@@ -817,7 +831,10 @@ public final class M3FXDemoApp extends Application {
         pageNode.getStyleClass().add("demo-page");
 
         pageNode.getChildren().addAll(createPageHeader(page), page.contentFactory().get());
-        host.getChildren().setAll(pageNode);
+        host.setContent(pageNode);
+        if (!animated) {
+            host.snapToCurrentState();
+        }
         ScrollPane scrollPane = pageScrollPane;
         if (scrollPane != null) {
             scrollPane.setHvalue(0.0);
@@ -857,7 +874,7 @@ public final class M3FXDemoApp extends Application {
     private void refreshCurrentPage() {
         DemoPage page = currentPage;
         if (page != null) {
-            showPage(page);
+            presentPage(page, false);
         }
     }
 
