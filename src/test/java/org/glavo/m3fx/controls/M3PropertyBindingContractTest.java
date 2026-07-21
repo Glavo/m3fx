@@ -57,6 +57,45 @@ final class M3PropertyBindingContractTest {
         });
     }
 
+    /// Verifies that button role properties preserve their values before and after observation or binding.
+    @Test
+    void buttonRolePropertiesPreserveValuesAcrossPropertyCreation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Action");
+            button.setVariant(M3ButtonVariant.OUTLINED);
+            button.setSize(M3ButtonSize.LARGE);
+            button.setButtonShape(M3ButtonShape.SQUARE);
+
+            assertEquals(M3ButtonVariant.OUTLINED, button.variantProperty().get());
+            assertEquals(M3ButtonSize.LARGE, button.sizeProperty().get());
+            assertEquals(M3ButtonShape.SQUARE, button.buttonShapeProperty().get());
+
+            ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(M3ButtonVariant.TONAL);
+            ObjectProperty<M3ButtonSize> size = new SimpleObjectProperty<>(M3ButtonSize.MEDIUM);
+            ObjectProperty<M3ButtonShape> shape = new SimpleObjectProperty<>(M3ButtonShape.ROUND);
+            button.variantProperty().bind(variant);
+            button.sizeProperty().bind(size);
+            button.buttonShapeProperty().bind(shape);
+
+            variant.set(M3ButtonVariant.FILLED);
+            size.set(M3ButtonSize.EXTRA_LARGE);
+            shape.set(M3ButtonShape.SQUARE);
+            assertEquals(M3ButtonVariant.FILLED, button.getVariant());
+            assertEquals(M3ButtonSize.EXTRA_LARGE, button.getSize());
+            assertEquals(M3ButtonShape.SQUARE, button.getButtonShape());
+
+            button.variantProperty().unbind();
+            button.sizeProperty().unbind();
+            button.buttonShapeProperty().unbind();
+            button.variantProperty().set(null);
+            button.sizeProperty().set(null);
+            button.buttonShapeProperty().set(null);
+            assertEquals(M3ButtonVariant.FILLED, button.getVariant());
+            assertEquals(M3ButtonSize.SMALL, button.getSize());
+            assertEquals(M3ButtonShape.ROUND, button.getButtonShape());
+        });
+    }
+
     /// Verifies valid progress bindings and normalization of direct assignments.
     @Test
     void progressBindingsAndDirectAssignmentsUseTheirDocumentedDomains() {

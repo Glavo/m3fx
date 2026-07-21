@@ -4057,11 +4057,39 @@ final class M3ControlContractMatrixTest {
                 assertLabeledColors(selected, surfaceContainer, onSurface);
                 assertEquals(onPrimaryContainer, iconFill(unselectedIcon));
                 assertEquals(onSurface, iconFill(selectedIcon));
+                unselected.fireEvent(primaryMouseEvent(
+                        unselected,
+                        MouseEvent.MOUSE_PRESSED,
+                        unselected.getWidth() / 2.0,
+                        unselected.getHeight() / 2.0,
+                        true
+                ));
+                selected.fireEvent(primaryMouseEvent(
+                        selected,
+                        MouseEvent.MOUSE_PRESSED,
+                        selected.getWidth() / 2.0,
+                        selected.getHeight() / 2.0,
+                        true
+                ));
                 assertEquals(onPrimaryContainer, lookupRegion(unselected, ".m3-ripple")
                         .getBackground().getFills().get(0).getFill());
                 assertEquals(onSurface, lookupRegion(selected, ".m3-ripple")
                         .getBackground().getFills().get(0).getFill());
                 assertEquals(onSurface, iconFill(disabledIcon));
+                unselected.fireEvent(primaryMouseEvent(
+                        unselected,
+                        MouseEvent.MOUSE_RELEASED,
+                        unselected.getWidth() / 2.0,
+                        unselected.getHeight() / 2.0,
+                        false
+                ));
+                selected.fireEvent(primaryMouseEvent(
+                        selected,
+                        MouseEvent.MOUSE_RELEASED,
+                        selected.getWidth() / 2.0,
+                        selected.getHeight() / 2.0,
+                        false
+                ));
             } finally {
                 stage.close();
             }
@@ -5825,15 +5853,16 @@ final class M3ControlContractMatrixTest {
         card.resize(180.0, 80.0);
         card.layout();
 
-        Region ripple = lookupRegion(card, ".m3-ripple");
+        assertNull(card.lookup(".m3-ripple"));
         card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
-        assertEquals(0.0, ripple.getOpacity(), 0.0001,
+        assertNull(card.lookup(".m3-ripple"),
                 "passive cards should not expose press feedback");
 
         card.setOnAction(event -> {
         });
         card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
 
+        Region ripple = lookupRegion(card, ".m3-ripple");
         assertTrue(ripple.getOpacity() > 0.0, "actionable cards should expose bounded ripple feedback");
     }
 
@@ -31515,7 +31544,6 @@ final class M3ControlContractMatrixTest {
 
         Label archiveLabel = listItemHeadlineLabel(archive);
         Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
-        Region archiveRipple = lookupRegion(archive, ".m3-ripple");
         assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
         assertEquals(
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
@@ -31531,6 +31559,14 @@ final class M3ControlContractMatrixTest {
         archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
         archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         root.applyCss();
+        archive.fireEvent(primaryMouseEvent(
+                archive,
+                MouseEvent.MOUSE_PRESSED,
+                archive.getWidth() / 2.0,
+                archive.getHeight() / 2.0,
+                true
+        ));
+        Region archiveRipple = lookupRegion(archive, ".m3-ripple");
         assertEquals(
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
                 archiveLabel.getTextFill()
@@ -31543,6 +31579,13 @@ final class M3ControlContractMatrixTest {
                 archiveRipple,
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
         );
+        archive.fireEvent(primaryMouseEvent(
+                archive,
+                MouseEvent.MOUSE_RELEASED,
+                archive.getWidth() / 2.0,
+                archive.getHeight() / 2.0,
+                false
+        ));
 
         archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), false);
         drawer.select(archive);
@@ -36202,7 +36245,7 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(50.0, slider.getValue(), 0.0001);
         assertFalse(slider.isValueChanging());
-        assertEquals(0.0, lookupRegion(slider, ".m3-ripple").getOpacity(), 0.0001);
+        assertNull(slider.lookup(".m3-ripple"));
     }
 
     /// Verifies that disposed slider skins no longer receive disabled-state changes.
@@ -36236,7 +36279,7 @@ final class M3ControlContractMatrixTest {
         slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 110.0, 24.0, true));
 
         assertEquals(0.0, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
-        assertEquals(0.0, lookupRegion(slider, ".m3-ripple").getOpacity(), 0.0001);
+        assertNull(slider.lookup(".m3-ripple"));
     }
 
     /// Verifies style classes for action controls.

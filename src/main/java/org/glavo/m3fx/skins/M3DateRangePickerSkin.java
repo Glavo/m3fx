@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -82,11 +83,14 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     /// Refreshes calendar structure after month, weekday-order, or adjacent-day changes.
     private final InvalidationListener calendarInvalidation = observable -> refreshCalendar();
 
-    /// Refreshes cell availability and navigation after date-bound changes.
+    /// Refreshes day-cell availability after date-bound changes.
     private final InvalidationListener boundsInvalidation = observable -> refreshBounds();
 
     /// Updates logical layout when the effective node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> refreshRangeOrientation();
+
+    /// Handles bubbled actions from every reusable day cell.
+    private final EventHandler<ActionEvent> dayCellActionHandler = this::handleDayCellAction;
 
     /// Creates a date range picker skin.
     ///
@@ -121,6 +125,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         header.dispose();
         weekdayRow.nodeOrientationProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
+        dayGrid.removeEventFilter(ActionEvent.ACTION, dayCellActionHandler);
         getChildren().remove(container);
         super.dispose();
     }
@@ -187,6 +192,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         weekdayRow.getStyleClass().add(M3DateRangePicker.WEEKDAY_ROW_STYLE_CLASS);
         dayGrid.getStyleClass().add(M3DatePicker.DAY_GRID_STYLE_CLASS);
         dayGrid.getStyleClass().add(M3DateRangePicker.DAY_GRID_STYLE_CLASS);
+        dayGrid.addEventFilter(ActionEvent.ACTION, dayCellActionHandler);
         container.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         dayGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
@@ -219,7 +225,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
-    /// Updates localized labels, date mappings, range states, and navigation for a calendar structure change.
+    /// Updates localized weekday labels, date mappings, and range states for a calendar structure change.
     private void refreshCalendar() {
         M3DateRangePicker control = getSkinnable();
         YearMonth displayedMonth = control.getDisplayedMonth();
@@ -242,14 +248,12 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         refreshDayCellAvailability(control);
         refreshRangeSelection();
         refreshRangeOrientation();
-        header.refresh();
     }
 
-    /// Updates disabled day states and navigation after optional date bounds change.
+    /// Updates disabled day states after optional date bounds change.
     private void refreshBounds() {
         M3DateRangePicker control = getSkinnable();
         refreshDayCellAvailability(control);
-        header.refresh();
     }
 
     /// Updates localized weekday labels starting from the configured first day.
@@ -275,7 +279,8 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         for (int index = 0; index < DAY_CELL_COUNT; index++) {
             LocalDate date = gridStart.plusDays(index);
             DateCellButton dayCell = dayCells.get(index);
-            boolean outsideMonth = !YearMonth.from(date).equals(displayedMonth);
+            boolean outsideMonth = date.getYear() != displayedMonth.getYear()
+                    || date.getMonthValue() != displayedMonth.getMonthValue();
             boolean visible = !outsideMonth || control.isShowAdjacentMonthDays();
             boolean todayDate = date.equals(today);
 
@@ -347,7 +352,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
 
     /// Selects the date represented by a day cell action.
     private void handleDayCellAction(ActionEvent event) {
-        if (event.getSource() instanceof Node node && node.getUserData() instanceof LocalDate date) {
+        if (event.getTarget() instanceof Node node && node.getUserData() instanceof LocalDate date) {
             M3DateRangePicker control = getSkinnable();
             if (!control.isDateDisabled(date)) {
                 control.selectDate(date);
@@ -365,9 +370,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
 
     /// Creates a reusable day cell button.
     private DateCellButton createDayCell() {
-        DateCellButton button = new DateCellButton();
-        button.setOnAction(this::handleDayCellAction);
-        return button;
+        return new DateCellButton();
     }
 
     /// Adds or removes a style class.

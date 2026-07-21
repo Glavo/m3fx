@@ -5,6 +5,8 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
@@ -81,6 +83,9 @@ final class M3DatePickerHeader extends HBox {
     /// Refreshes text, menu values, disabled states, and direction-dependent icons.
     private final InvalidationListener stateInvalidation = observable -> refresh();
 
+    /// Handles actions from every persistent month and year menu item.
+    private final EventHandler<ActionEvent> menuItemActionHandler = this::handleMenuItemAction;
+
     /// Creates a calendar header bound to picker state.
     ///
     /// @param owner          the picker control represented by this header
@@ -136,11 +141,17 @@ final class M3DatePickerHeader extends HBox {
         minDate.removeListener(stateInvalidation);
         maxDate.removeListener(stateInvalidation);
         owner.effectiveNodeOrientationProperty().removeListener(stateInvalidation);
+        for (M3MenuItem item : monthItems) {
+            item.setOnAction(null);
+        }
+        for (M3MenuItem item : yearItems) {
+            item.setOnAction(null);
+        }
         nodeOrientationProperty().unbind();
     }
 
     /// Synchronizes localized labels, menu entries, navigation availability, and logical arrow direction.
-    void refresh() {
+    private void refresh() {
         YearMonth month = displayedMonth.get();
         Locale locale = Locale.getDefault(Locale.Category.FORMAT);
         @Nullable LocalDate minimum = minDate.get();
@@ -225,11 +236,7 @@ final class M3DatePickerHeader extends HBox {
         for (Month month : Month.values()) {
             M3MenuItem item = new M3MenuItem();
             item.setUserData(month);
-            item.setOnAction(event -> {
-                if (item.getUserData() instanceof Month selectedMonth) {
-                    displayedMonth.set(displayedMonth.get().withMonth(selectedMonth.getValue()));
-                }
-            });
+            item.setOnAction(menuItemActionHandler);
             monthItems.add(item);
         }
         monthButton.getItems().setAll(monthItems);
@@ -238,14 +245,24 @@ final class M3DatePickerHeader extends HBox {
         yearButton.getMenu().setAllowEmptySelection(false);
         for (int index = 0; index < YEAR_MENU_ITEM_COUNT; index++) {
             M3MenuItem item = new M3MenuItem();
-            item.setOnAction(event -> {
-                if (item.getUserData() instanceof Integer selectedYear) {
-                    displayedMonth.set(displayedMonth.get().withYear(selectedYear));
-                }
-            });
+            item.setOnAction(menuItemActionHandler);
             yearItems.add(item);
         }
         yearButton.getItems().setAll(yearItems);
+    }
+
+    /// Applies the month or year represented by a fired persistent menu item.
+    private void handleMenuItemAction(ActionEvent event) {
+        if (!(event.getSource() instanceof M3MenuItem item)) {
+            return;
+        }
+
+        Object value = item.getUserData();
+        if (value instanceof Month selectedMonth) {
+            displayedMonth.set(displayedMonth.get().withMonth(selectedMonth.getValue()));
+        } else if (value instanceof Integer selectedYear) {
+            displayedMonth.set(displayedMonth.get().withYear(selectedYear));
+        }
     }
 
     /// Returns whether every date in a month falls outside the optional inclusive bounds.

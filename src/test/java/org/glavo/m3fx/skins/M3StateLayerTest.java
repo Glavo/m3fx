@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests state layer animation behavior.
@@ -44,6 +45,46 @@ final class M3StateLayerTest {
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
+    }
+
+    /// Verifies that optional visual nodes are created on first use and inherit previously configured state.
+    @Test
+    void optionalVisualNodesAreCreatedOnFirstUse() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add(BUTTON_BASE_STYLE_CLASS);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            PseudoClass customState = PseudoClass.getPseudoClass("custom-state");
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            stateLayer.setContentPaint(Color.CORNFLOWERBLUE);
+            stateLayer.setContentPseudoClass(customState, true);
+            owner.applyCss();
+
+            assertNull(stateLayer.lookup(".m3-ripple"));
+            assertNull(stateLayer.lookup(".m3-focus-indicator"));
+            assertFalse(stateLayer.isRippleAnimationRunning());
+            assertFalse(stateLayer.isFocusIndicatorOpacityAnimationRunning());
+
+            stateLayer.playRipple(20.0, 20.0);
+
+            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+            assertEquals(
+                    Color.CORNFLOWERBLUE,
+                    ripple.getBackground().getFills().get(0).getFill()
+            );
+            assertTrue(ripple.getPseudoClassStates().contains(customState));
+
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+
+            assertInstanceOf(Region.class, stateLayer.lookup(".m3-focus-indicator"));
+            stateLayer.uninstallStateTransitions();
+        });
     }
 
     /// Verifies that owner-state hover opacity is reached through an animation.
@@ -316,13 +357,12 @@ final class M3StateLayerTest {
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
 
-            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
-            assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
-            assertFalse(focusIndicator.isVisible());
+            assertNull(stateLayer.lookup(".m3-focus-indicator"));
 
             owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
             stateLayer.animateOverlayOpacityFromOwnerState();
 
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
             assertEquals(1.0, focusIndicator.getOpacity(), 0.0001);
             assertTrue(focusIndicator.isVisible());
             assertEquals(-7.0, focusIndicator.getLayoutX(), 0.0001);
@@ -351,6 +391,8 @@ final class M3StateLayerTest {
             owner.applyCss();
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            stateLayer.animateOverlayOpacityFromOwnerState();
             owner.applyCss();
 
             Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
@@ -418,10 +460,10 @@ final class M3StateLayerTest {
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
 
-            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
             owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
             stateLayer.animateOverlayOpacityFromOwnerState();
 
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
             assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
             assertTrue(focusIndicator.isVisible());
             assertTrue(stateLayer.isFocusIndicatorOpacityAnimationRunning());

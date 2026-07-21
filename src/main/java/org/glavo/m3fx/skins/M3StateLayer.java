@@ -102,17 +102,20 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The optional component container paint rendered beneath interaction feedback.
     private final Region containerPaintLayer = new Region();
 
-    /// The animated bounded ripple node.
-    private final Region ripple = new Region();
+    /// The animated bounded ripple node, created for the first ripple interaction.
+    private @Nullable Region ripple;
 
-    /// The independent keyboard focus indicator ring.
-    private final Region focusIndicator = new Region();
+    /// The independent keyboard focus indicator ring, created when keyboard-visible focus first appears.
+    private @Nullable Region focusIndicator;
 
     /// The explicitly resolved content paint used by controls that cannot retain CSS lookups while detached.
     private @Nullable Paint contentPaint;
 
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
+
+    /// The retained clipped group containing the persistent overlay and, after first use, the ripple.
+    private final Group clippedContent = new Group();
 
     /// The reusable clip path starting point.
     private final MoveTo clipStart = new MoveTo();
@@ -153,15 +156,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The reusable square top-left clip corner.
     private final LineTo clipTopLeftLine = new LineTo();
 
-    /// The reusable ripple expansion and release transition.
-    private final RippleTransition rippleAnimation = new RippleTransition(ripple);
+    /// The reusable ripple expansion and release transition, created with the first animated ripple.
+    private @Nullable RippleTransition rippleAnimation;
 
-    /// The reusable transition for persistent overlay and focus-indicator opacity.
-    private final StateOpacityTransition stateOpacityAnimation =
-            new StateOpacityTransition(overlay, focusIndicator);
-
-    /// Pauses motion-setting observation after the last active state-layer animation finishes.
-    private final EventHandler<ActionEvent> animationFinishedHandler = event -> stopMotionObservationIfIdle();
+    /// The reusable transition for persistent overlay and focus-indicator opacity, created on first use.
+    private @Nullable StateOpacityTransition stateOpacityAnimation;
 
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
@@ -238,6 +237,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The height currently applied to the focus indicator.
     private double focusIndicatorHeight = Double.NaN;
 
+    /// The horizontal position last requested for the focus indicator.
+    private double focusIndicatorX = Double.NaN;
+
+    /// The vertical position last requested for the focus indicator.
+    private double focusIndicatorY = Double.NaN;
+
     /// The top-left radius currently applied to the focus indicator.
     private double focusIndicatorTopLeftRadius = Double.NaN;
 
@@ -290,26 +295,15 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         getStyleClass().add(STYLE_CLASS);
         containerPaintLayer.getStyleClass().add(CONTAINER_PAINT_STYLE_CLASS);
         overlay.getStyleClass().add(OVERLAY_STYLE_CLASS);
-        ripple.getStyleClass().add(RIPPLE_STYLE_CLASS);
-        focusIndicator.getStyleClass().add(FOCUS_INDICATOR_STYLE_CLASS);
         setMouseTransparent(true);
         setManaged(false);
         containerPaintLayer.setManaged(false);
         overlay.setManaged(false);
-        ripple.setManaged(false);
-        focusIndicator.setManaged(false);
         containerPaintLayer.setMouseTransparent(true);
         overlay.setMouseTransparent(true);
-        ripple.setMouseTransparent(true);
-        focusIndicator.setMouseTransparent(true);
         containerPaintLayer.setVisible(false);
         overlay.setOpacity(0.0);
-        ripple.setOpacity(0.0);
-        focusIndicator.setOpacity(0.0);
-        focusIndicator.setVisible(false);
-        rippleAnimation.setOnFinished(animationFinishedHandler);
-        stateOpacityAnimation.setOnFinished(animationFinishedHandler);
-        Group clippedContent = new Group(overlay, ripple);
+        clippedContent.getChildren().add(overlay);
         clippedContent.setAutoSizeChildren(false);
         clippedContent.setManaged(false);
         clippedContent.setMouseTransparent(true);
@@ -327,7 +321,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 new ClosePath()
         );
         clippedContent.setClip(clip);
-        getChildren().addAll(containerPaintLayer, clippedContent, focusIndicator);
+        getChildren().addAll(containerPaintLayer, clippedContent);
     }
 
     /// Installs opacity transitions driven by the owner node's interaction states.
@@ -355,15 +349,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         owner.addEventHandler(MouseEvent.MOUSE_MOVED, pointerInputHandler);
         owner.addEventHandler(MouseEvent.MOUSE_DRAGGED, pointerInputHandler);
         owner.addEventHandler(MouseEvent.MOUSE_PRESSED, pointerInputHandler);
-        motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings, false);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
         }
         if (animateInitialState) {
-            stateOpacityAnimation.stop();
+            stopStateOpacityAnimation();
             overlay.setOpacity(0.0);
-            setFocusIndicatorOpacity(focusIndicator, 0.0);
+            setFocusIndicatorOpacity(0.0);
             animateOverlayOpacityFromOwnerState();
         } else {
             synchronizeOwnerStateOpacity(owner);
@@ -372,9 +365,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Synchronizes opacity with owner interaction states without starting an initial transition.
     private void synchronizeOwnerStateOpacity(Node owner) {
-        stateOpacityAnimation.stop();
+        stopStateOpacityAnimation();
         overlay.setOpacity(resolvedOverlayOpacity(owner));
-        setFocusIndicatorOpacity(focusIndicator, resolvedFocusIndicatorOpacity(owner));
+        setFocusIndicatorOpacity(resolvedFocusIndicatorOpacity(owner));
     }
 
     /// Removes opacity transition listeners from the current owner.
@@ -411,9 +404,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         hoverSuppressedUntilPointerInput = false;
         cachedAnimationsEnabled = false;
         motionSettingsRevision = Long.MIN_VALUE;
-        stateOpacityAnimation.stop();
-        setFocusIndicatorOpacity(focusIndicator, 0.0);
-        rippleAnimation.stop();
+        stopStateOpacityAnimation();
+        setFocusIndicatorOpacity(0.0);
+        stopRippleAnimation();
         clearRipple();
     }
 
@@ -493,9 +486,10 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             clearRipple();
             return;
         }
+        Region ripple = ensureRipple();
         Node owner = animationOwner();
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
-            rippleAnimation.stop();
+            stopRippleAnimation();
             clearRipple();
             return;
         }
@@ -507,6 +501,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
 
         double diameter = rippleDiameter(x, y, width, height);
+        RippleTransition rippleAnimation = ensureRippleAnimation(ripple);
         rippleAnimation.stop();
         ripple.resizeRelocate(x - diameter / 2.0, y - diameter / 2.0, diameter, diameter);
         ripple.setScaleX(0.0);
@@ -529,9 +524,13 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             clearRipple();
             return;
         }
+        Region ripple = this.ripple;
+        if (ripple == null) {
+            return;
+        }
         Node owner = animationOwner();
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
-            rippleAnimation.stop();
+            stopRippleAnimation();
             clearRipple();
             return;
         }
@@ -543,6 +542,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         double startScaleX = ripple.getScaleX();
         double startScaleY = ripple.getScaleY();
+        RippleTransition rippleAnimation = ensureRippleAnimation(ripple);
         rippleAnimation.stop();
         ripple.setOpacity(startOpacity);
         ripple.setScaleX(startScaleX);
@@ -568,7 +568,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Stops active ripple work and clears its visual state without changing persistent overlay state.
     void cancelRipple() {
-        rippleAnimation.stop();
+        stopRippleAnimation();
         clearRipple();
         stopMotionObservationIfIdle();
     }
@@ -576,7 +576,10 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Mirrors a pseudo-class to the overlay and ripple nodes.
     void setContentPseudoClass(PseudoClass pseudoClass, boolean active) {
         overlay.pseudoClassStateChanged(pseudoClass, active);
-        ripple.pseudoClassStateChanged(pseudoClass, active);
+        Region ripple = this.ripple;
+        if (ripple != null) {
+            ripple.pseudoClassStateChanged(pseudoClass, active);
+        }
     }
 
     /// Applies an optional concrete paint beneath this layer's interaction feedback.
@@ -616,14 +619,15 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         Paint currentPaint = contentPaint;
         if (paint.equals(currentPaint)
                 && hasSingleBackgroundFill(overlay, paint)
-                && hasSingleBackgroundFill(ripple, paint)) {
+                && (ripple == null || hasSingleBackgroundFill(ripple, paint))) {
             return;
         }
         contentPaint = paint;
         if (!overlay.getStyle().isEmpty()) {
             overlay.setStyle("");
         }
-        if (!ripple.getStyle().isEmpty()) {
+        Region ripple = this.ripple;
+        if (ripple != null && !ripple.getStyle().isEmpty()) {
             ripple.setStyle("");
         }
         updateContentBackgrounds();
@@ -651,39 +655,145 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
-        stateOpacityAnimation.stop();
+        stopStateOpacityAnimation();
         restingOverlayOpacity = 0.0;
         overlay.setOpacity(0.0);
-        setFocusIndicatorOpacity(focusIndicator, 0.0);
+        setFocusIndicatorOpacity(0.0);
         cancelRipple();
     }
 
     /// Clears transient ripple visual state.
     private void clearRipple() {
+        Region ripple = this.ripple;
+        if (ripple == null) {
+            return;
+        }
         ripple.setOpacity(0.0);
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
     }
 
     /// Applies focus-indicator opacity while excluding fully transparent rings from visual bounds and rendering.
-    private static void setFocusIndicatorOpacity(Region indicator, double opacity) {
+    private void setFocusIndicatorOpacity(double opacity) {
+        Region indicator = focusIndicator;
+        if (indicator == null) {
+            if (opacity <= 0.0) {
+                return;
+            }
+            indicator = ensureFocusIndicator();
+        }
         indicator.setOpacity(opacity);
         indicator.setVisible(opacity > 0.0);
     }
 
+    /// Returns the ripple region, creating and styling it for its first interaction.
+    private Region ensureRipple() {
+        Region current = ripple;
+        if (current != null) {
+            return current;
+        }
+
+        current = new Region();
+        current.getStyleClass().add(RIPPLE_STYLE_CLASS);
+        current.setManaged(false);
+        current.setMouseTransparent(true);
+        current.setOpacity(0.0);
+        current.setScaleX(0.0);
+        current.setScaleY(0.0);
+        for (PseudoClass pseudoClass : overlay.getPseudoClassStates()) {
+            current.pseudoClassStateChanged(pseudoClass, true);
+        }
+        ripple = current;
+        clippedContent.getChildren().add(current);
+        current.applyCss();
+        Paint paint = contentPaint;
+        if (paint != null) {
+            current.setBackground(new Background(
+                    new BackgroundFill(paint, new CornerRadii(999.0), Insets.EMPTY)
+            ));
+        }
+        return current;
+    }
+
+    /// Returns the focus indicator, creating it with the most recently requested geometry.
+    private Region ensureFocusIndicator() {
+        Region current = focusIndicator;
+        if (current != null) {
+            return current;
+        }
+
+        current = new Region();
+        current.getStyleClass().add(FOCUS_INDICATOR_STYLE_CLASS);
+        current.setManaged(false);
+        current.setMouseTransparent(true);
+        current.setOpacity(0.0);
+        current.setVisible(false);
+        focusIndicator = current;
+        getChildren().add(current);
+        applyFocusIndicatorGeometry(current);
+        current.applyCss();
+        return current;
+    }
+
+    /// Returns the ripple transition, creating it after the ripple becomes interactive.
+    private RippleTransition ensureRippleAnimation(Region ripple) {
+        RippleTransition current = rippleAnimation;
+        if (current == null) {
+            current = new RippleTransition(ripple);
+            current.setOnFinished(this::handleAnimationFinished);
+            rippleAnimation = current;
+        }
+        return current;
+    }
+
+    /// Returns the shared opacity transition, creating it for the first animated state change.
+    private StateOpacityTransition ensureStateOpacityAnimation() {
+        StateOpacityTransition current = stateOpacityAnimation;
+        if (current == null) {
+            current = new StateOpacityTransition(this);
+            current.setOnFinished(this::handleAnimationFinished);
+            stateOpacityAnimation = current;
+        }
+        return current;
+    }
+
+    /// Stops the ripple transition when it has been created.
+    private void stopRippleAnimation() {
+        RippleTransition animation = rippleAnimation;
+        if (animation != null) {
+            animation.stop();
+        }
+    }
+
+    /// Stops the shared opacity transition when it has been created.
+    private void stopStateOpacityAnimation() {
+        StateOpacityTransition animation = stateOpacityAnimation;
+        if (animation != null) {
+            animation.stop();
+        }
+    }
+
+    /// Stops motion observation after a lazily created transition completes.
+    private void handleAnimationFinished(ActionEvent event) {
+        stopMotionObservationIfIdle();
+    }
+
     /// Returns whether the overlay opacity is currently animating.
     boolean isOverlayOpacityAnimationRunning() {
-        return stateOpacityAnimation.isOverlayAnimating();
+        StateOpacityTransition animation = stateOpacityAnimation;
+        return animation != null && animation.isOverlayAnimating();
     }
 
     /// Returns whether the ripple is currently animating.
     boolean isRippleAnimationRunning() {
-        return rippleAnimation.getStatus() == Animation.Status.RUNNING;
+        RippleTransition animation = rippleAnimation;
+        return animation != null && animation.getStatus() == Animation.Status.RUNNING;
     }
 
     /// Returns whether the focus indicator is currently animating.
     boolean isFocusIndicatorOpacityAnimationRunning() {
-        return stateOpacityAnimation.isFocusIndicatorAnimating();
+        StateOpacityTransition animation = stateOpacityAnimation;
+        return animation != null && animation.isFocusIndicatorAnimating();
     }
 
     /// Applies changed animation settings to currently running state-layer animations.
@@ -694,12 +804,15 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
 
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
-            if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+            StateOpacityTransition stateOpacityAnimation = this.stateOpacityAnimation;
+            if (stateOpacityAnimation != null
+                    && stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
                 stateOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
-                setFocusIndicatorOpacity(focusIndicator, resolvedFocusIndicatorOpacity(owner));
+                setFocusIndicatorOpacity(resolvedFocusIndicatorOpacity(owner));
             }
-            if (rippleAnimation.getStatus() == Animation.Status.RUNNING) {
+            RippleTransition rippleAnimation = this.rippleAnimation;
+            if (rippleAnimation != null && rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
                 clearRipple();
             }
@@ -707,7 +820,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             return;
         }
 
-        if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+        StateOpacityTransition stateOpacityAnimation = this.stateOpacityAnimation;
+        if (stateOpacityAnimation != null
+                && stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
             animateOverlayOpacityFromOwnerState();
         }
     }
@@ -721,26 +836,33 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         double startOverlayOpacity = overlay.getOpacity();
         double targetOverlayOpacity = resolvedOverlayOpacity(owner);
-        double startFocusIndicatorOpacity = focusIndicator.getOpacity();
         double targetFocusIndicatorOpacity = resolvedFocusIndicatorOpacity(owner);
-        stateOpacityAnimation.stop();
+        Region focusIndicator = this.focusIndicator;
+        if (targetFocusIndicatorOpacity > 0.0 && focusIndicator == null) {
+            focusIndicator = ensureFocusIndicator();
+        }
+        double startFocusIndicatorOpacity = focusIndicator == null ? 0.0 : focusIndicator.getOpacity();
+        stopStateOpacityAnimation();
 
         boolean overlayChanged = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
         boolean focusIndicatorChanged =
                 Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
         if (!overlayChanged && !focusIndicatorChanged) {
             overlay.setOpacity(targetOverlayOpacity);
-            setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
+            setFocusIndicatorOpacity(targetFocusIndicatorOpacity);
+            stopMotionObservationIfIdle();
             return;
         }
 
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             overlay.setOpacity(targetOverlayOpacity);
-            setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
+            setFocusIndicatorOpacity(targetFocusIndicatorOpacity);
+            stopMotionObservationIfIdle();
             return;
         }
 
         M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
+        StateOpacityTransition stateOpacityAnimation = ensureStateOpacityAnimation();
         stateOpacityAnimation.configure(
                 opacitySpec,
                 startOverlayOpacity,
@@ -755,15 +877,22 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Starts observing settings while at least one state-layer animation is active.
     private void startMotionObservation() {
         M3MotionSettingsObserver observer = motionSettingsObserver;
-        if (observer != null) {
-            observer.start();
+        if (observer == null) {
+            Node owner = stateOwner;
+            if (owner == null) {
+                return;
+            }
+            observer = new M3MotionSettingsObserver(owner, this::refreshMotionSettings, false);
+            motionSettingsObserver = observer;
         }
+        observer.start();
     }
 
     /// Pauses settings observation after both reusable transitions become idle.
     private void stopMotionObservationIfIdle() {
-        if (rippleAnimation.getStatus() == Animation.Status.RUNNING
-                || stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+        if (isRippleAnimationRunning()
+                || isOverlayOpacityAnimationRunning()
+                || isFocusIndicatorOpacityAnimationRunning()) {
             return;
         }
         M3MotionSettingsObserver observer = motionSettingsObserver;
@@ -855,11 +984,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// A reusable transition for persistent state-layer opacity channels.
     @NotNullByDefault
     private static final class StateOpacityTransition extends Transition {
-        /// The persistent interaction overlay.
-        private final Region overlay;
-
-        /// The keyboard focus indicator.
-        private final Region focusIndicator;
+        /// The state layer receiving interpolated opacity values.
+        private final M3StateLayer stateLayer;
 
         /// The overlay opacity at the beginning of the current transition.
         private double startOverlayOpacity;
@@ -880,9 +1006,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         private boolean focusIndicatorAnimating;
 
         /// Creates an opacity transition for the persistent state-layer regions.
-        private StateOpacityTransition(Region overlay, Region focusIndicator) {
-            this.overlay = overlay;
-            this.focusIndicator = focusIndicator;
+        private StateOpacityTransition(M3StateLayer stateLayer) {
+            this.stateLayer = stateLayer;
         }
 
         /// Reconfigures both channels without replacing the animation graph.
@@ -903,7 +1028,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             overlayAnimating = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
             focusIndicatorAnimating =
                     Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
-            focusIndicator.setVisible(startFocusIndicatorOpacity > 0.0 || targetFocusIndicatorOpacity > 0.0);
+            if (focusIndicatorAnimating) {
+                stateLayer.ensureFocusIndicator().setVisible(
+                        startFocusIndicatorOpacity > 0.0 || targetFocusIndicatorOpacity > 0.0
+                );
+            }
         }
 
         /// Returns whether the overlay channel is participating in a running transition.
@@ -920,7 +1049,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         @Override
         protected void interpolate(double fraction) {
             if (overlayAnimating) {
-                overlay.setOpacity(linearInterpolate(
+                stateLayer.overlay.setOpacity(linearInterpolate(
                         startOverlayOpacity,
                         targetOverlayOpacity,
                         fraction
@@ -932,10 +1061,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                         targetFocusIndicatorOpacity,
                         fraction
                 );
-                focusIndicator.setOpacity(opacity);
-                if (fraction >= 1.0 && targetFocusIndicatorOpacity <= 0.0) {
-                    focusIndicator.setVisible(false);
-                }
+                stateLayer.setFocusIndicatorOpacity(opacity);
             }
         }
     }
@@ -1073,9 +1199,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         overlay.setBackground(new Background(
                 new BackgroundFill(paint, CornerRadii.EMPTY, Insets.EMPTY)
         ));
-        ripple.setBackground(new Background(
-                new BackgroundFill(paint, new CornerRadii(999.0), Insets.EMPTY)
-        ));
+        Region ripple = this.ripple;
+        if (ripple != null) {
+            ripple.setBackground(new Background(
+                    new BackgroundFill(paint, new CornerRadii(999.0), Insets.EMPTY)
+            ));
+        }
     }
 
     /// Updates the keyboard focus indicator ring to follow the component shape and focus offset token.
@@ -1104,12 +1233,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         double adjustedTopRight = adjustedIndicatorRadius(topRight, outwardExpansion - inwardOffset);
         double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, outwardExpansion - inwardOffset);
         double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, outwardExpansion - inwardOffset);
-        focusIndicator.resizeRelocate(
-                x - outwardExpansion,
-                y - outwardExpansion,
-                indicatorWidth,
-                indicatorHeight
-        );
+        double indicatorX = x - outwardExpansion;
+        double indicatorY = y - outwardExpansion;
+        Region indicator = focusIndicator;
+        if (indicator != null) {
+            indicator.resizeRelocate(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
+        }
+        focusIndicatorX = indicatorX;
+        focusIndicatorY = indicatorY;
         if (Double.compare(focusIndicatorWidth, indicatorWidth) == 0
                 && Double.compare(focusIndicatorHeight, indicatorHeight) == 0
                 && Double.compare(focusIndicatorTopLeftRadius, adjustedTopLeft) == 0
@@ -1129,18 +1260,34 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         focusIndicatorBottomLeftRadius = adjustedBottomLeft;
         focusIndicatorInset = inwardOffset;
         focusIndicatorThickness = thickness;
-        focusIndicator.setStyle("-fx-background-radius: "
-                + formatPixels(adjustedTopLeft) + " "
-                + formatPixels(adjustedTopRight) + " "
-                + formatPixels(adjustedBottomRight) + " "
-                + formatPixels(adjustedBottomLeft) + "; "
-                + "-fx-border-insets: " + formatPixels(inwardOffset) + "; "
-                + "-fx-border-width: " + formatPixels(thickness) + "; "
+        if (indicator != null) {
+            applyFocusIndicatorGeometry(indicator);
+        }
+    }
+
+    /// Applies the last resolved focus-indicator bounds and style to a materialized ring.
+    private void applyFocusIndicatorGeometry(Region indicator) {
+        if (!Double.isFinite(focusIndicatorWidth) || !Double.isFinite(focusIndicatorHeight)) {
+            return;
+        }
+        indicator.resizeRelocate(
+                focusIndicatorX,
+                focusIndicatorY,
+                focusIndicatorWidth,
+                focusIndicatorHeight
+        );
+        indicator.setStyle("-fx-background-radius: "
+                + formatPixels(focusIndicatorTopLeftRadius) + " "
+                + formatPixels(focusIndicatorTopRightRadius) + " "
+                + formatPixels(focusIndicatorBottomRightRadius) + " "
+                + formatPixels(focusIndicatorBottomLeftRadius) + "; "
+                + "-fx-border-insets: " + formatPixels(focusIndicatorInset) + "; "
+                + "-fx-border-width: " + formatPixels(focusIndicatorThickness) + "; "
                 + "-fx-border-radius: "
-                + formatPixels(adjustedTopLeft) + " "
-                + formatPixels(adjustedTopRight) + " "
-                + formatPixels(adjustedBottomRight) + " "
-                + formatPixels(adjustedBottomLeft) + ";");
+                + formatPixels(focusIndicatorTopLeftRadius) + " "
+                + formatPixels(focusIndicatorTopRightRadius) + " "
+                + formatPixels(focusIndicatorBottomRightRadius) + " "
+                + formatPixels(focusIndicatorBottomLeftRadius) + ";");
     }
 
     /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.

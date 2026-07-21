@@ -6,7 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.BooleanPropertyBase;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.ObjectPropertyBase;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -132,29 +132,22 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         setVariant(variant);
     }
 
-    /// The visual emphasis variant of this button.
+    /// The visual emphasis variant used while the observable property has not been requested.
+    private M3ButtonVariant variant = M3ButtonVariant.FILLED;
+
+    /// The visual emphasis variant property, or `null` until it is first requested.
     ///
     /// The default value is [M3ButtonVariant#FILLED]. A direct `null` assignment restores the default; bound values
     /// must be non-null.
     ///
     /// @defaultValue [M3ButtonVariant#FILLED]
-    private final ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.FILLED) {
-        /// Updates variant style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(M3ButtonVariant.FILLED);
-                return;
-            }
-            updateVariantStyle();
-        }
-    };
+    private @Nullable ObjectProperty<@Nullable M3ButtonVariant> variantProperty;
 
     /// Returns the button variant.
     ///
     /// @return the Material button variant
     public final M3ButtonVariant getVariant() {
-        return variant.get();
+        return variantProperty == null ? variant : Objects.requireNonNull(variantProperty.get());
     }
 
     /// Sets the button variant.
@@ -162,7 +155,15 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// @param variant the Material button variant
     /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3ButtonVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
+        M3ButtonVariant value = Objects.requireNonNull(variant, "variant");
+        if (variantProperty == null) {
+            if (this.variant != value) {
+                this.variant = value;
+                updateVariantStyle();
+            }
+        } else {
+            variantProperty.set(value);
+        }
     }
 
     /// Returns the observable property that stores the button variant.
@@ -171,35 +172,51 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// assignment restores that default.
     ///
     /// @return the button variant property
-    public final ObjectProperty<M3ButtonVariant> variantProperty() {
-        return variant;
+    public final ObjectProperty<@Nullable M3ButtonVariant> variantProperty() {
+        if (variantProperty == null) {
+            variantProperty = new ObjectPropertyBase<>(variant) {
+                /// Updates variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ButtonVariant.FILLED);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+
+                /// Returns the button that owns this property.
+                @Override
+                public Object getBean() {
+                    return M3ButtonBase.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "variant";
+                }
+            };
+        }
+        return variantProperty;
     }
 
-    /// The Material size that selects the button's geometry and typography roles.
+    /// The Material size used while the observable property has not been requested.
+    private M3ButtonSize size = DEFAULT_SIZE;
+
+    /// The Material size property, or `null` until it is first requested.
     ///
     /// The default value is [M3ButtonSize#SMALL]. A direct `null` assignment restores the default; bound values must
     /// be non-null.
     ///
     /// @defaultValue [M3ButtonSize#SMALL]
-    private final ObjectProperty<M3ButtonSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
-        /// Updates size and typography style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(DEFAULT_SIZE);
-                return;
-            }
-            updateSizeStyle();
-            updateTypographyStyle();
-            requestLayout();
-        }
-    };
+    private @Nullable ObjectProperty<@Nullable M3ButtonSize> sizeProperty;
 
     /// Returns the Material button size.
     ///
     /// @return the size that selects container, padding, icon, typography, outline, and shape tokens
     public final M3ButtonSize getSize() {
-        return size.get();
+        return sizeProperty == null ? size : Objects.requireNonNull(sizeProperty.get());
     }
 
     /// Sets the Material button size.
@@ -210,7 +227,17 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// @param size the Material button size
     /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3ButtonSize size) {
-        this.size.set(Objects.requireNonNull(size, "size"));
+        M3ButtonSize value = Objects.requireNonNull(size, "size");
+        if (sizeProperty == null) {
+            if (this.size != value) {
+                this.size = value;
+                updateSizeStyle();
+                updateTypographyStyle();
+                requestLayout();
+            }
+        } else {
+            sizeProperty.set(value);
+        }
     }
 
     /// Returns the observable property that stores the Material button size.
@@ -219,18 +246,81 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// assignment restores that default.
     ///
     /// @return the button size property
-    public final ObjectProperty<M3ButtonSize> sizeProperty() {
-        return size;
+    public final ObjectProperty<@Nullable M3ButtonSize> sizeProperty() {
+        if (sizeProperty == null) {
+            sizeProperty = new ObjectPropertyBase<>(size) {
+                /// Updates size and typography style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SIZE);
+                        return;
+                    }
+                    updateSizeStyle();
+                    updateTypographyStyle();
+                    requestLayout();
+                }
+
+                /// Returns the button that owns this property.
+                @Override
+                public Object getBean() {
+                    return M3ButtonBase.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "size";
+                }
+            };
+        }
+        return sizeProperty;
     }
 
-    /// The resting container shape of this button.
+    /// The resting container shape used while the observable property has not been requested.
+    private M3ButtonShape buttonShape = DEFAULT_BUTTON_SHAPE;
+
+    /// The resting container shape property, or `null` until it is first requested.
     ///
     /// The default value is [M3ButtonShape#ROUND]. Interaction states may temporarily use another shape without
     /// changing this property. A direct `null` assignment restores the default; bound values must be non-null.
     ///
     /// @defaultValue [M3ButtonShape#ROUND]
-    private final ObjectProperty<M3ButtonShape> buttonShape =
-            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_BUTTON_SHAPE) {
+    private @Nullable ObjectProperty<@Nullable M3ButtonShape> buttonShapeProperty;
+
+    /// Returns the resting Material button shape.
+    ///
+    /// @return the resting round or rounded-square shape role
+    public final M3ButtonShape getButtonShape() {
+        return buttonShapeProperty == null ? buttonShape : Objects.requireNonNull(buttonShapeProperty.get());
+    }
+
+    /// Sets the resting Material button shape.
+    ///
+    /// @param buttonShape the resting round or rounded-square shape role
+    /// @throws NullPointerException if `buttonShape` is `null`
+    public final void setButtonShape(M3ButtonShape buttonShape) {
+        M3ButtonShape value = Objects.requireNonNull(buttonShape, "buttonShape");
+        if (buttonShapeProperty == null) {
+            if (this.buttonShape != value) {
+                this.buttonShape = value;
+                updateButtonShapeStyle();
+                requestLayout();
+            }
+        } else {
+            buttonShapeProperty.set(value);
+        }
+    }
+
+    /// Returns the observable property that stores the resting button shape.
+    ///
+    /// The property can be observed and bound. Its default value is [M3ButtonShape#ROUND], and a direct `null`
+    /// assignment restores that default.
+    ///
+    /// @return the resting button shape property
+    public final ObjectProperty<@Nullable M3ButtonShape> buttonShapeProperty() {
+        if (buttonShapeProperty == null) {
+            buttonShapeProperty = new ObjectPropertyBase<>(buttonShape) {
                 /// Updates the resting shape style class when the property changes.
                 @Override
                 protected void invalidated() {
@@ -241,31 +331,21 @@ public abstract sealed class M3ButtonBase extends ButtonBase
                     updateButtonShapeStyle();
                     requestLayout();
                 }
+
+                /// Returns the button that owns this property.
+                @Override
+                public Object getBean() {
+                    return M3ButtonBase.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "buttonShape";
+                }
             };
-
-    /// Returns the resting Material button shape.
-    ///
-    /// @return the resting round or rounded-square shape role
-    public final M3ButtonShape getButtonShape() {
-        return buttonShape.get();
-    }
-
-    /// Sets the resting Material button shape.
-    ///
-    /// @param buttonShape the resting round or rounded-square shape role
-    /// @throws NullPointerException if `buttonShape` is `null`
-    public final void setButtonShape(M3ButtonShape buttonShape) {
-        this.buttonShape.set(Objects.requireNonNull(buttonShape, "buttonShape"));
-    }
-
-    /// Returns the observable property that stores the resting button shape.
-    ///
-    /// The property can be observed and bound. Its default value is [M3ButtonShape#ROUND], and a direct `null`
-    /// assignment restores that default.
-    ///
-    /// @return the resting button shape property
-    public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
-        return buttonShape;
+        }
+        return buttonShapeProperty;
     }
 
     /// The styleable paint used for the button container.

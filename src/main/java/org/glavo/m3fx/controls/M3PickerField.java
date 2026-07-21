@@ -107,41 +107,20 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The trailing button that opens the popup picker.
     private final M3IconButton openButton;
 
-    /// The popup root that inherits scene styles and hosts the picker.
-    private final StackPane popupContent = new StackPane();
+    /// The node currently designated as the popup body.
+    private Node popupContent;
 
-    /// The popup window used for picker display.
-    private final Popup popup = new Popup();
+    /// The concrete picker popup style class.
+    private final String popupStyleClass;
 
-    /// Keeps the detached picker popup synchronized with the owner scene and theme context while visible.
-    private final M3PopupContextSynchronizer popupContextSynchronizer =
-            new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
-
-    /// The reusable picker popup enter and exit animation.
-    private final M3NodeTransition popupAnimation = new M3NodeTransition(popupContent);
-
-    /// Reports popup picker focus changes through this field's accessibility node.
-    private final M3AccessibleFocusNotifier popupFocusNotifier =
-            new M3AccessibleFocusNotifier(this, popupContent, this::focusNode, this::notifyFocusNodeChanged);
-
-    /// Closes the popup when this field or one of its ancestors becomes unreachable.
-    private final M3ReachabilityObserver reachabilityObserver =
-            new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
+    /// The lazily created and subsequently reused popup presentation.
+    private @Nullable PickerPopup pickerPopup;
 
     /// Whether value listeners are currently synchronizing the field and picker.
     private boolean synchronizingValue;
 
     /// Whether the editor text is currently being rewritten from a selected value.
     private boolean updatingEditorText;
-
-    /// Whether focus should return to the editor after the popup hides.
-    private boolean focusEditorOnHidden;
-
-    /// Whether the reusable popup animation is currently closing the picker.
-    private boolean hidingPopup;
-
-    /// The vertical offset used by the current popup hide animation.
-    private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
 
     /// Creates a picker field around the supplied popup picker.
     ///
@@ -169,6 +148,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ) {
         this.picker = Objects.requireNonNull(picker, "picker");
         this.pickerValue = Objects.requireNonNull(pickerValue, "pickerValue");
+        this.popupContent = this.picker;
+        this.popupStyleClass = Objects.requireNonNull(popupStyleClass, "popupStyleClass");
         this.openButton = new M3IconButton(Objects.requireNonNull(pickerIconGraphic, "pickerIconGraphic"));
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
         this.invalidTextErrorText.set(Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText"));
@@ -183,7 +164,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         inputLayout.errorTextProperty().bindBidirectional(errorText);
         initialize(
                 Objects.requireNonNull(styleClass, "styleClass"),
-                Objects.requireNonNull(popupStyleClass, "popupStyleClass"),
                 Objects.requireNonNull(openButtonAccessibleText, "openButtonAccessibleText")
         );
     }
@@ -770,40 +750,41 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// reachable, or popup placement cannot be resolved. Focus remains managed by the current field and picker
     /// interaction rather than being requested unconditionally by this method.
     public final void showPicker() {
-        if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
+        if (!M3Accessible.canReach(this) || isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
+        PickerPopup popup = pickerPopup();
         boolean popupShown = false;
-        popupContextSynchronizer.start();
+        popup.contextSynchronizer.start();
         try {
-            preparePopupForShow();
+            preparePopupForShow(popup);
             @Nullable M3PopupPositioning.Placement placement =
-                    M3PopupPositioning.menuBelowOrAbove(inputLayout, popupContent, POPUP_OFFSET_Y);
+                    M3PopupPositioning.menuBelowOrAbove(inputLayout, popup.root, POPUP_OFFSET_Y);
             if (placement == null) {
                 return;
             }
 
-            popupTransitionOffsetY =
+            popup.transitionOffsetY =
                     placement.opensAbove() ? POPUP_TRANSITION_OFFSET_Y : -POPUP_TRANSITION_OFFSET_Y;
-            preparePopupForShowAnimation();
-            if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
+            preparePopupForShowAnimation(popup);
+            if (!M3PopupWindows.show(popup.window, this, placement.x(), placement.y())) {
                 return;
             }
             popupShown = true;
         } finally {
             if (!popupShown) {
-                resetPopupAnimationState();
-                popupContextSynchronizer.stop();
+                resetPopupAnimationState(popup);
+                popup.contextSynchronizer.stop();
             }
         }
-        popupFocusNotifier.start();
-        reachabilityObserver.install();
+        popup.focusNotifier.start();
+        popup.reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
-        playShowAnimation();
+        popup.focusNotifier.refresh();
+        playShowAnimation(popup);
     }
 
     /// Requests that the picker popup hide.
@@ -818,7 +799,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// This method has the same owner and reachability restrictions as [showPicker].
     public final void togglePicker() {
-        if (popup.isShowing()) {
+        if (isShowing()) {
             hidePicker();
         } else {
             showPicker();
@@ -904,7 +885,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// @param content the popup content node
     final void setPopupContent(Node content) {
-        popupContent.getChildren().setAll(Objects.requireNonNull(content, "content"));
+        popupContent = Objects.requireNonNull(content, "content");
+        @Nullable PickerPopup popup = pickerPopup;
+        if (popup != null) {
+            popup.root.getChildren().setAll(content);
+        }
     }
 
     /// Restores the popup surface to host only the concrete picker.
@@ -912,12 +897,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         setPopupContent(picker);
     }
 
-    /// Adds style classes, installs handlers, and prepares the popup.
-    private void initialize(String styleClass, String popupStyleClass, String openButtonAccessibleText) {
+    /// Adds style classes and installs field-level handlers.
+    private void initialize(String styleClass, String openButtonAccessibleText) {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(this, styleClass);
-        M3ControlStyles.add(popupContent, POPUP_STYLE_CLASS);
-        M3ControlStyles.add(popupContent, popupStyleClass);
         M3ControlStyles.add(openButton, OPEN_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.COMBO_BOX);
         setFocusTraversable(false);
@@ -930,25 +913,14 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         inputLayout.disableProperty().bind(disabledProperty());
         inputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        popupContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         openButton.setAccessibleText(openButtonAccessibleText);
         openButton.setOnAction(event -> togglePicker());
-
-        popupContent.getChildren().setAll(picker);
-        popup.setAutoHide(true);
-        popup.getContent().add(popupContent);
-        popupAnimation.setOnFinished(event -> {
-            if (hidingPopup) {
-                popup.hide();
-            }
-        });
-        popup.setOnHidden(event -> handlePopupHidden());
 
         pickerValue.addListener((observable, oldValue, newValue) -> handlePickerValueChanged(newValue));
         editor.addEventHandler(ActionEvent.ACTION, this::handleEditorAction);
         editor.addEventHandler(KeyEvent.KEY_PRESSED, this::handleEditorKeyPressed);
         editor.focusedProperty().addListener((observable, oldValue, focused) -> {
-            if (!focused && !popup.isShowing()) {
+            if (!focused && !isShowing()) {
                 commitEditorText();
             }
         });
@@ -957,12 +929,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 clearGeneratedErrorText();
             }
         });
-        popupContent.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
     }
 
     /// Hides the popup if its owner field can no longer be reached from its scene.
     private void hidePopupIfOwnerUnreachable() {
-        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+        if (isShowing() && !M3Accessible.canReach(this)) {
             hidePicker(false);
         }
     }
@@ -984,7 +955,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 event.consume();
             }
             case ESCAPE -> {
-                if (popup.isShowing()) {
+                if (isShowing()) {
                     hidePicker(true);
                     event.consume();
                 }
@@ -996,7 +967,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Handles picker keyboard dismissal.
     private void handlePickerKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.ESCAPE && popup.isShowing()) {
+        if (event.getCode() == KeyCode.ESCAPE && isShowing()) {
             hidePicker(true);
             event.consume();
         }
@@ -1004,29 +975,30 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Hides the popup picker and optionally restores editor focus.
     private void hidePicker(boolean focusEditor) {
-        if (!popup.isShowing()) {
+        @Nullable PickerPopup popup = pickerPopup;
+        if (popup == null || !popup.window.isShowing()) {
             return;
         }
 
-        focusEditorOnHidden |= focusEditor;
+        popup.focusEditorOnHidden |= focusEditor;
         if (getScene() == null) {
-            popup.hide();
+            popup.window.hide();
             return;
         }
-        if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
+        if (popup.hiding && popup.animation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hidingPopup = true;
-        popupAnimation.configure(
+        popup.hiding = true;
+        popup.animation.configure(
                 spec,
                 0.0,
                 POPUP_TRANSITION_SCALE,
                 POPUP_TRANSITION_SCALE,
-                popupContent.getTranslateX(),
-                popupTransitionOffsetY
+                popup.root.getTranslateX(),
+                popup.transitionOffsetY
         );
-        M3Animation.playFromStart(this, popupAnimation);
+        M3Animation.playFromStart(this, popup.animation);
     }
 
     /// Handles a selected value coming from the popup picker.
@@ -1036,7 +1008,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
 
         setValue(newValue);
-        if (popup.isShowing()) {
+        if (isShowing()) {
             hidePicker(true);
         }
     }
@@ -1093,7 +1065,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the current keyboard focus node for accessibility clients.
     private Node focusNode() {
-        if (!popup.isShowing()) {
+        if (!isShowing()) {
             return fieldFocusNode();
         }
 
@@ -1123,9 +1095,13 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the current focus owner inside popup content when it belongs to the popup scene.
     private @Nullable Node popupFocusOwner() {
-        @Nullable Scene popupScene = popupContent.getScene();
+        @Nullable PickerPopup popup = pickerPopup;
+        if (popup == null) {
+            return null;
+        }
+        @Nullable Scene popupScene = popup.root.getScene();
         @Nullable Node focusOwner = popupScene == null ? null : popupScene.getFocusOwner();
-        if (focusOwner != null && M3Accessible.containsNode(popupContent, focusOwner)
+        if (focusOwner != null && M3Accessible.containsNode(popup.root, focusOwner)
                 && M3Accessible.canReach(focusOwner)) {
             return focusOwner;
         }
@@ -1188,9 +1164,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         if (!M3Accessible.canReach(this) || !canAttemptAccessibleShow(parameters)) {
             return false;
         }
-        boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
+        boolean preservePopupFocus = isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
-        if (!popup.isShowing()) {
+        if (!isShowing()) {
             return false;
         }
         if (!preservePopupFocus) {
@@ -1206,13 +1182,13 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Focuses the preferred node inside the popup picker.
     private boolean focusPicker() {
-        if (!popup.isShowing()) {
+        if (!isShowing()) {
             return false;
         }
 
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
-            popupFocusNotifier.refresh();
+            refreshPopupFocusNotifier();
             return true;
         }
         return false;
@@ -1227,7 +1203,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
-            popupFocusNotifier.refresh();
+            refreshPopupFocusNotifier();
             return true;
         }
         return false;
@@ -1236,6 +1212,14 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Notifies accessibility clients and owner containers about the exposed focus target.
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
+    }
+
+    /// Refreshes popup accessibility focus state after an explicit focus change.
+    private void refreshPopupFocusNotifier() {
+        @Nullable PickerPopup popup = pickerPopup;
+        if (popup != null) {
+            popup.focusNotifier.refresh();
+        }
     }
 
     /// Clears generated parse or range errors after user edits.
@@ -1247,55 +1231,131 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     }
 
     /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
-    private void preparePopupForShow() {
+    private void preparePopupForShow(PickerPopup popup) {
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
-        M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
-        popupContent.applyCss();
+        M3Css.setMinWidthIfUnbound(popup.root, Math.max(fieldWidth, popup.root.minWidth(-1.0)));
+        popup.root.applyCss();
     }
 
     /// Applies initial visual state before the popup is shown.
-    private void preparePopupForShowAnimation() {
-        popupAnimation.stop();
-        hidingPopup = false;
-        popupContent.setOpacity(0.0);
-        popupContent.setScaleX(POPUP_TRANSITION_SCALE);
-        popupContent.setScaleY(POPUP_TRANSITION_SCALE);
-        popupContent.setTranslateY(popupTransitionOffsetY);
+    private void preparePopupForShowAnimation(PickerPopup popup) {
+        popup.animation.stop();
+        popup.hiding = false;
+        popup.root.setOpacity(0.0);
+        popup.root.setScaleX(POPUP_TRANSITION_SCALE);
+        popup.root.setScaleY(POPUP_TRANSITION_SCALE);
+        popup.root.setTranslateY(popup.transitionOffsetY);
     }
 
     /// Plays the popup picker enter animation.
-    private void playShowAnimation() {
-        popupAnimation.stop();
-        hidingPopup = false;
+    private void playShowAnimation(PickerPopup popup) {
+        popup.animation.stop();
+        popup.hiding = false;
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        popupAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
-        M3Animation.playFromStart(this, popupAnimation);
+        popup.animation.configure(spec, 1.0, 1.0, 1.0, popup.root.getTranslateX(), 0.0);
+        M3Animation.playFromStart(this, popup.animation);
     }
 
     /// Resets transient popup picker animation transforms.
-    private void resetPopupAnimationState() {
-        popupAnimation.stop();
-        hidingPopup = false;
-        popupContent.setOpacity(1.0);
-        popupContent.setScaleX(1.0);
-        popupContent.setScaleY(1.0);
-        popupContent.setTranslateY(0.0);
+    private void resetPopupAnimationState(PickerPopup popup) {
+        popup.animation.stop();
+        popup.hiding = false;
+        popup.root.setOpacity(1.0);
+        popup.root.setScaleX(1.0);
+        popup.root.setScaleY(1.0);
+        popup.root.setTranslateY(0.0);
     }
 
     /// Handles popup hidden cleanup and optional focus return.
-    private void handlePopupHidden() {
-        popupFocusNotifier.stop();
-        reachabilityObserver.uninstall();
-        popupContextSynchronizer.stop();
+    private void handlePopupHidden(PickerPopup popup) {
+        popup.focusNotifier.stop();
+        popup.reachabilityObserver.uninstall();
+        popup.contextSynchronizer.stop();
         showing.set(false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
-        resetPopupAnimationState();
-        boolean restoreFocus = focusEditorOnHidden;
-        focusEditorOnHidden = false;
+        popup.focusNotifier.refresh();
+        resetPopupAnimationState(popup);
+        boolean restoreFocus = popup.focusEditorOnHidden;
+        popup.focusEditorOnHidden = false;
         if (restoreFocus && M3Accessible.canReach(editor)) {
             M3Accessible.showItem(this, editor);
+        }
+    }
+
+    /// Returns the lazily created popup presentation.
+    private PickerPopup pickerPopup() {
+        @Nullable PickerPopup popup = pickerPopup;
+        if (popup == null) {
+            popup = new PickerPopup();
+            pickerPopup = popup;
+        }
+        return popup;
+    }
+
+    /// Owns the popup window and collaborators needed only while picker presentation is available.
+    @NotNullByDefault
+    private final class PickerPopup {
+        /// The detached popup root that inherits owner styles and hosts the selected popup content.
+        private final StackPane root = new StackPane();
+
+        /// The native popup window used for picker presentation.
+        private final Popup window = new Popup();
+
+        /// Keeps the detached root synchronized with the owner scene and theme context while visible.
+        private final M3PopupContextSynchronizer contextSynchronizer;
+
+        /// Animates popup entry and exit without allocating a transition for each display.
+        private final M3NodeTransition animation;
+
+        /// Reports popup focus changes through the picker field's accessibility node.
+        private final M3AccessibleFocusNotifier focusNotifier;
+
+        /// Closes the popup when the picker field becomes unreachable.
+        private final M3ReachabilityObserver reachabilityObserver;
+
+        /// Whether focus should return to the editor after the popup hides.
+        private boolean focusEditorOnHidden;
+
+        /// Whether the current transition is closing the popup.
+        private boolean hiding;
+
+        /// The vertical offset used by the current popup hide transition.
+        private double transitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
+
+        /// Creates and connects one reusable picker popup presentation.
+        private PickerPopup() {
+            M3ControlStyles.add(root, POPUP_STYLE_CLASS);
+            M3ControlStyles.add(root, popupStyleClass);
+            root.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+            root.getChildren().setAll(popupContent);
+            root.addEventHandler(KeyEvent.KEY_PRESSED, M3PickerField.this::handlePickerKeyPressed);
+
+            window.setAutoHide(true);
+            window.getContent().add(root);
+            window.setOnHidden(event -> handlePopupHidden(this));
+
+            contextSynchronizer = new M3PopupContextSynchronizer(
+                    M3PickerField.this,
+                    root,
+                    M3Stylesheets.controlStylesheet("picker-field.css")
+            );
+            animation = new M3NodeTransition(root);
+            animation.setOnFinished(event -> {
+                if (hiding) {
+                    window.hide();
+                }
+            });
+            focusNotifier = new M3AccessibleFocusNotifier(
+                    M3PickerField.this,
+                    root,
+                    M3PickerField.this::focusNode,
+                    M3PickerField.this::notifyFocusNodeChanged
+            );
+            reachabilityObserver = new M3ReachabilityObserver(
+                    M3PickerField.this,
+                    M3PickerField.this::hidePopupIfOwnerUnreachable
+            );
         }
     }
 

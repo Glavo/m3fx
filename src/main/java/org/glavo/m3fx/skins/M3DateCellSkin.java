@@ -36,23 +36,11 @@ final class M3DateCellSkin extends LabeledSkinBase<ButtonBase> {
     /// The text node whose visual bounds are centered in the fixed day target.
     private @Nullable Text textNode;
 
-    /// Handles primary mouse presses.
-    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
+    /// Dispatches the mouse event types used by date-cell activation.
+    private final EventHandler<MouseEvent> mouseEventHandler = this::handleMouseEvent;
 
-    /// Handles primary mouse releases.
-    private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
-
-    /// Handles pointer entry while a mouse press is active.
-    private final EventHandler<MouseEvent> mouseEnteredHandler = this::handleMouseEntered;
-
-    /// Handles pointer exit while a mouse press is active.
-    private final EventHandler<MouseEvent> mouseExitedHandler = this::handleMouseExited;
-
-    /// Handles keyboard activation presses.
-    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
-
-    /// Handles keyboard activation releases.
-    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
+    /// Dispatches the key event types used by date-cell activation.
+    private final EventHandler<KeyEvent> keyEventHandler = this::handleKeyEvent;
 
     /// Allocates interaction feedback when a persistent pointer or armed state first becomes active.
     private final ChangeListener<Boolean> activeStateListener = (observable, oldValue, newValue) -> {
@@ -136,22 +124,44 @@ final class M3DateCellSkin extends LabeledSkinBase<ButtonBase> {
 
     /// Installs mouse and keyboard activation handlers.
     private void installInteractionHandlers(ButtonBase control) {
-        control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
-        control.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
-        control.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
-        control.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
-        control.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        control.addEventHandler(MouseEvent.MOUSE_PRESSED, mouseEventHandler);
+        control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseEventHandler);
+        control.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEventHandler);
+        control.addEventHandler(MouseEvent.MOUSE_EXITED, mouseEventHandler);
+        control.addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler);
+        control.addEventHandler(KeyEvent.KEY_RELEASED, keyEventHandler);
     }
 
     /// Removes mouse and keyboard activation handlers.
     private void uninstallInteractionHandlers(ButtonBase control) {
-        control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
-        control.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
-        control.removeEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
-        control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
-        control.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mouseEventHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseEventHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEventHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_EXITED, mouseEventHandler);
+        control.removeEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler);
+        control.removeEventHandler(KeyEvent.KEY_RELEASED, keyEventHandler);
+    }
+
+    /// Dispatches one registered mouse event to its activation-state handler.
+    private void handleMouseEvent(MouseEvent event) {
+        if (event.getEventType() == MouseEvent.MOUSE_PRESSED) {
+            handleMousePressed(event);
+        } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED) {
+            handleMouseReleased(event);
+        } else if (event.getEventType() == MouseEvent.MOUSE_ENTERED) {
+            handleMouseEntered(event);
+        } else if (event.getEventType() == MouseEvent.MOUSE_EXITED) {
+            handleMouseExited(event);
+        }
+    }
+
+    /// Dispatches one registered key event to its activation-state handler.
+    private void handleKeyEvent(KeyEvent event) {
+        if (event.getEventType() == KeyEvent.KEY_PRESSED) {
+            handleKeyPressed(event);
+        } else if (event.getEventType() == KeyEvent.KEY_RELEASED) {
+            handleKeyReleased(event);
+        }
     }
 
     /// Arms the cell and starts bounded feedback for a primary mouse press.

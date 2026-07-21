@@ -54,8 +54,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
 
-    /// The press animation timeline.
-    private final M3NodeTransition animation = new M3NodeTransition(getSkinnable());
+    /// The press-scale transition, created when a button first needs scale motion.
+    private @Nullable M3NodeTransition pressedAnimation;
 
     /// The bounded state layer used for hover, focus, pressed, and ripple feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
@@ -200,6 +200,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         containerShapeTarget = null;
         resetInteractionState();
+        pressedAnimation = null;
         stateLayer.uninstallStateTransitions();
         effectTransition.uninstall();
         uninstallInteractionHandlers(getSkinnable());
@@ -487,6 +488,16 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         double scale = pressedScale(pressed);
+        M3NodeTransition animation = pressedAnimation;
+        if (Double.compare(button.getScaleX(), scale) == 0
+                && Double.compare(button.getScaleY(), scale) == 0
+                && (animation == null || animation.getStatus() != Animation.Status.RUNNING)) {
+            return;
+        }
+        if (animation == null) {
+            animation = new M3NodeTransition(button);
+            pressedAnimation = animation;
+        }
         M3MotionSpec spec = pressed ? M3Animation.fastEffects(button) : M3Animation.defaultEffects(button);
         animation.stop();
         animation.configure(
@@ -612,7 +623,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         C control = getSkinnable();
         mousePressed = false;
         spaceKeyPressed = false;
-        animation.stop();
+        M3NodeTransition animation = pressedAnimation;
+        if (animation != null) {
+            animation.stop();
+        }
         stateLayer.cancelRipple();
         control.disarm();
         control.setScaleX(1.0);
