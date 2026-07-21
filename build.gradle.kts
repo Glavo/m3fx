@@ -699,6 +699,18 @@ tasks.register("shadowDemoJar") {
     dependsOn(":demo:verifyShadowJar")
 }
 
+tasks.register("nativeCompileDemo") {
+    group = "distribution"
+    description = "Compiles the M3FX demo into a host-platform native executable."
+    dependsOn(":demo:nativeCompile")
+}
+
+tasks.register("nativeRunDemo") {
+    group = "application"
+    description = "Runs the host-platform native executable for the M3FX demo application."
+    dependsOn(":demo:nativeRun")
+}
+
 tasks.register("shadowCatalogJar") {
     group = "distribution"
     description = "Builds an executable fat JAR for the M3FX catalog application."

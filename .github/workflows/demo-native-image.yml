@@ -1,0 +1,65 @@
+name: Build Demo Native Image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-image:
+    name: Native Demo (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            executable: m3fx-demo
+          - os: windows-latest
+            target: windows
+            executable: m3fx-demo.exe
+          - os: macos-latest
+            target: macos
+            executable: m3fx-demo
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+
+      - name: Install Linux JavaFX build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libasound2-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libgl-dev \
+            libgtk-3-dev \
+            libpango1.0-dev \
+            libxtst-dev
+
+      - name: Set up Liberica Native Image Kit
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: liberica
+          java-version: "21"
+          java-package: jdk+fx
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build native image
+        shell: bash
+        env:
+          GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
+        run: ./gradlew nativeCompileDemo --no-daemon
+
+      - name: Upload native executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-demo-native-${{ matrix.target }}
+          path: demo/build/native/nativeCompile/${{ matrix.executable }}
+          if-no-files-found: error
+          archive: false

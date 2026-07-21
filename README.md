@@ -404,13 +404,24 @@ Build a host-platform jlink runtime image:
 ./gradlew jlinkDemoRuntime
 ```
 
+Compile the demo into a host-platform native executable with
+[Liberica Native Image Kit Full](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/):
+
+```shell
+./gradlew nativeCompileDemo
+./gradlew nativeRunDemo
+```
+
+Native Image builds are platform-specific and require the JavaFX-enabled Full distribution of Liberica NIK. They
+do not replace the cross-platform jlink tasks; build each native executable on its target operating system.
+
 Build all supported platform and architecture runtime images:
 
 ```shell
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-See [docs/PACKAGING.md](docs/PACKAGING.md) for shadow jar, jlink, cross-platform runtime-image, and validation details.
+See [docs/PACKAGING.md](docs/PACKAGING.md) for shadow jar, jlink, native-image, cross-platform runtime-image, and validation details.
 
 ## Verification
 

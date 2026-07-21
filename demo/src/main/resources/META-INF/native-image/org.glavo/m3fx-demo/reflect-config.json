@@ -1,0 +1,11 @@
+[
+  {
+    "name": "javafx.scene.Node",
+    "methods": [
+      {
+        "name": "focusVisibleProperty",
+        "parameterTypes": []
+      }
+    ]
+  }
+]

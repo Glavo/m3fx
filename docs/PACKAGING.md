@@ -95,6 +95,36 @@ demo/build/jlink/
 
 Each jlink task verifies the generated runtime image before it succeeds. The verification requires the `release` metadata file, `lib/modules`, JavaFX runtime metadata, JavaFX legal metadata, the M3FX demo module entry in `release`, and the expected platform launcher. Windows images must contain both `bin/m3fx-demo` and `bin/m3fx-demo.bat`; Linux and macOS images must contain `bin/m3fx-demo`.
 
+## Demo Native Image
+
+The demo can be compiled ahead of time into a host-platform executable with the
+[GraalVM Native Build Tools Gradle plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin). Use the
+Full distribution of [Liberica Native Image Kit](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/)
+for Java 21 because it includes the JavaFX modules and native support needed by the application. Point `JAVA_HOME`
+or `GRAALVM_HOME` at that installation before starting Gradle.
+
+Build and run the executable with:
+
+```shell
+./gradlew nativeCompileDemo
+./gradlew nativeRunDemo
+```
+
+The output is written under:
+
+```text
+demo/build/native/nativeCompile/
+```
+
+The native build uses the verified demo shadow jar as its application class path. That jar intentionally excludes
+OpenJFX artifacts; JavaFX comes from Liberica NIK Full instead. Native Image metadata retains M3FX and demo CSS, the
+packaged Alibaba PuHuiTi font, and the JavaFX focus-visible method reached through the JavaFX 14 compatibility path.
+
+Native Image does not cross-compile desktop executables. Run the task on each target operating system and
+architecture. The manually dispatched `Build Demo Native Image` GitHub Actions workflow builds and uploads host
+executables on Linux, Windows, and macOS. Platform C toolchains are still required locally; Linux additionally needs
+the JavaFX GTK, graphics, audio, and X11 development packages installed by that workflow.
+
 ## Jlink Configuration
 
 The default jlink target is inferred from the host OS and architecture. It can be overridden with Gradle properties:
@@ -165,6 +195,10 @@ Use these tasks before distributing artifacts:
 `releaseCheck` runs `check`, `fullTest`, both sample-application shadow jar verifications, and `jlinkDemoRuntime`. It is the local release gate for the library publication, all test tiers, sample-application behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
 The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo and catalog shadow jars with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
+
+The separate native-image workflow is manual because AOT compilation is intentionally outside the fast Tier 1
+gate. It provisions Liberica NIK Full on each host operating system, runs `nativeCompileDemo`, and uploads the raw
+platform executable with `archive: false`.
 
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 

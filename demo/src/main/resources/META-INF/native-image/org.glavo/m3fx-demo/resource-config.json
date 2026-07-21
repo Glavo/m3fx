@@ -1,0 +1,15 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "org/glavo/m3fx/styles/.*\\.css"
+      },
+      {
+        "pattern": "org/glavo/m3fx/demo/.*\\.css"
+      },
+      {
+        "pattern": "org/glavo/m3fx/demo/fonts/.*\\.ttf"
+      }
+    ]
+  }
+}

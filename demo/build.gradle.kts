@@ -3,6 +3,7 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
+import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -12,6 +13,7 @@ import java.util.zip.ZipFile
 
 plugins {
     application
+    id("org.graalvm.buildtools.native") version "1.1.5"
 }
 
 repositories {
@@ -138,6 +140,16 @@ application {
     mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
 }
 
+graalvmNative {
+    toolchainDetection.set(false)
+    testSupport.set(false)
+    binaries.named("main") {
+        imageName.set("m3fx-demo")
+        mainClass.set(application.mainClass)
+        resources.autodetect()
+    }
+}
+
 val shadowJar = tasks.register<Jar>("shadowJar") {
     group = "distribution"
     description = "Builds an executable fat JAR for the M3FX demo without bundling JavaFX."
@@ -216,6 +228,8 @@ tasks.register("verifyShadowJar") {
             requireEntry("org/glavo/m3fx/demo/M3FXDemoApp.class")
             requireEntry("org/glavo/m3fx/demo/m3fx-demo.css")
             requireEntry("org/glavo/m3fx/controls/M3Button.class")
+            requireEntry("META-INF/native-image/org.glavo/m3fx-demo/resource-config.json")
+            requireEntry("META-INF/native-image/org.glavo/m3fx-demo/reflect-config.json")
             if (entryNames.none { entryName -> entryName.startsWith("org/glavo/monetfx/") && entryName.endsWith(".class") }) {
                 throw GradleException("The demo shadow JAR is missing MonetFX runtime classes")
             }
@@ -229,6 +243,40 @@ tasks.register("verifyShadowJar") {
             }
         }
     }
+}
+
+val verifyNativeImageToolchain = tasks.register("verifyNativeImageToolchain") {
+    group = "verification"
+    description = "Verifies that the active Native Image toolchain includes JavaFX."
+
+    doLast {
+        val configuredHome = System.getenv("GRAALVM_HOME")
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+        val nativeImageHome = configuredHome?.let(::file) ?: file(System.getProperty("java.home"))
+        val nativeImageExecutable = listOf("native-image", "native-image.cmd", "native-image.exe")
+            .map { executableName -> nativeImageHome.resolve("bin").resolve(executableName) }
+            .firstOrNull(File::isFile)
+        if (nativeImageExecutable == null) {
+            throw GradleException(
+                "No native-image executable was found under ${nativeImageHome.absolutePath}. " +
+                        "Run Gradle with Liberica NIK Full or set GRAALVM_HOME to that installation."
+            )
+        }
+
+        val javafxControlsJmod = nativeImageHome.resolve("jmods/javafx.controls.jmod")
+        if (!javafxControlsJmod.isFile) {
+            throw GradleException(
+                "The Native Image toolchain at ${nativeImageHome.absolutePath} does not include JavaFX. " +
+                        "Use the Full distribution of Liberica NIK."
+            )
+        }
+    }
+}
+
+tasks.named<BuildNativeImageTask>("nativeCompile") {
+    dependsOn(verifyNativeImageToolchain, shadowJar)
+    classpathJar.set(shadowJar.flatMap { it.archiveFile })
 }
 
 val jlinkRuntime = registerJlinkRuntime(
