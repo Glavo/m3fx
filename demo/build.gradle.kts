@@ -1,9 +1,9 @@
-import com.gluonhq.gradle.ClientExtension
 import org.gradle.api.Task
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
+import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -13,7 +13,7 @@ import java.util.zip.ZipFile
 
 plugins {
     application
-    id("com.gluonhq.gluonfx-gradle-plugin") version "1.0.29"
+    id("org.graalvm.buildtools.native") version "1.1.5"
 }
 
 repositories {
@@ -140,17 +140,14 @@ application {
     mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
 }
 
-configure<ClientExtension> {
-    target = "host"
-    appIdentifier = "org.glavo.m3fx.demo"
-    javafxStaticSdkVersion = providers.gradleProperty("m3fx.gluon.javafxStaticSdkVersion")
-        .orElse("21-ea+11.3")
-        .get()
-    providers.gradleProperty("m3fx.gluon.javaStaticSdkVersion").orNull?.let {
-        javaStaticSdkVersion = it
-    }
-    providers.gradleProperty("m3fx.gluon.graalvmHome").orNull?.let {
-        graalvmHome = it
+graalvmNative {
+    toolchainDetection.set(false)
+    testSupport.set(false)
+    binaries.named("main") {
+        imageName.set("m3fx-demo")
+        mainClass.set(application.mainClass)
+        buildArgs.addAll("--no-fallback", "--enable-native-access=javafx.graphics")
+        resources.autodetect()
     }
 }
 
@@ -232,8 +229,8 @@ tasks.register("verifyShadowJar") {
             requireEntry("org/glavo/m3fx/demo/M3FXDemoApp.class")
             requireEntry("org/glavo/m3fx/demo/m3fx-demo.css")
             requireEntry("org/glavo/m3fx/controls/M3Button.class")
-            requireEntry("META-INF/substrate/config/resourceconfig.json")
-            requireEntry("META-INF/substrate/config/reflectionconfig.json")
+            requireEntry("META-INF/native-image/org.glavo/m3fx-demo/resource-config.json")
+            requireEntry("META-INF/native-image/org.glavo/m3fx-demo/reflect-config.json")
             if (entryNames.none { entryName -> entryName.startsWith("org/glavo/monetfx/") && entryName.endsWith(".class") }) {
                 throw GradleException("The demo shadow JAR is missing MonetFX runtime classes")
             }
@@ -249,54 +246,75 @@ tasks.register("verifyShadowJar") {
     }
 }
 
-tasks.named("nativeCompile") {
-    dependsOn(tasks.named("classes"), configurations.runtimeClasspath)
+val verifyNativeImageToolchain = tasks.register("verifyNativeImageToolchain") {
+    group = "verification"
+    description = "Verifies that the active Native Image toolchain is Liberica NIK Full."
+
+    doLast {
+        val configuredHome = System.getenv("GRAALVM_HOME")
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+        val nativeImageHome = configuredHome?.let(::file) ?: file(System.getProperty("java.home"))
+        val nativeImageExecutable = listOf("native-image", "native-image.cmd", "native-image.exe")
+            .map { executableName -> nativeImageHome.resolve("bin").resolve(executableName) }
+            .firstOrNull(File::isFile)
+            ?: throw GradleException(
+                "No native-image executable was found under ${nativeImageHome.absolutePath}. " +
+                        "Set GRAALVM_HOME to a Liberica NIK Full installation."
+            )
+        val javafxControlsJmod = nativeImageHome.resolve("jmods/javafx.controls.jmod")
+        if (!javafxControlsJmod.isFile) {
+            throw GradleException(
+                "The Native Image toolchain at ${nativeImageHome.absolutePath} does not include JavaFX. " +
+                        "Use the Full distribution of Liberica NIK."
+            )
+        }
+
+        val process = ProcessBuilder(nativeImageExecutable.absolutePath, "--version")
+            .redirectErrorStream(true)
+            .start()
+        val versionOutput = process.inputStream.bufferedReader().use { reader -> reader.readText() }
+        val exitCode = process.waitFor()
+        if (exitCode != 0 || "Liberica-NIK" !in versionOutput) {
+            throw GradleException(
+                "Unsupported Native Image toolchain at ${nativeImageHome.absolutePath}. " +
+                        "Use Liberica NIK Full. Detected output:\n$versionOutput"
+            )
+        }
+    }
 }
 
-tasks.named("nativeLink") {
-    dependsOn(tasks.named("nativeCompile"))
+tasks.named<BuildNativeImageTask>("nativeCompile") {
+    dependsOn(verifyNativeImageToolchain, shadowJar)
+    classpathJar.set(shadowJar.flatMap { it.archiveFile })
 }
 
-tasks.named("nativeRun") {
-    dependsOn(tasks.named("nativeBuild"))
-}
-
-val gluonHostOs = when {
+val nativeHostOs = when {
     System.getProperty("os.name").lowercase().contains("win") -> "windows"
     System.getProperty("os.name").lowercase().contains("mac") -> "macos"
     else -> "linux"
 }
-val gluonHostArch = when (System.getProperty("os.arch").lowercase()) {
+val nativeHostArch = when (System.getProperty("os.arch").lowercase()) {
     "aarch64", "arm64" -> "aarch64"
     else -> "x86_64"
 }
-val gluonExecutableName = if (gluonHostOs == "windows") "demo.exe" else "demo"
-val stagedNativeExecutableName = if (gluonHostOs == "windows") "m3fx-demo.exe" else "m3fx-demo"
+val nativeExecutableName = if (nativeHostOs == "windows") "m3fx-demo.exe" else "m3fx-demo"
+val compiledNativeExecutable = layout.buildDirectory.file("native/nativeCompile/$nativeExecutableName")
 val stagedNativeExecutable = layout.buildDirectory.file(
-    "distributions/native/$gluonHostOs-$gluonHostArch/$stagedNativeExecutableName"
+    "distributions/native/$nativeHostOs-$nativeHostArch/$nativeExecutableName"
 )
 
 tasks.register("stageNativeExecutable") {
     group = "distribution"
-    description = "Builds and stages the GluonFX native executable as one distributable file."
-    dependsOn(tasks.named("nativeBuild"))
+    description = "Builds and stages the Liberica NIK executable as one distributable file."
+    dependsOn(tasks.named("nativeCompile"))
+    inputs.file(compiledNativeExecutable)
     outputs.file(stagedNativeExecutable)
 
     doLast {
-        val gluonBuildDirectory = layout.buildDirectory.dir("gluonfx").get().asFile
-        val allCandidates = gluonBuildDirectory.walkTopDown()
-            .filter { candidate -> candidate.isFile && candidate.name == gluonExecutableName }
-            .toList()
-        val linkedCandidates = allCandidates.filterNot { candidate ->
-            candidate.relativeTo(gluonBuildDirectory).toPath().any { element -> element.toString() == "gvm" }
-        }
-        val sourceExecutable = when {
-            linkedCandidates.size == 1 -> linkedCandidates.single()
-            linkedCandidates.isEmpty() && allCandidates.size == 1 -> allCandidates.single()
-            else -> throw GradleException(
-                "Expected one linked GluonFX executable named $gluonExecutableName under " +
-                        "${gluonBuildDirectory.absolutePath}, found ${linkedCandidates.size}."
-            )
+        val sourceExecutable = compiledNativeExecutable.get().asFile
+        if (!sourceExecutable.isFile || sourceExecutable.length() == 0L) {
+            throw GradleException("The compiled Native Image is missing or empty: ${sourceExecutable.absolutePath}")
         }
         val targetExecutable = stagedNativeExecutable.get().asFile
         targetExecutable.parentFile.mkdirs()
@@ -307,11 +325,9 @@ tasks.register("stageNativeExecutable") {
             StandardCopyOption.REPLACE_EXISTING
         )
         if (!targetExecutable.isFile || targetExecutable.length() == 0L) {
-            throw GradleException(
-                "The staged GluonFX executable is missing or empty: ${targetExecutable.absolutePath}"
-            )
+            throw GradleException("The staged Native Image is missing or empty: ${targetExecutable.absolutePath}")
         }
-        if (gluonHostOs != "windows" && !targetExecutable.setExecutable(true, false)) {
+        if (nativeHostOs != "windows" && !targetExecutable.setExecutable(true, false)) {
             throw GradleException("Could not mark ${targetExecutable.absolutePath} as executable")
         }
     }

@@ -5,7 +5,7 @@
 M3FX is a broadly implemented preview of a Material Design 3 component library for JavaFX. It has a token-driven
 theme and motion system, broad Standard and Expressive component coverage, an exhaustive verification demo, an
 independent focused Catalog application, rendered state tests, and release packaging for modular applications. The
-Demo additionally has a statically linked GluonFX executable build and a manual three-platform CI matrix. The
+Demo additionally has a Liberica NIK Full native executable build and a manual three-platform CI matrix. The
 project is ready for systematic integration testing, but it is not yet a release candidate.
 
 Scene-scoped presentation now uses one stable `M3OverlayPane` root. It owns ordinary content, snackbar presentation,
@@ -106,7 +106,7 @@ Run this only after the specification, visual, and performance audits are closed
 - Verify documentation against actual behavior and official Material Design references.
 - Recheck JavaFX 14 API compatibility while retaining JavaFX 21 as the default development dependency.
 - Validate the modular library, publication metadata, both sample-application shadow JARs without bundled JavaFX,
-  host runtime image, Demo GluonFX executables, cross-platform jlink inputs, and GitHub Actions artifacts.
+  host runtime image, Demo Native Image executables, cross-platform jlink inputs, and GitHub Actions artifacts.
 - Run the complete library, demo, and Catalog suites on supported desktop platforms and resolve all warnings,
   intermittent failures, and rendering regressions before declaring a release candidate.
 
@@ -120,7 +120,7 @@ The first release candidate is ready when:
 - Performance and lifetime checks show no unbounded retention, persistent off-scene animation, or avoidable
   per-frame allocation on common paths.
 - The public API and documentation are internally consistent and do not expose unnecessary compatibility layers.
-- Library, Demo, Catalog, publication, runtime-image, GluonFX native, and CI release checks pass from a clean
+- Library, Demo, Catalog, publication, runtime-image, Native Image, and CI release checks pass from a clean
   checkout.
 
 ## Deferred Scope

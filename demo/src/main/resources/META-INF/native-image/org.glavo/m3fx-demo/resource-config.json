@@ -1,6 +1,6 @@
-[
-  {
-    "resources": [
+{
+  "resources": {
+    "includes": [
       {
         "pattern": "org/glavo/m3fx/styles/.*\\.css"
       },
@@ -12,4 +12,4 @@
       }
     ]
   }
-]
+}

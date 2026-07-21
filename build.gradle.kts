@@ -701,13 +701,13 @@ tasks.register("shadowDemoJar") {
 
 tasks.register("nativeBuildDemo") {
     group = "distribution"
-    description = "Builds the M3FX demo as a host-platform GluonFX native executable."
+    description = "Builds the M3FX demo as a host-platform Liberica NIK executable."
     dependsOn(":demo:stageNativeExecutable")
 }
 
 tasks.register("nativeRunDemo") {
     group = "application"
-    description = "Builds and runs the host-platform GluonFX executable for the M3FX demo application."
+    description = "Builds and runs the host-platform Liberica NIK executable for the M3FX demo application."
     dependsOn(":demo:nativeRun")
 }
 
