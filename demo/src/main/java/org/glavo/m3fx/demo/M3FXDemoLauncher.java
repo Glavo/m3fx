@@ -21,6 +21,8 @@ public final class M3FXDemoLauncher {
             // Native Image links JavaFX statically; ignore dynamic JavaFX binaries inherited from PATH.
             System.setProperty("java.library.path", "");
         }
+
+        System.getProperties().putIfAbsent("javafx.animation.pulse", "120");
         Application.launch(M3FXDemoApp.class, args);
     }
 }
