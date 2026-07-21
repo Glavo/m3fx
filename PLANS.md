@@ -32,14 +32,17 @@ policies, centered split panes, fixed side panes, physical safety insets, logica
 coordination, focus repair when an active region becomes hidden, and interruptible topology transitions over stable
 slot geometry. The Catalog uses this scaffold as a real application integration path.
 
-The exported motion foundation now includes an interruptible scalar animatable, a type-safe multi-property state
-transition, a four-state retained visibility lifecycle with animated removal sizing, retained-node content
-replacement, and a FLIP-style placement transition that can be installed on existing JavaFX parents. These APIs
+The exported motion foundation now includes an interruptible scalar animatable, a seekable type-safe state
+transition for primitive and immutable vector values, per-state-segment motion specifications, a four-state retained
+visibility lifecycle with animated removal sizing, retained-node content replacement, and a FLIP-style placement
+transition that can be installed on existing JavaFX parents. Enter and exit transitions compose fade, scale,
+logical-edge slide, and RTL-aware expand or shrink reveal effects without changing content layout bounds. These APIs
 share a reusable scalar-channel engine, theme, scene-lifecycle, and reduced-motion infrastructure, use one pulse
-receiver per coordinated transition, avoid per-pulse allocation, and are demonstrated by the Demo's Motion page.
-Adaptive scaffold geometry now uses the same channel engine for reversible pane and navigation transitions. General
-multi-child entry and removal orchestration and shared-element overlay transitions remain future layers rather than
-responsibilities of specialized layout panes.
+receiver per coordinated transition, and avoid per-pulse collection or channel allocation. The Demo's Motion page
+exercises seeking, interruption, reveal, replacement, and adaptive topology transitions. Adaptive scaffold geometry
+uses the same channel engine for reversible pane and navigation transitions. General multi-child entry and removal
+orchestration, key-frame and repetition specifications, decay animation, and shared-element overlay transitions
+remain future layers rather than responsibilities of specialized layout panes.
 
 The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable

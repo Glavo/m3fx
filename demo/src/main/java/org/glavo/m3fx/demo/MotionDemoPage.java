@@ -4,6 +4,8 @@
 package org.glavo.m3fx.demo;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -22,14 +24,18 @@ import org.glavo.m3fx.animation.M3LayoutTransition;
 import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.animation.M3TransitionEdge;
+import org.glavo.m3fx.animation.M3VectorConverters;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.layout.M3NavigationLayout;
 import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /// Builds the Motion component showcase page.
 @NotNullByDefault
@@ -123,6 +129,89 @@ final class MotionDemoPage extends DemoPageSupport {
         stateActions.setAlignment(Pos.CENTER_LEFT);
         VBox stateExample = new VBox(12.0, coordinatedTrack, stateActions);
 
+        Label seekHeadline = new Label("Drag this transition in either direction");
+        seekHeadline.getStyleClass().add("demo-group-title");
+        Label seekSupporting = new Label("Point2D, scale, and opacity use one normalized play-time position.");
+        M3Surface seekSurface = new M3Surface();
+        seekSurface.setPrefSize(220.0, 88.0);
+        seekSurface.setMaxSize(220.0, 88.0);
+        seekSurface.getContent().add(new VBox(6.0, seekHeadline, seekSupporting));
+
+        StackPane seekTrack = new StackPane(seekSurface);
+        seekTrack.getStyleClass().add("demo-flow");
+        seekTrack.setAlignment(Pos.CENTER_LEFT);
+        seekTrack.setMinHeight(128.0);
+        seekTrack.setPrefWidth(560.0);
+        seekTrack.setMaxWidth(560.0);
+
+        SimpleObjectProperty<Point2D> seekPosition = new SimpleObjectProperty<>(Point2D.ZERO);
+        seekPosition.addListener((observable, oldPosition, newPosition) -> {
+            seekSurface.setTranslateX(newPosition.getX());
+            seekSurface.setTranslateY(newPosition.getY());
+        });
+        M3StateTransition<Boolean> seekTransition = new M3StateTransition<>(seekSurface, false);
+        seekTransition.addValue(
+                seekPosition,
+                expanded -> expanded ? new Point2D(300.0, 0.0) : Point2D.ZERO,
+                M3VectorConverters.POINT_2D
+        );
+        seekTransition.addDouble(
+                seekSurface.scaleXProperty(),
+                expanded -> expanded ? 1.08 : 1.0,
+                5.0e-4
+        );
+        seekTransition.addDouble(
+                seekSurface.scaleYProperty(),
+                expanded -> expanded ? 1.08 : 1.0,
+                5.0e-4
+        );
+        seekTransition.addDouble(
+                seekSurface.opacityProperty(),
+                expanded -> expanded ? 1.0 : 0.72,
+                0.01
+        );
+
+        M3Slider seekSlider = new M3Slider(0.0, 1.0, 0.0);
+        seekSlider.setPrefWidth(300.0);
+        seekSlider.setBlockIncrement(0.1);
+        AtomicBoolean synchronizingSeekSlider = new AtomicBoolean();
+        seekSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!synchronizingSeekSlider.get()) {
+                seekTransition.seekTo(true, newValue.doubleValue());
+            }
+        });
+        seekTransition.progressProperty().addListener((observable, oldProgress, newProgress) -> {
+            if (!seekTransition.isSeeking() && seekTransition.getTargetState()) {
+                synchronizingSeekSlider.set(true);
+                try {
+                    seekSlider.setValue(newProgress.doubleValue());
+                } finally {
+                    synchronizingSeekSlider.set(false);
+                }
+            }
+        });
+
+        M3Button continueSeek = new M3Button("Continue", M3ButtonVariant.FILLED);
+        continueSeek.disableProperty().bind(seekTransition.seekingProperty().not());
+        continueSeek.setOnAction(event -> seekTransition.animateToTarget());
+        M3Button resetSeek = new M3Button("Reset", M3ButtonVariant.OUTLINED);
+        resetSeek.setOnAction(event -> {
+            seekTransition.snapTo(false);
+            synchronizingSeekSlider.set(true);
+            try {
+                seekSlider.setValue(0.0);
+            } finally {
+                synchronizingSeekSlider.set(false);
+            }
+        });
+        Label seekProgress = new Label();
+        seekProgress.textProperty().bind(
+                seekTransition.progressProperty().multiply(100.0).asString("Progress: %.0f%%")
+        );
+        HBox seekActions = new HBox(12.0, seekSlider, continueSeek, resetSeek, seekProgress);
+        seekActions.setAlignment(Pos.CENTER_LEFT);
+        VBox seekExample = new VBox(12.0, seekTrack, seekActions);
+
         Label visibilityHeadline = new Label("Content remains mounted until exit completes");
         visibilityHeadline.getStyleClass().add("demo-group-title");
         Label visibilitySupporting = new Label(
@@ -135,6 +224,16 @@ final class MotionDemoPage extends DemoPageSupport {
         visibilitySurface.getContent().add(new VBox(8.0, visibilityHeadline, visibilitySupporting));
 
         M3AnimatedVisibility animatedVisibility = new M3AnimatedVisibility(visibilitySurface);
+        animatedVisibility.setEnterTransition(
+                M3EnterTransition.fade(0.0)
+                        .and(M3EnterTransition.scale(0.92))
+                        .and(M3EnterTransition.expandIn(M3TransitionEdge.START, M3TransitionEdge.TOP))
+        );
+        animatedVisibility.setExitTransition(
+                M3ExitTransition.fade(0.0)
+                        .and(M3ExitTransition.scale(0.92))
+                        .and(M3ExitTransition.shrinkOut(M3TransitionEdge.END, M3TransitionEdge.BOTTOM))
+        );
         M3Button toggleVisibility = new M3Button("Hide content", M3ButtonVariant.FILLED);
         toggleVisibility.setOnAction(event -> {
             boolean show = !animatedVisibility.isShowing();
@@ -233,6 +332,7 @@ final class MotionDemoPage extends DemoPageSupport {
         return createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
                 createFullWidthShowcaseGroup("Coordinated State Transition", stateExample),
+                createFullWidthShowcaseGroup("Seekable State Transition", seekExample),
                 createFullWidthShowcaseGroup("Animated Visibility", visibilityExample),
                 createFullWidthShowcaseGroup("Animated Content And Size", contentExample),
                 createFullWidthShowcaseGroup("Existing Layout Container", layoutExample),
@@ -250,9 +350,11 @@ final class MotionDemoPage extends DemoPageSupport {
         animatedContent.setContentTransform(new M3ContentTransform(
                 M3EnterTransition.fade(0.0)
                         .withDelay(Duration.millis(60.0))
-                        .and(M3EnterTransition.slideFrom(enterEdge, 32.0)),
+                        .and(M3EnterTransition.slideFrom(enterEdge, 32.0))
+                        .and(M3EnterTransition.expandHorizontally(enterEdge)),
                 M3ExitTransition.fade(0.0)
-                        .and(M3ExitTransition.slideTo(exitEdge, 16.0)),
+                        .and(M3ExitTransition.slideTo(exitEdge, 16.0))
+                        .and(M3ExitTransition.shrinkHorizontally(exitEdge)),
                 new M3SizeTransform(true, null),
                 0.0
         ));

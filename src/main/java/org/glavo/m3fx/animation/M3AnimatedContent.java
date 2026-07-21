@@ -12,6 +12,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.HPos;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
@@ -41,10 +42,11 @@ import java.util.Objects;
 /// previous node is detached when the transition completes. At most two content nodes are retained, including when
 /// targets change repeatedly before an earlier transition finishes.
 ///
-/// Fade, scale, and logical-edge slide effects are composed by [M3EnterTransition] and [M3ExitTransition]. They are
-/// applied to private holders, leaving each content node's opacity, scale, translation, and transform list under
-/// caller ownership. [M3SizeTransform] independently controls animated preferred size and clipping. A target that is
-/// already the outgoing node reverses naturally from its current visual state instead of being reparented or reset.
+/// Fade, scale, logical-edge slide, and reveal effects are composed by [M3EnterTransition] and [M3ExitTransition].
+/// They are applied to private holders, leaving each content node's opacity, scale, translation, clip, and transform
+/// list under caller ownership. [M3SizeTransform] independently controls animated preferred size and viewport
+/// clipping. A target that is already the outgoing node reverses naturally from its current visual state instead of
+/// being reparented or reset.
 ///
 /// This class follows the retained-mode semantics of JavaFX rather than accepting a state-to-content composition
 /// callback. Callers create and retain their nodes, then assign the desired target through [#setContent(Node)]. A
@@ -76,6 +78,9 @@ public final class M3AnimatedContent extends Region {
 
     /// The visibility threshold used for translation spring channels, in logical pixels.
     private static final double TRANSLATION_VISIBILITY_THRESHOLD = 1.0e-2;
+
+    /// The visibility threshold used for normalized reveal-edge spring channels.
+    private static final double CLIP_VISIBILITY_THRESHOLD = 5.0e-4;
 
     /// The visibility threshold used for size spring channels, in logical pixels.
     private static final double SIZE_VISIBILITY_THRESHOLD = 5.0e-1;
@@ -310,7 +315,7 @@ public final class M3AnimatedContent extends Region {
     /// Immediately applies the current target content and target size.
     ///
     /// Any active transition is stopped, outgoing content is detached, and the target holder returns to opacity and
-    /// scale `1.0`. Repeated calls are idempotent.
+    /// scale `1.0`, zero translation, and no private reveal clip. Repeated calls are idempotent.
     public void snapToCurrentState() {
         animation.stop();
         clearOutgoingState();
@@ -489,6 +494,7 @@ public final class M3AnimatedContent extends Region {
             double height = finiteSize(current.holder.prefHeight(width));
             current.holder.resize(width, height);
             current.holder.layout();
+            current.updateClipGeometry();
             targetContentWidth = width;
             targetContentHeight = height;
         } finally {
@@ -539,6 +545,7 @@ public final class M3AnimatedContent extends Region {
                 snapPositionX(alignedOffset(width, holderWidth, position.getHpos())),
                 snapPositionY(alignedOffset(height, holderHeight, position.getVpos()))
         );
+        state.updateClipGeometry();
     }
 
     /// Completes lifecycle cleanup after every channel reaches its target.
@@ -599,6 +606,11 @@ public final class M3AnimatedContent extends Region {
         return Math.max(0.0, value);
     }
 
+    /// Restricts one finite normalized reveal coordinate to the unit interval.
+    private static double clampUnit(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
+    }
+
     /// Computes one aligned coordinate inside an available extent.
     private static double alignedOffset(double available, double size, HPos alignment) {
         return switch (alignment) {
@@ -656,6 +668,9 @@ public final class M3AnimatedContent extends Region {
         /// The private wrapper that owns visual transition properties.
         private final StackPane holder = new StackPane();
 
+        /// The reusable rectangle that clips this holder while a reveal effect is active.
+        private final Rectangle revealClip = new Rectangle();
+
         /// The holder opacity channel.
         private final M3DelayedScalarChannel opacity =
                 new M3DelayedScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
@@ -672,6 +687,37 @@ public final class M3AnimatedContent extends Region {
         private final M3DelayedScalarChannel translateY =
                 new M3DelayedScalarChannel(TRANSLATION_VISIBILITY_THRESHOLD);
 
+        /// The normalized logical minimum-x reveal channel.
+        private final M3DelayedScalarChannel clipMinX =
+                new M3DelayedScalarChannel(CLIP_VISIBILITY_THRESHOLD);
+
+        /// The normalized minimum-y reveal channel.
+        private final M3DelayedScalarChannel clipMinY =
+                new M3DelayedScalarChannel(CLIP_VISIBILITY_THRESHOLD);
+
+        /// The normalized logical maximum-x reveal channel.
+        private final M3DelayedScalarChannel clipMaxX =
+                new M3DelayedScalarChannel(CLIP_VISIBILITY_THRESHOLD);
+
+        /// The normalized maximum-y reveal channel.
+        private final M3DelayedScalarChannel clipMaxY =
+                new M3DelayedScalarChannel(CLIP_VISIBILITY_THRESHOLD);
+
+        /// The currently rendered normalized logical minimum x-coordinate.
+        private double clipMinXValue;
+
+        /// The currently rendered normalized minimum y-coordinate.
+        private double clipMinYValue;
+
+        /// The currently rendered normalized logical maximum x-coordinate.
+        private double clipMaxXValue = 1.0;
+
+        /// The currently rendered normalized maximum y-coordinate.
+        private double clipMaxYValue = 1.0;
+
+        /// Whether the reusable reveal rectangle is installed as the holder clip.
+        private boolean clipActive;
+
         /// Creates an empty inactive holder.
         private HolderState() {
             holder.getStyleClass().add(ITEM_STYLE_CLASS);
@@ -681,6 +727,7 @@ public final class M3AnimatedContent extends Region {
             holder.needsLayoutProperty().addListener(
                     (observable, oldValue, newValue) -> holderNeedsLayout(this, newValue)
             );
+            revealClip.setSmooth(false);
             resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
@@ -702,6 +749,7 @@ public final class M3AnimatedContent extends Region {
             double scaleValue = 1.0;
             double translateXValue = 0.0;
             double translateYValue = 0.0;
+            @Nullable Rectangle2D clipBounds = null;
             for (M3TransitionEffect effect : ((M3EnterTransitionImpl) transition).effects()) {
                 switch (effect.kind()) {
                     case FADE -> opacityValue = effect.value();
@@ -710,9 +758,13 @@ public final class M3AnimatedContent extends Region {
                         translateXValue = slideOffsetX(effect);
                         translateYValue = slideOffsetY(effect);
                     }
+                    case CLIP -> clipBounds = Objects.requireNonNull(effect.clipBounds(), "clipBounds");
                 }
             }
             resetVisuals(opacityValue, scaleValue, translateXValue, translateYValue);
+            if (clipBounds != null) {
+                resetClip(clipBounds);
+            }
         }
 
         /// Removes content and resets visual state without retaining the previous node.
@@ -740,6 +792,7 @@ public final class M3AnimatedContent extends Region {
             scale.reset(scaleValue);
             translateX.reset(translateXValue);
             translateY.reset(translateYValue);
+            clearClip();
         }
 
         /// Clears channel velocity while retaining the holder's current visual values.
@@ -748,6 +801,87 @@ public final class M3AnimatedContent extends Region {
             scale.reset(holder.getScaleX());
             translateX.reset(holder.getTranslateX());
             translateY.reset(holder.getTranslateY());
+            resetClipChannelsToCurrentValues();
+        }
+
+        /// Installs the reveal rectangle at normalized bounds and clears clip-channel velocity.
+        private void resetClip(Rectangle2D bounds) {
+            resetClip(
+                    bounds.getMinX(),
+                    bounds.getMinY(),
+                    bounds.getMaxX(),
+                    bounds.getMaxY()
+            );
+        }
+
+        /// Installs the reveal rectangle at four normalized logical edges.
+        private void resetClip(double minX, double minY, double maxX, double maxY) {
+            clipActive = true;
+            holder.setClip(revealClip);
+            applyClip(minX, minY, maxX, maxY);
+            resetClipChannelsToCurrentValues();
+        }
+
+        /// Installs a full-bounds reveal rectangle without changing the rendered holder.
+        private void ensureClip() {
+            if (!clipActive) {
+                resetClip(0.0, 0.0, 1.0, 1.0);
+            }
+        }
+
+        /// Removes the private reveal clip and resets its channels to full bounds.
+        private void clearClip() {
+            clipActive = false;
+            holder.setClip(null);
+            clipMinXValue = 0.0;
+            clipMinYValue = 0.0;
+            clipMaxXValue = 1.0;
+            clipMaxYValue = 1.0;
+            resetClipChannelsToCurrentValues();
+        }
+
+        /// Clears clip-channel velocity while retaining the currently rendered normalized bounds.
+        private void resetClipChannelsToCurrentValues() {
+            clipMinX.reset(clipMinXValue);
+            clipMinY.reset(clipMinYValue);
+            clipMaxX.reset(clipMaxXValue);
+            clipMaxY.reset(clipMaxYValue);
+        }
+
+        /// Applies normalized logical reveal bounds and updates the reusable clip geometry.
+        private void applyClip(double minX, double minY, double maxX, double maxY) {
+            double boundedMinX = clampUnit(minX);
+            double boundedMinY = clampUnit(minY);
+            double boundedMaxX = clampUnit(maxX);
+            double boundedMaxY = clampUnit(maxY);
+            if (boundedMaxX < boundedMinX) {
+                boundedMinX = boundedMaxX = (boundedMinX + boundedMaxX) / 2.0;
+            }
+            if (boundedMaxY < boundedMinY) {
+                boundedMinY = boundedMaxY = (boundedMinY + boundedMaxY) / 2.0;
+            }
+            clipMinXValue = boundedMinX;
+            clipMinYValue = boundedMinY;
+            clipMaxXValue = boundedMaxX;
+            clipMaxYValue = boundedMaxY;
+            updateClipGeometry();
+        }
+
+        /// Resolves logical horizontal edges and sizes the reusable reveal rectangle.
+        private void updateClipGeometry() {
+            if (!clipActive) {
+                return;
+            }
+            boolean rightToLeft =
+                    M3AnimatedContent.this.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+            double physicalMinX = rightToLeft ? 1.0 - clipMaxXValue : clipMinXValue;
+            double physicalMaxX = rightToLeft ? 1.0 - clipMinXValue : clipMaxXValue;
+            double width = holder.getWidth();
+            double height = holder.getHeight();
+            revealClip.setX(physicalMinX * width);
+            revealClip.setY(clipMinYValue * height);
+            revealClip.setWidth(Math.max(0.0, physicalMaxX - physicalMinX) * width);
+            revealClip.setHeight(Math.max(0.0, clipMaxYValue - clipMinYValue) * height);
         }
     }
 
@@ -872,6 +1006,20 @@ public final class M3AnimatedContent extends Region {
                         elapsedSeconds
                 );
             }
+
+            @Nullable M3TransitionEffect clip = findEffect(effects, M3TransitionEffectKind.CLIP);
+            if (clip == null) {
+                state.clearClip();
+            } else {
+                state.ensureClip();
+                configureClipChannels(
+                        state,
+                        Objects.requireNonNull(clip.clipBounds(), "clipBounds"),
+                        clip,
+                        true,
+                        elapsedSeconds
+                );
+            }
         }
 
         /// Configures channels that move outgoing content toward its requested effects.
@@ -930,6 +1078,66 @@ public final class M3AnimatedContent extends Region {
                         elapsedSeconds
                 );
             }
+
+            @Nullable M3TransitionEffect clip = findEffect(effects, M3TransitionEffectKind.CLIP);
+            if (clip == null) {
+                state.resetClipChannelsToCurrentValues();
+            } else {
+                state.ensureClip();
+                configureClipChannels(
+                        state,
+                        Objects.requireNonNull(clip.clipBounds(), "clipBounds"),
+                        clip,
+                        false,
+                        elapsedSeconds
+                );
+            }
+        }
+
+        /// Configures all normalized reveal edges as one composable clip effect.
+        private void configureClipChannels(
+                HolderState state,
+                Rectangle2D targetBounds,
+                M3TransitionEffect effect,
+                boolean entering,
+                double elapsedSeconds
+        ) {
+            double targetMinX = entering ? 0.0 : targetBounds.getMinX();
+            double targetMinY = entering ? 0.0 : targetBounds.getMinY();
+            double targetMaxX = entering ? 1.0 : targetBounds.getMaxX();
+            double targetMaxY = entering ? 1.0 : targetBounds.getMaxY();
+            configureChannel(
+                    state.clipMinX,
+                    state.clipMinXValue,
+                    targetMinX,
+                    effect,
+                    entering,
+                    elapsedSeconds
+            );
+            configureChannel(
+                    state.clipMinY,
+                    state.clipMinYValue,
+                    targetMinY,
+                    effect,
+                    entering,
+                    elapsedSeconds
+            );
+            configureChannel(
+                    state.clipMaxX,
+                    state.clipMaxXValue,
+                    targetMaxX,
+                    effect,
+                    entering,
+                    elapsedSeconds
+            );
+            configureChannel(
+                    state.clipMaxY,
+                    state.clipMaxYValue,
+                    targetMaxY,
+                    effect,
+                    entering,
+                    elapsedSeconds
+            );
         }
 
         /// Configures one delayed scalar effect with an explicit or semantic motion specification.
@@ -952,10 +1160,15 @@ public final class M3AnimatedContent extends Region {
 
         /// Returns the longest visual channel duration owned by one holder.
         private double holderDuration(HolderState state) {
-            return Math.max(
+            double transformDuration = Math.max(
                     Math.max(state.opacity.getDurationSeconds(), state.scale.getDurationSeconds()),
                     Math.max(state.translateX.getDurationSeconds(), state.translateY.getDurationSeconds())
             );
+            double clipDuration = Math.max(
+                    Math.max(state.clipMinX.getDurationSeconds(), state.clipMinY.getDurationSeconds()),
+                    Math.max(state.clipMaxX.getDurationSeconds(), state.clipMaxY.getDurationSeconds())
+            );
+            return Math.max(transformDuration, clipDuration);
         }
 
         /// Applies one shared elapsed time to all fixed channels.
@@ -983,6 +1196,14 @@ public final class M3AnimatedContent extends Region {
             state.holder.setScaleY(scaleValue);
             state.holder.setTranslateX(state.translateX.valueAt(elapsedSeconds));
             state.holder.setTranslateY(state.translateY.valueAt(elapsedSeconds));
+            if (state.clipActive) {
+                state.applyClip(
+                        state.clipMinX.valueAt(elapsedSeconds),
+                        state.clipMinY.valueAt(elapsedSeconds),
+                        state.clipMaxX.valueAt(elapsedSeconds),
+                        state.clipMaxY.valueAt(elapsedSeconds)
+                );
+            }
         }
 
         /// Resets size channel history to the currently rendered dimensions.

@@ -8,18 +8,18 @@ import javafx.animation.Interpolator;
 import javafx.scene.Node;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3SpringParameters;
+import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /// Reusable finite transition for a node's opacity, scale, and translation channels.
+///
+/// The transition coordinates five reusable scalar channels from one JavaFX pulse receiver. Each channel retains
+/// velocity independently when an active run is retargeted and may therefore have a different physical settling
+/// duration. The enclosing transition runs until the longest channel settles and allocates no per-pulse objects.
 @NotNullByDefault
 public final class M3NodeTransition extends M3FiniteTransition {
-    /// The fraction interval used to estimate velocity for duration-based fallback curves.
-    private static final double VELOCITY_SAMPLE_FRACTION = 1.0e-4;
-
     /// The opacity delta below which a physical spring is visually settled.
     private static final double OPACITY_VISIBILITY_THRESHOLD = 1.0e-2;
 
@@ -29,80 +29,29 @@ public final class M3NodeTransition extends M3FiniteTransition {
     /// The translation delta below which a physical spring changes position by less than half a logical pixel.
     private static final double TRANSLATION_VISIBILITY_THRESHOLD = 5.0e-1;
 
-    /// The shortest non-zero spring run accepted by a JavaFX transition, in seconds.
-    private static final double MIN_SPRING_DURATION_SECONDS = 1.0e-3;
-
     /// The node whose visual channels are animated.
     private final Node node;
 
-    /// The motion specification configured for the current or most recent run.
-    private @Nullable M3MotionSpec motionSpec;
+    /// The scalar channel that animates opacity.
+    private final M3ScalarChannel opacityChannel = new M3ScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
 
-    /// The physical parameters used by the current spring run, or `null` for duration-based interpolation.
-    private @Nullable M3SpringParameters springParameters;
+    /// The scalar channel that animates horizontal scale.
+    private final M3ScalarChannel scaleXChannel = new M3ScalarChannel(SCALE_VISIBILITY_THRESHOLD);
 
-    /// The duration of the longest channel in the current run, in seconds.
+    /// The scalar channel that animates vertical scale.
+    private final M3ScalarChannel scaleYChannel = new M3ScalarChannel(SCALE_VISIBILITY_THRESHOLD);
+
+    /// The scalar channel that animates horizontal translation.
+    private final M3ScalarChannel translateXChannel = new M3ScalarChannel(TRANSLATION_VISIBILITY_THRESHOLD);
+
+    /// The scalar channel that animates vertical translation.
+    private final M3ScalarChannel translateYChannel = new M3ScalarChannel(TRANSLATION_VISIBILITY_THRESHOLD);
+
+    /// The duration of the longest configured channel, in seconds.
     private double runDurationSeconds;
 
-    /// The opacity at the beginning of the current transition.
-    private double startOpacity;
-
-    /// The opacity at the end of the current transition.
-    private double targetOpacity;
-
-    /// The opacity velocity at the beginning of the current transition, in units per second.
-    private double initialOpacityVelocity;
-
-    /// The time at which the opacity channel settles, in seconds.
-    private double opacityDurationSeconds;
-
-    /// The horizontal scale at the beginning of the current transition.
-    private double startScaleX;
-
-    /// The horizontal scale at the end of the current transition.
-    private double targetScaleX;
-
-    /// The horizontal scale velocity at the beginning of the current transition, in units per second.
-    private double initialScaleXVelocity;
-
-    /// The time at which the horizontal scale channel settles, in seconds.
-    private double scaleXDurationSeconds;
-
-    /// The vertical scale at the beginning of the current transition.
-    private double startScaleY;
-
-    /// The vertical scale at the end of the current transition.
-    private double targetScaleY;
-
-    /// The vertical scale velocity at the beginning of the current transition, in units per second.
-    private double initialScaleYVelocity;
-
-    /// The time at which the vertical scale channel settles, in seconds.
-    private double scaleYDurationSeconds;
-
-    /// The horizontal translation at the beginning of the current transition.
-    private double startTranslateX;
-
-    /// The horizontal translation at the end of the current transition.
-    private double targetTranslateX;
-
-    /// The horizontal translation velocity at the beginning of the current transition, in logical pixels per second.
-    private double initialTranslateXVelocity;
-
-    /// The time at which the horizontal translation channel settles, in seconds.
-    private double translateXDurationSeconds;
-
-    /// The vertical translation at the beginning of the current transition.
-    private double startTranslateY;
-
-    /// The vertical translation at the end of the current transition.
-    private double targetTranslateY;
-
-    /// The vertical translation velocity at the beginning of the current transition, in logical pixels per second.
-    private double initialTranslateYVelocity;
-
-    /// The time at which the vertical translation channel settles, in seconds.
-    private double translateYDurationSeconds;
+    /// Whether this transition has been configured at least once.
+    private boolean configured;
 
     /// Creates a transition for a node.
     ///
@@ -114,12 +63,18 @@ public final class M3NodeTransition extends M3FiniteTransition {
 
     /// Reconfigures all supported visual channels from their current values.
     ///
-    /// @param spec             the duration and easing specification
-    /// @param targetOpacity    the target opacity
+    /// A running transition contributes each channel's current velocity to the corresponding new channel. A stopped
+    /// transition starts every channel with zero velocity. Opacity output is restricted to the closed unit interval;
+    /// scale and translation values are not clamped.
+    ///
+    /// @param spec             the motion specification for the next run
+    /// @param targetOpacity    the target opacity before output clamping
     /// @param targetScaleX     the target horizontal scale
     /// @param targetScaleY     the target vertical scale
     /// @param targetTranslateX the target horizontal translation
     /// @param targetTranslateY the target vertical translation
+    /// @throws NullPointerException     if `spec` is `null`
+    /// @throws IllegalArgumentException if a target or current node channel is non-finite
     public void configure(
             M3MotionSpec spec,
             double targetOpacity,
@@ -129,259 +84,85 @@ public final class M3NodeTransition extends M3FiniteTransition {
             double targetTranslateY
     ) {
         M3MotionSpec checkedSpec = Objects.requireNonNull(spec, "spec");
-        double opacityVelocity = currentVelocity(
-                startOpacity, targetOpacity, initialOpacityVelocity, opacityDurationSeconds
-        );
-        double scaleXVelocity = currentVelocity(
-                startScaleX, targetScaleX, initialScaleXVelocity, scaleXDurationSeconds
-        );
-        double scaleYVelocity = currentVelocity(
-                startScaleY, targetScaleY, initialScaleYVelocity, scaleYDurationSeconds
-        );
-        double translateXVelocity = currentVelocity(
-                startTranslateX, targetTranslateX, initialTranslateXVelocity, translateXDurationSeconds
-        );
-        double translateYVelocity = currentVelocity(
-                startTranslateY, targetTranslateY, initialTranslateYVelocity, translateYDurationSeconds
-        );
+        if (!Double.isFinite(targetOpacity)
+                || !Double.isFinite(targetScaleX)
+                || !Double.isFinite(targetScaleY)
+                || !Double.isFinite(targetTranslateX)
+                || !Double.isFinite(targetTranslateY)) {
+            throw new IllegalArgumentException("target node channels must be finite");
+        }
 
+        double currentOpacity = node.getOpacity();
+        double currentScaleX = node.getScaleX();
+        double currentScaleY = node.getScaleY();
+        double currentTranslateX = node.getTranslateX();
+        double currentTranslateY = node.getTranslateY();
+        if (!Double.isFinite(currentOpacity)
+                || !Double.isFinite(currentScaleX)
+                || !Double.isFinite(currentScaleY)
+                || !Double.isFinite(currentTranslateX)
+                || !Double.isFinite(currentTranslateY)) {
+            throw new IllegalArgumentException("current node channels must be finite");
+        }
+
+        double previousElapsedSeconds = getStatus() == Animation.Status.STOPPED
+                ? Double.POSITIVE_INFINITY
+                : Math.max(0.0, getCurrentTime().toSeconds());
         stop();
-        motionSpec = checkedSpec;
-        springParameters = checkedSpec.springParameters();
-        startOpacity = node.getOpacity();
-        this.targetOpacity = targetOpacity;
-        initialOpacityVelocity = opacityVelocity;
-        startScaleX = node.getScaleX();
-        this.targetScaleX = targetScaleX;
-        initialScaleXVelocity = scaleXVelocity;
-        startScaleY = node.getScaleY();
-        this.targetScaleY = targetScaleY;
-        initialScaleYVelocity = scaleYVelocity;
-        startTranslateX = node.getTranslateX();
-        this.targetTranslateX = targetTranslateX;
-        initialTranslateXVelocity = translateXVelocity;
-        startTranslateY = node.getTranslateY();
-        this.targetTranslateY = targetTranslateY;
-        initialTranslateYVelocity = translateYVelocity;
 
-        configureDurations(checkedSpec);
+        opacityChannel.configure(currentOpacity, targetOpacity, checkedSpec, previousElapsedSeconds);
+        scaleXChannel.configure(currentScaleX, targetScaleX, checkedSpec, previousElapsedSeconds);
+        scaleYChannel.configure(currentScaleY, targetScaleY, checkedSpec, previousElapsedSeconds);
+        translateXChannel.configure(currentTranslateX, targetTranslateX, checkedSpec, previousElapsedSeconds);
+        translateYChannel.configure(currentTranslateY, targetTranslateY, checkedSpec, previousElapsedSeconds);
+
+        runDurationSeconds = Math.max(
+                Math.max(
+                        opacityChannel.getDurationSeconds(),
+                        Math.max(scaleXChannel.getDurationSeconds(), scaleYChannel.getDurationSeconds())
+                ),
+                Math.max(translateXChannel.getDurationSeconds(), translateYChannel.getDurationSeconds())
+        );
+        configured = true;
         setCycleDuration(Duration.seconds(runDurationSeconds));
         setInterpolator(Interpolator.LINEAR);
     }
 
-    /// Applies spring or fallback interpolation to channels that change during the current transition.
+    /// Applies all scalar channel values for the current pulse.
     @Override
     protected void interpolate(double fraction) {
-        @Nullable M3MotionSpec spec = motionSpec;
-        if (spec == null) {
+        if (!configured) {
             return;
         }
 
-        if (isChanging(startOpacity, targetOpacity, initialOpacityVelocity)) {
-            node.setOpacity(clampOpacity(interpolate(
-                    spec,
-                    startOpacity,
-                    targetOpacity,
-                    initialOpacityVelocity,
-                    opacityDurationSeconds,
-                    fraction
-            )));
-        }
-        if (isChanging(startScaleX, targetScaleX, initialScaleXVelocity)) {
-            node.setScaleX(interpolate(
-                    spec,
-                    startScaleX,
-                    targetScaleX,
-                    initialScaleXVelocity,
-                    scaleXDurationSeconds,
-                    fraction
-            ));
-        }
-        if (isChanging(startScaleY, targetScaleY, initialScaleYVelocity)) {
-            node.setScaleY(interpolate(
-                    spec,
-                    startScaleY,
-                    targetScaleY,
-                    initialScaleYVelocity,
-                    scaleYDurationSeconds,
-                    fraction
-            ));
-        }
-        if (isChanging(startTranslateX, targetTranslateX, initialTranslateXVelocity)) {
-            node.setTranslateX(interpolate(
-                    spec,
-                    startTranslateX,
-                    targetTranslateX,
-                    initialTranslateXVelocity,
-                    translateXDurationSeconds,
-                    fraction
-            ));
-        }
-        if (isChanging(startTranslateY, targetTranslateY, initialTranslateYVelocity)) {
-            node.setTranslateY(interpolate(
-                    spec,
-                    startTranslateY,
-                    targetTranslateY,
-                    initialTranslateYVelocity,
-                    translateYDurationSeconds,
-                    fraction
-            ));
-        }
-    }
+        double elapsedSeconds = fraction >= 1.0 || runDurationSeconds <= 0.0
+                ? Double.POSITIVE_INFINITY
+                : Math.max(0.0, fraction) * runDurationSeconds;
 
-    /// Computes the actual spring settling time of every channel and the enclosing transition.
-    private void configureDurations(M3MotionSpec spec) {
-        double fallbackDurationSeconds = spec.duration().toSeconds();
-        @Nullable M3SpringParameters spring = springParameters;
-        if (spring == null) {
-            runDurationSeconds = fallbackDurationSeconds;
-            opacityDurationSeconds = fallbackDurationSeconds;
-            scaleXDurationSeconds = fallbackDurationSeconds;
-            scaleYDurationSeconds = fallbackDurationSeconds;
-            translateXDurationSeconds = fallbackDurationSeconds;
-            translateYDurationSeconds = fallbackDurationSeconds;
-            return;
+        double opacity = clampOpacity(opacityChannel.valueAt(elapsedSeconds));
+        if (Double.compare(node.getOpacity(), opacity) != 0) {
+            node.setOpacity(opacity);
         }
 
-        opacityDurationSeconds = estimateChannelDuration(
-                startOpacity,
-                targetOpacity,
-                initialOpacityVelocity,
-                OPACITY_VISIBILITY_THRESHOLD,
-                spring,
-                fallbackDurationSeconds
-        );
-        scaleXDurationSeconds = estimateChannelDuration(
-                startScaleX,
-                targetScaleX,
-                initialScaleXVelocity,
-                SCALE_VISIBILITY_THRESHOLD,
-                spring,
-                fallbackDurationSeconds
-        );
-        scaleYDurationSeconds = estimateChannelDuration(
-                startScaleY,
-                targetScaleY,
-                initialScaleYVelocity,
-                SCALE_VISIBILITY_THRESHOLD,
-                spring,
-                fallbackDurationSeconds
-        );
-        translateXDurationSeconds = estimateChannelDuration(
-                startTranslateX,
-                targetTranslateX,
-                initialTranslateXVelocity,
-                TRANSLATION_VISIBILITY_THRESHOLD,
-                spring,
-                fallbackDurationSeconds
-        );
-        translateYDurationSeconds = estimateChannelDuration(
-                startTranslateY,
-                targetTranslateY,
-                initialTranslateYVelocity,
-                TRANSLATION_VISIBILITY_THRESHOLD,
-                spring,
-                fallbackDurationSeconds
-        );
-        runDurationSeconds = Math.max(
-                Math.max(opacityDurationSeconds, Math.max(scaleXDurationSeconds, scaleYDurationSeconds)),
-                Math.max(translateXDurationSeconds, translateYDurationSeconds)
-        );
-    }
-
-    /// Returns the current physical velocity of one channel before this transition is retargeted.
-    private double currentVelocity(
-            double start,
-            double target,
-            double initialVelocity,
-            double channelDurationSeconds
-    ) {
-        @Nullable M3MotionSpec spec = motionSpec;
-        if (spec == null || getStatus() == Animation.Status.STOPPED) {
-            return 0.0;
+        double scaleX = scaleXChannel.valueAt(elapsedSeconds);
+        if (Double.compare(node.getScaleX(), scaleX) != 0) {
+            node.setScaleX(scaleX);
         }
 
-        double durationSeconds = springParameters == null ? spec.duration().toSeconds() : channelDurationSeconds;
-        if (durationSeconds <= 0.0) {
-            return 0.0;
-        }
-        double elapsedSeconds = Math.max(0.0, getCurrentTime().toSeconds());
-        if (elapsedSeconds >= durationSeconds) {
-            return 0.0;
-        }
-        @Nullable M3SpringParameters spring = springParameters;
-        if (spring != null) {
-            return M3SpringSolver.velocity(start, target, initialVelocity, elapsedSeconds, spring);
+        double scaleY = scaleYChannel.valueAt(elapsedSeconds);
+        if (Double.compare(node.getScaleY(), scaleY) != 0) {
+            node.setScaleY(scaleY);
         }
 
-        double fraction = elapsedSeconds / durationSeconds;
-        double lowerFraction = Math.max(0.0, fraction - VELOCITY_SAMPLE_FRACTION);
-        double upperFraction = Math.min(1.0, fraction + VELOCITY_SAMPLE_FRACTION);
-        if (Double.compare(lowerFraction, upperFraction) == 0) {
-            return 0.0;
+        double translateX = translateXChannel.valueAt(elapsedSeconds);
+        if (Double.compare(node.getTranslateX(), translateX) != 0) {
+            node.setTranslateX(translateX);
         }
-        double lowerValue = spec.interpolator().interpolate(start, target, lowerFraction);
-        double upperValue = spec.interpolator().interpolate(start, target, upperFraction);
-        return (upperValue - lowerValue) / ((upperFraction - lowerFraction) * durationSeconds);
-    }
 
-    /// Interpolates one channel using the configured physical spring or duration-based fallback.
-    private double interpolate(
-            M3MotionSpec spec,
-            double start,
-            double target,
-            double initialVelocity,
-            double channelDurationSeconds,
-            double fraction
-    ) {
-        if (fraction >= 1.0 || channelDurationSeconds <= 0.0) {
-            return target;
+        double translateY = translateYChannel.valueAt(elapsedSeconds);
+        if (Double.compare(node.getTranslateY(), translateY) != 0) {
+            node.setTranslateY(translateY);
         }
-        @Nullable M3SpringParameters spring = spec.springParameters();
-        if (spring == null) {
-            return spec.interpolator().interpolate(start, target, fraction);
-        }
-        double elapsedSeconds = Math.max(0.0, fraction) * runDurationSeconds;
-        if (elapsedSeconds >= channelDurationSeconds) {
-            return target;
-        }
-        return M3SpringSolver.value(
-                start,
-                target,
-                initialVelocity,
-                elapsedSeconds,
-                spring
-        );
-    }
-
-    /// Returns one spring channel's finite settling duration.
-    private static double estimateChannelDuration(
-            double start,
-            double target,
-            double initialVelocity,
-            double visibilityThreshold,
-            M3SpringParameters spring,
-            double fallbackDurationSeconds
-    ) {
-        if (Double.compare(start, target) == 0 && Double.compare(initialVelocity, 0.0) == 0) {
-            return 0.0;
-        }
-        double durationSeconds = M3SpringSolver.estimateDurationSeconds(
-                start - target,
-                initialVelocity,
-                visibilityThreshold,
-                spring
-        );
-        if (!Double.isFinite(durationSeconds)) {
-            return fallbackDurationSeconds;
-        }
-        return durationSeconds <= 0.0 ? 0.0 : Math.max(MIN_SPRING_DURATION_SECONDS, durationSeconds);
-    }
-
-    /// Returns whether a channel has displacement or retained spring velocity to animate.
-    private boolean isChanging(double start, double target, double initialVelocity) {
-        return Double.compare(start, target) != 0
-                || springParameters != null && Double.compare(initialVelocity, 0.0) != 0;
     }
 
     /// Restricts opacity to the range accepted by JavaFX rendering.

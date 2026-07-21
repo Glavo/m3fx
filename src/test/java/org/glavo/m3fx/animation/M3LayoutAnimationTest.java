@@ -210,8 +210,8 @@ final class M3LayoutAnimationTest {
             transition.setTargetState(true);
             transition.addDouble(second, expanded -> expanded ? 80.0 : 8.0, 0.5);
             assertTrue(transition.isRunning());
-            assertTrue(transition.removeDouble(first));
-            assertFalse(transition.removeDouble(first));
+            assertTrue(transition.removeChannel(first));
+            assertFalse(transition.removeChannel(first));
             transition.finish();
 
             assertEquals(0.0, first.get(), 0.0);

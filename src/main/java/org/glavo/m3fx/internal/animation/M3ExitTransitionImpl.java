@@ -39,6 +39,7 @@ public record M3ExitTransitionImpl(
                 targetOpacity,
                 null,
                 null,
+                null,
                 Duration.ZERO
         )));
     }
@@ -48,6 +49,7 @@ public record M3ExitTransitionImpl(
         return new M3ExitTransitionImpl(List.of(new M3TransitionEffect(
                 M3TransitionEffectKind.SCALE,
                 targetScale,
+                null,
                 null,
                 null,
                 Duration.ZERO
@@ -61,8 +63,21 @@ public record M3ExitTransitionImpl(
                 distance,
                 Objects.requireNonNull(edge, "edge"),
                 null,
+                null,
                 Duration.ZERO
         )));
+    }
+
+    /// Creates one logical shrink effect.
+    ///
+    /// @param horizontalAnchor the logical horizontal anchor, or `null` for full width
+    /// @param verticalAnchor   the vertical anchor, or `null` for full height
+    /// @return the immutable exit transition
+    public static M3ExitTransition shrink(
+            @Nullable M3TransitionEdge horizontalAnchor,
+            @Nullable M3TransitionEdge verticalAnchor
+    ) {
+        return new M3ExitTransitionImpl(List.of(M3TransitionEffects.clip(horizontalAnchor, verticalAnchor)));
     }
 
     /// Combines two exit transitions.

@@ -199,20 +199,67 @@ M3DoubleAnimatable position = new M3DoubleAnimatable(
 position.animateTo(240.0);
 ```
 
-`M3StateTransition<S>` coordinates several writable double properties from one typed state while using one shared
-pulse receiver. The current state changes only after every channel settles; the target state can be changed or
-bound while a run is active:
+`M3StateTransition<S>` coordinates primitive doubles and immutable multi-component JavaFX values from one typed
+state while using one shared pulse receiver. The current state changes only after every channel settles; the target
+state can be changed or bound while a run is active:
 
 ```java
+M3MotionScheme motion = M3MotionScheme.expressive();
+M3MotionSpec enterSpec = motion.defaultSpatial();
+M3MotionSpec exitSpec = motion.fastEffects();
 M3StateTransition<Boolean> expansion = new M3StateTransition<>(card, false);
 expansion.addDouble(card.translateXProperty(), expanded -> expanded ? 240.0 : 0.0, 0.5);
 expansion.addDouble(card.scaleXProperty(), expanded -> expanded ? 1.08 : 1.0, 0.0005);
-expansion.addDouble(card.scaleYProperty(), expanded -> expanded ? 1.08 : 1.0, 0.0005);
+expansion.addDouble(
+        card.scaleYProperty(),
+        expanded -> expanded ? 1.08 : 1.0,
+        0.0005,
+        (from, to) -> to ? enterSpec : exitSpec
+);
+expansion.addValue(
+        indicatorPosition,
+        expanded -> expanded ? new Point2D(240.0, 16.0) : Point2D.ZERO,
+        M3VectorConverters.POINT_2D
+);
 expansion.setTargetState(true);
 ```
 
-State mappings are evaluated only when a target changes and must return finite values. Registered properties must
-remain writable and must not be independently changed while the transition is running.
+Built-in converters cover `Color`, `Point2D`, `Point3D`, `Dimension2D`, `Rectangle2D`, and `Insets`; custom
+converters define a fixed component order and spring visibility thresholds. State mappings are evaluated only when
+a target changes and must return non-null values with finite components. Registered properties must remain writable
+and must not be independently changed while the transition is running or seeking.
+
+The same transition can be driven by a gesture. A seek fraction is normalized play time across the longest channel,
+so every channel continues to use its own easing or spring rather than falling back to linear value interpolation:
+
+```java
+expansion.seekTo(true, dragProgress);
+// Continue from the sought play time when direct manipulation ends.
+expansion.animateToTarget();
+```
+
+`progressProperty()` and `seekingProperty()` expose this lifecycle to JavaFX bindings. Reduced motion settles
+automatic continuation synchronously; explicit seeking remains responsive because the caller directly controls it.
+
+Enter and exit transitions compose independent fade, scale, slide, and reveal channels. Reveal effects clip the
+private retained holder rather than resizing or modifying the application-owned content node, so surrounding layout
+remains stable while an animation is interrupted or reversed:
+
+```java
+animatedVisibility.setEnterTransition(
+        M3EnterTransition.fade(0.0)
+                .and(M3EnterTransition.scale(0.92))
+                .and(M3EnterTransition.expandIn(M3TransitionEdge.START, M3TransitionEdge.TOP))
+);
+animatedVisibility.setExitTransition(
+        M3ExitTransition.fade(0.0)
+                .and(M3ExitTransition.scale(0.92))
+                .and(M3ExitTransition.shrinkOut(M3TransitionEdge.END, M3TransitionEdge.BOTTOM))
+);
+```
+
+Logical start and end anchors follow effective node orientation. Horizontal-only and vertical-only variants are
+available for content that should retain one full axis during the reveal.
 
 `M3AnimatedVisibility` retains one content node without taking ownership of that node's visual properties. Its
 showing target can be reversed while a transition is running, while `stateProperty()` distinguishes `ENTERING`,

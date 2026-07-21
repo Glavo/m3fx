@@ -8,26 +8,19 @@ import javafx.animation.Interpolator;
 import javafx.beans.property.DoubleProperty;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3SpringParameters;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3SpringSolver;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /// Reusable finite transition for one writable double property.
 ///
-/// Each call to [#configure(M3MotionSpec, double)] captures the property's current value, allowing one transition
-/// instance to be retargeted without replacing the property or allocating key frames.
+/// Each call to [#configure(M3MotionSpec, double)] captures the property's current value. Retargeting an active run
+/// retains its scalar velocity, while retargeting at a configured bound discards velocity directed farther outside
+/// that bound. Interpolation is delegated to one reusable scalar channel and does not allocate key frames or other
+/// per-pulse objects.
 @NotNullByDefault
 public final class M3DoubleTransition extends M3FiniteTransition {
-    /// The fraction interval used to estimate velocity for duration-based fallback curves.
-    private static final double VELOCITY_SAMPLE_FRACTION = 1.0e-4;
-
-    /// The shortest non-zero spring run accepted by a JavaFX transition, in seconds.
-    private static final double MIN_SPRING_DURATION_SECONDS = 1.0e-3;
-
     /// A visibility threshold suitable for values normalized to the closed unit interval.
     public static final double NORMALIZED_VISIBILITY_THRESHOLD = 5.0e-4;
 
@@ -40,8 +33,8 @@ public final class M3DoubleTransition extends M3FiniteTransition {
     /// The property whose value is animated.
     private final DoubleProperty property;
 
-    /// The value delta below which a spring is considered visually settled.
-    private final double visibilityThreshold;
+    /// The scalar interpolation and velocity state reused by every run.
+    private final M3ScalarChannel channel;
 
     /// The inclusive lower bound applied to each rendered value.
     private final double minimumValue;
@@ -49,23 +42,8 @@ public final class M3DoubleTransition extends M3FiniteTransition {
     /// The inclusive upper bound applied to each rendered value.
     private final double maximumValue;
 
-    /// The specification configured for the current or most recent run.
-    private @Nullable M3MotionSpec motionSpec;
-
-    /// The physical parameters used by the current run, or `null` for duration-based interpolation.
-    private @Nullable M3SpringParameters springParameters;
-
-    /// The duration of the current run, in seconds.
-    private double runDurationSeconds;
-
-    /// The value at the beginning of the current transition.
-    private double startValue;
-
-    /// The value at the end of the current transition.
-    private double targetValue;
-
-    /// The value velocity at the beginning of the current transition, in units per second.
-    private double initialVelocity;
+    /// Whether this transition has been configured at least once.
+    private boolean configured;
 
     /// Creates a transition for a writable double property.
     ///
@@ -93,139 +71,72 @@ public final class M3DoubleTransition extends M3FiniteTransition {
             double maximumValue
     ) {
         this.property = Objects.requireNonNull(property, "property");
-        if (!Double.isFinite(visibilityThreshold) || visibilityThreshold <= 0.0) {
-            throw new IllegalArgumentException("visibilityThreshold must be finite and greater than zero");
-        }
+        this.channel = new M3ScalarChannel(visibilityThreshold);
         if (Double.isNaN(minimumValue) || Double.isNaN(maximumValue) || minimumValue > maximumValue) {
             throw new IllegalArgumentException("minimumValue must not be greater than maximumValue");
         }
-        this.visibilityThreshold = visibilityThreshold;
         this.minimumValue = minimumValue;
         this.maximumValue = maximumValue;
     }
 
     /// Reconfigures this transition from the property's current value.
     ///
-    /// A spring specification preserves the current velocity when a running transition is retargeted and derives
-    /// its cycle duration from this transition's visibility threshold. A duration-based specification uses its
-    /// declared duration and interpolator.
+    /// A running transition contributes its current velocity to the new run. Velocity directed beyond an inclusive
+    /// bound is discarded because rendered output cannot continue in that direction. A stopped transition starts
+    /// with zero velocity.
     ///
     /// @param spec        the motion specification for the next run
     /// @param targetValue the value to apply at the end of the next run
     /// @throws NullPointerException     if `spec` is `null`
-    /// @throws IllegalArgumentException if `targetValue` is non-finite or outside this transition's configured
-    ///                                  bounds
+    /// @throws IllegalArgumentException if `targetValue` or the property's current value is non-finite, or if the
+    ///                                  target lies outside this transition's configured bounds
     public void configure(M3MotionSpec spec, double targetValue) {
         M3MotionSpec checkedSpec = Objects.requireNonNull(spec, "spec");
         if (!Double.isFinite(targetValue) || targetValue < minimumValue || targetValue > maximumValue) {
             throw new IllegalArgumentException("targetValue must be finite and inside the configured bounds");
         }
 
-        double retainedVelocity = currentVelocity();
-        stop();
-        motionSpec = checkedSpec;
-        springParameters = checkedSpec.springParameters();
-        startValue = property.get();
-        this.targetValue = targetValue;
-        initialVelocity = retainedVelocity;
+        double currentValue = property.get();
+        if (!Double.isFinite(currentValue)) {
+            throw new IllegalArgumentException("the property's current value must be finite");
+        }
 
-        configureDuration(checkedSpec);
-        setCycleDuration(Duration.seconds(runDurationSeconds));
-        setInterpolator(springParameters == null ? checkedSpec.interpolator() : Interpolator.LINEAR);
+        double previousElapsedSeconds = previousElapsedSeconds();
+        if (configured && Double.isFinite(previousElapsedSeconds)) {
+            double previousValue = channel.valueAt(previousElapsedSeconds);
+            double previousVelocity = channel.velocityAt(previousElapsedSeconds);
+            if ((previousValue <= minimumValue && previousVelocity < 0.0)
+                    || (previousValue >= maximumValue && previousVelocity > 0.0)) {
+                previousElapsedSeconds = Double.POSITIVE_INFINITY;
+            }
+        }
+
+        stop();
+        channel.configure(currentValue, targetValue, checkedSpec, previousElapsedSeconds);
+        configured = true;
+        setCycleDuration(Duration.seconds(channel.getDurationSeconds()));
+        setInterpolator(Interpolator.LINEAR);
     }
 
-    /// Applies the spring or eased fallback value for the current pulse.
+    /// Applies the scalar channel value for the current pulse.
     @Override
     protected void interpolate(double fraction) {
-        @Nullable M3MotionSpec spec = motionSpec;
-        if (spec == null) {
-            return;
-        }
-        if (fraction >= 1.0 || runDurationSeconds <= 0.0) {
-            property.set(targetValue);
+        if (!configured) {
             return;
         }
 
-        @Nullable M3SpringParameters spring = springParameters;
-        double value = spring == null
-                ? startValue + (targetValue - startValue) * fraction
-                : M3SpringSolver.value(
-                startValue,
-                targetValue,
-                initialVelocity,
-                Math.max(0.0, fraction) * runDurationSeconds,
-                spring
-        );
-        property.set(clamp(value));
+        double durationSeconds = channel.getDurationSeconds();
+        double elapsedSeconds = fraction >= 1.0 || durationSeconds <= 0.0
+                ? Double.POSITIVE_INFINITY
+                : Math.max(0.0, fraction) * durationSeconds;
+        property.set(clamp(channel.valueAt(elapsedSeconds)));
     }
 
-    /// Computes the current run duration from the physical spring or deterministic fallback.
-    private void configureDuration(M3MotionSpec spec) {
-        double fallbackDurationSeconds = spec.duration().toSeconds();
-        @Nullable M3SpringParameters spring = springParameters;
-        if (spring == null) {
-            runDurationSeconds = fallbackDurationSeconds;
-            return;
-        }
-        if (Double.compare(startValue, targetValue) == 0 && Double.compare(initialVelocity, 0.0) == 0) {
-            runDurationSeconds = 0.0;
-            return;
-        }
-
-        double estimatedDurationSeconds = M3SpringSolver.estimateDurationSeconds(
-                startValue - targetValue,
-                initialVelocity,
-                visibilityThreshold,
-                spring
-        );
-        runDurationSeconds = Double.isFinite(estimatedDurationSeconds)
-                ? Math.max(MIN_SPRING_DURATION_SECONDS, estimatedDurationSeconds)
-                : fallbackDurationSeconds;
-    }
-
-    /// Returns the current physical or estimated fallback velocity before retargeting.
-    private double currentVelocity() {
-        @Nullable M3MotionSpec spec = motionSpec;
-        if (spec == null || getStatus() == Animation.Status.STOPPED || runDurationSeconds <= 0.0) {
-            return 0.0;
-        }
-
-        double elapsedSeconds = Math.max(0.0, getCurrentTime().toSeconds());
-        if (elapsedSeconds >= runDurationSeconds) {
-            return 0.0;
-        }
-        @Nullable M3SpringParameters spring = springParameters;
-        if (spring != null) {
-            double value = M3SpringSolver.value(
-                    startValue,
-                    targetValue,
-                    initialVelocity,
-                    elapsedSeconds,
-                    spring
-            );
-            double velocity = M3SpringSolver.velocity(
-                    startValue,
-                    targetValue,
-                    initialVelocity,
-                    elapsedSeconds,
-                    spring
-            );
-            if ((value <= minimumValue && velocity < 0.0)
-                    || (value >= maximumValue && velocity > 0.0)) {
-                return 0.0;
-            }
-            return velocity;
-        }
-
-        double fraction = elapsedSeconds / runDurationSeconds;
-        double lowerFraction = Math.max(0.0, fraction - VELOCITY_SAMPLE_FRACTION);
-        double upperFraction = Math.min(1.0, fraction + VELOCITY_SAMPLE_FRACTION);
-        if (Double.compare(lowerFraction, upperFraction) == 0) {
-            return 0.0;
-        }
-        double lowerValue = spec.interpolator().interpolate(startValue, targetValue, lowerFraction);
-        double upperValue = spec.interpolator().interpolate(startValue, targetValue, upperFraction);
-        return (upperValue - lowerValue) / ((upperFraction - lowerFraction) * runDurationSeconds);
+    /// Returns the elapsed time of the active run, or positive infinity when no velocity should be retained.
+    private double previousElapsedSeconds() {
+        return getStatus() == Animation.Status.STOPPED
+                ? Double.POSITIVE_INFINITY
+                : Math.max(0.0, getCurrentTime().toSeconds());
     }
 
     /// Clamps a rendered value to this transition's configured inclusive bounds.

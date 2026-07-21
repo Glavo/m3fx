@@ -39,6 +39,7 @@ public record M3EnterTransitionImpl(
                 initialOpacity,
                 null,
                 null,
+                null,
                 Duration.ZERO
         )));
     }
@@ -48,6 +49,7 @@ public record M3EnterTransitionImpl(
         return new M3EnterTransitionImpl(List.of(new M3TransitionEffect(
                 M3TransitionEffectKind.SCALE,
                 initialScale,
+                null,
                 null,
                 null,
                 Duration.ZERO
@@ -61,8 +63,21 @@ public record M3EnterTransitionImpl(
                 distance,
                 Objects.requireNonNull(edge, "edge"),
                 null,
+                null,
                 Duration.ZERO
         )));
+    }
+
+    /// Creates one logical expand effect.
+    ///
+    /// @param horizontalAnchor the logical horizontal anchor, or `null` for full width
+    /// @param verticalAnchor   the vertical anchor, or `null` for full height
+    /// @return the immutable enter transition
+    public static M3EnterTransition expand(
+            @Nullable M3TransitionEdge horizontalAnchor,
+            @Nullable M3TransitionEdge verticalAnchor
+    ) {
+        return new M3EnterTransitionImpl(List.of(M3TransitionEffects.clip(horizontalAnchor, verticalAnchor)));
     }
 
     /// Combines two enter transitions.

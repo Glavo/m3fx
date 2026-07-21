@@ -15,5 +15,8 @@ public enum M3TransitionEffectKind {
     SCALE,
 
     /// Holder translation along one logical edge.
-    SLIDE
+    SLIDE,
+
+    /// Holder reveal rectangle expressed as normalized logical bounds.
+    CLIP
 }
