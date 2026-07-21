@@ -221,22 +221,40 @@ finish, then detaches it while retaining the public content reference:
 
 ```java
 M3AnimatedVisibility details = new M3AnimatedVisibility(detailsPane);
+details.setEnterTransition(
+        M3EnterTransition.fade(0.0).and(M3EnterTransition.scale(0.96))
+);
+details.setExitTransition(
+        M3ExitTransition.fade(0.0).and(M3ExitTransition.scale(0.96))
+);
 details.setShowing(expanded);
 details.stateProperty().addListener((observable, oldState, newState) -> updateStatus(newState));
 ```
 
 `M3AnimatedContent` performs retained-node replacement. The outgoing node remains attached until its exit effect
-finishes, the target node enters above it, and the container's preferred size follows the target. Assigning an
-outgoing node again reverses the transition from its current visual state:
+finishes, the target node enters at its configured drawing order, and the container's preferred size follows the
+target. Assigning an outgoing node again reverses the transition from its current visual state. Enter and exit
+values compose one fade, scale, and logical-edge slide channel each; `START` and `END` automatically follow the
+effective node orientation:
 
 ```java
 M3AnimatedContent content = new M3AnimatedContent(summaryPane);
+content.setContentTransform(new M3ContentTransform(
+        M3EnterTransition.fade(0.0)
+                .withDelay(Duration.millis(60.0))
+                .and(M3EnterTransition.slideFrom(M3TransitionEdge.END, 24.0)),
+        M3ExitTransition.fade(0.0)
+                .and(M3ExitTransition.slideTo(M3TransitionEdge.START, 12.0)),
+        new M3SizeTransform(true, null),
+        0.0
+));
 content.setContent(detailsPane);
 ```
 
 The container reuses two private holders and one shared transition, so rapid target changes cannot accumulate an
-unbounded list of stale nodes or pulse receivers. Configure enter, exit, and size motion independently through its
-JavaFX properties; disable clipping or size animation only when the surrounding layout requires it.
+unbounded list of stale nodes or pulse receivers. Individual effects may carry independent motion specifications
+and delays. Set the content transform's size transform to `null` when replacement must adopt the target size
+synchronously without clipping.
 
 `M3LayoutTransition` observes an existing `Parent` and animates direct-child `layoutX` and `layoutY` changes through
 private transforms. Start it after assigning the container to its lifecycle, and dispose it when that lifecycle is

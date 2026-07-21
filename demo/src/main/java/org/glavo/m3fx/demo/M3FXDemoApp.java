@@ -30,8 +30,12 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3ContentTransform;
+import org.glavo.m3fx.animation.M3EnterTransition;
+import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3StateTransition;
+import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
@@ -96,6 +100,15 @@ public final class M3FXDemoApp extends Application {
 
     /// The fixed width of the persistent and modal navigation drawer.
     private static final double NAVIGATION_DRAWER_WIDTH = 360.0;
+
+    /// The logical distance traversed by incoming demo pages.
+    private static final double PAGE_ENTER_DISTANCE = 24.0;
+
+    /// The smaller parallax distance traversed by outgoing demo pages.
+    private static final double PAGE_EXIT_DISTANCE = 12.0;
+
+    /// The delay that separates outgoing and incoming page opacity.
+    private static final Duration PAGE_ENTER_DELAY = Duration.millis(60.0);
 
     /// The current seed color used by the demo theme.
     private Color seedColor = M3Theme.DEFAULT_SEED_COLOR;
@@ -781,9 +794,6 @@ public final class M3FXDemoApp extends Application {
     private Node createPageScrollPane() {
         M3AnimatedContent host = new M3AnimatedContent();
         host.getStyleClass().add("demo-page-host");
-        host.setEnterScale(1.0);
-        host.setExitScale(1.0);
-        host.setSizeAnimationEnabled(false);
         pageHost = host;
 
         ScrollPane scrollPane = new ScrollPane(host);
@@ -823,6 +833,12 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
+        @Nullable DemoPage previousPage = currentPage;
+        boolean animateReplacement = animated && previousPage != null && previousPage != page;
+        if (animateReplacement) {
+            configurePageTransition(host, previousPage, page);
+        }
+
         currentPage = page;
         expandSidebarGroupForPage(page);
         refreshSidebarSelection();
@@ -832,7 +848,7 @@ public final class M3FXDemoApp extends Application {
 
         pageNode.getChildren().addAll(createPageHeader(page), page.contentFactory().get());
         host.setContent(pageNode);
-        if (!animated) {
+        if (!animateReplacement) {
             host.snapToCurrentState();
         }
         ScrollPane scrollPane = pageScrollPane;
@@ -842,6 +858,19 @@ public final class M3FXDemoApp extends Application {
         }
         scrollSidebarPageIntoViewLater(page);
         hideNavigationDrawer(true);
+    }
+
+    /// Configures a logical-direction shared-axis transition between two catalog destinations.
+    private void configurePageTransition(M3AnimatedContent host, DemoPage previousPage, DemoPage targetPage) {
+        boolean forward = pages.indexOf(targetPage) > pages.indexOf(previousPage);
+        M3TransitionEdge enterEdge = forward ? M3TransitionEdge.END : M3TransitionEdge.START;
+        M3TransitionEdge exitEdge = forward ? M3TransitionEdge.START : M3TransitionEdge.END;
+        M3EnterTransition enter = M3EnterTransition.fade(0.0)
+                .withDelay(PAGE_ENTER_DELAY)
+                .and(M3EnterTransition.slideFrom(enterEdge, PAGE_ENTER_DISTANCE));
+        M3ExitTransition exit = M3ExitTransition.fade(0.0)
+                .and(M3ExitTransition.slideTo(exitEdge, PAGE_EXIT_DISTANCE));
+        host.setContentTransform(new M3ContentTransform(enter, exit, null, 0.0));
     }
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.

@@ -11,11 +11,17 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
+import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3DoubleAnimatable;
+import org.glavo.m3fx.animation.M3EnterTransition;
+import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3LayoutTransition;
+import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.animation.M3StateTransition;
+import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Surface;
@@ -150,6 +156,7 @@ final class MotionDemoPage extends DemoPageSupport {
         replaceContent.setOnAction(event -> {
             @Nullable Node current = animatedContent.getContent();
             boolean expanded = current == null || current.prefWidth(-1.0) < 400.0;
+            configureContentTransform(animatedContent, expanded);
             animatedContent.setContent(createMotionContent(expanded));
             replaceContent.setText(expanded ? "Show compact content" : "Show expanded content");
         });
@@ -231,6 +238,24 @@ final class MotionDemoPage extends DemoPageSupport {
                 createFullWidthShowcaseGroup("Existing Layout Container", layoutExample),
                 createFullWidthShowcaseGroup("Adaptive Pane Topology", adaptiveExample)
         );
+    }
+
+    /// Configures a direction-aware shared-axis transform for one content replacement.
+    ///
+    /// @param animatedContent the retained-content host
+    /// @param forward         whether the replacement advances to expanded content
+    private static void configureContentTransform(M3AnimatedContent animatedContent, boolean forward) {
+        M3TransitionEdge enterEdge = forward ? M3TransitionEdge.END : M3TransitionEdge.START;
+        M3TransitionEdge exitEdge = forward ? M3TransitionEdge.START : M3TransitionEdge.END;
+        animatedContent.setContentTransform(new M3ContentTransform(
+                M3EnterTransition.fade(0.0)
+                        .withDelay(Duration.millis(60.0))
+                        .and(M3EnterTransition.slideFrom(enterEdge, 32.0)),
+                M3ExitTransition.fade(0.0)
+                        .and(M3ExitTransition.slideTo(exitEdge, 16.0)),
+                new M3SizeTransform(true, null),
+                0.0
+        ));
     }
 
     /// Creates one compact or expanded node for the animated-content showcase.

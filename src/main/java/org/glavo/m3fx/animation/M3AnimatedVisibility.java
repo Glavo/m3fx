@@ -4,19 +4,16 @@
 package org.glavo.m3fx.animation;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,9 +26,10 @@ import java.util.Objects;
 /// progress and is detached after all visual and size channels complete. The [content property][#contentProperty()]
 /// retains the node reference while hidden, so the same node may be shown again without reconstruction.
 ///
-/// Opacity and scale are applied to private holders. This region does not modify the content node's own opacity,
+/// Enter and exit effects are applied to private holders. This region does not modify the content node's own opacity,
 /// scale, translation, or transform list. By default, preferred and minimum size animate between the content's
-/// measured size and zero, and drawing is clipped to the current region bounds. Both policies are configurable.
+/// measured size and zero, and drawing is clipped to the current region bounds. The enter, exit, and size transforms
+/// are independently configurable.
 /// Replacing [#getContent()] is immediate and is not treated as an animated content transformation; use
 /// [M3AnimatedContent] when old and new content should coexist during replacement.
 ///
@@ -53,8 +51,16 @@ public final class M3AnimatedVisibility extends Region {
     /// The default alignment of visible and exiting content.
     private static final Pos DEFAULT_ALIGNMENT = Pos.CENTER;
 
-    /// The scale applied at the hidden end of an enter or exit transition.
-    private static final double DEFAULT_HIDDEN_SCALE = 0.96;
+    /// The default enter effects used by visibility changes.
+    private static final M3EnterTransition DEFAULT_ENTER_TRANSITION =
+            M3EnterTransition.fade(0.0).and(M3EnterTransition.scale(0.96));
+
+    /// The default exit effects used by visibility changes.
+    private static final M3ExitTransition DEFAULT_EXIT_TRANSITION =
+            M3ExitTransition.fade(0.0).and(M3ExitTransition.scale(0.96));
+
+    /// The default animated and clipped size behavior.
+    private static final M3SizeTransform DEFAULT_SIZE_TRANSFORM = new M3SizeTransform(true, null);
 
     /// The retained-content engine that owns visual effects, clipping, and animated size.
     private final M3AnimatedContent animatedContent = new M3AnimatedContent();
@@ -141,48 +147,80 @@ public final class M3AnimatedVisibility extends Region {
         return showing;
     }
 
-    /// The scale used at the hidden end of the visual transition.
-    private final DoubleProperty hiddenScale =
-            new SimpleDoubleProperty(this, "hiddenScale", DEFAULT_HIDDEN_SCALE) {
-                /// Validates and applies a hidden-state scale change.
+    /// The effects used while retained content enters.
+    private final ObjectProperty<@Nullable M3EnterTransition> enterTransition =
+            new SimpleObjectProperty<>(this, "enterTransition", DEFAULT_ENTER_TRANSITION) {
+                /// Restores the default after a direct null assignment and updates active motion otherwise.
                 @Override
                 protected void invalidated() {
-                    double value = validateHiddenScale(get());
-                    animatedContent.configureTransition(
-                            value,
-                            value,
-                            animatedContent.getEnterMotionSpec(),
-                            animatedContent.getExitMotionSpec(),
-                            animatedContent.getSizeMotionSpec()
-                    );
+                    if (get() == null) {
+                        set(DEFAULT_ENTER_TRANSITION);
+                    } else {
+                        configureMotion();
+                    }
                 }
             };
 
-    /// Returns the scale used at the hidden end of the visual transition.
+    /// Returns the effects used while retained content enters.
     ///
-    /// @return the finite, positive hidden-state scale
-    public double getHiddenScale() {
-        return hiddenScale.get();
+    /// @return the non-null immutable enter transition
+    public M3EnterTransition getEnterTransition() {
+        return Objects.requireNonNull(enterTransition.get(), "enterTransition");
     }
 
-    /// Sets the scale used at the hidden end of the visual transition.
+    /// Sets the effects used by subsequent and active enter transitions.
     ///
-    /// A value below `1.0` makes content grow as it enters; a value above `1.0` makes it shrink. The value affects
-    /// only a private holder and never changes the content node's own scale properties.
-    ///
-    /// @param hiddenScale the finite, positive hidden-state scale
-    /// @throws IllegalArgumentException if the value is not finite and greater than zero
-    public void setHiddenScale(double hiddenScale) {
-        this.hiddenScale.set(validateHiddenScale(hiddenScale));
+    /// @param transition the immutable enter transition
+    /// @throws NullPointerException if `transition` is `null`
+    public void setEnterTransition(M3EnterTransition transition) {
+        enterTransition.set(Objects.requireNonNull(transition, "transition"));
     }
 
-    /// Returns the observable hidden-state scale property.
+    /// Returns the observable enter-transition property.
     ///
-    /// The default value is `0.96`. Values supplied through a binding must be finite and greater than zero.
+    /// A `null` value assigned directly through the property is replaced with the default fade-and-scale transition.
     ///
-    /// @return the hidden-state scale property
-    public DoubleProperty hiddenScaleProperty() {
-        return hiddenScale;
+    /// @return the enter-transition property
+    public ObjectProperty<@Nullable M3EnterTransition> enterTransitionProperty() {
+        return enterTransition;
+    }
+
+    /// The effects used while retained content exits.
+    private final ObjectProperty<@Nullable M3ExitTransition> exitTransition =
+            new SimpleObjectProperty<>(this, "exitTransition", DEFAULT_EXIT_TRANSITION) {
+                /// Restores the default after a direct null assignment and updates active motion otherwise.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_EXIT_TRANSITION);
+                    } else {
+                        configureMotion();
+                    }
+                }
+            };
+
+    /// Returns the effects used while retained content exits.
+    ///
+    /// @return the non-null immutable exit transition
+    public M3ExitTransition getExitTransition() {
+        return Objects.requireNonNull(exitTransition.get(), "exitTransition");
+    }
+
+    /// Sets the effects used by subsequent and active exit transitions.
+    ///
+    /// @param transition the immutable exit transition
+    /// @throws NullPointerException if `transition` is `null`
+    public void setExitTransition(M3ExitTransition transition) {
+        exitTransition.set(Objects.requireNonNull(transition, "transition"));
+    }
+
+    /// Returns the observable exit-transition property.
+    ///
+    /// A `null` value assigned directly through the property is replaced with the default fade-and-scale transition.
+    ///
+    /// @return the exit-transition property
+    public ObjectProperty<@Nullable M3ExitTransition> exitTransitionProperty() {
+        return exitTransition;
     }
 
     /// The alignment of attached content within this region.
@@ -225,99 +263,38 @@ public final class M3AnimatedVisibility extends Region {
         return alignment;
     }
 
-    /// Whether preferred and minimum size animate between content size and zero.
-    private final BooleanProperty sizeAnimationEnabled =
-            new SimpleBooleanProperty(this, "sizeAnimationEnabled", true) {
-                /// Applies the size-animation policy to the retained-content engine.
+    /// The animated size and clipping behavior, or `null` for synchronous un-clipped size changes.
+    private final ObjectProperty<@Nullable M3SizeTransform> sizeTransform =
+            new SimpleObjectProperty<>(this, "sizeTransform", DEFAULT_SIZE_TRANSFORM) {
+                /// Updates active and subsequent visibility motion after the size behavior changes.
                 @Override
                 protected void invalidated() {
-                    animatedContent.setSizeAnimationEnabled(get());
+                    configureMotion();
                 }
             };
 
-    /// Returns whether visibility changes animate this region's content size.
+    /// Returns the size behavior used by visibility transitions.
     ///
-    /// @return `true` when preferred and minimum size move toward their target values
-    public boolean isSizeAnimationEnabled() {
-        return sizeAnimationEnabled.get();
+    /// @return the immutable size transform, or `null` when size changes synchronously without clipping
+    public @Nullable M3SizeTransform getSizeTransform() {
+        return sizeTransform.get();
     }
 
-    /// Sets whether visibility changes should animate this region's content size.
+    /// Sets the size behavior used by subsequent and active visibility transitions.
     ///
-    /// Disabling this property during playback applies the target size synchronously while allowing opacity and
-    /// scale effects to finish.
+    /// Passing `null` applies the target size synchronously and removes the animated-content clip without stopping
+    /// active enter or exit effects.
     ///
-    /// @param enabled whether content-size changes should be animated
-    public void setSizeAnimationEnabled(boolean enabled) {
-        sizeAnimationEnabled.set(enabled);
+    /// @param sizeTransform the immutable size behavior, or `null` to disable it
+    public void setSizeTransform(@Nullable M3SizeTransform sizeTransform) {
+        this.sizeTransform.set(sizeTransform);
     }
 
-    /// Returns the observable size-animation policy property.
+    /// Returns the observable size-transform property.
     ///
-    /// @return the size-animation policy property, initially `true`
-    public BooleanProperty sizeAnimationEnabledProperty() {
-        return sizeAnimationEnabled;
-    }
-
-    /// Whether attached content is clipped to this region's current bounds.
-    private final BooleanProperty clipContent =
-            new SimpleBooleanProperty(this, "clipContent", true) {
-                /// Applies the clipping policy to the retained-content engine.
-                @Override
-                protected void invalidated() {
-                    animatedContent.setClipContent(get());
-                }
-            };
-
-    /// Returns whether content drawing is clipped to this region.
-    ///
-    /// @return `true` when entering and exiting content is clipped
-    public boolean isClipContent() {
-        return clipContent.get();
-    }
-
-    /// Sets whether content drawing should be clipped to this region.
-    ///
-    /// This setting affects drawing and picking outside the region; it does not change preferred-size calculation.
-    ///
-    /// @param clipContent whether content should be clipped
-    public void setClipContent(boolean clipContent) {
-        this.clipContent.set(clipContent);
-    }
-
-    /// Returns the observable content-clipping property.
-    ///
-    /// @return the content-clipping property, initially `true`
-    public BooleanProperty clipContentProperty() {
-        return clipContent;
-    }
-
-    /// The explicit visibility motion specification, or `null` to use the theme default spatial role.
-    private final ObjectProperty<@Nullable M3MotionSpec> motionSpec =
-            new SimpleObjectProperty<>(this, "motionSpec");
-
-    /// Returns the explicit motion specification used by visibility transitions.
-    ///
-    /// @return the explicit specification, or `null` when the active theme's default spatial role is used
-    public @Nullable M3MotionSpec getMotionSpec() {
-        return motionSpec.get();
-    }
-
-    /// Sets the motion specification used by subsequent visibility transitions.
-    ///
-    /// Passing `null` restores semantic resolution through the active theme. Changing this property does not restart
-    /// a transition that is already running.
-    ///
-    /// @param motionSpec the explicit specification, or `null` to use the active theme
-    public void setMotionSpec(@Nullable M3MotionSpec motionSpec) {
-        this.motionSpec.set(motionSpec);
-    }
-
-    /// Returns the observable explicit motion-specification property.
-    ///
-    /// @return the motion-specification property, whose value may be `null`
-    public ObjectProperty<@Nullable M3MotionSpec> motionSpecProperty() {
-        return motionSpec;
+    /// @return the size-transform property, whose value may be `null`
+    public ObjectProperty<@Nullable M3SizeTransform> sizeTransformProperty() {
+        return sizeTransform;
     }
 
     /// The current visual lifecycle state.
@@ -362,7 +339,7 @@ public final class M3AnimatedVisibility extends Region {
         setPickOnBounds(false);
 
         animatedContent.setAlignment(DEFAULT_ALIGNMENT);
-        animatedContent.configureTransition(DEFAULT_HIDDEN_SCALE, DEFAULT_HIDDEN_SCALE, null, null, null);
+        configureMotion();
         getChildren().add(animatedContent);
 
         animatedContent.transitioningProperty().addListener((observable, wasTransitioning, isNowTransitioning) -> {
@@ -398,7 +375,8 @@ public final class M3AnimatedVisibility extends Region {
     /// Immediately applies the current showing target without running a transition.
     ///
     /// An active transition is stopped. Hidden content is detached and the region reports zero content size before
-    /// this method returns. Shown content is attached at full opacity and scale. Repeated calls are idempotent.
+    /// this method returns. Shown content is attached at neutral opacity, scale, and translation. Repeated calls are
+    /// idempotent.
     public void snapToCurrentState() {
         lifecycleTransitionActive = false;
         @Nullable Node target = isShowing() ? getContent() : null;
@@ -488,7 +466,6 @@ public final class M3AnimatedVisibility extends Region {
             return;
         }
 
-        configureMotion();
         lifecycleTransitionActive = true;
         state.set(shown ? M3VisibilityState.ENTERING : M3VisibilityState.EXITING);
         animatedContent.setContent(shown ? retainedContent : null);
@@ -498,12 +475,17 @@ public final class M3AnimatedVisibility extends Region {
         }
     }
 
-    /// Applies the current motion and hidden-scale configuration to the retained-content engine.
+    /// Applies the current enter, exit, and size configuration to the retained-content engine.
     private void configureMotion() {
-        double scale = getHiddenScale();
-        @Nullable M3MotionSpec explicitSpec = getMotionSpec();
-        M3MotionSpec resolvedSpec = explicitSpec == null ? M3Animation.defaultSpatial(this) : explicitSpec;
-        animatedContent.configureTransition(scale, scale, resolvedSpec, resolvedSpec, resolvedSpec);
+        M3ContentTransform transform = new M3ContentTransform(
+                getEnterTransition(),
+                getExitTransition(),
+                getSizeTransform(),
+                0.0
+        );
+        if (!transform.equals(animatedContent.getContentTransform())) {
+            animatedContent.setContentTransform(transform);
+        }
     }
 
     /// Completes lifecycle bookkeeping after all retained-content channels settle.
@@ -539,11 +521,4 @@ public final class M3AnimatedVisibility extends Region {
         return width < 0.0 ? width : Math.max(0.0, width - horizontalInsets());
     }
 
-    /// Validates a hidden-state scale.
-    private static double validateHiddenScale(double value) {
-        if (!Double.isFinite(value) || value <= 0.0) {
-            throw new IllegalArgumentException("hiddenScale must be finite and greater than zero");
-        }
-        return value;
-    }
 }

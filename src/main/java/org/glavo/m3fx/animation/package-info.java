@@ -15,9 +15,11 @@
 /// [M3StateTransition] coordinates multiple state-derived double properties through one typed transition and one
 /// pulse receiver. [M3AnimatedVisibility] owns the observable enter, visible, exit, and detached lifecycle of one
 /// retained content node while animating its container size. [M3AnimatedContent] retains incoming and outgoing
-/// nodes while animating replacement and preferred size, while [M3LayoutTransition] adds transform-based child
-/// placement motion to an existing JavaFX layout container. These runtime APIs resolve reduced-motion policy from
-/// their owner nodes and do not require specialized animated layout subclasses.
+/// nodes while animating replacement and preferred size. Its immutable [M3EnterTransition] and [M3ExitTransition]
+/// values compose independent fade, scale, and logical-edge slide effects, while [M3ContentTransform] coordinates
+/// those effects with size and drawing-order behavior. [M3LayoutTransition] adds transform-based child placement
+/// motion to an existing JavaFX layout container. These runtime APIs resolve reduced-motion policy from their owner
+/// nodes and do not require specialized animated layout subclasses.
 ///
 /// Motion specs and schemes are immutable and can be shared. Their builders are mutable, reusable, and not
 /// thread-safe. Runtime settings that observe or mutate live nodes follow JavaFX scene-graph threading rules.

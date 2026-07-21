@@ -5,15 +5,12 @@ package org.glavo.m3fx.animation;
 
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.HPos;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
@@ -24,25 +21,30 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
+import org.glavo.m3fx.internal.animation.M3DelayedScalarChannel;
+import org.glavo.m3fx.internal.animation.M3EnterTransitionImpl;
+import org.glavo.m3fx.internal.animation.M3ExitTransitionImpl;
 import org.glavo.m3fx.internal.animation.M3ScalarChannel;
+import org.glavo.m3fx.internal.animation.M3TransitionEffect;
+import org.glavo.m3fx.internal.animation.M3TransitionEffectKind;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 
 /// Animates replacement of one retained JavaFX content node with another.
 ///
 /// The [content property][#contentProperty()] identifies the target content. When it changes, this region keeps the
 /// previous and target nodes in private holders until their exit and enter effects have completed. The target is
-/// drawn above the previous content and is the only interactive node during the transition. The previous node is
-/// detached when the transition completes. At most two content nodes are retained, including when targets change
-/// repeatedly before an earlier transition finishes.
+/// ordered according to the active [M3ContentTransform] and is the only interactive node during the transition. The
+/// previous node is detached when the transition completes. At most two content nodes are retained, including when
+/// targets change repeatedly before an earlier transition finishes.
 ///
-/// Visual effects are applied to the private holders, leaving each content node's opacity, scale, translation, and
-/// transform list under caller ownership. Preferred and minimum size move from the current rendered size to the
-/// target content size when [#sizeAnimationEnabledProperty()] is `true`. Content is clipped to the region by default.
-/// A target that is already the outgoing node reverses naturally from its current visual state instead of being
-/// reparented or reset.
+/// Fade, scale, and logical-edge slide effects are composed by [M3EnterTransition] and [M3ExitTransition]. They are
+/// applied to private holders, leaving each content node's opacity, scale, translation, and transform list under
+/// caller ownership. [M3SizeTransform] independently controls animated preferred size and clipping. A target that is
+/// already the outgoing node reverses naturally from its current visual state instead of being reparented or reset.
 ///
 /// This class follows the retained-mode semantics of JavaFX rather than accepting a state-to-content composition
 /// callback. Callers create and retain their nodes, then assign the desired target through [#setContent(Node)]. A
@@ -66,17 +68,14 @@ public final class M3AnimatedContent extends Region {
     /// The default alignment of current and outgoing content.
     private static final Pos DEFAULT_ALIGNMENT = Pos.TOP_LEFT;
 
-    /// The scale from which newly assigned content enters.
-    private static final double DEFAULT_ENTER_SCALE = 0.92;
-
-    /// The scale reached by content as it exits.
-    private static final double DEFAULT_EXIT_SCALE = 1.0;
-
     /// The visibility threshold used for opacity spring channels.
     private static final double OPACITY_VISIBILITY_THRESHOLD = 1.0e-2;
 
     /// The visibility threshold used for scale spring channels.
     private static final double SCALE_VISIBILITY_THRESHOLD = 5.0e-4;
+
+    /// The visibility threshold used for translation spring channels, in logical pixels.
+    private static final double TRANSLATION_VISIBILITY_THRESHOLD = 1.0e-2;
 
     /// The visibility threshold used for size spring channels, in logical pixels.
     private static final double SIZE_VISIBILITY_THRESHOLD = 5.0e-1;
@@ -107,12 +106,6 @@ public final class M3AnimatedContent extends Region {
 
     /// Whether the target content requires a new preferred-size measurement.
     private boolean measurementPending;
-
-    /// Whether transition properties are being updated as one internal configuration change.
-    private boolean configuringTransition;
-
-    /// Whether an active transition must be retargeted after the current configuration change.
-    private boolean configurationRetargetPending;
 
     /// The target content width measured independently from the animated container width.
     private double targetContentWidth;
@@ -207,280 +200,55 @@ public final class M3AnimatedContent extends Region {
         return alignment;
     }
 
-    /// The initial scale applied to newly assigned target content.
-    private final DoubleProperty enterScale =
-            new SimpleDoubleProperty(this, "enterScale", DEFAULT_ENTER_SCALE) {
-                /// Validates and retargets after the enter scale changes.
+    /// The immutable enter, exit, size, and drawing-order configuration.
+    private final ObjectProperty<@Nullable M3ContentTransform> contentTransform =
+            new SimpleObjectProperty<>(this, "contentTransform", M3ContentTransform.DEFAULT) {
+                /// Restores the default after a direct null assignment and retargets active channels otherwise.
                 @Override
                 protected void invalidated() {
-                    validateScale(get(), "enterScale");
-                    retargetIfTransitioning();
-                }
-            };
-
-    /// Returns the initial scale applied to newly assigned target content.
-    ///
-    /// @return the finite, positive enter scale
-    public double getEnterScale() {
-        return enterScale.get();
-    }
-
-    /// Sets the initial scale applied to newly assigned target content.
-    ///
-    /// @param enterScale the finite, positive enter scale
-    /// @throws IllegalArgumentException if the value is not finite and greater than zero
-    public void setEnterScale(double enterScale) {
-        this.enterScale.set(validateScale(enterScale, "enterScale"));
-    }
-
-    /// Returns the observable enter-scale property.
-    ///
-    /// The default value is `0.92`. Values supplied through a binding must be finite and greater than zero.
-    ///
-    /// @return the enter-scale property
-    public DoubleProperty enterScaleProperty() {
-        return enterScale;
-    }
-
-    /// The final scale reached by outgoing content.
-    private final DoubleProperty exitScale =
-            new SimpleDoubleProperty(this, "exitScale", DEFAULT_EXIT_SCALE) {
-                /// Validates and retargets after the exit scale changes.
-                @Override
-                protected void invalidated() {
-                    validateScale(get(), "exitScale");
-                    retargetIfTransitioning();
-                }
-            };
-
-    /// Returns the final scale reached by outgoing content.
-    ///
-    /// @return the finite, positive exit scale
-    public double getExitScale() {
-        return exitScale.get();
-    }
-
-    /// Sets the final scale reached by outgoing content.
-    ///
-    /// @param exitScale the finite, positive exit scale
-    /// @throws IllegalArgumentException if the value is not finite and greater than zero
-    public void setExitScale(double exitScale) {
-        this.exitScale.set(validateScale(exitScale, "exitScale"));
-    }
-
-    /// Returns the observable exit-scale property.
-    ///
-    /// The default value is `1.0`. Values supplied through a binding must be finite and greater than zero.
-    ///
-    /// @return the exit-scale property
-    public DoubleProperty exitScaleProperty() {
-        return exitScale;
-    }
-
-    /// The explicit target-content enter specification, or `null` for the theme default effects role.
-    private final ObjectProperty<@Nullable M3MotionSpec> enterMotionSpec =
-            new SimpleObjectProperty<>(this, "enterMotionSpec") {
-                /// Retargets an active transition after the explicit specification changes.
-                @Override
-                protected void invalidated() {
-                    retargetIfTransitioning();
-                }
-            };
-
-    /// Returns the explicit target-content enter specification.
-    ///
-    /// @return the explicit specification, or `null` for the active theme's default effects role
-    public @Nullable M3MotionSpec getEnterMotionSpec() {
-        return enterMotionSpec.get();
-    }
-
-    /// Sets the target-content enter specification used by subsequent and active transitions.
-    ///
-    /// @param motionSpec the explicit specification, or `null` to resolve the active theme
-    public void setEnterMotionSpec(@Nullable M3MotionSpec motionSpec) {
-        enterMotionSpec.set(motionSpec);
-    }
-
-    /// Returns the observable explicit enter-specification property.
-    ///
-    /// @return the enter-specification property, whose value may be `null`
-    public ObjectProperty<@Nullable M3MotionSpec> enterMotionSpecProperty() {
-        return enterMotionSpec;
-    }
-
-    /// The explicit outgoing-content specification, or `null` for the theme fast effects role.
-    private final ObjectProperty<@Nullable M3MotionSpec> exitMotionSpec =
-            new SimpleObjectProperty<>(this, "exitMotionSpec") {
-                /// Retargets an active transition after the explicit specification changes.
-                @Override
-                protected void invalidated() {
-                    retargetIfTransitioning();
-                }
-            };
-
-    /// Returns the explicit outgoing-content specification.
-    ///
-    /// @return the explicit specification, or `null` for the active theme's fast effects role
-    public @Nullable M3MotionSpec getExitMotionSpec() {
-        return exitMotionSpec.get();
-    }
-
-    /// Sets the outgoing-content specification used by subsequent and active transitions.
-    ///
-    /// @param motionSpec the explicit specification, or `null` to resolve the active theme
-    public void setExitMotionSpec(@Nullable M3MotionSpec motionSpec) {
-        exitMotionSpec.set(motionSpec);
-    }
-
-    /// Returns the observable explicit exit-specification property.
-    ///
-    /// @return the exit-specification property, whose value may be `null`
-    public ObjectProperty<@Nullable M3MotionSpec> exitMotionSpecProperty() {
-        return exitMotionSpec;
-    }
-
-    /// The explicit container-size specification, or `null` for the theme default spatial role.
-    private final ObjectProperty<@Nullable M3MotionSpec> sizeMotionSpec =
-            new SimpleObjectProperty<>(this, "sizeMotionSpec") {
-                /// Retargets an active transition after the explicit specification changes.
-                @Override
-                protected void invalidated() {
-                    retargetIfTransitioning();
-                }
-            };
-
-    /// Returns the explicit container-size specification.
-    ///
-    /// @return the explicit specification, or `null` for the active theme's default spatial role
-    public @Nullable M3MotionSpec getSizeMotionSpec() {
-        return sizeMotionSpec.get();
-    }
-
-    /// Sets the container-size specification used by subsequent and active transitions.
-    ///
-    /// @param motionSpec the explicit specification, or `null` to resolve the active theme
-    public void setSizeMotionSpec(@Nullable M3MotionSpec motionSpec) {
-        sizeMotionSpec.set(motionSpec);
-    }
-
-    /// Returns the observable explicit size-specification property.
-    ///
-    /// @return the size-specification property, whose value may be `null`
-    public ObjectProperty<@Nullable M3MotionSpec> sizeMotionSpecProperty() {
-        return sizeMotionSpec;
-    }
-
-    /// Applies one internal transition configuration and retargets active channels at most once.
-    ///
-    /// Scale values are validated before any property is changed. Each changed property remains observable through
-    /// its regular JavaFX property, while an active replacement transition sees the complete configuration as one
-    /// retarget operation.
-    ///
-    /// @param enterScale      the finite, positive initial scale for target content
-    /// @param exitScale       the finite, positive final scale for outgoing content
-    /// @param enterMotionSpec the explicit enter specification, or `null` for the theme default
-    /// @param exitMotionSpec  the explicit exit specification, or `null` for the theme default
-    /// @param sizeMotionSpec  the explicit size specification, or `null` for the theme default
-    /// @throws IllegalArgumentException if either scale is not finite and greater than zero
-    void configureTransition(
-            double enterScale,
-            double exitScale,
-            @Nullable M3MotionSpec enterMotionSpec,
-            @Nullable M3MotionSpec exitMotionSpec,
-            @Nullable M3MotionSpec sizeMotionSpec
-    ) {
-        double checkedEnterScale = validateScale(enterScale, "enterScale");
-        double checkedExitScale = validateScale(exitScale, "exitScale");
-        configuringTransition = true;
-        configurationRetargetPending = false;
-        try {
-            this.enterScale.set(checkedEnterScale);
-            this.exitScale.set(checkedExitScale);
-            this.enterMotionSpec.set(enterMotionSpec);
-            this.exitMotionSpec.set(exitMotionSpec);
-            this.sizeMotionSpec.set(sizeMotionSpec);
-        } finally {
-            configuringTransition = false;
-            if (configurationRetargetPending) {
-                configurationRetargetPending = false;
-                if (isTransitioning()) {
-                    animation.retarget();
-                }
-            }
-        }
-    }
-
-    /// Whether preferred and minimum size move toward the target content size.
-    private final BooleanProperty sizeAnimationEnabled =
-            new SimpleBooleanProperty(this, "sizeAnimationEnabled", true) {
-                /// Retargets or settles size channels after the policy changes.
-                @Override
-                protected void invalidated() {
-                    if (!get()) {
+                    @Nullable M3ContentTransform value = get();
+                    if (value == null) {
+                        set(M3ContentTransform.DEFAULT);
+                        return;
+                    }
+                    if (value.sizeTransform() == null) {
                         animatedContentWidth = targetContentWidth;
                         animatedContentHeight = targetContentHeight;
                         animation.resetSizeChannels();
                         requestLayout();
                     }
+                    updateViewportClip();
+                    updateHolderOrder();
                     retargetIfTransitioning();
                 }
             };
 
-    /// Returns whether content-size changes are animated.
+    /// Returns the transition configuration used for content replacements.
     ///
-    /// @return `true` when preferred and minimum size move toward the target size
-    public boolean isSizeAnimationEnabled() {
-        return sizeAnimationEnabled.get();
+    /// @return the non-null immutable content transform
+    public M3ContentTransform getContentTransform() {
+        return Objects.requireNonNull(contentTransform.get(), "contentTransform");
     }
 
-    /// Sets whether content-size changes should be animated.
+    /// Sets the transition configuration used by subsequent and active replacements.
     ///
-    /// Disabling this property while a transition is active applies the target size synchronously without stopping
-    /// the enter or exit effects.
+    /// Changing this value while a transition is active retargets every affected channel from its currently rendered
+    /// value. Spring channels retain velocity after any configured delay has elapsed.
     ///
-    /// @param enabled whether size changes should be animated
-    public void setSizeAnimationEnabled(boolean enabled) {
-        sizeAnimationEnabled.set(enabled);
+    /// @param contentTransform the immutable transition configuration
+    /// @throws NullPointerException if `contentTransform` is `null`
+    public void setContentTransform(M3ContentTransform contentTransform) {
+        this.contentTransform.set(Objects.requireNonNull(contentTransform, "contentTransform"));
     }
 
-    /// Returns the observable size-animation policy property.
+    /// Returns the observable content-transform property.
     ///
-    /// @return the size-animation policy property, initially `true`
-    public BooleanProperty sizeAnimationEnabledProperty() {
-        return sizeAnimationEnabled;
-    }
-
-    /// Whether drawing is clipped to the private viewport.
-    private final BooleanProperty clipContent =
-            new SimpleBooleanProperty(this, "clipContent", true) {
-                /// Installs or removes the clip after the policy changes.
-                @Override
-                protected void invalidated() {
-                    updateViewportClip();
-                }
-            };
-
-    /// Returns whether content drawing is clipped to this region.
+    /// The default is [M3ContentTransform#DEFAULT]. A `null` value assigned directly through the property is replaced
+    /// with that default.
     ///
-    /// @return `true` when current and outgoing content are clipped
-    public boolean isClipContent() {
-        return clipContent.get();
-    }
-
-    /// Sets whether content drawing should be clipped to this region.
-    ///
-    /// This setting affects drawing and picking outside the region; it does not change preferred-size calculation.
-    ///
-    /// @param clipContent whether content should be clipped
-    public void setClipContent(boolean clipContent) {
-        this.clipContent.set(clipContent);
-    }
-
-    /// Returns the observable content-clipping property.
-    ///
-    /// @return the content-clipping property, initially `true`
-    public BooleanProperty clipContentProperty() {
-        return clipContent;
+    /// @return the content-transform property
+    public ObjectProperty<@Nullable M3ContentTransform> contentTransformProperty() {
+        return contentTransform;
     }
 
     /// Whether an enter, exit, or size channel is moving toward its target.
@@ -549,10 +317,7 @@ public final class M3AnimatedContent extends Region {
 
         @Nullable HolderState current = currentState;
         if (current != null) {
-            current.holder.setOpacity(1.0);
-            current.holder.setScaleX(1.0);
-            current.holder.setScaleY(1.0);
-            current.resetChannelsToCurrentVisuals();
+            current.resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
         measureTargetContent();
@@ -665,7 +430,7 @@ public final class M3AnimatedContent extends Region {
                 incoming.clearContent();
             }
             incoming.installContent(target);
-            incoming.resetVisuals(0.0, getEnterScale());
+            incoming.prepareForEnter(getContentTransform().targetContentEnter());
             currentState = incoming;
             outgoingState = previousCurrent;
         }
@@ -687,7 +452,7 @@ public final class M3AnimatedContent extends Region {
         return state == firstState ? secondState : firstState;
     }
 
-    /// Makes the target holder interactive and orders it above outgoing content.
+    /// Makes the target holder interactive and applies the configured target-content drawing order.
     private void updateHolderOrder() {
         @Nullable HolderState current = currentState;
         @Nullable HolderState outgoing = outgoingState;
@@ -698,7 +463,11 @@ public final class M3AnimatedContent extends Region {
         secondState.holder.setVisible(secondState == current || secondState == outgoing);
 
         if (current != null && outgoing != null) {
-            viewport.getChildren().setAll(outgoing.holder, current.holder);
+            if (getContentTransform().targetContentZIndex() >= 0.0) {
+                viewport.getChildren().setAll(outgoing.holder, current.holder);
+            } else {
+                viewport.getChildren().setAll(current.holder, outgoing.holder);
+            }
         } else if (current == firstState || outgoing == firstState) {
             viewport.getChildren().setAll(secondState.holder, firstState.holder);
         } else {
@@ -740,7 +509,7 @@ public final class M3AnimatedContent extends Region {
             return;
         }
 
-        if (!sizeInitialized || getScene() == null || !isSizeAnimationEnabled()) {
+        if (!sizeInitialized || getScene() == null || getContentTransform().sizeTransform() == null) {
             animatedContentWidth = targetContentWidth;
             animatedContentHeight = targetContentHeight;
             sizeInitialized = true;
@@ -781,10 +550,7 @@ public final class M3AnimatedContent extends Region {
 
         @Nullable HolderState current = currentState;
         if (current != null) {
-            current.holder.setOpacity(1.0);
-            current.holder.setScaleX(1.0);
-            current.holder.setScaleY(1.0);
-            current.resetChannelsToCurrentVisuals();
+            current.resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
         animatedContentWidth = targetContentWidth;
@@ -808,17 +574,14 @@ public final class M3AnimatedContent extends Region {
     /// Retargets active channels after a transition property changes.
     private void retargetIfTransitioning() {
         if (isTransitioning()) {
-            if (configuringTransition) {
-                configurationRetargetPending = true;
-            } else {
-                animation.retarget();
-            }
+            animation.retarget();
         }
     }
 
-    /// Installs or removes the clip owned by the private viewport.
+    /// Installs or removes the clip specified by the current size transform.
     private void updateViewportClip() {
-        viewport.setClip(isClipContent() ? viewportClip : null);
+        @Nullable M3SizeTransform sizeTransform = getContentTransform().sizeTransform();
+        viewport.setClip(sizeTransform != null && sizeTransform.clip() ? viewportClip : null);
     }
 
     /// Returns the horizontal snapped inset total.
@@ -857,12 +620,37 @@ public final class M3AnimatedContent extends Region {
         };
     }
 
-    /// Validates a content scale.
-    private static double validateScale(double value, String name) {
-        if (!Double.isFinite(value) || value <= 0.0) {
-            throw new IllegalArgumentException(name + " must be finite and greater than zero");
+    /// Returns the effect of one kind, or `null` when that channel is not part of a transition.
+    private static @Nullable M3TransitionEffect findEffect(
+            List<M3TransitionEffect> effects,
+            M3TransitionEffectKind kind
+    ) {
+        for (M3TransitionEffect effect : effects) {
+            if (effect.kind() == kind) {
+                return effect;
+            }
         }
-        return value;
+        return null;
+    }
+
+    /// Resolves a slide effect to its physical horizontal translation.
+    private double slideOffsetX(M3TransitionEffect effect) {
+        M3TransitionEdge edge = Objects.requireNonNull(effect.edge(), "slide edge");
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        return switch (edge) {
+            case START -> rightToLeft ? effect.value() : -effect.value();
+            case END -> rightToLeft ? -effect.value() : effect.value();
+            case TOP, BOTTOM -> 0.0;
+        };
+    }
+
+    /// Resolves a slide effect to its physical vertical translation.
+    private static double slideOffsetY(M3TransitionEffect effect) {
+        return switch (Objects.requireNonNull(effect.edge(), "slide edge")) {
+            case TOP -> -effect.value();
+            case BOTTOM -> effect.value();
+            case START, END -> 0.0;
+        };
     }
 
     /// Stores one reusable holder and its fixed visual animation channels.
@@ -872,10 +660,20 @@ public final class M3AnimatedContent extends Region {
         private final StackPane holder = new StackPane();
 
         /// The holder opacity channel.
-        private final M3ScalarChannel opacity = new M3ScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
+        private final M3DelayedScalarChannel opacity =
+                new M3DelayedScalarChannel(OPACITY_VISIBILITY_THRESHOLD);
 
         /// The holder uniform-scale channel.
-        private final M3ScalarChannel scale = new M3ScalarChannel(SCALE_VISIBILITY_THRESHOLD);
+        private final M3DelayedScalarChannel scale =
+                new M3DelayedScalarChannel(SCALE_VISIBILITY_THRESHOLD);
+
+        /// The holder horizontal-translation channel.
+        private final M3DelayedScalarChannel translateX =
+                new M3DelayedScalarChannel(TRANSLATION_VISIBILITY_THRESHOLD);
+
+        /// The holder vertical-translation channel.
+        private final M3DelayedScalarChannel translateY =
+                new M3DelayedScalarChannel(TRANSLATION_VISIBILITY_THRESHOLD);
 
         /// Creates an empty inactive holder.
         private HolderState() {
@@ -886,7 +684,7 @@ public final class M3AnimatedContent extends Region {
             holder.needsLayoutProperty().addListener(
                     (observable, oldValue, newValue) -> holderNeedsLayout(this, newValue)
             );
-            resetVisuals(1.0, 1.0);
+            resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
         /// Returns the holder's content, or `null` when empty.
@@ -901,27 +699,57 @@ public final class M3AnimatedContent extends Region {
             measurementPending = true;
         }
 
+        /// Applies the configured starting values for newly installed incoming content.
+        private void prepareForEnter(M3EnterTransition transition) {
+            double opacityValue = 1.0;
+            double scaleValue = 1.0;
+            double translateXValue = 0.0;
+            double translateYValue = 0.0;
+            for (M3TransitionEffect effect : ((M3EnterTransitionImpl) transition).effects()) {
+                switch (effect.kind()) {
+                    case FADE -> opacityValue = effect.value();
+                    case SCALE -> scaleValue = effect.value();
+                    case SLIDE -> {
+                        translateXValue = slideOffsetX(effect);
+                        translateYValue = slideOffsetY(effect);
+                    }
+                }
+            }
+            resetVisuals(opacityValue, scaleValue, translateXValue, translateYValue);
+        }
+
         /// Removes content and resets visual state without retaining the previous node.
         private void clearContent() {
             holder.getChildren().clear();
             holder.setVisible(false);
             holder.setMouseTransparent(true);
-            resetVisuals(1.0, 1.0);
+            resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
-        /// Immediately applies opacity and uniform scale and clears retained velocity.
-        private void resetVisuals(double opacityValue, double scaleValue) {
+        /// Immediately applies all holder visuals and clears retained velocity.
+        private void resetVisuals(
+                double opacityValue,
+                double scaleValue,
+                double translateXValue,
+                double translateYValue
+        ) {
             holder.setOpacity(opacityValue);
             holder.setScaleX(scaleValue);
             holder.setScaleY(scaleValue);
+            holder.setTranslateX(translateXValue);
+            holder.setTranslateY(translateYValue);
             opacity.reset(opacityValue);
             scale.reset(scaleValue);
+            translateX.reset(translateXValue);
+            translateY.reset(translateYValue);
         }
 
         /// Clears channel velocity while retaining the holder's current visual values.
         private void resetChannelsToCurrentVisuals() {
             opacity.reset(holder.getOpacity());
             scale.reset(holder.getScaleX());
+            translateX.reset(holder.getTranslateX());
+            translateY.reset(holder.getTranslateY());
         }
     }
 
@@ -942,15 +770,21 @@ public final class M3AnimatedContent extends Region {
             double elapsedSeconds = getStatus() == Animation.Status.RUNNING
                     ? Math.max(0.0, getCurrentTime().toSeconds())
                     : Double.POSITIVE_INFINITY;
+            M3ContentTransform transform = getContentTransform();
+            M3EnterTransitionImpl enter =
+                    (M3EnterTransitionImpl) transform.targetContentEnter();
+            M3ExitTransitionImpl exit =
+                    (M3ExitTransitionImpl) transform.initialContentExit();
 
-            M3MotionSpec enterSpec = resolveEnterSpec();
-            M3MotionSpec exitSpec = resolveExitSpec();
-            M3MotionSpec sizeSpec = resolveSizeSpec();
+            configureHolder(firstState, elapsedSeconds, enter, exit);
+            configureHolder(secondState, elapsedSeconds, enter, exit);
 
-            configureHolder(firstState, elapsedSeconds, enterSpec, exitSpec);
-            configureHolder(secondState, elapsedSeconds, enterSpec, exitSpec);
-
-            if (isSizeAnimationEnabled()) {
+            @Nullable M3SizeTransform sizeTransform = transform.sizeTransform();
+            if (sizeTransform != null) {
+                @Nullable M3MotionSpec explicitSizeSpec = sizeTransform.motionSpec();
+                M3MotionSpec sizeSpec = explicitSizeSpec == null
+                        ? M3Animation.defaultSpatial(M3AnimatedContent.this)
+                        : explicitSizeSpec;
                 width.configure(animatedContentWidth, targetContentWidth, sizeSpec, elapsedSeconds);
                 height.configure(animatedContentHeight, targetContentHeight, sizeSpec, elapsedSeconds);
             } else {
@@ -962,11 +796,8 @@ public final class M3AnimatedContent extends Region {
 
             stop();
             runDurationSeconds = Math.max(
-                    Math.max(firstState.opacity.getDurationSeconds(), firstState.scale.getDurationSeconds()),
-                    Math.max(
-                            Math.max(secondState.opacity.getDurationSeconds(), secondState.scale.getDurationSeconds()),
-                            Math.max(width.getDurationSeconds(), height.getDurationSeconds())
-                    )
+                    Math.max(holderDuration(firstState), holderDuration(secondState)),
+                    Math.max(width.getDurationSeconds(), height.getDurationSeconds())
             );
 
             if (runDurationSeconds <= 0.0) {
@@ -984,18 +815,149 @@ public final class M3AnimatedContent extends Region {
         private void configureHolder(
                 HolderState state,
                 double elapsedSeconds,
-                M3MotionSpec enterSpec,
-                M3MotionSpec exitSpec
+                M3EnterTransitionImpl enter,
+                M3ExitTransitionImpl exit
         ) {
             if (state == currentState) {
-                state.opacity.configure(state.holder.getOpacity(), 1.0, enterSpec, elapsedSeconds);
-                state.scale.configure(state.holder.getScaleX(), 1.0, enterSpec, elapsedSeconds);
+                configureIncoming(state, enter.effects(), elapsedSeconds);
             } else if (state == outgoingState) {
-                state.opacity.configure(state.holder.getOpacity(), 0.0, exitSpec, elapsedSeconds);
-                state.scale.configure(state.holder.getScaleX(), getExitScale(), exitSpec, elapsedSeconds);
+                configureOutgoing(state, exit.effects(), elapsedSeconds);
             } else {
                 state.resetChannelsToCurrentVisuals();
             }
+        }
+
+        /// Configures channels that return incoming content to its neutral visual state.
+        private void configureIncoming(
+                HolderState state,
+                List<M3TransitionEffect> effects,
+                double elapsedSeconds
+        ) {
+            @Nullable M3TransitionEffect fade = findEffect(effects, M3TransitionEffectKind.FADE);
+            if (fade == null) {
+                state.holder.setOpacity(1.0);
+                state.opacity.reset(1.0);
+            } else {
+                configureChannel(state.opacity, state.holder.getOpacity(), 1.0, fade, true, elapsedSeconds);
+            }
+
+            @Nullable M3TransitionEffect scale = findEffect(effects, M3TransitionEffectKind.SCALE);
+            if (scale == null) {
+                state.holder.setScaleX(1.0);
+                state.holder.setScaleY(1.0);
+                state.scale.reset(1.0);
+            } else {
+                configureChannel(state.scale, state.holder.getScaleX(), 1.0, scale, true, elapsedSeconds);
+            }
+
+            @Nullable M3TransitionEffect slide = findEffect(effects, M3TransitionEffectKind.SLIDE);
+            if (slide == null) {
+                state.holder.setTranslateX(0.0);
+                state.holder.setTranslateY(0.0);
+                state.translateX.reset(0.0);
+                state.translateY.reset(0.0);
+            } else {
+                configureChannel(
+                        state.translateX,
+                        state.holder.getTranslateX(),
+                        0.0,
+                        slide,
+                        true,
+                        elapsedSeconds
+                );
+                configureChannel(
+                        state.translateY,
+                        state.holder.getTranslateY(),
+                        0.0,
+                        slide,
+                        true,
+                        elapsedSeconds
+                );
+            }
+        }
+
+        /// Configures channels that move outgoing content toward its requested effects.
+        private void configureOutgoing(
+                HolderState state,
+                List<M3TransitionEffect> effects,
+                double elapsedSeconds
+        ) {
+            @Nullable M3TransitionEffect fade = findEffect(effects, M3TransitionEffectKind.FADE);
+            if (fade == null) {
+                state.opacity.reset(state.holder.getOpacity());
+            } else {
+                configureChannel(
+                        state.opacity,
+                        state.holder.getOpacity(),
+                        fade.value(),
+                        fade,
+                        false,
+                        elapsedSeconds
+                );
+            }
+
+            @Nullable M3TransitionEffect scale = findEffect(effects, M3TransitionEffectKind.SCALE);
+            if (scale == null) {
+                state.scale.reset(state.holder.getScaleX());
+            } else {
+                configureChannel(
+                        state.scale,
+                        state.holder.getScaleX(),
+                        scale.value(),
+                        scale,
+                        false,
+                        elapsedSeconds
+                );
+            }
+
+            @Nullable M3TransitionEffect slide = findEffect(effects, M3TransitionEffectKind.SLIDE);
+            if (slide == null) {
+                state.translateX.reset(state.holder.getTranslateX());
+                state.translateY.reset(state.holder.getTranslateY());
+            } else {
+                configureChannel(
+                        state.translateX,
+                        state.holder.getTranslateX(),
+                        slideOffsetX(slide),
+                        slide,
+                        false,
+                        elapsedSeconds
+                );
+                configureChannel(
+                        state.translateY,
+                        state.holder.getTranslateY(),
+                        slideOffsetY(slide),
+                        slide,
+                        false,
+                        elapsedSeconds
+                );
+            }
+        }
+
+        /// Configures one delayed scalar effect with an explicit or semantic motion specification.
+        private void configureChannel(
+                M3DelayedScalarChannel channel,
+                double currentValue,
+                double targetValue,
+                M3TransitionEffect effect,
+                boolean entering,
+                double elapsedSeconds
+        ) {
+            channel.configure(
+                    currentValue,
+                    targetValue,
+                    resolveEffectSpec(effect, entering),
+                    effect.delay().toSeconds(),
+                    elapsedSeconds
+            );
+        }
+
+        /// Returns the longest visual channel duration owned by one holder.
+        private double holderDuration(HolderState state) {
+            return Math.max(
+                    Math.max(state.opacity.getDurationSeconds(), state.scale.getDurationSeconds()),
+                    Math.max(state.translateX.getDurationSeconds(), state.translateY.getDurationSeconds())
+            );
         }
 
         /// Applies one shared elapsed time to all fixed channels.
@@ -1015,12 +977,14 @@ public final class M3AnimatedContent extends Region {
             }
         }
 
-        /// Applies the current opacity and scale values to one holder.
+        /// Applies current visual values to one holder.
         private void applyHolder(HolderState state, double elapsedSeconds) {
             state.holder.setOpacity(Math.max(0.0, Math.min(1.0, state.opacity.valueAt(elapsedSeconds))));
             double scaleValue = state.scale.valueAt(elapsedSeconds);
             state.holder.setScaleX(scaleValue);
             state.holder.setScaleY(scaleValue);
+            state.holder.setTranslateX(state.translateX.valueAt(elapsedSeconds));
+            state.holder.setTranslateY(state.translateY.valueAt(elapsedSeconds));
         }
 
         /// Resets size channel history to the currently rendered dimensions.
@@ -1029,22 +993,20 @@ public final class M3AnimatedContent extends Region {
             height.reset(animatedContentHeight);
         }
 
-        /// Resolves the explicit or theme-derived enter specification.
-        private M3MotionSpec resolveEnterSpec() {
-            @Nullable M3MotionSpec explicit = getEnterMotionSpec();
-            return explicit == null ? M3Animation.defaultEffects(M3AnimatedContent.this) : explicit;
-        }
-
-        /// Resolves the explicit or theme-derived exit specification.
-        private M3MotionSpec resolveExitSpec() {
-            @Nullable M3MotionSpec explicit = getExitMotionSpec();
-            return explicit == null ? M3Animation.fastEffects(M3AnimatedContent.this) : explicit;
-        }
-
-        /// Resolves the explicit or theme-derived size specification.
-        private M3MotionSpec resolveSizeSpec() {
-            @Nullable M3MotionSpec explicit = getSizeMotionSpec();
-            return explicit == null ? M3Animation.defaultSpatial(M3AnimatedContent.this) : explicit;
+        /// Resolves an effect's explicit spec or its semantic default.
+        private M3MotionSpec resolveEffectSpec(M3TransitionEffect effect, boolean entering) {
+            @Nullable M3MotionSpec explicit = effect.motionSpec();
+            if (explicit != null) {
+                return explicit;
+            }
+            if (effect.kind() == M3TransitionEffectKind.FADE) {
+                return entering
+                        ? M3Animation.defaultEffects(M3AnimatedContent.this)
+                        : M3Animation.fastEffects(M3AnimatedContent.this);
+            }
+            return entering
+                    ? M3Animation.defaultSpatial(M3AnimatedContent.this)
+                    : M3Animation.fastSpatial(M3AnimatedContent.this);
         }
     }
 

@@ -255,7 +255,7 @@ final class M3LayoutAnimationTest {
             content.setTranslateX(6.0);
 
             M3AnimatedVisibility visibility = new M3AnimatedVisibility(content);
-            visibility.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            configureSlowVisibility(visibility);
             AtomicBoolean detachedWhenHiddenWasPublished = new AtomicBoolean();
             visibility.stateProperty().addListener((observable, oldState, newState) -> {
                 if (newState == M3VisibilityState.HIDDEN) {
@@ -327,13 +327,14 @@ final class M3LayoutAnimationTest {
             assertEquals(Pos.CENTER, visibility.getAlignment());
 
             visibility.alignmentProperty().set(null);
-            visibility.setSizeAnimationEnabled(false);
-            visibility.setClipContent(false);
+            visibility.setSizeTransform(null);
             assertEquals(Pos.CENTER, visibility.getAlignment());
-            assertFalse(visibility.isSizeAnimationEnabled());
-            assertFalse(visibility.isClipContent());
-            assertThrows(IllegalArgumentException.class, () -> visibility.setHiddenScale(0.0));
-            assertThrows(IllegalArgumentException.class, () -> visibility.setHiddenScale(Double.NaN));
+            assertNull(visibility.getSizeTransform());
+
+            visibility.enterTransitionProperty().set(null);
+            visibility.exitTransitionProperty().set(null);
+            assertNotNull(visibility.getEnterTransition());
+            assertNotNull(visibility.getExitTransition());
 
             visibility.setShowing(false);
             Region first = fixedRegion(72.0, 28.0);
@@ -378,7 +379,7 @@ final class M3LayoutAnimationTest {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             Region content = fixedRegion(96.0, 40.0);
             M3AnimatedVisibility visibility = new M3AnimatedVisibility(content);
-            visibility.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+            configureSlowVisibility(visibility);
             Pane root = new Pane(visibility);
             Scene scene = new Scene(root);
             root.applyCss();
@@ -409,10 +410,7 @@ final class M3LayoutAnimationTest {
             first.setTranslateX(6.0);
 
             M3AnimatedContent animatedContent = new M3AnimatedContent(first);
-            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
-            animatedContent.setEnterMotionSpec(slow);
-            animatedContent.setExitMotionSpec(slow);
-            animatedContent.setSizeMotionSpec(slow);
+            animatedContent.setContentTransform(slowContentTransform(true));
 
             Pane root = new Pane(animatedContent);
             new Scene(root);
@@ -463,10 +461,7 @@ final class M3LayoutAnimationTest {
             Region first = fixedRegion(72.0, 28.0);
             Region second = fixedRegion(180.0, 56.0);
             M3AnimatedContent animatedContent = new M3AnimatedContent(first);
-            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
-            animatedContent.setEnterMotionSpec(slow);
-            animatedContent.setExitMotionSpec(slow);
-            animatedContent.setSizeMotionSpec(slow);
+            animatedContent.setContentTransform(slowContentTransform(true));
 
             Pane root = new Pane(animatedContent);
             new Scene(root);
@@ -478,15 +473,15 @@ final class M3LayoutAnimationTest {
 
             assertSame(first, animatedContent.getContent());
             assertNotNull(first.getParent());
-            assertNotNull(second.getParent());
-            assertTrue(animatedContent.isTransitioning());
+            assertNull(second.getParent());
+            assertFalse(animatedContent.isTransitioning());
 
             animatedContent.finish();
             assertNotNull(first.getParent());
             assertNull(second.getParent());
             assertEquals(72.0, animatedContent.prefWidth(-1.0), 1.0e-6);
 
-            animatedContent.setSizeAnimationEnabled(false);
+            animatedContent.setContentTransform(slowContentTransform(false));
             animatedContent.setContent(second);
             assertTrue(animatedContent.isTransitioning());
             assertEquals(180.0, animatedContent.prefWidth(-1.0), 1.0e-6);
@@ -512,8 +507,8 @@ final class M3LayoutAnimationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3AnimatedContent animatedContent = new M3AnimatedContent();
 
-            assertThrows(IllegalArgumentException.class, () -> animatedContent.setEnterScale(0.0));
-            assertThrows(IllegalArgumentException.class, () -> animatedContent.setExitScale(Double.NaN));
+            animatedContent.contentTransformProperty().set(null);
+            assertSame(M3ContentTransform.DEFAULT, animatedContent.getContentTransform());
             animatedContent.alignmentProperty().set(null);
             assertEquals(javafx.geometry.Pos.TOP_LEFT, animatedContent.getAlignment());
         });
@@ -524,10 +519,7 @@ final class M3LayoutAnimationTest {
     void animatedContentHandlesAttachmentAndReducedMotionLifecycle() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3AnimatedContent animatedContent = new M3AnimatedContent();
-            M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
-            animatedContent.setEnterMotionSpec(slow);
-            animatedContent.setExitMotionSpec(slow);
-            animatedContent.setSizeMotionSpec(slow);
+            animatedContent.setContentTransform(slowContentTransform(true));
             Pane root = new Pane(animatedContent);
             Scene scene = new Scene(root);
             root.applyCss();
@@ -561,9 +553,7 @@ final class M3LayoutAnimationTest {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             Region content = fixedRegion(84.0, 30.0);
             M3AnimatedContent animatedContent = new M3AnimatedContent(content);
-            animatedContent.setSizeMotionSpec(
-                    M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR)
-            );
+            animatedContent.setContentTransform(slowContentTransform(true));
             Pane root = new Pane(animatedContent);
             new Scene(root);
             root.applyCss();
@@ -783,6 +773,42 @@ final class M3LayoutAnimationTest {
             competing.start();
             competing.stop();
         });
+    }
+
+    /// Applies an intentionally long specification to every visibility channel used by lifecycle assertions.
+    private static void configureSlowVisibility(M3AnimatedVisibility visibility) {
+        M3MotionSpec slow = slowMotionSpec();
+        visibility.setEnterTransition(
+                M3EnterTransition.fade(0.0)
+                        .and(M3EnterTransition.scale(0.92))
+                        .withMotionSpec(slow)
+        );
+        visibility.setExitTransition(
+                M3ExitTransition.fade(0.0)
+                        .and(M3ExitTransition.scale(0.92))
+                        .withMotionSpec(slow)
+        );
+        visibility.setSizeTransform(new M3SizeTransform(true, slow));
+    }
+
+    /// Creates a deterministic content transform with optionally animated size for lifecycle assertions.
+    private static M3ContentTransform slowContentTransform(boolean animateSize) {
+        M3MotionSpec slow = slowMotionSpec();
+        return new M3ContentTransform(
+                M3EnterTransition.fade(0.0)
+                        .and(M3EnterTransition.scale(0.92))
+                        .withMotionSpec(slow),
+                M3ExitTransition.fade(0.0)
+                        .and(M3ExitTransition.scale(0.92))
+                        .withMotionSpec(slow),
+                animateSize ? new M3SizeTransform(true, slow) : null,
+                0.0
+        );
+    }
+
+    /// Returns the long linear specification shared by transition lifecycle tests.
+    private static M3MotionSpec slowMotionSpec() {
+        return M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
     }
 
     /// Creates a region whose minimum and preferred dimensions are fixed for layout assertions.
