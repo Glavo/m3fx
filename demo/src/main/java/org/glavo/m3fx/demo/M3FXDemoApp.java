@@ -529,9 +529,8 @@ public final class M3FXDemoApp extends Application {
             scaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
         } else {
             scaffold.setPaneLayout(M3PaneLayout.SINGLE);
-            if (scaffold.getLeadingPane() == sidebar) {
-                scaffold.setLeadingPane(null);
-            }
+            // Retain the stable leading slot so M3AdaptiveScaffold can animate it out. The node is detached only
+            // when the modal drawer is actually requested and must move into the overlay layer.
         }
     }
 

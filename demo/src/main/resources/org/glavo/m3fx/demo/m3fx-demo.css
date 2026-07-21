@@ -190,6 +190,17 @@
     -fx-background-radius: 12px;
 }
 
+.demo-motion-scaffold {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 12px;
+}
+
+.demo-motion-pane {
+    -fx-padding: 16px;
+    -fx-background-color: -m3-color-surface-container;
+    -fx-background-radius: 12px;
+}
+
 .demo-stacked-flow {
     -fx-fill-width: true;
 }

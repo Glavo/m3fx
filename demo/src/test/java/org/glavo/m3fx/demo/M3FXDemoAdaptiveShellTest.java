@@ -111,7 +111,7 @@ final class M3FXDemoAdaptiveShellTest {
                             visibleStyledNode(scene.getRoot(), "demo-navigation-button", M3IconButton.class);
                     return sidebar != null
                             && navigation == null
-                            && sidebar.localToScene(sidebar.getBoundsInLocal()).getMinX() <= EDGE_TOLERANCE;
+                            && Math.abs(sidebar.localToScene(sidebar.getBoundsInLocal()).getMinX()) <= EDGE_TOLERANCE;
                 },
                 STABLE_PULSES,
                 () -> {
@@ -149,8 +149,8 @@ final class M3FXDemoAdaptiveShellTest {
                             visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
                     return scene.getRoot().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
                             && sidebar != null
-                            && sidebar.localToScene(sidebar.getBoundsInLocal()).getMaxX()
-                            >= scene.getWidth() - EDGE_TOLERANCE;
+                            && Math.abs(sidebar.localToScene(sidebar.getBoundsInLocal()).getMaxX() - scene.getWidth())
+                            <= EDGE_TOLERANCE;
                 },
                 STABLE_PULSES,
                 () -> {
@@ -378,7 +378,7 @@ final class M3FXDemoAdaptiveShellTest {
                             visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
                     return scene.getRoot().getEffectiveNodeOrientation() == NodeOrientation.LEFT_TO_RIGHT
                             && sidebar != null
-                            && sidebar.localToScene(sidebar.getBoundsInLocal()).getMinX() <= EDGE_TOLERANCE;
+                            && Math.abs(sidebar.localToScene(sidebar.getBoundsInLocal()).getMinX()) <= EDGE_TOLERANCE;
                 },
                 STABLE_PULSES,
                 () -> {
@@ -575,7 +575,10 @@ final class M3FXDemoAdaptiveShellTest {
         pending.add(root);
         while (!pending.isEmpty()) {
             Node node = pending.removeFirst();
-            if (node.isVisible() && type.isInstance(node)) {
+            if (!node.isVisible()) {
+                continue;
+            }
+            if (type.isInstance(node)) {
                 T candidate = type.cast(node);
                 if (predicate.test(candidate)) {
                     return candidate;

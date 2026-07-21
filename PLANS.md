@@ -28,16 +28,17 @@ viewport-sized pagination; the remaining layouts retain horizontal Material keyl
 The exported layout foundation now models all five Material width breakpoints and provides an adaptive scaffold
 with stable top, bottom, navigation, rail, and one- to three-pane slots. It supports automatic and explicit pane
 policies, centered split panes, fixed side panes, physical safety insets, logical RTL placement, navigation
-coordination, and focus repair when an active region becomes hidden. The Catalog uses this scaffold as a real
-application integration path.
+coordination, focus repair when an active region becomes hidden, and interruptible topology transitions over stable
+slot geometry. The Catalog uses this scaffold as a real application integration path.
 
 The exported motion foundation now includes an interruptible scalar animatable, a type-safe multi-property state
 transition, a four-state retained visibility lifecycle with animated removal sizing, retained-node content
 replacement, and a FLIP-style placement transition that can be installed on existing JavaFX parents. These APIs
 share a reusable scalar-channel engine, theme, scene-lifecycle, and reduced-motion infrastructure, use one pulse
 receiver per coordinated transition, avoid per-pulse allocation, and are demonstrated by the Demo's Motion page.
-General multi-child entry and removal orchestration and shared-element overlay transitions remain future layers
-rather than responsibilities of specialized layout panes.
+Adaptive scaffold geometry now uses the same channel engine for reversible pane and navigation transitions. General
+multi-child entry and removal orchestration and shared-element overlay transitions remain future layers rather than
+responsibilities of specialized layout panes.
 
 The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable

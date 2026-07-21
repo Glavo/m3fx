@@ -11,6 +11,8 @@ import javafx.geometry.Insets;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionScheme;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,6 +48,8 @@ final class M3AdaptiveScaffoldStateTest {
             assertSame(M3PaneLayout.ADAPTIVE, scaffold.getPaneLayout());
             assertSame(M3PaneRole.MAIN, scaffold.getActivePane());
             assertSame(M3NavigationLayout.ADAPTIVE, scaffold.getNavigationLayout());
+            assertNull(scaffold.getLayoutMotionSpec());
+            assertNull(scaffold.layoutMotionSpecProperty().get());
             assertNull(scaffold.getBreakpointOverride());
             assertNull(scaffold.breakpointOverrideProperty().get());
             assertSame(M3Breakpoint.COMPACT, scaffold.getBreakpoint());
@@ -93,6 +97,23 @@ final class M3AdaptiveScaffoldStateTest {
             assertSame(M3PaneRole.MAIN, scaffold.getActivePane());
             assertSame(M3NavigationLayout.ADAPTIVE, scaffold.getNavigationLayout());
             assertSame(Insets.EMPTY, scaffold.getSafetyInsets());
+        });
+    }
+
+    /// Verifies local motion-specification assignment and restoration of theme-derived motion.
+    @Test
+    void exposesConfigurableLayoutMotion() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+            M3MotionSpec motionSpec = M3MotionScheme.expressive().slowSpatial();
+
+            scaffold.setLayoutMotionSpec(motionSpec);
+            assertSame(motionSpec, scaffold.getLayoutMotionSpec());
+            assertSame(motionSpec, scaffold.layoutMotionSpecProperty().get());
+
+            scaffold.setLayoutMotionSpec(null);
+            assertNull(scaffold.getLayoutMotionSpec());
+            assertNull(scaffold.layoutMotionSpecProperty().get());
         });
     }
 

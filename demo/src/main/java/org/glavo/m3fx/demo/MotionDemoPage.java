@@ -5,13 +5,12 @@ package org.glavo.m3fx.demo;
 
 import javafx.application.Platform;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Node;
-
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3DoubleAnimatable;
@@ -20,6 +19,9 @@ import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.layout.M3AdaptiveScaffold;
+import org.glavo.m3fx.layout.M3NavigationLayout;
+import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -186,12 +188,48 @@ final class MotionDemoPage extends DemoPageSupport {
         ));
         VBox layoutExample = new VBox(12.0, layoutTrack, changeLayout);
 
+        M3AdaptiveScaffold adaptiveScaffold = new M3AdaptiveScaffold();
+        adaptiveScaffold.getStyleClass().add("demo-motion-scaffold");
+        adaptiveScaffold.setMinHeight(300.0);
+        adaptiveScaffold.setPrefHeight(300.0);
+        adaptiveScaffold.setContentMargin(12.0);
+        adaptiveScaffold.setPaneSpacing(12.0);
+        adaptiveScaffold.setFixedLeadingPaneWidth(240.0);
+        adaptiveScaffold.setLeadingPane(createAdaptiveMotionPane(
+                "Supporting pane",
+                "Stable content slides out while the main pane reflows."
+        ));
+        adaptiveScaffold.setMainPane(createAdaptiveMotionPane(
+                "Main pane",
+                "Resize or reverse the transition without resetting rendered geometry."
+        ));
+        Region navigationRail = createAdaptiveMotionPane("Rail", "Expanded navigation");
+        navigationRail.setMinWidth(88.0);
+        navigationRail.setPrefWidth(88.0);
+        Region navigationBar = createAdaptiveMotionPane("Bar", "Compact navigation");
+        navigationBar.setMinHeight(64.0);
+        navigationBar.setPrefHeight(64.0);
+        adaptiveScaffold.setNavigationRail(navigationRail);
+        adaptiveScaffold.setNavigationBar(navigationBar);
+        adaptiveScaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
+        adaptiveScaffold.setNavigationLayout(M3NavigationLayout.RAIL);
+
+        M3Button changeAdaptiveLayout = new M3Button("Use compact topology", M3ButtonVariant.FILLED);
+        changeAdaptiveLayout.setOnAction(event -> {
+            boolean compact = adaptiveScaffold.getPaneLayout() != M3PaneLayout.SINGLE;
+            adaptiveScaffold.setPaneLayout(compact ? M3PaneLayout.SINGLE : M3PaneLayout.FIXED_LEADING);
+            adaptiveScaffold.setNavigationLayout(compact ? M3NavigationLayout.BAR : M3NavigationLayout.RAIL);
+            changeAdaptiveLayout.setText(compact ? "Use expanded topology" : "Use compact topology");
+        });
+        VBox adaptiveExample = new VBox(12.0, adaptiveScaffold, changeAdaptiveLayout);
+
         return createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
                 createFullWidthShowcaseGroup("Coordinated State Transition", stateExample),
                 createFullWidthShowcaseGroup("Animated Visibility", visibilityExample),
                 createFullWidthShowcaseGroup("Animated Content And Size", contentExample),
-                createFullWidthShowcaseGroup("Existing Layout Container", layoutExample)
+                createFullWidthShowcaseGroup("Existing Layout Container", layoutExample),
+                createFullWidthShowcaseGroup("Adaptive Pane Topology", adaptiveExample)
         );
     }
 
@@ -210,6 +248,24 @@ final class MotionDemoPage extends DemoPageSupport {
         M3Surface surface = new M3Surface();
         surface.getContent().add(content);
         surface.setPrefWidth(expanded ? 520.0 : 340.0);
+        return surface;
+    }
+
+    /// Creates one labeled surface used by the adaptive scaffold motion example.
+    ///
+    /// @param headline   the surface headline
+    /// @param supporting the supporting description
+    /// @return the configured surface
+    private static M3Surface createAdaptiveMotionPane(String headline, String supporting) {
+        Label headlineLabel = new Label(headline);
+        headlineLabel.getStyleClass().add("demo-group-title");
+        Label supportingLabel = new Label(supporting);
+        supportingLabel.setWrapText(true);
+
+        M3Surface surface = new M3Surface();
+        surface.getStyleClass().add("demo-motion-pane");
+        surface.getContent().add(new VBox(8.0, headlineLabel, supportingLabel));
+        surface.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         return surface;
     }
 }

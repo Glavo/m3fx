@@ -178,6 +178,12 @@ unmanaged rather than detached, preserving selection, scrolling, bindings, and o
 and trailing pane roles follow `NodeOrientation`; physical safety insets remain physical. `breakpointOverride` is
 intended for previews, tests, or an application policy that intentionally differs from assigned width.
 
+Resolved pane-topology and navigation-presentation changes animate stable slot bounds and opacity without
+reparenting application content. An active transition may be reversed or retargeted from its rendered geometry;
+physical spring velocity is retained across retargets. Continuous resizing within the same topology remains direct
+so the scaffold tracks the window instead of chasing it. Set `layoutMotionSpecProperty()` for a local specification,
+or leave it `null` to use the theme's default spatial motion role.
+
 ## Motion And Layout Transitions
 
 M3FX adds animation behavior to ordinary JavaFX properties and layout containers instead of introducing animated
@@ -243,9 +249,9 @@ buttonRow.setAlignment(Pos.CENTER_RIGHT);
 placement.dispose();
 ```
 
-All five APIs honor `M3MotionSettings`. A disabled or reduced-motion subtree reaches its target synchronously.
-Layout transitions animate placement only; shared elements and general child entry, removal, or remeasurement
-remain separate concerns rather than implicit behavior of every layout pane.
+All animation APIs and adaptive-scaffold transitions honor `M3MotionSettings`. A disabled or reduced-motion subtree
+reaches its target synchronously. Layout transitions animate placement only; shared elements and general child
+entry, removal, or remeasurement remain separate concerns rather than implicit behavior of every layout pane.
 
 ## Per-Control Configuration
 

@@ -19,6 +19,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3AdaptiveScaffoldSkin;
@@ -38,7 +39,11 @@ import java.util.Objects;
 /// requiring an application listener.
 ///
 /// Pane and navigation nodes remain attached to stable internal containers while their region is not effective.
-/// Hidden regions are unmanaged and do not receive input, but retaining their scene-graph state preserves controls,
+/// Changes in pane topology or navigation presentation animate the affected container bounds and opacity using
+/// [#getLayoutMotionSpec()] or the resolved default spatial motion role. A region that is leaving remains rendered
+/// until its transition settles but stops receiving input as soon as it ceases to be effective. Continuous resizing
+/// that does not change the resolved topology updates geometry directly rather than lagging behind the window.
+/// Hidden regions are unmanaged and do not receive input; retaining their scene-graph state preserves controls,
 /// selection, and scrolling across breakpoint changes. Each non-null slot node must be unique and must not belong
 /// to another parent when the scaffold's skin installs it.
 ///
@@ -437,6 +442,37 @@ public final class M3AdaptiveScaffold extends Control {
     /// @return the requested-navigation property
     public ObjectProperty<@Nullable M3NavigationLayout> navigationLayoutProperty() {
         return navigationLayout;
+    }
+
+    /// The motion specification used for adaptive pane and navigation geometry changes.
+    ///
+    /// A `null` value selects the default spatial role from the motion scheme resolved for this scaffold. The
+    /// specification affects subsequent transitions and a transition that is retargeted while running. It does not
+    /// override reduced-motion settings inherited through [org.glavo.m3fx.animation.M3MotionSettings].
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable M3MotionSpec> layoutMotionSpec =
+            new SimpleObjectProperty<>(this, "layoutMotionSpec");
+
+    /// Returns the explicit adaptive-layout motion specification.
+    ///
+    /// @return the motion specification, or `null` to use the resolved default spatial role
+    public @Nullable M3MotionSpec getLayoutMotionSpec() {
+        return layoutMotionSpec.get();
+    }
+
+    /// Sets the adaptive-layout motion specification.
+    ///
+    /// @param motionSpec the motion specification, or `null` to use the resolved default spatial role
+    public void setLayoutMotionSpec(@Nullable M3MotionSpec motionSpec) {
+        layoutMotionSpec.set(motionSpec);
+    }
+
+    /// Returns the observable, bindable adaptive-layout motion-specification property.
+    ///
+    /// @return the adaptive-layout motion-specification property
+    public ObjectProperty<@Nullable M3MotionSpec> layoutMotionSpecProperty() {
+        return layoutMotionSpec;
     }
 
     /// The optional breakpoint used instead of the scaffold width.
