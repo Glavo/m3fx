@@ -17,7 +17,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DatePicker;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -356,22 +355,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         /// Creates the animated date cell skin.
         @Override
         protected Skin<?> createDefaultSkin() {
-            return new DateCellSkin(this);
-        }
-
-        /// Returns the user-agent stylesheet for date cell states.
-        @Override
-        public String getUserAgentStylesheet() {
-            return M3Stylesheets.controlStylesheet("date-picker.css");
-        }
-    }
-
-    /// The animated labeled skin used by date cell buttons.
-    @NotNullByDefault
-    private static final class DateCellSkin extends M3LabeledButtonSkinBase<DateCellButton> {
-        /// Creates a date cell skin.
-        private DateCellSkin(DateCellButton control) {
-            super(control);
+            return new M3DateCellSkin(this);
         }
     }
 }

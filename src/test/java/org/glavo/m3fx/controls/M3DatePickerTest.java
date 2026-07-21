@@ -4,7 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
-import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -49,9 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests [M3DatePicker] API behavior, skin layout, and visual rendering.
 @NotNullByDefault
 final class M3DatePickerTest {
-    /// The pseudo-class used to verify pressed-like day cell feedback in visual tests.
-    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
-
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -123,14 +119,22 @@ final class M3DatePickerTest {
             assertFalse(monthButton.getText().contains("..."));
 
             ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+            assertNull(
+                    targetCell.lookup(".m3-state-layer"),
+                    "inactive day cells should not allocate Material interaction nodes"
+            );
             targetCell.fire();
 
             assertEquals(LocalDate.of(2026, 5, 20), picker.getValue());
             assertTrue(targetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
             assertEquals(48.0, targetCell.getWidth(), 0.5);
+            targetCell.arm();
+            targetCell.applyCss();
+            root.layout();
             Node stateLayer = Objects.requireNonNull(targetCell.lookup(".m3-state-layer"), "state layer");
             assertEquals(40.0, stateLayer.getBoundsInParent().getWidth(), 0.5);
             assertEquals(40.0, stateLayer.getBoundsInParent().getHeight(), 0.5);
+            targetCell.disarm();
 
             M3MenuItem january = assertInstanceOf(M3MenuItem.class, monthButton.getItems().get(0));
             january.fire();
@@ -436,8 +440,7 @@ final class M3DatePickerTest {
             ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
             WritableImage normalImage = snapshotImageOnFxThread(root);
 
-            targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
-            assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+            targetCell.arm();
             targetCell.applyCss();
             targetCell.requestLayout();
             root.layout();
@@ -447,6 +450,7 @@ final class M3DatePickerTest {
 
             WritableImage armedImage = snapshotImageOnFxThread(root);
             assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
+            targetCell.disarm();
         });
     }
 

@@ -332,6 +332,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Installs opacity transitions driven by the owner node's interaction states.
     void installStateTransitions(Node owner) {
+        installStateTransitions(owner, false);
+    }
+
+    /// Installs opacity transitions driven by the owner node's interaction states.
+    ///
+    /// @param owner               the node whose interaction states drive this layer
+    /// @param animateInitialState whether an already active state transitions from zero opacity
+    void installStateTransitions(Node owner, boolean animateInitialState) {
         if (stateOwner == owner) {
             return;
         }
@@ -352,7 +360,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
         }
-        synchronizeOwnerStateOpacity(owner);
+        if (animateInitialState) {
+            stateOpacityAnimation.stop();
+            overlay.setOpacity(0.0);
+            setFocusIndicatorOpacity(focusIndicator, 0.0);
+            animateOverlayOpacityFromOwnerState();
+        } else {
+            synchronizeOwnerStateOpacity(owner);
+        }
     }
 
     /// Synchronizes opacity with owner interaction states without starting an initial transition.

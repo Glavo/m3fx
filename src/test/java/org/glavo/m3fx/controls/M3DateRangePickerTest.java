@@ -50,9 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests [M3DateRangePicker] API behavior, skin layout, and visual rendering.
 @NotNullByDefault
 final class M3DateRangePickerTest {
-    /// The pseudo-class used to verify pressed-like day cell feedback in visual tests.
-    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
-
     /// The tolerance used when comparing rendered cell text ink centers.
     private static final double CELL_TEXT_INK_CENTER_TOLERANCE = 1.5;
 
@@ -468,8 +465,7 @@ final class M3DateRangePickerTest {
             ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
             WritableImage normalImage = snapshotImageOnFxThread(root);
 
-            targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
-            assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+            targetCell.arm();
             targetCell.applyCss();
             targetCell.requestLayout();
             root.layout();
@@ -479,6 +475,7 @@ final class M3DateRangePickerTest {
 
             WritableImage armedImage = snapshotImageOnFxThread(root);
             assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
+            targetCell.disarm();
         });
     }
 
