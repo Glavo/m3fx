@@ -17,7 +17,9 @@ import java.util.Objects;
 ///
 /// The transition coordinates five reusable scalar channels from one JavaFX pulse receiver. Each channel retains
 /// velocity independently when an active run is retargeted and may therefore have a different physical settling
-/// duration. The enclosing transition runs until the longest channel settles and allocates no per-pulse objects.
+/// duration. Only channels with displacement or retained spring velocity are written during a run, allowing
+/// independent transitions to animate disjoint properties of the same node. The enclosing transition runs until
+/// the longest channel settles and allocates no per-pulse objects.
 @NotNullByDefault
 public final class M3NodeTransition extends M3FiniteTransition {
     /// The opacity delta below which a physical spring is visually settled.
@@ -49,6 +51,21 @@ public final class M3NodeTransition extends M3FiniteTransition {
 
     /// The duration of the longest configured channel, in seconds.
     private double runDurationSeconds;
+
+    /// Whether the current run owns the node's opacity channel.
+    private boolean animateOpacity;
+
+    /// Whether the current run owns the node's horizontal scale channel.
+    private boolean animateScaleX;
+
+    /// Whether the current run owns the node's vertical scale channel.
+    private boolean animateScaleY;
+
+    /// Whether the current run owns the node's horizontal translation channel.
+    private boolean animateTranslateX;
+
+    /// Whether the current run owns the node's vertical translation channel.
+    private boolean animateTranslateY;
 
     /// Whether this transition has been configured at least once.
     private boolean configured;
@@ -116,6 +133,12 @@ public final class M3NodeTransition extends M3FiniteTransition {
         translateXChannel.configure(currentTranslateX, targetTranslateX, checkedSpec, previousElapsedSeconds);
         translateYChannel.configure(currentTranslateY, targetTranslateY, checkedSpec, previousElapsedSeconds);
 
+        animateOpacity = ownsChannel(currentOpacity, targetOpacity, opacityChannel);
+        animateScaleX = ownsChannel(currentScaleX, targetScaleX, scaleXChannel);
+        animateScaleY = ownsChannel(currentScaleY, targetScaleY, scaleYChannel);
+        animateTranslateX = ownsChannel(currentTranslateX, targetTranslateX, translateXChannel);
+        animateTranslateY = ownsChannel(currentTranslateY, targetTranslateY, translateYChannel);
+
         runDurationSeconds = Math.max(
                 Math.max(
                         opacityChannel.getDurationSeconds(),
@@ -128,7 +151,7 @@ public final class M3NodeTransition extends M3FiniteTransition {
         setInterpolator(Interpolator.LINEAR);
     }
 
-    /// Applies all scalar channel values for the current pulse.
+    /// Applies the scalar channels owned by the current run for the current pulse.
     @Override
     protected void interpolate(double fraction) {
         if (!configured) {
@@ -139,34 +162,49 @@ public final class M3NodeTransition extends M3FiniteTransition {
                 ? Double.POSITIVE_INFINITY
                 : Math.max(0.0, fraction) * runDurationSeconds;
 
-        double opacity = clampOpacity(opacityChannel.valueAt(elapsedSeconds));
-        if (Double.compare(node.getOpacity(), opacity) != 0) {
-            node.setOpacity(opacity);
+        if (animateOpacity) {
+            double opacity = clampOpacity(opacityChannel.valueAt(elapsedSeconds));
+            if (Double.compare(node.getOpacity(), opacity) != 0) {
+                node.setOpacity(opacity);
+            }
         }
 
-        double scaleX = scaleXChannel.valueAt(elapsedSeconds);
-        if (Double.compare(node.getScaleX(), scaleX) != 0) {
-            node.setScaleX(scaleX);
+        if (animateScaleX) {
+            double scaleX = scaleXChannel.valueAt(elapsedSeconds);
+            if (Double.compare(node.getScaleX(), scaleX) != 0) {
+                node.setScaleX(scaleX);
+            }
         }
 
-        double scaleY = scaleYChannel.valueAt(elapsedSeconds);
-        if (Double.compare(node.getScaleY(), scaleY) != 0) {
-            node.setScaleY(scaleY);
+        if (animateScaleY) {
+            double scaleY = scaleYChannel.valueAt(elapsedSeconds);
+            if (Double.compare(node.getScaleY(), scaleY) != 0) {
+                node.setScaleY(scaleY);
+            }
         }
 
-        double translateX = translateXChannel.valueAt(elapsedSeconds);
-        if (Double.compare(node.getTranslateX(), translateX) != 0) {
-            node.setTranslateX(translateX);
+        if (animateTranslateX) {
+            double translateX = translateXChannel.valueAt(elapsedSeconds);
+            if (Double.compare(node.getTranslateX(), translateX) != 0) {
+                node.setTranslateX(translateX);
+            }
         }
 
-        double translateY = translateYChannel.valueAt(elapsedSeconds);
-        if (Double.compare(node.getTranslateY(), translateY) != 0) {
-            node.setTranslateY(translateY);
+        if (animateTranslateY) {
+            double translateY = translateYChannel.valueAt(elapsedSeconds);
+            if (Double.compare(node.getTranslateY(), translateY) != 0) {
+                node.setTranslateY(translateY);
+            }
         }
     }
 
     /// Restricts opacity to the range accepted by JavaFX rendering.
     private static double clampOpacity(double opacity) {
         return Math.max(0.0, Math.min(1.0, opacity));
+    }
+
+    /// Returns whether a configured scalar channel must write its node property during the current run.
+    private static boolean ownsChannel(double currentValue, double targetValue, M3ScalarChannel channel) {
+        return Double.compare(currentValue, targetValue) != 0 || channel.getDurationSeconds() > 0.0;
     }
 }

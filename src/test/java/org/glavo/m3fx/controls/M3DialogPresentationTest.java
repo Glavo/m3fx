@@ -13,6 +13,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -23,8 +24,12 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3OverlayDialogPresentation;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.monetfx.ColorRole;
@@ -400,6 +405,104 @@ final class M3DialogPresentationTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies an animated entrance makes the dialog surface visibly contribute to a real window.
+    @Test
+    void animatedEntranceRendersDialogSurface() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayRootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Dialog> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DialogHandle> handleReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        M3Dialog dialog = dialogReference.get();
+                        return dialog != null
+                                && dialog.getDialogPane().getOpacity() >= 0.999
+                                && dialog.getDialogPane().getScaleY() >= 0.999;
+                    },
+                    3,
+                    () -> {
+                        Stage stage = new Stage();
+                        StackPane ownerContent = new StackPane(new M3Button("Owner"));
+                        M3OverlayPane overlayRoot = createOverlayRoot(ownerContent);
+                        Scene scene = new Scene(overlayRoot, 520.0, 340.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        M3MotionSpec shortMotion =
+                                M3MotionSpec.of(Duration.millis(80.0), M3MotionEasing.LINEAR);
+                        FxTestUtils.setMotionScheme(
+                                overlayRoot,
+                                M3MotionScheme.builder(M3MotionScheme.standard())
+                                        .fastEffects(shortMotion)
+                                        .defaultSpatial(shortMotion)
+                                        .build()
+                        );
+                        stage.setScene(scene);
+                        stage.show();
+
+                        M3Dialog dialog = new M3Dialog();
+                        dialog.getDialogPane().setHeaderText("Rendered dialog");
+                        dialog.getDialogPane().setContentText("Visible content");
+                        M3DialogHandle handle = overlayRoot.showDialog(dialog);
+
+                        stageReference.set(stage);
+                        overlayRootReference.set(overlayRoot);
+                        dialogReference.set(dialog);
+                        handleReference.set(handle);
+                    },
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        M3OverlayPane overlayRoot =
+                                Objects.requireNonNull(overlayRootReference.get(), "overlay root");
+                        M3Dialog dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+                        M3DialogHandle handle =
+                                Objects.requireNonNull(handleReference.get(), "dialog handle");
+                        try {
+                            overlayRoot.applyCss();
+                            overlayRoot.layout();
+                            assertDialogAttached(
+                                    handle,
+                                    dialog,
+                                    Objects.requireNonNull(stage.getScene(), "stage scene"),
+                                    overlayRoot
+                            );
+
+                            M3DialogPane pane = dialog.getDialogPane();
+                            assertTrue(pane.getWidth() > 1.0);
+                            assertTrue(pane.getHeight() > 1.0);
+                            assertEquals(1.0, pane.getOpacity(), 0.001);
+                            assertEquals(1.0, pane.getScaleY(), 0.001);
+
+                            SnapshotParameters snapshotParameters = new SnapshotParameters();
+                            snapshotParameters.setFill(Color.TRANSPARENT);
+                            WritableImage image = pane.snapshot(snapshotParameters, null);
+                            int centerX = (int) (image.getWidth() / 2.0);
+                            int centerY = (int) (image.getHeight() / 2.0);
+                            Color centerPixel = image.getPixelReader().getColor(centerX, centerY);
+                            assertTrue(
+                                    centerPixel.getOpacity() >= 0.99,
+                                    () -> "dialog surface did not contribute visible pixels: " + centerPixel
+                            );
+                        } finally {
+                            handle.requestClose();
+                            stage.close();
+                        }
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                M3DialogHandle handle = handleReference.get();
+                if (handle != null) {
+                    handle.requestClose();
+                }
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies animated dismissal retains the overlay until content effects, spatial motion, and scrim fade settle.

@@ -189,6 +189,37 @@ final class M3ScalarTransitionKernelTest {
         });
     }
 
+    /// Verifies concurrent node transitions do not overwrite channels owned by another transition.
+    @Test
+    void concurrentNodeTransitionsPreserveDisjointChannels() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane node = new Pane();
+            node.setOpacity(0.0);
+            node.setScaleY(0.8);
+            Pane root = new Pane(node);
+            new Scene(root, 120.0, 48.0);
+
+            M3MotionSpec spec = M3MotionSpec.of(Duration.seconds(1.0), M3MotionEasing.LINEAR);
+            M3NodeTransition effectsTransition = new M3NodeTransition(node);
+            M3NodeTransition spatialTransition = new M3NodeTransition(node);
+            effectsTransition.configure(spec, 1.0, 1.0, 0.8, 0.0, 0.0);
+            spatialTransition.configure(spec, 0.0, 1.0, 1.0, 0.0, 0.0);
+
+            M3Animation.playFromStart(node, effectsTransition);
+            M3Animation.playFromStart(node, spatialTransition);
+            effectsTransition.jumpTo(Duration.seconds(0.5));
+            spatialTransition.jumpTo(Duration.seconds(0.5));
+
+            assertEquals(0.5, node.getOpacity(), 1.0e-6);
+            assertEquals(0.9, node.getScaleY(), 1.0e-6);
+
+            M3Animation.finish(effectsTransition);
+            M3Animation.finish(spatialTransition);
+            assertEquals(1.0, node.getOpacity(), 0.0);
+            assertEquals(1.0, node.getScaleY(), 0.0);
+        });
+    }
+
     /// Verifies reduced motion and scene detachment still settle scalar-backed transitions synchronously.
     @Test
     void scalarBackedTransitionsHonorMotionAndSceneLifecycle() {
