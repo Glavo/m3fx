@@ -4,6 +4,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
+import java.io.RandomAccessFile
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -140,6 +141,16 @@ application {
     mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
 }
 
+val nativeHostOs = when {
+    System.getProperty("os.name").lowercase().contains("win") -> "windows"
+    System.getProperty("os.name").lowercase().contains("mac") -> "macos"
+    else -> "linux"
+}
+val nativeHostArch = when (System.getProperty("os.arch").lowercase()) {
+    "aarch64", "arm64" -> "aarch64"
+    else -> "x86_64"
+}
+
 graalvmNative {
     toolchainDetection.set(false)
     testSupport.set(false)
@@ -147,6 +158,12 @@ graalvmNative {
         imageName.set("m3fx-demo")
         mainClass.set(application.mainClass)
         buildArgs.addAll("--no-fallback", "--enable-native-access=javafx.graphics")
+        if (nativeHostOs == "windows") {
+            buildArgs.addAll(
+                "-H:NativeLinkerOption=/SUBSYSTEM:WINDOWS",
+                "-H:NativeLinkerOption=/ENTRY:mainCRTStartup"
+            )
+        }
         resources.autodetect()
     }
 }
@@ -289,15 +306,6 @@ tasks.named<BuildNativeImageTask>("nativeCompile") {
     classpathJar.set(shadowJar.flatMap { it.archiveFile })
 }
 
-val nativeHostOs = when {
-    System.getProperty("os.name").lowercase().contains("win") -> "windows"
-    System.getProperty("os.name").lowercase().contains("mac") -> "macos"
-    else -> "linux"
-}
-val nativeHostArch = when (System.getProperty("os.arch").lowercase()) {
-    "aarch64", "arm64" -> "aarch64"
-    else -> "x86_64"
-}
 val nativeExecutableName = if (nativeHostOs == "windows") "m3fx-demo.exe" else "m3fx-demo"
 val compiledNativeExecutable = layout.buildDirectory.file("native/nativeCompile/$nativeExecutableName")
 val stagedNativeExecutable = layout.buildDirectory.file(
@@ -315,6 +323,41 @@ tasks.register("stageNativeExecutable") {
         val sourceExecutable = compiledNativeExecutable.get().asFile
         if (!sourceExecutable.isFile || sourceExecutable.length() == 0L) {
             throw GradleException("The compiled Native Image is missing or empty: ${sourceExecutable.absolutePath}")
+        }
+        if (nativeHostOs == "windows") {
+            RandomAccessFile(sourceExecutable, "r").use { executable ->
+                fun readUnsignedShortLittleEndian(): Int =
+                    executable.readUnsignedByte() or (executable.readUnsignedByte() shl 8)
+
+                fun readUnsignedIntLittleEndian(): Long =
+                    readUnsignedShortLittleEndian().toLong() or
+                            (readUnsignedShortLittleEndian().toLong() shl 16)
+
+                if (executable.length() < 0x40L || readUnsignedShortLittleEndian() != 0x5a4d) {
+                    throw GradleException("The compiled Native Image is not a Windows PE executable")
+                }
+                executable.seek(0x3cL)
+                val peHeaderOffset = readUnsignedIntLittleEndian()
+                if (peHeaderOffset > executable.length() - 94L) {
+                    throw GradleException("The compiled Native Image has an invalid PE header offset")
+                }
+                executable.seek(peHeaderOffset)
+                if (readUnsignedIntLittleEndian() != 0x00004550L) {
+                    throw GradleException("The compiled Native Image has an invalid PE signature")
+                }
+                executable.seek(peHeaderOffset + 24L)
+                val optionalHeaderMagic = readUnsignedShortLittleEndian()
+                if (optionalHeaderMagic != 0x010b && optionalHeaderMagic != 0x020b) {
+                    throw GradleException("The compiled Native Image has an unsupported PE optional header")
+                }
+                executable.seek(peHeaderOffset + 92L)
+                val subsystem = readUnsignedShortLittleEndian()
+                if (subsystem != 2) {
+                    throw GradleException(
+                        "The Windows Native Image must use the GUI subsystem, but its PE subsystem is $subsystem"
+                    )
+                }
+            }
         }
         val targetExecutable = stagedNativeExecutable.get().asFile
         targetExecutable.parentFile.mkdirs()

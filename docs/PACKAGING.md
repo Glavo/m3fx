@@ -119,10 +119,12 @@ demo/build/distributions/native/<os>-<arch>/m3fx-demo[.exe]
 ```
 
 Native Image intermediate files remain under `demo/build/native/nativeCompile/` and are not distribution
-artifacts. On Windows the staged result is a single `m3fx-demo.exe`; it is not an installer and may still depend on
-operating-system libraries. The metadata under `META-INF/native-image/org.glavo/m3fx-demo` retains M3FX and demo
-CSS, the packaged Alibaba PuHuiTi font, and the JavaFX focus-visible method reached by the compatibility path. The
-shadow jar itself continues to exclude OpenJFX artifacts because JavaFX comes from Liberica NIK Full.
+artifacts. On Windows the staged result is a single `m3fx-demo.exe` linked as a Windows GUI application, so launching
+it does not allocate a console window. The build reads the staged PE metadata and fails unless the executable uses the
+Windows GUI subsystem. The executable is not an installer and may still depend on operating-system libraries. The
+metadata under `META-INF/native-image/org.glavo/m3fx-demo` retains M3FX and demo CSS, the packaged Alibaba PuHuiTi
+font, and the JavaFX focus-visible method reached by the compatibility path. The shadow jar itself continues to
+exclude OpenJFX artifacts because JavaFX comes from Liberica NIK Full.
 
 Native Image does not cross-compile desktop executables. Run the task on each target operating system and
 architecture. The manually dispatched `Build Demo Native Image` workflow accepts the Liberica NIK Java feature
