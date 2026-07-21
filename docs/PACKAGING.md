@@ -95,35 +95,42 @@ demo/build/jlink/
 
 Each jlink task verifies the generated runtime image before it succeeds. The verification requires the `release` metadata file, `lib/modules`, JavaFX runtime metadata, JavaFX legal metadata, the M3FX demo module entry in `release`, and the expected platform launcher. Windows images must contain both `bin/m3fx-demo` and `bin/m3fx-demo.bat`; Linux and macOS images must contain `bin/m3fx-demo`.
 
-## Demo Native Image
+## Demo GluonFX Native Executable
 
-The demo can be compiled ahead of time into a host-platform executable with the
-[GraalVM Native Build Tools Gradle plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin). Use the
-Full distribution of [Liberica Native Image Kit](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/)
-for Java 21 because it includes the JavaFX modules and native support needed by the application. Point `JAVA_HOME`
-or `GRAALVM_HOME` at that installation before starting Gradle.
+The demo uses the
+[GluonFX Gradle plugin](https://plugins.gradle.org/plugin/com.gluonhq.gluonfx-gradle-plugin) to AOT-compile and
+statically link the application with the Gluon Java and JavaFX SDKs. Install a
+[Gluon build of GraalVM](https://github.com/gluonhq/graal/releases) and point `GRAALVM_HOME` at it before starting
+Gradle. The GraalVM installation itself does not need to bundle JavaFX.
 
 Build and run the executable with:
 
 ```shell
-./gradlew nativeCompileDemo
+./gradlew nativeBuildDemo
 ./gradlew nativeRunDemo
 ```
 
-The output is written under:
+`nativeBuildDemo` runs GluonFX compilation and linking, verifies the linked result, and stages one distributable
+file under:
 
 ```text
-demo/build/native/nativeCompile/
+demo/build/distributions/native/<os>-<arch>/m3fx-demo[.exe]
 ```
 
-The native build uses the verified demo shadow jar as its application class path. That jar intentionally excludes
-OpenJFX artifacts; JavaFX comes from Liberica NIK Full instead. Native Image metadata retains M3FX and demo CSS, the
-packaged Alibaba PuHuiTi font, and the JavaFX focus-visible method reached through the JavaFX 14 compatibility path.
+GluonFX intermediate files remain under `demo/build/gluonfx/` and are not distribution artifacts. On Windows the
+staged result is a single `m3fx-demo.exe`; it is not an installer and may still rely on operating-system libraries.
+The Gluon-specific reflection and resource metadata under `META-INF/substrate/config` retains M3FX and demo CSS,
+the packaged Alibaba PuHuiTi font, and the JavaFX focus-visible method used by the compatibility path.
 
-Native Image does not cross-compile desktop executables. Run the task on each target operating system and
-architecture. The manually dispatched `Build Demo Native Image` GitHub Actions workflow builds and uploads host
-executables on Linux, Windows, and macOS. Platform C toolchains are still required locally; Linux additionally needs
-the JavaFX GTK, graphics, audio, and X11 development packages installed by that workflow.
+The JavaFX static SDK defaults to `21-ea+11.3`. It can be changed with
+`-Pm3fx.gluon.javafxStaticSdkVersion=<version>`. Advanced builds may also set
+`m3fx.gluon.javaStaticSdkVersion` or `m3fx.gluon.graalvmHome`; otherwise GluonFX selects its Java static SDK and
+reads `GRAALVM_HOME`.
+
+GluonFX does not cross-compile desktop executables. Run the task on each target operating system and architecture.
+The manually dispatched `Build Demo GluonFX Executable` workflow builds and uploads the raw Linux x64, Windows
+x64, and macOS AArch64 executables. Platform C toolchains are still required locally; Linux additionally needs the
+JavaFX GTK, graphics, audio, and X11 development packages installed by that workflow.
 
 ## Jlink Configuration
 
@@ -196,9 +203,9 @@ Use these tasks before distributing artifacts:
 
 The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo and catalog shadow jars with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
 
-The separate native-image workflow is manual because AOT compilation is intentionally outside the fast Tier 1
-gate. It provisions Liberica NIK Full on each host operating system, runs `nativeCompileDemo`, and uploads the raw
-platform executable with `archive: false`.
+The separate GluonFX workflow is manual because AOT compilation is intentionally outside the fast Tier 1 gate. It
+provisions Gluon GraalVM and the platform compiler, runs `nativeBuildDemo`, and uploads the staged executable with
+`archive: false`.
 
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 

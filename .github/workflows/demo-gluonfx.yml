@@ -1,4 +1,4 @@
-name: Build Demo Native Image
+name: Build Demo GluonFX Executable
 
 on:
   workflow_dispatch:
@@ -7,22 +7,29 @@ permissions:
   contents: read
 
 jobs:
-  native-image:
-    name: Native Demo (${{ matrix.target }})
+  native:
+    name: GluonFX Demo (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: linux
+            distribution: linux-x86_64
             executable: m3fx-demo
+            graal_arch: x86_64
           - os: windows-latest
             target: windows
+            distribution: windows-x86_64
             executable: m3fx-demo.exe
+            graal_arch: x86_64
           - os: macos-latest
             target: macos
+            distribution: macos-aarch64
             executable: m3fx-demo
+            graal_arch: aarch64
 
     steps:
       - name: Check out sources
@@ -42,24 +49,30 @@ jobs:
             libpango1.0-dev \
             libxtst-dev
 
-      - name: Set up Liberica Native Image Kit
-        uses: graalvm/setup-graalvm@v1
+      - name: Set up the MSVC build environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
         with:
-          distribution: liberica
-          java-version: "21"
-          java-package: jdk+fx
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          arch: x64
 
-      - name: Build native image
-        shell: bash
+      - name: Set up Gluon GraalVM
+        uses: gluonhq/setup-graalvm@3a9b11a45ef0ecad69107f5884b5dbbb7b806e1c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          graalvm: latest
+          jdk: java23
+          arch: ${{ matrix.graal_arch }}
+
+      - name: Build GluonFX native executable
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
-        run: ./gradlew nativeCompileDemo --no-daemon
+        run: ./gradlew nativeBuildDemo --no-daemon
 
       - name: Upload native executable
         uses: actions/upload-artifact@v7
         with:
-          name: m3fx-demo-native-${{ matrix.target }}
-          path: demo/build/native/nativeCompile/${{ matrix.executable }}
+          name: m3fx-demo-gluonfx-${{ matrix.target }}
+          path: demo/build/distributions/native/${{ matrix.distribution }}/${{ matrix.executable }}
           if-no-files-found: error
           archive: false

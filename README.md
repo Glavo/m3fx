@@ -404,16 +404,18 @@ Build a host-platform jlink runtime image:
 ./gradlew jlinkDemoRuntime
 ```
 
-Compile the demo into a host-platform native executable with
-[Liberica Native Image Kit Full](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/):
+Build the demo as a host-platform native executable with the
+[GluonFX Gradle plugin](https://plugins.gradle.org/plugin/com.gluonhq.gluonfx-gradle-plugin):
 
 ```shell
-./gradlew nativeCompileDemo
+./gradlew nativeBuildDemo
 ./gradlew nativeRunDemo
 ```
 
-Native Image builds are platform-specific and require the JavaFX-enabled Full distribution of Liberica NIK. They
-do not replace the cross-platform jlink tasks; build each native executable on its target operating system.
+GluonFX builds require a [Gluon GraalVM](https://github.com/gluonhq/graal/releases) installation through
+`GRAALVM_HOME`. The plugin links the Gluon Java and JavaFX static SDKs, then stages one distributable executable
+under `demo/build/distributions/native/<os>-<arch>/`. Native executables are platform-specific and do not replace
+the cross-platform jlink tasks.
 
 Build all supported platform and architecture runtime images:
 
@@ -421,7 +423,8 @@ Build all supported platform and architecture runtime images:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-See [docs/PACKAGING.md](docs/PACKAGING.md) for shadow jar, jlink, native-image, cross-platform runtime-image, and validation details.
+See [docs/PACKAGING.md](docs/PACKAGING.md) for shadow jar, jlink, GluonFX, cross-platform runtime-image, and
+validation details.
 
 ## Verification
 

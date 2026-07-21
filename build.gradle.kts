@@ -699,15 +699,15 @@ tasks.register("shadowDemoJar") {
     dependsOn(":demo:verifyShadowJar")
 }
 
-tasks.register("nativeCompileDemo") {
+tasks.register("nativeBuildDemo") {
     group = "distribution"
-    description = "Compiles the M3FX demo into a host-platform native executable."
-    dependsOn(":demo:nativeCompile")
+    description = "Builds the M3FX demo as a host-platform GluonFX native executable."
+    dependsOn(":demo:stageNativeExecutable")
 }
 
 tasks.register("nativeRunDemo") {
     group = "application"
-    description = "Runs the host-platform native executable for the M3FX demo application."
+    description = "Builds and runs the host-platform GluonFX executable for the M3FX demo application."
     dependsOn(":demo:nativeRun")
 }
 
