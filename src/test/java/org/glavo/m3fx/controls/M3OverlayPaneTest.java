@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
@@ -18,6 +19,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -208,8 +210,89 @@ final class M3OverlayPaneTest {
             assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
 
             backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            backgroundAction.fireEvent(primaryMousePress(backgroundAction));
             assertTrue(stateLayer.getOpacity() > 0.0);
         });
+    }
+
+    /// Verifies that closing a modal keeps lower feedback blocked through scene pointer repicking.
+    @Tier2Test
+    @Test
+    void modalFeedbackReleaseWaitsForSceneRepick() throws InterruptedException {
+        AtomicReference<@Nullable M3IconButton> actionReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> stateLayerReference = new AtomicReference<>();
+        AtomicReference<@Nullable AnimationTimer> monitorReference = new AtomicReference<>();
+        AtomicBoolean delayedRepickInjected = new AtomicBoolean();
+        AtomicBoolean transientFeedbackObserved = new AtomicBoolean();
+
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        M3IconButton action = Objects.requireNonNull(actionReference.get(), "background action");
+                        return !M3ModalInteraction.isBlocked(action);
+                    },
+                    2,
+                    () -> {
+                        M3IconButton action = new M3IconButton();
+                        M3OverlayPane overlayPane = new M3OverlayPane();
+                        overlayPane.setContent(new StackPane(action));
+                        new Scene(overlayPane, 320.0, 180.0);
+                        overlayPane.applyCss();
+                        overlayPane.resize(320.0, 180.0);
+                        overlayPane.layout();
+
+                        Node stateLayer = Objects.requireNonNull(
+                                action.lookup(".m3-state-layer"),
+                                "background action state layer"
+                        );
+                        actionReference.set(action);
+                        stateLayerReference.set(stateLayer);
+
+                        M3OverlayPane.OverlayHandle handle = overlayPane.showModalOverlay(new Pane());
+                        assertTrue(M3ModalInteraction.isBlocked(action));
+                        assertTrue(handle.hide());
+                        assertTrue(M3ModalInteraction.isBlocked(action));
+                        assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+                        AnimationTimer monitor = new AnimationTimer() {
+                            /// Simulates delayed pointer repicking and records any visible modal-release frame.
+                            @Override
+                            public void handle(long now) {
+                                if (delayedRepickInjected.compareAndSet(false, true)) {
+                                    action.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+                                }
+                                if (stateLayer.getOpacity() > 0.0001) {
+                                    transientFeedbackObserved.set(true);
+                                }
+                            }
+                        };
+                        monitorReference.set(monitor);
+                        monitor.start();
+                    },
+                    () -> {
+                        AnimationTimer monitor = monitorReference.getAndSet(null);
+                        if (monitor != null) {
+                            monitor.stop();
+                        }
+                        assertTrue(delayedRepickInjected.get());
+                        assertFalse(transientFeedbackObserved.get());
+                        assertEquals(
+                                0.0,
+                                Objects.requireNonNull(stateLayerReference.get(), "state layer").getOpacity(),
+                                0.0001
+                        );
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable AnimationTimer monitor = monitorReference.getAndSet(null);
+                if (monitor != null) {
+                    monitor.stop();
+                }
+            });
+        }
     }
 
     /// Verifies current, queue, duration, and mutation behavior exposed by the snackbar facade.

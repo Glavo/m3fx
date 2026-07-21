@@ -105,6 +105,9 @@ final class M3FXDemoAdaptiveShellTest {
     void pointerDrawerLifecycleClearsTriggerInteractionFeedback() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable AnimationTimer> feedbackMonitorReference = new AtomicReference<>();
+        AtomicBoolean transientFeedbackObserved = new AtomicBoolean();
+        AtomicReference<String> transientFeedbackDescription = new AtomicReference<>("none");
 
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
@@ -191,6 +194,38 @@ final class M3FXDemoAdaptiveShellTest {
                                 "demo-navigation-button",
                                 M3IconButton.class
                         );
+                        AnimationTimer feedbackMonitor = new AnimationTimer() {
+                            @Override
+                            public void handle(long now) {
+                                Node stateLayer = Objects.requireNonNull(
+                                        navigation.lookup(".m3-state-layer"),
+                                        "navigation state layer"
+                                );
+                                Node ripple = Objects.requireNonNull(
+                                        navigation.lookup(".m3-ripple"),
+                                        "navigation ripple"
+                                );
+                                Node focusIndicator = Objects.requireNonNull(
+                                        navigation.lookup(".m3-focus-indicator"),
+                                        "navigation focus indicator"
+                                );
+                                if (stateLayer.getOpacity() > 0.0001
+                                        || ripple.getOpacity() > 0.0001
+                                        || focusIndicator.getOpacity() > 0.0001) {
+                                    transientFeedbackObserved.set(true);
+                                    transientFeedbackDescription.set(
+                                            "stateOpacity=" + stateLayer.getOpacity()
+                                                    + ", rippleOpacity=" + ripple.getOpacity()
+                                                    + ", focusIndicatorOpacity=" + focusIndicator.getOpacity()
+                                                    + ", focused=" + navigation.isFocused()
+                                                    + ", hover=" + navigation.isHover()
+                                                    + ", pseudoClasses=" + navigation.getPseudoClassStates()
+                                    );
+                                }
+                            }
+                        };
+                        feedbackMonitorReference.set(feedbackMonitor);
+                        feedbackMonitor.start();
                         assertFalse(navigation.isPressed());
                         assertFalse(navigation.isArmed());
                         assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
@@ -299,10 +334,23 @@ final class M3FXDemoAdaptiveShellTest {
                         assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
                         assertEquals(0.0, navigation.lookup(".m3-ripple").getOpacity(), 0.0001);
                         assertEquals(0.0, navigation.lookup(".m3-focus-indicator").getOpacity(), 0.0001);
+                        AnimationTimer feedbackMonitor = feedbackMonitorReference.getAndSet(null);
+                        if (feedbackMonitor != null) {
+                            feedbackMonitor.stop();
+                        }
+                        assertFalse(
+                                transientFeedbackObserved.get(),
+                                () -> "modal dismissal exposed transient trigger feedback: "
+                                        + transientFeedbackDescription.get()
+                        );
                     }
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
+                @Nullable AnimationTimer feedbackMonitor = feedbackMonitorReference.getAndSet(null);
+                if (feedbackMonitor != null) {
+                    feedbackMonitor.stop();
+                }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
