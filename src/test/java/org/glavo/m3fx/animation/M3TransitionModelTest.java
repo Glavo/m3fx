@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.collections.ListChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -15,6 +16,8 @@ import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -116,6 +119,9 @@ final class M3TransitionModelTest {
             StackPane incoming = assertInstanceOf(StackPane.class, second.getParent());
             StackPane outgoing = assertInstanceOf(StackPane.class, first.getParent());
             Pane viewport = assertInstanceOf(Pane.class, incoming.getParent());
+            AtomicInteger holderListChanges = new AtomicInteger();
+            viewport.getChildren().addListener((ListChangeListener<Node>) change ->
+                    holderListChanges.incrementAndGet());
 
             assertEquals(0.25, incoming.getOpacity(), 0.0);
             assertEquals(0.8, incoming.getScaleX(), 0.0);
@@ -124,12 +130,12 @@ final class M3TransitionModelTest {
             assertEquals(0.0, incoming.getTranslateY(), 0.0);
             assertFalse(incoming.isMouseTransparent());
             assertTrue(outgoing.isMouseTransparent());
-            assertSame(outgoing, viewport.getChildren().get(0));
-            assertSame(incoming, viewport.getChildren().get(1));
+            assertTrue(incoming.getViewOrder() < outgoing.getViewOrder());
             assertEquals(1.0, first.getOpacity(), 0.0);
             assertEquals(1.0, second.getOpacity(), 0.0);
 
             animatedContent.finish();
+            assertEquals(0, holderListChanges.get());
             animatedContent.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             animatedContent.setContentTransform(new M3ContentTransform(
                     M3EnterTransition.slideFrom(M3TransitionEdge.START, 32.0)
@@ -143,8 +149,8 @@ final class M3TransitionModelTest {
             StackPane rtlIncoming = assertInstanceOf(StackPane.class, first.getParent());
             StackPane rtlOutgoing = assertInstanceOf(StackPane.class, second.getParent());
             assertEquals(32.0, rtlIncoming.getTranslateX(), 0.0);
-            assertSame(rtlIncoming, viewport.getChildren().get(0));
-            assertSame(rtlOutgoing, viewport.getChildren().get(1));
+            assertTrue(rtlIncoming.getViewOrder() > rtlOutgoing.getViewOrder());
+            assertEquals(0, holderListChanges.get());
         }));
     }
 

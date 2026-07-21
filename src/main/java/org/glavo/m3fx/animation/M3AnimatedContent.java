@@ -80,7 +80,7 @@ public final class M3AnimatedContent extends Region {
     /// The visibility threshold used for size spring channels, in logical pixels.
     private static final double SIZE_VISIBILITY_THRESHOLD = 5.0e-1;
 
-    /// The private viewport that owns clipping and the two reusable holders.
+    /// The private viewport that owns clipping and two permanently attached reusable holders.
     private final Pane viewport = new Pane();
 
     /// The clip updated to the private viewport bounds during layout.
@@ -453,6 +453,10 @@ public final class M3AnimatedContent extends Region {
     }
 
     /// Makes the target holder interactive and applies the configured target-content drawing order.
+    ///
+    /// The holders remain at stable child-list positions for the lifetime of this region. Drawing order is expressed
+    /// through [Node#viewOrderProperty()] so completing a transition does not detach and reinsert rendered content,
+    /// which would cause an avoidable CSS and layout pass after the final animation pulse.
     private void updateHolderOrder() {
         @Nullable HolderState current = currentState;
         @Nullable HolderState outgoing = outgoingState;
@@ -463,15 +467,8 @@ public final class M3AnimatedContent extends Region {
         secondState.holder.setVisible(secondState == current || secondState == outgoing);
 
         if (current != null && outgoing != null) {
-            if (getContentTransform().targetContentZIndex() >= 0.0) {
-                viewport.getChildren().setAll(outgoing.holder, current.holder);
-            } else {
-                viewport.getChildren().setAll(current.holder, outgoing.holder);
-            }
-        } else if (current == firstState || outgoing == firstState) {
-            viewport.getChildren().setAll(secondState.holder, firstState.holder);
-        } else {
-            viewport.getChildren().setAll(firstState.holder, secondState.holder);
+            outgoing.holder.setViewOrder(0.0);
+            current.holder.setViewOrder(getContentTransform().targetContentZIndex() >= 0.0 ? -1.0 : 1.0);
         }
     }
 
@@ -539,8 +536,8 @@ public final class M3AnimatedContent extends Region {
         double holderHeight = state.holder.getHeight();
         Pos position = getAlignment();
         state.holder.relocate(
-                alignedOffset(width, holderWidth, position.getHpos()),
-                alignedOffset(height, holderHeight, position.getVpos())
+                snapPositionX(alignedOffset(width, holderWidth, position.getHpos())),
+                snapPositionY(alignedOffset(height, holderHeight, position.getVpos()))
         );
     }
 
@@ -723,6 +720,7 @@ public final class M3AnimatedContent extends Region {
             holder.getChildren().clear();
             holder.setVisible(false);
             holder.setMouseTransparent(true);
+            holder.setViewOrder(0.0);
             resetVisuals(1.0, 1.0, 0.0, 0.0);
         }
 
