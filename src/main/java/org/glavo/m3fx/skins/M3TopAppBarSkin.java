@@ -20,7 +20,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,9 +65,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
 
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
-
-    /// Updates logical alignment when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateVariantLayout();
 
     /// Requests a second skin layout after a parent changes the control size in the current pulse.
     private final InvalidationListener sizeInvalidation = observable -> getSkinnable().requestLayout();
@@ -135,7 +131,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         control.scrolledUnderProperty().addListener(scrolledUnderInvalidation);
         control.collapseProgressProperty().addListener(collapseProgressInvalidation);
         control.subtitleProperty().addListener(subtitleInvalidation);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.widthProperty().addListener(sizeInvalidation);
         control.heightProperty().addListener(sizeInvalidation);
 
@@ -170,7 +165,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         control.scrolledUnderProperty().removeListener(scrolledUnderInvalidation);
         control.collapseProgressProperty().removeListener(collapseProgressInvalidation);
         control.subtitleProperty().removeListener(subtitleInvalidation);
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         control.widthProperty().removeListener(sizeInvalidation);
         control.heightProperty().removeListener(sizeInvalidation);
         actions.nodeOrientationProperty().unbind();
@@ -376,7 +370,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         boolean flexible = variant == M3TopAppBarVariant.MEDIUM_FLEXIBLE
                 || variant == M3TopAppBarVariant.LARGE_FLEXIBLE;
         Pos titleAlignment = centerAligned ? Pos.CENTER : leadingTextAlignment();
-        actions.setAlignment(M3NodeLayout.logicalEndCenterAlignment(getSkinnable()));
+        actions.setAlignment(Pos.CENTER_RIGHT);
         titleLabel.setWrapText(flexible);
         titleLabel.setAlignment(titleAlignment);
         subtitleLabel.setAlignment(titleAlignment);

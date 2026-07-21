@@ -121,7 +121,6 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         container.nodeOrientationProperty().unbind();
         header.dispose();
         weekdayRow.nodeOrientationProperty().unbind();
-        weekdayRow.alignmentProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
         getChildren().remove(container);
         super.dispose();
@@ -193,7 +192,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         dayGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
 
-        weekdayRow.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
+        weekdayRow.setAlignment(Pos.CENTER_LEFT);
         for (int column = 0; column < COLUMN_COUNT; column++) {
             Label label = createWeekdayLabel();
             weekdayLabels.add(label);

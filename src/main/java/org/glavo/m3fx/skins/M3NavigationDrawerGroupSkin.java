@@ -6,13 +6,11 @@ package org.glavo.m3fx.skins;
 import org.glavo.m3fx.internal.animation.M3DoubleTransition;
 
 import javafx.animation.Animation;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Parent;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
@@ -79,12 +77,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> setExpandedState(newValue, getSkinnable().getScene() != null);
 
-    /// Invalidates logical child padding when the effective node orientation changes at runtime.
-    private final InvalidationListener orientationInvalidation = observable -> {
-        updateInternalNodeOrientation();
-        getSkinnable().requestLayout();
-    };
-
     /// Whether child items are currently mounted in the viewport.
     private boolean childItemsMounted;
 
@@ -100,13 +92,11 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childViewport.setClip(childrenClip);
         childrenContainer.setManaged(false);
         childrenContainer.setSpacing(ITEM_SPACING);
-        updateInternalNodeOrientation();
         expansionAnimation.setOnFinished(event -> finishExpansionAnimation());
         childViewport.getChildren().add(childrenContainer);
         getChildren().setAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
         control.expandedProperty().addListener(expandedListener);
-        control.effectiveNodeOrientationProperty().addListener(orientationInvalidation);
         setExpandedState(control.isExpanded(), false);
     }
 
@@ -118,7 +108,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         expansionAnimation.setOnFinished(null);
         control.getItems().removeListener(itemsListener);
         control.expandedProperty().removeListener(expandedListener);
-        control.effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
         childrenContainer.getChildren().clear();
         childViewport.getChildren().clear();
         if (control.getSkin() == null || control.getSkin() == this) {
@@ -332,17 +321,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
                 break;
             }
             parent = parent.getParent();
-        }
-    }
-
-    /// Keeps internal layout containers in the group's direction without mutating application-owned child rows.
-    private void updateInternalNodeOrientation() {
-        NodeOrientation orientation = getSkinnable().getEffectiveNodeOrientation();
-        if (childViewport.getNodeOrientation() != orientation) {
-            childViewport.setNodeOrientation(orientation);
-        }
-        if (childrenContainer.getNodeOrientation() != orientation) {
-            childrenContainer.setNodeOrientation(orientation);
         }
     }
 

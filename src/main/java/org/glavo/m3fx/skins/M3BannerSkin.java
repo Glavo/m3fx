@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -14,7 +15,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Banner;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,8 +61,8 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         textLabel.textProperty().bind(control.textProperty());
         actions.setMinWidth(Region.USE_PREF_SIZE);
         actions.setMaxWidth(Region.USE_PREF_SIZE);
-        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        actions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        container.setAlignment(Pos.CENTER_LEFT);
+        actions.setAlignment(Pos.CENTER_RIGHT);
 
         control.iconProperty().addListener(iconListener);
         control.getActions().addListener(actionsListener);
@@ -86,8 +86,6 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         control.contentSpacingProperty().removeListener(tokenInvalidation);
         control.actionSpacingProperty().removeListener(tokenInvalidation);
         container.nodeOrientationProperty().unbind();
-        container.alignmentProperty().unbind();
-        actions.alignmentProperty().unbind();
         actions.getChildren().clear();
         iconSlot.getChildren().clear();
         container.getChildren().clear();

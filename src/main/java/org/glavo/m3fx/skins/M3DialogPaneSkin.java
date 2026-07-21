@@ -14,7 +14,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DialogPane;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +83,7 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         contentLabel.getStyleClass().add("content-label");
         contentLabel.setWrapText(true);
         actionBar.getStyleClass().add(M3DialogPane.ACTIONS_STYLE_CLASS);
-        actionBar.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        actionBar.setAlignment(Pos.CENTER_RIGHT);
         actionBar.spacingProperty().bind(control.actionSpacingProperty());
         HBox.setHgrow(actionSpacer, Priority.ALWAYS);
 
@@ -112,7 +111,6 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         control.getActions().removeListener(actionsInvalidation);
         headerLabel.textProperty().unbind();
         contentLabel.textProperty().unbind();
-        actionBar.alignmentProperty().unbind();
         actionBar.spacingProperty().unbind();
         actionBar.getChildren().clear();
         layout.getChildren().clear();

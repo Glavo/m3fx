@@ -8,14 +8,17 @@ import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.testing.Tier3Test;
@@ -122,6 +125,7 @@ final class M3FXDemoAdaptiveShellTest {
                             ScrollPane.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, false, "LTR persistent drawer");
+                    assertDrawerItemLogicalStart(sidebar, false, "LTR persistent drawer item");
                     assertNull(visibleStyledNode(
                             scene.getRoot(),
                             "demo-navigation-button",
@@ -162,6 +166,7 @@ final class M3FXDemoAdaptiveShellTest {
                             ScrollPane.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL persistent drawer");
+                    assertDrawerItemLogicalStart(sidebar, true, "RTL persistent drawer item");
                 }
         );
     }
@@ -267,6 +272,7 @@ final class M3FXDemoAdaptiveShellTest {
                     );
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL modal drawer");
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, sidebar.getEffectiveNodeOrientation());
+                    assertDrawerItemLogicalStart(sidebar, true, "RTL modal drawer item");
                     assertTrue(requireVisibleScrim(scene.getRoot()).isShown());
                     ScrollPane pageScrollPane = requireVisibleStyledNode(
                             scene.getRoot(),
@@ -394,6 +400,15 @@ final class M3FXDemoAdaptiveShellTest {
                             false,
                             "restored LTR persistent drawer"
                     );
+                    assertDrawerItemLogicalStart(
+                            requireVisibleStyledNode(
+                                    scene.getRoot(),
+                                    "demo-sidebar-scroll-pane",
+                                    ScrollPane.class
+                            ),
+                            false,
+                            "restored LTR persistent drawer item"
+                    );
                 }
         );
     }
@@ -461,6 +476,38 @@ final class M3FXDemoAdaptiveShellTest {
                     () -> description + " should touch the scene left edge: " + bounds
             );
         }
+    }
+
+    /// Verifies that a drawer destination aligns its text to the current logical start edge.
+    ///
+    /// @param drawer      the drawer viewport
+    /// @param rightToLeft whether the logical start edge is the physical right edge
+    /// @param description the assertion description
+    private static void assertDrawerItemLogicalStart(
+            ScrollPane drawer,
+            boolean rightToLeft,
+            String description
+    ) {
+        M3ListItem item = requireVisibleStyledNode(drawer, "demo-sidebar-top-item", M3ListItem.class);
+        VBox textBox = requireVisibleStyledNode(item, "m3-list-item-text", VBox.class);
+        Node headline = requireVisibleStyledNode(item, "m3-list-item-headline", Node.class);
+        NodeOrientation expectedOrientation = rightToLeft
+                ? NodeOrientation.RIGHT_TO_LEFT
+                : NodeOrientation.LEFT_TO_RIGHT;
+        Pos expectedAlignment = Pos.CENTER_LEFT;
+
+        assertEquals(expectedOrientation, item.getEffectiveNodeOrientation(),
+                description + " should inherit the drawer direction");
+        assertEquals(expectedAlignment, textBox.getAlignment(),
+                description + " should align its text column to logical start");
+
+        Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+        Bounds headlineBounds = headline.localToScene(headline.getBoundsInLocal());
+        double actualStartInset = rightToLeft
+                ? itemBounds.getMaxX() - headlineBounds.getMaxX()
+                : headlineBounds.getMinX() - itemBounds.getMinX();
+        assertEquals(item.getHorizontalPadding(), actualStartInset, EDGE_TOLERANCE,
+                description + " should preserve horizontal padding at logical start");
     }
 
     /// Returns a visible node with the requested style class and type.

@@ -179,23 +179,18 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
 
     /// Updates orientation-dependent text and content alignment.
     private void updateNodeOrientationLayout() {
-        header.setAlignment(topAlignment());
-        content.setAlignment(topAlignment());
-        titleLabel.setAlignment(centerAlignment());
+        header.setAlignment(Pos.TOP_LEFT);
+        content.setAlignment(Pos.TOP_LEFT);
+        titleLabel.setAlignment(physicalTextAlignment());
         titleLabel.setTextAlignment(textAlignment());
-        supportingLabel.setAlignment(centerAlignment());
+        supportingLabel.setAlignment(physicalTextAlignment());
         supportingLabel.setTextAlignment(textAlignment());
         getSkinnable().requestLayout();
     }
 
-    /// Returns the current logical top alignment for section containers.
-    private Pos topAlignment() {
-        return M3NodeLayout.logicalStartTopAlignment(getSkinnable());
-    }
-
-    /// Returns the current logical center alignment for section labels.
-    private Pos centerAlignment() {
-        return M3NodeLayout.logicalStartCenterAlignment(getSkinnable());
+    /// Returns the physical alignment for labels isolated from automatic RTL mirroring.
+    private Pos physicalTextAlignment() {
+        return M3NodeLayout.physicalStartCenterAlignment(getSkinnable());
     }
 
     /// Returns the current logical multi-line text alignment.

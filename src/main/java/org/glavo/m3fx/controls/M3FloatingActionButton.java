@@ -20,7 +20,6 @@ import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -381,7 +380,6 @@ public final class M3FloatingActionButton extends ButtonBase {
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());
-        effectiveNodeOrientationProperty().addListener(observable -> updateMetrics());
         updateMetrics();
     }
 
@@ -424,7 +422,7 @@ public final class M3FloatingActionButton extends ButtonBase {
             M3Css.setPrefWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
             M3Css.setPaddingIfUnbound(
                     this,
-                    M3NodeLayout.logicalInsets(this, 0.0, padding, 0.0, getTrailingPadding())
+                    new Insets(0.0, getTrailingPadding(), 0.0, padding)
             );
         } else {
             M3Css.setMinWidthIfUnbound(this, size);

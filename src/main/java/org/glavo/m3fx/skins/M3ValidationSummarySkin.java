@@ -128,10 +128,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         super(control);
 
         container.setManaged(false);
-        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        items.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        titleLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        emptyLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        container.setAlignment(Pos.CENTER_LEFT);
+        items.setAlignment(Pos.CENTER_LEFT);
+        titleLabel.alignmentProperty().bind(M3NodeLayout.createPhysicalStartCenterAlignmentBinding(control));
+        emptyLabel.alignmentProperty().bind(M3NodeLayout.createPhysicalStartCenterAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         items.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -167,9 +167,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         control.validatorProperty().removeListener(validatorListener);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
-        container.alignmentProperty().unbind();
         items.nodeOrientationProperty().unbind();
-        items.alignmentProperty().unbind();
         titleLabel.alignmentProperty().unbind();
         emptyLabel.alignmentProperty().unbind();
         updateValidator(null);
@@ -579,7 +577,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
     /// Returns the current logical label-node alignment.
     private Pos textAlignment() {
-        return M3NodeLayout.logicalStartCenterAlignment(getSkinnable());
+        return M3NodeLayout.physicalStartCenterAlignment(getSkinnable());
     }
 
     /// Returns the current logical multi-line text alignment.

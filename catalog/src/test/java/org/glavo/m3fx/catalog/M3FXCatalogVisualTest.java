@@ -86,6 +86,7 @@ final class M3FXCatalogVisualTest {
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
                 assertThemeSettings(scene, app);
+                assertRightToLeftLayout(scene, app);
                 assertExpandedComponentCoverage(scene, app);
                 assertEveryExampleRenders(scene, app);
             });
@@ -395,6 +396,64 @@ final class M3FXCatalogVisualTest {
             }
         }
         return false;
+    }
+
+    /// Verifies that Catalog content follows the logical start and end edges when orientation changes at runtime.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app   the running Catalog application
+    private static void assertRightToLeftLayout(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            Parent root = scene.getRoot();
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            app.navigateHome();
+            layout(scene);
+
+            TilePane grid = assertInstanceOf(
+                    TilePane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-grid"), "component grid")
+            );
+            Node firstCell = grid.getChildren().get(0);
+            Node secondCell = grid.getChildren().get(1);
+            assertTrue(
+                    firstCell.localToScene(firstCell.getBoundsInLocal()).getMinX()
+                            > secondCell.localToScene(secondCell.getBoundsInLocal()).getMinX(),
+                    "the first Catalog cell must occupy the visual start of an RTL row"
+            );
+
+            CatalogComponent chips = componentNamed(app.components(), "Chips");
+            app.navigate(new CatalogRoute.Component(chips));
+            layout(scene);
+            Node firstCard = Objects.requireNonNull(scene.lookup(".catalog-example-card"), "example card");
+            Node labels = Objects.requireNonNull(
+                    firstCard.lookup(".catalog-example-card-labels"),
+                    "example labels"
+            );
+            Node trailing = Objects.requireNonNull(
+                    firstCard.lookup(".catalog-example-card-trailing"),
+                    "example trailing action"
+            );
+            assertTrue(
+                    trailing.localToScene(trailing.getBoundsInLocal()).getCenterX()
+                            < labels.localToScene(labels.getBoundsInLocal()).getCenterX(),
+                    "the trailing action must occupy the visual end of an RTL example card"
+            );
+
+            root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            app.navigateHome();
+            layout(scene);
+            grid = assertInstanceOf(
+                    TilePane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-grid"), "component grid")
+            );
+            firstCell = grid.getChildren().get(0);
+            secondCell = grid.getChildren().get(1);
+            assertTrue(
+                    firstCell.localToScene(firstCell.getBoundsInLocal()).getMinX()
+                            < secondCell.localToScene(secondCell.getBoundsInLocal()).getMinX(),
+                    "the first Catalog cell must return to the visual start after restoring LTR"
+            );
+        });
     }
 
     /// Verifies the controls and layout boundaries added to the expanded Catalog registry.

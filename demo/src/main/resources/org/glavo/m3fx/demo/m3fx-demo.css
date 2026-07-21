@@ -71,10 +71,6 @@
     -fx-alignment: center-left;
 }
 
-.demo-modal-navigation-layer:rtl {
-    -fx-alignment: center-right;
-}
-
 .m3-navigation-drawer.demo-sidebar-drawer {
     -fx-min-width: 360px;
     -fx-pref-width: 360px;

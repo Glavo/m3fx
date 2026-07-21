@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -14,7 +15,6 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -176,10 +176,10 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     private void initializePresetContent() {
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        presetContent.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
+        presetContent.setAlignment(Pos.TOP_LEFT);
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
+        presetList.setAlignment(Pos.TOP_LEFT);
         M3PresetNavigation.installColumn(presetList, this, () -> M3Accessible.requestAccessibleFocus(this, getPicker()));
         getPicker().minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         getPicker().maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());

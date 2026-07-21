@@ -558,7 +558,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// Returns the badge alignment for the current logical end edge.
     private Pos badgeAlignment() {
-        return M3NodeLayout.logicalEndTopAlignment(getSkinnable());
+        return M3NodeLayout.physicalEndTopAlignment(getSkinnable());
     }
 
     /// Animates the selected indicator to the requested state.

@@ -18,7 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,7 +110,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         container.nodeOrientationProperty().unbind();
         header.dispose();
         weekdayRow.nodeOrientationProperty().unbind();
-        weekdayRow.alignmentProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
         getChildren().remove(container);
         super.dispose();
@@ -180,7 +178,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         dayGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
 
-        weekdayRow.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
+        weekdayRow.setAlignment(Pos.CENTER_LEFT);
         for (int column = 0; column < COLUMN_COUNT; column++) {
             Label label = createWeekdayLabel();
             weekdayLabels.add(label);

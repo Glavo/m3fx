@@ -5,14 +5,16 @@ package org.glavo.m3fx.internal;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.ObjectBinding;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Internal layout helpers that resolve logical edges from a node's effective orientation.
+/// Internal direction helpers for controls that implement bidirectional layout.
+///
+/// JavaFX automatically mirrors children of a right-to-left parent. The physical-alignment methods in this class
+/// are therefore only for internal nodes deliberately isolated with `NodeOrientation.LEFT_TO_RIGHT`; ordinary
+/// children must keep their alignment and padding in local left-to-right coordinates.
 @NotNullByDefault
 public final class M3NodeLayout {
     /// Prevents utility class instantiation.
@@ -27,112 +29,48 @@ public final class M3NodeLayout {
         return node.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
-    /// Returns the center alignment for the node's logical start edge.
+    /// Returns the physical center alignment for an isolated node at the owner's logical start edge.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return the visual start-side center alignment for the current effective orientation
-    public static Pos logicalStartCenterAlignment(Node node) {
+    /// @return the physical start-side center alignment for the current effective orientation
+    public static Pos physicalStartCenterAlignment(Node node) {
         return isRightToLeft(node) ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT;
     }
 
-    /// Returns the top alignment for the node's logical start edge.
+    /// Returns the physical top alignment for an isolated node at the owner's logical start edge.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return the visual top-start alignment for the current effective orientation
-    public static Pos logicalStartTopAlignment(Node node) {
+    /// @return the physical top-start alignment for the current effective orientation
+    public static Pos physicalStartTopAlignment(Node node) {
         return isRightToLeft(node) ? Pos.TOP_RIGHT : Pos.TOP_LEFT;
     }
 
-    /// Returns the top alignment for the node's logical end edge.
+    /// Returns the physical top alignment for an isolated node at the owner's logical end edge.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return the visual top-end alignment for the current effective orientation
-    public static Pos logicalEndTopAlignment(Node node) {
+    /// @return the physical top-end alignment for the current effective orientation
+    public static Pos physicalEndTopAlignment(Node node) {
         return isRightToLeft(node) ? Pos.TOP_LEFT : Pos.TOP_RIGHT;
     }
 
-    /// Returns the center alignment for the node's logical end edge.
+    /// Creates a physical center-alignment binding for an isolated node at the owner's logical start edge.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return the visual end-side center alignment for the current effective orientation
-    public static Pos logicalEndCenterAlignment(Node node) {
-        return isRightToLeft(node) ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT;
-    }
-
-    /// Resolves a horizontal alignment as logical start or end for the node's effective orientation.
-    ///
-    /// @param node the node that owns the effective orientation
-    /// @param alignment the alignment to resolve
-    /// @return the physical alignment matching the current effective orientation
-    public static Pos logicalAlignment(Node node, Pos alignment) {
-        if (!isRightToLeft(node)) {
-            return alignment;
-        }
-        return switch (alignment) {
-            case TOP_LEFT -> Pos.TOP_RIGHT;
-            case TOP_RIGHT -> Pos.TOP_LEFT;
-            case CENTER_LEFT -> Pos.CENTER_RIGHT;
-            case CENTER_RIGHT -> Pos.CENTER_LEFT;
-            case BOTTOM_LEFT -> Pos.BOTTOM_RIGHT;
-            case BOTTOM_RIGHT -> Pos.BOTTOM_LEFT;
-            case BASELINE_LEFT -> Pos.BASELINE_RIGHT;
-            case BASELINE_RIGHT -> Pos.BASELINE_LEFT;
-            default -> alignment;
-        };
-    }
-
-    /// Returns the horizontal alignment for the node's logical start edge.
-    ///
-    /// @param node the node that owns the effective orientation
-    /// @return the visual start-side horizontal alignment for the current effective orientation
-    public static HPos logicalStartHorizontalAlignment(Node node) {
-        return isRightToLeft(node) ? HPos.RIGHT : HPos.LEFT;
-    }
-
-    /// Returns physical insets from logical leading and trailing edge values.
-    ///
-    /// @param node the node that owns the effective orientation
-    /// @param top the top inset
-    /// @param leading the logical leading-edge inset
-    /// @param bottom the bottom inset
-    /// @param trailing the logical trailing-edge inset
-    /// @return physical insets matching the node's current effective orientation
-    public static Insets logicalInsets(Node node, double top, double leading, double bottom, double trailing) {
-        if (isRightToLeft(node)) {
-            return new Insets(top, leading, bottom, trailing);
-        }
-        return new Insets(top, trailing, bottom, leading);
-    }
-
-    /// Creates a center alignment binding that follows the node's logical start edge.
-    ///
-    /// @param node the node that owns the effective orientation
-    /// @return a binding that resolves to the visual start side for the current effective orientation
-    public static ObjectBinding<Pos> createLogicalStartCenterAlignmentBinding(Node node) {
+    /// @return a binding that resolves to the physical start side for the current effective orientation
+    public static ObjectBinding<Pos> createPhysicalStartCenterAlignmentBinding(Node node) {
         return Bindings.createObjectBinding(
-                () -> logicalStartCenterAlignment(node),
+                () -> physicalStartCenterAlignment(node),
                 node.effectiveNodeOrientationProperty()
         );
     }
 
-    /// Creates a top alignment binding that follows the node's logical start edge.
+    /// Creates a physical top-alignment binding for an isolated node at the owner's logical start edge.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return a binding that resolves to the visual top-start side for the current effective orientation
-    public static ObjectBinding<Pos> createLogicalStartTopAlignmentBinding(Node node) {
+    /// @return a binding that resolves to the physical top-start side for the current effective orientation
+    public static ObjectBinding<Pos> createPhysicalStartTopAlignmentBinding(Node node) {
         return Bindings.createObjectBinding(
-                () -> logicalStartTopAlignment(node),
-                node.effectiveNodeOrientationProperty()
-        );
-    }
-
-    /// Creates a center alignment binding that follows the node's logical end edge.
-    ///
-    /// @param node the node that owns the effective orientation
-    /// @return a binding that resolves to the visual end side for the current effective orientation
-    public static ObjectBinding<Pos> createLogicalEndCenterAlignmentBinding(Node node) {
-        return Bindings.createObjectBinding(
-                () -> logicalEndCenterAlignment(node),
+                () -> physicalStartTopAlignment(node),
                 node.effectiveNodeOrientationProperty()
         );
     }

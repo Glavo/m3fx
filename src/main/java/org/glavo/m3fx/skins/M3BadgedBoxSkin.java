@@ -33,7 +33,6 @@ public final class M3BadgedBoxSkin extends SkinBase<M3BadgedBox> {
         control.badgeAlignmentProperty().addListener(badgePlacementInvalidation);
         control.badgeOffsetXProperty().addListener(badgePlacementInvalidation);
         control.badgeOffsetYProperty().addListener(badgePlacementInvalidation);
-        control.effectiveNodeOrientationProperty().addListener(badgePlacementInvalidation);
         updateChildren();
     }
 
@@ -46,7 +45,6 @@ public final class M3BadgedBoxSkin extends SkinBase<M3BadgedBox> {
         control.badgeAlignmentProperty().removeListener(badgePlacementInvalidation);
         control.badgeOffsetXProperty().removeListener(badgePlacementInvalidation);
         control.badgeOffsetYProperty().removeListener(badgePlacementInvalidation);
-        control.effectiveNodeOrientationProperty().removeListener(badgePlacementInvalidation);
         if (control.getSkin() == null || control.getSkin() == this) {
             getChildren().clear();
         }

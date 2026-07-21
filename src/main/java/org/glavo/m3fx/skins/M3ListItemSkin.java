@@ -9,6 +9,7 @@ import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -38,7 +39,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
@@ -272,9 +272,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         textBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         trailingBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        textBox.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        trailingBox.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        // JavaFX mirrors layout coordinates for RTL subtrees. Keep alignments in local LTR coordinates so logical
+        // start and end are mirrored exactly once with the rest of the item.
+        container.setAlignment(Pos.CENTER_LEFT);
+        textBox.setAlignment(Pos.CENTER_LEFT);
+        trailingBox.setAlignment(Pos.CENTER_RIGHT);
 
         stateLayer.installStateTransitions(control);
         updateSelectionContainerImmediate(control.isSelected());
@@ -353,11 +355,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         item.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         container.nodeOrientationProperty().unbind();
-        container.alignmentProperty().unbind();
         textBox.nodeOrientationProperty().unbind();
-        textBox.alignmentProperty().unbind();
         trailingBox.nodeOrientationProperty().unbind();
-        trailingBox.alignmentProperty().unbind();
         selectionContainer.setClip(null);
         container.setClip(null);
         getChildren().removeAll(selectionContainer, container, stateLayer);

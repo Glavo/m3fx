@@ -8,11 +8,11 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
+import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3PresetNavigation;
@@ -202,10 +202,10 @@ public final class M3TimePickerDialog extends M3Dialog {
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
-        presetContent.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
+        presetContent.setAlignment(Pos.TOP_LEFT);
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
-        presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
+        presetList.setAlignment(Pos.TOP_LEFT);
         M3PresetNavigation.installColumn(
                 presetList,
                 pane,

@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.NodeOrientation;
+import javafx.geometry.Pos;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -69,10 +70,10 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         actions.getStyleClass().add(M3SideSheet.ACTIONS_STYLE_CLASS);
         contentSlot.getStyleClass().add(M3SideSheet.CONTENT_STYLE_CLASS);
         contentSlot.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        header.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        headerActions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
-        actions.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        contentSlot.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(control));
+        header.setAlignment(Pos.CENTER_LEFT);
+        headerActions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        contentSlot.alignmentProperty().bind(M3NodeLayout.createPhysicalStartTopAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         contentSlot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -105,9 +106,6 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         control.getActions().removeListener(actionsListener);
         container.nodeOrientationProperty().unbind();
         header.nodeOrientationProperty().unbind();
-        header.alignmentProperty().unbind();
-        headerActions.alignmentProperty().unbind();
-        actions.alignmentProperty().unbind();
         contentOrientationBridge.nodeOrientationProperty().unbind();
         contentSlot.nodeOrientationProperty().unbind();
         contentSlot.alignmentProperty().unbind();

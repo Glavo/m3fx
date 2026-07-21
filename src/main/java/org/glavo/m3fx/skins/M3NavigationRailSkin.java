@@ -285,10 +285,8 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         double headerWidth = Math.min(layerWidth, currentHeader.prefWidth(-1.0));
         double headerHeight = currentHeader.prefHeight(headerWidth);
         double collapsedX = (layerWidth - headerWidth) / 2.0;
-        double expandedX = getSkinnable().getEffectiveNodeOrientation() == javafx.geometry.NodeOrientation.RIGHT_TO_LEFT
-                ? layerWidth - headerWidth - EXPANDED_HEADER_INSET
-                : EXPANDED_HEADER_INSET;
-        double headerX = collapsedX + (expandedX - collapsedX) * expansionProgress.get();
+        // The RTL content layer mirrors this local leading-edge coordinate together with the header node.
+        double headerX = collapsedX + (EXPANDED_HEADER_INSET - collapsedX) * expansionProgress.get();
         if (currentHeader.isResizable()) {
             currentHeader.resizeRelocate(
                     snapPositionX(headerX),

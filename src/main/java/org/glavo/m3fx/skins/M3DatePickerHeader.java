@@ -83,10 +83,10 @@ final class M3DatePickerHeader extends HBox {
 
     /// Creates a calendar header bound to picker state.
     ///
-    /// @param owner the picker control represented by this header
+    /// @param owner          the picker control represented by this header
     /// @param displayedMonth the displayed month property
-    /// @param minDate the optional inclusive lower date bound
-    /// @param maxDate the optional inclusive upper date bound
+    /// @param minDate        the optional inclusive lower date bound
+    /// @param maxDate        the optional inclusive upper date bound
     M3DatePickerHeader(
             Control owner,
             ObjectProperty<YearMonth> displayedMonth,
@@ -100,7 +100,7 @@ final class M3DatePickerHeader extends HBox {
 
         getStyleClass().add(M3DatePicker.HEADER_STYLE_CLASS);
         nodeOrientationProperty().bind(owner.effectiveNodeOrientationProperty());
-        alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(owner));
+        setAlignment(Pos.CENTER_LEFT);
 
         HBox monthSection = new HBox(previousMonthButton, monthButton, nextMonthButton);
         monthSection.getStyleClass().add(M3DatePicker.HEADER_SECTION_STYLE_CLASS);
@@ -137,7 +137,6 @@ final class M3DatePickerHeader extends HBox {
         maxDate.removeListener(stateInvalidation);
         owner.effectiveNodeOrientationProperty().removeListener(stateInvalidation);
         nodeOrientationProperty().unbind();
-        alignmentProperty().unbind();
     }
 
     /// Synchronizes localized labels, menu entries, navigation availability, and logical arrow direction.

@@ -13,6 +13,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
@@ -48,7 +49,7 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
         super(control, control.getTabs(), new TabRow(control));
         tabRow = (TabRow) getContainer();
         tabRow.getStyleClass().add(M3TabBar.CONTAINER_STYLE_CLASS);
-        tabRow.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        tabRow.setAlignment(Pos.CENTER_LEFT);
         tabRow.install();
         divider.getStyleClass().add(M3TabBar.DIVIDER_STYLE_CLASS);
         divider.setManaged(false);
@@ -68,7 +69,6 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
     @Override
     public void dispose() {
         tabRow.dispose();
-        tabRow.alignmentProperty().unbind();
         getChildren().remove(divider);
         super.dispose();
     }

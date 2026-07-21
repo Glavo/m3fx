@@ -301,7 +301,6 @@ final class M3CarouselLayoutTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Carousel carousel = carousel(240.0, 220.0, 200.0, 180.0);
             carousel.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
-            carousel.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             carousel.selectIndex(0);
             List<Double> authoredWidths = carousel.getItems().stream()
                     .map(item -> ((StackPane) item).getPrefWidth())
@@ -309,7 +308,14 @@ final class M3CarouselLayoutTest {
             Stage stage = show(carousel, 500.0, 150.0);
             try {
                 layout(stage, carousel, 500.0, 120.0);
+                assertTrue(
+                        renderedMinX(carousel.getItems().get(0))
+                                < renderedMinX(carousel.getItems().get(1)),
+                        "logical first item must render on the left in LTR"
+                );
 
+                carousel.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                layout(stage, carousel, 500.0, 120.0);
                 assertTrue(
                         renderedMinX(carousel.getItems().get(0))
                                 > renderedMinX(carousel.getItems().get(1)),
@@ -323,6 +329,15 @@ final class M3CarouselLayoutTest {
                     );
                 }
 
+                carousel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                layout(stage, carousel, 500.0, 120.0);
+                assertTrue(
+                        renderedMinX(carousel.getItems().get(0))
+                                < renderedMinX(carousel.getItems().get(1)),
+                        "logical first item must return to the left after restoring LTR"
+                );
+
+                carousel.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                 carousel.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
                 layout(stage, carousel, 500.0, 120.0);
                 assertTrue(

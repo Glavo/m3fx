@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -281,6 +283,53 @@ final class M3SnackbarPresentationTest {
             action.fire();
             assertNull(overlayPane.getSnackbar());
             assertFalse(overlayPane.isSnackbarShowing());
+        });
+    }
+
+    /// Verifies that the reusable surface mirrors text and affordances exactly once when direction changes.
+    @Test
+    void surfaceContentTracksLogicalEdgesAcrossRuntimeOrientationChanges() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = overlayPane();
+            M3Snackbar snackbar = new M3Snackbar("Saved");
+            snackbar.setActionText("Undo");
+            snackbar.setCloseButtonVisible(true);
+            new Scene(overlayPane, 640.0, 240.0);
+            overlayPane.showSnackbar(snackbar);
+            overlayPane.applyCss();
+            overlayPane.resize(640.0, 240.0);
+            overlayPane.layout();
+
+            Node presenter = snackbarPresenter(overlayPane);
+            Region surface = snackbarSurface(presenter);
+            Label text = assertInstanceOf(Label.class, presenter.lookup(".m3-snackbar-text"));
+            M3Button action = assertInstanceOf(M3Button.class, presenter.lookup(".m3-snackbar-action"));
+            M3IconButton close = assertInstanceOf(M3IconButton.class, presenter.lookup(".m3-snackbar-close"));
+
+            Bounds leftToRightSurface = surface.localToScene(surface.getBoundsInLocal());
+            Bounds leftToRightText = text.localToScene(text.getBoundsInLocal());
+            Bounds leftToRightAction = action.localToScene(action.getBoundsInLocal());
+            Bounds leftToRightClose = close.localToScene(close.getBoundsInLocal());
+            double logicalStartGap = leftToRightText.getMinX() - leftToRightSurface.getMinX();
+            assertTrue(logicalStartGap >= surface.getPadding().getLeft());
+            assertTrue(leftToRightText.getMaxX() < leftToRightAction.getMinX());
+            assertTrue(leftToRightAction.getMaxX() <= leftToRightClose.getMinX());
+
+            overlayPane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            overlayPane.applyCss();
+            overlayPane.layout();
+
+            Bounds rightToLeftSurface = surface.localToScene(surface.getBoundsInLocal());
+            Bounds rightToLeftText = text.localToScene(text.getBoundsInLocal());
+            Bounds rightToLeftAction = action.localToScene(action.getBoundsInLocal());
+            Bounds rightToLeftClose = close.localToScene(close.getBoundsInLocal());
+            assertEquals(
+                    logicalStartGap,
+                    rightToLeftSurface.getMaxX() - rightToLeftText.getMaxX(),
+                    1.0
+            );
+            assertTrue(rightToLeftAction.getMaxX() < rightToLeftText.getMinX());
+            assertTrue(rightToLeftClose.getMaxX() <= rightToLeftAction.getMinX());
         });
     }
 

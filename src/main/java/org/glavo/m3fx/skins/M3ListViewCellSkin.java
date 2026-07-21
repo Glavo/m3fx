@@ -3,14 +3,11 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.HPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.controls.M3ListCell;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,19 +30,12 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
     private final ChangeListener<@Nullable Node> graphicListener =
             (observable, oldValue, newValue) -> updateGraphic(newValue);
 
-    /// Requests row re-layout when the cell direction changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> {
-        getSkinnable().requestLayout();
-        layoutCurrentRow();
-    };
-
     /// Creates a virtualized list view cell skin.
     ///
     /// @param control the skinned virtualized list cell
     public M3ListViewCellSkin(M3ListCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateGraphic(control.getGraphic());
     }
 
@@ -54,7 +44,6 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
     public void dispose() {
         M3ListCell<T> cell = getSkinnable();
         cell.graphicProperty().removeListener(graphicListener);
-        cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         if (cell.getSkin() == null || cell.getSkin() == this) {
             getChildren().clear();
         }
@@ -155,17 +144,6 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
         layoutRow(x, y, width, height);
     }
 
-    /// Lays out the current rendered row within the current skinnable bounds.
-    private void layoutCurrentRow() {
-        M3ListCell<T> cell = getSkinnable();
-        double width = cell.getWidth();
-        double height = cell.getHeight();
-        if (width <= 0.0 || height <= 0.0) {
-            return;
-        }
-        layoutRow(0.0, 0.0, width, height);
-    }
-
     /// Lays out the rendered row in the supplied area.
     private void layoutRow(double x, double y, double width, double height) {
         Node row = graphic;
@@ -189,14 +167,8 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
                 row.maxHeight(rowWidth),
                 itemAreaHeight
         ));
-        double rowX = alignedX(
-                x,
-                width,
-                rowWidth,
-                M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable())
-        );
         double rowY = y + (itemAreaHeight - rowHeight) / 2.0;
-        row.resizeRelocate(snapPositionX(rowX), snapPositionY(rowY), rowWidth, rowHeight);
+        row.resizeRelocate(snapPositionX(x), snapPositionY(rowY), rowWidth, rowHeight);
     }
 
     /// Returns the row minimum width while allowing default computed constraints to shrink inside the viewport.
@@ -237,15 +209,6 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
         return index >= 0 && index + 1 < cell.getListView().getItems().size()
                 ? cell.getListView().getItemSpacing()
                 : 0.0;
-    }
-
-    /// Returns the physical x coordinate for one horizontal alignment.
-    private static double alignedX(double x, double width, double childWidth, HPos alignment) {
-        return switch (alignment) {
-            case CENTER -> x + (width - childWidth) / 2.0;
-            case RIGHT -> x + width - childWidth;
-            default -> x;
-        };
     }
 
     /// Replaces the rendered row node owned by this skin.

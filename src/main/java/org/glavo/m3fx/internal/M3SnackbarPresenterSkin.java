@@ -7,6 +7,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.css.StyleOrigin;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -47,9 +48,6 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
     /// Applies changed component geometry tokens.
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
-    /// Recomputes logical alignment and padding when direction changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateTokenStyles();
-
     /// Creates the reusable presenter skin.
     ///
     /// @param control the snackbar presenter controlled by this skin
@@ -83,7 +81,6 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         control.singleLineContainerHeightProperty().addListener(tokenInvalidation);
         control.twoLineContainerHeightProperty().addListener(tokenInvalidation);
         control.actionContainerHeightProperty().addListener(tokenInvalidation);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
 
         container.getChildren().addAll(textLabel, actionButton, closeButton);
@@ -145,7 +142,6 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         control.singleLineContainerHeightProperty().removeListener(tokenInvalidation);
         control.twoLineContainerHeightProperty().removeListener(tokenInvalidation);
         control.actionContainerHeightProperty().removeListener(tokenInvalidation);
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         actionButton.setOnAction(null);
         closeButton.setOnAction(null);
@@ -280,19 +276,13 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
     /// Applies logical alignment, padding, height, and shape tokens.
     private void updateTokenStyles() {
         M3SnackbarPresenter presenter = getSkinnable();
-        container.setAlignment(M3NodeLayout.logicalStartCenterAlignment(presenter));
-        textLabel.setAlignment(M3NodeLayout.logicalStartCenterAlignment(presenter));
+        container.setAlignment(Pos.CENTER_LEFT);
+        textLabel.setAlignment(Pos.CENTER_LEFT);
 
         double padding = presenter.getContentPadding();
         double verticalPadding = padding / 2.0;
         double trailingPadding = actionButton.isManaged() || closeButton.isManaged() ? padding / 2.0 : padding;
-        container.setPadding(M3NodeLayout.logicalInsets(
-                presenter,
-                verticalPadding,
-                padding,
-                verticalPadding,
-                trailingPadding
-        ));
+        container.setPadding(new Insets(verticalPadding, trailingPadding, verticalPadding, padding));
         container.setMinHeight(presenter.getSingleLineContainerHeight());
         actionButton.containerHeightProperty().applyStyle(
                 StyleOrigin.USER_AGENT,

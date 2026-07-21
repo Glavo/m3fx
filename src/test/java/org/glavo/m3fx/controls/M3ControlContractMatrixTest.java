@@ -1126,14 +1126,23 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
+            HBox iconContainer = firstDescendantOfType(iconGroup, HBox.class);
+            HBox segmentedContainer = firstDescendantOfType(segmentedGroup, HBox.class);
+            FlowPane chipContainer = firstDescendantOfType(chipGroup, FlowPane.class);
+            HBox tabContainer = firstDescendantOfType(tabBar, HBox.class);
+
             assertTrue(buttonGroup.getItems().get(0)
                     .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
                     < buttonGroup.getItems().get(1)
                     .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(tabBar, HBox.class).getAlignment());
+            assertEquals(Pos.CENTER_LEFT, iconContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, segmentedContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, chipContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, tabContainer.getAlignment());
+            assertFirstChildAtLogicalStart(iconContainer, false);
+            assertFirstChildAtLogicalStart(segmentedContainer, false);
+            assertFirstChildAtLogicalStart(chipContainer, false);
+            assertFirstChildAtLogicalStart(tabContainer, false);
 
             buttonGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             iconGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -1147,10 +1156,14 @@ final class M3ControlContractMatrixTest {
                     .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
                     > buttonGroup.getItems().get(1)
                     .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
-            assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(tabBar, HBox.class).getAlignment());
+            assertEquals(Pos.CENTER_LEFT, iconContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, segmentedContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, chipContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, tabContainer.getAlignment());
+            assertFirstChildAtLogicalStart(iconContainer, true);
+            assertFirstChildAtLogicalStart(segmentedContainer, true);
+            assertFirstChildAtLogicalStart(chipContainer, true);
+            assertFirstChildAtLogicalStart(tabContainer, true);
 
             buttonGroup.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             iconGroup.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -1164,10 +1177,14 @@ final class M3ControlContractMatrixTest {
                     .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
                     < buttonGroup.getItems().get(1)
                     .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(tabBar, HBox.class).getAlignment());
+            assertEquals(Pos.CENTER_LEFT, iconContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, segmentedContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, chipContainer.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, tabContainer.getAlignment());
+            assertFirstChildAtLogicalStart(iconContainer, false);
+            assertFirstChildAtLogicalStart(segmentedContainer, false);
+            assertFirstChildAtLogicalStart(chipContainer, false);
+            assertFirstChildAtLogicalStart(tabContainer, false);
         });
     }
 
@@ -1191,8 +1208,9 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertCompositeControlContainerAlignment(checkBox, radioButton, switchControl, searchBar, splitButton,
-                    Pos.CENTER_LEFT);
+            assertCompositeControlContainerAlignment(
+                    checkBox, radioButton, switchControl, searchBar, splitButton, Pos.CENTER_LEFT, false
+            );
 
             checkBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             radioButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -1202,8 +1220,9 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertCompositeControlContainerAlignment(checkBox, radioButton, switchControl, searchBar, splitButton,
-                    Pos.CENTER_RIGHT);
+            assertCompositeControlContainerAlignment(
+                    checkBox, radioButton, switchControl, searchBar, splitButton, Pos.CENTER_LEFT, true
+            );
 
             checkBox.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             radioButton.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -1213,8 +1232,9 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertCompositeControlContainerAlignment(checkBox, radioButton, switchControl, searchBar, splitButton,
-                    Pos.CENTER_LEFT);
+            assertCompositeControlContainerAlignment(
+                    checkBox, radioButton, switchControl, searchBar, splitButton, Pos.CENTER_LEFT, false
+            );
         });
     }
 
@@ -5156,8 +5176,8 @@ final class M3ControlContractMatrixTest {
         button.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         applyCss(button);
 
-        assertEquals(30.0, button.getPadding().getLeft(), 0.0001);
-        assertEquals(22.0, button.getPadding().getRight(), 0.0001);
+        assertEquals(22.0, button.getPadding().getLeft(), 0.0001);
+        assertEquals(30.0, button.getPadding().getRight(), 0.0001);
     }
 
     /// Verifies that floating action button variants and sizes update style classes.
@@ -5248,6 +5268,55 @@ final class M3ControlContractMatrixTest {
         assertFalse(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
         assertTrue(first.isVisible());
         assertTrue(first.isManaged());
+    }
+
+    /// Verifies that FAB-menu actions and activators follow the logical end edge without rewriting layout data.
+    @Test
+    void fabMenuAnchorsToLogicalEndAcrossRuntimeOrientationChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3FloatingActionButton toggle = new M3FloatingActionButton(new M3Icon("+"));
+            M3FloatingActionButton action = new M3FloatingActionButton("Create");
+            M3FabMenu menu = new M3FabMenu(toggle);
+            menu.getItems().add(action);
+            menu.show();
+            menu.setManaged(false);
+            Pane root = new Pane(menu);
+            Scene scene = new Scene(root, 280.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            menu.resizeRelocate(20.0, 20.0, 220.0, 180.0);
+            root.layout();
+            menu.layout();
+
+            Bounds menuBounds = menu.localToScene(menu.getBoundsInLocal());
+            Bounds toggleBounds = toggle.localToScene(toggle.getBoundsInLocal());
+            Bounds actionBounds = action.localToScene(action.getBoundsInLocal());
+            assertEquals(0.0, menuBounds.getMaxX() - toggleBounds.getMaxX(), 0.01);
+            assertEquals(0.0, menuBounds.getMaxX() - actionBounds.getMaxX(), 0.01);
+
+            menu.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            menu.layout();
+
+            menuBounds = menu.localToScene(menu.getBoundsInLocal());
+            toggleBounds = toggle.localToScene(toggle.getBoundsInLocal());
+            actionBounds = action.localToScene(action.getBoundsInLocal());
+            assertEquals(0.0, toggleBounds.getMinX() - menuBounds.getMinX(), 0.01);
+            assertEquals(0.0, actionBounds.getMinX() - menuBounds.getMinX(), 0.01);
+
+            menu.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            root.applyCss();
+            root.layout();
+            menu.layout();
+
+            menuBounds = menu.localToScene(menu.getBoundsInLocal());
+            toggleBounds = toggle.localToScene(toggle.getBoundsInLocal());
+            actionBounds = action.localToScene(action.getBoundsInLocal());
+            assertEquals(0.0, menuBounds.getMaxX() - toggleBounds.getMaxX(), 0.01);
+            assertEquals(0.0, menuBounds.getMaxX() - actionBounds.getMaxX(), 0.01);
+        });
     }
 
     /// Verifies that floating action button menus toggle through the main button and accessibility actions.
@@ -17642,6 +17711,29 @@ final class M3ControlContractMatrixTest {
         leadingBounds = leading.localToScene(leading.getBoundsInLocal());
         trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
         assertTrue(trailingBounds.getMaxX() <= leadingBounds.getMinX());
+
+        input.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        input.setTrailingGraphic(null);
+        input.setIconHorizontalPadding(8.0);
+        input.setHorizontalPadding(18.0);
+        root.applyCss();
+        root.layout();
+
+        Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
+        leadingBounds = leading.localToScene(leading.getBoundsInLocal());
+        assertEquals(8.0, leadingBounds.getMinX() - inputBounds.getMinX(), 1.0);
+        assertEquals(8.0, input.getPadding().getLeft(), 0.0001);
+        assertEquals(18.0, input.getPadding().getRight(), 0.0001);
+
+        input.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        root.applyCss();
+        root.layout();
+
+        inputBounds = input.localToScene(input.getBoundsInLocal());
+        leadingBounds = leading.localToScene(leading.getBoundsInLocal());
+        assertEquals(8.0, inputBounds.getMaxX() - leadingBounds.getMaxX(), 1.0);
+        assertEquals(8.0, input.getPadding().getLeft(), 0.0001);
+        assertEquals(18.0, input.getPadding().getRight(), 0.0001);
     }
 
     /// Verifies that chips expose flat and elevated container style classes.
@@ -19869,7 +19961,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(reachable, group.getSelectedToggle());
     }
 
-    /// Verifies that selection control alignment remains CSS-styleable and follows logical direction.
+    /// Verifies that selection-control alignment remains CSS-styleable without rewriting the configured value.
     @Test
     void selectionControlAlignmentRemainsStyleableAndDirectionAware() {
         M3CheckBox checkBox = new M3CheckBox("Check");
@@ -19892,7 +19984,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(Pos.BOTTOM_RIGHT, container.getAlignment());
 
             control.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            assertEquals(Pos.BOTTOM_LEFT, container.getAlignment());
+            assertEquals(Pos.BOTTOM_RIGHT, container.getAlignment());
 
             control.setAlignment(Pos.TOP_CENTER);
             assertEquals(Pos.TOP_CENTER, container.getAlignment());
@@ -22311,16 +22403,24 @@ final class M3ControlContractMatrixTest {
         M3Divider divider = new M3Divider();
         divider.setInsetStart(12.0);
         divider.setInsetEnd(4.0);
-
-        applyCss(divider);
+        Pane root = new Pane(divider);
+        Scene scene = new Scene(root, 140.0, 40.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        divider.resizeRelocate(20.0, 20.0, 100.0, divider.prefHeight(100.0));
+        divider.layout();
 
         Region container = lookupRegion(divider, ".m3-divider-container");
+        Region line = lookupRegion(divider, ".m3-divider-line");
         assertEquals(new Insets(0.0, 4.0, 0.0, 12.0), container.getPadding());
+        assertHorizontalDividerPhysicalInsets(divider, line, 12.0, 4.0);
 
         divider.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-        applyCss(divider);
+        root.applyCss();
+        divider.layout();
 
-        assertEquals(new Insets(0.0, 12.0, 0.0, 4.0), container.getPadding());
+        assertEquals(new Insets(0.0, 4.0, 0.0, 12.0), container.getPadding());
+        assertHorizontalDividerPhysicalInsets(divider, line, 4.0, 12.0);
     }
 
     /// Verifies that badge component token properties are styleable from CSS.
@@ -22424,7 +22524,6 @@ final class M3ControlContractMatrixTest {
             M3Avatar content = new M3Avatar("M");
             M3Badge badge = new M3Badge("9");
             M3BadgedBox badgedBox = new M3BadgedBox(content, badge);
-            badgedBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             Pane root = new Pane(badgedBox);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
@@ -22433,6 +22532,14 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.resize(140.0, 120.0);
             badgedBox.resizeRelocate(40.0, 36.0, 48.0, 48.0);
+            root.layout();
+            badgedBox.layout();
+
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, badgedBox.getEffectiveNodeOrientation());
+            assertBadgedBoxBadgeAnchoredToLogicalEnd(badgedBox, false);
+
+            badgedBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
             root.layout();
             badgedBox.layout();
 
@@ -22532,12 +22639,18 @@ final class M3ControlContractMatrixTest {
             Node leadingSlot = Objects.requireNonNull(listItem.lookup(".m3-list-item-leading"));
             Node trailingSlot = Objects.requireNonNull(listItem.lookup(".m3-list-item-trailing"));
             VBox textBox = assertInstanceOf(VBox.class, listItem.lookup(".m3-list-item-text"));
+            Node headline = Objects.requireNonNull(listItem.lookup(".m3-list-item-headline"));
             Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
             Bounds trailingBounds = trailingSlot.localToScene(trailingSlot.getBoundsInLocal());
+            Bounds textBoxBounds = textBox.localToScene(textBox.getBoundsInLocal());
+            Bounds headlineBounds = headline.localToScene(headline.getBoundsInLocal());
 
-            assertEquals(Pos.CENTER_RIGHT, textBox.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, textBox.getAlignment());
             assertTrue(leadingBounds.getMinX() > trailingBounds.getMaxX(),
                     () -> "leadingBounds=" + leadingBounds + ", trailingBounds=" + trailingBounds);
+            assertEquals(textBoxBounds.getMaxX(), headlineBounds.getMaxX(), 1.0,
+                    () -> "headline should align to the RTL logical start: textBoxBounds="
+                            + textBoxBounds + ", headlineBounds=" + headlineBounds);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, leadingSlot, Color.WHITE, 0.04);
@@ -25275,13 +25388,23 @@ final class M3ControlContractMatrixTest {
         assertSame(row, cell.getListItem());
         assertEquals(0.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.LEFT_TO_RIGHT, row.getEffectiveNodeOrientation());
+        assertEquals(
+                cell.localToScene(cell.getBoundsInLocal()).getMinX(),
+                row.localToScene(row.getBoundsInLocal()).getMinX(),
+                0.0001
+        );
 
         root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         root.applyCss();
         cell.layout();
 
-        assertEquals(120.0, row.getLayoutX(), 0.0001);
+        assertEquals(0.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.RIGHT_TO_LEFT, row.getEffectiveNodeOrientation());
+        assertEquals(
+                cell.localToScene(cell.getBoundsInLocal()).getMaxX(),
+                row.localToScene(row.getBoundsInLocal()).getMaxX(),
+                0.0001
+        );
 
         root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         root.applyCss();
@@ -25289,6 +25412,11 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(0.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.LEFT_TO_RIGHT, row.getEffectiveNodeOrientation());
+        assertEquals(
+                cell.localToScene(cell.getBoundsInLocal()).getMinX(),
+                row.localToScene(row.getBoundsInLocal()).getMinX(),
+                0.0001
+        );
     }
 
     /// Verifies that cell layout stretches rows without overwriting application-owned width preferences.
@@ -26327,6 +26455,51 @@ final class M3ControlContractMatrixTest {
 
             navigationRail.variantProperty().set(null);
             assertEquals(M3NavigationRailVariant.STANDARD, navigationRail.getVariant());
+        });
+    }
+
+    /// Verifies that an expanded navigation-rail header follows the logical start edge exactly once.
+    @Test
+    void navigationRailHeaderMirrorsOnceAcrossRuntimeOrientationChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            Region header = new Region();
+            header.setMinSize(40.0, 40.0);
+            header.setPrefSize(40.0, 40.0);
+            header.setMaxSize(40.0, 40.0);
+            M3NavigationRail rail = navigationRail(new M3NavigationItem("Home"));
+            rail.setHeader(header);
+            rail.setExpanded(true);
+            rail.setManaged(false);
+            Pane root = new Pane(rail);
+            Scene scene = new Scene(root, 320.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            rail.resizeRelocate(20.0, 20.0, 220.0, 320.0);
+            root.layout();
+            rail.layout();
+
+            Bounds railBounds = rail.localToScene(rail.getBoundsInLocal());
+            Bounds headerBounds = header.localToScene(header.getBoundsInLocal());
+            assertEquals(16.0, headerBounds.getMinX() - railBounds.getMinX(), 0.01);
+
+            rail.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            rail.layout();
+
+            railBounds = rail.localToScene(rail.getBoundsInLocal());
+            headerBounds = header.localToScene(header.getBoundsInLocal());
+            assertEquals(16.0, railBounds.getMaxX() - headerBounds.getMaxX(), 0.01);
+
+            rail.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            root.applyCss();
+            root.layout();
+            rail.layout();
+
+            railBounds = rail.localToScene(rail.getBoundsInLocal());
+            headerBounds = header.localToScene(header.getBoundsInLocal());
+            assertEquals(16.0, headerBounds.getMinX() - railBounds.getMinX(), 0.01);
         });
     }
 
@@ -30307,7 +30480,7 @@ final class M3ControlContractMatrixTest {
 
         assertFormSectionTextAlignment(
                 section,
-                Pos.TOP_RIGHT,
+                Pos.TOP_LEFT,
                 Pos.CENTER_RIGHT,
                 TextAlignment.RIGHT,
                 NodeOrientation.RIGHT_TO_LEFT
@@ -30345,7 +30518,7 @@ final class M3ControlContractMatrixTest {
         root.applyCss();
         row.layout();
 
-        assertFormRowTextAlignment(row, Pos.CENTER_RIGHT, Pos.CENTER_LEFT, TextAlignment.RIGHT);
+        assertFormRowTextAlignment(row, Pos.CENTER_LEFT, Pos.CENTER_RIGHT, TextAlignment.RIGHT);
 
         row.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         root.applyCss();
@@ -30370,7 +30543,7 @@ final class M3ControlContractMatrixTest {
         formRow.layout();
 
         Node labelColumn = Objects.requireNonNull(formRow.lookup("." + M3FormRow.TEXT_COLUMN_STYLE_CLASS));
-        assertFormRowTextAlignment(formRow, Pos.CENTER_RIGHT, Pos.CENTER_LEFT, TextAlignment.RIGHT);
+        assertFormRowTextAlignment(formRow, Pos.CENTER_LEFT, Pos.CENTER_RIGHT, TextAlignment.RIGHT);
         Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
         Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
         Bounds labelBounds = labelColumn.localToScene(labelColumn.getBoundsInLocal());
@@ -30881,9 +31054,9 @@ final class M3ControlContractMatrixTest {
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateWeekdays.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeHeader.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, timeDisplay.getEffectiveNodeOrientation());
-            assertEquals(Pos.CENTER_RIGHT, dateHeader.getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, dateWeekdays.getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, rangeHeader.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, dateHeader.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, dateWeekdays.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, rangeHeader.getAlignment());
             assertEquals(Pos.CENTER_LEFT, timeDisplay.getAlignment());
             HBox dateMonthSection = assertInstanceOf(HBox.class, dateHeader.getChildren().get(0));
             M3IconButton previousMonthButton = assertInstanceOf(
@@ -31055,22 +31228,22 @@ final class M3ControlContractMatrixTest {
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryTitle.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemLabel.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemError.getEffectiveNodeOrientation());
-            assertEquals(Pos.CENTER_RIGHT, sideHeader.getAlignment());
-            assertEquals(Pos.CENTER_LEFT, sideHeaderActions.getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, sideActions.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, sideHeader.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, sideHeaderActions.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, sideActions.getAlignment());
             assertEquals(Pos.TOP_RIGHT, sideContentSlot.getAlignment());
             assertEquals(sideHeaderAction, sideHeaderActions.getChildren().get(0));
             assertEquals(sideAction, sideActions.getChildren().get(0));
-            assertEquals(Pos.CENTER_RIGHT, bottomHeader.getAlignment());
-            assertEquals(Pos.CENTER_LEFT, bottomActions.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, bottomHeader.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, bottomActions.getAlignment());
             assertEquals(Pos.TOP_RIGHT, bottomContentSlot.getAlignment());
-            assertEquals(Pos.TOP_RIGHT, formHeader.getAlignment());
-            assertEquals(Pos.TOP_RIGHT, formContent.getAlignment());
+            assertEquals(Pos.TOP_LEFT, formHeader.getAlignment());
+            assertEquals(Pos.TOP_LEFT, formContent.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, sectionTitle.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, sectionSupporting.getAlignment());
             assertEquals(TextAlignment.RIGHT, sectionTitle.getTextAlignment());
             assertEquals(TextAlignment.RIGHT, sectionSupporting.getTextAlignment());
-            assertEquals(Pos.CENTER_RIGHT, summaryItems.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, summaryItems.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, summaryTitle.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, summaryItemLabel.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, summaryItemError.getAlignment());
@@ -33836,8 +34009,8 @@ final class M3ControlContractMatrixTest {
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetContent.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetList.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeDialog.getPicker().getEffectiveNodeOrientation());
-            assertEquals(Pos.TOP_RIGHT, timePresetContent.getAlignment());
-            assertEquals(Pos.TOP_RIGHT, timePresetList.getAlignment());
+            assertEquals(Pos.TOP_LEFT, timePresetContent.getAlignment());
+            assertEquals(Pos.TOP_LEFT, timePresetList.getAlignment());
             Bounds timePresetBounds = timePresetList.localToScene(timePresetList.getBoundsInLocal());
             Bounds timePickerBounds = timeDialog.getPicker().localToScene(
                     timeDialog.getPicker().getBoundsInLocal()
@@ -40808,7 +40981,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(orientation, presetContent.getEffectiveNodeOrientation());
         assertEquals(orientation, presetList.getEffectiveNodeOrientation());
         assertEquals(orientation, picker.getEffectiveNodeOrientation());
-        Pos expectedAlignment = orientation == NodeOrientation.RIGHT_TO_LEFT ? Pos.TOP_RIGHT : Pos.TOP_LEFT;
+        Pos expectedAlignment = Pos.TOP_LEFT;
         assertEquals(expectedAlignment, presetContent.getAlignment());
         assertEquals(expectedAlignment, presetList.getAlignment());
 
@@ -41006,8 +41179,8 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetContent.getEffectiveNodeOrientation());
         assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetList.getEffectiveNodeOrientation());
-        assertEquals(Pos.TOP_RIGHT, presetContent.getAlignment());
-        assertEquals(Pos.TOP_RIGHT, presetList.getAlignment());
+        assertEquals(Pos.TOP_LEFT, presetContent.getAlignment());
+        assertEquals(Pos.TOP_LEFT, presetList.getAlignment());
     }
 
     /// Verifies that common Material targets keep text, icon, and fixed-cell geometry stable.
@@ -41359,7 +41532,8 @@ final class M3ControlContractMatrixTest {
             M3Switch switchControl,
             M3SearchBar searchBar,
             M3SplitButton splitButton,
-            Pos alignment
+            Pos alignment,
+            boolean rightToLeft
     ) {
         assertEquals(alignment, assertInstanceOf(
                 HBox.class,
@@ -41382,7 +41556,7 @@ final class M3ControlContractMatrixTest {
         Bounds actionBounds = actionButton.localToScene(actionButton.getLayoutBounds());
         Bounds menuBounds = menuButton.localToScene(menuButton.getLayoutBounds());
         double gap;
-        if (alignment == Pos.CENTER_RIGHT) {
+        if (rightToLeft) {
             assertTrue(actionBounds.getMinX() > menuBounds.getMinX());
             gap = actionBounds.getMinX() - menuBounds.getMaxX();
         } else {
@@ -41390,6 +41564,35 @@ final class M3ControlContractMatrixTest {
             gap = menuBounds.getMinX() - actionBounds.getMaxX();
         }
         assertEquals(splitButton.getSpacing(), gap, 1.0);
+    }
+
+    /// Verifies that the first child occupies a container's rendered logical start edge.
+    private static void assertFirstChildAtLogicalStart(Region container, boolean rightToLeft) {
+        Node firstChild = container.getChildrenUnmodifiable().get(0);
+        Bounds containerBounds = container.localToScene(container.getBoundsInLocal());
+        Bounds childBounds = firstChild.localToScene(firstChild.getBoundsInLocal());
+        double expectedEdge = rightToLeft
+                ? containerBounds.getMaxX() - container.getInsets().getLeft()
+                : containerBounds.getMinX() + container.getInsets().getLeft();
+        double actualEdge = rightToLeft ? childBounds.getMaxX() : childBounds.getMinX();
+
+        assertEquals(expectedEdge, actualEdge, 1.0,
+                () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
+    }
+
+    /// Verifies the physical left and right gaps around a rendered horizontal divider line.
+    private static void assertHorizontalDividerPhysicalInsets(
+            M3Divider divider,
+            Region line,
+            double expectedLeft,
+            double expectedRight
+    ) {
+        Bounds dividerBounds = divider.localToScene(divider.getBoundsInLocal());
+        Bounds lineBounds = line.localToScene(line.getBoundsInLocal());
+        assertEquals(expectedLeft, lineBounds.getMinX() - dividerBounds.getMinX(), 1.0,
+                () -> "dividerBounds=" + dividerBounds + ", lineBounds=" + lineBounds);
+        assertEquals(expectedRight, dividerBounds.getMaxX() - lineBounds.getMaxX(), 1.0,
+                () -> "dividerBounds=" + dividerBounds + ", lineBounds=" + lineBounds);
     }
 
     /// Returns the first descendant of the requested node type.

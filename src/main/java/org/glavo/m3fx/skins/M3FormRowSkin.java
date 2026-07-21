@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -62,11 +63,11 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         label.setWrapText(true);
         supportingLabel.setWrapText(true);
         HBox.setHgrow(contentSlot, Priority.ALWAYS);
-        textColumn.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        label.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        supportingLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        contentSlot.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
-        trailingSlot.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        textColumn.setAlignment(Pos.CENTER_LEFT);
+        label.setAlignment(Pos.CENTER_LEFT);
+        supportingLabel.setAlignment(Pos.CENTER_LEFT);
+        contentSlot.setAlignment(Pos.CENTER_LEFT);
+        trailingSlot.setAlignment(Pos.CENTER_RIGHT);
 
         textColumn.getChildren().addAll(label, supportingLabel);
         container.getChildren().addAll(textColumn, contentSlot, trailingSlot);
@@ -90,11 +91,6 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         control.rowMinHeightProperty().removeListener(updateListener);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
-        textColumn.alignmentProperty().unbind();
-        label.alignmentProperty().unbind();
-        supportingLabel.alignmentProperty().unbind();
-        contentSlot.alignmentProperty().unbind();
-        trailingSlot.alignmentProperty().unbind();
         contentSlot.getChildren().clear();
         trailingSlot.getChildren().clear();
         getChildren().remove(container);
