@@ -20452,17 +20452,42 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(25.0, slider.getValue(), 0.0001);
 
-        double centerY = slider.getHeight() / 2.0;
-        double lowValueX = slider.getWidth() - slider.getThumbWidth() / 2.0;
-        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, lowValueX, centerY, true));
-        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, lowValueX, centerY, false));
+        Bounds sliderSceneBounds = slider.localToScene(slider.getBoundsInLocal());
+        double sceneCenterY = sliderSceneBounds.getCenterY();
+        double lowValueSceneX = sliderSceneBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+        slider.fireEvent(primaryMouseEventAtScenePoint(
+                slider,
+                MouseEvent.MOUSE_PRESSED,
+                lowValueSceneX,
+                sceneCenterY,
+                true
+        ));
+        slider.fireEvent(primaryMouseEventAtScenePoint(
+                slider,
+                MouseEvent.MOUSE_RELEASED,
+                lowValueSceneX,
+                sceneCenterY,
+                false
+        ));
 
         assertEquals(0.0, slider.getValue(), 0.0001);
         assertFalse(slider.isValueChanging());
 
-        double highValueX = slider.getThumbWidth() / 2.0;
-        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, highValueX, centerY, true));
-        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, highValueX, centerY, false));
+        double highValueSceneX = sliderSceneBounds.getMinX() + slider.getThumbWidth() / 2.0;
+        slider.fireEvent(primaryMouseEventAtScenePoint(
+                slider,
+                MouseEvent.MOUSE_PRESSED,
+                highValueSceneX,
+                sceneCenterY,
+                true
+        ));
+        slider.fireEvent(primaryMouseEventAtScenePoint(
+                slider,
+                MouseEvent.MOUSE_RELEASED,
+                highValueSceneX,
+                sceneCenterY,
+                false
+        ));
 
         assertEquals(100.0, slider.getValue(), 0.0001);
         assertFalse(slider.isValueChanging());
@@ -20867,6 +20892,29 @@ final class M3ControlContractMatrixTest {
                 assertEquals(NodeOrientation.RIGHT_TO_LEFT, rightToLeft.getEffectiveNodeOrientation());
                 assertTrue(rtlLowThumb.localToScene(rtlLowThumb.getBoundsInLocal()).getCenterX()
                         > rtlHighThumb.localToScene(rtlHighThumb.getBoundsInLocal()).getCenterX());
+                Bounds rtlSceneBounds = rightToLeft.localToScene(rightToLeft.getBoundsInLocal());
+                double rtlRightEdgeSceneX = rtlSceneBounds.getMaxX() - 8.0;
+                double rtlSceneCenterY = rtlSceneBounds.getCenterY();
+                rightToLeft.fireEvent(primaryMouseEventAtScenePoint(
+                        rightToLeft,
+                        MouseEvent.MOUSE_PRESSED,
+                        rtlRightEdgeSceneX,
+                        rtlSceneCenterY,
+                        true
+                ));
+                assertTrue(rightToLeft.isLowValueChanging());
+                assertFalse(rightToLeft.isHighValueChanging());
+                assertTrue(rightToLeft.getLowValue() < 5.0,
+                        () -> "lowValue=" + rightToLeft.getLowValue());
+                rightToLeft.fireEvent(primaryMouseEventAtScenePoint(
+                        rightToLeft,
+                        MouseEvent.MOUSE_RELEASED,
+                        rtlRightEdgeSceneX,
+                        rtlSceneCenterY,
+                        false
+                ));
+                rightToLeft.setLowValue(20.0);
+
                 rtlLowThumb.requestFocus();
                 assertTrue(rtlLowThumb.isFocused());
                 rtlLowThumb.fireEvent(targetedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT, rtlLowThumb));
@@ -36087,10 +36135,30 @@ final class M3ControlContractMatrixTest {
         rightToLeft.resize(220.0, 48.0);
         rightToLeft.layout();
 
-        rightToLeft.fireEvent(primaryMouseEvent(rightToLeft, MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        Bounds rightToLeftSceneBounds = rightToLeft.localToScene(rightToLeft.getBoundsInLocal());
+        double rightToLeftSceneCenterY = rightToLeftSceneBounds.getCenterY();
+        double rightEdgeSceneX = rightToLeftSceneBounds.getMaxX() - 10.0;
+        rightToLeft.fireEvent(primaryMouseEventAtScenePoint(
+                rightToLeft,
+                MouseEvent.MOUSE_PRESSED,
+                rightEdgeSceneX,
+                rightToLeftSceneCenterY,
+                true
+        ));
         assertTrue(rightToLeft.getValue() < 5.0, () -> "value=" + rightToLeft.getValue());
-        rightToLeft.fireEvent(primaryMouseEvent(rightToLeft, MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
+        double leftEdgeSceneX = rightToLeftSceneBounds.getMinX() + 10.0;
+        rightToLeft.fireEvent(primaryMouseEventAtScenePoint(
+                rightToLeft,
+                MouseEvent.MOUSE_RELEASED,
+                leftEdgeSceneX,
+                rightToLeftSceneCenterY,
+                false
+        ));
         assertTrue(rightToLeft.getValue() > 95.0, () -> "value=" + rightToLeft.getValue());
+
+        rightToLeft.setValue(50.0);
+        rightToLeft.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(rightToLeft.getValue() < 50.0);
     }
 
     /// Verifies that drag interactions snap the displayed slider position without animation lag.
@@ -43921,6 +43989,18 @@ final class M3ControlContractMatrixTest {
                 false,
                 new PickResult(node, scenePoint.getX(), scenePoint.getY())
         );
+    }
+
+    /// Creates a primary mouse event at one point expressed in scene coordinates.
+    private static MouseEvent primaryMouseEventAtScenePoint(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double sceneX,
+            double sceneY,
+            boolean primaryButtonDown
+    ) {
+        Point2D localPoint = node.sceneToLocal(sceneX, sceneY);
+        return primaryMouseEvent(node, eventType, localPoint.getX(), localPoint.getY(), primaryButtonDown);
     }
 
     /// Creates an indirect scroll event for scroll behavior tests.

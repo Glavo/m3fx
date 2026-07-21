@@ -950,6 +950,9 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     }
 
     /// Converts a pointer event to a normalized numeric position in the range slider's coordinate system.
+    ///
+    /// JavaFX maps pointer coordinates into the mirrored local coordinate system of an RTL node. Horizontal
+    /// coordinates therefore use the same conversion as LTR coordinates and must not be reversed a second time.
     private double mousePositionToValuePosition(MouseEvent event) {
         M3RangeSlider slider = getSkinnable();
         double x = event.getX();
@@ -978,8 +981,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         if (length == 0.0) {
             return 0.0;
         }
-        double position = clamp((x - layoutX - baseThumbWidth / 2.0) / length);
-        return isHorizontalRightToLeft() ? 1.0 - position : position;
+        return clamp((x - layoutX - baseThumbWidth / 2.0) / length);
     }
 
     /// Converts a numeric value to a normalized position.
