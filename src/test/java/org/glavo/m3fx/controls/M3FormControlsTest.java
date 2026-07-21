@@ -722,7 +722,7 @@ final class M3FormControlsTest {
             );
             assertEquals("Account is required", retiredError.getText());
 
-            summary.setSkin(new M3ValidationSummarySkin(summary));
+            FxTestUtils.replaceSkin(summary, M3ValidationSummarySkin::new);
             layout.setValidator(M3TextInputValidators.required("Enter an account"));
             root.applyCss();
             root.layout();

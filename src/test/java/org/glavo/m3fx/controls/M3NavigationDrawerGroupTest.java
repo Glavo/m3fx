@@ -226,7 +226,7 @@ final class M3NavigationDrawerGroupTest {
                         + ", expanded=" + expandedHeight);
                 assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
 
-                group.setSkin(new M3NavigationDrawerGroupSkin(group));
+                FxTestUtils.replaceSkin(group, M3NavigationDrawerGroupSkin::new);
                 root.applyCss();
                 root.layout();
 
@@ -282,7 +282,7 @@ final class M3NavigationDrawerGroupTest {
                 assertEquals(180.0, inheritedChild.getMaxWidth(), 0.0001);
 
                 group.getItems().add(inheritedChild);
-                group.setSkin(new M3NavigationDrawerGroupSkin(group));
+                FxTestUtils.replaceSkin(group, M3NavigationDrawerGroupSkin::new);
                 root.applyCss();
                 root.layout();
 

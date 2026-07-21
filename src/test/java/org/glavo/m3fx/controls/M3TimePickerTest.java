@@ -406,7 +406,7 @@ final class M3TimePickerTest {
             );
             assertTrue(retiredSelected.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS));
 
-            picker.setSkin(new M3TimePickerSkin(picker));
+            FxTestUtils.replaceSkin(picker, M3TimePickerSkin::new);
             picker.applyCss();
             picker.layout();
             picker.setValue(LocalTime.of(11, 15));

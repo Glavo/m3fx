@@ -194,7 +194,7 @@ final class M3DateRangePickerTest {
             ButtonBase retiredMiddleCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
             ButtonBase retiredFutureCell = dayCellForDate(picker, LocalDate.of(2026, 5, 25));
 
-            picker.setSkin(new M3DateRangePickerSkin(picker));
+            FxTestUtils.replaceSkin(picker, M3DateRangePickerSkin::new);
             picker.setRange(LocalDate.of(2026, 5, 24), LocalDate.of(2026, 5, 26));
             root.applyCss();
             picker.layout();

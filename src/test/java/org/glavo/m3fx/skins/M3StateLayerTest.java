@@ -509,9 +509,9 @@ final class M3StateLayerTest {
                     checkBox.lookup("." + M3StateLayer.OVERLAY_STYLE_CLASS)
             );
 
-            button.setSkin(new M3ButtonSkin(button));
-            navigationItem.setSkin(new M3NavigationItemSkin(navigationItem));
-            checkBox.setSkin(new M3CheckBoxSkin(checkBox));
+            FxTestUtils.replaceSkin(button, M3ButtonSkin::new);
+            FxTestUtils.replaceSkin(navigationItem, M3NavigationItemSkin::new);
+            FxTestUtils.replaceSkin(checkBox, M3CheckBoxSkin::new);
             root.applyCss();
             root.layout();
 

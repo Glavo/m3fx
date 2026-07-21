@@ -8,6 +8,8 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -27,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
@@ -88,6 +91,31 @@ public final class FxTestUtils {
         });
         awaitUnchecked(latch);
         throwIfFailed(failure.get());
+    }
+
+    /// Clears a control's current skin and installs a newly created replacement.
+    ///
+    /// Clearing the current skin first guarantees that replacement occurs when the old and new skins have the same
+    /// runtime class. The factory is invoked after the old skin has been disposed.
+    ///
+    /// @param control     the control whose skin is replaced
+    /// @param skinFactory the factory that creates a skin for `control`
+    /// @param <C>         the control type
+    /// @throws NullPointerException if `control`, `skinFactory`, or the created skin is `null`
+    /// @throws IllegalArgumentException if the created skin belongs to a different control
+    public static <C extends Control> void replaceSkin(
+            C control,
+            Function<? super C, ? extends Skin<?>> skinFactory
+    ) {
+        Objects.requireNonNull(control, "control");
+        Objects.requireNonNull(skinFactory, "skinFactory");
+        // JavaFX 17 ignores direct replacement when both skins have the same runtime class.
+        control.setSkin(null);
+        Skin<?> skin = Objects.requireNonNull(skinFactory.apply(control), "skinFactory result");
+        if (skin.getSkinnable() != control) {
+            throw new IllegalArgumentException("skinFactory created a skin for a different control");
+        }
+        control.setSkin(skin);
     }
 
     /// Runs a task with reduced motion requested globally and restores the previous setting.

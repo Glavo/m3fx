@@ -11869,7 +11869,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(defaultItem.getPseudoClassStates().contains(firstItem));
         assertTrue(constrainedItem.getPseudoClassStates().contains(lastItem));
 
-        menu.setSkin(new M3MenuSkin(menu));
+        FxTestUtils.replaceSkin(menu, M3MenuSkin::new);
         root.applyCss();
         menu.layout();
         assertEquals(40.0, constrainedItem.getMinWidth(), 0.0001);
@@ -31653,7 +31653,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(30.0, child.getMinWidth(), 0.0001);
         assertEquals(184.0, child.getMaxWidth(), 0.0001);
 
-        navigationDrawer.setSkin(new M3NavigationDrawerSkin(navigationDrawer));
+        FxTestUtils.replaceSkin(navigationDrawer, M3NavigationDrawerSkin::new);
         root.applyCss();
         navigationDrawer.layout();
         assertEquals(36.0, topLevel.getMinWidth(), 0.0001);

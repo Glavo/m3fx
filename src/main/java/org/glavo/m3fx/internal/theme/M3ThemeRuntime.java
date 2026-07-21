@@ -3,8 +3,7 @@
 
 package org.glavo.m3fx.internal.theme;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.beans.InvalidationListener;
 import javafx.css.Styleable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -628,7 +627,7 @@ public final class M3ThemeRuntime {
     @NotNullByDefault
     private static final class SceneThemeInstallation {
         /// Handles scene root replacement.
-        private final ChangeListener<Parent> rootListener = this::handleRootChanged;
+        private final InvalidationListener rootListener;
 
         /// The root state captured before applying the scene theme.
         private @Nullable RootThemeSnapshot snapshot;
@@ -638,6 +637,9 @@ public final class M3ThemeRuntime {
 
         /// Creates a scene theme installation.
         private SceneThemeInstallation(Scene scene) {
+            // JavaFX 17 compatibility: keep this scene-owned observer independent from popup ChangeListeners that
+            // unregister while their owner detaches. Only the current root is needed after invalidation.
+            rootListener = observable -> handleRootChanged(scene.getRoot());
             scene.rootProperty().addListener(rootListener);
         }
 
@@ -691,11 +693,7 @@ public final class M3ThemeRuntime {
         }
 
         /// Moves the installed theme from the previous scene root to the new one.
-        private void handleRootChanged(
-                ObservableValue<? extends Parent> observable,
-                Parent oldRoot,
-                Parent newRoot
-        ) {
+        private void handleRootChanged(Parent newRoot) {
             restoreSnapshot();
             @Nullable M3Theme currentTheme = theme;
             if (currentTheme != null) {
