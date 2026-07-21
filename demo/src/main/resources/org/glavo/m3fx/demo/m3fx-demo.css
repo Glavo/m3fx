@@ -178,6 +178,10 @@
     -fx-fill-width: true;
 }
 
+.demo-overview-destination:rtl .demo-overview-destination-indicator {
+    -fx-scale-x: -1;
+}
+
 .demo-group-title {
     -fx-font-size: 14px;
     -fx-font-weight: 700;

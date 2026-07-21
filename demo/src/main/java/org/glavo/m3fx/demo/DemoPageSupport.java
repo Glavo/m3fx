@@ -152,11 +152,21 @@ abstract class DemoPageSupport {
     /// Returns the demo icon name that best matches a list row title.
     protected static String overviewIconName(String title) {
         String normalized = title.toLowerCase(Locale.ROOT);
-        if (normalized.contains("button")) {
+        if (normalized.contains("app bar") || normalized.contains("toolbar")) {
+            return "menu";
+        } else if (normalized.contains("button") || normalized.contains("fab")) {
             return "add";
-        } else if (normalized.contains("input") || normalized.contains("text")) {
+        } else if (normalized.contains("input")
+                || normalized.contains("text")
+                || normalized.contains("form")
+                || normalized.contains("typography")) {
             return "text";
-        } else if (normalized.contains("selection") || normalized.contains("checkbox")) {
+        } else if (normalized.contains("selection")
+                || normalized.contains("checkbox")
+                || normalized.contains("chip")
+                || normalized.contains("radio")
+                || normalized.contains("segment")
+                || normalized.contains("switch")) {
             return "check";
         } else if (normalized.contains("navigation")) {
             return "home";
@@ -166,16 +176,34 @@ abstract class DemoPageSupport {
             return "calendar";
         } else if (normalized.contains("dialog") || normalized.contains("sheet")) {
             return "info";
-        } else if (normalized.contains("list") || normalized.contains("surface")) {
+        } else if (normalized.contains("list")
+                || normalized.contains("surface")
+                || normalized.contains("badge")) {
             return "label";
+        } else if (normalized.contains("card")) {
+            return "dashboard";
+        } else if (normalized.contains("carousel")) {
+            return "image";
+        } else if (normalized.contains("slider")) {
+            return "tune";
+        } else if (normalized.contains("snackbar")
+                || normalized.contains("banner")
+                || normalized.contains("tooltip")) {
+            return "info";
         } else if (normalized.contains("menu")) {
             return "menu";
         } else if (normalized.contains("search")) {
             return "search";
-        } else if (normalized.contains("profile")) {
+        } else if (normalized.contains("profile") || normalized.contains("avatar")) {
             return "person";
         } else if (normalized.contains("settings")) {
             return "settings";
+        } else if (normalized.contains("motion")) {
+            return "move";
+        } else if (normalized.contains("icon")) {
+            return "star";
+        } else if (normalized.contains("scrim")) {
+            return "visibility";
         }
         return "bookmark";
     }

@@ -14,6 +14,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -355,6 +356,54 @@ final class M3FXDemoAdaptiveShellTest {
                 if (feedbackMonitor != null) {
                     feedbackMonitor.stop();
                 }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that a pointer activation on an overview destination opens its registered component page.
+    @Test
+    void overviewDestinationPointerActivationNavigatesToComponentPage() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1180.0);
+                stage.setHeight(820.0);
+                stageReference.set(stage);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                layout(scene);
+                M3ListItem destination = Objects.requireNonNull(
+                        findNode(
+                                scene.getRoot(),
+                                M3ListItem.class,
+                                item -> item.getStyleClass().contains("demo-overview-destination")
+                                        && "App bars".equals(item.getHeadlineText())
+                        ),
+                        "App bars overview destination"
+                );
+
+                firePrimaryClick(destination);
+                layout(scene);
+
+                Label pageTitle = requireVisibleStyledNode(
+                        scene.getRoot(),
+                        "demo-page-title",
+                        Label.class
+                );
+                assertEquals("App Bars", pageTitle.getText());
+                assertEquals("App bars", app.currentPageNavigationTitle());
+                assertEquals("App bars", app.selectedSidebarNavigationTitle());
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();

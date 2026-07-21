@@ -12027,17 +12027,28 @@ final class M3FXDemoVisualMatrixTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Components Overview");
         assertCurrentPageTitle(scene, "Components Overview");
-        assertVisibleText(root, "Primary Components", "Components Overview");
-        assertVisibleText(root, "Feedback And Containers", "Components Overview");
-        assertVisibleText(root, "Text fields", "Components Overview");
-        assertVisibleText(root, "Loading & progress", "Components Overview");
+        assertVisibleText(root, "Material Components", "Components Overview");
+        assertVisibleText(root, "Additional Demos", "Components Overview");
+        assertVisibleText(root, "App bars", "Components Overview");
+        assertVisibleText(root, "Motion", "Components Overview");
 
         List<M3ListPane> lists = visibleNodesOfType(page, M3ListPane.class);
         assertEquals(2, lists.size(), () -> "Components Overview should render two overview lists: " + lists);
+        assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
+                "overview destinations should use segmented list treatment");
+        assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
+        assertEquals(8, lists.get(1).getItems().size(), "M3FX extension destinations");
+
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(9, items.size(), () -> "Components Overview should render nine overview items: " + items);
+        assertEquals(46, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
+        assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
+                "every overview destination should be actionable");
+        assertTrue(items.stream().allMatch(item -> item.getUserData() instanceof DemoPage),
+                "every overview destination should retain its registered page");
+        assertTrue(items.stream().allMatch(item -> item.getTrailing() != null),
+                "every overview destination should expose a trailing navigation indicator");
     }
 
     /// Verifies the real App Bars demo page variant matrix and slot geometry.

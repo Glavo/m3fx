@@ -792,8 +792,17 @@ public final class M3FXDemoApp extends Application {
         return scrollPane;
     }
 
-    /// Shows a component page in the center pane.
-    private void showPage(DemoPage page) {
+    /// Shows a registered component page in the center pane.
+    ///
+    /// @param page the registered destination page
+    /// @throws NullPointerException     if `page` is `null`
+    /// @throws IllegalArgumentException if `page` is not registered by this application
+    void showPage(DemoPage page) {
+        Objects.requireNonNull(page, "page");
+        if (!pages.contains(page)) {
+            throw new IllegalArgumentException("demo page is not registered: " + page.title());
+        }
+
         stopPageAnimations();
         StackPane host = pageHost;
         if (host == null) {
@@ -856,6 +865,14 @@ public final class M3FXDemoApp extends Application {
     @Unmodifiable
     List<String> demoPageTitles() {
         return pages.stream().map(DemoPage::title).toList();
+    }
+
+    /// Returns the immutable demo page catalog in navigation order.
+    ///
+    /// @return the registered demo pages
+    @Unmodifiable
+    List<DemoPage> demoPages() {
+        return pages;
     }
 
     /// Shows the demo page with the requested title.

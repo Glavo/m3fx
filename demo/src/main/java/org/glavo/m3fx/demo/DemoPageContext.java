@@ -8,13 +8,15 @@ import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.List;
 import java.util.Objects;
 
 /// Provides page implementations with the application-level actions needed by interactive samples.
 ///
-/// The context deliberately excludes theme, navigation, window, and scene state. Page implementations use it only
-/// when a sample must present an overlay or register an animation whose lifetime follows the active page.
+/// The context exposes the immutable demo catalog, page navigation, overlay presentation, and page-scoped animation
+/// registration without exposing the application window or scene implementation to individual page classes.
 @NotNullByDefault
 final class DemoPageContext {
     /// The demo application that owns the active presentation.
@@ -25,6 +27,25 @@ final class DemoPageContext {
     /// @param application the application that owns overlay and animation state
     DemoPageContext(M3FXDemoApp application) {
         this.application = Objects.requireNonNull(application, "application");
+    }
+
+    /// Returns the registered demo pages in navigation order.
+    ///
+    /// The returned list is immutable and remains valid for the lifetime of the application.
+    ///
+    /// @return the registered demo pages
+    @Unmodifiable
+    List<DemoPage> demoPages() {
+        return application.demoPages();
+    }
+
+    /// Navigates the demo shell to a registered page.
+    ///
+    /// @param page the destination page
+    /// @throws NullPointerException     if `page` is `null`
+    /// @throws IllegalArgumentException if `page` is not registered by the application
+    void navigateTo(DemoPage page) {
+        application.showPage(page);
     }
 
     /// Returns the active overlay pane.

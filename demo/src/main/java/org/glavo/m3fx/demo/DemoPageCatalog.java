@@ -13,7 +13,7 @@ import java.util.Objects;
 @NotNullByDefault
 final class DemoPageCatalog {
     /// The sidebar destination for the components overview page.
-    private static final String COMPONENTS_OVERVIEW_GROUP = "Components overview";
+    static final String COMPONENTS_OVERVIEW_GROUP = "Components overview";
 
     /// The official components sidebar group for app bar components.
     private static final String APP_BARS_GROUP = "App bars";
@@ -37,7 +37,7 @@ final class DemoPageCatalog {
     private static final String TOOLBARS_GROUP = "Toolbars";
 
     /// The sidebar section for demos absent from the Material components navigation drawer.
-    private static final String ADDITIONAL_DEMOS_GROUP = "Additional demos";
+    static final String ADDITIONAL_DEMOS_GROUP = "Additional demos";
 
     /// Prevents instantiation.
     private DemoPageCatalog() {
@@ -50,7 +50,7 @@ final class DemoPageCatalog {
     static @Unmodifiable List<DemoPage> createPages(DemoPageContext context) {
         Objects.requireNonNull(context, "context");
         return List.of(
-                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", DemoMaterialDocs.COMPONENTS, (new ComponentsOverviewDemoPage(context))::createContent),
+                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse every implemented Material Design 3 component and supporting M3FX demo", DemoMaterialDocs.COMPONENTS, (new ComponentsOverviewDemoPage(context))::createContent),
                 new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, (new AppBarsDemoPage(context))::createContent),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, (new BadgesDemoPage(context))::createContent),
                 new DemoPage("All Buttons", "All buttons", BUTTONS_GROUP, "Overview of button families and action patterns", DemoMaterialDocs.ALL_BUTTONS, (new AllButtonsDemoPage(context))::createContent),
