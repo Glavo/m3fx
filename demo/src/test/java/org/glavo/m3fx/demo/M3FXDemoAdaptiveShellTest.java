@@ -6,13 +6,18 @@ package org.glavo.m3fx.demo;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
@@ -88,6 +93,217 @@ final class M3FXDemoAdaptiveShellTest {
                     viewportMonitor.stop();
                 }
                 Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that a pointer-opened modal drawer does not leave interaction feedback on its trigger.
+    @Test
+    void pointerDrawerLifecycleClearsTriggerInteractionFeedback() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(480.0);
+            stage.setHeight(720.0);
+            stageReference.set(stage);
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+        });
+
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        layout(scene);
+                        return visibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        ) != null;
+                    },
+                    STABLE_PULSES,
+                    () -> {
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton settings = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-settings-button",
+                                M3IconButton.class
+                        );
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        settings.requestFocus();
+                        assertTrue(settings.isFocused());
+                        firePrimaryClick(navigation);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        @Nullable M3Scrim scrim = visibleScrim(scene.getRoot());
+                        @Nullable M3IconButton navigation = visibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        @Nullable Node stateLayer = navigation == null
+                                ? null
+                                : navigation.lookup(".m3-state-layer");
+                        return scrim != null
+                                && scrim.isShown()
+                                && stateLayer != null
+                                && stateLayer.getOpacity() <= 0.0001;
+                    },
+                    STABLE_PULSES,
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        @Nullable M3Scrim scrim = visibleScrim(scene.getRoot());
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        return "Timed out waiting for modal feedback suspension: scrim="
+                                + (scrim == null ? "absent" : scrim.isShown())
+                                + ", opacity=" + navigation.lookup(".m3-state-layer").getOpacity()
+                                + ", focused=" + navigation.isFocused()
+                                + ", pressed=" + navigation.isPressed()
+                                + ", armed=" + navigation.isArmed()
+                                + ", pseudoClasses=" + navigation.getPseudoClassStates();
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        assertFalse(navigation.isPressed());
+                        assertFalse(navigation.isArmed());
+                        assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
+                        firePrimaryClick(requireVisibleScrim(scene.getRoot()));
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        return visibleScrim(scene.getRoot()) == null
+                                && visibleStyledNode(
+                                scene.getRoot(),
+                                "demo-modal-sidebar-scroll-pane",
+                                ScrollPane.class
+                        ) == null
+                                && navigation.lookup(".m3-state-layer").getOpacity() <= 0.0001;
+                    },
+                    STABLE_PULSES,
+                    () -> {
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        assertTrue(navigation.isFocused(), "modal dismissal should restore its pointer trigger");
+                        assertFalse(navigation.getPseudoClassStates().contains(
+                                PseudoClass.getPseudoClass("focus-visible")
+                        ));
+                        assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        layout(scene);
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        @Nullable Node stateLayer = navigation.lookup(".m3-state-layer");
+                        @Nullable Node ripple = navigation.lookup(".m3-ripple");
+                        @Nullable Node focusIndicator = navigation.lookup(".m3-focus-indicator");
+                        return !navigation.isFocused()
+                                && stateLayer != null
+                                && stateLayer.getOpacity() <= 0.0001
+                                && ripple != null
+                                && ripple.getOpacity() <= 0.0001
+                                && focusIndicator != null
+                                && focusIndicator.getOpacity() <= 0.0001;
+                    },
+                    STABLE_PULSES,
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        M3IconButton settings = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-settings-button",
+                                M3IconButton.class
+                        );
+                        return "Timed out waiting for navigation feedback to clear after focus transfer: "
+                                + "navigationFocused=" + navigation.isFocused()
+                                + ", settingsFocused=" + settings.isFocused()
+                                + ", stateOpacity=" + navigation.lookup(".m3-state-layer").getOpacity()
+                                + ", rippleOpacity=" + navigation.lookup(".m3-ripple").getOpacity()
+                                + ", focusIndicatorOpacity="
+                                + navigation.lookup(".m3-focus-indicator").getOpacity()
+                                + ", pseudoClasses=" + navigation.getPseudoClassStates();
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton settings = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-settings-button",
+                                M3IconButton.class
+                        );
+                        settings.requestFocus();
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        M3IconButton navigation = requireVisibleStyledNode(
+                                scene.getRoot(),
+                                "demo-navigation-button",
+                                M3IconButton.class
+                        );
+                        assertFalse(navigation.isFocused());
+                        assertFalse(navigation.isPressed());
+                        assertFalse(navigation.isArmed());
+                        assertFalse(navigation.getPseudoClassStates().contains(
+                                PseudoClass.getPseudoClass("focus-visible")
+                        ));
+                        assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
+                        assertEquals(0.0, navigation.lookup(".m3-ripple").getOpacity(), 0.0001);
+                        assertEquals(0.0, navigation.lookup(".m3-focus-indicator").getOpacity(), 0.0001);
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -450,6 +666,59 @@ final class M3FXDemoAdaptiveShellTest {
     private static void layout(Scene scene) {
         scene.getRoot().applyCss();
         scene.getRoot().layout();
+    }
+
+    /// Fires one complete synthetic primary-button click at the center of a node.
+    ///
+    /// @param node the event target
+    private static void firePrimaryClick(Node node) {
+        Bounds bounds = node.getBoundsInLocal();
+        double x = bounds.getMinX() + bounds.getWidth() / 2.0;
+        double y = bounds.getMinY() + bounds.getHeight() / 2.0;
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_PRESSED, x, y, true));
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_RELEASED, x, y, false));
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_CLICKED, x, y, false));
+    }
+
+    /// Creates a primary-button mouse event at one local point of a node.
+    ///
+    /// @param node              the event target
+    /// @param eventType         the mouse event type
+    /// @param x                 the local horizontal coordinate
+    /// @param y                 the local vertical coordinate
+    /// @param primaryButtonDown whether the primary button is held
+    /// @return the mouse event
+    private static MouseEvent primaryMouseEvent(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
+        Point2D scenePoint = node.localToScene(x, y);
+        @Nullable Point2D screenPoint = node.localToScreen(x, y);
+        double screenX = screenPoint == null ? scenePoint.getX() : screenPoint.getX();
+        double screenY = screenPoint == null ? scenePoint.getY() : screenPoint.getY();
+        return new MouseEvent(
+                eventType,
+                x,
+                y,
+                screenX,
+                screenY,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                primaryButtonDown,
+                false,
+                false,
+                false,
+                false,
+                false,
+                new PickResult(node, scenePoint.getX(), scenePoint.getY())
+        );
     }
 
     /// Verifies that a drawer touches the logical leading edge of the scene.

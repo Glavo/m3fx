@@ -16,6 +16,7 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -33,6 +34,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
@@ -42,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 
 /// A bounded Material Design 3 state layer with ripple animation support.
 @NotNullByDefault
-final class M3StateLayer extends Pane {
+final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Style class assigned to direct component container-paint regions.
     static final String CONTAINER_PAINT_STYLE_CLASS = "m3-container-paint";
 
@@ -170,6 +172,12 @@ final class M3StateLayer extends Pane {
     /// Whether a delegated child currently owns keyboard-visible focus for this component.
     private boolean delegatedFocusVisible;
 
+    /// Whether an active modal presentation blocks transient interaction feedback for this layer.
+    private boolean modalInteractionBlocked;
+
+    /// Whether hover feedback waits for fresh pointer activity after modal blocking ends.
+    private boolean hoverSuppressedUntilPointerActivity;
+
     /// Tracks keyboard-visible focus state for the owner.
     private @Nullable M3FocusVisibleTracker focusVisibleTracker;
 
@@ -195,6 +203,14 @@ final class M3StateLayer extends Pane {
                 || pseudoClass == HOVER_PSEUDO_CLASS
                 || pseudoClass == FOCUS_VISIBLE_PSEUDO_CLASS
                 || pseudoClass == PRESSED_PSEUDO_CLASS) {
+            animateOverlayOpacityFromOwnerState();
+        }
+    };
+
+    /// Resumes hover feedback only after the pointer is observed again in the unblocked owner subtree.
+    private final EventHandler<MouseEvent> pointerActivityHandler = event -> {
+        if (!modalInteractionBlocked && hoverSuppressedUntilPointerActivity) {
+            hoverSuppressedUntilPointerActivity = false;
             animateOverlayOpacityFromOwnerState();
         }
     };
@@ -321,11 +337,16 @@ final class M3StateLayer extends Pane {
         }
         uninstallStateTransitions();
         stateOwner = owner;
+        modalInteractionBlocked = M3ModalInteraction.isBlocked(owner);
+        hoverSuppressedUntilPointerActivity = modalInteractionBlocked;
         focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromOwnerState);
         focusVisibleTracker.install();
         owner.disabledProperty().addListener(disabledStateListener);
         owner.sceneProperty().addListener(ownerSceneListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
+        owner.addEventHandler(MouseEvent.MOUSE_ENTERED, pointerActivityHandler);
+        owner.addEventHandler(MouseEvent.MOUSE_MOVED, pointerActivityHandler);
+        owner.addEventHandler(MouseEvent.MOUSE_PRESSED, pointerActivityHandler);
         motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings, false);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
@@ -351,6 +372,9 @@ final class M3StateLayer extends Pane {
         owner.disabledProperty().removeListener(disabledStateListener);
         owner.sceneProperty().removeListener(ownerSceneListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
+        owner.removeEventHandler(MouseEvent.MOUSE_ENTERED, pointerActivityHandler);
+        owner.removeEventHandler(MouseEvent.MOUSE_MOVED, pointerActivityHandler);
+        owner.removeEventHandler(MouseEvent.MOUSE_PRESSED, pointerActivityHandler);
         M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer != null) {
             observer.dispose();
@@ -368,6 +392,8 @@ final class M3StateLayer extends Pane {
         stateOwner = null;
         restingOverlayOpacity = 0.0;
         delegatedFocusVisible = false;
+        modalInteractionBlocked = false;
+        hoverSuppressedUntilPointerActivity = false;
         cachedAnimationsEnabled = false;
         motionSettingsRevision = Long.MIN_VALUE;
         stateOpacityAnimation.stop();
@@ -385,6 +411,26 @@ final class M3StateLayer extends Pane {
             return;
         }
         this.delegatedFocusVisible = delegatedFocusVisible;
+        animateOverlayOpacityFromOwnerState();
+    }
+
+    /// Applies effective modal blocking while retaining persistent semantic state.
+    ///
+    /// Hover feedback remains suppressed after unblocking until new pointer activity reaches the owner. This avoids
+    /// reviving a stale JavaFX hover state after a modal layer is removed without pointer movement.
+    ///
+    /// @param blocked whether transient interaction feedback is blocked
+    @Override
+    public void setModalInteractionBlocked(boolean blocked) {
+        if (modalInteractionBlocked == blocked) {
+            return;
+        }
+
+        modalInteractionBlocked = blocked;
+        hoverSuppressedUntilPointerActivity = true;
+        if (blocked) {
+            cancelRipple();
+        }
         animateOverlayOpacityFromOwnerState();
     }
 
@@ -427,7 +473,7 @@ final class M3StateLayer extends Pane {
 
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
     void playRipple(double x, double y) {
-        if (!interactionFeedbackEnabled) {
+        if (!interactionFeedbackEnabled || modalInteractionBlocked) {
             clearRipple();
             return;
         }
@@ -463,7 +509,7 @@ final class M3StateLayer extends Pane {
 
     /// Releases the active ripple and fades it out.
     void releaseRipple() {
-        if (!interactionFeedbackEnabled) {
+        if (!interactionFeedbackEnabled || modalInteractionBlocked) {
             clearRipple();
             return;
         }
@@ -737,14 +783,17 @@ final class M3StateLayer extends Pane {
         }
         M3StateLayerTokens tokens = stateLayerTokens(owner);
         double interactionOpacity;
-        if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
+        if (modalInteractionBlocked) {
+            interactionOpacity = 0.0;
+        } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
         } else if (isPressedLike(owner)) {
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
                 || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
             interactionOpacity = tokens.focusOpacity();
-        } else if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
+        } else if (!hoverSuppressedUntilPointerActivity
+                && (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS))) {
             interactionOpacity = tokens.hoverOpacity();
         } else {
             interactionOpacity = 0.0;
@@ -759,7 +808,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns the target focus indicator opacity for the owner interaction state.
     private double resolvedFocusIndicatorOpacity(Node owner) {
-        if (owner.isDisabled()) {
+        if (owner.isDisabled() || modalInteractionBlocked) {
             return 0.0;
         }
         return delegatedFocusVisible

@@ -26,6 +26,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.internal.M3SnackbarPresenter;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -137,9 +138,11 @@ public final class M3OverlayPane extends Pane {
             getChildren().add(0, content);
         }
         if (previousContent != null) {
+            M3ModalInteraction.setBlocked(previousContent, false);
             getChildren().remove(previousContent);
         }
         this.contentValue.set(content);
+        updateModalInteractionBlocking();
         requestLayout();
         if (modalOverlays.isEmpty()) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
@@ -496,6 +499,7 @@ public final class M3OverlayPane extends Pane {
         boolean completed = false;
         try {
             targetList.add(handle);
+            updateModalInteractionBlocking();
             if (modal) {
                 snackbarPresenter.setModalBlocked(true);
                 notifyModalAccessibilityChanged();
@@ -507,6 +511,8 @@ public final class M3OverlayPane extends Pane {
         } finally {
             if (!completed) {
                 targetList.remove(handle);
+                M3ModalInteraction.setBlocked(nonNullOverlay, false);
+                updateModalInteractionBlocking();
                 getChildren().remove(nonNullOverlay);
                 handle.detach();
                 snackbarPresenter.setModalBlocked(!modalOverlays.isEmpty());
@@ -528,6 +534,8 @@ public final class M3OverlayPane extends Pane {
         boolean wasTopModal = handle.modal && index == modalOverlays.size() - 1;
         propagateRestoreFocusOwner(handle, node, restoreFocusOwner);
         ownerList.remove(index);
+        M3ModalInteraction.setBlocked(node, false);
+        updateModalInteractionBlocking();
         // Hand off focus while the outgoing subtree is still attached. Otherwise Scene focus cleanup may traverse
         // into scrollable content during the pulse before a deferred restoration request can run.
         if (handle.modal && wasTopModal) {
@@ -546,6 +554,28 @@ public final class M3OverlayPane extends Pane {
         }
         requestLayout();
         return true;
+    }
+
+    /// Applies effective modal interaction blocking to every direct presentation subtree.
+    ///
+    /// The uppermost modal remains interactive. Content, regular overlays, snackbars, and lower modal layers retain
+    /// their layout and persistent semantic appearance while transient hover, press, focus, and ripple feedback is
+    /// suspended.
+    private void updateModalInteractionBlocking() {
+        boolean hasModal = !modalOverlays.isEmpty();
+        @Nullable Node content = getContent();
+        if (content != null) {
+            M3ModalInteraction.setBlocked(content, hasModal);
+        }
+        for (OverlayHandle overlay : regularOverlays) {
+            M3ModalInteraction.setBlocked(overlay.node(), hasModal);
+        }
+        M3ModalInteraction.setBlocked(snackbarPresenter, hasModal);
+
+        int topIndex = modalOverlays.size() - 1;
+        for (int index = 0; index < modalOverlays.size(); index++) {
+            M3ModalInteraction.setBlocked(modalOverlays.get(index).node(), index != topIndex);
+        }
     }
 
     /// Rewrites restoration targets that would otherwise point into a removed overlay subtree.

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -169,6 +170,39 @@ final class M3OverlayPaneTest {
             assertTrue(modalHandle.hide());
             background.fireEvent(primaryMousePress(background));
             assertEquals(1, backgroundPresses.get());
+        });
+    }
+
+    /// Verifies modal presentation suppresses stale lower-layer hover until fresh pointer activity is observed.
+    @Test
+    void modalOverlaySuspendsTransientInteractionFeedback() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3IconButton backgroundAction = new M3IconButton();
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new StackPane(backgroundAction));
+            new Scene(overlayPane, 320.0, 180.0);
+            overlayPane.applyCss();
+            overlayPane.resize(320.0, 180.0);
+            overlayPane.layout();
+
+            Node stateLayer = Objects.requireNonNull(
+                    backgroundAction.lookup(".m3-state-layer"),
+                    "background action state layer"
+            );
+            backgroundAction.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            assertTrue(stateLayer.getOpacity() > 0.0);
+
+            M3OverlayPane.OverlayHandle handle = overlayPane.showModalOverlay(new Pane());
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            assertTrue(handle.hide());
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            backgroundAction.fireEvent(pointerExit(backgroundAction));
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            backgroundAction.fireEvent(pointerMove(backgroundAction));
+            assertTrue(stateLayer.getOpacity() > 0.0);
         });
     }
 
@@ -498,6 +532,54 @@ final class M3OverlayPaneTest {
                 true,
                 false,
                 true,
+                new PickResult(target, 4.0, 4.0)
+        );
+    }
+
+    /// Returns a pointer-move event targeted at the supplied node.
+    private static MouseEvent pointerMove(Node target) {
+        return new MouseEvent(
+                MouseEvent.MOUSE_MOVED,
+                4.0,
+                4.0,
+                4.0,
+                4.0,
+                MouseButton.NONE,
+                0,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                new PickResult(target, 4.0, 4.0)
+        );
+    }
+
+    /// Returns a pointer-exit event targeted at the supplied node.
+    private static MouseEvent pointerExit(Node target) {
+        return new MouseEvent(
+                MouseEvent.MOUSE_EXITED,
+                4.0,
+                4.0,
+                4.0,
+                4.0,
+                MouseButton.NONE,
+                0,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
                 new PickResult(target, 4.0, 4.0)
         );
     }
