@@ -10,7 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ListPane;
-import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListItemBase;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -143,9 +143,9 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
                 spacing > 0.0 ? new Insets(0.0, 0.0, spacing, 0.0) : null;
         for (int index = 0; index < items.size(); index++) {
             Node item = items.get(index);
-            boolean followedByListItem = item instanceof M3ListItem
+            boolean followedByListItem = item instanceof M3ListItemBase
                     && index + 1 < items.size()
-                    && items.get(index + 1) instanceof M3ListItem;
+                    && items.get(index + 1) instanceof M3ListItemBase;
             VBox.setMargin(item, followedByListItem ? spacingMargin : null);
         }
         container.requestLayout();

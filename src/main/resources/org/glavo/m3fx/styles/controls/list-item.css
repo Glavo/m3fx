@@ -220,3 +220,27 @@
 .m3-list-item:disabled .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }
+
+/* Setting rows keep value selection on their trailing indicator instead of selecting the complete row surface. */
+.m3-setting-item {
+    -m3-list-item-selected-container-color: transparent;
+    -m3-list-item-selected-content-color: -m3-color-on-surface;
+}
+
+.m3-setting-item:selected .m3-list-item-selection-container {
+    -fx-background-color: transparent;
+}
+
+.m3-setting-item .m3-list-item-overline:selected,
+.m3-setting-item .m3-list-item-supporting:selected,
+.m3-setting-item .m3-list-item-trailing-supporting:selected {
+    -fx-text-fill: -m3-list-item-supporting-color;
+}
+
+.m3-setting-item .m3-list-item-headline:selected {
+    -fx-text-fill: -m3-list-item-headline-color;
+}
+
+.m3-setting-item:disabled .m3-list-item-trailing {
+    -fx-opacity: 1;
+}

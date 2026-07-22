@@ -52,9 +52,11 @@ import java.util.Objects;
 /// A Material Design 3 static list container for a small number of already-created nodes.
 ///
 /// `M3ListPane` is useful when the application creates the exact nodes to display and the list is small enough
-/// that virtualization is unnecessary. [#getItems()] is a live, ordered list that may contain [M3ListItem], section
-/// headers, dividers, and other structural nodes. Only enabled and visible `M3ListItem` entries participate in
-/// selection and keyboard traversal. For large or data-driven lists, prefer [M3ListView].
+/// that virtualization is unnecessary. [#getItems()] is a live, ordered list that may contain [M3ListItem], setting
+/// rows, section headers, dividers, and other structural nodes. Only enabled and visible `M3ListItem` entries
+/// participate in the pane's managed selection. In [M3SelectionMode#NONE] and [M3SelectionMode#MULTIPLE], enabled
+/// and visible list-derived rows, including setting rows, participate in directional and type-ahead focus traversal.
+/// For large or data-driven lists, prefer [M3ListView].
 ///
 /// The default pane is empty, uses [M3ListStyle#STANDARD], has no managed selection, and permits an empty
 /// selection. The selected-item list is a live, unmodifiable observable view in child order. Nodes in the item
@@ -130,13 +132,13 @@ public final class M3ListPane extends Control {
         return listStyle;
     }
 
-    /// The gap between directly adjacent [M3ListItem] nodes in logical pixels.
+    /// The gap between directly adjacent list-derived rows in logical pixels.
     ///
     /// Values must be finite and non-negative. The effective default is supplied by the active list style and
     /// theme; section headers, dividers, and other structural content do not receive this gap.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    /// Returns the gap between directly adjacent [M3ListItem] nodes.
+    /// Returns the gap between directly adjacent list-derived rows.
     ///
     /// Section headers, dividers, and other content nodes do not receive this gap.
     ///
@@ -145,7 +147,7 @@ public final class M3ListPane extends Control {
         return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
     }
 
-    /// Sets the gap between directly adjacent [M3ListItem] nodes.
+    /// Sets the gap between directly adjacent list-derived rows.
     ///
     /// An explicit Java value overrides the style default selected by [#listStyleProperty()]. Section headers,
     /// dividers, and other content nodes remain contiguous with their neighbors.
@@ -175,10 +177,11 @@ public final class M3ListPane extends Control {
         return itemSpacing;
     }
 
-    /// The policy applied when a reachable list item is activated.
+    /// The policy applied to a reachable [M3ListItem] after it is activated.
     ///
-    /// [M3SelectionMode#NONE] leaves item activation independent of selection, [M3SelectionMode#SINGLE] retains at
-    /// most one selected item, and [M3SelectionMode#MULTIPLE] permits multiple selected items. A direct assignment
+    /// [M3SelectionMode#NONE] leaves list-item activation independent of managed selection,
+    /// [M3SelectionMode#SINGLE] retains at most one selected list item, and [M3SelectionMode#MULTIPLE] permits
+    /// multiple selected list items. This policy does not manage values owned by setting rows. A direct assignment
     /// of `null` is replaced with [M3SelectionMode#NONE].
     ///
     /// @defaultValue [M3SelectionMode#NONE]
@@ -192,6 +195,8 @@ public final class M3ListPane extends Control {
                         return;
                     }
                     enforceSelectionPolicy();
+                    M3Accessible.notifyFocusNodeChanged(M3ListPane.this);
+                    focusNotifier.refresh();
                 }
             };
 
@@ -213,7 +218,8 @@ public final class M3ListPane extends Control {
     /// Returns the observable, bindable selection-mode property.
     ///
     /// The property defaults to [M3SelectionMode#NONE]. A `null` value assigned directly through the property is
-    /// replaced with that default. Changing the mode immediately enforces the new selection policy.
+    /// replaced with that default. Changing the mode immediately enforces the new list-item selection policy; it
+    /// does not modify setting-row values.
     ///
     /// @return the selection-mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
@@ -288,10 +294,9 @@ public final class M3ListPane extends Control {
     /// state.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    /// Notifies accessibility clients when focus moves between list items.
+    /// Notifies accessibility clients when focus moves between list-derived rows.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () ->
-                    M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedItem(), M3ListItem.class));
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusTarget);
 
     /// The selected list items in child order.
     private final ObservableList<M3ListItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
@@ -489,12 +494,7 @@ public final class M3ListPane extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case FOCUS_NODE -> M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedItem(),
-                    M3ListItem.class
-            );
+            case FOCUS_NODE -> accessibleFocusTarget();
             case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -522,37 +522,51 @@ public final class M3ListPane extends Control {
         }
     }
 
-    /// Requests focus on the current selected or focused list accessibility target.
+    /// Requests focus on the current list accessibility target.
     ///
     /// @return `true` when the target accepted focus
     final boolean focusAccessibleSelectionTarget() {
-        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
-                this,
-                getItems(),
-                getSelectedItem(),
-                M3ListItem.class
-        ))) {
+        if (M3Accessible.showItem(this, accessibleFocusTarget())) {
             notifyAccessibleFocusChanged();
             return true;
         }
         return false;
     }
 
-    /// Shows a list item requested by an accessibility client.
+    /// Shows a list row requested by an accessibility client.
     ///
     /// @param parameters optional accessibility target parameters
     /// @return `true` when focus moved to the default or requested item
     final boolean showAccessibleItem(Object... parameters) {
-        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
-                this,
-                getItems(),
-                getSelectedItem(),
-                M3ListItem.class
-        ), getItems(), parameters)) {
+        if (M3Accessible.showItemOrDefault(this, accessibleFocusTarget(), getItems(), parameters)) {
             notifyAccessibleFocusChanged();
             return true;
         }
         return false;
+    }
+
+    /// Returns the accessibility focus target appropriate for the current selection policy.
+    ///
+    /// Managed single selection exposes [M3ListItem] entries because only those rows participate in that policy.
+    /// Other modes expose all list-derived rows so that settings lists remain reachable without adopting a second
+    /// selection model.
+    ///
+    /// @return the current or default accessibility focus target, or `null` when no row is reachable
+    private @Nullable Node accessibleFocusTarget() {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
+            return M3Accessible.currentOrSelectionFocusTarget(
+                    this,
+                    getItems(),
+                    getSelectedItem(),
+                    M3ListItem.class
+            );
+        }
+        return M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedItem(),
+                M3ListItemBase.class
+        );
     }
 
     /// Notifies accessibility clients that the list focus target changed.
@@ -579,7 +593,7 @@ public final class M3ListPane extends Control {
         });
     }
 
-    /// Applies keyboard navigation across enabled list items.
+    /// Applies keyboard navigation across enabled list-derived rows.
     private void handleNavigationKeyPressed(KeyEvent event) {
         if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
@@ -591,8 +605,8 @@ public final class M3ListPane extends Control {
                     event,
                     this,
                     getItems(),
-                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
-                    M3ListItem.class,
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItemBase.class),
+                    M3ListItemBase.class,
                     false,
                     true
             )) {
@@ -602,8 +616,8 @@ public final class M3ListPane extends Control {
                     event,
                     this,
                     getItems(),
-                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
-                    M3ListItem.class
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItemBase.class),
+                    M3ListItemBase.class
             );
             return;
         }
@@ -648,7 +662,7 @@ public final class M3ListPane extends Control {
 
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
         typeAheadState.append(normalizedCharacter);
-        @Nullable M3ListItem target = typeAheadTarget(typeAheadState.getPrefix());
+        @Nullable M3ListItemBase target = typeAheadTarget(typeAheadState.getPrefix());
         if (target == null && typeAheadState.length() > 1) {
             typeAheadState.replace(normalizedCharacter);
             target = typeAheadTarget(typeAheadState.getPrefix());
@@ -658,27 +672,39 @@ public final class M3ListPane extends Control {
         }
 
         focusTypeAheadTarget(target);
-        if (getSelectionMode() == M3SelectionMode.SINGLE) {
-            select(target);
+        if (getSelectionMode() == M3SelectionMode.SINGLE && target instanceof M3ListItem listItem) {
+            select(listItem);
         }
         event.consume();
     }
 
-    /// Returns the next enabled visible list item matching the normalized type-ahead prefix.
-    private @Nullable M3ListItem typeAheadTarget(String prefix) {
-        @Nullable M3ListItem anchor =
-                M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class);
+    /// Returns the next enabled visible row matching the normalized type-ahead prefix.
+    private @Nullable M3ListItemBase typeAheadTarget(String prefix) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
+            @Nullable M3ListItem anchor =
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class);
+            return M3SelectionNavigation.typeAheadTarget(
+                    getItems(),
+                    anchor,
+                    M3ListItem.class,
+                    prefix,
+                    M3ListItem::getHeadlineText
+            );
+        }
+
+        @Nullable M3ListItemBase anchor =
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItemBase.class);
         return M3SelectionNavigation.typeAheadTarget(
                 getItems(),
                 anchor,
-                M3ListItem.class,
+                M3ListItemBase.class,
                 prefix,
-                M3ListItem::getHeadlineText
+                M3ListItemBase::getHeadlineText
         );
     }
 
     /// Focuses a type-ahead target and notifies accessibility clients.
-    private void focusTypeAheadTarget(M3ListItem item) {
+    private void focusTypeAheadTarget(M3ListItemBase item) {
         if (M3Accessible.showItem(this, item)) {
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();

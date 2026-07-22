@@ -76,6 +76,7 @@ import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
 import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
@@ -136,6 +137,7 @@ import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
@@ -144,6 +146,7 @@ import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SearchViewLayout;
 import org.glavo.m3fx.controls.M3SearchViewStyle;
+import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SideSheet;
@@ -157,6 +160,7 @@ import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
 import org.glavo.m3fx.controls.M3TabBarLayout;
@@ -260,6 +264,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Dialogs", M3FXDemoVisualMatrixTest::assertDialogsPageVisualState),
             Map.entry("Dividers", M3FXDemoVisualMatrixTest::assertDividersPageVisualState),
             Map.entry("Lists", M3FXDemoVisualMatrixTest::assertListsPageVisualState),
+            Map.entry("Settings", M3FXDemoVisualMatrixTest::assertSettingsPageVisualState),
             Map.entry("Loading Indicator", M3FXDemoVisualMatrixTest::assertLoadingIndicatorPageVisualState),
             Map.entry("Progress", M3FXDemoVisualMatrixTest::assertProgressPageVisualState),
             Map.entry("Menus", M3FXDemoVisualMatrixTest::assertMenusPageVisualState),
@@ -311,6 +316,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Bottom App Bars", "Toolbars"),
             Map.entry("Banners", "Additional demos"),
             Map.entry("Forms", "Additional demos"),
+            Map.entry("Settings", "Additional demos"),
             Map.entry("Motion", "Additional demos"),
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
@@ -12656,7 +12662,7 @@ final class M3FXDemoVisualMatrixTest {
         assertCurrentPageTitle(scene, "Lists");
         assertVisibleText(root, "Standard", "Lists");
         assertVisibleText(root, "Segmented", "Lists");
-        assertVisibleText(root, "Settings List", "Lists");
+        assertVisibleText(root, "Settings Rows", "Lists");
         assertVisibleText(root, "Virtualized Segmented", "Lists");
         assertVisibleText(root, "Selected item", "Lists");
         assertVisibleText(root, "Disabled item", "Lists");
@@ -12675,18 +12681,23 @@ final class M3FXDemoVisualMatrixTest {
                 .orElseThrow(() -> new AssertionError("standard list pane"));
         M3ListPane segmentedList = listPanes.stream()
                 .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("segmented list pane"));
-        M3ListPane settingsList = listPanes.stream()
-                .filter(listPane -> listPane.getListStyle() == M3ListStyle.STANDARD)
                 .filter(listPane -> listPane.getItems().stream()
                         .filter(M3ListItem.class::isInstance)
                         .map(M3ListItem.class::cast)
+                        .anyMatch(item -> "Thumbnail item".equals(item.getHeadlineText())))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("segmented list pane"));
+        M3ListPane settingsList = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3SwitchSettingItem.class::isInstance)
+                        .map(M3SwitchSettingItem.class::cast)
                         .anyMatch(item -> "Automatic updates".equals(item.getHeadlineText())))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("settings list pane"));
         assertEquals(0.0, standardList.getItemSpacing(), 0.0001, "standard list spacing");
-        assertEquals(0.0, settingsList.getItemSpacing(), 0.0001, "settings list spacing");
+        assertEquals(2.0, settingsList.getItemSpacing(), 0.0001, "settings list spacing");
+        assertEquals(M3SelectionMode.NONE, settingsList.getSelectionMode(), "settings list selection mode");
         assertEquals(2.0, segmentedList.getItemSpacing(), 0.0001, "segmented list spacing");
         assertEquals(2, settingsList.getItems().size(), "settings list item count");
         assertEquals(1, visibleNodesOfType(settingsList, M3Switch.class).size(), "settings list switch count");
@@ -12767,6 +12778,74 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(0.38, disabledLeading.getOpacity(), 0.0001, "disabled list item leading opacity");
     }
 
+    /// Verifies the real Settings demo page action, boolean, and radio rows.
+    private static void assertSettingsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Settings");
+        assertCurrentPageTitle(scene, "Settings");
+        assertVisibleText(root, "Action Settings", "Settings");
+        assertVisibleText(root, "Toggle Settings", "Settings");
+        assertVisibleText(root, "Single Choice", "Settings");
+        assertVisibleText(root, "Automatic updates", "Settings");
+        assertVisibleText(root, "Use mobile data", "Settings");
+        assertVisibleText(root, "Use system theme", "Settings");
+
+        List<M3ListPane> listPanes = visibleNodesOfType(page, M3ListPane.class);
+        assertEquals(3, listPanes.size(), "Settings page should render action, toggle, and choice panes");
+        M3ListPane actionRows = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.STANDARD)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3SettingItem.class::isInstance)
+                        .map(M3SettingItem.class::cast)
+                        .anyMatch(item -> "Account".equals(item.getHeadlineText())))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("action settings pane"));
+        M3ListPane toggleRows = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3SwitchSettingItem.class::isInstance)
+                        .map(M3SwitchSettingItem.class::cast)
+                        .anyMatch(item -> "Automatic updates".equals(item.getHeadlineText())))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("toggle settings pane"));
+        M3ListPane choiceRows = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3RadioButtonSettingItem.class::isInstance)
+                        .map(M3RadioButtonSettingItem.class::cast)
+                        .anyMatch(item -> "Use system theme".equals(item.getHeadlineText())))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("choice settings pane"));
+
+        assertEquals(M3SelectionMode.NONE, actionRows.getSelectionMode(), "action settings selection mode");
+        assertEquals(M3SelectionMode.NONE, toggleRows.getSelectionMode(), "toggle settings selection mode");
+        assertEquals(M3SelectionMode.NONE, choiceRows.getSelectionMode(), "choice settings selection mode");
+        assertEquals(0.0, actionRows.getItemSpacing(), 0.0001, "standard action settings spacing");
+        assertEquals(2.0, toggleRows.getItemSpacing(), 0.0001, "segmented toggle settings spacing");
+        assertEquals(2.0, choiceRows.getItemSpacing(), 0.0001, "segmented choice settings spacing");
+
+        List<M3SwitchSettingItem> switches = visibleNodesOfType(page, M3SwitchSettingItem.class);
+        assertEquals(1, switches.size(), "Settings page switch setting count");
+        assertTrue(switches.get(0).isSelected(), "automatic updates should start selected");
+        List<M3CheckBoxSettingItem> checkBoxes = visibleNodesOfType(page, M3CheckBoxSettingItem.class);
+        assertEquals(2, checkBoxes.size(), "Settings page checkbox setting count");
+        assertTrue(checkBoxes.stream().anyMatch(item -> item.isDisabled() && item.isIndeterminate()),
+                "Settings page should show a disabled indeterminate checkbox setting");
+        List<M3RadioButtonSettingItem> radios = visibleNodesOfType(page, M3RadioButtonSettingItem.class);
+        assertEquals(3, radios.size(), "Settings page radio setting count");
+        assertEquals(1L, radios.stream().filter(M3RadioButtonSettingItem::isSelected).count(),
+                "Settings page theme choice should retain one radio selection");
+
+        List<M3ListItemBase> toggleItems = toggleRows.getItems().stream()
+                .filter(M3ListItemBase.class::isInstance)
+                .map(M3ListItemBase.class::cast)
+                .toList();
+        assertTrue(toggleItems.size() >= 2, "segmented toggle settings should render adjacent rows");
+        Bounds firstBounds = toggleItems.get(0).localToScene(toggleItems.get(0).getBoundsInLocal());
+        Bounds secondBounds = toggleItems.get(1).localToScene(toggleItems.get(1).getBoundsInLocal());
+        assertEquals(2.0, secondBounds.getMinY() - firstBounds.getMaxY(), CONTROL_EDGE_TOLERANCE,
+                "segmented setting-row rendered gap");
+    }
     /// Verifies the real Loading Indicator demo page default and contained variants.
     private static void assertLoadingIndicatorPageVisualState(Scene scene) {
         Parent root = scene.getRoot();

@@ -89,6 +89,9 @@ final class DemoMaterialDocs {
     /// The lists component documentation URL.
     static final String LISTS = componentUrl("lists");
 
+    /// The closest Material documentation URL for settings rows.
+    static final String SETTINGS = LISTS;
+
     /// The loading indicator component documentation URL.
     static final String LOADING_INDICATOR = componentUrl("loading-indicator");
 

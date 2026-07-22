@@ -71,6 +71,7 @@ final class DemoPageCatalog {
                 new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", DemoMaterialDocs.DIALOGS, (new DialogsDemoPage(context))::createContent),
                 new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", DemoMaterialDocs.DIVIDER, (new DividersDemoPage(context))::createContent),
                 new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, selected, and disabled rows", DemoMaterialDocs.LISTS, (new ListDemoPage(context))::createContent),
+                new DemoPage("Settings", "Settings", ADDITIONAL_DEMOS_GROUP, "Action, switch, checkbox, and radio setting rows", DemoMaterialDocs.SETTINGS, (new SettingsDemoPage(context))::createContent),
                 new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", DemoMaterialDocs.LOADING_INDICATOR, (new LoadingIndicatorDemoPage(context))::createContent),
                 new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", DemoMaterialDocs.PROGRESS_INDICATORS, (new ProgressDemoPage(context))::createContent),
                 new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", DemoMaterialDocs.MENUS, (new MenusDemoPage(context))::createContent),

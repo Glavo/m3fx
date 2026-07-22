@@ -14,8 +14,8 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3SelectionMode;
-import org.glavo.m3fx.controls.M3CheckBox;
-import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
+import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Builds the List component showcase page.
@@ -83,30 +83,34 @@ final class ListDemoPage extends DemoPageSupport {
         segmentedList.getItems().addAll(thumbnail, wideThumbnail, selected);
         segmentedList.select(selected);
 
-        M3Switch automaticUpdates = new M3Switch();
-        automaticUpdates.setSelected(true);
-        M3ListItem updates = new M3ListItem("Automatic updates");
+        M3SwitchSettingItem updates = new M3SwitchSettingItem("Automatic updates");
         updates.setSupportingText("Install feature updates when the device is idle");
         updates.setLeading(createSurfaceVariantIcon("archive"));
-        updates.setTrailing(automaticUpdates);
-        updates.setOnAction(event -> automaticUpdates.fire());
+        updates.setSelected(true);
+        updates.setOnAction(event -> context.showSnackbar(
+                updates.isSelected() ? "Automatic updates enabled" : "Automatic updates disabled"
+        ));
 
-        M3CheckBox cellularDownloads = new M3CheckBox();
-        M3ListItem mobileData = new M3ListItem("Use mobile data");
+        M3CheckBoxSettingItem mobileData = new M3CheckBoxSettingItem("Use mobile data");
         mobileData.setSupportingText("Allow update downloads away from Wi-Fi");
         mobileData.setLeading(createSurfaceVariantIcon("settings"));
-        mobileData.setTrailing(cellularDownloads);
-        mobileData.setOnAction(event -> cellularDownloads.fire());
+        mobileData.setAllowIndeterminate(true);
+        mobileData.setOnAction(event -> context.showSnackbar(
+                mobileData.isIndeterminate() ? "Mobile data follows network policy"
+                        : mobileData.isSelected() ? "Mobile data enabled" : "Mobile data disabled"
+        ));
 
         M3ListPane settingsList = new M3ListPane();
         settingsList.getStyleClass().add("demo-list");
         configureResponsiveWidth(settingsList, 520.0);
+        settingsList.setListStyle(M3ListStyle.SEGMENTED);
+        settingsList.setSelectionMode(M3SelectionMode.NONE);
         settingsList.getItems().addAll(updates, mobileData);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Standard", standardList),
                 createFullWidthShowcaseGroup("Segmented", segmentedList),
-                createFullWidthShowcaseGroup("Settings List", settingsList),
+                createFullWidthShowcaseGroup("Settings Rows", settingsList),
                 createFullWidthShowcaseGroup("Virtualized Segmented", createVirtualizedListView())
         );
     }

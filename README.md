@@ -329,7 +329,17 @@ button.setButtonShape(M3ButtonShape.SQUARE);
 M3ListPane list = new M3ListPane();
 list.setListStyle(M3ListStyle.SEGMENTED);
 list.setItemSpacing(6.0);
+
+M3ListPane settings = new M3ListPane();
+settings.setListStyle(M3ListStyle.SEGMENTED);
+settings.setSelectionMode(M3SelectionMode.NONE);
+M3SwitchSettingItem updates = new M3SwitchSettingItem("Automatic updates");
+settings.getItems().add(updates);
 ```
+
+`M3SettingItem`, `M3SwitchSettingItem`, `M3CheckBoxSettingItem`, and `M3RadioButtonSettingItem` keep the whole
+row as the interactive target. Use `M3SelectionMode.NONE` for their containing `M3ListPane`, because boolean and
+radio setting state is owned by the row rather than by the list selection model.
 
 Install a local theme when one application section needs a different token set without changing the complete scene:
 
@@ -432,7 +442,7 @@ Implemented component families include:
 - Buttons, icon buttons, floating action buttons, split buttons, button groups, segmented buttons, tabs, chips, and icon toggle groups.
 - Text fields, password fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
 - Checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
-- Lists, virtualized list views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
+- Lists, setting rows, virtualized list views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
 - Adaptive breakpoints and scaffolds with stable bars, navigation regions, logical rails, and one- to three-pane layouts.
 
 Controls use custom skins and avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface. Text input controls intentionally retain JavaFX text-input bases to preserve editing, selection, clipboard, IME, and multiline behavior.

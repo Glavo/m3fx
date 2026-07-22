@@ -40,10 +40,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// The common base class for Material Design 3 list and menu items.
+/// The common base class for Material Design 3 list-derived rows.
 ///
-/// `M3ListItemBase` supplies the content, selection state, and action contract shared by [M3ListItem] and
-/// [M3MenuItem]. Applications create one of those permitted concrete controls rather than extending this class.
+/// `M3ListItemBase` supplies the content, selection state, and action contract shared by [M3ListItem],
+/// [M3MenuItem], and the setting-row controls. Applications create one of those permitted concrete controls rather
+/// than extending this class.
 ///
 /// A row has a required headline and optional overline, supporting text, trailing supporting text, leading node,
 /// and trailing node. Its line count starts at one for the headline and increases for populated overline and
@@ -51,14 +52,15 @@ import java.util.Objects;
 /// one-, two-, or three-line height. Leading and trailing nodes are owned by the row while displayed and therefore
 /// must not belong to another parent.
 ///
-/// Calling [#fire()] on an enabled row delivers an [ActionEvent] to [#onActionProperty()] and other registered
-/// handlers. Selection is independent of action dispatch: [#selectedProperty()] may be set directly, while
-/// containers such as [M3ListPane] and [M3Menu] apply their configured selection policy when they handle an item
-/// action.
+/// Calling [#fire()] on an enabled row first lets the concrete row update its own semantic value, then delivers an
+/// [ActionEvent] to [#onActionProperty()] and other registered handlers when that activation was accepted. Plain
+/// list and menu items leave [#selectedProperty()] independent of action dispatch, while setting rows use it as
+/// their selected value. Containers such as [M3ListPane] and [M3Menu] apply their configured selection policy when
+/// they handle an item action.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
-public abstract sealed class M3ListItemBase extends Control permits M3ListItem, M3MenuItem {
+public abstract sealed class M3ListItemBase extends Control permits M3ListItem, M3MenuItem, M3SettingItemBase {
     /// The base style class for M3FX list items.
     public static final String STYLE_CLASS = "m3-list-item";
 
@@ -438,10 +440,11 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         return onAction;
     }
 
-    /// Whether this row is selected.
+    /// Whether this row is selected or, for a setting row, whether its boolean value is selected.
     ///
     /// Changing the property updates visual and accessibility state but does not fire an action event. A containing
-    /// selection control may change the value again to maintain its selection policy.
+    /// selection control may change a plain list or menu item's value again to maintain its selection policy. Setting
+    /// rows use the property as their control value and update it during accepted activation.
     ///
     /// @defaultValue `false`
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
@@ -453,24 +456,28 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         }
     };
 
-    /// Returns whether this list item is selected.
+    /// Returns whether this row is selected.
     ///
-    /// @return `true` when this list item is selected
+    /// For a setting row, the result is its boolean control value.
+    ///
+    /// @return `true` when this row is selected
     public final boolean isSelected() {
         return selected.get();
     }
 
-    /// Sets whether this list item is selected.
+    /// Sets whether this row is selected.
     ///
-    /// @param selected whether this list item is selected
+    /// For a setting row, this directly changes its boolean control value without firing an action event.
+    ///
+    /// @param selected whether this row is selected
     public final void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
     /// Returns the observable, bindable selected-state property.
     ///
-    /// The property defaults to `false`. Changing it does not fire an action event and remains subject to an
-    /// owning selection control's policy.
+    /// The property defaults to `false`. Changing it does not fire an action event. Plain list and menu items remain
+    /// subject to an owning selection control's policy; setting rows use it as their boolean control value.
     ///
     /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
@@ -844,14 +851,26 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         return icon;
     }
 
-    /// Fires this row's action event if it is enabled.
+    /// Fires this row's action event if it is enabled and accepts activation.
     ///
     /// The event is delivered through the normal JavaFX event dispatch chain. No event is created or delivered
-    /// while the row is disabled. This method does not directly change [#selectedProperty()].
+    /// while the row is disabled. Plain list and menu items do not directly change [#selectedProperty()]; setting
+    /// rows may update their value before the event is delivered. A row may reject activation, for example when a
+    /// grouped radio setting is already selected; rejected activation does not deliver an event.
     public final void fire() {
-        if (!isDisabled()) {
+        if (!isDisabled() && prepareAction()) {
             Event.fireEvent(this, new ActionEvent(this, this));
         }
+    }
+
+    /// Prepares an enabled row for action dispatch.
+    ///
+    /// The default implementation accepts activation without changing state. Setting-row implementations override
+    /// this hook to update their value, or to reject an activation that has no observable effect.
+    ///
+    /// @return `true` when [#fire()] must deliver an action event
+    boolean prepareAction() {
+        return true;
     }
 
     /// Returns accessibility attributes for list item selection and position.
