@@ -461,6 +461,10 @@ Build either application as a shadow jar without bundling JavaFX:
 ./gradlew shadowCatalogJar
 ```
 
+The [M3FX Nightly Release](https://github.com/Glavo/m3fx/releases/tag/nightly) is rebuilt daily and can also be
+triggered manually. It publishes the latest verified Demo Shadow JAR together with self-contained Windows x64,
+Linux x64, and macOS AArch64 Native Image distributions and a SHA-256 checksum manifest.
+
 Build a host-platform jlink runtime image:
 
 ```shell

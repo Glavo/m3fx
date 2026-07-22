@@ -207,6 +207,27 @@ The separate Native Image workflow is manual because AOT compilation is intentio
 gate. It provisions Liberica NIK Full and the platform compiler, runs `nativeBuildDemo`, and uploads the staged
 executable with `archive: false`.
 
+## Nightly Demo Release
+
+The Publish Nightly Demo workflow runs every day at 02:17 UTC and may also be started with
+`workflow_dispatch`. It first runs the Tier 1 test suite and verifies the Demo Shadow JAR. After that gate passes,
+it builds Windows x64, Linux x64, and macOS AArch64 Demo executables with Liberica Native Image Kit Full.
+
+The workflow maintains one prerelease at the `nightly` tag. Each successful run moves the tag to the tested commit,
+updates the release notes, and replaces the stable asset names:
+
+- `m3fx-demo-nightly.jar`
+- `m3fx-demo-nightly-windows-x86_64.exe`
+- `m3fx-demo-nightly-linux-x86_64.tar.gz`
+- `m3fx-demo-nightly-macos-aarch64.tar.gz`
+- `m3fx-demo-nightly-build.txt`
+- `SHA256SUMS`
+
+The native assets are self-contained platform builds. The Shadow JAR remains an integration artifact and does not
+bundle JavaFX. Manual runs may select a Liberica NIK Java feature version; scheduled runs use Java 25. The workflow
+uses fixed asset names and `gh release upload --clobber`, so it updates the existing Nightly Release rather than
+creating one release per day.
+
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 
 `check` also verifies the generated main jar, sources jar, and Javadoc jar. The artifact verification fails if required module or API entries are missing, if any bundled M3FX stylesheet resource is absent from the main jar, if any main Java source is absent from the sources jar, if the Javadoc jar is not a generated documentation artifact, or if the main jar bundles JavaFX implementation classes.

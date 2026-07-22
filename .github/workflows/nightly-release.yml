@@ -1,0 +1,284 @@
+name: Publish Nightly Demo
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      nik_java_version:
+        description: Liberica NIK Java feature version
+        required: true
+        default: "25"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m3fx-nightly-release
+  cancel-in-progress: true
+
+env:
+  NIGHTLY_NIK_JAVA_VERSION: ${{ inputs.nik_java_version || '25' }}
+
+jobs:
+  shadow-jar:
+    name: Verify and build Demo Shadow JAR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Run Tier 1 tests and verify Demo Shadow JAR
+        env:
+          GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
+        run: xvfb-run -a ./gradlew test :demo:verifyShadowJar --no-daemon
+
+      - name: Stage Shadow JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          jar_files=(demo/build/libs/m3fx-demo-*-shadow.jar)
+          if (( ${#jar_files[@]} != 1 )); then
+            printf 'Expected exactly one Demo Shadow JAR, found %d.\n' "${#jar_files[@]}" >&2
+            exit 1
+          fi
+          mkdir -p build/nightly
+          cp "${jar_files[0]}" build/nightly/m3fx-demo-nightly.jar
+
+      - name: Upload Shadow JAR
+        uses: actions/upload-artifact@v7
+        with:
+          path: build/nightly/m3fx-demo-nightly.jar
+          if-no-files-found: error
+          archive: false
+
+  native-image:
+    name: Native Demo (${{ matrix.target }}, NIK ${{ inputs.nik_java_version || '25' }})
+    needs: shadow-jar
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            distribution: linux-x86_64
+            executable: m3fx-demo
+            asset: m3fx-demo-nightly-linux-x86_64.tar.gz
+          - os: windows-latest
+            target: windows-x86_64
+            distribution: windows-x86_64
+            executable: m3fx-demo.exe
+            asset: m3fx-demo-nightly-windows-x86_64.exe
+          - os: macos-latest
+            target: macos-aarch64
+            distribution: macos-aarch64
+            executable: m3fx-demo
+            asset: m3fx-demo-nightly-macos-aarch64.tar.gz
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+
+      - name: Install Linux JavaFX build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libasound2-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libfreetype6-dev \
+            libgl-dev \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libpango1.0-dev \
+            libx11-dev \
+            libxtst-dev \
+            zlib1g-dev
+
+      - name: Set up the MSVC build environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Liberica Native Image Kit Full
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: liberica
+          java-version: ${{ env.NIGHTLY_NIK_JAVA_VERSION }}
+          java-package: jdk+fx
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build native image
+        env:
+          GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
+        run: ./gradlew nativeBuildDemo --no-daemon
+
+      - name: Verify Windows native executable startup
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $executable = Resolve-Path 'demo/build/distributions/native/windows-x86_64/m3fx-demo.exe'
+          $process = Start-Process -FilePath $executable -PassThru
+          try {
+            Start-Sleep -Seconds 10
+            $process.Refresh()
+            if ($process.HasExited) {
+              throw "The native Demo exited during startup with code $($process.ExitCode)."
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
+
+      - name: Stage Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path 'build/nightly' | Out-Null
+          Copy-Item `
+            -LiteralPath 'demo/build/distributions/native/${{ matrix.distribution }}/${{ matrix.executable }}' `
+            -Destination 'build/nightly/${{ matrix.asset }}'
+
+      - name: Stage Unix executable
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_file='demo/build/distributions/native/${{ matrix.distribution }}/${{ matrix.executable }}'
+          mkdir -p build/nightly
+          chmod +x "$source_file"
+          tar -czf 'build/nightly/${{ matrix.asset }}' \
+            -C "$(dirname "$source_file")" "$(basename "$source_file")"
+
+      - name: Upload native distribution
+        uses: actions/upload-artifact@v7
+        with:
+          path: build/nightly/${{ matrix.asset }}
+          if-no-files-found: error
+          archive: false
+
+  publish:
+    name: Update Nightly Release
+    needs:
+      - shadow-jar
+      - native-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out sources and tags
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Nightly assets
+        uses: actions/download-artifact@v8
+        with:
+          path: build/nightly-assets
+          pattern: m3fx-demo-nightly*
+          merge-multiple: true
+
+      - name: Prepare release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_directory='build/nightly-assets'
+          expected_assets=(
+            m3fx-demo-nightly.jar
+            m3fx-demo-nightly-linux-x86_64.tar.gz
+            m3fx-demo-nightly-windows-x86_64.exe
+            m3fx-demo-nightly-macos-aarch64.tar.gz
+          )
+          for asset in "${expected_assets[@]}"; do
+            if [[ ! -s "$asset_directory/$asset" ]]; then
+              printf 'Missing or empty Nightly asset: %s\n' "$asset" >&2
+              exit 1
+            fi
+          done
+
+          built_at="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          short_sha="${GITHUB_SHA:0:12}"
+          cat > "$asset_directory/m3fx-demo-nightly-build.txt" <<EOF
+          Repository: ${GITHUB_REPOSITORY}
+          Commit: ${GITHUB_SHA}
+          Ref: ${GITHUB_REF}
+          Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          Built at: ${built_at}
+          Liberica NIK Java feature: ${NIGHTLY_NIK_JAVA_VERSION}
+          EOF
+
+          (
+            cd "$asset_directory"
+            sha256sum \
+              "${expected_assets[@]}" \
+              m3fx-demo-nightly-build.txt > SHA256SUMS
+          )
+
+          cat > "$asset_directory/release-notes.md" <<EOF
+          # M3FX Nightly Demo
+
+          Automated snapshot of [commit ${short_sha}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}), built at ${built_at}.
+
+          This prerelease is updated in place by the daily Nightly workflow and by manual dispatches. Assets always represent the commit linked above.
+
+          - Windows x64, Linux x64, and macOS AArch64 Native Image distributions are self-contained platform builds.
+          - The Shadow JAR includes M3FX, MonetFX, Demo resources, and the bundled Demo font, but intentionally excludes JavaFX.
+          - SHA256SUMS covers every downloadable build asset and the build metadata file.
+
+          Workflow run: [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          EOF
+
+      - name: Move Nightly tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git tag --force nightly "$GITHUB_SHA"
+          git push --force origin refs/tags/nightly
+
+      - name: Create or update Nightly Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes_file='build/nightly-assets/release-notes.md'
+          if gh release view nightly >/dev/null 2>&1; then
+            gh release edit nightly \
+              --title 'M3FX Nightly' \
+              --notes-file "$notes_file" \
+              --prerelease
+          else
+            gh release create nightly \
+              --verify-tag \
+              --title 'M3FX Nightly' \
+              --notes-file "$notes_file" \
+              --prerelease \
+              --latest=false
+          fi
+
+          gh release upload nightly \
+            build/nightly-assets/m3fx-demo-nightly.jar \
+            build/nightly-assets/m3fx-demo-nightly-linux-x86_64.tar.gz \
+            build/nightly-assets/m3fx-demo-nightly-windows-x86_64.exe \
+            build/nightly-assets/m3fx-demo-nightly-macos-aarch64.tar.gz \
+            build/nightly-assets/m3fx-demo-nightly-build.txt \
+            build/nightly-assets/SHA256SUMS \
+            --clobber
