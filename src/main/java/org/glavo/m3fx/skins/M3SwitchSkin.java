@@ -9,7 +9,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
@@ -25,31 +24,45 @@ import org.jetbrains.annotations.Nullable;
 ///
 /// The skin combines shared selection-control interaction with a track, movable thumb, and optional thumb icon.
 /// Pointer dragging updates the thumb presentation before committing selection on release; keyboard activation and
-/// programmatic selection use the same selected-state transition.
+/// programmatic selection use the same selected-state transition. Track and handle appearances follow the visual
+/// thumb position continuously, so crossing the commit threshold does not introduce a discrete color change.
 @NotNullByDefault
 public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The minimum pointer movement before a track press becomes a handle drag.
     private static final double DRAG_THRESHOLD = 4.0;
 
-    /// The pseudo-class applied while a drag previews the unselected state.
-    private static final PseudoClass DRAG_UNSELECTED_PSEUDO_CLASS =
-            PseudoClass.getPseudoClass("drag-unselected");
-
-    /// The pseudo-class applied while a drag previews the selected state.
-    private static final PseudoClass DRAG_SELECTED_PSEUDO_CLASS =
-            PseudoClass.getPseudoClass("drag-selected");
-
-    /// The standard selection pseudo-class temporarily synchronized with the dragged handle.
-    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
-
     /// The style class applied temporarily to the currently displayed handle icon.
     private static final String HANDLE_ICON_STYLE_CLASS = "m3-switch-handle-icon";
+
+    /// The style class applied to the icon slot while it presents the unselected icon.
+    private static final String UNSELECTED_ICON_SLOT_STYLE_CLASS = "m3-switch-icon-slot-unselected";
+
+    /// The style class applied to the icon slot while it presents the selected icon.
+    private static final String SELECTED_ICON_SLOT_STYLE_CLASS = "m3-switch-icon-slot-selected";
 
     /// The visual switch track.
     private final StackPane box = new StackPane();
 
+    /// The retained unselected track appearance.
+    private final StackPane unselectedTrackLayer = new StackPane();
+
+    /// The CSS-styled surface inside the unselected track layer.
+    private final StackPane unselectedTrackPaint = new StackPane();
+
+    /// The retained selected track appearance.
+    private final StackPane selectedTrackLayer = new StackPane();
+
+    /// The CSS-styled surface inside the selected track layer.
+    private final StackPane selectedTrackPaint = new StackPane();
+
     /// The visual switch thumb.
     private final StackPane thumb = new StackPane();
+
+    /// The retained unselected handle appearance.
+    private final StackPane unselectedThumbLayer = new StackPane();
+
+    /// The retained selected handle appearance.
+    private final StackPane selectedThumbLayer = new StackPane();
 
     /// The fixed-size slot that centers the current handle icon.
     private final StackPane iconSlot = new StackPane();
@@ -59,6 +72,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Whether this skin added the managed handle icon style class to [displayedIcon].
     private boolean displayedIconStyleClassAdded;
+
+    /// Whether the icon slot currently exposes selected-state icon styling.
+    private boolean displayedIconSelected;
 
     /// Whether the current primary press began inside the switch indicator.
     private boolean dragCandidate;
@@ -148,9 +164,28 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     public M3SwitchSkin(M3Switch control) {
         super(control);
         box.getStyleClass().addAll("box", "m3-switch-track");
+        unselectedTrackLayer.getStyleClass().add("m3-switch-track-unselected-layer");
+        selectedTrackLayer.getStyleClass().add("m3-switch-track-selected-layer");
+        unselectedTrackPaint.getStyleClass().add("m3-switch-track-unselected");
+        selectedTrackPaint.getStyleClass().add("m3-switch-track-selected");
+        unselectedTrackLayer.setMouseTransparent(true);
+        selectedTrackLayer.setMouseTransparent(true);
+        unselectedTrackLayer.getChildren().add(unselectedTrackPaint);
+        selectedTrackLayer.getChildren().add(selectedTrackPaint);
+        box.getChildren().addAll(unselectedTrackLayer, selectedTrackLayer);
         thumb.getStyleClass().addAll("thumb", "m3-switch-thumb");
-        iconSlot.getStyleClass().add("m3-switch-icon-slot");
-        thumb.getChildren().add(iconSlot);
+        unselectedThumbLayer.getStyleClass().add("m3-switch-thumb-unselected-layer");
+        selectedThumbLayer.getStyleClass().add("m3-switch-thumb-selected-layer");
+        StackPane unselectedThumbPaint = new StackPane();
+        StackPane selectedThumbPaint = new StackPane();
+        unselectedThumbPaint.getStyleClass().add("m3-switch-thumb-unselected");
+        selectedThumbPaint.getStyleClass().add("m3-switch-thumb-selected");
+        unselectedThumbLayer.setMouseTransparent(true);
+        selectedThumbLayer.setMouseTransparent(true);
+        unselectedThumbLayer.getChildren().add(unselectedThumbPaint);
+        selectedThumbLayer.getChildren().add(selectedThumbPaint);
+        iconSlot.getStyleClass().addAll("m3-switch-icon-slot", UNSELECTED_ICON_SLOT_STYLE_CLASS);
+        thumb.getChildren().addAll(unselectedThumbLayer, selectedThumbLayer, iconSlot);
         thumb.setManaged(false);
         indicatorSlot().getChildren().addAll(box, thumb);
         box.toBack();
@@ -202,8 +237,13 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         control.focusedProperty().removeListener(focusedInvalidation);
         control.sceneProperty().removeListener(sceneInvalidation);
         cancelDrag();
-        setDisplayedIcon(null);
+        setDisplayedIcon(null, false);
         thumb.getChildren().clear();
+        box.getChildren().clear();
+        unselectedTrackLayer.getChildren().clear();
+        selectedTrackLayer.getChildren().clear();
+        unselectedThumbLayer.getChildren().clear();
+        selectedThumbLayer.getChildren().clear();
         super.dispose();
     }
 
@@ -250,7 +290,6 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
             return;
         }
         thumbPosition.set(clamp01((handleCenterX - offCenterX) / travel));
-        updateDragPreview();
     }
 
     /// Commits a dragged handle position and suppresses the base click toggle.
@@ -292,7 +331,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Applies the switch track shape token to the visual track.
     private void updateTrackStyle() {
         String shape = formatPixels(getSkinnable().getTrackShape());
-        box.setStyle("-fx-background-radius: " + shape + "; -fx-border-radius: " + shape + ";");
+        String style = "-fx-background-radius: " + shape + "; -fx-border-radius: " + shape + ";";
+        unselectedTrackPaint.setStyle(style);
+        selectedTrackPaint.setStyle(style);
     }
 
     /// Animates the thumb to the selected or unselected position.
@@ -344,37 +385,49 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
                 control.getTrackShape()
         );
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
+        unselectedTrackLayer.setOpacity(1.0 - position);
+        selectedTrackLayer.setOpacity(position);
+        unselectedThumbLayer.setOpacity(1.0 - position);
+        selectedThumbLayer.setOpacity(position);
         updateIconOpacity(position);
     }
 
     /// Mounts the icon for the current selected state without retaining the inactive icon in the scene graph.
     private void updateDisplayedIcon() {
         M3Switch control = getSkinnable();
-        boolean selected = dragging ? thumbPosition.get() >= 0.5 : control.isSelected();
-        setDisplayedIcon(selected ? control.getSelectedIcon() : control.getUnselectedIcon());
+        boolean selected = thumbPosition.get() >= 0.5;
+        setDisplayedIcon(selected ? control.getSelectedIcon() : control.getUnselectedIcon(), selected);
     }
 
     /// Replaces the mounted handle icon and restores the previous node's application-owned style classes.
-    private void setDisplayedIcon(@Nullable Node icon) {
-        if (displayedIcon == icon) {
-            return;
+    private void setDisplayedIcon(@Nullable Node icon, boolean selected) {
+        if (displayedIcon != icon) {
+            Node oldIcon = displayedIcon;
+            if (oldIcon != null && displayedIconStyleClassAdded) {
+                oldIcon.getStyleClass().remove(HANDLE_ICON_STYLE_CLASS);
+            }
+            iconSlot.getChildren().clear();
+            displayedIcon = icon;
+            displayedIconStyleClassAdded = false;
+            if (icon != null) {
+                if (!icon.getStyleClass().contains(HANDLE_ICON_STYLE_CLASS)) {
+                    icon.getStyleClass().add(HANDLE_ICON_STYLE_CLASS);
+                    displayedIconStyleClassAdded = true;
+                }
+                iconSlot.getChildren().add(icon);
+            }
+            iconSlot.setVisible(icon != null);
         }
 
-        Node oldIcon = displayedIcon;
-        if (oldIcon != null && displayedIconStyleClassAdded) {
-            oldIcon.getStyleClass().remove(HANDLE_ICON_STYLE_CLASS);
+        if (displayedIconSelected != selected) {
+            displayedIconSelected = selected;
+            iconSlot.getStyleClass().remove(selected
+                    ? UNSELECTED_ICON_SLOT_STYLE_CLASS
+                    : SELECTED_ICON_SLOT_STYLE_CLASS);
+            iconSlot.getStyleClass().add(selected
+                    ? SELECTED_ICON_SLOT_STYLE_CLASS
+                    : UNSELECTED_ICON_SLOT_STYLE_CLASS);
         }
-        iconSlot.getChildren().clear();
-        displayedIcon = icon;
-        displayedIconStyleClassAdded = false;
-        if (icon != null) {
-            if (!icon.getStyleClass().contains(HANDLE_ICON_STYLE_CLASS)) {
-                icon.getStyleClass().add(HANDLE_ICON_STYLE_CLASS);
-                displayedIconStyleClassAdded = true;
-            }
-            iconSlot.getChildren().add(icon);
-        }
-        iconSlot.setVisible(icon != null);
     }
 
     /// Fades the destination-state icon in as the handle moves between switch states.
@@ -388,27 +441,14 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         if (control.getSelectedIcon() == control.getUnselectedIcon()) {
             iconSlot.setOpacity(1.0);
         } else {
-            boolean selected = dragging ? position >= 0.5 : control.isSelected();
-            iconSlot.setOpacity(selected ? position : 1.0 - position);
+            iconSlot.setOpacity(position < 0.5
+                    ? 1.0 - position * 2.0
+                    : position * 2.0 - 1.0);
         }
     }
 
-    /// Updates the transient visual selection state while the handle is dragged.
-    private void updateDragPreview() {
-        boolean selected = thumbPosition.get() >= 0.5;
-        M3Switch control = getSkinnable();
-        control.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
-        control.pseudoClassStateChanged(DRAG_UNSELECTED_PSEUDO_CLASS, !selected);
-        control.pseudoClassStateChanged(DRAG_SELECTED_PSEUDO_CLASS, selected);
-        updateDisplayedIcon();
-    }
-
-    /// Clears transient drag-selection pseudo-classes and restores the committed icon state.
+    /// Restores the icon state after a direct manipulation gesture ends.
     private void clearDragPreview() {
-        M3Switch control = getSkinnable();
-        control.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, control.isSelected());
-        control.pseudoClassStateChanged(DRAG_UNSELECTED_PSEUDO_CLASS, false);
-        control.pseudoClassStateChanged(DRAG_SELECTED_PSEUDO_CLASS, false);
         updateDisplayedIcon();
     }
 

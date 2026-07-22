@@ -3,11 +3,13 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Node;
 
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -160,8 +162,54 @@ final class NavigationRailDemoPage extends DemoPageSupport {
             railPresentation = immersivePresentation;
         }
 
-        VBox preview = new VBox(12.0, titleLabel, railPresentation);
+        StackPane presentationFootprint = createRailPresentationFootprint(railPresentation, navigationRail);
+        VBox preview = new VBox(12.0, titleLabel, presentationFootprint);
         preview.setAlignment(Pos.TOP_LEFT);
+        reserveExpandedRailFootprint(preview, navigationRail);
         return preview;
+    }
+
+    /// Creates a stable-height viewport for one rail presentation.
+    ///
+    /// A rail may resolve different content heights for its vertical and horizontal destination layouts. The
+    /// viewport retains the sample's declared preferred height while allowing the rail to keep its own maximum-size
+    /// behavior, so rows below the sample do not move during expansion.
+    ///
+    /// @param presentation   the rail or composite presentation shown in the preview
+    /// @param navigationRail the rail that declares the sample height
+    /// @return the stable presentation viewport
+    private static StackPane createRailPresentationFootprint(Node presentation, M3NavigationRail navigationRail) {
+        StackPane footprint = new StackPane(presentation);
+        footprint.setAlignment(Pos.TOP_LEFT);
+        StackPane.setAlignment(presentation, Pos.TOP_LEFT);
+        footprint.minHeightProperty().bind(navigationRail.prefHeightProperty());
+        footprint.prefHeightProperty().bind(navigationRail.prefHeightProperty());
+        footprint.maxHeightProperty().bind(navigationRail.prefHeightProperty());
+        return footprint;
+    }
+
+    /// Reserves the rail's resolved expanded width without stretching its current presentation.
+    ///
+    /// The surrounding gallery may still wrap complete previews when its available width changes. Keeping each
+    /// preview's footprint stable ensures that the rail's own expansion animation cannot reflow a sibling preview.
+    ///
+    /// @param preview        the preview cell placed in the gallery flow
+    /// @param navigationRail the rail whose expanded footprint is reserved
+    private static void reserveExpandedRailFootprint(VBox preview, M3NavigationRail navigationRail) {
+        DoubleBinding expandedFootprint = Bindings.createDoubleBinding(
+                () -> {
+                    double minimum = navigationRail.getExpandedMinimumContainerWidth();
+                    double maximum = Math.max(minimum, navigationRail.getExpandedMaximumContainerWidth());
+                    return Math.max(minimum, Math.min(maximum, navigationRail.getExpandedContainerWidth()));
+                },
+                navigationRail.expandedMinimumContainerWidthProperty(),
+                navigationRail.expandedContainerWidthProperty(),
+                navigationRail.expandedMaximumContainerWidthProperty()
+        );
+
+        preview.setFillWidth(false);
+        preview.minWidthProperty().bind(expandedFootprint);
+        preview.prefWidthProperty().bind(expandedFootprint);
+        preview.maxWidthProperty().bind(expandedFootprint);
     }
 }

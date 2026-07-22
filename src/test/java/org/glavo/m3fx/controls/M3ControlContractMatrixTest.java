@@ -19046,61 +19046,63 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.38, checkBoxContainer.getOpacity(), 0.0001);
         assertRegionFill(lookupRegion(checkBox, ".mark"), Color.rgb(19, 20, 21));
 
-        Region switchTrack = lookupRegion(switchControl, ".box");
-        Region switchThumb = lookupRegion(switchControl, ".thumb");
+        Region switchUnselectedTrack = lookupRegion(switchControl, ".m3-switch-track-unselected");
+        Region switchSelectedTrack = lookupRegion(switchControl, ".m3-switch-track-selected");
+        Region switchUnselectedThumb = lookupRegion(switchControl, ".m3-switch-thumb-unselected");
+        Region switchSelectedThumb = lookupRegion(switchControl, ".m3-switch-thumb-selected");
         Region switchStateLayer = lookupRegion(switchControl, ".m3-state-layer");
-        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
-        assertBorderColor(switchTrack, Color.rgb(22, 23, 24));
-        assertRegionFill(switchThumb, Color.rgb(22, 23, 24));
+        assertRegionFill(switchUnselectedTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchUnselectedTrack, Color.rgb(22, 23, 24));
+        assertRegionFill(switchUnselectedThumb, Color.rgb(22, 23, 24));
         assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         root.applyCss();
-        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
-        assertBorderColor(switchTrack, Color.rgb(22, 23, 24));
-        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchUnselectedTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchUnselectedTrack, Color.rgb(22, 23, 24));
+        assertRegionFill(switchUnselectedThumb, Color.rgb(7, 8, 9));
         assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         root.applyCss();
-        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchUnselectedThumb, Color.rgb(7, 8, 9));
         assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
         switchControl.arm();
         root.applyCss();
-        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchUnselectedThumb, Color.rgb(7, 8, 9));
         assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
 
         switchControl.disarm();
         switchControl.setSelected(true);
         root.applyCss();
-        assertRegionFill(switchTrack, Color.rgb(1, 2, 3));
-        assertNoBorder(switchTrack);
-        assertRegionFill(switchThumb, Color.rgb(25, 26, 27));
+        assertRegionFill(switchSelectedTrack, Color.rgb(1, 2, 3));
+        assertNoBorder(switchSelectedTrack);
+        assertRegionFill(switchSelectedThumb, Color.rgb(25, 26, 27));
         assertRegionFill(switchStateLayer, Color.rgb(1, 2, 3));
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         root.applyCss();
-        assertRegionFill(switchThumb, Color.rgb(28, 29, 30));
+        assertRegionFill(switchSelectedThumb, Color.rgb(28, 29, 30));
         assertRegionFill(switchStateLayer, Color.rgb(1, 2, 3));
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
         switchControl.setDisable(true);
         root.applyCss();
-        assertRegionFill(switchTrack, Color.rgb(4, 5, 6));
-        assertEquals(0.12, switchTrack.getOpacity(), 0.0001);
-        assertRegionFill(switchThumb, Color.rgb(19, 20, 21));
-        assertEquals(1.0, switchThumb.getOpacity(), 0.0001);
+        assertRegionFill(switchSelectedTrack, Color.rgb(4, 5, 6));
+        assertEquals(0.12, switchSelectedTrack.getOpacity(), 0.0001);
+        assertRegionFill(switchSelectedThumb, Color.rgb(19, 20, 21));
+        assertEquals(1.0, switchSelectedThumb.getOpacity(), 0.0001);
 
         switchControl.setSelected(false);
         root.applyCss();
-        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
-        assertBorderColor(switchTrack, Color.rgb(4, 5, 6));
-        assertEquals(0.12, switchTrack.getOpacity(), 0.0001);
-        assertRegionFill(switchThumb, Color.rgb(4, 5, 6));
-        assertEquals(0.38, switchThumb.getOpacity(), 0.0001);
+        assertRegionFill(switchUnselectedTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchUnselectedTrack, Color.rgb(4, 5, 6));
+        assertEquals(0.12, switchUnselectedTrack.getOpacity(), 0.0001);
+        assertRegionFill(switchUnselectedThumb, Color.rgb(4, 5, 6));
+        assertEquals(0.38, switchUnselectedThumb.getOpacity(), 0.0001);
     }
 
     /// Verifies that selection controls create Material Design 3 skins.
@@ -19350,6 +19352,14 @@ final class M3ControlContractMatrixTest {
         AtomicInteger switchActions = new AtomicInteger();
         switchControl.setOnAction(event -> switchActions.incrementAndGet());
         Region switchTrack = lookupRegion(switchControl, ".m3-switch-track");
+        Region unselectedTrackLayer = lookupRegion(switchControl, ".m3-switch-track-unselected-layer");
+        Region selectedTrackLayer = lookupRegion(switchControl, ".m3-switch-track-selected-layer");
+        Region unselectedThumbLayer = lookupRegion(switchControl, ".m3-switch-thumb-unselected-layer");
+        Region selectedThumbLayer = lookupRegion(switchControl, ".m3-switch-thumb-selected-layer");
+        Region unselectedTrackPaint = lookupRegion(switchControl, ".m3-switch-track-unselected");
+        Region selectedTrackPaint = lookupRegion(switchControl, ".m3-switch-track-selected");
+        Region unselectedThumbPaint = lookupRegion(switchControl, ".m3-switch-thumb-unselected");
+        Region selectedThumbPaint = lookupRegion(switchControl, ".m3-switch-thumb-selected");
         double offCenter = switchControl.getTrackHeight() / 2.0;
         double onCenter = switchTrack.getWidth() - offCenter;
         double trackCenterY = switchTrack.getHeight() / 2.0;
@@ -19368,21 +19378,19 @@ final class M3ControlContractMatrixTest {
                 true
         ));
         root.applyCss();
-        assertTrue(
-                switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")),
-                "Dragging to the off side should expose the unselected visual preview"
-        );
-        assertTrue(switchControl.isSelected(), "Dragging should preview the destination before committing selection");
+        assertTrue(switchControl.isSelected(), "Dragging must not commit selection before release");
+        assertEquals(1.0, unselectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(0.0, selectedTrackLayer.getOpacity(), 0.0001);
         assertRegionFill(
-                switchTrack,
+                unselectedTrackPaint,
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER_HIGHEST)
         );
-        javafx.scene.layout.BorderStroke offPreviewBorder = switchTrack.getBorder().getStrokes().get(0);
+        javafx.scene.layout.BorderStroke offPreviewBorder = unselectedTrackPaint.getBorder().getStrokes().get(0);
         assertEquals(theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.OUTLINE),
                 offPreviewBorder.getTopStroke());
         assertEquals(2.0, offPreviewBorder.getWidths().getTop(), 0.0001);
         assertRegionFill(
-                lookupRegion(switchControl, ".m3-switch-thumb"),
+                unselectedThumbPaint,
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT)
         );
         switchTrack.fireEvent(primaryMouseEvent(
@@ -19393,7 +19401,6 @@ final class M3ControlContractMatrixTest {
                 false
         ));
         assertFalse(switchControl.isSelected(), "Dragging the handle to the off side should clear selection");
-        assertFalse(switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")));
         assertEquals(1, switchActions.get(), "A committed handle drag should fire one action event");
 
         switchTrack.fireEvent(primaryMouseEvent(
@@ -19406,19 +19413,42 @@ final class M3ControlContractMatrixTest {
         switchTrack.fireEvent(primaryMouseEvent(
                 switchTrack,
                 MouseEvent.MOUSE_DRAGGED,
+                offCenter + (onCenter - offCenter) * 0.49,
+                trackCenterY,
+                true
+        ));
+        assertEquals(0.51, unselectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(0.49, selectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(0.51, unselectedThumbLayer.getOpacity(), 0.0001);
+        assertEquals(0.49, selectedThumbLayer.getOpacity(), 0.0001);
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_DRAGGED,
+                offCenter + (onCenter - offCenter) * 0.51,
+                trackCenterY,
+                true
+        ));
+        assertEquals(0.49, unselectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(0.51, selectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(0.49, unselectedThumbLayer.getOpacity(), 0.0001);
+        assertEquals(0.51, selectedThumbLayer.getOpacity(), 0.0001);
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_DRAGGED,
                 onCenter,
                 trackCenterY,
                 true
         ));
-        root.applyCss();
         assertFalse(switchControl.isSelected(), "Dragging should not commit the selected state before release");
+        assertEquals(0.0, unselectedTrackLayer.getOpacity(), 0.0001);
+        assertEquals(1.0, selectedTrackLayer.getOpacity(), 0.0001);
         assertRegionFill(
-                switchTrack,
+                selectedTrackPaint,
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY)
         );
-        assertNoBorder(switchTrack);
+        assertNoBorder(selectedTrackPaint);
         assertRegionFill(
-                lookupRegion(switchControl, ".m3-switch-thumb"),
+                selectedThumbPaint,
                 theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY_CONTAINER)
         );
         switchTrack.fireEvent(primaryMouseEvent(
@@ -19429,7 +19459,6 @@ final class M3ControlContractMatrixTest {
                 false
         ));
         assertTrue(switchControl.isSelected(), "Dragging the handle to the on side should select the switch");
-        assertFalse(switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-selected")));
         assertEquals(2, switchActions.get(), "Opposite handle drags should each commit one action event");
 
         switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -19953,19 +19982,19 @@ final class M3ControlContractMatrixTest {
         switchControl.resize(120.0, 48.0);
         switchControl.layout();
 
-        Region thumb = lookupRegion(switchControl, ".thumb");
-        Paint selectedHandleColor = thumb.getBackground().getFills().get(0).getFill();
+        Region selectedThumb = lookupRegion(switchControl, ".m3-switch-thumb-selected");
+        Paint selectedHandleColor = selectedThumb.getBackground().getFills().get(0).getFill();
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
         root.applyCss();
 
-        assertEquals(selectedHandleColor, thumb.getBackground().getFills().get(0).getFill(),
+        assertEquals(selectedHandleColor, selectedThumb.getBackground().getFills().get(0).getFill(),
                 "ordinary focus retained after a pointer click must keep the selected handle color");
 
         switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         root.applyCss();
 
-        assertFalse(selectedHandleColor.equals(thumb.getBackground().getFills().get(0).getFill()),
+        assertFalse(selectedHandleColor.equals(selectedThumb.getBackground().getFills().get(0).getFill()),
                 "keyboard-visible focus must use the selected focus-state handle color");
     }
 
@@ -19991,8 +20020,15 @@ final class M3ControlContractMatrixTest {
             Region stateLayer = lookupRegion(switchControl, ".m3-state-layer-container");
             Region track = lookupRegion(switchControl, ".box");
             Region thumb = lookupRegion(switchControl, ".thumb");
-            track.setStyle(track.getStyle() + " -fx-background-color: white; -fx-border-color: white;");
-            thumb.setStyle(thumb.getStyle() + " -fx-background-color: white;");
+            for (String selector : List.of(".m3-switch-track-unselected", ".m3-switch-track-selected")) {
+                Region trackLayer = lookupRegion(switchControl, selector);
+                trackLayer.setStyle(trackLayer.getStyle()
+                        + " -fx-background-color: white; -fx-border-color: white;");
+            }
+            for (String selector : List.of(".m3-switch-thumb-unselected", ".m3-switch-thumb-selected")) {
+                Region thumbLayer = lookupRegion(switchControl, selector);
+                thumbLayer.setStyle(thumbLayer.getStyle() + " -fx-background-color: white;");
+            }
             root.applyCss();
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -20044,7 +20080,7 @@ final class M3ControlContractMatrixTest {
         switchControl.resize(120.0, 48.0);
         switchControl.layout();
 
-        Region track = lookupRegion(switchControl, ".box");
+        Region track = lookupRegion(switchControl, ".m3-switch-track-unselected");
         assertEquals(12.0, track.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
         assertEquals(12.0, track.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
     }

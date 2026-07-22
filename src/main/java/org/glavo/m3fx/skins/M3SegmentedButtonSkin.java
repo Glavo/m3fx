@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.layout.Border;
@@ -34,9 +35,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The built-in selected-state check indicator style class.
     public static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
 
-    /// The skin-managed class that hides an application graphic while the selected check replaces it.
-    private static final String REPLACED_GRAPHIC_STYLE_CLASS =
-            "m3-segmented-button-replaced-graphic";
+    /// Marks an application graphic that is currently replaced by the built-in selected-state check.
+    private static final PseudoClass GRAPHIC_REPLACED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-segmented-button-graphic-replaced");
 
     /// The checkmark layer inside the selected-state indicator.
     private static final String SELECTION_INDICATOR_MARK_STYLE_CLASS =
@@ -328,6 +329,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// Animates all selected-state visuals and keeps content measurement stable.
     private void animateSelection(boolean selected) {
+        updateGraphicReplacement(getSkinnable().getGraphic(), shouldDisplaySelectionIndicator(selected));
         animateSelectionContainer(selected);
         animateSelectionIndicator(shouldDisplaySelectionIndicator(selected));
         getSkinnable().requestLayout();
@@ -368,15 +370,20 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         button.requestLayout();
     }
 
-    /// Transfers the class that lets CSS replace the application graphic without painting over it.
+    /// Transfers the replacement state between application graphics.
     private void updateManagedGraphic(@Nullable Node oldGraphic, @Nullable Node newGraphic) {
-        if (oldGraphic != null) {
-            oldGraphic.getStyleClass().remove(REPLACED_GRAPHIC_STYLE_CLASS);
+        if (oldGraphic != null && oldGraphic != newGraphic) {
+            updateGraphicReplacement(oldGraphic, false);
         }
-        if (newGraphic != null && getSkinnable().isSelectionIndicatorEnabled()) {
-            if (!newGraphic.getStyleClass().contains(REPLACED_GRAPHIC_STYLE_CLASS)) {
-                newGraphic.getStyleClass().add(REPLACED_GRAPHIC_STYLE_CLASS);
-            }
+        if (newGraphic != null) {
+            updateGraphicReplacement(newGraphic, shouldDisplaySelectionIndicator());
+        }
+    }
+
+    /// Updates whether CSS hides an application graphic behind the built-in selected-state check.
+    private static void updateGraphicReplacement(@Nullable Node graphic, boolean replaced) {
+        if (graphic != null) {
+            graphic.pseudoClassStateChanged(GRAPHIC_REPLACED_PSEUDO_CLASS, replaced);
         }
     }
 

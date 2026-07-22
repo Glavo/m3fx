@@ -58,7 +58,7 @@
     -fx-scale-shape: true;
 }
 
-.m3-segmented-button:selected .m3-segmented-button-replaced-graphic {
+*:m3-segmented-button-graphic-replaced {
     -fx-opacity: 0;
 }
 

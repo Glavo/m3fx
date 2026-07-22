@@ -235,55 +235,56 @@
     -fx-fill: -m3-color-primary;
 }
 
-.m3-switch .box,
-.m3-switch:hover .box,
-.m3-switch:focus-visible .box,
-.m3-switch:armed .box,
-.m3-switch:pressed .box {
+.m3-switch .box {
+    -fx-background-color: transparent;
+    -fx-alignment: center-left;
+}
+
+.m3-switch .m3-switch-track-unselected {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-radius: 999px;
     -fx-border-color: -m3-color-outline;
     -fx-border-insets: 0;
     -fx-border-radius: 999px;
     -fx-border-width: 2px;
-    -fx-alignment: center-left;
 }
 
-.m3-switch:selected .box,
-.m3-switch:selected:hover .box,
-.m3-switch:selected:focus-visible .box,
-.m3-switch:selected:armed .box,
-.m3-switch:selected:pressed .box {
+.m3-switch .m3-switch-track-selected {
     -fx-background-color: -m3-color-primary;
+    -fx-background-radius: 999px;
     -fx-border-color: -m3-color-primary;
+    -fx-border-radius: 999px;
     -fx-border-width: 0px;
 }
 
-.m3-switch .thumb,
-.m3-switch:hover .thumb,
-.m3-switch:focus-visible .thumb,
-.m3-switch:armed .thumb,
-.m3-switch:pressed .thumb {
+.m3-switch .thumb {
+    -fx-background-color: transparent;
+    -fx-background-radius: 999px;
+}
+
+.m3-switch .m3-switch-thumb-unselected {
     -fx-background-color: -m3-color-outline;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
 }
 
-.m3-switch:hover .thumb,
-.m3-switch:focus-visible .thumb,
-.m3-switch:armed .thumb,
-.m3-switch:pressed .thumb {
+.m3-switch:hover .m3-switch-thumb-unselected,
+.m3-switch:focus-visible .m3-switch-thumb-unselected,
+.m3-switch:armed .m3-switch-thumb-unselected,
+.m3-switch:pressed .m3-switch-thumb-unselected {
     -fx-background-color: -m3-color-on-surface-variant;
 }
 
-.m3-switch:selected .thumb {
+.m3-switch .m3-switch-thumb-selected {
     -fx-background-color: -m3-color-on-primary;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
 }
 
-.m3-switch:selected:hover .thumb,
-.m3-switch:selected:focus-visible .thumb,
-.m3-switch:selected:armed .thumb,
-.m3-switch:selected:pressed .thumb {
+.m3-switch:hover .m3-switch-thumb-selected,
+.m3-switch:focus-visible .m3-switch-thumb-selected,
+.m3-switch:armed .m3-switch-thumb-selected,
+.m3-switch:pressed .m3-switch-thumb-selected {
     -fx-background-color: -m3-color-primary-container;
 }
 
@@ -291,13 +292,13 @@
     -fx-alignment: center;
 }
 
-.m3-switch .m3-switch-handle-icon {
+.m3-switch .m3-switch-icon-slot-unselected .m3-switch-handle-icon {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-fill: -m3-color-surface-container-highest;
     -fx-text-fill: -m3-color-surface-container-highest;
 }
 
-.m3-switch:selected .m3-switch-handle-icon {
+.m3-switch .m3-switch-icon-slot-selected .m3-switch-handle-icon {
     -fx-background-color: -m3-color-primary;
     -fx-fill: -m3-color-primary;
     -fx-text-fill: -m3-color-primary;
@@ -365,41 +366,25 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
-.m3-switch:disabled .box,
-.m3-switch:disabled:hover .box,
-.m3-switch:disabled:focus-visible .box,
-.m3-switch:disabled:armed .box,
-.m3-switch:disabled:pressed .box {
+.m3-switch:disabled .m3-switch-track-unselected {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-border-color: -m3-color-on-surface;
     -fx-opacity: -m3-state-disabled-container-opacity;
 }
 
-.m3-switch:selected:disabled .box,
-.m3-switch:selected:disabled:hover .box,
-.m3-switch:selected:disabled:focus-visible .box,
-.m3-switch:selected:disabled:armed .box,
-.m3-switch:selected:disabled:pressed .box {
+.m3-switch:disabled .m3-switch-track-selected {
     -fx-background-color: -m3-color-on-surface;
     -fx-border-color: -m3-color-on-surface;
     -fx-border-width: 0px;
     -fx-opacity: -m3-state-disabled-container-opacity;
 }
 
-.m3-switch:disabled .thumb,
-.m3-switch:disabled:hover .thumb,
-.m3-switch:disabled:focus-visible .thumb,
-.m3-switch:disabled:armed .thumb,
-.m3-switch:disabled:pressed .thumb {
+.m3-switch:disabled .m3-switch-thumb-unselected {
     -fx-background-color: -m3-color-on-surface;
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
-.m3-switch:selected:disabled .thumb,
-.m3-switch:selected:disabled:hover .thumb,
-.m3-switch:selected:disabled:focus-visible .thumb,
-.m3-switch:selected:disabled:armed .thumb,
-.m3-switch:selected:disabled:pressed .thumb {
+.m3-switch:disabled .m3-switch-thumb-selected {
     -fx-background-color: -m3-color-surface;
     -fx-opacity: 1;
 }
@@ -408,7 +393,7 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
-.m3-switch:selected:disabled .m3-switch-handle-icon {
+.m3-switch:disabled .m3-switch-icon-slot-selected .m3-switch-handle-icon {
     -fx-background-color: -m3-color-on-surface;
     -fx-fill: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;

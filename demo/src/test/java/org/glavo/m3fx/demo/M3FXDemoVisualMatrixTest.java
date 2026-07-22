@@ -13243,6 +13243,16 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertNavigationRailToggleInteraction(Scene scene) {
         FxTestUtils.runOnFxThread(() -> {
             Node page = currentDemoPage(scene, "Navigation Rail");
+            M3NavigationRail collapsed = visibleNodesOfType(page, M3NavigationRail.class).stream()
+                    .filter(candidate -> !candidate.isExpanded() && !candidate.isNarrow())
+                    .findFirst()
+                    .orElseThrow();
+            M3NavigationRail narrow = visibleNodesOfType(page, M3NavigationRail.class).stream()
+                    .filter(candidate -> !candidate.isExpanded() && candidate.isNarrow())
+                    .findFirst()
+                    .orElseThrow();
+            assertNavigationRailPreviewFootprintStability(scene, collapsed, narrow);
+
             M3NavigationRail rail = visibleNodesOfType(page, M3NavigationRail.class).stream()
                     .filter(M3NavigationRail::isExpanded)
                     .filter(candidate -> candidate.getVariant() == M3NavigationRailVariant.STANDARD)
@@ -13287,6 +13297,75 @@ final class M3FXDemoVisualMatrixTest {
             assertTrue(immersive.isExpanded(), "external menu should restore the immersive rail");
             assertFalse(revealButton.isVisible(), "external reveal action should leave the expanded presentation");
         });
+    }
+
+    /// Verifies that expanding a collapsed rail does not resize its gallery cell or move its sibling preview.
+    private static void assertNavigationRailPreviewFootprintStability(
+            Scene scene,
+            M3NavigationRail collapsed,
+            M3NavigationRail sibling
+    ) {
+        Parent preview = Objects.requireNonNull(
+                Objects.requireNonNull(collapsed.getParent(), "collapsed rail presentation").getParent(),
+                "collapsed rail preview"
+        );
+        Parent siblingPreview = Objects.requireNonNull(
+                Objects.requireNonNull(sibling.getParent(), "collapsed rail sibling presentation").getParent(),
+                "collapsed rail sibling preview"
+        );
+        assertSame(preview.getParent(), siblingPreview.getParent(),
+                "collapsed rail previews should share one adaptive gallery flow");
+
+        applySceneCssAndLayout(scene);
+        Bounds previewBefore = preview.getBoundsInParent();
+        Bounds siblingBefore = siblingPreview.getBoundsInParent();
+        double expectedFootprint = Math.max(
+                collapsed.getExpandedMinimumContainerWidth(),
+                Math.min(
+                        Math.max(
+                                collapsed.getExpandedMinimumContainerWidth(),
+                                collapsed.getExpandedMaximumContainerWidth()
+                        ),
+                        collapsed.getExpandedContainerWidth()
+                )
+        );
+        assertEquals(expectedFootprint, previewBefore.getWidth(), CONTROL_EDGE_TOLERANCE,
+                "collapsed preview should reserve its resolved expanded footprint");
+
+        M3IconButton toggle = visibleNodesOfType(preview, M3IconButton.class).stream()
+                .filter(button -> "Expand navigation rail".equals(button.getAccessibleText()))
+                .findFirst()
+                .orElseThrow();
+        M3MotionSettings.setReducedMotionRequested(collapsed, true);
+        try {
+            toggle.fire();
+            applySceneCssAndLayout(scene);
+
+            Bounds previewExpanded = preview.getBoundsInParent();
+            Bounds siblingExpanded = siblingPreview.getBoundsInParent();
+            assertTrue(collapsed.isExpanded(), "collapsed preview menu should expand its rail");
+            assertEquals(previewBefore.getWidth(), previewExpanded.getWidth(), CONTROL_EDGE_TOLERANCE,
+                    "rail expansion must not resize the reserved preview footprint");
+            assertEquals(siblingBefore.getMinX(), siblingExpanded.getMinX(), CONTROL_EDGE_TOLERANCE,
+                    "rail expansion must not move the sibling preview horizontally");
+            assertEquals(siblingBefore.getMinY(), siblingExpanded.getMinY(), CONTROL_EDGE_TOLERANCE,
+                    "rail expansion must not wrap the sibling preview to another row");
+
+            toggle.fire();
+            applySceneCssAndLayout(scene);
+            Bounds siblingRestored = siblingPreview.getBoundsInParent();
+            assertFalse(collapsed.isExpanded(), "second menu activation should restore the collapsed rail");
+            assertEquals(siblingBefore.getMinX(), siblingRestored.getMinX(), CONTROL_EDGE_TOLERANCE,
+                    "restoring the rail must preserve the sibling's horizontal position");
+            assertEquals(siblingBefore.getMinY(), siblingRestored.getMinY(), CONTROL_EDGE_TOLERANCE,
+                    "restoring the rail must preserve the sibling's row");
+        } finally {
+            if (collapsed.isExpanded()) {
+                collapsed.setExpanded(false);
+            }
+            M3MotionSettings.setReducedMotionRequested(collapsed, false);
+            applySceneCssAndLayout(scene);
+        }
     }
 
     /// Verifies the real Search demo page styles, layouts, and standalone controls.
