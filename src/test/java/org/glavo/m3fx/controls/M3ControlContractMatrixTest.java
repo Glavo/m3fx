@@ -77,7 +77,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
-import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -574,11 +573,9 @@ final class M3ControlContractMatrixTest {
             M3PasswordField passwordField = new M3PasswordField("Secret");
             M3TextArea textArea = new M3TextArea("Multiline");
             textArea.setPrefRowCount(3);
-            M3TextInputLayout textInputLayout = new M3TextInputLayout(
-                    new M3TextField("Wrapped"),
-                    "Label",
-                    "Supporting"
-            );
+            M3TextInputLayout textInputLayout = new M3TextInputLayout(new M3TextField("Wrapped"));
+            textInputLayout.setLabelText("Label");
+            textInputLayout.setSupportingText("Supporting");
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setText("Query");
             searchBar.setActive(true);
@@ -7394,7 +7391,8 @@ final class M3ControlContractMatrixTest {
     @Test
     void textInputLayoutDisplaysSupportingTextAndCounter() {
         M3TextField textField = new M3TextField("abc");
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setSupportingText("Helper text");
         layout.setCharacterCounterVisible(true);
         layout.setCharacterLimit(5);
 
@@ -7431,7 +7429,11 @@ final class M3ControlContractMatrixTest {
     void textInputLayoutDisplaysFloatingLabel() {
         PseudoClass floating = PseudoClass.getPseudoClass("floating");
         M3TextField textField = new M3TextField();
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setLabelText("Email");
+        layout.setSupportingText("Helper text");
+        AtomicInteger floatingChanges = new AtomicInteger();
+        layout.labelFloatingProperty().addListener(observable -> floatingChanges.incrementAndGet());
 
         applyCss(layout);
 
@@ -7441,15 +7443,13 @@ final class M3ControlContractMatrixTest {
         assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertFalse(layout.isLabelFloating());
         assertFalse(label.getPseudoClassStates().contains(floating));
-        assertEquals(Pos.CENTER_LEFT, StackPane.getAlignment(label));
-        assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
+        assertEquals(20.0, textField.getPadding().getTop(), 0.0001);
         assertTrue(layout.getStyleClass().contains(M3TextInputVariant.FILLED.styleClass()));
 
         textField.setText("support@example.com");
 
         assertTrue(layout.isLabelFloating());
         assertTrue(label.getPseudoClassStates().contains(floating));
-        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
         assertEquals(20.0, textField.getPadding().getTop(), 0.0001);
 
         textField.setVariant(M3TextInputVariant.OUTLINED);
@@ -7459,7 +7459,8 @@ final class M3ControlContractMatrixTest {
         textField.clear();
 
         assertFalse(layout.isLabelFloating());
-        assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
+        assertEquals(11.0, textField.getPadding().getTop(), 0.0001);
+        assertEquals(2, floatingChanges.get());
     }
 
     /// Verifies that filled text input labels and text keep stable vertical placement in a shown window.
@@ -7468,7 +7469,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("support@example.com", M3TextInputVariant.FILLED);
             textField.setPrefWidth(340.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email address");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Email address");
             layout.setLabelText("Filled with text");
             layout.setLeading(new M3Icon("E"));
             layout.setClearButtonEnabled(true);
@@ -7502,7 +7504,7 @@ final class M3ControlContractMatrixTest {
                 Bounds textBounds = inputText.localToScene(inputText.getLayoutBounds());
 
                 assertEquals(containerBounds.getMinY() + 4.0, labelBounds.getMinY(), 1.0);
-                assertTrue(labelBounds.getMaxY() + 3.0 <= textBounds.getMinY(),
+                assertTrue(labelBounds.getMaxY() + 0.5 <= textBounds.getMinY(),
                         () -> "labelBounds=" + labelBounds + ", textBounds=" + textBounds);
                 assertTrue(textBounds.getMaxY() <= containerBounds.getMaxY() - 6.0,
                         () -> "textBounds=" + textBounds + ", containerBounds=" + containerBounds);
@@ -7529,7 +7531,9 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("Project name");
             layout.setLabelText("Outlined with text");
             layout.setLeading(new M3Icon("T"));
             layout.setClearButtonEnabled(true);
@@ -7623,7 +7627,9 @@ final class M3ControlContractMatrixTest {
             );
             textArea.setPrefSize(500.0, 112.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textArea, "Outlined multi-line input");
+            M3TextInputLayout layout = new M3TextInputLayout(textArea);
+
+            layout.setSupportingText("Outlined multi-line input");
             layout.setLabelText("Outlined text area");
             layout.setCharacterCounterVisible(true);
             layout.setCharacterLimit(96);
@@ -7685,7 +7691,9 @@ final class M3ControlContractMatrixTest {
             textArea.setTranslateX(6.0);
             textArea.setPrefSize(420.0, 128.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textArea, "RTL multiline supporting text");
+            M3TextInputLayout layout = new M3TextInputLayout(textArea);
+
+            layout.setSupportingText("RTL multiline supporting text");
             layout.setLabelText("RTL outlined area");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -7759,7 +7767,9 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("RTL project name");
             layout.setLabelText("RTL outlined");
             layout.setLeading(visualIcon("text"));
             layout.setClearButtonEnabled(true);
@@ -7852,7 +7862,9 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("RTL project name");
             layout.setLabelText("RTL outlined");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -7933,7 +7945,9 @@ final class M3ControlContractMatrixTest {
             textField.translateXProperty().bind(applicationTranslate);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("RTL project name");
             layout.setLabelText("RTL outlined");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -7998,7 +8012,9 @@ final class M3ControlContractMatrixTest {
             textField.paddingProperty().bind(applicationPadding);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("RTL project name");
             layout.setLabelText("RTL outlined");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -8066,7 +8082,9 @@ final class M3ControlContractMatrixTest {
             textField.setTranslateX(4.0);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("RTL project name");
             layout.setLabelText("RTL outlined");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -8436,7 +8454,8 @@ final class M3ControlContractMatrixTest {
         M3TextField textField = new M3TextField("abc");
         M3Icon leading = new M3Icon("S");
         M3IconButton trailing = new M3IconButton(new M3Icon("C"));
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setSupportingText("Helper text");
         layout.setLeading(leading);
         layout.setTrailing(trailing);
 
@@ -8491,7 +8510,8 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
             M3IconButton trailing = createIconButton("T");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setLeading(leading);
             layout.setTrailing(trailing);
 
@@ -8563,7 +8583,8 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
             M3IconButton trailing = createIconButton("T");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setLeading(leading);
             layout.setTrailing(trailing);
 
@@ -8635,7 +8656,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setLeading(leading);
             layout.setClearButtonEnabled(true);
 
@@ -8691,7 +8713,8 @@ final class M3ControlContractMatrixTest {
             M3Button trailingSecondary = new M3Button("Trailing secondary");
             HBox leadingGroup = new HBox(leadingPrimary, leadingSecondary);
             HBox trailingGroup = new HBox(trailingPrimary, trailingSecondary);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setLeading(leadingGroup);
             layout.setTrailing(trailingGroup);
 
@@ -8736,7 +8759,8 @@ final class M3ControlContractMatrixTest {
             M3MenuButton trailingMenuButton = new M3MenuButton("Trailing menu", trailingSubMenu);
 
             M3TextField textField = new M3TextField("abc");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setLeading(leadingMenuButton);
             layout.setTrailing(trailingMenuButton);
             M3MotionSettings.setReducedMotionRequested(leadingMenuButton, true);
@@ -8784,7 +8808,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3IconButton trailing = createIconButton("T");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Helper text");
             layout.setTrailing(trailing);
 
             M3Button outside = new M3Button("Outside");
@@ -8826,7 +8851,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Project name");
             layout.setLabelText("Outlined with text");
             layout.setLeading(new M3Icon("T"));
             layout.setTrailing(createIconButton("V"));
@@ -8866,7 +8892,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setSupportingText("Project name");
             layout.setLabelText("Outlined with text");
             layout.setLeading(new M3Icon("T"));
             layout.setTrailing(createIconButton("V"));
@@ -8920,7 +8947,8 @@ final class M3ControlContractMatrixTest {
                         M3IconButton trailingButton = createIconButton("V");
 
                         M3TextInputLayout layout =
-                                new M3TextInputLayout(passwordField, "At least 8 characters");
+                                new M3TextInputLayout(passwordField);
+                        layout.setSupportingText("At least 8 characters");
                         layout.setTrailing(trailingButton);
                         layout.setPrefWidth(320.0);
 
@@ -8994,7 +9022,8 @@ final class M3ControlContractMatrixTest {
     void textInputLayoutAppliesErrorStateFromTextAndCharacterLimit() {
         PseudoClass error = PseudoClass.getPseudoClass("error");
         M3TextField textField = new M3TextField("abcdef");
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setSupportingText("Helper text");
         layout.setCharacterCounterVisible(true);
         layout.setCharacterLimit(4);
 
@@ -9033,7 +9062,9 @@ final class M3ControlContractMatrixTest {
     void textInputLayoutValidatesWithConfiguredValidator() {
         PseudoClass error = PseudoClass.getPseudoClass("error");
         M3TextField textField = new M3TextField();
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setLabelText("Email");
+        layout.setSupportingText("Helper text");
         layout.setValidator((input, text) -> text.isBlank()
                 ? "Email is required"
                 : text.contains("@") ? null : "Use an email address");
@@ -9091,7 +9122,9 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField();
             textField.setPrefWidth(280.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setLabelText("Email");
+            layout.setSupportingText("Helper text");
             layout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
             layout.setPrefWidth(280.0);
 
@@ -9140,7 +9173,9 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = new M3TextField("a");
             textField.setVariant(M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(280.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name", "Supporting text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setLabelText("Project name");
+            layout.setSupportingText("Supporting text");
             layout.setPrefWidth(280.0);
 
             StackPane root = new StackPane(layout);
@@ -9157,7 +9192,6 @@ final class M3ControlContractMatrixTest {
             );
             Insets inputPadding = textField.getPadding();
             Insets labelPadding = label.getPadding();
-            Insets labelMargin = Objects.requireNonNull(StackPane.getMargin(label), "floating label margin");
             AtomicInteger inputPaddingChanges = new AtomicInteger();
             AtomicInteger labelPaddingChanges = new AtomicInteger();
             textField.paddingProperty().addListener(observable -> inputPaddingChanges.incrementAndGet());
@@ -9170,7 +9204,7 @@ final class M3ControlContractMatrixTest {
 
             assertSame(inputPadding, textField.getPadding());
             assertSame(labelPadding, label.getPadding());
-            assertSame(labelMargin, StackPane.getMargin(label));
+            assertEquals(1.0, renderedScaleX(label), 0.0001);
             assertEquals(0, inputPaddingChanges.get());
             assertEquals(0, labelPaddingChanges.get());
             assertTrue(layout.isLabelFloating());
@@ -9210,7 +9244,9 @@ final class M3ControlContractMatrixTest {
     void textInputLayoutRunsAdditionalValidators() {
         PseudoClass error = PseudoClass.getPseudoClass("error");
         M3TextField textField = new M3TextField();
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setLabelText("Email");
+        layout.setSupportingText("Helper text");
         M3TextInputValidator emailValidator = M3TextInputValidators.pattern(
                 Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                 "Use an email address"
@@ -9264,7 +9300,9 @@ final class M3ControlContractMatrixTest {
     @Test
     void textInputLayoutCanDisableTextChangeValidationRefresh() {
         M3TextField textField = new M3TextField();
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setLabelText("Email");
+        layout.setSupportingText("Helper text");
         layout.setValidateOnTextChange(false);
         layout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
 
@@ -9290,7 +9328,9 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField();
             M3Button nextButton = new M3Button("Next");
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setLabelText("Email");
+            layout.setSupportingText("Helper text");
             layout.setValidator((input, text) -> text.isBlank() ? "Email is required" : null);
 
             Pane root = new Pane(layout, nextButton);
@@ -9322,7 +9362,8 @@ final class M3ControlContractMatrixTest {
     @Test
     void textInputLayoutEnforcesCharacterLimitAndClearButton() {
         M3TextField textField = new M3TextField("abcdef");
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setSupportingText("Helper text");
         layout.setCharacterCounterVisible(true);
         layout.setCharacterLimit(4);
         layout.setCharacterLimitEnforced(true);
@@ -9381,7 +9422,9 @@ final class M3ControlContractMatrixTest {
         SimpleStringProperty applicationText = new SimpleStringProperty("abcdef");
         textField.textProperty().bind(applicationText);
 
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+        layout.setSupportingText("Helper text");
         layout.setCharacterCounterVisible(true);
         layout.setCharacterLimit(4);
         layout.setCharacterLimitEnforced(true);
@@ -9394,21 +9437,14 @@ final class M3ControlContractMatrixTest {
                 StackPane.class,
                 layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
         );
-        M3IconButton clearButton = textInputClearButton(layout);
-
         assertEquals("abcdef", textField.getText());
         assertEquals("abcdef", applicationText.get());
         assertEquals(6, layout.getCharacterCount());
         assertTrue(layout.isCharacterLimitExceeded());
         assertTrue(textField.isError());
         assertEquals("6 / 4", counter.getText());
-        assertEquals(clearButton, trailingSlot.getChildren().get(0));
-
-        clearButton.fire();
-
-        assertEquals("abcdef", textField.getText());
-        assertEquals("abcdef", applicationText.get());
-        assertEquals("6 / 4", counter.getText());
+        assertTrue(trailingSlot.getChildren().isEmpty());
+        assertEquals(1, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
 
         applicationText.set("abc");
 
@@ -9417,6 +9453,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(layout.isCharacterLimitExceeded());
         assertFalse(textField.isError());
         assertEquals("3 / 4", counter.getText());
+        assertTrue(trailingSlot.getChildren().isEmpty());
 
         textField.textProperty().unbind();
         textField.setText("abcdef");
@@ -9425,6 +9462,17 @@ final class M3ControlContractMatrixTest {
         assertEquals(4, layout.getCharacterCount());
         assertFalse(layout.isCharacterLimitExceeded());
         assertEquals("4 / 4", counter.getText());
+        M3IconButton clearButton = textInputClearButton(layout);
+        assertEquals(clearButton, trailingSlot.getChildren().get(0));
+
+        textField.setEditable(false);
+        assertTrue(trailingSlot.getChildren().isEmpty());
+        assertEquals(1, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+        textField.setEditable(true);
+        assertEquals(clearButton, trailingSlot.getChildren().get(0));
+        clearButton.fire();
+        assertEquals("", textField.getText());
     }
 
     /// Verifies that layout-owned error states preserve application-bound input error properties.
@@ -9434,7 +9482,9 @@ final class M3ControlContractMatrixTest {
         SimpleBooleanProperty applicationError = new SimpleBooleanProperty(false);
         textField.errorProperty().bind(applicationError);
 
-        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+        layout.setSupportingText("Helper text");
         layout.setCharacterCounterVisible(true);
         layout.setCharacterLimit(4);
 
@@ -17426,7 +17476,8 @@ final class M3ControlContractMatrixTest {
             standaloneOutlined.setDisable(true);
 
             M3TextField wrappedFilled = createTextField("Wrapped filled", M3TextInputVariant.FILLED);
-            M3TextInputLayout filledLayout = new M3TextInputLayout(wrappedFilled, "Disabled supporting text");
+            M3TextInputLayout filledLayout = new M3TextInputLayout(wrappedFilled);
+            filledLayout.setSupportingText("Disabled supporting text");
             filledLayout.setLabelText("Disabled filled");
             M3Icon leading = new M3Icon("L");
             filledLayout.setLeading(leading);
@@ -17434,7 +17485,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField wrappedOutlined = createTextField("Wrapped outlined", M3TextInputVariant.OUTLINED);
             M3TextInputLayout outlinedLayout =
-                    new M3TextInputLayout(wrappedOutlined, "Disabled outlined supporting text");
+                    new M3TextInputLayout(wrappedOutlined);
+            outlinedLayout.setSupportingText("Disabled outlined supporting text");
             outlinedLayout.setLabelText("Disabled outlined");
             M3Icon trailingIcon = new M3Icon("T");
             M3IconButton trailingButton = new M3IconButton(trailingIcon);
@@ -17520,20 +17572,23 @@ final class M3ControlContractMatrixTest {
 
             M3TextField filledField = createTextField("M3FX", M3TextInputVariant.FILLED);
             filledField.setPrefWidth(260.0);
-            M3TextInputLayout filledLayout = new M3TextInputLayout(filledField, "Supporting text");
+            M3TextInputLayout filledLayout = new M3TextInputLayout(filledField);
+            filledLayout.setSupportingText("Supporting text");
             filledLayout.setLabelText("Filled label");
             filledLayout.setPrefWidth(260.0);
 
             M3TextField focusedField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             focusedField.setPrefWidth(260.0);
-            M3TextInputLayout focusedLayout = new M3TextInputLayout(focusedField, "Project name");
+            M3TextInputLayout focusedLayout = new M3TextInputLayout(focusedField);
+            focusedLayout.setSupportingText("Project name");
             focusedLayout.setLabelText("Focused label");
             focusedLayout.setPrefWidth(260.0);
 
             M3TextField errorField = createTextField("Invalid", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(260.0);
             M3Icon errorTrailing = new M3Icon("error");
-            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField);
+            errorLayout.setSupportingText("Helper text");
             errorLayout.setLabelText("Error label");
             errorLayout.setErrorText("Use a valid value");
             errorLayout.setTrailing(errorTrailing);
@@ -30322,7 +30377,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField textField = new M3TextField();
             M3Button leading = new M3Button("Leading");
-            M3TextInputLayout inputLayout = new M3TextInputLayout(textField, "Helper text");
+            M3TextInputLayout inputLayout = new M3TextInputLayout(textField);
+            inputLayout.setSupportingText("Helper text");
             inputLayout.setLeading(leading);
 
             M3Button rowContentPrimary = new M3Button("Row primary");
@@ -30473,10 +30529,12 @@ final class M3ControlContractMatrixTest {
             carousel.select(carouselSecond);
 
             M3TextField invalidField = new M3TextField();
-            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField, "Name");
+            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField);
+            invalidLayout.setSupportingText("Name");
             invalidLayout.setValidator(M3TextInputValidators.required("Required"));
             M3TextField secondInvalidField = new M3TextField();
-            M3TextInputLayout secondInvalidLayout = new M3TextInputLayout(secondInvalidField, "Email");
+            M3TextInputLayout secondInvalidLayout = new M3TextInputLayout(secondInvalidField);
+            secondInvalidLayout.setSupportingText("Email");
             secondInvalidLayout.setValidator(M3TextInputValidators.required("Required"));
             M3FormValidator validator = new M3FormValidator(invalidLayout, secondInvalidLayout);
             M3ValidationSummary validationSummary = new M3ValidationSummary(validator);
@@ -31205,7 +31263,9 @@ final class M3ControlContractMatrixTest {
             formSection.setPrefWidth(360.0);
 
             M3TextField invalidField = new M3TextField();
-            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField, "Display name", "Required");
+            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField);
+            invalidLayout.setLabelText("Display name");
+            invalidLayout.setSupportingText("Required");
             invalidLayout.setValidator(M3TextInputValidators.required("Display name is required"));
             M3FormValidator validator = new M3FormValidator(invalidLayout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);
@@ -32802,14 +32862,16 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField supportingField = new M3TextField("Alpha");
             supportingField.setPrefWidth(220.0);
-            M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
+            M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField);
+            supportingLayout.setSupportingText("Supporting text");
             supportingLayout.setLabelText("Project");
             supportingLayout.setLeading(visualIcon("work"));
             supportingLayout.setPrefWidth(220.0);
 
             M3TextField counterField = createTextField("support@example.com", M3TextInputVariant.OUTLINED);
             counterField.setPrefWidth(320.0);
-            M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
+            M3TextInputLayout counterLayout = new M3TextInputLayout(counterField);
+            counterLayout.setSupportingText("Email address");
             counterLayout.setLabelText("Email");
             counterLayout.setLeading(visualIcon("mail"));
             counterLayout.setClearButtonEnabled(true);
@@ -32819,7 +32881,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField errorField = createTextField("abcdef", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(220.0);
-            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField);
+            errorLayout.setSupportingText("Helper text");
             errorLayout.setLabelText("Code");
             errorLayout.setLeading(visualIcon("warning"));
             errorLayout.setCharacterCounterVisible(true);
@@ -32829,7 +32892,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField enforcedField = createTextField("Too many characters", M3TextInputVariant.OUTLINED);
             enforcedField.setPrefWidth(260.0);
-            M3TextInputLayout enforcedLayout = new M3TextInputLayout(enforcedField, "Limit enforced");
+            M3TextInputLayout enforcedLayout = new M3TextInputLayout(enforcedField);
+            enforcedLayout.setSupportingText("Limit enforced");
             enforcedLayout.setLabelText("Limited");
             enforcedLayout.setCharacterCounterVisible(true);
             enforcedLayout.setCharacterLimit(8);
@@ -32838,7 +32902,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField validatedField = createTextField("support", M3TextInputVariant.OUTLINED);
             validatedField.setPrefWidth(260.0);
-            M3TextInputLayout validatedLayout = new M3TextInputLayout(validatedField, "Email format");
+            M3TextInputLayout validatedLayout = new M3TextInputLayout(validatedField);
+            validatedLayout.setSupportingText("Email format");
             validatedLayout.setLabelText("Validated");
             validatedLayout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
             validatedLayout.validate();
@@ -32923,7 +32988,8 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField filledField = new M3TextField("Filled value");
             filledField.setPrefWidth(240.0);
-            M3TextInputLayout filledLayout = new M3TextInputLayout(filledField, "Filled supporting text");
+            M3TextInputLayout filledLayout = new M3TextInputLayout(filledField);
+            filledLayout.setSupportingText("Filled supporting text");
             filledLayout.setLabelText("Filled label");
             filledLayout.setLeading(visualIcon("mail"));
             filledLayout.setClearButtonEnabled(true);
@@ -32933,7 +32999,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField outlinedField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             outlinedField.setPrefWidth(300.0);
-            M3TextInputLayout outlinedLayout = new M3TextInputLayout(outlinedField, "Project name");
+            M3TextInputLayout outlinedLayout = new M3TextInputLayout(outlinedField);
+            outlinedLayout.setSupportingText("Project name");
             outlinedLayout.setLabelText("Outlined with text");
             outlinedLayout.setLeading(visualIcon("text"));
             outlinedLayout.setClearButtonEnabled(true);
@@ -32943,7 +33010,8 @@ final class M3ControlContractMatrixTest {
 
             M3PasswordField passwordField = createPasswordField("secret", M3TextInputVariant.OUTLINED);
             passwordField.setPrefWidth(240.0);
-            M3TextInputLayout passwordLayout = new M3TextInputLayout(passwordField, "At least 8 characters");
+            M3TextInputLayout passwordLayout = new M3TextInputLayout(passwordField);
+            passwordLayout.setSupportingText("At least 8 characters");
             passwordLayout.setLabelText("Password");
             passwordLayout.setLeading(visualIcon("bookmark"));
             passwordLayout.setTrailing(new M3IconButton(visualIcon("info")));
@@ -32953,7 +33021,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextField errorField = createTextField("abcdef", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(220.0);
-            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField);
+            errorLayout.setSupportingText("Helper text");
             errorLayout.setLabelText("Error code");
             errorLayout.setLeading(visualIcon("warning"));
             errorLayout.setCharacterCounterVisible(true);
@@ -32963,7 +33032,8 @@ final class M3ControlContractMatrixTest {
 
             M3TextArea area = createTextArea("Multiline\ncontent", M3TextInputVariant.OUTLINED);
             area.setPrefSize(280.0, 104.0);
-            M3TextInputLayout areaLayout = new M3TextInputLayout(area, "Detailed notes");
+            M3TextInputLayout areaLayout = new M3TextInputLayout(area);
+            areaLayout.setSupportingText("Detailed notes");
             areaLayout.setLabelText("Text area");
             areaLayout.setLeading(visualIcon("info"));
             areaLayout.setCharacterCounterVisible(true);
@@ -33029,7 +33099,9 @@ final class M3ControlContractMatrixTest {
             );
             textArea.setPrefSize(360.0, 168.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textArea, "Outlined multi-line input");
+            M3TextInputLayout layout = new M3TextInputLayout(textArea);
+
+            layout.setSupportingText("Outlined multi-line input");
             layout.setLabelText("RTL outlined text area");
             layout.setLeading(visualIcon("text"));
             layout.setTrailing(new M3IconButton(visualIcon("info")));
@@ -33101,7 +33173,9 @@ final class M3ControlContractMatrixTest {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
-            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+
+            layout.setSupportingText("Project name");
             layout.setLabelText("Outlined with text");
             layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
@@ -33191,7 +33265,9 @@ final class M3ControlContractMatrixTest {
     void validationSummaryMirrorsTextAlignmentWhenOrientationChanges() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Display name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Display name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             assertFalse(validator.validate());
@@ -33269,11 +33345,15 @@ final class M3ControlContractMatrixTest {
     void validationSummarySnapshotRendersInvalidInputRows() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
-            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Display name");
+            nameLayout.setSupportingText("Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
 
             M3TextField emailField = new M3TextField("support");
-            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField);
+            emailLayout.setLabelText("Email");
+            emailLayout.setSupportingText("Format");
             emailLayout.setValidator(M3TextInputValidators.pattern(
                     Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                     "Enter a valid email address"
@@ -33314,11 +33394,15 @@ final class M3ControlContractMatrixTest {
     void validationSummaryRoutesAccessibleFocusAcrossInvalidInputs() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
-            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Name");
+            nameLayout.setSupportingText("Required");
             nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
 
             M3TextField emailField = new M3TextField();
-            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField);
+            emailLayout.setLabelText("Email");
+            emailLayout.setSupportingText("Required");
             emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
 
             M3Button outside = new M3Button("Outside");
@@ -33424,13 +33508,17 @@ final class M3ControlContractMatrixTest {
     void formValidatorFocusSkipsInvalidInputsHiddenByAncestors() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField hiddenField = new M3TextField();
-            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField);
+            hiddenLayout.setLabelText("Hidden");
+            hiddenLayout.setSupportingText("Required");
             hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
             Pane hiddenAncestor = new Pane(hiddenLayout);
             hiddenAncestor.setVisible(false);
 
             M3TextField visibleField = new M3TextField();
-            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField, "Visible", "Required");
+            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField);
+            visibleLayout.setLabelText("Visible");
+            visibleLayout.setSupportingText("Required");
             visibleLayout.setValidator(M3TextInputValidators.required("Visible is required"));
 
             M3Button outside = new M3Button("Outside");
@@ -33468,13 +33556,17 @@ final class M3ControlContractMatrixTest {
     void validationSummarySkipsInvalidInputsHiddenByAncestors() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField hiddenField = new M3TextField();
-            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField);
+            hiddenLayout.setLabelText("Hidden");
+            hiddenLayout.setSupportingText("Required");
             hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
             Pane hiddenAncestor = new Pane(hiddenLayout);
             hiddenAncestor.setVisible(false);
 
             M3TextField visibleField = new M3TextField();
-            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField, "Visible", "Required");
+            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField);
+            visibleLayout.setLabelText("Visible");
+            visibleLayout.setSupportingText("Required");
             visibleLayout.setValidator(M3TextInputValidators.required("Visible is required"));
 
             M3Button outside = new M3Button("Outside");
@@ -40184,8 +40276,11 @@ final class M3ControlContractMatrixTest {
         }
 
         M3IconButton clearButton = textInputClearButton(layout);
-        return isBetweenExclusive(label.getOpacity(), 0.72, 1.0)
-                && isBetweenExclusive(Math.abs(label.getTranslateY()), 0.0, 4.0)
+        double expandedScale = textInputLayoutExpandedLabelScale(layout, label);
+        double lowerScale = Math.min(1.0, expandedScale);
+        double upperScale = Math.max(1.0, expandedScale);
+        return Double.compare(label.getOpacity(), 1.0) == 0
+                && isBetweenExclusive(renderedScaleX(label), lowerScale, upperScale)
                 && outlineNotchGap(outline) > 0.5
                 && isBetweenExclusive(clearButton.getOpacity(), 0.0, 1.0)
                 && isBetweenExclusive(clearButton.getScaleX(), 0.86, 1.0)
@@ -40225,9 +40320,15 @@ final class M3ControlContractMatrixTest {
         Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
         Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
         M3IconButton clearButton = textInputClearButton(layout);
+        double expandedScale = textInputLayoutExpandedLabelScale(layout, label);
 
-        assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity");
-        assertBetween(Math.abs(label.getTranslateY()), 0.0, 4.0, "floating label translateY");
+        assertEquals(1.0, label.getOpacity(), 0.0001);
+        assertBetween(
+                renderedScaleX(label),
+                Math.min(1.0, expandedScale),
+                Math.max(1.0, expandedScale),
+                "floating label scale"
+        );
         assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
         assertBetween(clearButton.getOpacity(), 0.0, 1.0, "clear button opacity");
         assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scaleX");
@@ -40256,7 +40357,7 @@ final class M3ControlContractMatrixTest {
         );
 
         assertEquals(1.0, label.getOpacity(), 0.0001);
-        assertEquals(0.0, label.getTranslateY(), 0.0001);
+        assertEquals(1.0, renderedScaleX(label), 0.0001);
         assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
         assertEquals(1.0, clearButton.getOpacity(), 0.0001);
         assertEquals(1.0, clearButton.getScaleX(), 0.0001);
@@ -40541,11 +40642,22 @@ final class M3ControlContractMatrixTest {
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, input.getEffectiveNodeOrientation());
         }
 
-        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
         assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
                 () -> "outlineNotchGap=" + outlineNotchGap(outline)
                         + ", labelBounds=" + labelBounds
                         + ", rightToLeft=" + rightToLeft);
+    }
+
+    /// Returns the horizontal scale represented by a node's rendered local-to-parent transform.
+    private static double renderedScaleX(Node node) {
+        var transform = node.getLocalToParentTransform();
+        return Math.hypot(transform.getMxx(), transform.getMyx());
+    }
+
+    /// Returns the resting label scale derived from the current computed input and label typography.
+    private static double textInputLayoutExpandedLabelScale(M3TextInputLayout layout, Label label) {
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
+        return input.getFont().getSize() / label.getFont().getSize();
     }
 
     /// Describes text input logical layout geometry for assertion failures.

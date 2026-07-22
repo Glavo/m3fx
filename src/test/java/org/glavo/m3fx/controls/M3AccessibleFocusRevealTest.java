@@ -457,7 +457,8 @@ final class M3AccessibleFocusRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             M3TextField input = new M3TextField("Project");
-            M3TextInputLayout layout = new M3TextInputLayout(input, "Project name");
+            M3TextInputLayout layout = new M3TextInputLayout(input);
+            layout.setSupportingText("Project name");
             VBox content = new VBox(spacer, layout);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -485,7 +486,9 @@ final class M3AccessibleFocusRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             M3TextField input = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(input, "Name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(input);
+            layout.setLabelText("Name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);

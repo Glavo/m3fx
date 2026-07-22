@@ -70,7 +70,8 @@ final class M3InputSlotNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField input = new M3TextField("Edit");
             M3Button trailing = new M3Button("Action");
-            M3TextInputLayout layout = new M3TextInputLayout(input, "Label");
+            M3TextInputLayout layout = new M3TextInputLayout(input);
+            layout.setSupportingText("Label");
             layout.setTrailing(trailing);
             StackPane root = new StackPane(layout);
             Stage stage = new Stage();

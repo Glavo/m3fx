@@ -1368,7 +1368,9 @@ final class M3ThemeTest {
         M3FormPane formPane = new M3FormPane();
         M3FormSection formSection = formSection("Account", new M3TextField());
         M3FormRow formRow = new M3FormRow("Name", new M3TextField());
-        M3TextInputLayout invalidInput = new M3TextInputLayout(new M3TextField(), "Project", "Required");
+        M3TextInputLayout invalidInput = new M3TextInputLayout(new M3TextField());
+        invalidInput.setLabelText("Project");
+        invalidInput.setSupportingText("Required");
         invalidInput.setValidator(M3TextInputValidators.required("Project is required"));
         M3FormValidator validationValidator = new M3FormValidator(invalidInput);
         M3ValidationSummary validationSummary = new M3ValidationSummary(validationValidator);

@@ -674,11 +674,15 @@ final class CatalogSamples {
     /// @return the text field example
     static Node textFields() {
         M3TextField name = new M3TextField("M3FX");
-        M3TextInputLayout filled = new M3TextInputLayout(name, "Project name", "Visible to collaborators");
+        M3TextInputLayout filled = new M3TextInputLayout(name);
+        filled.setLabelText("Project name");
+        filled.setSupportingText("Visible to collaborators");
 
         M3TextField email = new M3TextField("support@example.com");
         email.setVariant(M3TextInputVariant.OUTLINED);
-        M3TextInputLayout outlined = new M3TextInputLayout(email, "Email", "Used for notifications");
+        M3TextInputLayout outlined = new M3TextInputLayout(email);
+        outlined.setLabelText("Email");
+        outlined.setSupportingText("Used for notifications");
         filled.setPrefWidth(360.0);
         outlined.setPrefWidth(360.0);
         return column(filled, outlined);

@@ -138,7 +138,8 @@ abstract class DemoPageSupport {
 
     /// Creates a text input layout for the page gallery.
     protected static M3TextInputLayout createTextInputLayout(TextInputControl input, String supportingText) {
-        M3TextInputLayout layout = new M3TextInputLayout(input, supportingText);
+        M3TextInputLayout layout = new M3TextInputLayout(input);
+        layout.setSupportingText(supportingText);
         layout.setLabelText(input.getPromptText());
         input.setPromptText("");
         layout.setPrefWidth(input.getPrefWidth());

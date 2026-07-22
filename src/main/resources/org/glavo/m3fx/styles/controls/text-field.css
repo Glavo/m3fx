@@ -288,12 +288,8 @@
 }
 
 .m3-text-input-label {
-    -fx-font-size: 16px;
-    -fx-text-fill: -m3-color-on-surface-variant;
-}
-
-.m3-text-input-label:floating {
     -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label {

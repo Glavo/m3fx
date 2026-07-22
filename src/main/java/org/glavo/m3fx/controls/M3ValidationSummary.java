@@ -46,7 +46,8 @@ import java.util.Set;
 /// the form in its submission path:
 ///
 /// ```java
-/// M3TextInputLayout name = new M3TextInputLayout(new M3TextField(), "Name", "");
+/// M3TextInputLayout name = new M3TextInputLayout(new M3TextField());
+/// name.setLabelText("Name");
 /// name.setValidator(M3TextInputValidators.required("Name is required"));
 /// M3FormValidator form = new M3FormValidator(name);
 /// M3ValidationSummary summary = new M3ValidationSummary(form);

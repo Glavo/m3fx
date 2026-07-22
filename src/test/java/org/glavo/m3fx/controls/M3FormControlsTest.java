@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
+import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.geometry.Bounds;
@@ -28,6 +29,7 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.glavo.m3fx.skins.M3FormRowSkin;
 import org.glavo.m3fx.skins.M3FormSectionSkin;
+import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -192,11 +194,15 @@ final class M3FormControlsTest {
     void formValidatorCoordinatesTextInputValidation() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
-            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Display name");
+            nameLayout.setSupportingText("Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
 
             M3TextField emailField = new M3TextField("support@example.com");
-            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField);
+            emailLayout.setLabelText("Email");
+            emailLayout.setSupportingText("Format");
             emailLayout.setValidator(M3TextInputValidators.pattern(
                     Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                     "Enter a valid email address"
@@ -251,7 +257,9 @@ final class M3FormControlsTest {
     void formValidatorOwnerFocusRevealsInvalidInput() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             Pane spacer = new Pane();
@@ -283,7 +291,9 @@ final class M3FormControlsTest {
     void formValidatorTracksExternalValidationChanges() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
 
@@ -310,11 +320,15 @@ final class M3FormControlsTest {
     void formValidatorSupportsSingleInputValidationWorkflow() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
-            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Display name");
+            nameLayout.setSupportingText("Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
 
             M3TextField emailField = new M3TextField("support");
-            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField);
+            emailLayout.setLabelText("Email");
+            emailLayout.setSupportingText("Format");
             emailLayout.setValidator(M3TextInputValidators.pattern(
                     Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                     "Enter a valid email address"
@@ -385,7 +399,9 @@ final class M3FormControlsTest {
     void formValidatorSuppressesRedundantInvalidInputListChanges() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField("a");
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Code", "Minimum length");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Code");
+            layout.setSupportingText("Minimum length");
             layout.setValidator((input, text) -> text.length() < 3 ? "Enter " + (3 - text.length()) + " more" : null);
             M3FormValidator validator = new M3FormValidator(layout);
             AtomicInteger changeCount = new AtomicInteger();
@@ -471,11 +487,15 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             PseudoClass empty = PseudoClass.getPseudoClass("empty");
             M3TextField nameField = new M3TextField();
-            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Display name");
+            nameLayout.setSupportingText("Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
 
             M3TextField emailField = new M3TextField("support");
-            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField);
+            emailLayout.setLabelText("Email");
+            emailLayout.setSupportingText("Format");
             emailLayout.setValidator(M3TextInputValidators.pattern(
                     Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                     "Enter a valid email address"
@@ -524,7 +544,9 @@ final class M3FormControlsTest {
     void validationSummaryAccessibleTextFollowsVisibleInvalidRows() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField hiddenField = new M3TextField();
-            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField);
+            hiddenLayout.setLabelText("Hidden");
+            hiddenLayout.setSupportingText("Required");
             hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
             Pane hiddenAncestor = new Pane(hiddenLayout);
             hiddenAncestor.setVisible(false);
@@ -578,7 +600,9 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             PseudoClass empty = PseudoClass.getPseudoClass("empty");
             M3TextField field = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Display name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Display name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);
@@ -640,7 +664,9 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
             field.setPromptText("Email");
-            M3TextInputLayout layout = new M3TextInputLayout(field, "", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Email is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);
@@ -738,21 +764,82 @@ final class M3FormControlsTest {
         });
     }
 
+    /// Verifies that text input presentation is detached when its skin or input is replaced.
+    @Test
+    void textInputLayoutRestoresReplacedInputAndDetachesRetiredSkin() {
+        FxTestUtils.runOnFxThread(() -> {
+            Insets originalPadding = new Insets(2.0, 3.0, 4.0, 5.0);
+            M3TextField originalInput = new M3TextField("M3FX");
+            originalInput.setPadding(originalPadding);
+            originalInput.setTranslateY(6.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(originalInput);
+            layout.setLabelText("Original label");
+            VBox root = new VBox(layout);
+            Scene scene = new Scene(root, 420.0, 160.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            assertInstanceOf(M3TextInputLayoutSkin.class, layout.getSkin());
+            Label retiredLabel = assertInstanceOf(
+                    Label.class,
+                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+            );
+
+            FxTestUtils.replaceSkin(layout, M3TextInputLayoutSkin::new);
+            layout.setLabelText("Replacement label");
+            root.applyCss();
+            root.layout();
+
+            Label currentLabel = assertInstanceOf(
+                    Label.class,
+                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+            );
+            assertNotSame(retiredLabel, currentLabel);
+            assertEquals("Original label", retiredLabel.getText());
+            assertEquals("Replacement label", currentLabel.getText());
+
+            M3TextField replacementInput = new M3TextField();
+            layout.setInput(replacementInput);
+            root.applyCss();
+            root.layout();
+
+            assertNull(originalInput.getParent());
+            assertEquals(originalPadding, originalInput.getPadding());
+            assertEquals(6.0, originalInput.getTranslateY(), 0.0);
+            assertFalse(originalInput.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+            assertSame(replacementInput, layout.getInput());
+            assertNotNull(replacementInput.getParent());
+            assertTrue(replacementInput.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+            assertFalse(layout.isLabelFloating());
+
+            originalInput.setText("Detached input update");
+            assertFalse(layout.isLabelFloating());
+        });
+    }
+
     /// Verifies that validation summaries follow only the active validator and its live input list.
     @Test
     void validationSummaryTracksValidatorReplacementAndInputListChanges() {
         FxTestUtils.runOnFxThread(() -> {
             PseudoClass empty = PseudoClass.getPseudoClass("empty");
             M3TextField firstField = new M3TextField();
-            M3TextInputLayout firstLayout = new M3TextInputLayout(firstField, "First", "Required");
+            M3TextInputLayout firstLayout = new M3TextInputLayout(firstField);
+            firstLayout.setLabelText("First");
+            firstLayout.setSupportingText("Required");
             firstLayout.setValidator(M3TextInputValidators.required("First is required"));
 
             M3TextField secondField = new M3TextField();
-            M3TextInputLayout secondLayout = new M3TextInputLayout(secondField, "Second", "Required");
+            M3TextInputLayout secondLayout = new M3TextInputLayout(secondField);
+            secondLayout.setLabelText("Second");
+            secondLayout.setSupportingText("Required");
             secondLayout.setValidator(M3TextInputValidators.required("Second is required"));
 
             M3TextField thirdField = new M3TextField();
-            M3TextInputLayout thirdLayout = new M3TextInputLayout(thirdField, "Third", "Required");
+            M3TextInputLayout thirdLayout = new M3TextInputLayout(thirdField);
+            thirdLayout.setLabelText("Third");
+            thirdLayout.setSupportingText("Required");
             thirdLayout.setValidator(M3TextInputValidators.required("Third is required"));
 
             M3FormValidator firstValidator = new M3FormValidator(firstLayout);
@@ -826,7 +913,9 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button focusSentinel = new M3Button("Before");
             M3TextField field = new M3TextField();
-            M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+            M3TextInputLayout layout = new M3TextInputLayout(field);
+            layout.setLabelText("Display name");
+            layout.setSupportingText("Required");
             layout.setValidator(M3TextInputValidators.required("Display name is required"));
             M3FormValidator validator = new M3FormValidator(layout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);
@@ -879,7 +968,9 @@ final class M3FormControlsTest {
                     () -> "Timed out waiting for validation summary pointer ripple",
                     () -> {
                         M3TextField field = new M3TextField();
-                        M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+                        M3TextInputLayout layout = new M3TextInputLayout(field);
+                        layout.setLabelText("Display name");
+                        layout.setSupportingText("Required");
                         layout.setValidator(M3TextInputValidators.required("Display name is required"));
                         M3FormValidator validator = new M3FormValidator(layout);
                         M3ValidationSummary summary = new M3ValidationSummary(validator);
@@ -958,7 +1049,9 @@ final class M3FormControlsTest {
             ArrayList<M3TextInputLayout> layouts = new ArrayList<>();
             for (int index = 0; index < 8; index++) {
                 M3TextField field = new M3TextField();
-                M3TextInputLayout layout = new M3TextInputLayout(field, "Field " + index, "Required");
+                M3TextInputLayout layout = new M3TextInputLayout(field);
+                layout.setLabelText("Field " + index);
+                layout.setSupportingText("Required");
                 layout.setValidator(M3TextInputValidators.required("Field " + index + " is required"));
                 layouts.add(layout);
             }
@@ -998,7 +1091,9 @@ final class M3FormControlsTest {
 
     /// Creates one empty required input layout for aggregate validation tests.
     private static M3TextInputLayout requiredLayout(String label) {
-        M3TextInputLayout layout = new M3TextInputLayout(new M3TextField(), label, "Required");
+        M3TextInputLayout layout = new M3TextInputLayout(new M3TextField());
+        layout.setLabelText(label);
+        layout.setSupportingText("Required");
         layout.setValidator(M3TextInputValidators.required(label + " is required"));
         return layout;
     }

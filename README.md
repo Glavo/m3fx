@@ -62,11 +62,9 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 public final class DemoApp extends Application {
     @Override
     public void start(Stage stage) {
-        M3TextInputLayout name = new M3TextInputLayout(
-                new M3TextField(),
-                "Project name",
-                "Visible in the workspace list"
-        );
+        M3TextInputLayout name = new M3TextInputLayout(new M3TextField());
+        name.setLabelText("Project name");
+        name.setSupportingText("Visible in the workspace list");
         M3Button create = new M3Button("Create");
 
         VBox content = new VBox(16.0, name, create);
