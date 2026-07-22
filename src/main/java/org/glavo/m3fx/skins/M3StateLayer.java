@@ -112,10 +112,10 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The explicitly resolved content paint used by controls that cannot retain CSS lookups while detached.
     private @Nullable Paint contentPaint;
 
-    /// The clip that bounds overlay and ripple visuals to the component shape.
+    /// The clip that bounds container, overlay, and ripple visuals to the component shape.
     private final Path clip = new Path();
 
-    /// The retained clipped group containing the persistent overlay and, after first use, the ripple.
+    /// The retained clipped group containing the container, persistent overlay, and, after first use, the ripple.
     private final Group clippedContent = new Group();
 
     /// The reusable clip path starting point.
@@ -304,7 +304,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         overlay.setMouseTransparent(true);
         containerPaintLayer.setVisible(false);
         overlay.setOpacity(0.0);
-        clippedContent.getChildren().add(overlay);
+        clippedContent.getChildren().addAll(containerPaintLayer, overlay);
         clippedContent.setAutoSizeChildren(false);
         clippedContent.setManaged(false);
         clippedContent.setMouseTransparent(true);
@@ -322,7 +322,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 new ClosePath()
         );
         clippedContent.setClip(clip);
-        getChildren().addAll(containerPaintLayer, clippedContent);
+        getChildren().add(clippedContent);
     }
 
     /// Installs opacity transitions driven by the owner node's interaction states.
@@ -585,13 +585,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Applies an optional concrete paint beneath this layer's interaction feedback.
     ///
-    /// The supplied radii and insets mirror the owning control's current background geometry. A `null` value
-    /// removes the container layer and leaves the owning control's normal CSS background visible.
+    /// The retained group clip supplies the component's current shape. A `null` value removes the concrete
+    /// container layer and exposes the owning control's background.
     ///
-    /// @param paint  the container paint, or `null` to remove the concrete container layer
-    /// @param radii  the corner radii of the owning control's current background
-    /// @param insets the insets of the owning control's current background
-    void setContainerPaint(@Nullable Paint paint, CornerRadii radii, Insets insets) {
+    /// @param paint the container paint, or `null` to remove the concrete container layer
+    void setContainerPaint(@Nullable Paint paint) {
         if (paint == null) {
             containerPaintLayer.setBackground(null);
             containerPaintLayer.setVisible(false);
@@ -600,14 +598,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         Background background = containerPaintLayer.getBackground();
         if (background != null
                 && background.getFills().size() == 1
-                && paint.equals(background.getFills().get(0).getFill())
-                && radii.equals(background.getFills().get(0).getRadii())
-                && insets.equals(background.getFills().get(0).getInsets())) {
+                && paint.equals(background.getFills().get(0).getFill())) {
             containerPaintLayer.setVisible(true);
             return;
         }
         containerPaintLayer.setBackground(new Background(
-                new BackgroundFill(paint, radii, insets)
+                new BackgroundFill(paint, CornerRadii.EMPTY, Insets.EMPTY)
         ));
         containerPaintLayer.setVisible(true);
     }

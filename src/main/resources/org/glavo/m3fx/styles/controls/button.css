@@ -130,7 +130,7 @@
     -m3-button-icon-color: -m3-color-on-primary;
     -m3-container-color: -m3-color-primary;
     -m3-content-color: -m3-color-on-primary;
-    -fx-background-color: -m3-color-primary;
+    -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-effect: null;
@@ -151,7 +151,7 @@
     -m3-button-icon-color: -m3-color-on-secondary-container;
     -m3-container-color: -m3-color-secondary-container;
     -m3-content-color: -m3-color-on-secondary-container;
-    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-effect: null;
@@ -251,7 +251,7 @@
     -m3-button-icon-color: -m3-color-primary;
     -m3-container-color: -m3-color-surface-container-low;
     -m3-content-color: -m3-color-primary;
-    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-primary;
@@ -578,6 +578,10 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
+.m3-button-base:disabled > .m3-state-layer-container {
+    -fx-opacity: 1;
+}
+
 .m3-button-base.m3-filled-button:disabled,
 .m3-button-base.m3-tonal-button:disabled,
 .m3-button-base.m3-text-button:disabled,
@@ -585,7 +589,7 @@
     -m3-disclosure-icon-color: -m3-color-on-surface;
     -m3-container-color: -m3-button-disabled-container-color;
     -m3-content-color: -m3-color-on-surface;
-    -fx-background-color: -m3-button-disabled-container-color;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-effect: null;
     -fx-text-fill: -m3-color-on-surface;

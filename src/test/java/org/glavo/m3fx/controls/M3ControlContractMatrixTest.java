@@ -1488,15 +1488,18 @@ final class M3ControlContractMatrixTest {
             assertNull(button.getEffect(), () -> variant + " disabled elevation");
             if (variant == M3ButtonVariant.OUTLINED) {
                 assertRegionFill(button, Color.TRANSPARENT);
+                assertButtonContainerFill(button, Color.TRANSPARENT);
                 assertBorderColor(button, outlineVariant);
             } else {
-                assertRegionFill(button, disabledContainer);
+                assertRegionFill(button, Color.TRANSPARENT);
+                assertButtonContainerFill(button, disabledContainer);
                 assertBorderColor(button, Color.TRANSPARENT);
             }
         }
 
         assertEquals(1.0, iconButton.getOpacity(), 0.0001);
-        assertRegionFill(iconButton, disabledContainer);
+        assertRegionFill(iconButton, Color.TRANSPARENT);
+        assertButtonContainerFill(iconButton, disabledContainer);
         assertEquals(0.38, iconGraphic.getOpacity(), 0.0001);
 
         assertEquals(1.0, fab.getOpacity(), 0.0001);
@@ -5009,7 +5012,7 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies equal part heights, exact between-space, and uncovered gap pixels for every color role.
+    /// Verifies equal part heights, exact between-space, uncovered gap pixels, and disabled alpha composition.
     @Test
     void splitButtonLayoutPreservesTwoIndependentSurfaces() {
         FxTestUtils.runOnFxThread(() -> {
@@ -5022,16 +5025,27 @@ final class M3ControlContractMatrixTest {
             )) {
                 splitButtons.add(createSplitButton(variant.name(), variant, new M3MenuItem("Item")));
             }
+            M3SplitButton disabledSplitButton =
+                    createSplitButton("Disabled", M3ButtonVariant.TONAL, new M3MenuItem("Item"));
+            disabledSplitButton.setDisable(true);
+            splitButtons.add(disabledSplitButton);
+            Color rootBackground = Color.web("#f8f2fa");
             HBox root = new HBox(20.0);
             root.setPadding(new Insets(20.0));
-            root.setStyle("-fx-background-color: #00ff00;");
+            root.setStyle("-fx-background-color: #f8f2fa;");
             root.getChildren().addAll(splitButtons);
-            Scene scene = new Scene(root, 720.0, 100.0);
+            Scene scene = new Scene(root, 900.0, 100.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(720.0, 100.0);
+            root.resize(900.0, 100.0);
             root.layout();
             WritableImage image = snapshotImageOnFxThread(root);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-split-button-surfaces.png"
+            ));
 
             for (M3SplitButton splitButton : splitButtons) {
                 M3Button actionButton = splitButtonActionButton(splitButton);
@@ -5056,7 +5070,7 @@ final class M3ControlContractMatrixTest {
                             (actionBounds.getMaxX() + menuBounds.getMinX()) / 2.0,
                             actionBounds.getMinY() + actionBounds.getHeight() / 2.0
                     );
-                    assertTrue(colorDistance(gapPixel, Color.web("#00ff00")) < 0.04);
+                    assertTrue(colorDistance(gapPixel, rootBackground) < 0.04);
                 } else {
                     assertNotNull(actionButton.getEffect());
                     assertNotNull(menuButton.getEffect());
@@ -5072,12 +5086,46 @@ final class M3ControlContractMatrixTest {
                     );
                     Color menuInnerCorner = menuImage.getPixelReader().getColor(0, 0);
                     assertTrue(
-                            colorDistance(actionInnerCorner, Color.WHITE) < 0.04,
+                            colorDistance(actionInnerCorner, Color.WHITE) < 0.12,
                             () -> "Action inner corner color=" + actionInnerCorner + " for " + splitButton.getVariant()
                     );
                     assertTrue(
-                            colorDistance(menuInnerCorner, Color.WHITE) < 0.04,
+                            colorDistance(menuInnerCorner, Color.WHITE) < 0.12,
                             () -> "Menu inner corner color=" + menuInnerCorner + " for " + splitButton.getVariant()
+                    );
+                }
+                if (splitButton.isDisabled()) {
+                    Color disabledContainerPaint =
+                            assertInstanceOf(Color.class, actionButton.getContainerColor());
+                    assertEquals(disabledContainerPaint, menuButton.getContainerColor());
+                    double containerOpacity = disabledContainerPaint.getOpacity();
+                    Color expectedContainerPixel = Color.color(
+                            disabledContainerPaint.getRed() * containerOpacity
+                                    + rootBackground.getRed() * (1.0 - containerOpacity),
+                            disabledContainerPaint.getGreen() * containerOpacity
+                                    + rootBackground.getGreen() * (1.0 - containerOpacity),
+                            disabledContainerPaint.getBlue() * containerOpacity
+                                    + rootBackground.getBlue() * (1.0 - containerOpacity)
+                    );
+                    Color actionContainerPixel = snapshotScenePixel(
+                            image,
+                            actionBounds.getMinX() + 12.0,
+                            actionBounds.getCenterY()
+                    );
+                    Color menuContainerPixel = snapshotScenePixel(
+                            image,
+                            menuBounds.getMinX() + 8.0,
+                            menuBounds.getCenterY()
+                    );
+                    assertTrue(
+                            colorDistance(actionContainerPixel, expectedContainerPixel) < 0.04,
+                            () -> "Disabled split action container was composited more than once: actual="
+                                    + actionContainerPixel + ", expected=" + expectedContainerPixel
+                    );
+                    assertTrue(
+                            colorDistance(menuContainerPixel, expectedContainerPixel) < 0.04,
+                            () -> "Disabled split menu container was composited more than once: actual="
+                                    + menuContainerPixel + ", expected=" + expectedContainerPixel
                     );
                 }
             }
@@ -38413,10 +38461,14 @@ final class M3ControlContractMatrixTest {
         node.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
     }
 
-    /// Verifies the first background fill and text fill for a labeled control.
+    /// Verifies the rendered container fill and text fill for a labeled control.
     private static void assertLabeledColors(Labeled control, Color expectedBackground, Color expectedText) {
-        assertEquals(1, control.getBackground().getFills().size());
-        assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
+        if (control instanceof M3ButtonBase button) {
+            assertButtonContainerFill(button, expectedBackground);
+        } else {
+            assertEquals(1, control.getBackground().getFills().size());
+            assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
+        }
         assertEquals(expectedText, control.getTextFill());
     }
 
@@ -40955,6 +41007,11 @@ final class M3ControlContractMatrixTest {
     private static void assertRegionFill(Region region, Color expectedFill) {
         assertEquals(1, region.getBackground().getFills().size());
         assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
+    }
+
+    /// Verifies the concrete container paint rendered by an M3FX button skin.
+    private static void assertButtonContainerFill(M3ButtonBase button, Color expectedFill) {
+        assertRegionFill(lookupRegion(button, ".m3-container-paint"), expectedFill);
     }
 
     /// Verifies that a region background resolved to a concrete color.

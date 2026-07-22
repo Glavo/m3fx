@@ -14460,8 +14460,8 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Launch", "Buttons");
 
         List<M3Button> buttons = visibleDemoPageButtons(page);
-        assertEquals(17, buttons.size(), () -> "Buttons page should render seventeen sample buttons: " + buttons);
-        assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 7, "Buttons");
+        assertEquals(18, buttons.size(), () -> "Buttons page should render eighteen sample buttons: " + buttons);
+        assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 8, "Buttons");
         assertButtonVariantCount(buttons, M3ButtonVariant.TONAL, 5, "Buttons");
         assertButtonVariantCount(buttons, M3ButtonVariant.OUTLINED, 3, "Buttons");
         assertButtonVariantCount(buttons, M3ButtonVariant.TEXT, 1, "Buttons");
@@ -14474,9 +14474,16 @@ final class M3FXDemoVisualMatrixTest {
                 .orElseThrow();
         assertEquals(1.0, disabledButton.getOpacity(), 0.0001,
                 "disabled button should not attenuate its container and content as one layer");
+        Region disabledContainerLayer = assertInstanceOf(
+                Region.class,
+                Objects.requireNonNull(
+                        disabledButton.lookup(".m3-container-paint"),
+                        "disabled button container paint"
+                )
+        );
         Color disabledContainer = assertInstanceOf(
                 Color.class,
-                disabledButton.getBackground().getFills().get(0).getFill()
+                disabledContainerLayer.getBackground().getFills().get(0).getFill()
         );
         assertEquals(0.10, disabledContainer.getOpacity(), 0.0001,
                 "disabled button container opacity");
@@ -14486,8 +14493,8 @@ final class M3FXDemoVisualMatrixTest {
         assertNull(disabledButton.getEffect(), "disabled button elevation");
         assertEquals(1, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.EXTRA_SMALL).count(),
                 "Buttons page should render one extra-small button");
-        assertEquals(9, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.SMALL).count(),
-                "Buttons page should render nine small buttons");
+        assertEquals(10, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.SMALL).count(),
+                "Buttons page should render ten small buttons");
         assertEquals(3, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.MEDIUM).count(),
                 "Buttons page should render three medium buttons");
         assertEquals(3, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.LARGE).count(),
