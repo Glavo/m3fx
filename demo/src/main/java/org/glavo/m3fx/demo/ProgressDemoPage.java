@@ -37,10 +37,10 @@ final class ProgressDemoPage extends DemoPageSupport {
     /// Creates the progress component page.
     Node createContent() {
         M3ProgressBar determinateBar = new M3ProgressBar(0.32);
-        determinateBar.setPrefWidth(380.0);
+        configureResponsiveWidth(determinateBar, 380.0);
         applyBaselineProgress(determinateBar);
         M3ProgressBar indeterminateBar = new M3ProgressBar();
-        indeterminateBar.setPrefWidth(380.0);
+        configureResponsiveWidth(indeterminateBar, 380.0);
         applyBaselineProgress(indeterminateBar);
         M3ProgressIndicator determinateIndicator = new M3ProgressIndicator(0.32);
         applyBaselineProgress(determinateIndicator);
@@ -48,10 +48,10 @@ final class ProgressDemoPage extends DemoPageSupport {
         applyBaselineProgress(indeterminateIndicator);
 
         M3ProgressBar expressiveDeterminateBar = new M3ProgressBar(0.32);
-        expressiveDeterminateBar.setPrefWidth(380.0);
+        configureResponsiveWidth(expressiveDeterminateBar, 380.0);
         applyExpressiveLinearProgress(expressiveDeterminateBar);
         M3ProgressBar expressiveIndeterminateBar = new M3ProgressBar();
-        expressiveIndeterminateBar.setPrefWidth(380.0);
+        configureResponsiveWidth(expressiveIndeterminateBar, 380.0);
         applyExpressiveLinearProgress(expressiveIndeterminateBar);
         M3ProgressIndicator expressiveDeterminateIndicator = new M3ProgressIndicator(0.32);
         applyExpressiveCircularProgress(expressiveDeterminateIndicator);
@@ -110,6 +110,7 @@ final class ProgressDemoPage extends DemoPageSupport {
                 createProgressTrackHeightRow("Circular expressive indeterminate", true, true, true)
         );
         matrix.setFillWidth(true);
+        matrix.setMinWidth(0.0);
         matrix.setMaxWidth(Double.MAX_VALUE);
         return matrix;
     }
@@ -126,7 +127,8 @@ final class ProgressDemoPage extends DemoPageSupport {
 
         FlowPane indicators = new FlowPane(16.0, 12.0);
         indicators.setAlignment(Pos.CENTER_LEFT);
-        indicators.setPrefWrapLength(760.0);
+        indicators.setMinWidth(0.0);
+        indicators.setMaxWidth(Double.MAX_VALUE);
         for (double trackHeight : PROGRESS_TRACK_HEIGHTS) {
             indicators.getChildren().add(createProgressTrackHeightSample(
                     trackHeight,
@@ -137,6 +139,7 @@ final class ProgressDemoPage extends DemoPageSupport {
         }
 
         VBox row = new VBox(8.0, label, indicators);
+        row.setMinWidth(0.0);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
@@ -164,7 +167,7 @@ final class ProgressDemoPage extends DemoPageSupport {
             sampleWidth = 64.0;
         } else {
             M3ProgressBar progressBar = indeterminate ? new M3ProgressBar() : new M3ProgressBar(0.62);
-            progressBar.setPrefWidth(180.0);
+            configureResponsiveWidth(progressBar, 180.0);
             if (expressive) {
                 applyExpressiveLinearProgress(progressBar);
             } else {
@@ -179,8 +182,9 @@ final class ProgressDemoPage extends DemoPageSupport {
         heightLabel.getStyleClass().add("demo-progress-track-height-label");
         VBox sample = new VBox(6.0, heightLabel, indicator);
         sample.setAlignment(Pos.CENTER_LEFT);
-        sample.setMinWidth(sampleWidth);
+        sample.setMinWidth(0.0);
         sample.setPrefWidth(sampleWidth);
+        sample.setMaxWidth(Double.MAX_VALUE);
         return sample;
     }
 

@@ -30,6 +30,8 @@ import java.util.Objects;
 /// scale, translation, or transform list. By default, preferred and minimum size animate between the content's
 /// measured size and zero, and drawing is clipped to the current region bounds. The enter, exit, and size transforms
 /// are independently configurable.
+/// Set [#fitToWidthProperty()] when a width-constraining parent must reflow retained content instead of preserving
+/// its independent preferred width.
 /// Replacing [#getContent()] is immediate and is not treated as an animated content transformation; use
 /// [M3AnimatedContent] when old and new content should coexist during replacement.
 ///
@@ -263,6 +265,46 @@ public final class M3AnimatedVisibility extends Region {
         return alignment;
     }
 
+    /// Whether a positive assigned width constrains retained content measurement.
+    ///
+    /// When `false`, the default, this region measures visible content at its independent preferred width. When
+    /// `true`, a positive assigned width constrains the retained-content engine and allows ordinary resizable content
+    /// to reflow. This is useful inside a width-constraining parent such as [javafx.scene.control.ScrollPane].
+    private final BooleanProperty fitToWidth = new SimpleBooleanProperty(this, "fitToWidth", false) {
+        /// Synchronizes the retained-content engine after the outer measurement contract changes.
+        @Override
+        protected void invalidated() {
+            animatedContent.setFitToWidth(get());
+            requestLayout();
+        }
+    };
+
+    /// Returns whether retained content is fitted to this region's assigned width.
+    ///
+    /// @return `true` when a positive assigned width constrains visible content
+    public boolean isFitToWidth() {
+        return fitToWidth.get();
+    }
+
+    /// Sets whether retained content is fitted to this region's assigned width.
+    ///
+    /// Changing this value requests a target remeasurement. It does not alter the configured enter or exit effects
+    /// and may retarget an active size transition when the measured content height changes.
+    ///
+    /// @param fitToWidth whether the assigned width constrains retained content
+    public void setFitToWidth(boolean fitToWidth) {
+        this.fitToWidth.set(fitToWidth);
+    }
+
+    /// Returns the observable fit-to-width property.
+    ///
+    /// The default value is `false`.
+    ///
+    /// @return the fit-to-width property
+    public BooleanProperty fitToWidthProperty() {
+        return fitToWidth;
+    }
+
     /// The animated size and clipping behavior, or `null` for synchronous un-clipped size changes.
     private final ObjectProperty<@Nullable M3SizeTransform> sizeTransform =
             new SimpleObjectProperty<>(this, "sizeTransform", DEFAULT_SIZE_TRANSFORM) {
@@ -342,6 +384,12 @@ public final class M3AnimatedVisibility extends Region {
         configureMotion();
         getChildren().add(animatedContent);
 
+        // Preserve a size invalidation raised while this wrapper is already laying out the retained-content engine.
+        animatedContent.needsLayoutProperty().addListener((observable, wasNeeded, isNeeded) -> {
+            if (isNeeded) {
+                requestLayout();
+            }
+        });
         animatedContent.transitioningProperty().addListener((observable, wasTransitioning, isNowTransitioning) -> {
             transitioning.set(isNowTransitioning);
             if (!isNowTransitioning && lifecycleTransitionActive) {

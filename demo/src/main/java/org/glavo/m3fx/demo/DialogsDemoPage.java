@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
 /// Builds the Dialogs component showcase page.
 @NotNullByDefault
 final class DialogsDemoPage extends DemoPageSupport {
+    /// The Material maximum width used by inline dialog-pane previews.
+    private static final double MAX_INLINE_DIALOG_PANE_WIDTH = 560.0;
+
     /// Creates a page builder backed by the shared demo context.
     ///
     /// @param context the application-level actions available to interactive samples
@@ -86,8 +89,8 @@ final class DialogsDemoPage extends DemoPageSupport {
                         destructiveButton,
                         standaloneButton
                 ),
-                createShowcaseGroup("Inline Panes", basicPane, settingsPane),
-                createShowcaseGroup("Scrollable Content", longPane)
+                createFullWidthShowcaseGroup("Inline Panes", basicPane, settingsPane),
+                createFullWidthShowcaseGroup("Scrollable Content", longPane)
         );
     }
 
@@ -166,10 +169,9 @@ final class DialogsDemoPage extends DemoPageSupport {
     /// @return the settings content
     private static Node createDialogSettingsContent(boolean popup) {
         M3TextField projectName = createTextField("Project name", "M3FX", M3TextInputVariant.OUTLINED, false);
-        projectName.setPrefWidth(popup ? 360.0 : 320.0);
+        configureResponsiveWidth(projectName, popup ? 360.0 : 320.0);
         M3TextInputLayout projectLayout = createTextInputLayout(projectName, "Shown in generated artifacts");
-        projectLayout.setPrefWidth(projectName.getPrefWidth());
-        projectLayout.setMaxWidth(projectName.getPrefWidth());
+        configureResponsiveWidth(projectLayout, projectName.getPrefWidth());
 
         M3Switch notifications = new M3Switch("Notify contributors");
         notifications.setSelected(true);
@@ -178,6 +180,7 @@ final class DialogsDemoPage extends DemoPageSupport {
 
         VBox content = new VBox(12.0, projectLayout, notifications, rememberChoice);
         content.getStyleClass().add("demo-dialog-content");
+        content.setMinWidth(0.0);
         content.setMaxWidth(Double.MAX_VALUE);
         return content;
     }
@@ -190,6 +193,8 @@ final class DialogsDemoPage extends DemoPageSupport {
     ) {
         M3DialogPane pane = new M3DialogPane();
         pane.getStyleClass().add("demo-dialog-pane");
+        pane.setMinWidth(0.0);
+        pane.setMaxWidth(MAX_INLINE_DIALOG_PANE_WIDTH);
         pane.setMaxHeight(Region.USE_PREF_SIZE);
         pane.setHeaderText(headerText);
         if (contentText != null) {
@@ -220,6 +225,8 @@ final class DialogsDemoPage extends DemoPageSupport {
         scrollPane.getStyleClass().add("demo-dialog-scroll-pane");
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefViewportHeight(132.0);
+        scrollPane.setMinWidth(0.0);
+        scrollPane.setMaxWidth(Double.MAX_VALUE);
         scrollPane.setMaxHeight(Region.USE_PREF_SIZE);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         M3ScrollPanes.style(scrollPane);

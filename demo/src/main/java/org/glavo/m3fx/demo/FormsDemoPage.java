@@ -3,8 +3,6 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.geometry.Pos;
-import javafx.scene.layout.HBox;
 import javafx.scene.Node;
 
 import org.glavo.m3fx.controls.M3Button;
@@ -57,8 +55,7 @@ final class FormsDemoPage extends DemoPageSupport {
         availability.setStartLabelText("Start");
         availability.setEndLabelText("End");
         availability.getPresets().setAll(M3DateRangePresets.common(LocalDate.now(), availability.getPicker().getFirstDayOfWeek()));
-        availability.setPrefWidth(420.0);
-        availability.setMaxWidth(420.0);
+        configureResponsiveWidth(availability, 420.0);
 
         M3Switch notifications = new M3Switch("");
         notifications.setSelected(true);
@@ -89,8 +86,7 @@ final class FormsDemoPage extends DemoPageSupport {
         M3ValidationSummary validationSummary = new M3ValidationSummary(validator);
         validationSummary.setTitleText("Review form fields");
         validationSummary.setEmptyText("All registered fields are valid");
-        validationSummary.setPrefWidth(720.0);
-        validationSummary.setMaxWidth(720.0);
+        configureResponsiveWidth(validationSummary, 720.0);
 
         M3Button validateButton = new M3Button("Validate form", M3ButtonVariant.FILLED);
         validateButton.setOnAction(event -> {
@@ -112,8 +108,7 @@ final class FormsDemoPage extends DemoPageSupport {
             context.showSnackbar("Validation cleared");
         });
 
-        HBox validationActions = new HBox(12.0, validateButton, clearValidationButton);
-        validationActions.setAlignment(Pos.CENTER_LEFT);
+        Node validationActions = createResponsiveActionRow(validateButton, clearValidationButton);
 
         M3FormSection validation = new M3FormSection(
                 "Validation",
@@ -126,10 +121,9 @@ final class FormsDemoPage extends DemoPageSupport {
         M3FormPane form = createFormPane(validationSummary, account, preferences, validation);
         form.getStyleClass().add("demo-form");
         form.setContentPadding(18.0);
-        form.setPrefWidth(760.0);
-        form.setMaxWidth(760.0);
+        configureResponsiveWidth(form, 760.0);
 
-        return createGallery(createShowcaseGroup("Structured Form", form));
+        return createGallery(createFullWidthShowcaseGroup("Structured Form", form));
     }
 
     /// Creates a form pane sample with initial items.

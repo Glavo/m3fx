@@ -9,8 +9,11 @@ import javafx.scene.shape.SVGPath;
 
 import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3IconSize;
+import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Builds the SplitButtons component showcase page.
@@ -53,8 +56,25 @@ final class SplitButtonsDemoPage extends DemoPageSupport {
         large.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.LARGE));
         extraLarge.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.EXTRA_LARGE));
 
+        M3SplitButton export = new M3SplitButton("Export");
+        export.setVariant(M3ButtonVariant.FILLED);
+        export.setGraphic(createSplitButtonGraphic("send", M3ButtonVariant.FILLED, M3IconSize.SMALL));
+        export.setOnAction(event -> context.showSnackbar("Exported as PDF"));
+        M3MenuItem exportPdf = new M3MenuItem("Export as PDF");
+        exportPdf.setOnAction(event -> context.showSnackbar("Exported as PDF"));
+        M3MenuItem exportCsv = new M3MenuItem("Export as CSV");
+        exportCsv.setOnAction(event -> context.showSnackbar("Exported as CSV"));
+        M3SubMenuItem moreFormats = new M3SubMenuItem("More formats");
+        M3MenuItem exportJson = new M3MenuItem("Export as JSON");
+        exportJson.setOnAction(event -> context.showSnackbar("Exported as JSON"));
+        M3MenuItem exportMarkdown = new M3MenuItem("Export as Markdown");
+        exportMarkdown.setOnAction(event -> context.showSnackbar("Exported as Markdown"));
+        moreFormats.getItems().addAll(exportJson, exportMarkdown);
+        export.getItems().setAll(exportPdf, exportCsv, new M3Divider(), moreFormats);
+
         return createGallery(
                 createShowcaseGroup("Color Roles", tonal, outlined, filled, elevated),
+                createShowcaseGroup("Menu Interaction", export),
                 createShowcaseGroup("Disabled", disabled),
                 createShowcaseGroup("Size Scale", extraSmall, small, medium, large, extraLarge)
         );

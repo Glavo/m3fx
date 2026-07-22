@@ -5,7 +5,7 @@ package org.glavo.m3fx.demo;
 
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.Node;
 
@@ -92,7 +92,8 @@ final class ToolbarsDemoPage extends DemoPageSupport {
                 "share",
                 "more"
         );
-        HBox toolbarWithFab = new HBox(
+        FlowPane toolbarWithFab = new FlowPane(
+                8.0,
                 8.0,
                 pairedToolbar,
                 createFab(
@@ -102,6 +103,8 @@ final class ToolbarsDemoPage extends DemoPageSupport {
                 )
         );
         toolbarWithFab.setAlignment(Pos.CENTER_LEFT);
+        toolbarWithFab.setMinWidth(0.0);
+        toolbarWithFab.setMaxWidth(Double.MAX_VALUE);
         toolbarWithFab.getStyleClass().add("demo-toolbar-fab-pair");
 
         return createGallery(
@@ -150,7 +153,7 @@ final class ToolbarsDemoPage extends DemoPageSupport {
     private static StackPane createToolbarPreview(M3Toolbar toolbar) {
         StackPane preview = new StackPane(toolbar);
         preview.getStyleClass().add("demo-toolbar-preview");
-        preview.setMinWidth(560.0);
+        preview.setMinWidth(0.0);
         preview.setPrefWidth(760.0);
         preview.setMaxWidth(Double.MAX_VALUE);
         StackPane.setAlignment(toolbar, Pos.CENTER_LEFT);

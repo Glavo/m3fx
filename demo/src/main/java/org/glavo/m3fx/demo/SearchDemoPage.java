@@ -26,17 +26,17 @@ final class SearchDemoPage extends DemoPageSupport {
     /// Creates the search component page.
     Node createContent() {
         M3SearchBar searchBar = new M3SearchBar("Search M3FX");
-        searchBar.setPrefWidth(420.0);
+        configureResponsiveWidth(searchBar, 420.0);
         M3IconButton clearSearchBar = createIconButton("close");
         clearSearchBar.setOnAction(event -> searchBar.clear());
         searchBar.getTrailingActions().add(clearSearchBar);
 
         M3SearchBar populated = new M3SearchBar("Search M3FX");
         populated.setText("Buttons");
-        populated.setPrefWidth(420.0);
+        configureResponsiveWidth(populated, 420.0);
 
         M3SearchView containedDocked = new M3SearchView("Search components");
-        containedDocked.setPrefWidth(520.0);
+        configureResponsiveWidth(containedDocked, 520.0);
         M3IconButton tuneSearchView = createIconButton("tune");
         M3IconButton clearSearchView = createIconButton("close");
         clearSearchView.setOnAction(event -> containedDocked.clear());
@@ -49,7 +49,7 @@ final class SearchDemoPage extends DemoPageSupport {
 
         M3SearchView dividedDocked = new M3SearchView("Search divided results");
         dividedDocked.setViewStyle(M3SearchViewStyle.DIVIDED);
-        dividedDocked.setPrefWidth(520.0);
+        configureResponsiveWidth(dividedDocked, 520.0);
         dividedDocked.getResults().addAll(
                 createSearchResult("Color", "Dynamic color and component color roles"),
                 createSearchResult("Typography", "Material type roles and font metrics")
@@ -57,7 +57,7 @@ final class SearchDemoPage extends DemoPageSupport {
 
         M3SearchView containedFullScreen = new M3SearchView("Search full-screen content");
         containedFullScreen.setViewLayout(M3SearchViewLayout.FULL_SCREEN);
-        containedFullScreen.setPrefWidth(520.0);
+        configureResponsiveWidth(containedFullScreen, 520.0);
         containedFullScreen.getResults().addAll(
                 createSearchResult("Cards", "Elevated, filled, and outlined cards"),
                 createSearchResult("Dialogs", "Basic and full-screen dialogs")
@@ -66,7 +66,7 @@ final class SearchDemoPage extends DemoPageSupport {
         M3SearchView dividedFullScreen = new M3SearchView("Search full-screen divided content");
         dividedFullScreen.setViewStyle(M3SearchViewStyle.DIVIDED);
         dividedFullScreen.setViewLayout(M3SearchViewLayout.FULL_SCREEN);
-        dividedFullScreen.setPrefWidth(520.0);
+        configureResponsiveWidth(dividedFullScreen, 520.0);
         dividedFullScreen.getTrailingActions().add(createIconButton("tune"));
         dividedFullScreen.getResults().addAll(
                 createSearchResult("Date pickers", "Docked and modal date selection"),
@@ -74,11 +74,11 @@ final class SearchDemoPage extends DemoPageSupport {
         );
 
         return createGallery(
-                createShowcaseGroup("Search Bars", searchBar, populated),
-                createShowcaseGroup("Contained Docked", containedDocked),
-                createShowcaseGroup("Divided Docked", dividedDocked),
-                createShowcaseGroup("Contained Full-screen", containedFullScreen),
-                createShowcaseGroup("Divided Full-screen", dividedFullScreen)
+                createFullWidthShowcaseGroup("Search Bars", searchBar, populated),
+                createFullWidthShowcaseGroup("Contained Docked", containedDocked),
+                createFullWidthShowcaseGroup("Divided Docked", dividedDocked),
+                createFullWidthShowcaseGroup("Contained Full-screen", containedFullScreen),
+                createFullWidthShowcaseGroup("Divided Full-screen", dividedFullScreen)
         );
     }
 

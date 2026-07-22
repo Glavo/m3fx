@@ -134,11 +134,13 @@ final class AppBarsDemoPage extends DemoPageSupport {
         VBox stack = new VBox(16.0);
         stack.getStyleClass().addAll("demo-app-bar-stack", "demo-stacked-flow");
         stack.setFillWidth(true);
+        stack.setMinWidth(0.0);
         stack.setMaxWidth(Double.MAX_VALUE);
         stack.getChildren().addAll(nodes);
 
         VBox group = new VBox(10.0, label, stack);
         group.getStyleClass().add("demo-showcase-group");
+        group.setMinWidth(0.0);
         group.setMaxWidth(Double.MAX_VALUE);
         return group;
     }
@@ -178,6 +180,7 @@ final class AppBarsDemoPage extends DemoPageSupport {
         VBox sample = new VBox(8.0, label, preview);
         sample.getStyleClass().add("demo-app-bar-sample");
         sample.setFillWidth(true);
+        sample.setMinWidth(0.0);
         sample.setMaxWidth(Double.MAX_VALUE);
         if (preview instanceof Region region) {
             region.setMaxWidth(Double.MAX_VALUE);
@@ -191,6 +194,7 @@ final class AppBarsDemoPage extends DemoPageSupport {
         VBox content = new VBox(10.0);
         content.getStyleClass().add("demo-top-app-bar-preview-content");
         content.setFillWidth(true);
+        content.setMinWidth(0.0);
         content.setMaxWidth(Double.MAX_VALUE);
 
         content.getChildren().addAll(
@@ -214,6 +218,7 @@ final class AppBarsDemoPage extends DemoPageSupport {
         supporting.getStyleClass().add("demo-top-app-bar-preview-supporting");
         VBox text = new VBox(2.0, headline, supporting);
         text.getStyleClass().add("demo-top-app-bar-preview-text");
+        text.setMinWidth(0.0);
         HBox.setHgrow(text, Priority.ALWAYS);
 
         Region trailing = new Region();
@@ -225,6 +230,7 @@ final class AppBarsDemoPage extends DemoPageSupport {
         HBox row = new HBox(16.0, leading, text, trailing);
         row.getStyleClass().add("demo-top-app-bar-preview-row");
         row.setAlignment(Pos.CENTER_LEFT);
+        row.setMinWidth(0.0);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }

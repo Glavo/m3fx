@@ -10,6 +10,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -514,6 +515,55 @@ final class M3LayoutAnimationTest {
         });
     }
 
+    /// Verifies animated content and visibility can remeasure retained content at an assigned parent width.
+    @Test
+    void retainedContentCanFitToAssignedWidth() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Region content = responsiveRegion(420.0, 32.0);
+            M3AnimatedContent animatedContent = new M3AnimatedContent(content);
+            assertFalse(animatedContent.isFitToWidth());
+            assertEquals(420.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+
+            animatedContent.setFitToWidth(true);
+            assertEquals(0.0, animatedContent.minWidth(-1.0), 1.0e-6);
+            assertEquals(0.0, animatedContent.prefWidth(-1.0), 1.0e-6);
+
+            StackPane contentRoot = new StackPane(animatedContent);
+            new Scene(contentRoot, 180.0, 80.0);
+            contentRoot.applyCss();
+            contentRoot.layout();
+
+            assertEquals(180.0, animatedContent.getWidth(), 1.0e-6);
+            assertEquals(180.0, content.getWidth(), 1.0e-6);
+
+            Region visibleContent = responsiveRegion(360.0, 28.0);
+            M3AnimatedVisibility visibility = new M3AnimatedVisibility(visibleContent);
+            assertFalse(visibility.isFitToWidth());
+            visibility.setFitToWidth(true);
+            assertEquals(0.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            StackPane visibilityRoot = new StackPane(visibility);
+            new Scene(visibilityRoot, 160.0, 72.0);
+            visibilityRoot.applyCss();
+            visibilityRoot.layout();
+
+            assertEquals(160.0, visibility.getWidth(), 1.0e-6);
+            assertEquals(160.0, visibleContent.getWidth(), 1.0e-6);
+            assertEquals(28.0, visibilityRoot.prefHeight(-1.0), 1.0e-6);
+
+            visibleContent.setMinHeight(46.0);
+            visibleContent.setPrefHeight(46.0);
+            visibility.layout();
+            assertEquals(46.0, visibility.prefHeight(-1.0), 1.0e-6);
+            assertEquals(46.0, visibilityRoot.prefHeight(-1.0), 1.0e-6);
+
+            visibility.setFitToWidth(false);
+            visibilityRoot.applyCss();
+            visibilityRoot.layout();
+            assertEquals(360.0, visibility.prefWidth(-1.0), 1.0e-6);
+        });
+    }
+
     /// Verifies first attachment, reduced motion, and active-scene detachment settle content lifecycle correctly.
     @Test
     void animatedContentHandlesAttachmentAndReducedMotionLifecycle() {
@@ -816,6 +866,15 @@ final class M3LayoutAnimationTest {
         Region region = new Region();
         region.setMinSize(width, height);
         region.setPrefSize(width, height);
+        return region;
+    }
+
+    /// Creates a region that can shrink below its preferred width when an enclosing layout assigns less space.
+    private static Region responsiveRegion(double preferredWidth, double height) {
+        Region region = new Region();
+        region.setMinSize(0.0, height);
+        region.setPrefSize(preferredWidth, height);
+        region.setMaxWidth(Double.MAX_VALUE);
         return region;
     }
 }

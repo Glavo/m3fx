@@ -5,10 +5,12 @@ package org.glavo.m3fx.demo;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -59,18 +61,18 @@ final class MotionDemoPage extends DemoPageSupport {
         valueTrack.getStyleClass().add("demo-flow");
         valueTrack.setAlignment(Pos.CENTER_LEFT);
         valueTrack.setMinHeight(96.0);
-        valueTrack.setPrefWidth(560.0);
-        valueTrack.setMaxWidth(560.0);
+        configureResponsiveWidth(valueTrack, 560.0);
 
         M3Button moveButton = new M3Button("Change target", M3ButtonVariant.FILLED);
-        moveButton.setOnAction(event -> horizontalPosition.animateTo(
-                horizontalPosition.getTargetValue() < 140.0 ? 320.0 : 0.0
-        ));
+        moveButton.setOnAction(event -> {
+            double travel = availableHorizontalTravel(valueTrack, movingTarget);
+            horizontalPosition.animateTo(horizontalPosition.getTargetValue() < travel / 2.0 ? travel : 0.0);
+        });
         M3Button snapButton = new M3Button("Snap to start", M3ButtonVariant.OUTLINED);
         snapButton.setOnAction(event -> horizontalPosition.snapTo(0.0));
-        HBox valueActions = new HBox(12.0, moveButton, snapButton);
-        valueActions.setAlignment(Pos.CENTER_LEFT);
+        FlowPane valueActions = createResponsiveActionRow(moveButton, snapButton);
         VBox valueExample = new VBox(12.0, valueTrack, valueActions);
+        configureResponsiveWidth(valueExample, 560.0);
 
         Label coordinatedHeadline = new Label("One state, four visual channels");
         coordinatedHeadline.getStyleClass().add("demo-group-title");
@@ -78,19 +80,19 @@ final class MotionDemoPage extends DemoPageSupport {
         M3Surface coordinatedSurface = new M3Surface();
         coordinatedSurface.setPrefSize(220.0, 88.0);
         coordinatedSurface.setMaxSize(220.0, 88.0);
+        coordinatedSurface.setMinWidth(0.0);
         coordinatedSurface.getContent().add(new VBox(6.0, coordinatedHeadline, coordinatedSupporting));
 
         StackPane coordinatedTrack = new StackPane(coordinatedSurface);
         coordinatedTrack.getStyleClass().add("demo-flow");
         coordinatedTrack.setAlignment(Pos.CENTER_LEFT);
         coordinatedTrack.setMinHeight(128.0);
-        coordinatedTrack.setPrefWidth(560.0);
-        coordinatedTrack.setMaxWidth(560.0);
+        configureResponsiveWidth(coordinatedTrack, 560.0);
 
         M3StateTransition<Boolean> stateTransition = new M3StateTransition<>(coordinatedSurface, false);
         stateTransition.addDouble(
                 coordinatedSurface.translateXProperty(),
-                expanded -> expanded ? 300.0 : 0.0,
+                expanded -> expanded ? availableHorizontalTravel(coordinatedTrack, coordinatedSurface) : 0.0,
                 0.5
         );
         stateTransition.addDouble(
@@ -125,24 +127,26 @@ final class MotionDemoPage extends DemoPageSupport {
         changeState.setOnAction(event -> stateTransition.setTargetState(!stateTransition.getTargetState()));
         M3Button finishState = new M3Button("Finish transition", M3ButtonVariant.OUTLINED);
         finishState.setOnAction(event -> stateTransition.finish());
-        HBox stateActions = new HBox(12.0, changeState, finishState, stateLabel);
-        stateActions.setAlignment(Pos.CENTER_LEFT);
+        FlowPane stateActions = createResponsiveActionRow(changeState, finishState, stateLabel);
         VBox stateExample = new VBox(12.0, coordinatedTrack, stateActions);
+        configureResponsiveWidth(stateExample, 560.0);
 
         Label seekHeadline = new Label("Drag this transition in either direction");
         seekHeadline.getStyleClass().add("demo-group-title");
+        seekHeadline.setWrapText(true);
         Label seekSupporting = new Label("Point2D, scale, and opacity use one normalized play-time position.");
+        seekSupporting.setWrapText(true);
         M3Surface seekSurface = new M3Surface();
         seekSurface.setPrefSize(220.0, 88.0);
         seekSurface.setMaxSize(220.0, 88.0);
+        seekSurface.setMinWidth(0.0);
         seekSurface.getContent().add(new VBox(6.0, seekHeadline, seekSupporting));
 
         StackPane seekTrack = new StackPane(seekSurface);
         seekTrack.getStyleClass().add("demo-flow");
         seekTrack.setAlignment(Pos.CENTER_LEFT);
         seekTrack.setMinHeight(128.0);
-        seekTrack.setPrefWidth(560.0);
-        seekTrack.setMaxWidth(560.0);
+        configureResponsiveWidth(seekTrack, 560.0);
 
         SimpleObjectProperty<Point2D> seekPosition = new SimpleObjectProperty<>(Point2D.ZERO);
         seekPosition.addListener((observable, oldPosition, newPosition) -> {
@@ -152,7 +156,7 @@ final class MotionDemoPage extends DemoPageSupport {
         M3StateTransition<Boolean> seekTransition = new M3StateTransition<>(seekSurface, false);
         seekTransition.addValue(
                 seekPosition,
-                expanded -> expanded ? new Point2D(300.0, 0.0) : Point2D.ZERO,
+                expanded -> expanded ? new Point2D(availableHorizontalTravel(seekTrack, seekSurface), 0.0) : Point2D.ZERO,
                 M3VectorConverters.POINT_2D
         );
         seekTransition.addDouble(
@@ -172,7 +176,7 @@ final class MotionDemoPage extends DemoPageSupport {
         );
 
         M3Slider seekSlider = new M3Slider(0.0, 1.0, 0.0);
-        seekSlider.setPrefWidth(300.0);
+        configureResponsiveWidth(seekSlider, 300.0);
         seekSlider.setBlockIncrement(0.1);
         AtomicBoolean synchronizingSeekSlider = new AtomicBoolean();
         seekSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -208,9 +212,9 @@ final class MotionDemoPage extends DemoPageSupport {
         seekProgress.textProperty().bind(
                 seekTransition.progressProperty().multiply(100.0).asString("Progress: %.0f%%")
         );
-        HBox seekActions = new HBox(12.0, seekSlider, continueSeek, resetSeek, seekProgress);
-        seekActions.setAlignment(Pos.CENTER_LEFT);
+        FlowPane seekActions = createResponsiveActionRow(seekSlider, continueSeek, resetSeek, seekProgress);
         VBox seekExample = new VBox(12.0, seekTrack, seekActions);
+        configureResponsiveWidth(seekExample, 560.0);
 
         Label visibilityHeadline = new Label("Content remains mounted until exit completes");
         visibilityHeadline.getStyleClass().add("demo-group-title");
@@ -219,11 +223,12 @@ final class MotionDemoPage extends DemoPageSupport {
         );
         visibilitySupporting.setWrapText(true);
         M3Surface visibilitySurface = new M3Surface();
-        visibilitySurface.setPrefWidth(520.0);
-        visibilitySurface.setMaxWidth(520.0);
+        configureResponsiveWidth(visibilitySurface, 520.0);
         visibilitySurface.getContent().add(new VBox(8.0, visibilityHeadline, visibilitySupporting));
 
         M3AnimatedVisibility animatedVisibility = new M3AnimatedVisibility(visibilitySurface);
+        animatedVisibility.setFitToWidth(true);
+        configureResponsiveWidth(animatedVisibility, 520.0);
         animatedVisibility.setEnterTransition(
                 M3EnterTransition.fade(0.0)
                         .and(M3EnterTransition.scale(0.92))
@@ -245,12 +250,15 @@ final class MotionDemoPage extends DemoPageSupport {
         finishVisibility.setOnAction(event -> animatedVisibility.finish());
         Label visibilityState = new Label();
         visibilityState.textProperty().bind(animatedVisibility.stateProperty().asString("State: %s"));
-        HBox visibilityActions = new HBox(12.0, toggleVisibility, finishVisibility, visibilityState);
-        visibilityActions.setAlignment(Pos.CENTER_LEFT);
+        FlowPane visibilityActions = createResponsiveActionRow(toggleVisibility, finishVisibility, visibilityState);
         VBox visibilityExample = new VBox(12.0, animatedVisibility, visibilityActions);
+        configureResponsiveWidth(visibilityExample, 520.0);
 
         M3AnimatedContent animatedContent = new M3AnimatedContent(createMotionContent(false));
-        animatedContent.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        animatedContent.setFitToWidth(true);
+        animatedContent.setMinWidth(0.0);
+        animatedContent.setMaxWidth(Double.MAX_VALUE);
+        animatedContent.setMaxHeight(Region.USE_PREF_SIZE);
         M3Button replaceContent = new M3Button("Show expanded content", M3ButtonVariant.FILLED);
         replaceContent.setOnAction(event -> {
             @Nullable Node current = animatedContent.getContent();
@@ -261,9 +269,9 @@ final class MotionDemoPage extends DemoPageSupport {
         });
         M3Button finishReplacement = new M3Button("Finish transition", M3ButtonVariant.OUTLINED);
         finishReplacement.setOnAction(event -> animatedContent.finish());
-        HBox contentActions = new HBox(12.0, replaceContent, finishReplacement);
-        contentActions.setAlignment(Pos.CENTER_LEFT);
+        FlowPane contentActions = createResponsiveActionRow(replaceContent, finishReplacement);
         VBox contentExample = new VBox(12.0, animatedContent, contentActions);
+        configureResponsiveWidth(contentExample, 520.0);
 
         M3Button firstItem = new M3Button("Plan", M3ButtonVariant.TONAL);
         M3Button secondItem = new M3Button("Build", M3ButtonVariant.TONAL);
@@ -272,8 +280,7 @@ final class MotionDemoPage extends DemoPageSupport {
         layoutTrack.getStyleClass().add("demo-flow");
         layoutTrack.setAlignment(Pos.CENTER_LEFT);
         layoutTrack.setMinHeight(112.0);
-        layoutTrack.setPrefWidth(560.0);
-        layoutTrack.setMaxWidth(560.0);
+        configureResponsiveWidth(layoutTrack, 560.0);
 
         M3LayoutTransition layoutTransition = new M3LayoutTransition(layoutTrack);
         layoutTrack.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -293,9 +300,12 @@ final class MotionDemoPage extends DemoPageSupport {
                 layoutTrack.getAlignment() == Pos.CENTER_LEFT ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT
         ));
         VBox layoutExample = new VBox(12.0, layoutTrack, changeLayout);
+        configureResponsiveWidth(layoutExample, 560.0);
 
         M3AdaptiveScaffold adaptiveScaffold = new M3AdaptiveScaffold();
         adaptiveScaffold.getStyleClass().add("demo-motion-scaffold");
+        adaptiveScaffold.setMinWidth(0.0);
+        adaptiveScaffold.setMaxWidth(Double.MAX_VALUE);
         adaptiveScaffold.setMinHeight(300.0);
         adaptiveScaffold.setPrefHeight(300.0);
         adaptiveScaffold.setContentMargin(12.0);
@@ -317,17 +327,18 @@ final class MotionDemoPage extends DemoPageSupport {
         navigationBar.setPrefHeight(64.0);
         adaptiveScaffold.setNavigationRail(navigationRail);
         adaptiveScaffold.setNavigationBar(navigationBar);
-        adaptiveScaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
-        adaptiveScaffold.setNavigationLayout(M3NavigationLayout.RAIL);
+        adaptiveScaffold.setPaneLayout(M3PaneLayout.ADAPTIVE);
+        adaptiveScaffold.setNavigationLayout(M3NavigationLayout.ADAPTIVE);
 
         M3Button changeAdaptiveLayout = new M3Button("Use compact topology", M3ButtonVariant.FILLED);
         changeAdaptiveLayout.setOnAction(event -> {
             boolean compact = adaptiveScaffold.getPaneLayout() != M3PaneLayout.SINGLE;
-            adaptiveScaffold.setPaneLayout(compact ? M3PaneLayout.SINGLE : M3PaneLayout.FIXED_LEADING);
-            adaptiveScaffold.setNavigationLayout(compact ? M3NavigationLayout.BAR : M3NavigationLayout.RAIL);
-            changeAdaptiveLayout.setText(compact ? "Use expanded topology" : "Use compact topology");
+            adaptiveScaffold.setPaneLayout(compact ? M3PaneLayout.SINGLE : M3PaneLayout.ADAPTIVE);
+            adaptiveScaffold.setNavigationLayout(compact ? M3NavigationLayout.BAR : M3NavigationLayout.ADAPTIVE);
+            changeAdaptiveLayout.setText(compact ? "Resume adaptive topology" : "Use compact topology");
         });
         VBox adaptiveExample = new VBox(12.0, adaptiveScaffold, changeAdaptiveLayout);
+        configureResponsiveWidth(adaptiveExample, 560.0);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
@@ -360,6 +371,16 @@ final class MotionDemoPage extends DemoPageSupport {
         ));
     }
 
+    /// Computes the horizontal distance a sample may travel without leaving its track's content area.
+    ///
+    /// @param track  the containing track
+    /// @param sample the moving sample
+    /// @return the non-negative available travel distance in logical pixels
+    private static double availableHorizontalTravel(Region track, Region sample) {
+        Insets insets = track.getInsets();
+        return Math.max(0.0, track.getWidth() - insets.getLeft() - insets.getRight() - sample.prefWidth(-1.0));
+    }
+
     /// Creates one compact or expanded node for the animated-content showcase.
     private static M3Surface createMotionContent(boolean expanded) {
         Label headline = new Label(expanded ? "Expanded workspace" : "Compact summary");
@@ -369,13 +390,14 @@ final class MotionDemoPage extends DemoPageSupport {
                 + "Repeated clicks retarget every active channel from its current visual state."
                 : "Replace this summary without resetting an in-progress transition.");
         supporting.setWrapText(true);
-        supporting.setPrefWidth(expanded ? 440.0 : 260.0);
+        configureResponsiveWidth(supporting, expanded ? 440.0 : 260.0);
 
         VBox content = new VBox(8.0, headline, supporting);
+        content.setMinWidth(0.0);
+        content.setMaxWidth(Double.MAX_VALUE);
         M3Surface surface = new M3Surface();
         surface.getContent().add(content);
-        surface.setPrefWidth(expanded ? 520.0 : 340.0);
-        return surface;
+        return configureResponsiveWidth(surface, expanded ? 520.0 : 340.0);
     }
 
     /// Creates one labeled surface used by the adaptive scaffold motion example.

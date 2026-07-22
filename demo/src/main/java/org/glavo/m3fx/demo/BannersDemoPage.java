@@ -54,13 +54,13 @@ final class BannersDemoPage extends DemoPageSupport {
                 "Details",
                 "Close"
         );
-        narrow.setPrefWidth(420.0);
+        configureResponsiveWidth(narrow, 420.0);
 
         return createGallery(
-                createShowcaseGroup("With Actions", informational, warning),
-                createShowcaseGroup("Without Icon", noIcon),
-                createShowcaseGroup("Passive", passive),
-                createShowcaseGroup("Responsive", narrow)
+                createFullWidthShowcaseGroup("With Actions", informational, warning),
+                createFullWidthShowcaseGroup("Without Icon", noIcon),
+                createFullWidthShowcaseGroup("Passive", passive),
+                createFullWidthShowcaseGroup("Responsive", narrow)
         );
     }
 
@@ -68,7 +68,7 @@ final class BannersDemoPage extends DemoPageSupport {
     private M3Banner createBanner(String text, @Nullable Node icon, String... actionTexts) {
         M3Banner banner = new M3Banner(text);
         banner.setIcon(icon);
-        banner.setPrefWidth(760.0);
+        configureResponsiveWidth(banner, 760.0);
         banner.getStyleClass().add("demo-banner");
         for (String actionText : actionTexts) {
             M3Button action = new M3Button(actionText, M3ButtonVariant.TEXT);

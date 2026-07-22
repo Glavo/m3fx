@@ -64,6 +64,13 @@ final class ButtonGroupsDemoPage extends DemoPageSupport {
         );
         connectedMultiSelect.setSize(M3ButtonSize.MEDIUM);
 
+        M3Button archiveAction = createConnectedLabeledAction("Archive", "archive");
+        M3Button shareAction = createConnectedLabeledAction("Share", "share");
+        M3Button editAction = createConnectedLabeledAction("Edit", "edit");
+        M3ButtonGroup connectedLabeledActions = createButtonGroup(archiveAction, shareAction, editAction);
+        connectedLabeledActions.setVariant(M3ButtonGroupVariant.CONNECTED);
+        connectedLabeledActions.setSize(M3ButtonSize.MEDIUM);
+
         M3ButtonGroup small = createButtonGroup(
                 new M3Button("Previous", M3ButtonVariant.TONAL),
                 new M3Button("Next", M3ButtonVariant.TONAL)
@@ -81,10 +88,26 @@ final class ButtonGroupsDemoPage extends DemoPageSupport {
         return createGallery(
                 createShowcaseGroup("Standard Actions", standardGroup),
                 createShowcaseGroup("Standard Toggle Selection", standardSingleSelect),
+                createFullWidthShowcaseGroup("Connected Labeled Actions", connectedLabeledActions),
                 createFullWidthShowcaseGroup("Connected Single Select", connectedSingleSelect),
                 createFullWidthShowcaseGroup("Connected Multi Select", connectedMultiSelect),
                 createShowcaseGroup("Size Scale", small, large)
         );
+    }
+
+    /// Creates one labeled action used by the connected button-group sample.
+    ///
+    /// @param text     the action label
+    /// @param iconName the demo icon name
+    /// @return the configured tonal action button
+    private M3Button createConnectedLabeledAction(String text, String iconName) {
+        M3Button button = new M3Button(
+                text,
+                createIconViewport(DemoIcons.onSecondaryContainer(iconName)),
+                M3ButtonVariant.TONAL
+        );
+        button.setOnAction(event -> context.showSnackbar(text + " pressed"));
+        return button;
     }
 
     /// Creates a selectable icon-toggle button group for one Material button-group variant.

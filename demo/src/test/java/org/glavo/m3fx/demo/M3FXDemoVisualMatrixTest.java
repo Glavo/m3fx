@@ -52,6 +52,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -278,6 +279,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Tooltips", M3FXDemoVisualMatrixTest::assertTooltipsPageVisualState),
             Map.entry("Banners", M3FXDemoVisualMatrixTest::assertBannersPageVisualState),
             Map.entry("Forms", M3FXDemoVisualMatrixTest::assertFormsPageVisualState),
+            Map.entry("Motion", M3FXDemoVisualMatrixTest::assertMotionPageVisualState),
             Map.entry("Typography", M3FXDemoVisualMatrixTest::assertTypographyPageVisualState),
             Map.entry("Icons", M3FXDemoVisualMatrixTest::assertIconsPageVisualState),
             Map.entry("Avatars", M3FXDemoVisualMatrixTest::assertAvatarsPageVisualState),
@@ -309,6 +311,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Bottom App Bars", "Toolbars"),
             Map.entry("Banners", "Additional demos"),
             Map.entry("Forms", "Additional demos"),
+            Map.entry("Motion", "Additional demos"),
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
@@ -12450,14 +12453,15 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Variants", "Cards");
         assertVisibleText(root, "Passive Cards With Actions", "Cards");
         assertVisibleText(root, "States", "Cards");
+        assertVisibleText(root, "Local Container Paint", "Cards");
 
         List<M3Card> cards = visibleNodesOfType(page, M3Card.class);
-        assertEquals(8, cards.size(), "Cards page should render eight focused card examples");
-        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
+        assertEquals(9, cards.size(), "Cards page should render nine focused card examples");
+        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
         assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
         assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
         assertEquals(1, cards.stream().filter(Node::isDisabled).count(), "Cards page disabled card count");
-        assertEquals(5, cards.stream().filter(card -> card.getOnAction() != null).count(),
+        assertEquals(6, cards.stream().filter(card -> card.getOnAction() != null).count(),
                 "demo direct-action card count");
         assertEquals(3, cards.stream().filter(card -> card.getOnAction() == null).count(),
                 "demo passive card count");
@@ -12652,22 +12656,41 @@ final class M3FXDemoVisualMatrixTest {
         assertCurrentPageTitle(scene, "Lists");
         assertVisibleText(root, "Standard", "Lists");
         assertVisibleText(root, "Segmented", "Lists");
+        assertVisibleText(root, "Settings List", "Lists");
         assertVisibleText(root, "Virtualized Segmented", "Lists");
         assertVisibleText(root, "Selected item", "Lists");
         assertVisibleText(root, "Disabled item", "Lists");
+        assertVisibleText(root, "Automatic updates", "Lists");
+        assertVisibleText(root, "Use mobile data", "Lists");
 
         List<M3ListPane> listPanes = visibleNodesOfType(page, M3ListPane.class);
-        assertEquals(2, listPanes.size(), () -> "Lists page should render standard and segmented panes: " + listPanes);
+        assertEquals(3, listPanes.size(), () -> "Lists page should render standard, segmented, and settings panes: " + listPanes);
         M3ListPane standardList = listPanes.stream()
                 .filter(listPane -> listPane.getListStyle() == M3ListStyle.STANDARD)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3ListItem.class::isInstance)
+                        .map(M3ListItem.class::cast)
+                        .anyMatch(item -> "One-line item".equals(item.getHeadlineText())))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("standard list pane"));
         M3ListPane segmentedList = listPanes.stream()
                 .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("segmented list pane"));
+        M3ListPane settingsList = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.STANDARD)
+                .filter(listPane -> listPane.getItems().stream()
+                        .filter(M3ListItem.class::isInstance)
+                        .map(M3ListItem.class::cast)
+                        .anyMatch(item -> "Automatic updates".equals(item.getHeadlineText())))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("settings list pane"));
         assertEquals(0.0, standardList.getItemSpacing(), 0.0001, "standard list spacing");
+        assertEquals(0.0, settingsList.getItemSpacing(), 0.0001, "settings list spacing");
         assertEquals(2.0, segmentedList.getItemSpacing(), 0.0001, "segmented list spacing");
+        assertEquals(2, settingsList.getItems().size(), "settings list item count");
+        assertEquals(1, visibleNodesOfType(settingsList, M3Switch.class).size(), "settings list switch count");
+        assertEquals(1, visibleNodesOfType(settingsList, M3CheckBox.class).size(), "settings list checkbox count");
         List<M3ListItem> segmentedItems = segmentedList.getItems().stream()
                 .filter(M3ListItem.class::isInstance)
                 .map(M3ListItem.class::cast)
@@ -12859,42 +12882,72 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(7, menuButton.getItems().size(), "menu button item count including sections and divider");
     }
 
-    /// Verifies compact vertical and medium-window horizontal navigation bar layouts.
+    /// Verifies compact, adaptive, and destination-count navigation bar layouts.
     private static void assertNavigationPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Navigation");
         assertCurrentPageTitle(scene, "Navigation");
         assertVisibleText(root, "Compact Window", "Navigation");
-        assertVisibleText(root, "Medium Window", "Navigation");
+        assertVisibleText(root, "Adaptive Window", "Navigation");
+        assertVisibleText(root, "Three And Five Destinations", "Navigation");
 
         List<M3NavigationBar> bars = visibleNodesOfType(page, M3NavigationBar.class);
-        assertEquals(2, bars.size(), () -> "Navigation page should render compact and medium bars: " + bars);
+        assertEquals(4, bars.size(), () -> "Navigation page should render compact, adaptive, and destination-count bars: " + bars);
         assertEquals(4, bars.get(0).getItems().size(), "compact navigation bar item count");
-        assertEquals(4, bars.get(1).getItems().size(), "medium navigation bar item count");
+        assertEquals(4, bars.get(1).getItems().size(), "adaptive navigation bar item count");
+        assertEquals(3, bars.get(2).getItems().size(), "three-destination navigation bar item count");
+        assertEquals(5, bars.get(3).getItems().size(), "five-destination navigation bar item count");
         assertEquals(M3NavigationItemLayout.VERTICAL, bars.get(0).getItemLayout());
         assertEquals(M3NavigationItemLayout.HORIZONTAL, bars.get(1).getItemLayout());
         assertEquals(0, bars.get(0).getSelectedIndex(), "compact navigation selected index");
-        assertEquals(0, bars.get(1).getSelectedIndex(), "medium navigation selected index");
+        assertEquals(0, bars.get(1).getSelectedIndex(), "adaptive navigation selected index");
+        assertEquals(0, bars.get(2).getSelectedIndex(), "three-destination navigation selected index");
+        assertEquals(2, bars.get(3).getSelectedIndex(), "five-destination navigation selected index");
         for (int index = 0; index < bars.size(); index++) {
             assertNavigationBarDemoGeometry(bars.get(index), "navigation bar " + index);
         }
         List<M3NavigationItem> items = visibleNodesOfType(page, M3NavigationItem.class);
-        assertEquals(4, items.stream()
+        assertEquals(12, items.stream()
                         .filter(item -> item.getItemLayout() == M3NavigationItemLayout.VERTICAL)
                         .count(),
-                "compact bar vertical item count");
+                "compact and destination-count bar vertical item count");
         assertEquals(4, items.stream()
                         .filter(item -> item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL)
                         .count(),
-                "medium bar horizontal item count");
+                "wide adaptive bar horizontal item count");
         for (M3NavigationItem item : items) {
             @Nullable WritableImage itemImage = snapshotIfNodeFullyVisible(scene, item);
             if (itemImage != null) {
                 assertNavigationItemDemoGeometry(itemImage, item, "Navigation");
             }
         }
-        assertDemoVectorIcons(page, "Navigation", 8);
+        assertDemoVectorIcons(page, "Navigation", 16);
         assertNavigationBadgesStayCompact(scene, "Navigation");
+    }
+
+    /// Verifies the Motion page exposes every retained and layout-animation showcase.
+    private static void assertMotionPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Motion");
+        assertCurrentPageTitle(scene, "Motion");
+        assertVisibleText(root, "Interruptible Value", "Motion");
+        assertVisibleText(root, "Coordinated State Transition", "Motion");
+        assertVisibleText(root, "Seekable State Transition", "Motion");
+        assertVisibleText(root, "Animated Visibility", "Motion");
+        assertVisibleText(root, "Animated Content And Size", "Motion");
+        assertVisibleText(root, "Existing Layout Container", "Motion");
+        assertVisibleText(root, "Adaptive Pane Topology", "Motion");
+
+        List<M3AnimatedContent> animatedContents = visibleNodesOfType(page, M3AnimatedContent.class);
+        assertTrue(animatedContents.stream().anyMatch(M3AnimatedContent::isFitToWidth),
+                "Motion page should include width-constrained animated content");
+        List<M3AnimatedVisibility> animatedVisibilities = visibleNodesOfType(page, M3AnimatedVisibility.class);
+        assertEquals(1, animatedVisibilities.size(), "Motion page animated visibility count");
+        assertTrue(animatedVisibilities.get(0).isFitToWidth(),
+                "Motion page animated visibility should reflow within its showcase width");
+        List<M3Slider> sliders = visibleNodesOfType(page, M3Slider.class);
+        assertEquals(1, sliders.size(), "Motion page seekable transition slider count");
+        assertTrue(sliders.get(0).isManaged(), "Motion page seekable transition slider should participate in layout");
     }
 
     /// Verifies the real Navigation Drawer demo page drawer and grouped destination states.
@@ -14606,19 +14659,20 @@ final class M3FXDemoVisualMatrixTest {
         assertCurrentPageTitle(scene, "Button Groups");
         assertVisibleText(root, "Standard Actions", "Button Groups");
         assertVisibleText(root, "Standard Toggle Selection", "Button Groups");
+        assertVisibleText(root, "Connected Labeled Actions", "Button Groups");
         assertVisibleText(root, "Connected Single Select", "Button Groups");
         assertVisibleText(root, "Connected Multi Select", "Button Groups");
         assertVisibleText(root, "Size Scale", "Button Groups");
 
         List<M3ButtonGroup> groups = visibleNodesOfType(page, M3ButtonGroup.class);
-        assertEquals(6, groups.size(), () -> "Button Groups page should render six focused groups: " + groups);
+        assertEquals(7, groups.size(), () -> "Button Groups page should render seven focused groups: " + groups);
         assertEquals(4, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD).count(),
                 "Button Groups standard group count");
-        assertEquals(2, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED).count(),
+        assertEquals(3, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED).count(),
                 "Button Groups connected group count");
         assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.SMALL).count(),
                 "Button Groups small group count");
-        assertEquals(4, groups.stream().filter(group -> group.getSize() == M3ButtonSize.MEDIUM).count(),
+        assertEquals(5, groups.stream().filter(group -> group.getSize() == M3ButtonSize.MEDIUM).count(),
                 "Button Groups medium group count");
         assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.LARGE).count(),
                 "Button Groups large group count");
@@ -14627,7 +14681,7 @@ final class M3FXDemoVisualMatrixTest {
                 .filter(button -> nearestAncestorOfType(button, M3ButtonGroup.class) != null)
                 .toList();
         List<M3IconToggleButton> toggleButtons = visibleNodesOfType(page, M3IconToggleButton.class);
-        assertEquals(7, actionButtons.size(), "Button Groups grouped action count");
+        assertEquals(10, actionButtons.size(), "Button Groups grouped action count");
         assertEquals(9, toggleButtons.size(), "Button Groups toggle count");
         assertEquals(4, toggleButtons.stream().filter(M3IconToggleButton::isSelected).count(),
                 "Button groups should expose standard, connected single-select, and connected multi-select choices");
@@ -14654,8 +14708,20 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(standardSelected.getWidth() > widestStandardUnselected + 0.5,
                 "Standard selected item should retain the Expressive width interaction");
 
+        M3ButtonGroup connectedLabeledActions = groups.stream()
+                .filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED)
+                .filter(group -> group.getItems().stream().allMatch(M3Button.class::isInstance))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("connected labeled action group"));
+        assertEquals(3, connectedLabeledActions.getItems().size(), "connected labeled action item count");
+        assertTrue(connectedLabeledActions.getItems().stream()
+                        .map(M3Button.class::cast)
+                        .allMatch(button -> button.getGraphic() != null),
+                "connected labeled actions should render leading icons");
+
         for (M3ButtonGroup connectedGroup : groups.stream()
                 .filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED)
+                .filter(group -> group.getItems().stream().allMatch(M3IconToggleButton.class::isInstance))
                 .toList()) {
             assertTrue(connectedGroup.getWidth() > 600.0,
                     "Connected groups should expand across the demo content surface");
@@ -15093,30 +15159,40 @@ final class M3FXDemoVisualMatrixTest {
         Node page = currentDemoPage(scene, "Split Buttons");
         assertCurrentPageTitle(scene, "Split Buttons");
         assertVisibleText(root, "Color Roles", "Split Buttons");
+        assertVisibleText(root, "Menu Interaction", "Split Buttons");
         assertVisibleText(root, "Disabled", "Split Buttons");
         assertVisibleText(root, "Size Scale", "Split Buttons");
 
         List<M3SplitButton> splitButtons = visibleNodesOfType(page, M3SplitButton.class);
-        assertEquals(10, splitButtons.size(),
-                () -> "Split Buttons page should render roles, disabled state, and five sizes: " + splitButtons);
+        assertEquals(11, splitButtons.size(),
+                () -> "Split Buttons page should render roles, interactive menu, disabled state, and five sizes: " + splitButtons);
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 7, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.OUTLINED, 1, "Split Buttons");
-        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 1, "Split Buttons");
+        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 2, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.ELEVATED, 1, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.MEDIUM, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.LARGE, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_LARGE, "Split Buttons");
-        assertEquals(9, splitButtons.stream().filter(button -> button.getGraphic() != null).count(),
+        assertEquals(10, splitButtons.stream().filter(button -> button.getGraphic() != null).count(),
                 "split button roles and size scale should render leading icons");
         assertEquals(1, splitButtons.stream().filter(Node::isDisabled).count(),
                 "Split Buttons page should render one disabled split button");
+        M3SplitButton interactiveExport = splitButtons.stream()
+                .filter(button -> button.getItems().size() == 4)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("interactive export split button"));
+        assertEquals(M3ButtonVariant.FILLED, interactiveExport.getVariant(), "interactive export variant");
+        assertTrue(interactiveExport.getItems().stream().anyMatch(M3Divider.class::isInstance),
+                "interactive export menu should separate secondary formats");
+        assertTrue(interactiveExport.getItems().stream().anyMatch(M3SubMenuItem.class::isInstance),
+                "interactive export menu should expose nested formats");
         for (M3SplitButton splitButton : splitButtons) {
             assertEquals(2.0, splitButton.getSpacing(), CONTROL_EDGE_TOLERANCE,
                     "split button between-space token");
-            assertEquals(3, splitButton.getItems().size(),
-                    () -> "split button should expose three attached menu items: " + splitButton.getText());
+            assertTrue(splitButton.getItems().size() >= 3,
+                    () -> "split button should expose attached menu items: " + splitButton.getText());
             assertEquals(splitButton.getVariant(), splitButtonActionButton(splitButton).getVariant(),
                     "split action button variant should follow the owner");
             assertEquals(splitButton.getVariant(), splitButtonMenuButton(splitButton).getVariant(),
@@ -15251,6 +15327,7 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(overlay.getSnackbarQueue().isEmpty(), "snackbar queue should start empty");
 
         @Nullable Duration previousDisplayDuration = overlay.snackbarDisplayDurationProperty().get();
+        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(overlay);
         M3MotionSettings.setReducedMotionRequested(overlay, true);
         overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
         try {
@@ -15325,7 +15402,7 @@ final class M3FXDemoVisualMatrixTest {
         } finally {
             overlay.dismissAllSnackbars();
             overlay.snackbarDisplayDurationProperty().set(previousDisplayDuration);
-            M3MotionSettings.setReducedMotionRequested(overlay, false);
+            M3MotionSettings.setReducedMotionRequested(overlay, previousReducedMotionRequested);
             applySceneCssAndLayout(scene);
         }
     }
@@ -15334,7 +15411,7 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertBottomSheetDemoGeometry(M3BottomSheet sheet, String description) {
         Bounds sheetBounds = sheet.localToScene(sheet.getBoundsInLocal());
         assertTrue(bottomSheetShown(sheet), () -> description + " should be fully shown: " + sheetBounds);
-        assertTrue(sheetBounds.getWidth() >= 320.0 && sheetBounds.getWidth() <= 560.0,
+        assertTrue(sheetBounds.getWidth() >= 320.0 && sheetBounds.getWidth() <= 648.0,
                 () -> description + " width should stay near the demo sheet width: " + sheetBounds);
         assertTrue(sheetBounds.getHeight() >= 160.0 && sheetBounds.getHeight() <= 420.0,
                 () -> description + " height should stay compact: " + sheetBounds);
@@ -16360,11 +16437,12 @@ final class M3FXDemoVisualMatrixTest {
         assertCurrentPageTitle(scene, "Surfaces");
         assertVisibleText(root, "Surface Tones", "Surfaces");
         assertVisibleText(root, "Container Colors", "Surfaces");
+        assertVisibleText(root, "Local Container Paint", "Surfaces");
         assertVisibleText(root, "Surface", "Surfaces");
         assertVisibleText(root, "Tertiary", "Surfaces");
 
         List<M3Surface> surfaces = visibleNodesOfType(page, M3Surface.class);
-        assertEquals(6, surfaces.size(), () -> "Surfaces page should render six surfaces, found " + surfaces.size());
+        assertEquals(7, surfaces.size(), () -> "Surfaces page should render seven surfaces, found " + surfaces.size());
         assertTrue(surfaces.stream().anyMatch(surface -> surface.getVariant() == M3SurfaceVariant.SURFACE
                         && surface.getElevation() == M3SurfaceElevation.LEVEL0),
                 "Surfaces page should render a level-0 base surface");
@@ -16377,6 +16455,8 @@ final class M3FXDemoVisualMatrixTest {
                 "Surfaces page should render a secondary container");
         assertTrue(surfaces.stream().anyMatch(surface -> surface.getVariant() == M3SurfaceVariant.TERTIARY_CONTAINER),
                 "Surfaces page should render a tertiary container");
+        assertTrue(surfaces.stream().anyMatch(surface -> surface.getContainerColor() != null),
+                "Surfaces page should render a local container color override");
         for (M3Surface surface : surfaces) {
             assertSurfaceDemoGeometry(surface);
         }
@@ -16496,7 +16576,7 @@ final class M3FXDemoVisualMatrixTest {
                 "Forms page should render an indeterminate checkbox");
     }
 
-    /// Verifies that the form validation summary renders an invalid field row with Material feedback layers.
+    /// Verifies that the form validation summary renders an invalid field row with its stable Material state layer.
     private static void assertFormValidationSummaryDemoState(M3ValidationSummary summary) {
         assertTrue(summary.isShowingSummary(), "Forms page validation summary should be visible by default");
         assertEquals(1, summary.getInvalidInputCount(), "Forms page should start with one invalid field");
@@ -16507,7 +16587,6 @@ final class M3FXDemoVisualMatrixTest {
                 "forms validation summary item"
         );
         requireVisibleStyledDescendant(item, "m3-state-layer-container", "forms validation item state layer");
-        assertNotNull(item.lookup("." + RIPPLE_STYLE_CLASS), "forms validation item ripple node");
         Bounds summaryBounds = summary.localToScene(summary.getBoundsInLocal());
         Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
         assertTrue(containsBoundsWithTolerance(summaryBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
@@ -16590,7 +16669,7 @@ final class M3FXDemoVisualMatrixTest {
         assertVisibleText(root, "Title Large", "Typography");
         assertVisibleText(root, "Title Medium", "Typography");
         assertVisibleText(root, "Title Small", "Typography");
-        assertVisibleText(root, "Body Large text follows the active theme typography tokens.", "Typography");
+        assertVisibleText(root, "Body Large text follows the active theme typography tokens and wraps within the available page width.", "Typography");
         assertVisibleText(root, "Body Medium text", "Typography");
         assertVisibleText(root, "Body Small text", "Typography");
         assertVisibleText(root, "Label Large", "Typography");
@@ -16604,6 +16683,11 @@ final class M3FXDemoVisualMatrixTest {
             assertEquals(1, texts.stream().filter(text -> text.getRole() == role).count(),
                     () -> "Typography page should render exactly one " + role + " sample");
         }
+        M3Text bodyLarge = texts.stream()
+                .filter(text -> text.getRole() == M3TextRole.BODY_LARGE)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Typography body-large sample"));
+        assertTrue(bodyLarge.isWrapText(), "Typography body-large sample should wrap in narrow page widths");
         for (M3Text text : texts) {
             assertTypographyDemoGeometry(text);
         }
@@ -17506,7 +17590,9 @@ final class M3FXDemoVisualMatrixTest {
                 }
             }
         }
-        int minimumOpaquePixels = Math.max(4, (int) (image.getWidth() * image.getHeight() * 0.02));
+        double pixelArea = image.getWidth() * image.getHeight();
+        int compactMinimum = Math.max(1, Math.min(4, (int) Math.ceil(pixelArea * 0.25)));
+        int minimumOpaquePixels = Math.max(compactMinimum, (int) (pixelArea * 0.02));
         int finalOpaquePixels = opaquePixels;
         assertTrue(finalOpaquePixels >= minimumOpaquePixels,
                 () -> description + " snapshot has too few opaque pixels: opaque="

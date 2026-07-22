@@ -21,7 +21,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -549,14 +548,14 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Returns whether a breakpoint has enough width for the persistent component drawer.
+    /// Returns whether a breakpoint retains the component drawer beside a sufficiently wide page pane.
     ///
     /// @param breakpoint the current Material width breakpoint
-    /// @return `true` for expanded and wider layouts
+    /// @return `true` for large and extra-large layouts
     private static boolean usesPersistentNavigation(M3Breakpoint breakpoint) {
         return switch (breakpoint) {
-            case COMPACT, MEDIUM -> false;
-            case EXPANDED, LARGE, EXTRA_LARGE -> true;
+            case COMPACT, MEDIUM, EXPANDED -> false;
+            case LARGE, EXTRA_LARGE -> true;
         };
     }
 
@@ -795,6 +794,9 @@ public final class M3FXDemoApp extends Application {
     private Node createPageScrollPane() {
         M3AnimatedContent host = new M3AnimatedContent();
         host.getStyleClass().add("demo-page-host");
+        host.setMinWidth(0.0);
+        host.setMaxWidth(Double.MAX_VALUE);
+        host.setFitToWidth(true);
         pageHost = host;
 
         ScrollPane scrollPane = new ScrollPane(host);
@@ -804,7 +806,7 @@ public final class M3FXDemoApp extends Application {
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFocusTraversable(false);
         scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
     }
 
@@ -847,8 +849,16 @@ public final class M3FXDemoApp extends Application {
 
         VBox pageNode = new VBox(24.0);
         pageNode.getStyleClass().add("demo-page");
+        pageNode.setFillWidth(true);
+        pageNode.setMinWidth(0.0);
+        pageNode.setMaxWidth(Double.MAX_VALUE);
 
-        pageNode.getChildren().addAll(createPageHeader(page), page.contentFactory().get());
+        Node pageContent = page.contentFactory().get();
+        if (pageContent instanceof Region region) {
+            region.setMinWidth(0.0);
+            region.setMaxWidth(Double.MAX_VALUE);
+        }
+        pageNode.getChildren().addAll(createPageHeader(page), pageContent);
         host.setContent(pageNode);
         if (!animateReplacement) {
             host.snapToCurrentState();
@@ -877,29 +887,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.
     private Node createPageHeader(DemoPage page) {
-        Label title = new Label(page.title());
-        title.getStyleClass().add("demo-page-title");
-        Label subtitle = new Label(page.subtitle());
-        subtitle.getStyleClass().add("demo-page-subtitle");
-        subtitle.setWrapText(true);
-
-        VBox heading = new VBox(8.0, title, subtitle);
-        heading.getStyleClass().add("demo-page-heading");
-        heading.setMinWidth(0.0);
-        HBox.setHgrow(heading, Priority.ALWAYS);
-
-        HBox header = new HBox(16.0, heading);
-        header.getStyleClass().add("demo-page-header");
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        M3Button docsButton = new M3Button("Material docs");
-        docsButton.setVariant(M3ButtonVariant.OUTLINED);
-        docsButton.setCursor(Cursor.HAND);
-        docsButton.getStyleClass().add("demo-page-doc-link");
-        docsButton.setOnAction(event -> getHostServices().showDocument(page.materialUrl()));
-        header.getChildren().add(docsButton);
-
-        return header;
+        return new DemoPageHeader(page.title(), page.subtitle(), () -> getHostServices().showDocument(page.materialUrl()));
     }
 
     /// Recreates the current page so resolved runtime settings affect active controls immediately.

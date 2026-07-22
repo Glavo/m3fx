@@ -41,8 +41,7 @@ final class DatePickersDemoPage extends DemoPageSupport {
         field.setSupportingText("Editable ISO date with popup calendar");
         field.setVariant(M3TextInputVariant.OUTLINED);
         field.getPresets().setAll(M3DatePresets.common(today));
-        field.setPrefWidth(320.0);
-        field.setMaxWidth(320.0);
+        configureResponsiveWidth(field, 320.0);
 
         M3DatePickerField boundedField = new M3DatePickerField(today.plusDays(2));
         boundedField.setLabelText("Booking date");
@@ -55,8 +54,7 @@ final class DatePickersDemoPage extends DemoPageSupport {
                 M3DatePresets.tomorrow(today),
                 M3DatePresets.daysFrom(today, 7)
         );
-        boundedField.setPrefWidth(320.0);
-        boundedField.setMaxWidth(320.0);
+        configureResponsiveWidth(boundedField, 320.0);
 
         M3DateRangePickerField rangeField = new M3DateRangePickerField(today.plusDays(2), today.plusDays(8));
         rangeField.setStartLabelText("Start date");
@@ -68,8 +66,7 @@ final class DatePickersDemoPage extends DemoPageSupport {
         rangeField.getPicker().setMinDate(today.minusDays(7));
         rangeField.getPicker().setMaxDate(today.plusDays(30));
         rangeField.getPresets().setAll(M3DateRangePresets.common(today, rangeField.getPicker().getFirstDayOfWeek()));
-        rangeField.setPrefWidth(680.0);
-        rangeField.setMaxWidth(680.0);
+        configureResponsiveWidth(rangeField, 680.0);
 
         M3DatePicker selected = new M3DatePicker(today);
 
@@ -94,7 +91,7 @@ final class DatePickersDemoPage extends DemoPageSupport {
 
         return createGallery(
                 createShowcaseGroup("Fields", field, boundedField),
-                createShowcaseGroup("Range Field", rangeField),
+                createFullWidthShowcaseGroup("Range Field", rangeField),
                 createShowcaseGroup("Dialogs", dateDialogButton, rangeDialogButton, presetRangeDialogButton),
                 createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range, dateRange),

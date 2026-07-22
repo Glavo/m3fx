@@ -14,6 +14,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Builds the Navigation component showcase page.
 @NotNullByDefault
 final class NavigationDemoPage extends DemoPageSupport {
+    /// The minimum bar width that preserves four 160px horizontal destination slots and 8px side insets.
+    private static final double MINIMUM_FOUR_ITEM_HORIZONTAL_WIDTH = 656.0;
+
     /// Creates a page builder backed by the shared demo context.
     ///
     /// @param context the application-level actions available to interactive samples
@@ -25,12 +28,32 @@ final class NavigationDemoPage extends DemoPageSupport {
     Node createContent() {
         M3NavigationBar compact = createFourItemNavigationBar();
         M3NavigationBar medium = createFourItemNavigationBar();
-        medium.setItemLayout(M3NavigationItemLayout.HORIZONTAL);
-        medium.setMaxWidth(720.0);
+        configureResponsiveWidth(compact, 520.0);
+        configureResponsiveWidth(medium, 720.0);
+        installAdaptiveItemLayout(medium);
+
+        M3NavigationBar threeDestinations = createNavigationBar(
+                createNavigationItem("Home", "home"),
+                createNavigationItem("Search", "search"),
+                createNavigationItem("Profile", "person")
+        );
+        threeDestinations.selectIndex(0);
+        configureResponsiveWidth(threeDestinations, 520.0);
+
+        M3NavigationBar fiveDestinations = createNavigationBar(
+                createNavigationItem("Home", "home"),
+                createNavigationItem("Search", "search"),
+                createNavigationItem("Updates", "notifications"),
+                createNavigationItem("Files", "label"),
+                createNavigationItem("Profile", "person")
+        );
+        fiveDestinations.selectIndex(2);
+        configureResponsiveWidth(fiveDestinations, 520.0);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Compact Window", compact),
-                createFullWidthShowcaseGroup("Medium Window", medium)
+                createFullWidthShowcaseGroup("Adaptive Window", medium),
+                createFullWidthShowcaseGroup("Three And Five Destinations", threeDestinations, fiveDestinations)
         );
     }
 
@@ -39,6 +62,31 @@ final class NavigationDemoPage extends DemoPageSupport {
         M3NavigationBar navigationBar = new M3NavigationBar();
         navigationBar.getItems().addAll(items);
         return navigationBar;
+    }
+
+    /// Selects the horizontal medium-window arrangement only while all four destination targets fit the bar.
+    ///
+    /// Below the Material token width, the bar uses the compact vertical arrangement instead of clipping or
+    /// compressing destination hit targets.
+    ///
+    /// @param navigationBar the four-destination navigation bar to adapt
+    private static void installAdaptiveItemLayout(M3NavigationBar navigationBar) {
+        navigationBar.widthProperty().addListener((observable, oldWidth, newWidth) ->
+                updateAdaptiveItemLayout(navigationBar)
+        );
+        updateAdaptiveItemLayout(navigationBar);
+    }
+
+    /// Updates the navigation item arrangement after the bar receives a new allocated width.
+    ///
+    /// @param navigationBar the four-destination navigation bar to update
+    private static void updateAdaptiveItemLayout(M3NavigationBar navigationBar) {
+        M3NavigationItemLayout layout = navigationBar.getWidth() >= MINIMUM_FOUR_ITEM_HORIZONTAL_WIDTH
+                ? M3NavigationItemLayout.HORIZONTAL
+                : M3NavigationItemLayout.VERTICAL;
+        if (navigationBar.getItemLayout() != layout) {
+            navigationBar.setItemLayout(layout);
+        }
     }
 
     /// Creates the four-item navigation bar sample.

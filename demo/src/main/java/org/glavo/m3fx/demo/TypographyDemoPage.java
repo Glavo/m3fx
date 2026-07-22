@@ -20,6 +20,14 @@ final class TypographyDemoPage extends DemoPageSupport {
 
     /// Creates the typography component page.
     Node createContent() {
+        M3Text bodyLarge = new M3Text(
+                "Body Large text follows the active theme typography tokens and wraps within the available page width.",
+                M3TextRole.BODY_LARGE
+        );
+        bodyLarge.setWrapText(true);
+        bodyLarge.setMinWidth(0.0);
+        bodyLarge.setMaxWidth(Double.MAX_VALUE);
+
         return createGallery(
                 createShowcaseGroup(
                         "Display",
@@ -39,9 +47,9 @@ final class TypographyDemoPage extends DemoPageSupport {
                         new M3Text("Title Medium", M3TextRole.TITLE_MEDIUM),
                         new M3Text("Title Small", M3TextRole.TITLE_SMALL)
                 ),
-                createShowcaseGroup(
+                createFullWidthShowcaseGroup(
                         "Body",
-                        new M3Text("Body Large text follows the active theme typography tokens.", M3TextRole.BODY_LARGE),
+                        bodyLarge,
                         new M3Text("Body Medium text", M3TextRole.BODY_MEDIUM),
                         new M3Text("Body Small text", M3TextRole.BODY_SMALL)
                 ),

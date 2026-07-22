@@ -14,6 +14,8 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3SelectionMode;
+import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3Switch;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Builds the List component showcase page.
@@ -48,6 +50,7 @@ final class ListDemoPage extends DemoPageSupport {
 
         M3ListPane standardList = new M3ListPane();
         standardList.getStyleClass().add("demo-list");
+        configureResponsiveWidth(standardList, 520.0);
         standardList.setSelectionMode(M3SelectionMode.SINGLE);
         standardList.getItems().addAll(
                 new M3ListSectionHeader("Recent"),
@@ -74,15 +77,37 @@ final class ListDemoPage extends DemoPageSupport {
 
         M3ListPane segmentedList = new M3ListPane();
         segmentedList.getStyleClass().add("demo-list");
+        configureResponsiveWidth(segmentedList, 520.0);
         segmentedList.setListStyle(M3ListStyle.SEGMENTED);
         segmentedList.setSelectionMode(M3SelectionMode.SINGLE);
         segmentedList.getItems().addAll(thumbnail, wideThumbnail, selected);
         segmentedList.select(selected);
 
+        M3Switch automaticUpdates = new M3Switch();
+        automaticUpdates.setSelected(true);
+        M3ListItem updates = new M3ListItem("Automatic updates");
+        updates.setSupportingText("Install feature updates when the device is idle");
+        updates.setLeading(createSurfaceVariantIcon("archive"));
+        updates.setTrailing(automaticUpdates);
+        updates.setOnAction(event -> automaticUpdates.fire());
+
+        M3CheckBox cellularDownloads = new M3CheckBox();
+        M3ListItem mobileData = new M3ListItem("Use mobile data");
+        mobileData.setSupportingText("Allow update downloads away from Wi-Fi");
+        mobileData.setLeading(createSurfaceVariantIcon("settings"));
+        mobileData.setTrailing(cellularDownloads);
+        mobileData.setOnAction(event -> cellularDownloads.fire());
+
+        M3ListPane settingsList = new M3ListPane();
+        settingsList.getStyleClass().add("demo-list");
+        configureResponsiveWidth(settingsList, 520.0);
+        settingsList.getItems().addAll(updates, mobileData);
+
         return createGallery(
-                createShowcaseGroup("Standard", standardList),
-                createShowcaseGroup("Segmented", segmentedList),
-                createShowcaseGroup("Virtualized Segmented", createVirtualizedListView())
+                createFullWidthShowcaseGroup("Standard", standardList),
+                createFullWidthShowcaseGroup("Segmented", segmentedList),
+                createFullWidthShowcaseGroup("Settings List", settingsList),
+                createFullWidthShowcaseGroup("Virtualized Segmented", createVirtualizedListView())
         );
     }
 
@@ -96,7 +121,8 @@ final class ListDemoPage extends DemoPageSupport {
         }
         listView.setSelectionMode(M3SelectionMode.SINGLE);
         listView.setFixedCellSize(72.0);
-        listView.setPrefSize(520.0, 360.0);
+        configureResponsiveWidth(listView, 520.0);
+        listView.setPrefHeight(360.0);
         listView.setCellFactory(view -> new M3ListCell<>(view) {
             /// Creates the reusable row structure for this virtualized cell.
             @Override

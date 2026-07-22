@@ -23,7 +23,7 @@ final class BottomSheetsDemoPage extends DemoPageSupport {
     Node createContent() {
         M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent());
         bottomSheet.getActions().add(createIconButton("close"));
-        bottomSheet.setPrefWidth(520.0);
+        configureResponsiveWidth(bottomSheet, 520.0);
         bottomSheet.setOnDragHandleAction(event -> bottomSheet.setPrefHeight(
                 bottomSheet.getPrefHeight() > 360.0 ? Region.USE_COMPUTED_SIZE : 420.0
         ));
@@ -32,10 +32,10 @@ final class BottomSheetsDemoPage extends DemoPageSupport {
         modalBottomSheet.getActions().add(createIconButton("close"));
         modalBottomSheet.setVariant(M3SheetVariant.MODAL);
         modalBottomSheet.setDragHandleVisible(false);
-        modalBottomSheet.setPrefWidth(520.0);
+        configureResponsiveWidth(modalBottomSheet, 520.0);
 
         return createGallery(
-                createShowcaseGroup("Standard And Modal", bottomSheet, modalBottomSheet)
+                createFullWidthShowcaseGroup("Standard And Modal", bottomSheet, modalBottomSheet)
         );
     }
 }

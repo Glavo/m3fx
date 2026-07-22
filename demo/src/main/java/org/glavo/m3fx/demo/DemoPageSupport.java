@@ -9,6 +9,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.Node;
@@ -70,6 +71,8 @@ abstract class DemoPageSupport {
     protected static VBox createGallery(Node... groups) {
         VBox gallery = new VBox(18.0);
         gallery.getStyleClass().add("demo-gallery");
+        gallery.setMinWidth(0.0);
+        gallery.setMaxWidth(Double.MAX_VALUE);
         gallery.getChildren().addAll(groups);
         return gallery;
     }
@@ -78,15 +81,19 @@ abstract class DemoPageSupport {
     protected static VBox createShowcaseGroup(String title, Node... nodes) {
         Label label = new Label(title);
         label.getStyleClass().add("demo-group-title");
+        label.setMinWidth(0.0);
+        label.setMaxWidth(Double.MAX_VALUE);
 
         FlowPane flow = new FlowPane(16.0, 16.0);
         flow.getStyleClass().add("demo-flow");
         flow.setAlignment(Pos.CENTER_LEFT);
+        flow.setMinWidth(0.0);
         flow.setMaxWidth(Double.MAX_VALUE);
         flow.getChildren().addAll(nodes);
 
         VBox group = new VBox(10.0, label, flow);
         group.getStyleClass().add("demo-showcase-group");
+        group.setMinWidth(0.0);
         group.setMaxWidth(Double.MAX_VALUE);
         return group;
     }
@@ -95,15 +102,19 @@ abstract class DemoPageSupport {
     protected static VBox createFullWidthShowcaseGroup(String title, Node... nodes) {
         Label label = new Label(title);
         label.getStyleClass().add("demo-group-title");
+        label.setMinWidth(0.0);
+        label.setMaxWidth(Double.MAX_VALUE);
 
         VBox stack = new VBox(16.0);
         stack.getStyleClass().add("demo-stacked-flow");
         stack.setFillWidth(true);
+        stack.setMinWidth(0.0);
         stack.setMaxWidth(Double.MAX_VALUE);
         stack.getChildren().addAll(nodes);
 
         VBox group = new VBox(10.0, label, stack);
         group.getStyleClass().add("demo-showcase-group");
+        group.setMinWidth(0.0);
         group.setMaxWidth(Double.MAX_VALUE);
         return group;
     }
@@ -132,8 +143,7 @@ abstract class DemoPageSupport {
         textField.setVariant(variant);
         textField.setPromptText(prompt);
         textField.setDisable(disabled);
-        textField.setPrefWidth(280.0);
-        return textField;
+        return configureResponsiveWidth(textField, 280.0);
     }
 
     /// Creates a text input layout for the page gallery.
@@ -142,8 +152,7 @@ abstract class DemoPageSupport {
         layout.setSupportingText(supportingText);
         layout.setLabelText(input.getPromptText());
         input.setPromptText("");
-        layout.setPrefWidth(input.getPrefWidth());
-        layout.setMaxWidth(input.getPrefWidth());
+        configureResponsiveWidth(layout, input.getPrefWidth());
         if (input.isDisabled()) {
             layout.setDisable(true);
         }
@@ -223,6 +232,46 @@ abstract class DemoPageSupport {
         return group;
     }
 
+    /// Configures a resizable sample to use a preferred width without forcing that width in narrow page panes.
+    ///
+    /// The returned region can shrink to the width assigned by its containing showcase group and may grow when the
+    /// group allocates additional width. Callers retain ownership of any more specific height constraint.
+    ///
+    /// @param sample         the sample region to configure
+    /// @param preferredWidth the preferred width in logical pixels
+    /// @param <T>            the concrete sample type
+    /// @return `sample`
+    /// @throws NullPointerException     if `sample` is `null`
+    /// @throws IllegalArgumentException if `preferredWidth` is negative or not finite
+    protected static <T extends Region> T configureResponsiveWidth(T sample, double preferredWidth) {
+        Objects.requireNonNull(sample, "sample");
+        if (!Double.isFinite(preferredWidth) || preferredWidth < 0.0) {
+            throw new IllegalArgumentException("preferredWidth must be finite and non-negative: " + preferredWidth);
+        }
+        sample.setMinWidth(0.0);
+        sample.setPrefWidth(preferredWidth);
+        sample.setMaxWidth(Double.MAX_VALUE);
+        return sample;
+    }
+
+    /// Creates an action row that wraps controls instead of forcing a page-wide horizontal overflow.
+    ///
+    /// @param nodes the controls in display order
+    /// @return the responsive action row
+    /// @throws NullPointerException if `nodes` or an element is `null`
+    protected static FlowPane createResponsiveActionRow(Node... nodes) {
+        Objects.requireNonNull(nodes, "nodes");
+        FlowPane row = new FlowPane(12.0, 12.0);
+        row.getStyleClass().add("demo-action-row");
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setMinWidth(0.0);
+        row.setMaxWidth(Double.MAX_VALUE);
+        for (Node node : nodes) {
+            row.getChildren().add(Objects.requireNonNull(node, "nodes element"));
+        }
+        return row;
+    }
+
     /// Creates an icon toggle button group sample with initial buttons.
     protected static M3IconToggleButtonGroup createIconToggleButtonGroup(M3IconToggleButton... buttons) {
         M3IconToggleButtonGroup group = new M3IconToggleButtonGroup();
@@ -244,7 +293,7 @@ abstract class DemoPageSupport {
         VBox preview = new VBox();
         preview.getStyleClass().add("demo-app-bar-preview");
         preview.setFillWidth(true);
-        preview.setMinWidth(560.0);
+        preview.setMinWidth(0.0);
         preview.setPrefWidth(760.0);
         preview.setMaxWidth(Double.MAX_VALUE);
         return preview;

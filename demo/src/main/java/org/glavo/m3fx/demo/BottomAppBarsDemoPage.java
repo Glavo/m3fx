@@ -31,7 +31,7 @@ final class BottomAppBarsDemoPage extends DemoPageSupport {
         start.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.START);
 
         return createGallery(
-                createShowcaseGroup(
+                createFullWidthShowcaseGroup(
                         "Floating Action",
                         createBottomAppBarPreview(end),
                         createBottomAppBarPreview(center),

@@ -40,8 +40,7 @@ final class TabsDemoPage extends DemoPageSupport {
                 new M3Tab("Connected applications")
         );
         scrollablePrimary.setTabLayout(M3TabBarLayout.SCROLLABLE);
-        scrollablePrimary.setPrefWidth(720.0);
-        scrollablePrimary.setMaxWidth(720.0);
+        configureResponsiveWidth(scrollablePrimary, 720.0);
 
         M3TabBar scrollableSecondary = createTabBar(
                 new M3Tab("Highlights"),
@@ -54,14 +53,15 @@ final class TabsDemoPage extends DemoPageSupport {
         );
         scrollableSecondary.setVariant(M3TabBarVariant.SECONDARY);
         scrollableSecondary.setTabLayout(M3TabBarLayout.SCROLLABLE);
-        scrollableSecondary.setPrefWidth(720.0);
-        scrollableSecondary.setMaxWidth(720.0);
+        configureResponsiveWidth(scrollableSecondary, 720.0);
 
         M3TabBar hierarchyPrimary = createTabBar("Flights", "Trips", "Explore");
         M3TabBar hierarchySecondary = createTabBar("Upcoming", "Previous", "Saved");
         hierarchySecondary.setVariant(M3TabBarVariant.SECONDARY);
         VBox hierarchy = new VBox(hierarchyPrimary, hierarchySecondary);
         hierarchy.getStyleClass().add("demo-tab-hierarchy");
+        hierarchy.setMinWidth(0.0);
+        hierarchy.setMaxWidth(Double.MAX_VALUE);
 
         return createGallery(
                 createShowcaseGroup("Primary Fixed", primary),
