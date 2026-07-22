@@ -11,6 +11,8 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -228,7 +230,7 @@ final class M3TextInputMotionTest {
         assertReducedMotionEndpoints(M3Profile.EXPRESSIVE_2025);
     }
 
-    /// Verifies that an outlined label does not paint a rectangular region while crossing the outline.
+    /// Verifies that an outlined label uses a partial transparent cutout during motion.
     @Test
     void outlinedLabelRemainsTransparentDuringMotion() throws InterruptedException {
         MotionScene scene = createMotionScene(M3Profile.BASELINE_2021);
@@ -239,23 +241,26 @@ final class M3TextInputMotionTest {
             scene.root.applyCss();
             scene.root.layout();
         });
-        Region inputContainer = FxTestUtils.callOnFxThread(() -> assertInstanceOf(
-                Region.class,
-                scene.layout.lookup("." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS)
+        javafx.scene.shape.Path outline = FxTestUtils.callOnFxThread(() -> assertInstanceOf(
+                javafx.scene.shape.Path.class,
+                scene.layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
         ));
 
         try {
             FxTestUtils.runOnFxThreadWhen(
                     () -> {
-                        Bounds labelBounds = sceneBounds(scene.label);
-                        double outlineTop = inputContainer.localToScene(inputContainer.getBoundsInLocal()).getMinY();
-                        return isStrictlyBetween(renderedScale(scene.label), MINIMIZED_SCALE, expandedScale)
-                                && labelBounds.getMinY() <= outlineTop
-                                && labelBounds.getMaxY() >= outlineTop;
+                        double progress = floatingProgress(renderedScale(scene.label), expandedScale);
+                        return progress >= 0.25 && progress <= 0.55;
                     },
-                    () -> "outlined label did not expose an intermediate frame",
+                    () -> "outlined label did not expose an early intermediate frame",
                     () -> scene.field.setText("M3FX"),
                     () -> {
+                        double gap = outlineNotchGap(outline);
+                        double fullGap = sceneBounds(scene.label).getWidth() + 8.0;
+                        assertTrue(gap > 4.0, () -> "outline cutout did not begin opening: " + gap);
+                        assertTrue(gap < fullGap - 2.0,
+                                () -> "outline cutout opened completely before label motion settled: "
+                                        + gap + " >= " + fullGap);
                         assertNull(scene.label.getClip(),
                                 "ordinary outlined labels should render as unclipped text geometry");
                         intermediateFrame[0] = snapshotImageOnFxThread(scene.root);
@@ -669,6 +674,29 @@ final class M3TextInputMotionTest {
     /// @return the signed endpoint-relative travel fraction
     private static double expandedTravelFraction(double scale, double expandedScale) {
         return (scale - MINIMIZED_SCALE) / (expandedScale - MINIMIZED_SCALE);
+    }
+
+    /// Returns the clamped floating-label progress represented by a rendered scale.
+    ///
+    /// @param scale         the current rendered scale
+    /// @param expandedScale the expanded endpoint
+    /// @return the normalized progress from expanded to minimized
+    private static double floatingProgress(double scale, double expandedScale) {
+        return Math.max(0.0, Math.min(1.0, 1.0 - expandedTravelFraction(scale, expandedScale)));
+    }
+
+    /// Returns the current horizontal opening in an outlined field's top border.
+    ///
+    /// @param outline the rendered outline path
+    /// @return the distance between the two top-border segments
+    private static double outlineNotchGap(javafx.scene.shape.Path outline) {
+        List<javafx.scene.shape.PathElement> elements = outline.getElements();
+        if (elements.size() < 3) {
+            return 0.0;
+        }
+        LineTo notchStart = assertInstanceOf(LineTo.class, elements.get(1));
+        MoveTo notchEnd = assertInstanceOf(MoveTo.class, elements.get(2));
+        return Math.max(0.0, notchEnd.getX() - notchStart.getX());
     }
 
     /// Returns the label bounds transformed into scene coordinates.

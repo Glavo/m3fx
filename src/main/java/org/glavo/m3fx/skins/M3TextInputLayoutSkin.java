@@ -69,7 +69,7 @@ import static org.glavo.m3fx.controls.M3TextInputLayout.TRAILING_STYLE_CLASS;
 ///
 /// Floating-label motion uses one interruptible scalar channel. Spatial spring overshoot is preserved instead of
 /// clipping progress to the closed unit interval. The outlined notch follows the current transformed label bounds
-/// and is fully open whenever the top border intersects those bounds.
+/// and expands continuously with the same transition progress.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
@@ -115,9 +115,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
 
     /// The normalized visibility threshold for floating-label motion.
     private static final double LABEL_PROGRESS_VISIBILITY_THRESHOLD = 0.001;
-
-    /// The smallest non-empty outline notch rendered during its approach.
-    private static final double MINIMUM_NOTCH_GAP = 0.5;
 
     /// The initial vertical offset used when a supporting row appears.
     private static final double SUPPORTING_ROW_TRANSITION_OFFSET_Y = -4.0;
@@ -1287,6 +1284,9 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     }
 
     /// Updates only the two animated top-border endpoints.
+    ///
+    /// The cutout follows the same progress as the label instead of being derived from its distance to the border.
+    /// This keeps the opening visible throughout the transition and makes it grow from the logical leading edge.
     private void updateOutlineNotch() {
         if (!outlineGeometryValid || !outlineElementsAttached) {
             return;
@@ -1297,43 +1297,30 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         }
 
         double progress = labelProgress.get();
-        double scale = interpolate(expandedLabelScale, 1.0, progress);
-        if (!Double.isFinite(scale) || scale <= 0.0) {
-            closeOutlineNotch();
-            return;
-        }
-
-        double currentX = interpolate(expandedLabelX, minimizedLabelX, progress);
-        double currentY = interpolate(expandedLabelY, minimizedLabelY, progress);
-        double currentWidth = laidOutLabelWidth * scale;
-        double currentHeight = laidOutLabelHeight * scale;
-        double currentBottom = currentY + currentHeight;
-        boolean intersectsTop = currentY <= outlineTop && currentBottom >= outlineTop;
-        double distance = intersectsTop
-                ? 0.0
-                : currentY > outlineTop
-                ? currentY - outlineTop
-                : outlineTop - currentBottom;
-        double approachDistance = Math.max(1.0, currentHeight / 2.0);
-        double reveal = intersectsTop ? 1.0 : clamp(1.0 - distance / approachDistance, 0.0, 1.0);
+        double reveal = clamp(progress, 0.0, 1.0);
         if (reveal <= 0.0) {
             closeOutlineNotch();
             return;
         }
 
-        double center = currentX + currentWidth / 2.0;
-        double fullWidth = currentWidth + 2.0 * FLOATING_LABEL_HORIZONTAL_PADDING;
-        double notchWidth = Math.max(MINIMUM_NOTCH_GAP, fullWidth * reveal);
-        double notchStart = clamp(center - notchWidth / 2.0, outlineTopStart, outlineTopEnd);
-        double notchEnd = clamp(center + notchWidth / 2.0, notchStart, outlineTopEnd);
-
-        // Once the border intersects the label, cover its complete transformed horizontal bounds.
-        if (intersectsTop) {
-            notchStart = clamp(currentX - FLOATING_LABEL_HORIZONTAL_PADDING,
-                    outlineTopStart, outlineTopEnd);
-            notchEnd = clamp(currentX + currentWidth + FLOATING_LABEL_HORIZONTAL_PADDING,
-                    notchStart, outlineTopEnd);
+        double scale = interpolate(expandedLabelScale, 1.0, reveal);
+        if (!Double.isFinite(scale) || scale <= 0.0) {
+            closeOutlineNotch();
+            return;
         }
+
+        double currentX = interpolate(expandedLabelX, minimizedLabelX, reveal);
+        double currentWidth = laidOutLabelWidth * scale;
+        double notchStart = clamp(
+                currentX - FLOATING_LABEL_HORIZONTAL_PADDING * reveal,
+                outlineTopStart,
+                outlineTopEnd
+        );
+        double notchEnd = clamp(
+                currentX + (currentWidth + FLOATING_LABEL_HORIZONTAL_PADDING) * reveal,
+                notchStart,
+                outlineTopEnd
+        );
         setOutlineNotch(notchStart, notchEnd);
     }
 
