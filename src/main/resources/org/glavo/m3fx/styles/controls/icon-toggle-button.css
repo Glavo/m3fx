@@ -146,7 +146,7 @@
     -fx-alignment: center;
     -fx-padding: 0;
     -fx-content-display: graphic-only;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-icon-toggle-button.m3-icon-button-extra-small {
@@ -401,7 +401,6 @@
 
 .m3-icon-toggle-button:disabled {
     -m3-button-icon-color: -m3-color-on-surface;
-    -fx-cursor: default;
     -fx-opacity: 1;
     -fx-text-fill: -m3-color-on-surface;
 }

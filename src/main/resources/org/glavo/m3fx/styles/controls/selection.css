@@ -4,7 +4,7 @@
     -m3-state-layer-size: 40px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-checkbox {
@@ -33,12 +33,6 @@
     -m3-icon-size: 16px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
-    -fx-cursor: hand;
-}
-
-.m3-checkbox:disabled,
-.m3-radio-button:disabled,
-.m3-switch:disabled {
     -fx-cursor: default;
 }
 

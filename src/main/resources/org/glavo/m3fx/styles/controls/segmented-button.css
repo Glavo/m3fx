@@ -23,7 +23,7 @@
     -fx-alignment: center;
     -fx-content-display: left;
     -fx-graphic-text-gap: 8px;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-segmented-button.m3-segmented-button:selected,
@@ -105,7 +105,6 @@
 .m3-segmented-button:disabled {
     -fx-background-color: transparent;
     -fx-border-color: -m3-state-disabled-container-color;
-    -fx-cursor: default;
     -fx-opacity: 1;
     -fx-text-fill: -m3-color-on-surface;
 }

@@ -39,7 +39,7 @@
     -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
     -m3-list-item-state-layer-color: -m3-color-on-surface;
     -fx-background-color: transparent;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-list-item.m3-navigation-drawer-group-header {
@@ -187,7 +187,6 @@
 }
 
 .m3-list-item:disabled {
-    -fx-cursor: default;
     -fx-opacity: 1;
 }
 

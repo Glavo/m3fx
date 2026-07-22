@@ -1,5 +1,5 @@
 .m3-slider {
-    -fx-cursor: hand;
+    -fx-cursor: default;
     -m3-stop-indicator-size: 4px;
     -m3-stop-indicator-trailing-space: 4px;
     -m3-thumb-width: 4px;
@@ -8,10 +8,6 @@
     -m3-thumb-track-gap: 6px;
     -m3-touch-target-size: 48px;
     -m3-value-indicator-bottom-space: 12px;
-}
-
-.m3-slider:disabled {
-    -fx-cursor: default;
 }
 
 .m3-slider-extra-small {

@@ -35,7 +35,7 @@
     -fx-text-fill: -m3-color-on-surface-variant;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-tab:hover,

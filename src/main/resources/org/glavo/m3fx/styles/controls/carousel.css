@@ -28,7 +28,7 @@
 
 .m3-carousel-item-container {
     -fx-background-color: transparent;
-    -fx-cursor: hand;
+    -fx-cursor: default;
     -fx-effect: null;
 }
 
@@ -42,7 +42,6 @@
 }
 
 .m3-carousel-item-container:disabled {
-    -fx-cursor: default;
     -fx-opacity: 0.38;
 }
 

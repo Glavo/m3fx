@@ -109,7 +109,7 @@
     -fx-border-insets: 4px;
     -fx-border-radius: 999px;
     -fx-alignment: center;
-    -fx-cursor: hand;
+    -fx-cursor: default;
     -fx-font-size: 16px;
     -fx-font-weight: 400;
     -fx-padding: 0;

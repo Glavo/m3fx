@@ -20303,7 +20303,7 @@ final class M3ControlContractMatrixTest {
         }
 
         M3Slider medium = sliders.get(M3SliderSize.MEDIUM.ordinal());
-        assertEquals(Cursor.HAND, medium.getCursor());
+        assertEquals(Cursor.DEFAULT, medium.getCursor());
         Region mediumActiveSlot = lookupRegion(medium, ".m3-slider-active-track-graphic-slot");
         Region mediumInactiveSlot = lookupRegion(medium, ".m3-slider-inactive-track-graphic-slot");
         M3MotionSettings.setReducedMotionRequested(root, true);

@@ -23,7 +23,7 @@
     -fx-border-color: transparent;
     -fx-border-width: 0px;
     -fx-padding: 0px;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-navigation-item-content {

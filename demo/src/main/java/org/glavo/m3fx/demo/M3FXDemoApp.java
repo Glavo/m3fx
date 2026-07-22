@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -892,6 +893,7 @@ public final class M3FXDemoApp extends Application {
 
         M3Button docsButton = new M3Button("Material docs");
         docsButton.setVariant(M3ButtonVariant.OUTLINED);
+        docsButton.setCursor(Cursor.HAND);
         docsButton.getStyleClass().add("demo-page-doc-link");
         docsButton.setOnAction(event -> getHostServices().showDocument(page.materialUrl()));
         header.getChildren().add(docsButton);

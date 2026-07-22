@@ -19,10 +19,6 @@
     -m3-container-color: -m3-color-surface;
 }
 
-.m3-card:actionable {
-    -fx-cursor: hand;
-}
-
 .m3-card-container {
     -fx-padding: 16px;
     -fx-background-radius: 12px;
@@ -113,7 +109,6 @@
 }
 
 .m3-card:disabled {
-    -fx-cursor: default;
     -fx-opacity: 1;
 }
 

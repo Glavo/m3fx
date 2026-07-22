@@ -10,7 +10,7 @@
     -fx-border-insets: 0;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-fab .m3-icon-graphic {
@@ -29,7 +29,7 @@
     -fx-font-weight: 500;
     -fx-graphic-text-gap: 8px;
     -fx-effect: null;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 .m3-fab.m3-fab-menu-action:hover {
@@ -50,7 +50,7 @@
     -m3-fab-icon-size: 20px;
     -fx-background-radius: 28px;
     -fx-border-radius: 28px;
-    -fx-cursor: hand;
+    -fx-cursor: default;
 }
 
 
@@ -235,7 +235,6 @@
 .m3-fab.m3-tertiary-fab:disabled {
     -fx-background-color: -m3-button-disabled-container-color;
     -fx-border-color: transparent;
-    -fx-cursor: default;
     -fx-effect: null;
     -fx-opacity: 1;
     -fx-text-fill: -m3-color-on-surface;
