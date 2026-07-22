@@ -289,35 +289,36 @@
 
 .m3-text-input-label {
     -fx-font-size: 12px;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-fill: -m3-color-on-surface-variant;
+    -fx-font-smoothing-type: gray;
 }
 
 .m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label {
-    -fx-text-fill: -m3-color-on-surface;
+    -fx-fill: -m3-color-on-surface;
 }
 
 .m3-text-input-label:focused {
-    -fx-text-fill: -m3-color-primary;
+    -fx-fill: -m3-color-primary;
 }
 
 .m3-text-input-label:error,
 .m3-text-input-label:error:focused {
-    -fx-text-fill: -m3-color-error;
+    -fx-fill: -m3-color-error;
 }
 
 .m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:error,
 .m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:error {
-    -fx-text-fill: -m3-color-on-error-container;
+    -fx-fill: -m3-color-on-error-container;
 }
 
 .m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:focused,
 .m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:focused {
-    -fx-text-fill: -m3-color-primary;
+    -fx-fill: -m3-color-primary;
 }
 
 .m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:error:focused,
 .m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:error:focused {
-    -fx-text-fill: -m3-color-error;
+    -fx-fill: -m3-color-error;
 }
 
 .m3-text-input-leading,
@@ -382,7 +383,11 @@
     -fx-text-fill: -m3-color-error;
 }
 
-.m3-text-input-label:disabled,
+.m3-text-input-label:disabled {
+    -fx-fill: -m3-state-disabled-content-color;
+    -fx-opacity: 1;
+}
+
 .m3-text-input-supporting-row:disabled {
     -fx-text-fill: -m3-state-disabled-content-color;
     -fx-opacity: 1;

@@ -3563,22 +3563,7 @@ final class M3FXDemoVisualMatrixTest {
         assertRightToLeftTextInputLayoutGeometry(passwordLayout, "mirrored password text input");
         assertRightToLeftTextInputLayoutGeometry(outlinedAreaLayout, "mirrored outlined multiline text input");
 
-        ScrollPane pageScrollPane = demoPageScrollPane(scene);
-        pageScrollPane.setVvalue(1.0);
-        scene.getRoot().applyCss();
-        scene.getRoot().layout();
-        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getLayoutBounds());
-        for (M3TextInputLayout mirroredLayout : List.of(
-                filledLayout,
-                outlinedLayout,
-                passwordLayout,
-                outlinedAreaLayout
-        )) {
-            Bounds mirroredBounds = mirroredLayout.localToScene(mirroredLayout.getLayoutBounds());
-            assertFalse(isOutsideSceneViewport(mirroredLayout, mirroredBounds, sceneBounds),
-                    () -> "Mirrored text input should be visible in the scrolled capture: " + mirroredBounds);
-        }
-
+        scrollAncestorScrollPanesNodeIntoView(outlinedLayout);
         WritableImage mirroredImage = requireSnapshotWithNodeFullyVisible(
                 scene,
                 outlinedLayout,
@@ -3608,88 +3593,84 @@ final class M3FXDemoVisualMatrixTest {
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Mirrored Text Fields");
 
-        TextInputControl outlinedInput = Objects.requireNonNull(
-                outlinedLayout.getInput(),
-                "mirrored outlined input"
-        );
-        outlinedInput.requestFocus();
-        scene.getRoot().applyCss();
-        scene.getRoot().layout();
-        WritableImage focusedMirroredImage = requireSnapshotWithNodeFullyVisible(
-                scene,
-                outlinedLayout,
-                "focused mirrored outlined text input"
-        );
-        writeVisualSnapshot(focusedMirroredImage, Path.of(
-                "build",
-                "reports",
-                "m3fx-demo-visual",
-                "text-input-focused-rtl-outlined-contracts.png"
-        ));
-        assertSnapshotHasVisibleContent(focusedMirroredImage, "Focused mirrored outlined text input contracts");
-        assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                focusedMirroredImage,
-                outlinedLayout,
-                "focused mirrored outlined text input"
-        );
-        assertTextInputFloatingLabelInkAvoidsAdornmentSlots(
-                focusedMirroredImage,
-                outlinedLayout,
-                "focused mirrored outlined text input"
-        );
-        assertTextInputFloatingLabelInkAvoidsInputInk(
-                focusedMirroredImage,
-                outlinedLayout,
-                "focused mirrored outlined text input"
-        );
-        Text focusedMirroredText = Objects.requireNonNull(
-                firstVisibleText(outlinedInput),
-                "focused mirrored outlined input text"
-        );
-        assertSingleLineTextInputHasVerticalRoom(
-                focusedMirroredImage,
-                outlinedLayout,
-                outlinedInput,
-                focusedMirroredText,
-                "Focused mirrored Text Fields"
-        );
+        Node root = scene.getRoot();
+        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(root);
+        M3MotionSettings.setReducedMotionRequested(root, true);
+        try {
+            TextInputControl outlinedInput = Objects.requireNonNull(
+                    outlinedLayout.getInput(),
+                    "mirrored outlined input"
+            );
+            outlinedInput.requestFocus();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            WritableImage focusedMirroredImage = requireSnapshotWithNodeFullyVisible(
+                    scene,
+                    outlinedLayout,
+                    "focused mirrored outlined text input"
+            );
+            writeVisualSnapshot(focusedMirroredImage, Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-demo-visual",
+                    "text-input-focused-rtl-outlined-contracts.png"
+            ));
+            assertSnapshotHasVisibleContent(focusedMirroredImage, "Focused mirrored outlined text input contracts");
+            assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
+                    focusedMirroredImage,
+                    outlinedLayout,
+                    "focused mirrored outlined text input"
+            );
+            assertTextInputFloatingLabelInkAvoidsAdornmentSlots(
+                    focusedMirroredImage,
+                    outlinedLayout,
+                    "focused mirrored outlined text input"
+            );
+            assertTextInputFloatingLabelInkAvoidsInputInk(
+                    focusedMirroredImage,
+                    outlinedLayout,
+                    "focused mirrored outlined text input"
+            );
+            Text focusedMirroredText = Objects.requireNonNull(
+                    firstVisibleText(outlinedInput),
+                    "focused mirrored outlined input text"
+            );
+            assertSingleLineTextInputHasVerticalRoom(
+                    focusedMirroredImage,
+                    outlinedLayout,
+                    outlinedInput,
+                    focusedMirroredText,
+                    "Focused mirrored Text Fields"
+            );
 
-        TextInputControl passwordInput = Objects.requireNonNull(
-                passwordLayout.getInput(),
-                "mirrored password input"
-        );
-        passwordInput.requestFocus();
-        scene.getRoot().applyCss();
-        scene.getRoot().layout();
-        WritableImage focusedPasswordImage = requireSnapshotWithNodeFullyVisible(
-                scene,
-                passwordLayout,
-                "focused mirrored password input"
-        );
-        writeVisualSnapshot(focusedPasswordImage, Path.of(
-                "build",
-                "reports",
-                "m3fx-demo-visual",
-                "text-input-focused-rtl-outlined-action-contracts.png"
-        ));
-        assertTextInputFocusedVisualState(
-                focusedPasswordImage,
-                passwordLayout,
-                passwordInput,
-                "focused mirrored password input"
-        );
-        Text focusedPasswordText = Objects.requireNonNull(
-                firstVisibleText(passwordInput),
-                "focused mirrored password input text"
-        );
-        assertSingleLineTextInputHasVerticalRoom(
-                focusedPasswordImage,
-                passwordLayout,
-                passwordInput,
-                focusedPasswordText,
-                "Focused mirrored password Text Fields"
-        );
-        assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
+            TextInputControl passwordInput = Objects.requireNonNull(
+                    passwordLayout.getInput(),
+                    "mirrored password input"
+            );
+            passwordInput.requestFocus();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            WritableImage focusedPasswordImage = requireSnapshotWithNodeFullyVisible(
+                    scene,
+                    passwordLayout,
+                    "focused mirrored password input"
+            );
+            writeVisualSnapshot(focusedPasswordImage, Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-demo-visual",
+                    "text-input-focused-rtl-outlined-action-contracts.png"
+            ));
+            assertTextInputFocusedVisualState(
+                    focusedPasswordImage,
+                    passwordLayout,
+                    passwordInput,
+                    "focused mirrored password input"
+            );
+            assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
+        } finally {
+            M3MotionSettings.setReducedMotionRequested(root, previousReducedMotionRequested);
+        }
     }
 
     /// Verifies every focusable text input state exposed by the demo page.
@@ -9359,12 +9340,11 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertOutlinedFloatingLabelGeometry(M3TextInputLayout layout, String description) {
         TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
         assertTextInputVariant(layout, M3TextInputVariant.OUTLINED, description);
-        Label label = assertInstanceOf(
-                Label.class,
+        Text label = assertInstanceOf(
+                Text.class,
                 requireVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS, description + " label")
         );
-        assertTrue(label.getBackground() == null || label.getBackground().isEmpty(),
-                () -> description + " floating label should not use a background mask");
+        assertNull(label.getClip(), () -> description + " ordinary floating label should use unclipped text geometry");
 
         Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
@@ -9391,11 +9371,11 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
         assertTextInputVariant(layout, M3TextInputVariant.OUTLINED, description);
-        Label label = assertInstanceOf(
-                Label.class,
+        Text label = assertInstanceOf(
+                Text.class,
                 requireVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS, description + " label")
         );
-        Text labelText = Objects.requireNonNull(firstVisibleText(label), description + " label text");
+        Text labelText = label;
         @Nullable Rectangle2D renderedLabelInkBounds = renderedTextInkBounds(image, labelText);
         Rectangle2D inkBounds = renderedLabelInkBounds == null
                 ? renderedNodePixelBoundsInScene(labelText, description + " rendered floating-label ink")
@@ -10034,7 +10014,7 @@ final class M3FXDemoVisualMatrixTest {
     /// Verifies that an outlined input path has an open top notch around the floating label.
     private static void assertOutlinedPathHasOpenLabelNotch(
             javafx.scene.shape.Path outline,
-            Label label,
+            Text label,
             String description
     ) {
         assertTrue(outline.getElements().size() >= 4,

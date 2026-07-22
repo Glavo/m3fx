@@ -23,6 +23,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
@@ -594,6 +595,7 @@ final class M3FormControlsTest {
             assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
         });
     }
+
     /// Verifies that validation summaries track their own visible and enabled ancestor chain.
     @Test
     void validationSummaryTracksOwnAncestorReachability() {
@@ -782,8 +784,8 @@ final class M3FormControlsTest {
             root.layout();
 
             assertInstanceOf(M3TextInputLayoutSkin.class, layout.getSkin());
-            Label retiredLabel = assertInstanceOf(
-                    Label.class,
+            Text retiredLabel = assertInstanceOf(
+                    Text.class,
                     layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
 
@@ -792,8 +794,8 @@ final class M3FormControlsTest {
             root.applyCss();
             root.layout();
 
-            Label currentLabel = assertInstanceOf(
-                    Label.class,
+            Text currentLabel = assertInstanceOf(
+                    Text.class,
                     layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
             assertNotSame(retiredLabel, currentLabel);

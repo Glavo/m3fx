@@ -7,10 +7,11 @@ import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
@@ -28,14 +29,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static org.glavo.m3fx.controls.ControlVisualTestUtils.snapshotImageOnFxThread;
+import static org.glavo.m3fx.controls.ControlVisualTestUtils.writeVisualSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies the observable floating-label motion contract through natural JavaFX pulses in a real window.
@@ -223,6 +228,53 @@ final class M3TextInputMotionTest {
         assertReducedMotionEndpoints(M3Profile.EXPRESSIVE_2025);
     }
 
+    /// Verifies that an outlined label does not paint a rectangular region while crossing the outline.
+    @Test
+    void outlinedLabelRemainsTransparentDuringMotion() throws InterruptedException {
+        MotionScene scene = createMotionScene(M3Profile.BASELINE_2021);
+        double expandedScale = expandedScale(scene);
+        WritableImage[] intermediateFrame = new WritableImage[1];
+        FxTestUtils.runOnFxThread(() -> {
+            scene.root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 16px;");
+            scene.root.applyCss();
+            scene.root.layout();
+        });
+        Region inputContainer = FxTestUtils.callOnFxThread(() -> assertInstanceOf(
+                Region.class,
+                scene.layout.lookup("." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS)
+        ));
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        Bounds labelBounds = sceneBounds(scene.label);
+                        double outlineTop = inputContainer.localToScene(inputContainer.getBoundsInLocal()).getMinY();
+                        return isStrictlyBetween(renderedScale(scene.label), MINIMIZED_SCALE, expandedScale)
+                                && labelBounds.getMinY() <= outlineTop
+                                && labelBounds.getMaxY() >= outlineTop;
+                    },
+                    () -> "outlined label did not expose an intermediate frame",
+                    () -> scene.field.setText("M3FX"),
+                    () -> {
+                        assertNull(scene.label.getClip(),
+                                "ordinary outlined labels should render as unclipped text geometry");
+                        intermediateFrame[0] = snapshotImageOnFxThread(scene.root);
+                    }
+            );
+            writeVisualSnapshot(
+                    Objects.requireNonNull(intermediateFrame[0], "intermediate frame"),
+                    Path.of(
+                            "build",
+                            "reports",
+                            "m3fx-visual",
+                            "visual-text-field-outlined-label-intermediate.png"
+                    )
+            );
+        } finally {
+            scene.close();
+        }
+    }
+
     /// Exercises one profile and verifies the complete observable floating-label motion lifecycle.
     ///
     /// @param profile the Material profile under test
@@ -321,9 +373,9 @@ final class M3TextInputMotionTest {
 
     /// Observes a transition from its synchronous retarget through a complete natural-pulse settlement.
     ///
-    /// @param scene the real-window scene under test
-    /// @param targetScale the expected rendered endpoint scale
-    /// @param retarget the state change that starts or reverses the transition
+    /// @param scene          the real-window scene under test
+    /// @param targetScale    the expected rendered endpoint scale
+    /// @param retarget       the state change that starts or reverses the transition
     /// @param failureMessage the timeout diagnostic
     /// @return the synchronous and pulse-driven observations
     /// @throws InterruptedException if the test thread is interrupted while awaiting JavaFX pulses
@@ -372,9 +424,9 @@ final class M3TextInputMotionTest {
 
     /// Starts motion toward the resting endpoint, reverses it in flight, and observes the return settlement.
     ///
-    /// @param scene the real-window scene under test
+    /// @param scene         the real-window scene under test
     /// @param expandedScale the dynamically computed resting endpoint
-    /// @param profile the Material profile used for diagnostics
+    /// @param profile       the Material profile used for diagnostics
     /// @return observations from both sides of the interrupted transition
     /// @throws InterruptedException if the test thread is interrupted while awaiting JavaFX pulses
     private static InterruptedMotion observeInterruptedReverse(
@@ -424,9 +476,9 @@ final class M3TextInputMotionTest {
 
     /// Verifies that a settled endpoint remains geometrically unchanged for approximately one second.
     ///
-    /// @param scene the real-window scene under test
+    /// @param scene       the real-window scene under test
     /// @param targetScale the expected settled scale
-    /// @param profile the Material profile used for diagnostics
+    /// @param profile     the Material profile used for diagnostics
     /// @throws InterruptedException if the test thread is interrupted while awaiting JavaFX pulses
     private static void assertStableSceneBounds(
             MotionScene scene,
@@ -460,7 +512,7 @@ final class M3TextInputMotionTest {
 
     /// Verifies that a retarget did not synchronously alter rendered presentation.
     ///
-    /// @param run the observed transition
+    /// @param run         the observed transition
     /// @param description the assertion diagnostic prefix
     private static void assertNoSynchronousJump(MotionRun run, String description) {
         assertNoSynchronousJump(run.beforeRetarget(), run.afterRetarget(), description);
@@ -468,8 +520,8 @@ final class M3TextInputMotionTest {
 
     /// Verifies that two frames around one synchronous retarget have identical presentation.
     ///
-    /// @param before the frame immediately before retargeting
-    /// @param after the frame immediately after retargeting in the same JavaFX callback
+    /// @param before      the frame immediately before retargeting
+    /// @param after       the frame immediately after retargeting in the same JavaFX callback
     /// @param description the assertion diagnostic prefix
     private static void assertNoSynchronousJump(MotionFrame before, MotionFrame after, String description) {
         assertEquals(before.scale(), after.scale(), RETARGET_EPSILON,
@@ -481,10 +533,10 @@ final class M3TextInputMotionTest {
 
     /// Verifies that a pulse trace contains finite, positive, non-endpoint rendered frames.
     ///
-    /// @param frames the natural-pulse observations
-    /// @param startScale the transition's starting endpoint
+    /// @param frames      the natural-pulse observations
+    /// @param startScale  the transition's starting endpoint
     /// @param targetScale the transition's target endpoint
-    /// @param profile the Material profile used for diagnostics
+    /// @param profile     the Material profile used for diagnostics
     private static void assertIntermediateFrames(
             @Unmodifiable List<MotionFrame> frames,
             double startScale,
@@ -505,9 +557,9 @@ final class M3TextInputMotionTest {
     /// Expressive motion may cross an endpoint slightly. A continuous crossing is accepted; holding at the exact
     /// endpoint for multiple rendered pulses and then moving visibly away is not.
     ///
-    /// @param frames the natural-pulse observations
+    /// @param frames      the natural-pulse observations
     /// @param targetScale the target endpoint
-    /// @param profile the Material profile used for diagnostics
+    /// @param profile     the Material profile used for diagnostics
     private static void assertNoPlateauThenVisibleDeparture(
             @Unmodifiable List<MotionFrame> frames,
             double targetScale,
@@ -557,7 +609,7 @@ final class M3TextInputMotionTest {
     ///
     /// @param label the rendered floating-label node
     /// @return the uniform rendered scale
-    private static double renderedScale(Label label) {
+    private static double renderedScale(Text label) {
         var transform = label.getLocalToParentTransform();
         return Math.hypot(transform.getMxx(), transform.getMyx());
     }
@@ -566,22 +618,22 @@ final class M3TextInputMotionTest {
     ///
     /// @param label the rendered floating-label node
     /// @return the captured frame
-    private static MotionFrame captureFrame(Label label) {
+    private static MotionFrame captureFrame(Text label) {
         return captureFrame(label, System.nanoTime());
     }
 
     /// Captures one rendered label frame for an AnimationTimer observation.
     ///
-    /// @param label the rendered floating-label node
+    /// @param label          the rendered floating-label node
     /// @param timestampNanos the pulse observation time in nanoseconds
     /// @return the captured frame
-    private static MotionFrame captureFrame(Label label, long timestampNanos) {
+    private static MotionFrame captureFrame(Text label, long timestampNanos) {
         return new MotionFrame(timestampNanos, renderedScale(label), label.getOpacity(), sceneBounds(label));
     }
 
     /// Returns whether two observations differ enough to reset the settlement quiet interval.
     ///
-    /// @param first the earlier frame
+    /// @param first  the earlier frame
     /// @param second the later frame
     /// @return `true` when scale or scene-space bounds changed visibly
     private static boolean visiblyDifferent(MotionFrame first, MotionFrame second) {
@@ -591,7 +643,7 @@ final class M3TextInputMotionTest {
 
     /// Returns whether a scale has reached the requested endpoint.
     ///
-    /// @param scale the rendered scale
+    /// @param scale       the rendered scale
     /// @param targetScale the expected endpoint
     /// @return `true` when the values differ by no more than [#SCALE_EPSILON]
     private static boolean isAtScale(double scale, double targetScale) {
@@ -600,8 +652,8 @@ final class M3TextInputMotionTest {
 
     /// Returns whether a scale lies strictly between two endpoints.
     ///
-    /// @param scale the rendered scale
-    /// @param firstEndpoint one endpoint
+    /// @param scale          the rendered scale
+    /// @param firstEndpoint  one endpoint
     /// @param secondEndpoint the other endpoint
     /// @return `true` when the scale excludes both endpoint tolerance regions
     private static boolean isStrictlyBetween(double scale, double firstEndpoint, double secondEndpoint) {
@@ -612,7 +664,7 @@ final class M3TextInputMotionTest {
 
     /// Returns the normalized distance traveled between two scale endpoints.
     ///
-    /// @param scale the current rendered scale
+    /// @param scale         the current rendered scale
     /// @param expandedScale the expanded endpoint
     /// @return the signed endpoint-relative travel fraction
     private static double expandedTravelFraction(double scale, double expandedScale) {
@@ -623,13 +675,13 @@ final class M3TextInputMotionTest {
     ///
     /// @param label the rendered floating-label node
     /// @return the scene-space bounds
-    private static Bounds sceneBounds(Label label) {
+    private static Bounds sceneBounds(Text label) {
         return label.localToScene(label.getBoundsInLocal());
     }
 
     /// Returns whether two scene-space bounds agree within the standard stability tolerance.
     ///
-    /// @param first one scene-space bounds value
+    /// @param first  one scene-space bounds value
     /// @param second the other scene-space bounds value
     /// @return `true` when all observable components agree
     private static boolean equalBounds(Bounds first, Bounds second) {
@@ -638,8 +690,8 @@ final class M3TextInputMotionTest {
 
     /// Returns whether two scene-space bounds agree within a supplied tolerance.
     ///
-    /// @param first one scene-space bounds value
-    /// @param second the other scene-space bounds value
+    /// @param first   one scene-space bounds value
+    /// @param second  the other scene-space bounds value
     /// @param epsilon the maximum permitted component difference
     /// @return `true` when all observable components agree
     private static boolean equalBounds(Bounds first, Bounds second, double epsilon) {
@@ -676,8 +728,8 @@ final class M3TextInputMotionTest {
             root.applyCss();
             root.layout();
 
-            Label label = assertInstanceOf(
-                    Label.class,
+            Text label = assertInstanceOf(
+                    Text.class,
                     layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
             assertTrue(initialFocus.isFocused());
@@ -742,17 +794,17 @@ final class M3TextInputMotionTest {
     /// Describes one observable rendered label frame.
     ///
     /// @param timestampNanos the monotonic observation time in nanoseconds
-    /// @param scale the rendered uniform scale
-    /// @param opacity the rendered label opacity
-    /// @param bounds the label bounds in scene coordinates
+    /// @param scale          the rendered uniform scale
+    /// @param opacity        the rendered label opacity
+    /// @param bounds         the label bounds in scene coordinates
     private record MotionFrame(long timestampNanos, double scale, double opacity, Bounds bounds) {
     }
 
     /// Describes one state change followed through complete settlement.
     ///
     /// @param beforeRetarget the frame before changing semantic state
-    /// @param afterRetarget the frame immediately after changing state in the same callback
-    /// @param pulseFrames the natural-pulse observations through settlement
+    /// @param afterRetarget  the frame immediately after changing state in the same callback
+    /// @param pulseFrames    the natural-pulse observations through settlement
     private record MotionRun(
             MotionFrame beforeRetarget,
             MotionFrame afterRetarget,
@@ -768,12 +820,12 @@ final class M3TextInputMotionTest {
 
     /// Describes reverse motion that is retargeted before reaching its endpoint.
     ///
-    /// @param reverseStart the frame before reverse motion starts
-    /// @param reverseStartAfter the frame immediately after reverse motion starts
-    /// @param reverseFrames the natural-pulse frames before interruption
+    /// @param reverseStart       the frame before reverse motion starts
+    /// @param reverseStartAfter  the frame immediately after reverse motion starts
+    /// @param reverseFrames      the natural-pulse frames before interruption
     /// @param beforeInterruption the in-flight frame immediately before retargeting
-    /// @param afterInterruption the frame immediately after retargeting in the same callback
-    /// @param returnRun the observations through settlement at the original endpoint
+    /// @param afterInterruption  the frame immediately after retargeting in the same callback
+    /// @param returnRun          the observations through settlement at the original endpoint
     private record InterruptedMotion(
             MotionFrame reverseStart,
             MotionFrame reverseStartAfter,
@@ -786,17 +838,17 @@ final class M3TextInputMotionTest {
 
     /// Holds the nodes used by one real-window floating-label motion run.
     ///
-    /// @param stage the window presenting the field
-    /// @param root the scene root
+    /// @param stage  the window presenting the field
+    /// @param root   the scene root
     /// @param layout the Material text-input layout
-    /// @param field the wrapped text field
-    /// @param label the rendered floating-label node
+    /// @param field  the wrapped text field
+    /// @param label  the rendered floating-label node
     private record MotionScene(
             Stage stage,
             VBox root,
             M3TextInputLayout layout,
             M3TextField field,
-            Label label
+            Text label
     ) {
         /// Closes the window and clears its local motion override.
         private void close() {

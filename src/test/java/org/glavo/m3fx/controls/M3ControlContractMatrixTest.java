@@ -7437,7 +7437,7 @@ final class M3ControlContractMatrixTest {
 
         applyCss(layout);
 
-        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
         assertEquals("Email", layout.getLabelText());
         assertEquals("Email", label.getText());
         assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
@@ -7493,8 +7493,8 @@ final class M3ControlContractMatrixTest {
                 root.layout();
 
                 Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
-                Label label = assertInstanceOf(
-                        Label.class,
+                Text label = assertInstanceOf(
+                        Text.class,
                         layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 Text inputText = renderedTextNode(textField, "support@example.com");
@@ -7566,8 +7566,8 @@ final class M3ControlContractMatrixTest {
                 layout.layout();
 
                 Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
-                Label label = assertInstanceOf(
-                        Label.class,
+                Text label = assertInstanceOf(
+                        Text.class,
                         layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 Text inputText = renderedTextNode(textField, "M3FX");
@@ -7801,8 +7801,8 @@ final class M3ControlContractMatrixTest {
                 assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
                 assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
 
-                Label label = assertInstanceOf(
-                        Label.class,
+                Text label = assertInstanceOf(
+                        Text.class,
                         layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 Text inputText = renderedTextNode(textField, "M3FX RTL");
@@ -7894,8 +7894,8 @@ final class M3ControlContractMatrixTest {
                 assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
                 assertEquals(16.0, textField.getPadding().getLeft(), 0.0001);
 
-                Label label = assertInstanceOf(
-                        Label.class,
+                Text label = assertInstanceOf(
+                        Text.class,
                         layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 Text inputText = renderedTextNode(textField, "M3FX RTL");
@@ -8317,8 +8317,8 @@ final class M3ControlContractMatrixTest {
                 assertEquals(48.0, editor.getPadding().getRight(), 0.0001);
                 assertEquals(16.0, editor.getPadding().getLeft(), 0.0001);
 
-                Label label = assertInstanceOf(
-                        Label.class,
+                Text label = assertInstanceOf(
+                        Text.class,
                         layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 Text inputText = renderedTextNode(editor, "2026-06-27");
@@ -8872,7 +8872,7 @@ final class M3ControlContractMatrixTest {
             root.layout();
             layout.layout();
 
-            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
             assertTextInputLayoutUsesLogicalGeometry(layout, true);
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -9186,16 +9186,16 @@ final class M3ControlContractMatrixTest {
             root.resize(360.0, 120.0);
             root.layout();
 
-            Label label = assertInstanceOf(
-                    Label.class,
+            Text label = assertInstanceOf(
+                    Text.class,
                     layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
             Insets inputPadding = textField.getPadding();
-            Insets labelPadding = label.getPadding();
+            var labelFont = label.getFont();
             AtomicInteger inputPaddingChanges = new AtomicInteger();
-            AtomicInteger labelPaddingChanges = new AtomicInteger();
+            AtomicInteger labelFontChanges = new AtomicInteger();
             textField.paddingProperty().addListener(observable -> inputPaddingChanges.incrementAndGet());
-            label.paddingProperty().addListener(observable -> labelPaddingChanges.incrementAndGet());
+            label.fontProperty().addListener(observable -> labelFontChanges.incrementAndGet());
 
             for (int length = 2; length <= 64; length++) {
                 textField.setText("x".repeat(length));
@@ -9203,10 +9203,10 @@ final class M3ControlContractMatrixTest {
             root.layout();
 
             assertSame(inputPadding, textField.getPadding());
-            assertSame(labelPadding, label.getPadding());
+            assertSame(labelFont, label.getFont());
             assertEquals(1.0, renderedScaleX(label), 0.0001);
             assertEquals(0, inputPaddingChanges.get());
-            assertEquals(0, labelPaddingChanges.get());
+            assertEquals(0, labelFontChanges.get());
             assertTrue(layout.isLabelFloating());
         });
     }
@@ -17536,11 +17536,11 @@ final class M3ControlContractMatrixTest {
             assertEquals(onSurface, outline.getStroke());
             assertEquals(0.12, outline.getOpacity(), 0.0001);
 
-            Label outlinedLabel = assertInstanceOf(
-                    Label.class,
+            Text outlinedLabel = assertInstanceOf(
+                    Text.class,
                     outlinedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
-            assertEquals(disabledContent, outlinedLabel.getTextFill());
+            assertEquals(disabledContent, outlinedLabel.getFill());
             assertEquals(1.0, outlinedLabel.getOpacity(), 0.0001);
 
             Region leadingSlot = lookupRegion(
@@ -17642,23 +17642,23 @@ final class M3ControlContractMatrixTest {
                         Path.class,
                         focusedLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
                 );
-                Label hoveredLabel = assertInstanceOf(
-                        Label.class,
+                Text hoveredLabel = assertInstanceOf(
+                        Text.class,
                         focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 assertEquals(onSurface, hoveredOutline.getStroke());
-                assertEquals(onSurface, hoveredLabel.getTextFill());
+                assertEquals(onSurface, hoveredLabel.getFill());
 
                 Path hoveredErrorOutline = assertInstanceOf(
                         Path.class,
                         errorLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
                 );
-                Label errorLabel = assertInstanceOf(
-                        Label.class,
+                Text errorLabel = assertInstanceOf(
+                        Text.class,
                         errorLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 assertEquals(onErrorContainer, hoveredErrorOutline.getStroke());
-                assertEquals(onErrorContainer, errorLabel.getTextFill());
+                assertEquals(onErrorContainer, errorLabel.getFill());
                 Region errorTrailingSlot = lookupRegion(
                         errorLayout,
                         "." + M3TextInputLayout.TRAILING_STYLE_CLASS
@@ -17680,13 +17680,13 @@ final class M3ControlContractMatrixTest {
                 root.layout();
 
                 assertTrue(focusedField.isFocused(), "focused text field should own focus");
-                Label focusedLabel = assertInstanceOf(
-                        Label.class,
+                Text focusedLabel = assertInstanceOf(
+                        Text.class,
                         focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
                 assertTrue(focusedLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
-                assertEquals(primary, focusedLabel.getTextFill());
-                assertEquals(error, errorLabel.getTextFill());
+                assertEquals(primary, focusedLabel.getFill());
+                assertEquals(error, errorLabel.getFill());
                 assertEquals(error, iconFill(errorTrailing));
 
                 errorField.requestFocus();
@@ -17695,7 +17695,7 @@ final class M3ControlContractMatrixTest {
 
                 assertTrue(errorField.isFocused(), "error text field should own focus");
                 assertTrue(errorLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
-                assertEquals(error, errorLabel.getTextFill());
+                assertEquals(error, errorLabel.getFill());
                 assertEquals(error, iconFill(errorTrailing));
             } finally {
                 stage.close();
@@ -32938,8 +32938,8 @@ final class M3ControlContractMatrixTest {
             assertEquals("Too many", enforcedField.getText());
             assertTrue(counterLayout.isLabelFloating());
             assertEquals(textInputClearButton(counterLayout), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
-            Label floatingCounterLabel = assertInstanceOf(
-                    Label.class,
+            Text floatingCounterLabel = assertInstanceOf(
+                    Text.class,
                     counterLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
             );
             var counterFieldBounds = counterField.localToScene(counterField.getBoundsInLocal());
@@ -33196,7 +33196,7 @@ final class M3ControlContractMatrixTest {
             assertVisualIconSlotsUseVectorGraphics(root);
 
             WritableImage image = snapshotImageOnFxThread(root);
-            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
             Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
             Text inputText = renderedTextNode(textField, "M3FX");
             var labelBounds = label.localToScene(label.getBoundsInLocal());
@@ -33210,7 +33210,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(fieldCenterY, inputTextCenterY, 4.0,
                     () -> "outlined input line box should stay vertically centered: field="
                             + fieldBounds + ", text=" + inputTextBounds + ", ink=" + inputInkBounds);
-            assertTrue(label.getBackground() == null || label.getBackground().getFills().isEmpty());
+            assertNull(label.getClip());
             assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
                     () -> "outline gap is narrower than the floating label: gap="
                             + outlineNotchGap(outline) + ", label=" + labelBounds);
@@ -33224,22 +33224,14 @@ final class M3ControlContractMatrixTest {
                     () -> "floating label should be centered around the outline top: field="
                             + fieldBounds + ", label=" + labelBounds);
 
-            Color labelPaddingPixel = averageSnapshotColor(
+            Color leadingNotchPixel = averageSnapshotColor(
                     image,
-                    (int) Math.floor(labelBounds.getMinX()),
-                    (int) Math.floor(labelBounds.getCenterY() - 2.0),
-                    (int) Math.floor(labelBounds.getMinX() + 4.0),
-                    (int) Math.floor(labelBounds.getCenterY() + 3.0)
-            );
-            Color notchPixel = averageSnapshotColor(
-                    image,
-                    (int) Math.floor(labelBounds.getMinX()),
+                    (int) Math.floor(labelBounds.getMinX() - 3.0),
                     (int) Math.floor(fieldBounds.getMinY()),
-                    (int) Math.floor(labelBounds.getMinX() + 4.0),
+                    (int) Math.floor(labelBounds.getMinX() - 1.0),
                     (int) Math.floor(fieldBounds.getMinY() + 3.0)
             );
-            assertColorNear(labelPaddingPixel, surface, 0.09, "floating label padding area");
-            assertColorNear(notchPixel, surface, 0.05, "outlined notch area");
+            assertColorNear(leadingNotchPixel, surface, 0.05, "outlined notch leading clearance");
             assertSnapshotAreaContainsContrast(
                     image,
                     (int) Math.floor(fieldBounds.getMinX() + 4.0),
@@ -40271,7 +40263,7 @@ final class M3ControlContractMatrixTest {
         layout.layout();
         @Nullable Node labelNode = layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS);
         @Nullable Node outlineNode = layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS);
-        if (!(labelNode instanceof Label label) || !(outlineNode instanceof Path outline)) {
+        if (!(labelNode instanceof Text label) || !(outlineNode instanceof Path outline)) {
             return false;
         }
 
@@ -40317,7 +40309,7 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies a floating-label and clear-button intermediate frame on a text input layout.
     private static void assertTextInputLayoutFloatingPresentationIntermediate(M3TextInputLayout layout) {
-        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
         Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
         M3IconButton clearButton = textInputClearButton(layout);
         double expandedScale = textInputLayoutExpandedLabelScale(layout, label);
@@ -40348,7 +40340,7 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that text input presentation state is settled after motion is disabled.
     private static void assertTextInputLayoutPresentationSettled(M3TextInputLayout layout) {
-        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
         Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
         M3IconButton clearButton = textInputClearButton(layout);
         HBox supportingRow = assertInstanceOf(
@@ -40544,7 +40536,7 @@ final class M3ControlContractMatrixTest {
         Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
         Region leadingSlot = lookupRegion(layout, "." + M3TextInputLayout.LEADING_STYLE_CLASS);
         Region trailingSlot = lookupRegion(layout, "." + M3TextInputLayout.TRAILING_STYLE_CLASS);
-        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
         Label supportingLabel = assertInstanceOf(
                 Label.class,
                 layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
@@ -40655,7 +40647,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Returns the resting label scale derived from the current computed input and label typography.
-    private static double textInputLayoutExpandedLabelScale(M3TextInputLayout layout, Label label) {
+    private static double textInputLayoutExpandedLabelScale(M3TextInputLayout layout, Text label) {
         TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
         return input.getFont().getSize() / label.getFont().getSize();
     }

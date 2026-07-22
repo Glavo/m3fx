@@ -7,8 +7,10 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -24,6 +26,8 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.QuadCurveTo;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextBoundsType;
 import javafx.scene.transform.Affine;
 import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.controls.M3IconButton;
@@ -65,7 +69,7 @@ import static org.glavo.m3fx.controls.M3TextInputLayout.TRAILING_STYLE_CLASS;
 ///
 /// Floating-label motion uses one interruptible scalar channel. Spatial spring overshoot is preserved instead of
 /// clipping progress to the closed unit interval. The outlined notch follows the current transformed label bounds
-/// and is fully open whenever the top border intersects the label rectangle.
+/// and is fully open whenever the top border intersects those bounds.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
@@ -145,8 +149,8 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
             new QuadCurveTo()
     };
 
-    /// The label displayed inside or above the input.
-    private final Label label = new Label();
+    /// The text geometry displayed inside or above the input.
+    private final Text label = new Text();
 
     /// The affine transform carrying every floating-label presentation channel.
     private final Affine labelTransform = new Affine();
@@ -382,9 +386,10 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         label.setManaged(false);
         label.setVisible(false);
         label.setMouseTransparent(true);
+        label.setBoundsType(TextBoundsType.LOGICAL);
+        label.setTextOrigin(VPos.TOP);
         label.getTransforms().add(labelTransform);
         label.fontProperty().addListener(labelMetricsListener);
-        label.paddingProperty().addListener(labelMetricsListener);
 
         leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
         trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
@@ -463,7 +468,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
 
         outlinePath.strokeWidthProperty().removeListener(outlineMetricsListener);
         label.fontProperty().removeListener(labelMetricsListener);
-        label.paddingProperty().removeListener(labelMetricsListener);
         clearButton.setOnAction(null);
         clearButton.setOpacity(1.0);
         clearButton.setScaleX(1.0);
@@ -707,14 +711,15 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
 
         if (!label.getText().equals(text)) {
             label.setText(text);
+            invalidateLabelGeometry();
         }
-        label.setVisible(visible);
+        labelVisible = visible;
+        label.setVisible(visible && labelGeometryValid);
         label.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, isInputFocused());
         label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasVisualErrorState());
 
         updateLabelFloatingState();
         if (visibilityChanged) {
-            labelVisible = visible;
             updateInputPadding();
         }
         if (!visible) {
@@ -728,7 +733,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     private void updateLabelFloatingState() {
         boolean floating = getSkinnable().isLabelFloating();
         label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
-        updateLabelMotion(label.isVisible(), floating);
+        updateLabelMotion(labelVisible, floating);
     }
 
     /// Retargets floating-label progress without clipping spatial spring overshoot.
@@ -1120,8 +1125,8 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// @param width  the input-container width
     /// @param height the input-container height
     private void layoutLabelGeometry(double width, double height) {
-        invalidateLabelGeometry();
-        if (!label.isVisible() || width <= 0.0 || height <= 0.0) {
+        if (!labelVisible || width <= 0.0 || height <= 0.0) {
+            invalidateLabelGeometry();
             return;
         }
 
@@ -1137,12 +1142,14 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         double availableWidth = Math.max(0.0, width - leadingInset - trailingInset);
         expandedLabelScale = resolvedExpandedLabelScale();
         double maximumEndpointScale = Math.max(1.0, expandedLabelScale);
-        double labelWidth = Math.min(label.prefWidth(-1.0), availableWidth / maximumEndpointScale);
-        double labelHeight = label.prefHeight(labelWidth);
+        Bounds labelBounds = label.getLayoutBounds();
+        double labelWidth = Math.min(labelBounds.getWidth(), availableWidth / maximumEndpointScale);
+        double labelHeight = labelBounds.getHeight();
         if (!Double.isFinite(labelWidth)
                 || !Double.isFinite(labelHeight)
                 || labelWidth <= 0.0
                 || labelHeight <= 0.0) {
+            invalidateLabelGeometry();
             return;
         }
 
@@ -1156,9 +1163,9 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
                 : FILLED_FLOATING_LABEL_TOP_MARGIN;
         laidOutLabelWidth = labelWidth;
         laidOutLabelHeight = labelHeight;
-        label.resize(labelWidth, labelHeight);
         label.relocate(0.0, 0.0);
         labelGeometryValid = true;
+        label.setVisible(true);
         updateLabelPresentation();
     }
 
@@ -1216,10 +1223,10 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// Invalidates label geometry and removes stale rendered bounds.
     private void invalidateLabelGeometry() {
         labelGeometryValid = false;
+        label.setVisible(false);
         laidOutLabelWidth = 0.0;
         laidOutLabelHeight = 0.0;
         expandedLabelScale = DEFAULT_EXPANDED_LABEL_SCALE;
-        label.resize(0.0, 0.0);
         label.relocate(0.0, 0.0);
         labelTransform.setToIdentity();
         closeOutlineNotch();
