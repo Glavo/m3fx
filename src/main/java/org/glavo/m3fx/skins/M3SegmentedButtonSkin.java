@@ -34,9 +34,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The built-in selected-state check indicator style class.
     public static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
 
-    /// The backing layer that visually replaces an application icon in the selected state.
-    private static final String SELECTION_INDICATOR_BACKDROP_STYLE_CLASS =
-            "m3-segmented-button-selection-indicator-backdrop";
+    /// The skin-managed class that hides an application graphic while the selected check replaces it.
+    private static final String REPLACED_GRAPHIC_STYLE_CLASS =
+            "m3-segmented-button-replaced-graphic";
 
     /// The checkmark layer inside the selected-state indicator.
     private static final String SELECTION_INDICATOR_MARK_STYLE_CLASS =
@@ -88,6 +88,13 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// Refreshes the built-in indicator when its eligibility changes.
     private final InvalidationListener selectionIndicatorInvalidation = observable -> refreshSelectionIndicator();
 
+    /// Transfers skin-managed replacement styling when the application graphic changes.
+    private final ChangeListener<@Nullable Node> graphicListener = (observable, oldValue, newValue) -> {
+        updateManagedGraphic(oldValue, newValue);
+        animateSelectionIndicator(shouldDisplaySelectionIndicator());
+        getSkinnable().requestLayout();
+    };
+
     /// Requests layout when group position style classes change.
     private final ListChangeListener<String> styleClassListener = change -> getSkinnable().requestLayout();
 
@@ -102,11 +109,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         getChildren().add(0, selectionContainer);
 
         selectionIndicator.getStyleClass().add(SELECTION_INDICATOR_STYLE_CLASS);
-        Region selectionIndicatorBackdrop = new Region();
         Region selectionIndicatorMark = new Region();
-        selectionIndicatorBackdrop.getStyleClass().add(SELECTION_INDICATOR_BACKDROP_STYLE_CLASS);
         selectionIndicatorMark.getStyleClass().add(SELECTION_INDICATOR_MARK_STYLE_CLASS);
-        selectionIndicator.getChildren().setAll(selectionIndicatorBackdrop, selectionIndicatorMark);
+        selectionIndicator.getChildren().setAll(selectionIndicatorMark);
         selectionIndicator.setManaged(false);
         selectionIndicator.setMouseTransparent(true);
         getChildren().add(selectionIndicator);
@@ -114,9 +119,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
         updateSelectionContainerImmediate(control.isSelected());
         updateSelectionIndicatorImmediate();
+        updateManagedGraphic(null, control.getGraphic());
         control.selectedProperty().addListener(selectedListener);
         control.selectionIndicatorEnabledProperty().addListener(selectionIndicatorInvalidation);
-        control.graphicProperty().addListener(selectionIndicatorInvalidation);
+        control.graphicProperty().addListener(graphicListener);
         control.getStyleClass().addListener(styleClassListener);
     }
 
@@ -128,8 +134,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         selectionIndicatorAnimation.stop();
         button.selectedProperty().removeListener(selectedListener);
         button.selectionIndicatorEnabledProperty().removeListener(selectionIndicatorInvalidation);
-        button.graphicProperty().removeListener(selectionIndicatorInvalidation);
+        button.graphicProperty().removeListener(graphicListener);
         button.getStyleClass().removeListener(styleClassListener);
+        updateManagedGraphic(button.getGraphic(), null);
         super.dispose();
     }
 
@@ -356,8 +363,21 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// Refreshes indicator visibility after its configuration or application graphic changes.
     private void refreshSelectionIndicator() {
         M3SegmentedButton button = getSkinnable();
+        updateManagedGraphic(button.getGraphic(), button.getGraphic());
         animateSelectionIndicator(shouldDisplaySelectionIndicator());
         button.requestLayout();
+    }
+
+    /// Transfers the class that lets CSS replace the application graphic without painting over it.
+    private void updateManagedGraphic(@Nullable Node oldGraphic, @Nullable Node newGraphic) {
+        if (oldGraphic != null) {
+            oldGraphic.getStyleClass().remove(REPLACED_GRAPHIC_STYLE_CLASS);
+        }
+        if (newGraphic != null && getSkinnable().isSelectionIndicatorEnabled()) {
+            if (!newGraphic.getStyleClass().contains(REPLACED_GRAPHIC_STYLE_CLASS)) {
+                newGraphic.getStyleClass().add(REPLACED_GRAPHIC_STYLE_CLASS);
+            }
+        }
     }
 
     /// Updates the selected container without animation.

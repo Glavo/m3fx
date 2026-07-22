@@ -601,7 +601,7 @@ final class M3SelectionNavigationTest {
             listView.fireEvent(event);
 
             assertEquals(0, listView.getSelectedIndex());
-            assertEquals(-1, listView.getFocusedIndex());
+            assertEquals(0, listView.getFocusedIndex());
             assertFalse(event.isConsumed());
         });
     }

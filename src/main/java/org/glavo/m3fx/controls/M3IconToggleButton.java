@@ -11,7 +11,9 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -20,6 +22,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
@@ -78,6 +82,12 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// The default toggle icon button glyph size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
+
+    /// The fallback container paint used before CSS resolves a toggle-button variant.
+    private static final Paint DEFAULT_CONTAINER_COLOR = Color.TRANSPARENT;
+
+    /// The fallback content paint used before CSS resolves a toggle-button variant.
+    private static final Paint DEFAULT_CONTENT_COLOR = Color.BLACK;
 
     /// Creates an unselected standard toggle icon button with no graphic.
     public M3IconToggleButton() {
@@ -323,6 +333,95 @@ public final class M3IconToggleButton extends ButtonBase {
     /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// The styleable paint used for the toggle icon button container.
+    ///
+    /// CSS exposes this property as `-m3-container-color`. Before CSS is applied, its effective value is
+    /// transparent. Selection may animate the rendered container from its current paint to this target value;
+    /// the property itself always contains the resolved target paint.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> containerColor;
+
+    /// Returns the target paint used for the toggle icon button container.
+    ///
+    /// @return the effective non-null container paint
+    public final Paint getContainerColor() {
+        return containerColor == null
+                ? DEFAULT_CONTAINER_COLOR
+                : Objects.requireNonNullElse(containerColor.get(), DEFAULT_CONTAINER_COLOR);
+    }
+
+    /// Sets the target paint used for the toggle icon button container.
+    ///
+    /// A direct assignment takes precedence over user-agent token rules. Application stylesheets may configure the
+    /// same value through `-m3-container-color`.
+    ///
+    /// @param color the non-null container paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setContainerColor(Paint color) {
+        containerColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the styleable property containing the toggle icon button container paint.
+    ///
+    /// If a binding supplies `null`, rendering falls back to transparent until a non-null value is supplied. CSS
+    /// cannot set the property while it is bound.
+    ///
+    /// @return the container-color property
+    public final StyleableObjectProperty<@Nullable Paint> containerColorProperty() {
+        if (containerColor == null) {
+            containerColor = M3Css.styleableObjectProperty(
+                    DEFAULT_CONTAINER_COLOR,
+                    this,
+                    "containerColor",
+                    StyleableProperties.CONTAINER_COLOR,
+                    this::requestLayout
+            );
+        }
+        return containerColor;
+    }
+
+    /// The styleable paint used for the icon and interaction feedback.
+    ///
+    /// CSS exposes this property as `-m3-content-color`. Before CSS is applied, its effective value is black.
+    /// Selection may animate direct M3FX icon graphics and interaction feedback from their current paint to this
+    /// target value; the property itself always contains the resolved target paint.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> contentColor;
+
+    /// Returns the target paint used for icon content and interaction feedback.
+    ///
+    /// @return the effective non-null content paint
+    public final Paint getContentColor() {
+        return contentColor == null
+                ? DEFAULT_CONTENT_COLOR
+                : Objects.requireNonNullElse(contentColor.get(), DEFAULT_CONTENT_COLOR);
+    }
+
+    /// Sets the target paint used for icon content and interaction feedback.
+    ///
+    /// @param color the non-null content paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setContentColor(Paint color) {
+        contentColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the styleable property containing the toggle icon button content paint.
+    ///
+    /// If a binding supplies `null`, rendering falls back to black until a non-null value is supplied. CSS cannot
+    /// set the property while it is bound.
+    ///
+    /// @return the content-color property
+    public final StyleableObjectProperty<@Nullable Paint> contentColorProperty() {
+        if (contentColor == null) {
+            contentColor = M3Css.styleableObjectProperty(
+                    DEFAULT_CONTENT_COLOR,
+                    this,
+                    "contentColor",
+                    StyleableProperties.CONTENT_COLOR,
+                    this::requestLayout
+            );
+        }
+        return contentColor;
     }
 
     /// The preferred visual container height in logical pixels.
@@ -661,6 +760,46 @@ public final class M3IconToggleButton extends ButtonBase {
     /// CSS metadata for M3FX toggle icon button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the toggle icon button container paint.
+        private static final CssMetaData<M3IconToggleButton, @Nullable Paint> CONTAINER_COLOR =
+                new CssMetaData<>(
+                        "-m3-container-color",
+                        PaintConverter.getInstance(),
+                        DEFAULT_CONTAINER_COLOR
+                ) {
+                    /// Returns whether CSS may assign the property.
+                    @Override
+                    public boolean isSettable(M3IconToggleButton control) {
+                        return M3Css.isSettable(control.containerColorProperty());
+                    }
+
+                    /// Returns the styleable container paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3IconToggleButton control) {
+                        return control.containerColorProperty();
+                    }
+                };
+
+        /// CSS metadata for the toggle icon button content paint.
+        private static final CssMetaData<M3IconToggleButton, @Nullable Paint> CONTENT_COLOR =
+                new CssMetaData<>(
+                        "-m3-content-color",
+                        PaintConverter.getInstance(),
+                        DEFAULT_CONTENT_COLOR
+                ) {
+                    /// Returns whether CSS may assign the property.
+                    @Override
+                    public boolean isSettable(M3IconToggleButton control) {
+                        return M3Css.isSettable(control.contentColorProperty());
+                    }
+
+                    /// Returns the styleable content paint property.
+                    @Override
+                    public StyleableProperty<@Nullable Paint> getStyleableProperty(M3IconToggleButton control) {
+                        return control.contentColorProperty();
+                    }
+                };
+
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_HEIGHT =
                 new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
@@ -730,6 +869,8 @@ public final class M3IconToggleButton extends ButtonBase {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
+            styleables.add(CONTAINER_COLOR);
+            styleables.add(CONTENT_COLOR);
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(CONTAINER_WIDTH);
             styleables.add(CONTAINER_SHAPE);

@@ -802,6 +802,7 @@ public final class M3FXDemoApp extends Application {
         scrollPane.getStyleClass().add("demo-scroll-pane");
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        scrollPane.setFocusTraversable(false);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         return scrollPane;

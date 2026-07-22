@@ -52,15 +52,14 @@
     -fx-max-height: 18px;
 }
 
-.m3-segmented-button-selection-indicator-backdrop {
-    -fx-background-color: -m3-color-secondary-container;
-    -fx-background-insets: 0;
-}
-
 .m3-segmented-button-selection-indicator-mark {
     -fx-background-color: -m3-color-on-secondary-container;
     -fx-shape: "M9 16.2 4.8 12 3.4 13.4 9 19 21 7 19.6 5.6z";
     -fx-scale-shape: true;
+}
+
+.m3-segmented-button:selected .m3-segmented-button-replaced-graphic {
+    -fx-opacity: 0;
 }
 
 .m3-segmented-button .m3-icon-graphic {
@@ -124,10 +123,6 @@
 .m3-segmented-button:selected:disabled .m3-segmented-button-selection-container {
     -fx-background-color: -m3-state-disabled-container-color;
     -fx-opacity: 1;
-}
-
-.m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-backdrop {
-    -fx-background-color: -m3-state-disabled-container-color;
 }
 
 .m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-mark {

@@ -27,6 +27,10 @@ import java.util.Objects;
 /// method must replace every item-dependent value because a later call may represent an unrelated data item.
 /// Applications normally customize the cell factory rather than creating cells outside an [M3ListView].
 ///
+/// Cells and their retained list items do not participate directly in scene Tab traversal. The owning list view is
+/// one traversal stop and keeps native focus while a cell represents its logical focused row. This avoids exposing
+/// only the currently materialized portion of a virtualized list to the scene traversal engine.
+///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 ///
 /// @param <T> the item type rendered by this cell
@@ -60,6 +64,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
         }
 
         setAccessibleRole(AccessibleRole.LIST_ITEM);
+        setFocusTraversable(false);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setText(null);
     }

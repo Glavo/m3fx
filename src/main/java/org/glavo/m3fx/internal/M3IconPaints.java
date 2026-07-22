@@ -81,6 +81,20 @@ public final class M3IconPaints {
         return paintProperty;
     }
 
+    /// Returns whether a node exposes the M3FX icon paint channels.
+    ///
+    /// This query does not allocate either channel. Containers use it before supplying inherited paint so arbitrary
+    /// graphic nodes do not acquire unused implementation properties.
+    ///
+    /// @param node the node to inspect
+    /// @return `true` if the node initialized an M3FX semantic paint channel
+    /// @throws NullPointerException if `node` is `null`
+    public static boolean supportsInheritedPaint(Node node) {
+        Objects.requireNonNull(node, "node");
+        return node.hasProperties()
+                && node.getProperties().get(SEMANTIC_PAINT_KEY) instanceof StyleableObjectProperty<?>;
+    }
+
     /// Returns the lazily allocated paint supplied by a containing component.
     ///
     /// @param icon the icon node

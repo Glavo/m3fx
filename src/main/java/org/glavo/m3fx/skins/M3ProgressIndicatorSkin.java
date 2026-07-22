@@ -66,7 +66,16 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private static final int CIRCULAR_TRACK_SAMPLE_STEPS = 72;
 
     /// The fixed sample count for circular active indicator paths.
-    private static final int CIRCULAR_INDICATOR_SAMPLE_STEPS = 32;
+    private static final int CIRCULAR_INDICATOR_SAMPLE_STEPS = 72;
+
+    /// The minimum whole-wave count used to preserve the expressive circular silhouette.
+    private static final int MIN_CIRCULAR_WAVE_COUNT = 5;
+
+    /// The maximum whole-wave count that retains at least four samples per wave.
+    private static final int MAX_CIRCULAR_WAVE_COUNT = CIRCULAR_INDICATOR_SAMPLE_STEPS / 4;
+
+    /// The time required for one wave crest to advance by one wavelength.
+    private static final double WAVE_PHASE_CYCLE_MILLIS = 1000.0;
 
     /// The inactive track arc with gaps around the active indicator.
     private final Arc track = new Arc();
@@ -115,11 +124,11 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The animated active arc sweep fraction.
     private double indeterminateSweepFraction = INDETERMINATE_MIN_SWEEP_FRACTION;
 
-    /// The current normalized indeterminate cycle fraction used as the expressive wave phase.
-    private double indeterminateCycleFraction;
+    /// The current normalized expressive wave phase, measured in complete wavelengths.
+    private double wavePhaseCycles;
 
-    /// The reusable indeterminate phase transition.
-    private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
+    /// The reusable activity transition for indeterminate geometry and determinate wave propagation.
+    private final ActivityTransition activityAnimation = new ActivityTransition();
 
     /// Whether the current inherited motion settings require reduced-motion rendering.
     private boolean reducedMotion;
@@ -140,6 +149,12 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
+
+    /// Reconfigures activity when expressive wave mode changes and requests fresh geometry.
+    private final InvalidationListener waveModeInvalidation = observable -> {
+        getSkinnable().requestLayout();
+        updateProgressAnimation(false);
+    };
 
     /// Creates a progress indicator skin.
     ///
@@ -173,10 +188,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
         control.waveIndicatorSizeProperty().addListener(layoutInvalidation);
-        control.waveAmplitudeProperty().addListener(layoutInvalidation);
+        control.waveAmplitudeProperty().addListener(waveModeInvalidation);
         control.wavelengthProperty().addListener(layoutInvalidation);
         control.trackGapProperty().addListener(layoutInvalidation);
-        determinateAnimation.setOnFinished(event -> motionSettingsObserver.stop());
+        determinateAnimation.setOnFinished(event -> updateProgressAnimation(false));
         updateProgressAnimation(false);
     }
 
@@ -186,14 +201,14 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         M3ProgressIndicator progressIndicator = getSkinnable();
         determinateAnimation.stop();
         determinateAnimation.setOnFinished(null);
-        indeterminateAnimation.stop();
+        activityAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
         progressIndicator.progressProperty().removeListener(progressInvalidation);
         motionSettingsObserver.dispose();
         progressIndicator.trackThicknessProperty().removeListener(layoutInvalidation);
         progressIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
         progressIndicator.waveIndicatorSizeProperty().removeListener(layoutInvalidation);
-        progressIndicator.waveAmplitudeProperty().removeListener(layoutInvalidation);
+        progressIndicator.waveAmplitudeProperty().removeListener(waveModeInvalidation);
         progressIndicator.wavelengthProperty().removeListener(layoutInvalidation);
         progressIndicator.trackGapProperty().removeListener(layoutInvalidation);
         getChildren().removeAll(track, indicator, waveTrack, waveIndicator);
@@ -272,7 +287,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                     progressIndicator.getWavelength(),
                     start,
                     start + sweepFraction,
-                    indeterminateCycleFraction
+                    wavePhaseCycles
             );
             return;
         }
@@ -288,7 +303,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                 progressIndicator.getWavelength(),
                 0.0,
                 displayed,
-                0.0
+                wavePhaseCycles
         );
     }
 
@@ -336,24 +351,30 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             M3ProgressIndicator progressIndicator = getSkinnable();
             reducedMotion = !M3Animation.areAnimationsEnabled(progressIndicator);
             double progress = progressIndicator.getProgress();
+            boolean activityPaused = shouldPauseActivityAnimations();
             if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
                 determinateAnimation.stop();
-                if (shouldPauseActivityAnimations()) {
-                    indeterminateAnimation.stop();
+                if (activityPaused) {
+                    activityAnimation.stop();
                     resetIndeterminateGeometry();
                 } else {
-                    startIndeterminateAnimation();
+                    startActivityAnimation();
                 }
                 updateAnimatedVisuals();
                 motionSettingsObserver.start();
             } else {
-                indeterminateAnimation.stop();
                 resetIndeterminateGeometry();
                 animateDisplayedProgress(
                         clamp(progress),
-                        animateDeterminateProgress && !shouldPauseActivityAnimations()
+                        animateDeterminateProgress && !activityPaused
                 );
-                if (determinateAnimation.getStatus() == Animation.Status.RUNNING) {
+                boolean waveVisible = isDeterminateWaveVisible(progress);
+                if (waveVisible && !reducedMotion && !activityPaused) {
+                    startActivityAnimation();
+                } else {
+                    activityAnimation.stop();
+                }
+                if (determinateAnimation.getStatus() == Animation.Status.RUNNING || waveVisible) {
                     motionSettingsObserver.start();
                 } else {
                     motionSettingsObserver.stop();
@@ -371,13 +392,24 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         return window == null || !window.isShowing();
     }
 
-    /// Starts the indeterminate linear phase loop.
-    private void startIndeterminateAnimation() {
-        indeterminateAnimation.stop();
-        indeterminateAnimation.configure(
-                M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration()
-        );
-        indeterminateAnimation.playFromStart();
+    /// Starts the shared linear activity loop when it is not already running with the current duration.
+    private void startActivityAnimation() {
+        Duration duration = M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration();
+        if (activityAnimation.getStatus() == Animation.Status.RUNNING
+                && activityAnimation.getCycleDuration().equals(duration)) {
+            return;
+        }
+        activityAnimation.configure(duration);
+        activityAnimation.playFromStart();
+    }
+
+    /// Returns whether determinate expressive wave geometry is currently visible.
+    private boolean isDeterminateWaveVisible(double targetProgress) {
+        if (getSkinnable().getWaveAmplitude() <= 0.0) {
+            return false;
+        }
+        return amplitudeForProgress(clamp(targetProgress)) > 0.0
+                || amplitudeForProgress(displayedProgress.get()) > 0.0;
     }
 
     /// Animates the displayed determinate progress value.
@@ -400,7 +432,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// Updates circular indeterminate geometry from the AndroidX global, additional, and sweep animations.
     private void updateIndeterminateGeometry(double cycleFraction) {
-        indeterminateCycleFraction = cycleFraction;
         if (reducedMotion) {
             indeterminateStartFraction = cycleFraction;
             indeterminateSweepFraction = BASIC_INDETERMINATE_SWEEP_FRACTION;
@@ -432,7 +463,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         );
     }
 
-    /// Returns the four linear quarter-turn pulses used by AndroidX circular indeterminate progress.
+    /// Returns the four emphasized-decelerate quarter-turn pulses used by AndroidX circular indeterminate progress.
     static double additionalRotationDegrees(double cycleFraction) {
         double elapsedMillis = clamp(cycleFraction) * CIRCULAR_INDETERMINATE_REFERENCE_DURATION_MILLIS;
         int pulseIndex = Math.min(
@@ -443,7 +474,15 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double localFraction = clamp(
                 (elapsedMillis - pulseStartMillis) / CIRCULAR_ADDITIONAL_ROTATION_DURATION_MILLIS
         );
-        return (pulseIndex + localFraction) * CIRCULAR_ADDITIONAL_ROTATION_DEGREES;
+        double easedFraction;
+        if (localFraction <= 0.0) {
+            easedFraction = 0.0;
+        } else if (localFraction >= 1.0) {
+            easedFraction = 1.0;
+        } else {
+            easedFraction = M3Motion.EMPHASIZED_DECELERATE.interpolate(0.0, 1.0, localFraction);
+        }
+        return (pulseIndex + easedFraction) * CIRCULAR_ADDITIONAL_ROTATION_DEGREES;
     }
 
     /// Resets circular indeterminate geometry to the seamless cycle origin.
@@ -452,7 +491,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indeterminateSweepFraction = reducedMotion
                 ? BASIC_INDETERMINATE_SWEEP_FRACTION
                 : INDETERMINATE_MIN_SWEEP_FRACTION;
-        indeterminateCycleFraction = 0.0;
     }
 
     /// Returns the resolved active wave amplitude for a determinate progress value.
@@ -503,7 +541,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double wavelength,
             double start,
             double end,
-            double phase
+            double phaseCycles
     ) {
         if (radius <= 0.0 || end <= start) {
             path.setVisible(false);
@@ -521,7 +559,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                 wavelength,
                 start,
                 end,
-                phase
+                phaseCycles
         );
     }
 
@@ -536,10 +574,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double wavelength,
             double start,
             double end,
-            double phase
+            double phaseCycles
     ) {
-        double circumference = Math.max(1.0, Math.PI * 2.0 * radius);
-        double waves = Math.max(1.0, circumference / Math.max(1.0, wavelength));
+        int waveCount = circularWaveCount(radius, wavelength);
         int resolvedSteps = Math.max(4, steps);
         ObservableList<PathElement> elements = path.getElements();
         ensureSampledPathElements(elements, resolvedSteps + 1);
@@ -547,11 +584,71 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double fraction = (double) i / (double) resolvedSteps;
             double progress = start + (end - start) * fraction;
             double angle = Math.toRadians(90.0 - 360.0 * progress);
-            double waveRadius = radius + Math.sin((progress * waves + phase) * Math.PI * 2.0) * amplitude;
+            double waveRadius = circularWaveRadius(
+                    radius,
+                    amplitude,
+                    waveCount,
+                    progress,
+                    phaseCycles
+            );
             double x = centerX + Math.cos(angle) * waveRadius;
             double y = centerY - Math.sin(angle) * waveRadius;
             setSampledPathPoint(elements.get(i), x, y);
         }
+    }
+
+    /// Returns a whole-wave count that closes seamlessly around the circular indicator.
+    ///
+    /// @param radius the center-line radius
+    /// @param wavelength the requested arc length between adjacent crests
+    /// @return the bounded number of complete waves around the circle
+    static int circularWaveCount(double radius, double wavelength) {
+        double circumference = Math.max(0.0, Math.PI * 2.0 * radius);
+        int waveCount = (int) Math.floor(circumference / Math.max(1.0, wavelength));
+        return Math.max(MIN_CIRCULAR_WAVE_COUNT, Math.min(MAX_CIRCULAR_WAVE_COUNT, waveCount));
+    }
+
+    /// Returns the radial coordinate for one point of a circular traveling wave.
+    ///
+    /// @param radius the unmodulated center-line radius
+    /// @param amplitude the maximum radial displacement
+    /// @param waveCount the complete number of waves around the circle
+    /// @param progress the clockwise position around the full circle
+    /// @param phaseCycles the propagated offset measured in wavelengths
+    /// @return the modulated radius at `progress`
+    static double circularWaveRadius(
+            double radius,
+            double amplitude,
+            int waveCount,
+            double progress,
+            double phaseCycles
+    ) {
+        double angle = (progress * waveCount - phaseCycles) * Math.PI * 2.0;
+        return radius + Math.sin(angle) * amplitude;
+    }
+
+    /// Advances a normalized wave phase from consecutive fractions of a repeating activity cycle.
+    ///
+    /// @param phaseCycles the current phase measured in wavelengths
+    /// @param previousCycleFraction the preceding activity-cycle fraction
+    /// @param currentCycleFraction the current activity-cycle fraction
+    /// @param cycleDurationMillis the complete activity-cycle duration in milliseconds
+    /// @return the advanced phase normalized to `[0, 1)`
+    static double propagatedWavePhase(
+            double phaseCycles,
+            double previousCycleFraction,
+            double currentCycleFraction,
+            double cycleDurationMillis
+    ) {
+        double previous = clamp(previousCycleFraction);
+        double current = clamp(currentCycleFraction);
+        double elapsedFraction = current - previous;
+        if (elapsedFraction < 0.0) {
+            elapsedFraction += 1.0;
+        }
+        double elapsedMillis = elapsedFraction * Math.max(0.0, cycleDurationMillis);
+        double propagated = phaseCycles + elapsedMillis / WAVE_PHASE_CYCLE_MILLIS;
+        return propagated - Math.floor(propagated);
     }
 
     /// Ensures that a sampled path contains one `MoveTo` followed by reusable `LineTo` elements.
@@ -609,11 +706,17 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
-    /// Reuses one transition for the indeterminate circular phase loop.
+    /// Reuses one transition for indeterminate geometry and expressive wave propagation.
     @NotNullByDefault
-    private final class IndeterminateTransition extends Transition {
+    private final class ActivityTransition extends Transition {
+        /// The configured activity cycle duration cached for allocation-free phase propagation.
+        private double cycleDurationMillis;
+
+        /// The cycle fraction observed during the preceding pulse.
+        private double previousCycleFraction;
+
         /// Creates a linearly timed indefinite transition.
-        private IndeterminateTransition() {
+        private ActivityTransition() {
             setInterpolator(M3Motion.LINEAR);
             setCycleCount(Animation.INDEFINITE);
         }
@@ -624,12 +727,26 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         private void configure(Duration duration) {
             stop();
             setCycleDuration(duration);
+            cycleDurationMillis = Math.max(0.0, duration.toMillis());
+            previousCycleFraction = 0.0;
         }
 
-        /// Updates the primitive phase and active geometry for one animation pulse.
+        /// Updates primitive phase and active geometry without allocating per-pulse objects.
         @Override
         protected void interpolate(double fraction) {
-            updateIndeterminateGeometry(fraction);
+            boolean indeterminate = getSkinnable().getProgress() == M3ProgressIndicator.INDETERMINATE_PROGRESS;
+            if (!indeterminate && !reducedMotion && getSkinnable().getWaveAmplitude() > 0.0) {
+                wavePhaseCycles = propagatedWavePhase(
+                        wavePhaseCycles,
+                        previousCycleFraction,
+                        fraction,
+                        cycleDurationMillis
+                );
+            }
+            previousCycleFraction = fraction;
+            if (indeterminate) {
+                updateIndeterminateGeometry(fraction);
+            }
             updateAnimatedVisuals();
         }
     }

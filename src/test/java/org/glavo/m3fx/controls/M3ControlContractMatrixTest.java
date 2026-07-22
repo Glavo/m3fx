@@ -1624,7 +1624,12 @@ final class M3ControlContractMatrixTest {
         assertRegionFill(selectedSegment, Color.TRANSPARENT);
         assertBorderColor(selectedSegment, disabledContainer);
         assertEquals(onSurface, selectedSegment.getTextFill());
-        assertEquals(0.38, selectedSegmentGraphic.getOpacity(), 0.0001);
+        assertEquals(0.0, selectedSegmentGraphic.getOpacity(), 0.0001);
+        assertEquals(
+                0.38,
+                lookupRegion(selectedSegment, ".m3-segmented-button-selection-indicator-mark").getOpacity(),
+                0.0001
+        );
         assertRegionFill(segmentedButtonSelectionContainer(selectedSegment), disabledContainer);
         assertEquals(1.0, segmentedButtonSelectionContainer(selectedSegment).getOpacity(), 0.0001);
 
@@ -9730,6 +9735,7 @@ final class M3ControlContractMatrixTest {
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3MotionSettings.setReducedMotionRequested(target, true);
 
                     Stage stage = new Stage();
                     stage.setScene(new Scene(new Pane(target), 240.0, 120.0));
@@ -9752,6 +9758,8 @@ final class M3ControlContractMatrixTest {
 
                         assertFalse(tooltip.isShowing());
                     } finally {
+                        tooltip.hide();
+                        M3MotionSettings.setReducedMotionRequested(target, false);
                         stage.close();
                     }
                 }
@@ -10217,6 +10225,7 @@ final class M3ControlContractMatrixTest {
 
             HBox root = new HBox(240.0, firstOwner, secondOwner);
             root.setPadding(new Insets(120.0));
+            M3MotionSettings.setReducedMotionRequested(root, true);
             try {
                 stage.setScene(new Scene(root, 960.0, 420.0));
                 stage.show();
@@ -10263,6 +10272,7 @@ final class M3ControlContractMatrixTest {
                 M3Tooltip.uninstall(secondOwner, secondTooltip);
                 firstTooltip.hide();
                 secondTooltip.hide();
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -10301,6 +10311,7 @@ final class M3ControlContractMatrixTest {
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3MotionSettings.setReducedMotionRequested(target, true);
 
                     Pane root = new Pane(target);
                     root.setFocusTraversable(true);
@@ -10332,6 +10343,7 @@ final class M3ControlContractMatrixTest {
                         tooltipRoot.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
                     } finally {
                         tooltip.hide();
+                        M3MotionSettings.setReducedMotionRequested(target, false);
                         stage.close();
                     }
                 }
@@ -10423,6 +10435,7 @@ final class M3ControlContractMatrixTest {
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3MotionSettings.setReducedMotionRequested(target, true);
 
                     Pane root = new Pane(target);
                     stage.setScene(new Scene(root, 240.0, 120.0));
@@ -10452,6 +10465,7 @@ final class M3ControlContractMatrixTest {
                         assertTrue(target.isFocused());
                     } finally {
                         tooltip.hide();
+                        M3MotionSettings.setReducedMotionRequested(target, false);
                         stage.close();
                     }
                 }
@@ -10490,6 +10504,7 @@ final class M3ControlContractMatrixTest {
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3MotionSettings.setReducedMotionRequested(target, true);
 
                     Pane root = new Pane(target);
                     stage.setScene(new Scene(root, 260.0, 140.0));
@@ -10543,6 +10558,7 @@ final class M3ControlContractMatrixTest {
                         assertTrue(target.isFocused());
                     } finally {
                         tooltip.hide();
+                        M3MotionSettings.setReducedMotionRequested(target, false);
                         stage.close();
                     }
                 }
@@ -14375,6 +14391,7 @@ final class M3ControlContractMatrixTest {
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3MotionSettings.setReducedMotionRequested(details, true);
                     M3Surface surface = surface(menuButton);
                     Scene scene = new Scene(surface, 360.0, 220.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
@@ -14426,6 +14443,7 @@ final class M3ControlContractMatrixTest {
                     } finally {
                         tooltip.hide();
                         menuButton.hideMenu();
+                        M3MotionSettings.setReducedMotionRequested(details, false);
                         stage.close();
                     }
                 }
@@ -18285,6 +18303,18 @@ final class M3ControlContractMatrixTest {
             assertEquals(graphicBounds.getCenterX(), indicatorBounds.getCenterX(), 0.0001);
             assertEquals(graphicBounds.getCenterY(), indicatorBounds.getCenterY(), 0.0001);
             assertSame(graphic, graphicButton.getGraphic());
+            assertEquals(0.0, graphic.getOpacity(), 0.0001);
+            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+            graphicButton.pseudoClassStateChanged(hover, true);
+            root.applyCss();
+            assertEquals(0.0, graphic.getOpacity(), 0.0001);
+            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+
+            graphicButton.setSelected(false);
+            root.applyCss();
+            assertEquals(1.0, graphic.getOpacity(), 0.0001);
         });
     }
 
@@ -32653,7 +32683,7 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that selected segmented button backgrounds keep rounded end caps in rendered output.
+    /// Verifies that a hovered selected segment keeps rounded caps without a square behind its check indicator.
     @Tier2Test
     @Test
     void segmentedButtonSnapshotKeepsSelectedEndRounded() {
@@ -32661,6 +32691,7 @@ final class M3ControlContractMatrixTest {
             M3SegmentedButton day = new M3SegmentedButton("Day");
             M3SegmentedButton week = new M3SegmentedButton("Week");
             M3SegmentedButton month = createSegmentedButton("Month", true);
+            month.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
             M3SegmentedButtonGroup group = segmentedButtonGroup(day, week, month);
             group.setPrefSize(240.0, 40.0);
             FlowPane root = new FlowPane(group);
@@ -32693,7 +32724,7 @@ final class M3ControlContractMatrixTest {
                     "build",
                     "reports",
                     "m3fx-visual",
-                    "visual-segmented-selected-border.png"
+                    "visual-segmented-selected-hover.png"
             ));
         });
     }

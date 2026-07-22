@@ -65,6 +65,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The preferred distance between sampled points in a linear expressive wave.
     private static final double LINEAR_WAVE_SAMPLE_LENGTH = 4.0;
 
+    /// The time required for an expressive crest to travel one complete wavelength.
+    private static final double WAVE_PHASE_CYCLE_MILLIS = 1000.0;
+
     /// The clipped visual container.
     private final Pane container = new Pane();
 
@@ -136,11 +139,11 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The second indeterminate segment end fraction.
     private double secondIndeterminateEnd;
 
-    /// The current normalized indeterminate cycle fraction used as the expressive wave phase.
-    private double indeterminateCycleFraction;
+    /// The current normalized expressive wave phase, measured in complete wavelengths.
+    private double wavePhaseCycles;
 
-    /// The reusable indeterminate segment transition.
-    private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
+    /// The reusable activity transition for indeterminate segments and determinate wave propagation.
+    private final ActivityTransition activityAnimation = new ActivityTransition();
 
     /// Whether the current inherited motion settings require reduced-motion rendering.
     private boolean reducedMotion;
@@ -161,6 +164,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
+
+    /// Reconfigures activity when expressive wave mode changes and requests fresh geometry.
+    private final InvalidationListener waveModeInvalidation = observable -> {
+        getSkinnable().requestLayout();
+        updateProgressAnimation(false);
+    };
 
     /// Creates a progress bar skin.
     ///
@@ -208,12 +217,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.trackShapeProperty().addListener(layoutInvalidation);
-        control.waveAmplitudeProperty().addListener(layoutInvalidation);
+        control.waveAmplitudeProperty().addListener(waveModeInvalidation);
         control.wavelengthProperty().addListener(layoutInvalidation);
         control.indeterminateWavelengthProperty().addListener(layoutInvalidation);
         control.trackGapProperty().addListener(layoutInvalidation);
         control.stopSizeProperty().addListener(layoutInvalidation);
-        determinateAnimation.setOnFinished(event -> motionSettingsObserver.stop());
+        determinateAnimation.setOnFinished(event -> updateProgressAnimation(false));
         updateProgressAnimation(false);
     }
 
@@ -223,13 +232,13 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         M3ProgressBar progressBar = getSkinnable();
         determinateAnimation.stop();
         determinateAnimation.setOnFinished(null);
-        indeterminateAnimation.stop();
+        activityAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
         progressBar.progressProperty().removeListener(progressInvalidation);
         motionSettingsObserver.dispose();
         progressBar.trackThicknessProperty().removeListener(layoutInvalidation);
         progressBar.trackShapeProperty().removeListener(layoutInvalidation);
-        progressBar.waveAmplitudeProperty().removeListener(layoutInvalidation);
+        progressBar.waveAmplitudeProperty().removeListener(waveModeInvalidation);
         progressBar.wavelengthProperty().removeListener(layoutInvalidation);
         progressBar.indeterminateWavelengthProperty().removeListener(layoutInvalidation);
         progressBar.trackGapProperty().removeListener(layoutInvalidation);
@@ -366,7 +375,15 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double displayed = displayedProgress.get();
         double progressWidth = width * displayed;
         double activeAmplitude = amplitudeForProgress(displayed) * amplitude;
-        layoutWavePath(waveBar, 0.0, progressWidth, centerY, activeAmplitude, getSkinnable().getWavelength(), 0.0);
+        layoutWavePath(
+                waveBar,
+                0.0,
+                progressWidth,
+                centerY,
+                activeAmplitude,
+                getSkinnable().getWavelength(),
+                wavePhaseCycles
+        );
 
         double stopDiameter = Math.min(thickness, getSkinnable().getStopSize());
         double remaining = width - progressWidth;
@@ -447,10 +464,22 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         for (int i = 0; i <= steps; i++) {
             double fraction = (double) i / (double) steps;
             double x = startX + (endX - startX) * fraction;
-            double angle = (x / safeWavelength + phase) * Math.PI * 2.0;
-            double y = centerY + Math.sin(angle) * amplitude;
+            double y = centerY + linearWaveDisplacement(x, safeWavelength, phase, amplitude);
             setSampledPathPoint(elements.get(i), x, y);
         }
+    }
+
+    /// Returns the signed displacement of a right-travelling linear wave.
+    ///
+    /// @param x the horizontal position in control coordinates
+    /// @param wavelength the distance between adjacent crests
+    /// @param phaseCycles the propagated offset measured in wavelengths
+    /// @param amplitude the maximum signed displacement from the center line
+    /// @return the signed vertical displacement at `x`
+    static double linearWaveDisplacement(double x, double wavelength, double phaseCycles, double amplitude) {
+        double safeWavelength = Math.max(1.0, wavelength);
+        double angle = (x / safeWavelength - phaseCycles) * Math.PI * 2.0;
+        return Math.sin(angle) * amplitude;
     }
 
     /// Ensures that a sampled path contains one `MoveTo` followed by reusable `LineTo` elements.
@@ -631,7 +660,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 centerY,
                 amplitude,
                 getSkinnable().getIndeterminateWavelength(),
-                indeterminateCycleFraction,
+                wavePhaseCycles,
                 Math.max(2, (int) Math.ceil(width / LINEAR_WAVE_SAMPLE_LENGTH))
         );
     }
@@ -645,7 +674,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Updates both indeterminate segments for one normalized AndroidX cycle fraction.
     private void updateIndeterminateSegments(double fraction) {
-        indeterminateCycleFraction = fraction;
         if (reducedMotion) {
             firstIndeterminateStart = Math.max(0.0, fraction * 1.32 - 0.32);
             firstIndeterminateEnd = Math.min(1.0, firstIndeterminateStart + 0.32);
@@ -694,24 +722,30 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             M3ProgressBar progressBar = getSkinnable();
             reducedMotion = !M3Animation.areAnimationsEnabled(progressBar);
             double progress = progressBar.getProgress();
+            boolean activityPaused = shouldPauseActivityAnimations();
             if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
                 determinateAnimation.stop();
-                if (shouldPauseActivityAnimations()) {
-                    indeterminateAnimation.stop();
+                if (activityPaused) {
+                    activityAnimation.stop();
                     resetIndeterminateSegments();
                 } else {
-                    startIndeterminateAnimation();
+                    startActivityAnimation();
                 }
                 updateAnimatedVisuals();
                 motionSettingsObserver.start();
             } else {
-                indeterminateAnimation.stop();
                 resetIndeterminateSegments();
                 animateDisplayedProgress(
                         clamp(progress),
-                        animateDeterminateProgress && !shouldPauseActivityAnimations()
+                        animateDeterminateProgress && !activityPaused
                 );
-                if (determinateAnimation.getStatus() == Animation.Status.RUNNING) {
+                boolean waveVisible = isDeterminateWaveVisible(progress);
+                if (waveVisible && !reducedMotion && !activityPaused) {
+                    startActivityAnimation();
+                } else {
+                    activityAnimation.stop();
+                }
+                if (determinateAnimation.getStatus() == Animation.Status.RUNNING || waveVisible) {
                     motionSettingsObserver.start();
                 } else {
                     motionSettingsObserver.stop();
@@ -729,13 +763,24 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         return window == null || !window.isShowing();
     }
 
-    /// Starts the indeterminate linear segment loop.
-    private void startIndeterminateAnimation() {
-        indeterminateAnimation.stop();
-        indeterminateAnimation.configure(
-                M3Animation.motionBehavior(getSkinnable()).linearProgressIndeterminateCycleDuration()
-        );
-        indeterminateAnimation.playFromStart();
+    /// Starts the shared linear activity loop when it is not already running with the current duration.
+    private void startActivityAnimation() {
+        Duration duration = M3Animation.motionBehavior(getSkinnable()).linearProgressIndeterminateCycleDuration();
+        if (activityAnimation.getStatus() == Animation.Status.RUNNING
+                && activityAnimation.getCycleDuration().equals(duration)) {
+            return;
+        }
+        activityAnimation.configure(duration);
+        activityAnimation.playFromStart();
+    }
+
+    /// Returns whether determinate expressive wave geometry is currently visible.
+    private boolean isDeterminateWaveVisible(double targetProgress) {
+        if (getSkinnable().getWaveAmplitude() <= 0.0) {
+            return false;
+        }
+        return amplitudeForProgress(clamp(targetProgress)) > 0.0
+                || amplitudeForProgress(displayedProgress.get()) > 0.0;
     }
 
     /// Animates the displayed determinate progress value.
@@ -754,6 +799,51 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Returns the initial displayed progress value for a public progress value.
     private static double initialDisplayedProgress(double progress) {
         return progress == M3ProgressBar.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
+    }
+
+    /// Advances a normalized wave phase from consecutive fractions of a repeating activity cycle.
+    ///
+    /// @param phaseCycles the current phase measured in wavelengths
+    /// @param previousCycleFraction the preceding activity-cycle fraction
+    /// @param currentCycleFraction the current activity-cycle fraction
+    /// @param cycleDurationMillis the complete activity-cycle duration in milliseconds
+    /// @return the advanced phase normalized to `[0, 1)`
+    static double propagatedWavePhase(
+            double phaseCycles,
+            double previousCycleFraction,
+            double currentCycleFraction,
+            double cycleDurationMillis
+    ) {
+        double previous = clamp(previousCycleFraction);
+        double current = clamp(currentCycleFraction);
+        double elapsedFraction = current - previous;
+        if (elapsedFraction < 0.0) {
+            elapsedFraction += 1.0;
+        }
+        double elapsedMillis = elapsedFraction * Math.max(0.0, cycleDurationMillis);
+        double propagated = phaseCycles + elapsedMillis / WAVE_PHASE_CYCLE_MILLIS;
+        return propagated - Math.floor(propagated);
+    }
+
+    /// Resolves the AndroidX indeterminate wave offset for one activity-cycle fraction.
+    ///
+    /// AndroidX advances three complete wavelengths during each linear indeterminate cycle and
+    /// applies the emphasized accelerate easing used by the segment keyframes. Reducing the result
+    /// to a single wavelength keeps the repeating path continuous at each whole-wave boundary.
+    ///
+    /// @param cycleFraction the current normalized indeterminate cycle fraction
+    /// @return the normalized wave phase in `[0, 1)`
+    static double indeterminateWavePhase(double cycleFraction) {
+        if (cycleFraction <= 0.0 || cycleFraction >= 1.0) {
+            return 0.0;
+        }
+        double easedFraction = M3Motion.EMPHASIZED_ACCELERATE.interpolate(
+                0.0,
+                1.0,
+                cycleFraction
+        );
+        double phase = easedFraction * 3.0;
+        return phase - Math.floor(phase);
     }
 
     /// Clamps a progress value to the visible range.
@@ -778,11 +868,17 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         rectangle.setArcHeight(radius * 2.0);
     }
 
-    /// Reuses one transition for the indeterminate linear segment loop.
+    /// Reuses one transition for indeterminate segments and expressive wave propagation.
     @NotNullByDefault
-    private final class IndeterminateTransition extends Transition {
+    private final class ActivityTransition extends Transition {
+        /// The configured activity cycle duration cached for allocation-free phase propagation.
+        private double cycleDurationMillis;
+
+        /// The cycle fraction observed during the preceding pulse.
+        private double previousCycleFraction;
+
         /// Creates a linearly timed indefinite transition.
-        private IndeterminateTransition() {
+        private ActivityTransition() {
             setInterpolator(M3Motion.LINEAR);
             setCycleCount(Animation.INDEFINITE);
         }
@@ -793,16 +889,33 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         private void configure(Duration duration) {
             stop();
             setCycleDuration(duration);
+            cycleDurationMillis = Math.max(0.0, duration.toMillis());
+            previousCycleFraction = 0.0;
         }
 
-        /// Updates the primitive segment position and active geometry for one animation pulse.
+        /// Updates primitive phase and active geometry without allocating per-pulse objects.
         @Override
         protected void interpolate(double fraction) {
-            double shiftedFraction = fraction + 0.40;
-            if (shiftedFraction >= 1.0) {
-                shiftedFraction -= 1.0;
+            boolean indeterminate = getSkinnable().getProgress() == M3ProgressBar.INDETERMINATE_PROGRESS;
+            if (!indeterminate && !reducedMotion && getSkinnable().getWaveAmplitude() > 0.0) {
+                wavePhaseCycles = propagatedWavePhase(
+                        wavePhaseCycles,
+                        previousCycleFraction,
+                        fraction,
+                        cycleDurationMillis
+                );
             }
-            updateIndeterminateSegments(shiftedFraction);
+            previousCycleFraction = fraction;
+            if (indeterminate) {
+                double shiftedFraction = fraction + 0.40;
+                if (shiftedFraction >= 1.0) {
+                    shiftedFraction -= 1.0;
+                }
+                if (!reducedMotion && getSkinnable().getWaveAmplitude() > 0.0) {
+                    wavePhaseCycles = indeterminateWavePhase(shiftedFraction);
+                }
+                updateIndeterminateSegments(shiftedFraction);
+            }
             updateAnimatedVisuals();
         }
     }

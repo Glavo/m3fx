@@ -6,6 +6,8 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-leading:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-leading:pressed {
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface;
@@ -17,6 +19,8 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-trailing:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-trailing:pressed {
     -m3-button-icon-color: -m3-color-on-surface-variant;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -35,6 +39,7 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-leading:disabled,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:top-app-bar-trailing:disabled {
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -44,6 +49,8 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:pressed {
     -m3-button-icon-color: -m3-color-on-surface-variant;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -55,7 +62,9 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:selected:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:selected:pressed {
     -m3-button-icon-color: -m3-color-on-secondary-container;
-    -fx-background-color: -m3-color-secondary-container;
+    -m3-container-color: -m3-color-secondary-container;
+    -m3-content-color: -m3-color-on-secondary-container;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
@@ -66,6 +75,7 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:pressed {
     -m3-button-icon-color: -m3-color-on-primary-container;
+    -m3-content-color: -m3-color-on-primary-container;
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
@@ -75,7 +85,9 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:selected:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:selected:pressed {
     -m3-button-icon-color: -m3-color-on-surface;
-    -fx-background-color: -m3-color-surface-container;
+    -m3-container-color: -m3-color-surface-container;
+    -m3-content-color: -m3-color-on-surface;
+    -fx-background-color: transparent;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -120,6 +132,7 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:disabled .m3-icon-graphic,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:disabled .m3-icon-graphic {
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
 
@@ -134,6 +147,8 @@
 .m3-icon-toggle-button.m3-icon-toggle-button:pressed,
 .m3-icon-toggle-button.m3-icon-toggle-button:selected {
     -m3-button-icon-color: -m3-color-on-surface-variant;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -m3-container-height: 40px;
     -m3-container-width: 40px;
     -m3-container-shape: 999px;
@@ -263,6 +278,8 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:focused,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:pressed {
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -274,6 +291,8 @@
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:armed,
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:pressed {
     -m3-button-icon-color: -m3-color-primary;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-primary;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-primary;
@@ -284,7 +303,9 @@
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:focused,
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:armed,
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:pressed {
-    -fx-background-color: -m3-color-surface-container;
+    -m3-container-color: -m3-color-surface-container;
+    -m3-content-color: -m3-color-on-surface-variant;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-surface-variant;
 }
@@ -295,7 +316,9 @@
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:armed,
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:pressed {
     -m3-button-icon-color: -m3-color-on-primary;
-    -fx-background-color: -m3-color-primary;
+    -m3-container-color: -m3-color-primary;
+    -m3-content-color: -m3-color-on-primary;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-primary;
 }
@@ -306,7 +329,9 @@
 .m3-icon-toggle-button.m3-tonal-icon-toggle-button:armed,
 .m3-icon-toggle-button.m3-tonal-icon-toggle-button:pressed {
     -m3-button-icon-color: -m3-color-on-secondary-container;
-    -fx-background-color: -m3-color-secondary-container;
+    -m3-container-color: -m3-color-secondary-container;
+    -m3-content-color: -m3-color-on-secondary-container;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
@@ -317,7 +342,9 @@
 .m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:armed,
 .m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:pressed {
     -m3-button-icon-color: -m3-color-on-secondary;
-    -fx-background-color: -m3-color-secondary;
+    -m3-container-color: -m3-color-secondary;
+    -m3-content-color: -m3-color-on-secondary;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-secondary;
 }
@@ -327,6 +354,8 @@
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:focused,
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:armed,
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:pressed {
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline-variant;
     -fx-border-width: 1px;
@@ -339,7 +368,9 @@
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:armed,
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:pressed {
     -m3-button-icon-color: -m3-color-inverse-on-surface;
-    -fx-background-color: -m3-color-inverse-surface;
+    -m3-container-color: -m3-color-inverse-surface;
+    -m3-content-color: -m3-color-inverse-on-surface;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-inverse-on-surface;
 }
@@ -401,6 +432,7 @@
 
 .m3-icon-toggle-button:disabled {
     -m3-button-icon-color: -m3-color-on-surface;
+    -m3-content-color: -m3-color-on-surface;
     -fx-opacity: 1;
     -fx-text-fill: -m3-color-on-surface;
 }
@@ -409,12 +441,18 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
+.m3-icon-toggle-button:disabled > .m3-state-layer-container {
+    -fx-opacity: 1;
+}
+
 .m3-icon-toggle-button.m3-standard-icon-toggle-button:disabled {
+    -m3-container-color: transparent;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
 
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:disabled {
+    -m3-container-color: transparent;
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline-variant;
 }
@@ -422,7 +460,8 @@
 .m3-icon-toggle-button.m3-filled-icon-toggle-button:disabled,
 .m3-icon-toggle-button.m3-tonal-icon-toggle-button:disabled,
 .m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:disabled {
-    -fx-background-color: -m3-button-disabled-container-color;
+    -m3-container-color: -m3-button-disabled-container-color;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
 

@@ -39,6 +39,7 @@ import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -102,6 +103,15 @@ public class M3Tooltip extends PopupControl {
 
     /// The owner node currently supplying popup context.
     private @Nullable Node popupContextOwner;
+
+    /// The popup skin node animated by the current visibility transition.
+    private @Nullable Node visibilityNode;
+
+    /// The reusable popup visibility transition, recreated only when the skin node changes.
+    private @Nullable M3NodeTransition visibilityAnimation;
+
+    /// Whether a requested hide is waiting for its exit transition to finish.
+    private boolean hidingAfterAnimation;
 
     /// Whether the current theme value was inherited from the target node hierarchy.
     private boolean themeInherited;
@@ -495,11 +505,18 @@ public class M3Tooltip extends PopupControl {
             stopPopupContextSynchronizer();
             return;
         }
+        boolean wasShowing = isShowing();
+        if (wasShowing) {
+            cancelHideAnimation();
+        }
+        if (!wasShowing) {
+            prepareShowAnimation(ownerNode);
+        }
         try {
             super.show(ownerNode, anchorX, anchorY);
         } catch (RuntimeException | Error exception) {
             try {
-                hide();
+                hideSynchronously();
             } catch (RuntimeException | Error cleanupFailure) {
                 exception.addSuppressed(cleanupFailure);
             }
@@ -507,11 +524,49 @@ public class M3Tooltip extends PopupControl {
             throw exception;
         }
         if (!isShowing()) {
-            hide();
+            hideSynchronously();
             stopPopupContextSynchronizer();
             return;
         }
         syncPopupRootThemeContext(ownerNode);
+        if (!wasShowing) {
+            playShowAnimation(ownerNode);
+        }
+    }
+
+    /// Hides this tooltip after playing its Material exit transition.
+    ///
+    /// Repeated calls while the exit transition is running are ignored. If animation is disabled, the tooltip has
+    /// no usable skin node, or its owner context is no longer available, the popup is hidden synchronously.
+    @Override
+    public void hide() {
+        if (!isShowing()) {
+            resetVisibilityAnimation();
+            return;
+        }
+        if (hidingAfterAnimation) {
+            return;
+        }
+
+        @Nullable Node owner = popupContextOwner;
+        @Nullable Node node = animatedSkinNode();
+        if (owner == null || node == null || !M3Animation.areAnimationsEnabled(owner)) {
+            hideSynchronously();
+            return;
+        }
+
+        M3NodeTransition animation = visibilityTransition(node);
+        hidingAfterAnimation = true;
+        animation.setOnFinished(event -> hideSynchronously());
+        animation.configure(
+                M3Animation.fastEffects(owner),
+                0.0,
+                0.8,
+                0.8,
+                node.getTranslateX(),
+                node.getTranslateY()
+        );
+        M3Animation.playFromStart(owner, animation);
     }
 
     /// Adds base style classes and Material timing defaults.
@@ -522,12 +577,141 @@ public class M3Tooltip extends PopupControl {
         setAutoHide(true);
         setHideOnEscape(true);
         addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            resetVisibilityAnimation();
             stopPopupContextSynchronizer();
             @Nullable WeakReference<M3Tooltip> reference = activeTooltipReference;
             if (reference != null && reference.get() == this) {
                 activeTooltipReference = null;
             }
         });
+    }
+
+    /// Places the popup content at the Material entrance origin before the popup becomes visible.
+    private void prepareShowAnimation(Node owner) {
+        hidingAfterAnimation = false;
+        @Nullable Node node = animatedSkinNode();
+        if (node == null) {
+            return;
+        }
+
+        M3NodeTransition animation = visibilityTransition(node);
+        animation.stop();
+        animation.setOnFinished(null);
+        if (M3Animation.areAnimationsEnabled(owner)) {
+            node.setOpacity(0.0);
+            node.setScaleX(0.8);
+            node.setScaleY(0.8);
+        } else {
+            resetVisibilityNode(node);
+        }
+    }
+
+    /// Plays the Material entrance transition from the prepared popup state.
+    private void playShowAnimation(Node owner) {
+        @Nullable Node node = animatedSkinNode();
+        if (node == null) {
+            return;
+        }
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            resetVisibilityNode(node);
+            return;
+        }
+
+        M3NodeTransition animation = visibilityTransition(node);
+        animation.setOnFinished(event -> {
+            if (!hidingAfterAnimation) {
+                resetVisibilityNode(node);
+            }
+        });
+        animation.configure(
+                M3Animation.fastEffects(owner),
+                1.0,
+                1.0,
+                1.0,
+                node.getTranslateX(),
+                node.getTranslateY()
+        );
+        M3Animation.playFromStart(owner, animation);
+    }
+
+    /// Reverses a running exit transition without closing or recreating the popup.
+    private void cancelHideAnimation() {
+        if (!hidingAfterAnimation || !isShowing()) {
+            return;
+        }
+
+        hidingAfterAnimation = false;
+        @Nullable Node owner = popupContextOwner;
+        @Nullable Node node = visibilityNode;
+        if (owner == null || node == null || !M3Animation.areAnimationsEnabled(owner)) {
+            if (node != null) {
+                resetVisibilityNode(node);
+            }
+            return;
+        }
+
+        playShowAnimation(owner);
+    }
+
+    /// Returns the current popup skin node, creating the default skin before first show when necessary.
+    private @Nullable Node animatedSkinNode() {
+        @Nullable Skin<?> skin = getSkin();
+        if (skin == null) {
+            skin = createDefaultSkin();
+            setSkin(skin);
+        }
+        return skin.getNode();
+    }
+
+    /// Returns the reusable visibility transition for the supplied skin node.
+    private M3NodeTransition visibilityTransition(Node node) {
+        M3NodeTransition animation = visibilityAnimation;
+        if (animation == null || visibilityNode != node) {
+            if (animation != null) {
+                animation.stop();
+                animation.setOnFinished(null);
+            }
+            visibilityNode = node;
+            animation = new M3NodeTransition(node);
+            visibilityAnimation = animation;
+        }
+        return animation;
+    }
+
+    /// Hides the popup synchronously and restores neutral transforms for its next presentation.
+    private void hideSynchronously() {
+        M3NodeTransition animation = visibilityAnimation;
+        if (animation != null) {
+            animation.stop();
+            animation.setOnFinished(null);
+        }
+        hidingAfterAnimation = false;
+        super.hide();
+        @Nullable Node node = visibilityNode;
+        if (node != null) {
+            resetVisibilityNode(node);
+        }
+    }
+
+    /// Cancels visibility motion and restores the skin node after any external popup closure.
+    private void resetVisibilityAnimation() {
+        M3NodeTransition animation = visibilityAnimation;
+        if (animation != null) {
+            animation.stop();
+            animation.setOnFinished(null);
+        }
+        hidingAfterAnimation = false;
+        @Nullable Node node = visibilityNode;
+        if (node != null) {
+            resetVisibilityNode(node);
+        }
+    }
+
+    /// Restores the neutral visual channels owned by tooltip visibility motion.
+    private static void resetVisibilityNode(Node node) {
+        node.setOpacity(1.0);
+        node.setScaleX(1.0);
+        node.setScaleY(1.0);
     }
 
     /// Sets the default visible duration without marking it as an application override.
@@ -1049,7 +1233,7 @@ public class M3Tooltip extends PopupControl {
                 persistentShowingBeforePress = tooltip.isShowing();
                 stopTimer();
             } else {
-                hideImmediately();
+                requestHide();
             }
         }
 
@@ -1059,7 +1243,7 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
             if (persistentShowingBeforePress) {
-                hideImmediately();
+                requestHide();
             } else {
                 showTooltip();
             }
@@ -1084,6 +1268,7 @@ public class M3Tooltip extends PopupControl {
         /// Cancels pending hide while the pointer is inside an interactive tooltip popup.
         private void handleTooltipEntered(MouseEvent event) {
             tooltipContainsPointer = true;
+            tooltip.cancelHideAnimation();
             if (timerAction == HIDE_TIMER_ACTION) {
                 stopTimer();
             }
@@ -1103,7 +1288,7 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
-                hideImmediately();
+                requestHide();
                 if (M3Accessible.canReach(node)) {
                     M3Accessible.showDirectItem(node, node);
                 }
@@ -1134,6 +1319,7 @@ public class M3Tooltip extends PopupControl {
                     && M3Accessible.containsNode(tooltipRoot, newValue);
             if (tooltipContainsFocus) {
                 stopTimer();
+                tooltip.cancelHideAnimation();
             } else if (tooltip.isShowing() && !tooltip.usesPersistentActivation()) {
                 scheduleHide();
             }
@@ -1168,12 +1354,12 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
-                hideImmediately();
+                requestHide();
                 event.consume();
             } else if (tooltip.usesPersistentActivation()
                     && (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE)) {
                 if (tooltip.isShowing()) {
-                    hideImmediately();
+                    requestHide();
                 } else {
                     showTooltip();
                 }
@@ -1290,7 +1476,8 @@ public class M3Tooltip extends PopupControl {
             if (tooltip.usesPersistentActivation()) {
                 return;
             }
-            if (tooltip.isInteractive() && tooltip.isShowing()) {
+            if (tooltip.isShowing()) {
+                tooltip.cancelHideAnimation();
                 return;
             }
             startTimer(SHOW_TIMER_ACTION, tooltip.effectiveShowDelay(node));
@@ -1310,8 +1497,8 @@ public class M3Tooltip extends PopupControl {
             }
         }
 
-        /// Hides the tooltip immediately and clears pending timers.
-        private void hideImmediately() {
+        /// Requests tooltip hiding and clears pending timers and interaction ownership.
+        private void requestHide() {
             stopTimer();
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
@@ -1577,7 +1764,7 @@ public class M3Tooltip extends PopupControl {
                 }
             }
 
-            hideImmediately();
+            requestHide();
             return true;
         }
 

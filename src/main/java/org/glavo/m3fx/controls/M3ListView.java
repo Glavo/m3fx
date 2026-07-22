@@ -69,7 +69,10 @@ import java.util.Objects;
 /// The default view is empty, uses standard list containment, creates [M3ListCell] instances, permits variable row
 /// heights, animates programmatic scrolling, and has selection disabled. Keyboard focus and selection are distinct:
 /// focus identifies the row that receives list navigation, while the configured [#selectionModeProperty()]
-/// determines how activation changes the selected-index set. Selected indices are maintained in ascending order.
+/// determines how activation changes the selected-index set. The view is one scene-traversal stop. When it receives
+/// focus, logical row focus is restored to the previous focused row, the first selected row, or the first
+/// reachable row. Tab traversal then leaves the view normally, while arrow and page keys move logical row focus.
+/// Selected indices are maintained in ascending order.
 ///
 /// Use this control for application data lists and feeds. Customize row content with [#cellFactoryProperty()]. See
 /// [Material Design lists](https://m3.material.io/components/lists/overview).
@@ -880,6 +883,7 @@ public final class M3ListView<T> extends Control {
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
+        focusedProperty().addListener(observable -> ensureTraversalFocus());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(itemsListener);
@@ -1003,6 +1007,7 @@ public final class M3ListView<T> extends Control {
         } else {
             refreshSelectedItems();
         }
+        ensureTraversalFocus();
         M3Accessible.notifyFocusNodeChanged(this);
         requestVisibleCellRefresh();
     }
@@ -1873,6 +1878,25 @@ public final class M3ListView<T> extends Control {
         focusedItem.set(index < 0 ? null : getItems().get(index));
         if (previousIndex != index || !Objects.equals(previousItem, focusedItem.get())) {
             M3Accessible.notifyFocusNodeChanged(this);
+        }
+    }
+
+    /// Ensures that a focused list view exposes one reachable logical row to keyboard users.
+    ///
+    /// The current logical row is retained when possible. Otherwise the first selected row is preferred, followed
+    /// by the first reachable data row. Selection is not changed. An empty list, or a list whose rows are all
+    /// unreachable, keeps control focus with no logical row focus.
+    private void ensureTraversalFocus() {
+        if (!isFocused() || isDisabled() || isIndexNavigable(focusedIndex.get())) {
+            return;
+        }
+
+        int targetIndex = getSelectedIndex();
+        if (!isIndexNavigable(targetIndex)) {
+            targetIndex = firstIndex();
+        }
+        if (targetIndex >= 0) {
+            updateFocusedIndex(targetIndex, false);
         }
     }
 
