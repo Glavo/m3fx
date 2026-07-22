@@ -1796,8 +1796,10 @@ public final class M3TextInputLayout extends Control {
             label.setOpacity(LABEL_TRANSITION_START_OPACITY);
             label.setTranslateY(floating ? LABEL_TRANSITION_OFFSET_Y : -LABEL_TRANSITION_OFFSET_Y);
         }
+        // A text baseline must approach its final pixel monotonically. Spatial fallback curves may overshoot the
+        // target, which is appropriate for container motion but appears as a second vertical jump on glyphs.
         labelAnimation.configure(
-                M3Animation.fastSpatial(this),
+                M3Animation.fastEffects(this),
                 0.0,
                 1.0,
                 1.0,
