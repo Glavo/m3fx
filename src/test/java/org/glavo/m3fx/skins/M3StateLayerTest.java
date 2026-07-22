@@ -15,6 +15,7 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;

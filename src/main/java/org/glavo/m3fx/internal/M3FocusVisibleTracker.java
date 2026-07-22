@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.skins;
+package org.glavo.m3fx.internal;
 
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.value.ChangeListener;
@@ -11,7 +11,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import org.glavo.m3fx.internal.IdentityKey;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,19 +21,19 @@ import java.util.Arrays;
 
 /// Tracks focus-visible state for Material interaction feedback.
 ///
-/// Native JavaFX focus-visible state is used when exposed by the running JavaFX version. JavaFX 17 does not expose
-/// that property, so trackers on the compatibility baseline share a scene-level input-modality observer and mark
-/// focused owners after keyboard interaction. [#install()] and [#uninstall()] are idempotent and must delimit the
-/// tracker's active lifetime.
+/// Native JavaFX focus-visible state is used when exposed by the running JavaFX version. M3FX traversal explicitly
+/// marks focus that it moves without the platform traversal engine. JavaFX 17 does not expose the native property,
+/// so trackers on the compatibility baseline also derive keyboard focus from a shared scene-level input-modality
+/// observer. [#install()] and [#uninstall()] are idempotent and must delimit the tracker's active lifetime.
 @NotNullByDefault
-final class M3FocusVisibleTracker {
+public final class M3FocusVisibleTracker {
     /// Resolves post-JavaFX-17 native focus-visible support when it is available at runtime.
     private static final @Nullable MethodHandle FOCUS_VISIBLE_PROPERTY_HANDLE = focusVisiblePropertyHandle();
 
     /// The pseudo-class used by M3FX CSS for keyboard-visible focus feedback.
-    static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
+    public static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
-    /// Opaque scene property key for the fallback input tracker.
+    /// Opaque scene property key for the shared input tracker.
     private static final IdentityKey SCENE_INPUT_TRACKER_KEY =
             new IdentityKey(M3FocusVisibleTracker.class.getName() + ".sceneInputTracker");
 
@@ -54,28 +53,35 @@ final class M3FocusVisibleTracker {
     /// The native JavaFX focus-visible property, or `null` when the runtime does not expose it.
     private final @Nullable ReadOnlyBooleanProperty nativeFocusVisibleProperty;
 
-    /// Handles owner focus changes for both native and fallback focus-visible tracking.
-    private final ChangeListener<Boolean> focusedListener =
-            (observable, oldValue, newValue) -> updateFocusVisible();
-
-    /// Handles owner eligibility changes that may invalidate visible focus feedback.
-    private final ChangeListener<Boolean> eligibilityListener =
-            (observable, oldValue, newValue) -> updateFocusVisible();
-
-    /// The fallback observation, created only on runtimes without native focus-visible support.
-    private @Nullable FallbackObservation fallbackObservation;
-
     /// Whether this tracker is currently installed.
     private boolean installed;
 
     /// Whether this tracker currently contributes keyboard-visible focus to its owner.
     private boolean focusVisible;
 
+    /// Whether M3FX custom keyboard traversal explicitly focused this owner.
+    private boolean keyboardTraversalFocusVisible;
+
+    /// Handles owner focus changes for both native and fallback focus-visible tracking.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
+            keyboardTraversalFocusVisible = false;
+        }
+        updateFocusVisible();
+    };
+
+    /// Handles owner eligibility changes that may invalidate visible focus feedback.
+    private final ChangeListener<Boolean> eligibilityListener =
+            (observable, oldValue, newValue) -> updateFocusVisible();
+
+    /// The shared scene input observation used for pointer clearing and JavaFX 17 fallback modality.
+    private @Nullable SceneObservation sceneObservation;
+
     /// Creates a focus-visible tracker using the focus-visible capability available at runtime.
     ///
     /// @param owner        the node whose focus-visible pseudo-class is maintained
     /// @param invalidation the callback invoked after installed state is reevaluated
-    M3FocusVisibleTracker(Node owner, Runnable invalidation) {
+    public M3FocusVisibleTracker(Node owner, Runnable invalidation) {
         this(owner, invalidation, nativeFocusVisibleProperty(owner));
     }
 
@@ -84,7 +90,7 @@ final class M3FocusVisibleTracker {
     /// @param owner                      the node whose focus-visible pseudo-class is maintained
     /// @param invalidation               the callback invoked after installed state is reevaluated
     /// @param nativeFocusVisibleProperty the native focus-visible property, or `null` to use fallback tracking
-    M3FocusVisibleTracker(
+    public M3FocusVisibleTracker(
             Node owner,
             Runnable invalidation,
             @Nullable ReadOnlyBooleanProperty nativeFocusVisibleProperty
@@ -97,8 +103,8 @@ final class M3FocusVisibleTracker {
                 : (observable, oldValue, newValue) -> updateFocusVisible();
     }
 
-    /// Installs native focus-visible or fallback event listeners.
-    void install() {
+    /// Installs native focus-visible and shared scene-input listeners.
+    public void install() {
         if (installed) {
             return;
         }
@@ -109,14 +115,13 @@ final class M3FocusVisibleTracker {
         owner.focusedProperty().addListener(focusedListener);
         owner.disabledProperty().addListener(eligibilityListener);
         owner.visibleProperty().addListener(eligibilityListener);
+        SceneObservation observation = new SceneObservation();
+        sceneObservation = observation;
+        observation.install();
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
             nativeProperty.addListener(nativeListener);
-        } else {
-            FallbackObservation observation = new FallbackObservation();
-            fallbackObservation = observation;
-            observation.install();
         }
         updateFocusVisible(false);
         if (nativeFocusVisibleProperty == null && initiallyFocusVisible && owner.isFocused()) {
@@ -125,8 +130,8 @@ final class M3FocusVisibleTracker {
         }
     }
 
-    /// Uninstalls native focus-visible or fallback event listeners.
-    void uninstall() {
+    /// Uninstalls native focus-visible and shared scene-input listeners.
+    public void uninstall() {
         if (!installed) {
             return;
         }
@@ -138,21 +143,21 @@ final class M3FocusVisibleTracker {
         ChangeListener<Boolean> nativeListener = nativeFocusVisibleListener;
         if (nativeProperty != null && nativeListener != null) {
             nativeProperty.removeListener(nativeListener);
-        } else {
-            FallbackObservation observation = fallbackObservation;
-            fallbackObservation = null;
-            if (observation != null) {
-                observation.uninstall();
-            }
+        }
+        SceneObservation observation = sceneObservation;
+        sceneObservation = null;
+        if (observation != null) {
+            observation.uninstall();
         }
         installed = false;
         focusVisible = false;
+        keyboardTraversalFocusVisible = false;
         removeOwnerTracker(owner, this);
         applyOwnerFocusVisibleState(owner);
     }
 
     /// Reevaluates state after owner eligibility changes outside the focus properties.
-    void refresh() {
+    public void refresh() {
         if (installed) {
             updateFocusVisible();
         }
@@ -168,7 +173,7 @@ final class M3FocusVisibleTracker {
         focusVisible = owner.isFocused()
                 && !owner.isDisabled()
                 && owner.isVisible()
-                && (isNativeFocusVisible() || isFallbackKeyboardInteraction());
+                && (keyboardTraversalFocusVisible || isNativeFocusVisible() || isFallbackKeyboardInteraction());
         applyOwnerFocusVisibleState(owner);
         if (notify) {
             invalidation.run();
@@ -183,12 +188,44 @@ final class M3FocusVisibleTracker {
 
     /// Returns whether this tracker's fallback scene most recently received keyboard input.
     private boolean isFallbackKeyboardInteraction() {
-        FallbackObservation observation = fallbackObservation;
-        return observation != null && observation.isKeyboardInteraction();
+        SceneObservation observation = sceneObservation;
+        return nativeFocusVisibleProperty == null
+                && observation != null
+                && observation.isKeyboardInteraction();
     }
 
-    /// Returns or creates the fallback input tracker for one scene.
-    private static SceneInputTracker fallbackTracker(Scene scene) {
+    /// Marks the installed trackers on a focused node as originating from M3FX keyboard traversal.
+    ///
+    /// The marker remains active while the node keeps focus and no pointer press reaches it. Calling this method for
+    /// a node without an installed tracker has no effect.
+    ///
+    /// @param owner the current scene focus owner, or `null` when no node accepted focus
+    static void markKeyboardTraversalFocus(@Nullable Node owner) {
+        if (owner == null || !owner.hasProperties()) {
+            return;
+        }
+
+        Object value = owner.getProperties().get(OWNER_TRACKERS_KEY);
+        if (value instanceof M3FocusVisibleTracker tracker) {
+            tracker.markKeyboardTraversalFocus();
+        } else if (value instanceof M3FocusVisibleTracker[] trackers) {
+            for (M3FocusVisibleTracker tracker : trackers) {
+                tracker.markKeyboardTraversalFocus();
+            }
+        }
+    }
+
+    /// Marks this installed tracker as keyboard-visible when its owner currently holds focus.
+    private void markKeyboardTraversalFocus() {
+        if (!installed || !owner.isFocused()) {
+            return;
+        }
+        keyboardTraversalFocusVisible = true;
+        updateFocusVisible();
+    }
+
+    /// Returns or creates the shared input tracker for one scene.
+    private static SceneInputTracker inputTracker(Scene scene) {
         @Nullable SceneInputTracker tracker = sceneInputTracker(scene);
         if (tracker == null) {
             tracker = new SceneInputTracker(scene);
@@ -197,7 +234,7 @@ final class M3FocusVisibleTracker {
         return tracker;
     }
 
-    /// Returns the fallback input tracker currently owned by a scene.
+    /// Returns the shared input tracker currently owned by a scene.
     private static @Nullable SceneInputTracker sceneInputTracker(Scene scene) {
         Object value = scene.getProperties().get(SCENE_INPUT_TRACKER_KEY);
         return value instanceof SceneInputTracker tracker ? tracker : null;
@@ -230,9 +267,9 @@ final class M3FocusVisibleTracker {
         }
     }
 
-    /// Owns the listeners and scene registration needed only by fallback focus-visible tracking.
+    /// Owns the listeners and registration needed to share one input tracker per scene.
     @NotNullByDefault
-    private final class FallbackObservation {
+    private final class SceneObservation {
         /// Handles owner scene changes.
         private final ChangeListener<@Nullable Scene> sceneListener = (observable, oldScene, newScene) -> {
             detachFromScene();
@@ -240,29 +277,29 @@ final class M3FocusVisibleTracker {
             updateFocusVisible();
         };
 
-        /// The scene currently registered for fallback input tracking.
+        /// The scene currently registered for shared input tracking.
         private @Nullable Scene scene;
 
-        /// Installs the fallback owner listeners and scene registration.
+        /// Installs the owner listeners and scene registration.
         private void install() {
             owner.sceneProperty().addListener(sceneListener);
             attachToScene(owner.getScene());
         }
 
-        /// Removes all fallback listeners and scene registration.
+        /// Removes all owner listeners and scene registration.
         private void uninstall() {
             detachFromScene();
             owner.sceneProperty().removeListener(sceneListener);
         }
 
-        /// Registers the outer tracker with one scene input tracker.
+        /// Registers the outer tracker with one shared scene input tracker.
         private void attachToScene(@Nullable Scene newScene) {
             if (newScene == null) {
                 return;
             }
 
             scene = newScene;
-            fallbackTracker(newScene).add();
+            inputTracker(newScene).add();
         }
 
         /// Unregisters the outer tracker from its current scene input tracker.
@@ -291,7 +328,7 @@ final class M3FocusVisibleTracker {
         }
     }
 
-    /// Tracks fallback input modality for one scene.
+    /// Tracks input modality and pointer clearing for one scene.
     @NotNullByDefault
     private static final class SceneInputTracker {
         /// The scene whose input events are tracked.
@@ -303,13 +340,13 @@ final class M3FocusVisibleTracker {
         /// Handles mouse presses as pointer interaction.
         private final EventHandler<MouseEvent> mousePressedHandler = event -> updateModality(false);
 
-        /// Whether the latest fallback interaction in this scene was keyboard-driven.
+        /// Whether the latest interaction in this scene was keyboard-driven.
         private boolean keyboardInteraction;
 
         /// The number of focus-visible trackers registered in this scene.
         private int trackerCount;
 
-        /// Creates a scene-level fallback input tracker.
+        /// Creates a scene-level input tracker.
         private SceneInputTracker(Scene scene) {
             this.scene = scene;
         }
@@ -322,7 +359,7 @@ final class M3FocusVisibleTracker {
             }
         }
 
-        /// Updates this scene's fallback modality and all registered trackers for its focus owner.
+        /// Updates this scene's modality and all registered trackers for its focus owner.
         private void updateModality(boolean keyboard) {
             keyboardInteraction = keyboard;
             @Nullable Node focusOwner = scene.getFocusOwner();
@@ -332,10 +369,10 @@ final class M3FocusVisibleTracker {
 
             Object value = focusOwner.getProperties().get(OWNER_TRACKERS_KEY);
             if (value instanceof M3FocusVisibleTracker tracker) {
-                tracker.updateFallbackFocusVisible();
+                tracker.updateSceneInput(keyboard);
             } else if (value instanceof M3FocusVisibleTracker[] trackers) {
                 for (M3FocusVisibleTracker tracker : trackers) {
-                    tracker.updateFallbackFocusVisible();
+                    tracker.updateSceneInput(keyboard);
                 }
             }
         }
@@ -353,9 +390,13 @@ final class M3FocusVisibleTracker {
 
     }
 
-    /// Reevaluates this tracker after fallback scene input without invalidating native-only trackers.
-    private void updateFallbackFocusVisible() {
-        if (fallbackObservation != null) {
+    /// Reevaluates fallback modality or clears explicit traversal focus after scene input.
+    private void updateSceneInput(boolean keyboard) {
+        boolean traversalFocusCleared = !keyboard && keyboardTraversalFocusVisible;
+        if (traversalFocusCleared) {
+            keyboardTraversalFocusVisible = false;
+        }
+        if (nativeFocusVisibleProperty == null || traversalFocusCleared) {
             updateFocusVisible();
         }
     }

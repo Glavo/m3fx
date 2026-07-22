@@ -187,9 +187,7 @@ public final class M3FocusTraversal {
             return false;
         }
 
-        boolean focused = target.isFocusTraversable()
-                ? M3Accessible.showDirectItem(owner, target)
-                : M3Accessible.showItem(owner, target);
+        boolean focused = focusFromKeyboardTraversal(owner, target);
         if (!focused) {
             return false;
         }
@@ -231,13 +229,22 @@ public final class M3FocusTraversal {
         }
 
         Node target = reachableFocusItems.get(targetIndex);
-        if (target.isFocusTraversable()) {
-            M3Accessible.showDirectItem(owner, target);
-        } else {
-            M3Accessible.showItem(owner, target);
-        }
+        focusFromKeyboardTraversal(owner, target);
         event.consume();
         return true;
+    }
+
+    /// Requests focus for a traversal target while preserving keyboard-visible focus semantics.
+    private static boolean focusFromKeyboardTraversal(Node owner, Node target) {
+        boolean focused = target.isFocusTraversable()
+                ? M3Accessible.showDirectItem(owner, target)
+                : M3Accessible.showItem(owner, target);
+        if (focused) {
+            @Nullable Scene scene = owner.getScene();
+            @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+            M3FocusVisibleTracker.markKeyboardTraversalFocus(focusOwner == null ? target : focusOwner);
+        }
+        return focused;
     }
 
     /// Returns whether an event requests cyclic focus traversal without application shortcut modifiers.

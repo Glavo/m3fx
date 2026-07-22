@@ -22,6 +22,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;

@@ -15,16 +15,20 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests fallback focus-visible modality tracking.
+/// Tests focus-visible modality tracking across native, fallback, and custom traversal paths.
 @NotNullByDefault
 final class M3FocusVisibleTrackerTest {
     /// Starts the JavaFX toolkit for focus-visible tracker tests.
@@ -151,6 +155,47 @@ final class M3FocusVisibleTrackerTest {
         });
     }
 
+    /// Verifies that custom traversal preserves focus-visible semantics when native traversal is bypassed.
+    @Test
+    void customKeyboardTraversalMarksFocusedTargetAsFocusVisible() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane first = focusablePane();
+            Pane second = focusablePane();
+            HBox root = new HBox(first, second);
+            show(root, 160.0, 48.0);
+            SimpleBooleanProperty firstNativeFocusVisible = new SimpleBooleanProperty(false);
+            SimpleBooleanProperty secondNativeFocusVisible = new SimpleBooleanProperty(false);
+            M3FocusVisibleTracker firstTracker =
+                    new M3FocusVisibleTracker(first, () -> {}, firstNativeFocusVisible);
+            M3FocusVisibleTracker secondTracker =
+                    new M3FocusVisibleTracker(second, () -> {}, secondNativeFocusVisible);
+            firstTracker.install();
+            secondTracker.install();
+            try {
+                first.requestFocus();
+                first.fireEvent(primaryMousePressedEvent());
+                KeyEvent right = keyPressedEvent(KeyCode.RIGHT);
+
+                assertTrue(M3FocusTraversal.handleHorizontalKeyFocus(root, right, List.of(first, second)));
+                assertTrue(right.isConsumed());
+                assertTrue(second.isFocused());
+                assertTrue(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                second.fireEvent(primaryMousePressedEvent());
+                assertFalse(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                KeyEvent tab = keyPressedEvent(KeyCode.TAB);
+                assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(root, tab, List.of(second)));
+                assertTrue(tab.isConsumed());
+                assertTrue(second.isFocused());
+                assertTrue(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                firstTracker.uninstall();
+                secondTracker.uninstall();
+            }
+        });
+    }
+
     /// Verifies pointer fallback modality from an untracked container clears the next focused owner.
     @Test
     void fallbackPointerModalityFromContainerClearsNextFocusedOwner() {
@@ -258,6 +303,7 @@ final class M3FocusVisibleTrackerTest {
             assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
         });
     }
+
     /// Verifies duplicate fallback trackers on one owner remain independent across partial uninstall.
     @Test
     void duplicateFallbackTrackersShareOwnerRegistration() {

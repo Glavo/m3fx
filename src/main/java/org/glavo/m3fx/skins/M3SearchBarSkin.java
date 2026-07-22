@@ -24,6 +24,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 

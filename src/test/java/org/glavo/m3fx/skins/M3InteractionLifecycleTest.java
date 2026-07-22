@@ -29,6 +29,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;

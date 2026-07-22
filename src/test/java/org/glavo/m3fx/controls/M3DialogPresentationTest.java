@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -1289,9 +1290,14 @@ final class M3DialogPresentationTest {
                 content.requestFocus();
                 content.fireEvent(keyPressed(KeyCode.TAB));
                 assertTrue(cancelAction.isFocused());
+                assertTrue(cancelAction.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focus-visible")));
+                assertVisibleFocusIndicator(cancelAction);
 
                 cancelAction.fireEvent(keyPressed(KeyCode.TAB));
                 assertTrue(acceptAction.isFocused());
+                assertFalse(cancelAction.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focus-visible")));
+                assertTrue(acceptAction.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focus-visible")));
+                assertVisibleFocusIndicator(acceptAction);
 
                 acceptAction.fireEvent(keyPressed(KeyCode.TAB));
                 assertTrue(content.isFocused());
@@ -1338,6 +1344,13 @@ final class M3DialogPresentationTest {
     /// Creates an unmodified key-press event for keyboard lifecycle tests.
     private static KeyEvent keyPressed(KeyCode code) {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
+    }
+
+    /// Verifies that a keyboard-focused control materializes an opaque focus-indicator node.
+    private static void assertVisibleFocusIndicator(Node control) {
+        @Nullable Node indicator = control.lookup(".m3-focus-indicator");
+        assertTrue(indicator != null && indicator.isVisible());
+        assertEquals(1.0, indicator.getOpacity(), 0.000_001);
     }
 
     /// Creates a primary mouse-click event for scrim dismissal tests.

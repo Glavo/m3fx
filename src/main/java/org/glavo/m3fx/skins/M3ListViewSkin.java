@@ -27,6 +27,7 @@ import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;

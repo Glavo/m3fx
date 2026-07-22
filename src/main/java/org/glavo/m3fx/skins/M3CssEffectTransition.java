@@ -17,6 +17,7 @@ import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 

@@ -34,6 +34,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
