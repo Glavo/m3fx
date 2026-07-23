@@ -148,9 +148,11 @@ final class HMCLInstanceDetailView extends BorderPane {
         worldsItem.setOnAction(event -> showSection(Section.WORLDS));
         shadersItem.setOnAction(event -> showSection(Section.SHADERS));
         schematicsItem.setOnAction(event -> showSection(Section.SCHEMATICS));
-        updateItem.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+        updateItem.setOnAction(event -> {
+        });
         testItem.setOnAction(event -> controller.launchSelected());
-        folderItem.setOnAction(event -> controller.showMessageKey("snackbar.open_folder"));
+        folderItem.setOnAction(event -> {
+        });
         manageItem.setOnAction(event -> showManageDialog());
 
         VBox sidebar = HMCLDemoUi.sidebar(
@@ -293,19 +295,14 @@ final class HMCLInstanceDetailView extends BorderPane {
 
         M3SettingItem launcherVisibility = new M3SettingItem(strings.get("instance.settings.launcher_visibility"));
         launcherVisibility.setSupportingText(strings.get("instance.settings.launcher_visibility.support"));
-        launcherVisibility.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
-
         M3SettingItem showLogs = new M3SettingItem(strings.get("instance.settings.show_logs"));
         showLogs.setSupportingText(strings.get("instance.settings.show_logs.support"));
-        showLogs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
 
         M3SettingItem jvmArgs = new M3SettingItem(strings.get("instance.settings.jvm_args"));
         jvmArgs.setSupportingText(strings.get("instance.settings.jvm_args.support"));
-        jvmArgs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
 
         M3SettingItem gameArgs = new M3SettingItem(strings.get("instance.settings.game_args"));
         gameArgs.setSupportingText(strings.get("instance.settings.game_args.support"));
-        gameArgs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
 
         VBox root = new VBox(16.0);
         root.setMinHeight(0.0);
@@ -397,22 +394,14 @@ final class HMCLInstanceDetailView extends BorderPane {
                         ? strings.get("instance.installers.change")
                         : strings.get("instance.installers.install"),
                 M3ButtonVariant.TONAL);
-        primary.setOnAction(event -> {
-            String version = nextInstallerVersion(installer);
-            if (state.setInstallerVersion(installer.id(), version)) {
-                controller.showMessageKey("snackbar.installer_updated", installer.name(), version);
-            }
-        });
+        primary.setOnAction(event ->
+                state.setInstallerVersion(installer.id(), nextInstallerVersion(installer)));
 
         HBox trailing = new HBox(6.0, primary);
         trailing.setAlignment(Pos.CENTER_RIGHT);
         if (installer.isInstalled() && !"game".equals(installer.id())) {
             M3Button remove = new M3Button(strings.get("instance.installers.remove"), M3ButtonVariant.TEXT);
-            remove.setOnAction(event -> {
-                if (state.setInstallerVersion(installer.id(), null)) {
-                    controller.showMessageKey("snackbar.installer_removed", installer.name());
-                }
-            });
+            remove.setOnAction(event -> state.setInstallerVersion(installer.id(), null));
             trailing.getChildren().add(0, remove);
         }
 
@@ -433,16 +422,11 @@ final class HMCLInstanceDetailView extends BorderPane {
         searchBar.setPromptText(strings.get("instance.mods.search"));
         searchBar.setText(modsQuery);
 
-        M3Button refresh = createTextAction(strings.get("common.refresh"), () ->
-                controller.showMessageKey("snackbar.refreshed"));
-        M3Button add = createTextAction(strings.get("instance.mods.add"), () -> {
-            @Nullable HMCLDemoMod mod = state.addDemoMod();
-            if (mod != null) {
-                controller.showMessageKey("snackbar.mod_added", mod.name());
-            }
+        M3Button refresh = createTextAction(strings.get("common.refresh"), () -> {
         });
-        M3Button checkUpdates = createTextAction(strings.get("instance.mods.check_updates"), () ->
-                controller.showMessageKey("snackbar.refreshed"));
+        M3Button add = createTextAction(strings.get("instance.mods.add"), () -> state.addDemoMod());
+        M3Button checkUpdates = createTextAction(strings.get("instance.mods.check_updates"), () -> {
+        });
 
         HBox toolbar = HMCLDemoUi.toolbar(
                 searchBar,
@@ -506,11 +490,7 @@ final class HMCLInstanceDetailView extends BorderPane {
                 state.setSelectedModEnabled(mod.id(), newValue));
 
         M3Button remove = new M3Button(strings.get("instance.mods.remove"), M3ButtonVariant.TEXT);
-        remove.setOnAction(event -> {
-            if (state.removeMod(mod.id())) {
-                controller.showMessageKey("snackbar.mod_removed", mod.name());
-            }
-        });
+        remove.setOnAction(event -> state.removeMod(mod.id()));
 
         HBox trailing = new HBox(8.0, enabled, remove);
         trailing.setAlignment(Pos.CENTER_RIGHT);
@@ -529,10 +509,7 @@ final class HMCLInstanceDetailView extends BorderPane {
     /// @return the resource-packs content
     private Node resourcePacksContent(HMCLDemoInstance instance) {
         M3Button add = createTextAction(strings.get("instance.resource_packs.add"), () -> {
-            @Nullable HMCLDemoPack pack = state.addDemoResourcePack();
-            if (pack != null) {
-                controller.showMessageKey("snackbar.pack_added", pack.name());
-            }
+            state.addDemoResourcePack();
         });
         HBox toolbar = HMCLDemoUi.toolbar(
                 new M3Text(strings.get("instance.nav.resource_packs"), M3TextRole.TITLE_SMALL),
@@ -572,10 +549,7 @@ final class HMCLInstanceDetailView extends BorderPane {
     /// @return the worlds content
     private Node worldsContent(HMCLDemoInstance instance) {
         M3Button add = createTextAction(strings.get("instance.worlds.add"), () -> {
-            @Nullable HMCLDemoWorld world = state.addDemoWorld();
-            if (world != null) {
-                controller.showMessageKey("snackbar.world_added", world.name());
-            }
+            state.addDemoWorld();
         });
         HBox toolbar = HMCLDemoUi.toolbar(
                 new M3Text(strings.get("instance.nav.worlds"), M3TextRole.TITLE_SMALL),
@@ -594,11 +568,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         list.getStyleClass().add("hmcl-dense-list");
         for (HMCLDemoWorld world : instance.worlds()) {
             M3Button remove = new M3Button(strings.get("instance.worlds.remove"), M3ButtonVariant.TEXT);
-            remove.setOnAction(event -> {
-                if (state.removeWorld(world.id())) {
-                    controller.showMessageKey("snackbar.world_removed", world.name());
-                }
-            });
+            remove.setOnAction(event -> state.removeWorld(world.id()));
 
             M3ListItem row = new M3ListItem(world.name());
             row.setSupportingText(world.gameMode() + " · " + world.lastPlayed());
@@ -615,10 +585,7 @@ final class HMCLInstanceDetailView extends BorderPane {
     /// @return the shaders content
     private Node shadersContent(HMCLDemoInstance instance) {
         M3Button add = createTextAction(strings.get("instance.shaders.add"), () -> {
-            @Nullable HMCLDemoPack pack = state.addDemoShader();
-            if (pack != null) {
-                controller.showMessageKey("snackbar.pack_added", pack.name());
-            }
+            state.addDemoShader();
         });
         HBox toolbar = HMCLDemoUi.toolbar(
                 new M3Text(strings.get("instance.nav.shaders"), M3TextRole.TITLE_SMALL),
@@ -656,10 +623,7 @@ final class HMCLInstanceDetailView extends BorderPane {
     /// @return the schematics content
     private Node schematicsContent(HMCLDemoInstance instance) {
         M3Button add = createTextAction(strings.get("instance.schematics.add"), () -> {
-            @Nullable HMCLDemoPack pack = state.addDemoSchematic();
-            if (pack != null) {
-                controller.showMessageKey("snackbar.pack_added", pack.name());
-            }
+            state.addDemoSchematic();
         });
         HBox toolbar = HMCLDemoUi.toolbar(
                 new M3Text(strings.get("instance.nav.schematics"), M3TextRole.TITLE_SMALL),
@@ -717,13 +681,10 @@ final class HMCLInstanceDetailView extends BorderPane {
                 @Nullable HMCLDemoInstance copied = state.copySelectedInstance();
                 if (copied != null) {
                     instanceId = copied.id();
-                    controller.showMessageKey("snackbar.instance_copied", copied.name());
                     renderSection(false);
                 }
             } else if (event.getAction() == delete) {
-                String name = instance.name();
                 if (state.deleteSelectedInstance()) {
-                    controller.showMessageKey("snackbar.instance_deleted", name);
                     controller.goBack();
                 }
             }
@@ -756,9 +717,7 @@ final class HMCLInstanceDetailView extends BorderPane {
             if (value.isEmpty()) {
                 return;
             }
-            if (state.renameSelectedInstance(value)) {
-                controller.showMessageKey("snackbar.instance_renamed", value);
-            }
+            state.renameSelectedInstance(value);
         });
         controller.overlay().showDialog(dialog);
     }

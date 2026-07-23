@@ -86,13 +86,12 @@ final class HMCLInstancesView extends BorderPane {
 
         newDirectoryItem.setOnAction(event -> showNewDirectoryDialog());
         newGameItem.setOnAction(event -> controller.openDownload());
-        importItem.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
-        globalSettingsItem.setOnAction(event -> controller.openSettings());
-        refreshButton.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
-        addButton.setOnAction(event -> {
-            state.addDemoInstance();
-            controller.showMessageKey("snackbar.instance_added");
+        importItem.setOnAction(event -> {
         });
+        globalSettingsItem.setOnAction(event -> controller.openSettings());
+        refreshButton.setOnAction(event -> {
+        });
+        addButton.setOnAction(event -> state.addDemoInstance());
         searchBar.textProperty().bindBidirectional(state.instanceSearchQueryProperty());
 
         VBox sidebar = HMCLDemoUi.sidebar(
@@ -220,8 +219,7 @@ final class HMCLInstancesView extends BorderPane {
             if (name.isEmpty()) {
                 return;
             }
-            HMCLDemoGameDirectory directory = state.addDirectory(name);
-            controller.showMessageKey("snackbar.directory_added", directory.name());
+            state.addDirectory(name);
         });
         controller.overlay().showDialog(dialog);
     }

@@ -251,7 +251,8 @@ final class HMCLDownloadView extends BorderPane {
 
         M3IconButton refresh = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.REFRESH));
         refresh.setAccessibleText(strings.get("common.refresh"));
-        refresh.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
+        refresh.setOnAction(event -> {
+        });
 
         HBox toolbar = HMCLDemoUi.toolbar(searchBar, release, snapshot, old, HMCLDemoUi.hgrow(), refresh);
         HBox.setHgrow(searchBar, Priority.ALWAYS);
@@ -284,7 +285,8 @@ final class HMCLDownloadView extends BorderPane {
 
         M3IconButton refresh = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.REFRESH));
         refresh.setAccessibleText(strings.get("common.refresh"));
-        refresh.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
+        refresh.setOnAction(event -> {
+        });
 
         HBox toolbar = HMCLDemoUi.toolbar(searchBar, HMCLDemoUi.hgrow(), refresh);
         HBox.setHgrow(searchBar, Priority.ALWAYS);

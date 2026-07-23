@@ -168,7 +168,8 @@ final class HMCLHomeView extends BorderPane {
         multiplayerItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.GROUP));
         multiplayerItem.setOnAction(event -> controller.openMultiplayer());
         feedbackItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.CHAT));
-        feedbackItem.setOnAction(event -> controller.showMessageKey("snackbar.feedback"));
+        feedbackItem.setOnAction(event -> {
+        });
 
         sidebar.getChildren().setAll(
                 accountSection,

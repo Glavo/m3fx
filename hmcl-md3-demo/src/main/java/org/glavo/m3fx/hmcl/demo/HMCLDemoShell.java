@@ -304,7 +304,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             showMessageKey("snackbar.no_account");
             return;
         }
-        showMessageKey("snackbar.launching", instance.name(), account.displayName());
     }
 
     @Override
@@ -447,7 +446,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         closeButton.getStyleClass().add("hmcl-window-close");
 
         backButton.setOnAction(event -> goBack());
-        helpButton.setOnAction(event -> showMessageKey("snackbar.feedback"));
+        helpButton.setOnAction(event -> {
+        });
         minimizeButton.setOnAction(event -> {
             @Nullable Stage stage = currentStage();
             if (stage != null) {

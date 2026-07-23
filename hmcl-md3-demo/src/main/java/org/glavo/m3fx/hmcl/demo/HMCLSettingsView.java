@@ -435,10 +435,7 @@ final class HMCLSettingsView extends BorderPane {
             item.setSupportingText(runtime.version() + " · " + runtime.architecture() + " · " + runtime.path());
             item.setToggleGroup(group);
             item.setSelected(runtime.id().equals(selectedId));
-            item.setOnAction(event -> {
-                state.setSelectedJavaId(runtime.id());
-                controller.showMessageKey("snackbar.settings_java_selected", runtime.name());
-            });
+            item.setOnAction(event -> state.setSelectedJavaId(runtime.id()));
             runtimes.getItems().add(item);
         }
 
@@ -993,16 +990,15 @@ final class HMCLSettingsView extends BorderPane {
         return item;
     }
 
-    /// Creates an action setting row that shows a snackbar.
+    /// Creates an action setting row for offline-demo placeholders.
     ///
     /// @param headlineKey the headline message key
     /// @param supportKey the supporting-text message key
-    /// @param snackbarKey the snackbar message key
+    /// @param snackbarKey unused; retained for call-site compatibility
     /// @return the setting row
     private M3SettingItem actionSetting(String headlineKey, String supportKey, String snackbarKey) {
         M3SettingItem item = new M3SettingItem(strings.get(headlineKey));
         item.setSupportingText(strings.get(supportKey));
-        item.setOnAction(event -> controller.showMessageKey(snackbarKey));
         return item;
     }
 
@@ -1014,7 +1010,6 @@ final class HMCLSettingsView extends BorderPane {
     private M3SettingItem infoSetting(String headlineKey, String supporting) {
         M3SettingItem item = new M3SettingItem(strings.get(headlineKey));
         item.setSupportingText(supporting);
-        item.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
         return item;
     }
 
@@ -1025,13 +1020,13 @@ final class HMCLSettingsView extends BorderPane {
     private M3SettingItem helpTopic(String headlineKey) {
         M3SettingItem item = new M3SettingItem(strings.get(headlineKey));
         item.setSupportingText(strings.get(headlineKey + ".support"));
-        item.setOnAction(event -> controller.showMessageKey("snackbar.settings_open_docs"));
         return item;
     }
 
-    /// Shows the generic settings-saved snackbar.
+    /// Marks that a setting value changed without showing a snackbar.
+    ///
+    /// Preference changes already update the visible supporting text or control state, so toast feedback is omitted.
     private void saved() {
-        controller.showMessageKey("snackbar.settings_saved");
     }
 
     /// Returns the localized isolation label.

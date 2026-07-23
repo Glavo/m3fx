@@ -159,10 +159,7 @@ final class HMCLMultiplayerView extends BorderPane {
         body.setWrapText(true);
 
         M3Button createRoom = new M3Button(strings.get("multiplayer.create"), M3ButtonVariant.FILLED);
-        createRoom.setOnAction(event -> {
-            state.startHost();
-            controller.showMessageKey("snackbar.multiplayer_create");
-        });
+        createRoom.setOnAction(event -> state.startHost());
 
         M3Button joinRoom = new M3Button(strings.get("multiplayer.join"), M3ButtonVariant.TONAL);
         joinRoom.setOnAction(event -> {
@@ -171,7 +168,6 @@ final class HMCLMultiplayerView extends BorderPane {
                 code = "HMCL-JOIN";
             }
             state.startJoin(code);
-            controller.showMessageKey("snackbar.multiplayer_join");
         });
 
         HBox actions = new HBox(12.0, createRoom, joinRoom);
@@ -198,7 +194,8 @@ final class HMCLMultiplayerView extends BorderPane {
         codeLabel.getStyleClass().add("hmcl-multiplayer-code");
 
         M3Button copy = new M3Button(strings.get("multiplayer.copy_code"), M3ButtonVariant.TONAL);
-        copy.setOnAction(event -> controller.showMessageKey("snackbar.multiplayer_copied", code));
+        copy.setOnAction(event -> {
+        });
 
         M3Button back = new M3Button(strings.get("multiplayer.back"), M3ButtonVariant.TEXT);
         back.setOnAction(event -> state.resetMultiplayer());

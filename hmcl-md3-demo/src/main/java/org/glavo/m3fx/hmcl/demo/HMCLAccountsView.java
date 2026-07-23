@@ -67,15 +67,10 @@ final class HMCLAccountsView extends BorderPane {
         HMCLDemoUi.fill(this);
 
         microsoftItem.setOnAction(event -> showMicrosoftDialog());
-        offlineItem.setOnAction(event -> {
-            state.addDummyAccount(HMCLDemoAccount.AccountType.OFFLINE);
-            controller.showMessageKey("snackbar.account_added");
+        offlineItem.setOnAction(event -> state.addDummyAccount(HMCLDemoAccount.AccountType.OFFLINE));
+        externalItem.setOnAction(event -> state.addDummyAccount(HMCLDemoAccount.AccountType.EXTERNAL));
+        addServerItem.setOnAction(event -> {
         });
-        externalItem.setOnAction(event -> {
-            state.addDummyAccount(HMCLDemoAccount.AccountType.EXTERNAL);
-            controller.showMessageKey("snackbar.account_added");
-        });
-        addServerItem.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
 
         VBox sidebar = HMCLDemoUi.sidebar(addSection, microsoftItem, offlineItem, externalItem, addServerItem);
         setLeft(sidebar);
@@ -125,7 +120,7 @@ final class HMCLAccountsView extends BorderPane {
             remove.setOnAction(event -> {
                 state.selectAccount(account.id());
                 state.removeSelectedAccount();
-                controller.showMessageKey("snackbar.account_removed");
+
             });
 
             HBox trailing = new HBox(4.0, remove, selector);
@@ -169,7 +164,6 @@ final class HMCLAccountsView extends BorderPane {
         dialog.setOnHidden(event -> {
             if (event.getAction() == login) {
                 state.addDummyAccount(HMCLDemoAccount.AccountType.MICROSOFT);
-                controller.showMessageKey("snackbar.account_added");
             }
         });
         controller.overlay().showDialog(dialog);
