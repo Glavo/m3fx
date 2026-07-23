@@ -8,22 +8,22 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3ListItem;
-import org.glavo.m3fx.controls.M3ListPane;
-import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3RadioButton;
-import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// Displays the account list with provider shortcuts in the left pane.
+///
+/// Center content is a full-height card list over an opaque surface, matching HMCL `AccountListPage`.
 @NotNullByDefault
 final class HMCLAccountsView extends BorderPane {
     /// The localization source.
@@ -50,8 +50,8 @@ final class HMCLAccountsView extends BorderPane {
     /// The add-auth-server row.
     private final M3ListItem addServerItem = HMCLDemoUi.navItem("", HMCLDemoIcons.ADD, null);
 
-    /// The account list surface.
-    private final M3ListPane accountList = new M3ListPane();
+    /// Full-height account card column.
+    private final VBox accountCards = new VBox(10.0);
 
     /// Creates the accounts page.
     ///
@@ -65,10 +65,6 @@ final class HMCLAccountsView extends BorderPane {
 
         getStyleClass().add("hmcl-secondary-page");
         HMCLDemoUi.fill(this);
-        accountList.setListStyle(M3ListStyle.SEGMENTED);
-        accountList.setSelectionMode(M3SelectionMode.SINGLE);
-        accountList.getStyleClass().add("hmcl-dense-list");
-        accountList.setMinHeight(0.0);
 
         microsoftItem.setOnAction(event -> showMicrosoftDialog());
         offlineItem.setOnAction(event -> {
@@ -84,8 +80,18 @@ final class HMCLAccountsView extends BorderPane {
         VBox sidebar = HMCLDemoUi.sidebar(addSection, microsoftItem, offlineItem, externalItem, addServerItem);
         setLeft(sidebar);
 
-        VBox column = HMCLDemoUi.contentColumn(accountList);
-        setCenter(HMCLDemoUi.listHost(column));
+        accountCards.getStyleClass().add("hmcl-card-list");
+        accountCards.setFillWidth(true);
+        accountCards.setMaxWidth(Double.MAX_VALUE);
+        accountCards.setMinHeight(0.0);
+
+        var scroll = HMCLDemoUi.scroll(accountCards);
+        scroll.setFitToHeight(false);
+        VBox center = HMCLDemoUi.fill(new VBox(scroll));
+        center.getStyleClass().add("hmcl-page-center");
+        center.setPadding(new Insets(10.0));
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        setCenter(center);
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> rebuildAccounts());
         state.getAccounts().addListener((ListChangeListener<HMCLDemoAccount>) change -> rebuildAccounts());
@@ -105,7 +111,7 @@ final class HMCLAccountsView extends BorderPane {
 
     /// Rebuilds account cards from the current state.
     private void rebuildAccounts() {
-        accountList.getItems().clear();
+        accountCards.getChildren().clear();
         @Nullable HMCLDemoAccount selected = state.getSelectedAccount();
         for (HMCLDemoAccount account : state.getAccounts()) {
             boolean isSelected = account.equals(selected);
@@ -122,18 +128,18 @@ final class HMCLAccountsView extends BorderPane {
                 controller.showMessageKey("snackbar.account_removed");
             });
 
-            HBox trailing = new HBox(8.0, remove, selector);
+            HBox trailing = new HBox(4.0, remove, selector);
             trailing.setAlignment(Pos.CENTER_RIGHT);
-            trailing.setMinWidth(0.0);
 
             M3ListItem row = new M3ListItem(account.displayName());
-            row.getStyleClass().add("hmcl-account-row");
+            row.getStyleClass().addAll("hmcl-account-row", "hmcl-account-card");
             row.setSupportingText(HMCLDemoUi.accountTypeLabel(strings, account.type()));
-            row.setLeading(HMCLDemoUi.accountFace(account, 36.0));
+            row.setLeading(HMCLDemoUi.accountFace(account, 32.0));
             row.setTrailing(trailing);
             row.setSelected(isSelected);
+            row.setMaxWidth(Double.MAX_VALUE);
             row.setOnAction(event -> state.selectAccount(account.id()));
-            accountList.getItems().add(row);
+            accountCards.getChildren().add(row);
         }
     }
 

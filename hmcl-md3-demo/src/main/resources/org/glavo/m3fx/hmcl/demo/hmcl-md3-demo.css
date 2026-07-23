@@ -142,28 +142,26 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-/* launch-pane from HMCL root.css */
+/* launch-pane from HMCL root.css — plain regions, not M3 pill buttons */
 .hmcl-launch-pane {
-    -fx-max-height: 57px;
-    -fx-min-height: 57px;
+    -fx-max-height: 55px;
+    -fx-min-height: 55px;
+    -fx-pref-height: 55px;
     -fx-max-width: 230px;
     -fx-min-width: 230px;
+    -fx-pref-width: 230px;
 }
 
 .hmcl-launch-button,
 .hmcl-launch-menu-button {
-    -m3-container-color: -m3-color-primary-container;
-    -m3-content-color: -m3-color-on-primary-container;
     -fx-background-color: -m3-color-primary-container;
-    -fx-opacity: 1;
     -fx-cursor: hand;
 }
 
 .hmcl-launch-button {
-    -m3-container-shape: 0px;
     -fx-background-radius: 4px 0 0 4px;
     -fx-border-radius: 4px 0 0 4px;
-    -fx-border-width: 0 3px 0 0;
+    -fx-border-width: 0 3 0 0;
     -fx-border-color: linear-gradient(
         to bottom,
         transparent 0%,
@@ -175,14 +173,27 @@
     );
 }
 
+.hmcl-launch-button:hover {
+    -fx-background-color: derive(-m3-color-primary-container, -6%);
+}
+
+.hmcl-launch-button:pressed {
+    -fx-background-color: derive(-m3-color-primary-container, -12%);
+}
+
 .hmcl-launch-menu-button {
-    -m3-container-shape: 0px;
-    -m3-container-width: 27px;
     -fx-background-radius: 0 4px 4px 0;
     -fx-border-radius: 0 4px 4px 0;
 }
 
-.hmcl-launch-button .m3-text,
+.hmcl-launch-menu-button:hover {
+    -fx-background-color: derive(-m3-color-primary-container, -6%);
+}
+
+.hmcl-launch-menu-button:pressed {
+    -fx-background-color: derive(-m3-color-primary-container, -12%);
+}
+
 .hmcl-launch-label,
 .hmcl-launch-instance {
     -fx-text-fill: -m3-color-on-primary-container;
@@ -190,41 +201,46 @@
 
 .hmcl-launch-label {
     -fx-font-size: 16px;
+    -fx-font-weight: bold;
 }
 
 .hmcl-launch-instance {
     -fx-font-size: 12px;
 }
 
+.hmcl-launch-menu-icon,
 .hmcl-launch-menu-button .hmcl-demo-icon {
     -fx-fill: -m3-color-on-primary-container;
 }
 
-.hmcl-launch-button .m3-state-layer,
-.hmcl-launch-button .m3-ripple,
-.hmcl-launch-menu-button .m3-state-layer,
-.hmcl-launch-menu-button .m3-ripple {
-    -fx-background-color: -m3-color-on-primary-container;
-}
-
-/* Secondary pages: gray-background over wallpaper */
+/* Secondary pages: opaque surface (HMCL content-background), not see-through wallpaper */
 
 .hmcl-secondary-page {
-    -fx-background-color: rgba(251, 248, 255, 0.92);
+    -fx-background-color: -m3-color-surface;
 }
 
-.m3-dark .hmcl-secondary-page {
-    -fx-background-color: rgba(20, 18, 24, 0.94);
+.hmcl-page-center {
+    -fx-background-color: -m3-color-surface;
 }
 
 .hmcl-context-sidebar {
-    -fx-background-color: rgba(251, 248, 255, 0.72);
-    -fx-border-color: transparent rgba(73, 69, 79, 0.18) transparent transparent;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1 0 0;
 }
 
-.m3-dark .hmcl-context-sidebar {
-    -fx-background-color: rgba(20, 18, 24, 0.78);
+.hmcl-card-list {
+    -fx-spacing: 10;
+}
+
+.hmcl-account-card {
+    -m3-one-line-height: 56px;
+    -m3-two-line-height: 64px;
+    -m3-container-shape: 4px;
+    -m3-horizontal-padding: 12px;
+    -fx-background-color: -m3-color-surface-container-lowest;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.12, 0, 1);
 }
 
 .hmcl-sidebar-item {
