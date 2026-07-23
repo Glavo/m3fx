@@ -36,6 +36,7 @@ final class HMCLHomeView extends BorderPane {
     private final M3ListItem instanceItem = new M3ListItem();
     private final M3ListItem allInstancesItem = new M3ListItem();
     private final M3ListItem downloadItem = new M3ListItem();
+    private final M3ListItem settingsItem = new M3ListItem();
     private final M3ListItem multiplayerItem = new M3ListItem();
     private final M3ListItem feedbackItem = new M3ListItem();
 
@@ -66,9 +67,12 @@ final class HMCLHomeView extends BorderPane {
                 instanceItem,
                 allInstancesItem,
                 downloadItem,
+                HMCLDemoUi.sectionLabel(""),
+                settingsItem,
                 multiplayerItem,
                 feedbackItem
         );
+        sidebar.getStyleClass().add("hmcl-home-sidebar");
 
         accountItem.setOnAction(event -> controller.openAccounts());
         instanceItem.setOnAction(event -> controller.openSelectedInstance());
@@ -76,6 +80,8 @@ final class HMCLHomeView extends BorderPane {
         allInstancesItem.setOnAction(event -> controller.openInstances());
         downloadItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.DOWNLOAD));
         downloadItem.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.GAME));
+        settingsItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.SETTINGS));
+        settingsItem.setOnAction(event -> controller.openSettings(HMCLDemoRoute.SettingsSection.GLOBAL_GAME));
         multiplayerItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.GROUP));
         multiplayerItem.setOnAction(event -> controller.openMultiplayer());
         feedbackItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.CHAT));
@@ -135,8 +141,10 @@ final class HMCLHomeView extends BorderPane {
         VBox sidebar = (VBox) getLeft();
         sidebar.getChildren().set(0, HMCLDemoUi.sectionLabel(strings.get("home.section.account")));
         sidebar.getChildren().set(2, HMCLDemoUi.sectionLabel(strings.get("home.section.version")));
+        sidebar.getChildren().set(6, HMCLDemoUi.sectionLabel(strings.get("home.section.launcher")));
         allInstancesItem.setHeadlineText(strings.get("home.all_instances"));
         downloadItem.setHeadlineText(strings.get("home.download"));
+        settingsItem.setHeadlineText(strings.get("home.launcher_settings"));
         multiplayerItem.setHeadlineText(strings.get("home.multiplayer"));
         feedbackItem.setHeadlineText(strings.get("home.feedback"));
         announcementTitle.setText(strings.get("home.preview.title"));

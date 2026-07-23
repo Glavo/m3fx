@@ -1,68 +1,325 @@
-/* HMCL Material 3 demo application styles. Prefer M3FX theme tokens for color. */
+/* Window chrome modeled on HMCL DecoratorSkin + root.css */
 
-.hmcl-demo-root,
-.hmcl-demo-shell,
-.hmcl-demo-scaffold,
-.hmcl-route-host {
+/* Transparent stage: keep the 8px shadow gutter clear of the M3 surface fill. */
+.m3-root,
+.m3-overlay-pane,
+.hmcl-demo-shell {
     -fx-background-color: transparent;
 }
 
-.hmcl-page-column,
-.hmcl-page-scroll,
-.hmcl-home-page,
-.hmcl-accounts-page,
-.hmcl-instances-page,
-.hmcl-instance-detail-page,
-.hmcl-download-page,
-.hmcl-settings-page,
-.hmcl-multiplayer-page {
+.hmcl-window-body {
     -fx-background-color: transparent;
 }
 
-.hmcl-context-sidebar {
-    -fx-background-color: -m3-surface-container-low;
-    -fx-padding: 8 0 12 0;
+.hmcl-window-parent {
+    -fx-background-color: -m3-color-surface;
 }
 
-.hmcl-sidebar-section-label {
-    -fx-padding: 16 16 8 16;
-    -fx-opacity: 0.8;
+.hmcl-window-wallpaper {
+    -fx-opacity: 1;
 }
 
-.hmcl-page-toolbar {
-    -fx-alignment: center-left;
+.hmcl-window-frame {
+    -fx-background-color: transparent;
 }
 
-.hmcl-empty-state {
-    -fx-opacity: 0.72;
-    -fx-padding: 8 0 8 0;
+.hmcl-route-host,
+.hmcl-route-host .m3-animated-content-item {
+    -fx-background-color: transparent;
+}
+
+/* .jfx-tool-bar.background → primary-container, 40px */
+.hmcl-window-title-bar {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+}
+
+.hmcl-window-title-label,
+.hmcl-window-brand .m3-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.hmcl-window-button {
+    -m3-content-color: -m3-color-on-primary-container;
+    -m3-container-height: 40px;
+    -m3-container-width: 40px;
+    -m3-container-shape: 0px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-background-color: transparent;
+}
+
+.hmcl-window-button .m3-icon-graphic,
+.hmcl-window-button .hmcl-demo-icon {
+    -fx-fill: -m3-color-on-primary-container;
+}
+
+.hmcl-window-button .m3-state-layer,
+.hmcl-window-button .m3-ripple {
+    -fx-background-color: -m3-color-on-primary-container;
+}
+
+.hmcl-window-close:hover,
+.hmcl-window-close:armed,
+.hmcl-window-close:pressed {
+    -m3-container-color: #e81123;
+    -m3-content-color: white;
+}
+
+.hmcl-window-close:hover .hmcl-demo-icon,
+.hmcl-window-close:armed .hmcl-demo-icon,
+.hmcl-window-close:pressed .hmcl-demo-icon {
+    -fx-fill: white;
+}
+
+.hmcl-demo-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+/* Home: RootPage left gray-background + MainPage launch pane */
+
+.hmcl-home-page {
+    -fx-background-color: transparent;
 }
 
 .hmcl-home-center {
     -fx-background-color: transparent;
 }
 
-.hmcl-announcement-card {
-    -fx-max-width: 560;
+.hmcl-home-sidebar {
+    -fx-background-color: rgba(251, 248, 255, 0.72);
+    -fx-border-color: transparent rgba(73, 69, 79, 0.18) transparent transparent;
+    -fx-border-width: 0 1 0 0;
 }
 
-.hmcl-launch-button {
-    -fx-min-width: 220;
+.m3-dark .hmcl-home-sidebar {
+    -fx-background-color: rgba(20, 18, 24, 0.78);
+    -fx-border-color: transparent rgba(202, 196, 208, 0.18) transparent transparent;
 }
 
-.hmcl-account-row {
-    -fx-background-radius: 12;
+/* class-title */
+.hmcl-class-title {
+    -fx-font-size: 12px;
+    -fx-padding: 8 16 8 16;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-weight: bold;
 }
 
-.hmcl-seed-button {
-    -fx-pref-width: 40;
-    -fx-pref-height: 40;
-    -fx-min-width: 40;
-    -fx-min-height: 40;
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
+/* advanced-list-item approximation */
+.hmcl-advanced-list-item {
+    -m3-one-line-height: 40px;
+    -m3-two-line-height: 52px;
+    -m3-three-line-height: 60px;
+    -m3-container-shape: 0px;
+    -m3-horizontal-padding: 16px;
+    -m3-vertical-padding: 10px;
+    -m3-content-spacing: 10px;
+    -m3-list-item-selected-container-color: derive(-m3-color-secondary-container, 0%);
+    -fx-background-radius: 0;
 }
 
-.hmcl-demo-icon {
-    -fx-opacity: 0.92;
+.hmcl-advanced-list-item .m3-list-item-headline {
+    -fx-font-size: 13px;
+}
+
+.hmcl-advanced-list-item .m3-list-item-supporting {
+    -fx-font-size: 10px;
+}
+
+/* announcement card */
+.hmcl-card.hmcl-announcement {
+    -fx-background-color: -m3-color-surface;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.26), 10, 0.12, -1, 2);
+    -fx-padding: 16px;
+}
+
+.hmcl-announcement .m3-text {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+/* Home launch control: Material 3 filled split button */
+.m3-split-button.hmcl-home-launch {
+    -m3-split-button-container-height: 56px;
+    -m3-split-button-outer-corner: 28px;
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-hovered-inner-corner: 12px;
+    -m3-split-button-pressed-inner-corner: 12px;
+    -m3-split-button-selected-inner-corner: 28px;
+    -m3-split-button-action-leading-space: 24px;
+    -m3-split-button-action-trailing-space: 20px;
+    -m3-split-button-menu-width: 56px;
+}
+
+.m3-split-button.hmcl-home-launch .hmcl-launch-label,
+.m3-split-button.hmcl-home-launch .hmcl-launch-instance {
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.hmcl-launch-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.hmcl-launch-instance {
+    -fx-font-size: 12px;
+}
+
+/* Secondary pages: opaque surface (HMCL content-background), not see-through wallpaper */
+
+.hmcl-secondary-page {
+    -fx-background-color: -m3-color-surface;
+}
+
+.hmcl-page-center {
+    -fx-background-color: -m3-color-surface;
+}
+
+.hmcl-context-sidebar {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+
+.hmcl-card-list {
+    -fx-spacing: 10;
+}
+
+.hmcl-account-card {
+    -m3-one-line-height: 56px;
+    -m3-two-line-height: 64px;
+    -m3-container-shape: 4px;
+    -m3-horizontal-padding: 12px;
+    -fx-background-color: -m3-color-surface-container-lowest;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.12, 0, 1);
+}
+
+.hmcl-sidebar-item {
+    -m3-one-line-height: 40px;
+    -m3-two-line-height: 48px;
+    -m3-container-shape: 0px;
+    -m3-horizontal-padding: 16px;
+    -m3-vertical-padding: 8px;
+    -m3-content-spacing: 10px;
+}
+
+.hmcl-sidebar-item .m3-list-item-headline {
+    -fx-font-size: 13px;
+}
+
+.hmcl-sidebar-item .m3-list-item-supporting {
+    -fx-font-size: 10px;
+}
+
+.hmcl-sidebar-section-label {
+    -fx-font-size: 12px;
+    -fx-padding: 8 16 8 16;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-weight: bold;
+}
+
+.hmcl-page-body {
+    -fx-background-color: transparent;
+}
+
+.hmcl-page-toolbar {
+    -fx-alignment: center-left;
+    -fx-background-color: -m3-color-surface;
+    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 6 8 6 8;
+    -fx-spacing: 6;
+}
+
+.hmcl-list-surface,
+.hmcl-settings-card {
+    -fx-background-color: -m3-color-surface-container-lowest;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.14), 8, 0.10, 0, 1);
+}
+
+.hmcl-settings-section-header {
+    -fx-padding: 0 4 0 4;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.hmcl-dense-list .m3-list-item,
+.hmcl-account-row,
+.hmcl-instance-row,
+.hmcl-mod-row,
+.hmcl-version-row {
+    -m3-one-line-height: 46px;
+    -m3-two-line-height: 52px;
+    -m3-three-line-height: 58px;
+    -m3-container-shape: 0px;
+    -m3-horizontal-padding: 12px;
+    -m3-vertical-padding: 6px;
+    -m3-content-spacing: 10px;
+}
+
+.hmcl-dense-list .m3-list-item-headline,
+.hmcl-account-row .m3-list-item-headline,
+.hmcl-instance-row .m3-list-item-headline,
+.hmcl-mod-row .m3-list-item-headline,
+.hmcl-version-row .m3-list-item-headline {
+    -fx-font-size: 14px;
+}
+
+.hmcl-dense-list .m3-list-item-supporting,
+.hmcl-account-row .m3-list-item-supporting,
+.hmcl-instance-row .m3-list-item-supporting,
+.hmcl-mod-row .m3-list-item-supporting,
+.hmcl-version-row .m3-list-item-supporting {
+    -fx-font-size: 12px;
+}
+
+.hmcl-version-tag {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 4px;
+    -fx-padding: 2 8 2 8;
+    -fx-text-fill: -m3-color-on-secondary-container;
+    -fx-font-size: 11px;
+}
+
+.hmcl-installer-name-card .m3-card-container {
+    -fx-padding: 12 16 12 16;
+}
+
+.hmcl-installer-card {
+    -m3-container-shape: 4px;
+}
+
+.hmcl-installer-card .m3-card-container {
+    -fx-padding: 12px;
+}
+
+.hmcl-page-scroll,
+.hmcl-page-scroll > .viewport,
+.hmcl-page-scroll > .corner {
+    -fx-background-color: transparent;
+}
+
+.hmcl-dialog-warning {
+    -fx-background-color: -m3-color-error-container;
+    -fx-background-radius: 4px;
+    -fx-padding: 10 12 10 12;
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.hmcl-demo-shell .scroll-pane,
+.hmcl-demo-shell .scroll-pane > .viewport,
+.hmcl-demo-shell .scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+.hmcl-instance-menu-item {
+    -m3-one-line-height: 44px;
+    -m3-two-line-height: 52px;
+    -m3-container-shape: 0px;
+    -fx-pref-width: 260px;
 }
