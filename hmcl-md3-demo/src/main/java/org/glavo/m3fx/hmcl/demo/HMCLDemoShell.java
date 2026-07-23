@@ -110,8 +110,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Close window button.
     private final M3IconButton closeButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
 
-    /// Routes retained for Back navigation.
-    private final Deque<HMCLDemoRoute> backStack = new ArrayDeque<>();
+    /// Routes retained for Back navigation, with the enter transition used to open each destination.
+    private final Deque<StackEntry> backStack = new ArrayDeque<>();
 
     private final HMCLHomeView homeView;
     private final HMCLAccountsView accountsView;
@@ -250,17 +250,18 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             return;
         }
         backStack.clear();
-        showRoute(new HMCLDemoRoute.Home(), TransitionKind.BACKWARD);
+        // Returning to the wallpaper home uses the soft navigation reverse, not a full shared-axis pan.
+        showRoute(new HMCLDemoRoute.Home(), TransitionKind.NAVIGATION_BACK);
     }
 
     @Override
     public void openAccounts() {
-        pushRoute(new HMCLDemoRoute.Accounts());
+        pushRoute(new HMCLDemoRoute.Accounts(), TransitionKind.NAVIGATION);
     }
 
     @Override
     public void openInstances() {
-        pushRoute(new HMCLDemoRoute.Instances());
+        pushRoute(new HMCLDemoRoute.Instances(), TransitionKind.NAVIGATION);
     }
 
     @Override
@@ -280,7 +281,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
                 replaceSection(target);
                 return;
             }
-            pushRoute(target);
+            pushRoute(target, TransitionKind.FORWARD);
         }
     }
 
@@ -291,7 +292,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             replaceSection(target);
             return;
         }
-        pushRoute(target);
+        pushRoute(target, TransitionKind.NAVIGATION);
     }
 
     @Override
@@ -301,12 +302,12 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             replaceSection(target);
             return;
         }
-        pushRoute(target);
+        pushRoute(target, TransitionKind.NAVIGATION);
     }
 
     @Override
     public void openMultiplayer() {
-        pushRoute(new HMCLDemoRoute.Multiplayer());
+        pushRoute(new HMCLDemoRoute.Multiplayer(), TransitionKind.NAVIGATION);
     }
 
     @Override
@@ -315,7 +316,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             goHome();
             return;
         }
-        showRoute(backStack.pop(), TransitionKind.BACKWARD);
+        StackEntry entry = backStack.pop();
+        showRoute(entry.route(), reverseOf(entry.enterKind()));
     }
 
     @Override
@@ -363,16 +365,32 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         updateTitleBar();
     }
 
-    /// Pushes the current route and shows `route` with a forward transition.
+    /// Pushes the current route and shows `route` with the requested enter transition.
     ///
     /// @param route the destination route
-    private void pushRoute(HMCLDemoRoute route) {
+    /// @param enterKind the enter transition stored for the matching back navigation
+    private void pushRoute(HMCLDemoRoute route, TransitionKind enterKind) {
         Objects.requireNonNull(route, "route");
+        Objects.requireNonNull(enterKind, "enterKind");
         if (route.equals(currentRoute)) {
             return;
         }
-        backStack.push(currentRoute);
-        showRoute(route, TransitionKind.FORWARD);
+        backStack.push(new StackEntry(currentRoute, enterKind));
+        showRoute(route, enterKind);
+    }
+
+    /// Returns the reverse transition for a stored enter kind.
+    ///
+    /// @param enterKind the enter transition used to open the current page
+    /// @return the reverse transition
+    private static TransitionKind reverseOf(TransitionKind enterKind) {
+        return switch (enterKind) {
+            case FORWARD -> TransitionKind.BACKWARD;
+            case BACKWARD -> TransitionKind.FORWARD;
+            case NAVIGATION -> TransitionKind.NAVIGATION_BACK;
+            case NAVIGATION_BACK -> TransitionKind.NAVIGATION;
+            case SECTION, IMMEDIATE -> TransitionKind.SECTION;
+        };
     }
 
     /// Replaces the active route without stacking when only a section changed.
@@ -400,7 +418,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             pageHost.snapToCurrentState();
         }
         updateTitleBar();
-        if (route instanceof HMCLDemoRoute.Home && kind != TransitionKind.FORWARD) {
+        if (route instanceof HMCLDemoRoute.Home
+                && kind != TransitionKind.FORWARD
+                && kind != TransitionKind.NAVIGATION) {
             backStack.clear();
         }
     }
@@ -416,9 +436,18 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         return switch (kind) {
             case FORWARD -> HMCLDemoTransitions.forward();
             case BACKWARD -> HMCLDemoTransitions.backward();
+            case NAVIGATION -> HMCLDemoTransitions.navigation();
+            case NAVIGATION_BACK -> HMCLDemoTransitions.navigationBack();
             case SECTION -> HMCLDemoTransitions.sectionUp();
             case IMMEDIATE -> HMCLDemoTransitions.none();
         };
+    }
+
+    /// One retained back-stack entry.
+    ///
+    /// @param route the previous route
+    /// @param enterKind the enter transition used to leave `route`
+    private record StackEntry(HMCLDemoRoute route, TransitionKind enterKind) {
     }
 
     /// Returns the retained page node for `route`.
@@ -662,11 +691,17 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     /// Identifies how a route replacement should animate.
     private enum TransitionKind {
-        /// Secondary stack push.
+        /// Hierarchical push (for example instance detail).
         FORWARD,
 
-        /// Secondary stack pop or explicit home return.
+        /// Hierarchical pop.
         BACKWARD,
+
+        /// Ordinary shell navigation from home (HMCL `NAVIGATION`).
+        NAVIGATION,
+
+        /// Reverse of [#NAVIGATION].
+        NAVIGATION_BACK,
 
         /// In-page section replacement.
         SECTION,
