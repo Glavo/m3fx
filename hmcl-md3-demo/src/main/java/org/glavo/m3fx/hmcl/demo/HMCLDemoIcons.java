@@ -38,9 +38,6 @@ final class HMCLDemoIcons {
     /// The back arrow icon path.
     static final String BACK = "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z";
 
-    /// The menu icon path.
-    static final String MENU = "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
-
     /// The palette icon path.
     static final String PALETTE =
             "M12 3a9 9 0 0 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a1.5 1.5 0 0 1 0-3h1.8A7.2 7.2 0 0 0 21 7.8C21 5.1 16.9 3 12 3zM6.5 13A1.5 1.5 0 1 1 6.5 10a1.5 1.5 0 0 1 0 3zm2-4A1.5 1.5 0 1 1 8.5 6a1.5 1.5 0 0 1 0 3zm4-1A1.5 1.5 0 1 1 12.5 5a1.5 1.5 0 0 1 0 3zm4 2A1.5 1.5 0 1 1 16.5 7a1.5 1.5 0 0 1 0 3z";
@@ -48,12 +45,9 @@ final class HMCLDemoIcons {
     /// The add icon path.
     static final String ADD = "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
 
-    /// The play icon path.
-    static final String PLAY = "M8 5v14l11-7z";
-
-    /// The search icon path.
-    static final String SEARCH =
-            "M9.5 3a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm5.4 8.5L22 20.6 20.6 22l-7.1-7.1z";
+    /// The refresh icon path.
+    static final String REFRESH =
+            "M17.7 6.3A7.9 7.9 0 0 0 12 4a8 8 0 0 0-7.8 9.8l-2 .6A10 10 0 0 1 12 2c2.8 0 5.3 1.1 7.1 2.9L22 2v8h-8zM6.3 17.7A7.9 7.9 0 0 0 12 20a8 8 0 0 0 7.8-9.8l2-.6A10 10 0 0 1 12 22c-2.8 0-5.3-1.1-7.1-2.9L2 22v-8h8z";
 
     /// The help icon path.
     static final String HELP =
@@ -85,12 +79,11 @@ final class HMCLDemoIcons {
         return icon;
     }
 
-    /// Creates a directional icon that mirrors under right-to-left orientation.
+    /// Creates the back icon and mirrors it under right-to-left orientation.
     ///
-    /// @param path the SVG path content
-    /// @return the configured directional icon
-    static M3SVGIcon directional(String path) {
-        M3SVGIcon icon = create(path);
+    /// @return the configured back icon
+    static M3SVGIcon back() {
+        M3SVGIcon icon = create(BACK);
         icon.setAutoMirrored(true);
         return icon;
     }

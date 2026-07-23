@@ -5,15 +5,15 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.scene.Node;
 import javafx.scene.control.ToggleGroup;
+import javafx.geometry.Insets;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
-import org.glavo.m3fx.controls.M3CardVariant;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
@@ -21,9 +21,6 @@ import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
-import org.glavo.m3fx.controls.M3Tab;
-import org.glavo.m3fx.controls.M3TabBar;
-import org.glavo.m3fx.controls.M3TabBarVariant;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -49,28 +46,64 @@ public final class HMCLSettingsView extends HMCLDemoView {
     @Override
     protected Node createContent() {
         StackPane contentHost = new StackPane();
+        contentHost.getStyleClass().add("hmcl-settings-surface");
+        contentHost.setPadding(new Insets(12.0));
         contentHost.setMinWidth(0.0);
         contentHost.setMaxWidth(Double.MAX_VALUE);
-
-        M3Tab general = new M3Tab(text("settings.tab.general"));
-        M3Tab appearance = new M3Tab(text("settings.tab.appearance"));
-        M3Tab downloads = new M3Tab(text("settings.tab.downloads"));
-        general.setSelected(true);
-
-        general.setOnAction(event -> contentHost.getChildren().setAll(createGeneralSettings()));
-        appearance.setOnAction(event -> contentHost.getChildren().setAll(createAppearanceSettings()));
-        downloads.setOnAction(event -> contentHost.getChildren().setAll(createDownloadSettings()));
-
-        M3TabBar tabs = new M3TabBar();
-        tabs.setVariant(M3TabBarVariant.SECONDARY);
-        tabs.getTabs().addAll(general, appearance, downloads);
         contentHost.getChildren().setAll(createGeneralSettings());
+        return contextualPage(createSidebar(contentHost), contentHost);
+    }
 
-        return page(
-                heading(text("settings.title"), text("settings.subtitle")),
-                tabs,
-                contentHost
+    /// Creates the fixed launcher-settings category sidebar.
+    ///
+    /// @param contentHost the central content host replaced by category actions
+    /// @return the configured settings sidebar
+    private Node createSidebar(StackPane contentHost) {
+        M3Text label = new M3Text(text("settings.title"), M3TextRole.TITLE_MEDIUM);
+        M3ListPane categories = new M3ListPane();
+        categories.setListStyle(M3ListStyle.SEGMENTED);
+        categories.setSelectionMode(M3SelectionMode.SINGLE);
+        categories.setAllowEmptySelection(false);
+
+        M3ListItem general = settingsCategory(
+                text("settings.tab.general"),
+                HMCLDemoIcons.SETTINGS,
+                () -> contentHost.getChildren().setAll(createGeneralSettings())
         );
+        M3ListItem appearance = settingsCategory(
+                text("settings.tab.appearance"),
+                HMCLDemoIcons.PALETTE,
+                () -> contentHost.getChildren().setAll(createAppearanceSettings())
+        );
+        M3ListItem downloads = settingsCategory(
+                text("settings.tab.downloads"),
+                HMCLDemoIcons.DISCOVER,
+                () -> contentHost.getChildren().setAll(createDownloadSettings())
+        );
+        general.setSelected(true);
+        categories.getItems().addAll(general, appearance, downloads);
+
+        VBox sidebar = new VBox(8.0, label, categories);
+        sidebar.setPadding(new Insets(12.0, 8.0, 10.0, 8.0));
+        sidebar.setPrefWidth(200.0);
+        sidebar.setMinWidth(200.0);
+        sidebar.setMaxWidth(200.0);
+        return sidebar;
+    }
+
+    /// Creates one launcher-settings sidebar category.
+    ///
+    /// @param label    the localized category label
+    /// @param iconPath the category icon path
+    /// @param action   the content replacement action
+    /// @return the configured category row
+    private static M3ListItem settingsCategory(String label, String iconPath, Runnable action) {
+        M3ListItem item = new M3ListItem(label);
+        item.getStyleClass().add("hmcl-sidebar-item");
+        item.setLeading(HMCLDemoIcons.create(iconPath));
+        item.setOneLineHeight(40.0);
+        item.setOnAction(event -> action.run());
+        return item;
     }
 
     /// Creates the general launcher settings.
@@ -144,7 +177,6 @@ public final class HMCLSettingsView extends HMCLDemoView {
         M3Button orange = colorButton("settings.color.orange", Color.web("#8B5000"));
         FlowPane colors = flow(purple, green, orange);
         M3Card colorCard = card(
-                M3CardVariant.FILLED,
                 new M3Text(text("settings.appearance.color"), M3TextRole.TITLE_MEDIUM),
                 wrapped(text("settings.appearance.color.supporting")),
                 colors
@@ -204,7 +236,6 @@ public final class HMCLSettingsView extends HMCLDemoView {
         threads.valueProperty().addListener((observable, oldValue, newValue) ->
                 threadValue.setText(text("settings.download.threads.value", Math.round(newValue.doubleValue()))));
         M3Card threadCard = card(
-                M3CardVariant.FILLED,
                 new M3Text(text("settings.download.threads"), M3TextRole.TITLE_MEDIUM),
                 threadValue,
                 threads

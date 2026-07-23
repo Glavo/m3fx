@@ -9,6 +9,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -18,6 +19,7 @@ import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Text;
@@ -25,7 +27,6 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
 import java.util.Objects;
 
 /// Displays HMCL's wallpaper-first launch page with its account, version, and launcher sidebar.
@@ -42,6 +43,9 @@ public final class HMCLHomeView extends StackPane {
 
     /// The full-bleed HMCL wallpaper behind page controls.
     private final ImageView wallpaperView = new ImageView();
+
+    /// Whether the preview-channel notice remains visible for this demo session.
+    private boolean updateNoticeVisible = true;
 
     /// Creates the wallpaper-first home page.
     ///
@@ -77,15 +81,22 @@ public final class HMCLHomeView extends StackPane {
         page.getStyleClass().add("hmcl-home-overlay");
         page.setLeft(createSidebar());
 
-        M3Card update = createUpdateNotice();
-        StackPane.setAlignment(update, Pos.TOP_RIGHT);
-        StackPane.setMargin(update, new Insets(18.0, 20.0, 0.0, 0.0));
+        StackPane foreground = new StackPane();
+        foreground.getStyleClass().add("hmcl-home-foreground");
+        if (updateNoticeVisible) {
+            M3Card update = createUpdateNotice();
+            StackPane.setAlignment(update, Pos.TOP_CENTER);
+            StackPane.setMargin(update, new Insets(20.0, 20.0, 0.0, 20.0));
+            foreground.getChildren().add(update);
+        }
 
         M3SplitButton launch = createLaunchButton();
         StackPane.setAlignment(launch, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(launch, new Insets(0.0, 22.0, 22.0, 0.0));
+        StackPane.setMargin(launch, new Insets(0.0, 20.0, 20.0, 0.0));
+        foreground.getChildren().add(launch);
+        page.setCenter(foreground);
 
-        getChildren().setAll(wallpaperView, page, update, launch);
+        getChildren().setAll(wallpaperView, page);
     }
 
     /// Creates the fixed HMCL navigation sidebar shown only on Home.
@@ -94,10 +105,10 @@ public final class HMCLHomeView extends StackPane {
     private Node createSidebar() {
         VBox sidebar = new VBox(3.0);
         sidebar.getStyleClass().add("hmcl-home-sidebar");
-        sidebar.setPadding(new Insets(16.0, 8.0, 12.0, 8.0));
-        sidebar.setPrefWidth(224.0);
-        sidebar.setMinWidth(224.0);
-        sidebar.setMaxWidth(224.0);
+        sidebar.setPadding(new Insets(10.0, 8.0, 10.0, 8.0));
+        sidebar.setPrefWidth(200.0);
+        sidebar.setMinWidth(200.0);
+        sidebar.setMaxWidth(200.0);
 
         sidebar.getChildren().add(sectionLabel(text("home.section.account")));
         sidebar.getChildren().add(createAccountItem());
@@ -106,13 +117,11 @@ public final class HMCLHomeView extends StackPane {
         sidebar.getChildren().add(createCurrentInstanceItem());
         sidebar.getChildren().add(navigationItem(
                 text("home.all_instances"),
-                text("instances.count", state.getInstances().size()),
                 HMCLDemoIcons.INSTANCES,
                 () -> actions.navigate(HMCLDemoActions.ROUTE_INSTANCES)
         ));
         sidebar.getChildren().add(navigationItem(
                 text("home.download"),
-                text("discover.subtitle"),
                 HMCLDemoIcons.DISCOVER,
                 () -> actions.navigate(HMCLDemoActions.ROUTE_DISCOVER)
         ));
@@ -120,13 +129,11 @@ public final class HMCLHomeView extends StackPane {
         sidebar.getChildren().add(sectionLabel(text("home.section.launcher")));
         sidebar.getChildren().add(navigationItem(
                 text("home.launcher_settings"),
-                text("settings.subtitle"),
                 HMCLDemoIcons.SETTINGS,
                 () -> actions.navigate(HMCLDemoActions.ROUTE_SETTINGS)
         ));
         sidebar.getChildren().add(navigationItem(
                 text("home.multiplayer"),
-                text("home.multiplayer.supporting"),
                 HMCLDemoIcons.HOME,
                 () -> actions.dispatch("multiplayer")
         ));
@@ -136,7 +143,6 @@ public final class HMCLHomeView extends StackPane {
         sidebar.getChildren().add(spacer);
         sidebar.getChildren().add(navigationItem(
                 text("home.feedback"),
-                text("home.feedback.supporting"),
                 HMCLDemoIcons.CHAT,
                 () -> actions.dispatch("feedback")
         ));
@@ -170,7 +176,7 @@ public final class HMCLHomeView extends StackPane {
         item.setSupportingText(instance == null ? text("home.no_instance") : instance.name());
         item.setLeading(instance == null
                 ? HMCLDemoIcons.create(HMCLDemoIcons.INSTANCES)
-                : instanceIcon(instance, 32.0));
+                : instanceIcon());
         item.setDisable(instance == null);
         item.setOnAction(event -> actions.navigate(HMCLDemoActions.ROUTE_INSTANCE_DETAIL));
         return item;
@@ -179,19 +185,16 @@ public final class HMCLHomeView extends StackPane {
     /// Creates one action row in the Home sidebar.
     ///
     /// @param headline the row headline
-    /// @param supporting the row supporting text
     /// @param iconPath the row icon path
     /// @param action the action invoked by the row
     /// @return the configured list item
     private M3ListItem navigationItem(
             String headline,
-            String supporting,
             String iconPath,
             Runnable action
     ) {
         M3ListItem item = new M3ListItem(headline);
         item.getStyleClass().add("hmcl-home-navigation-item");
-        item.setSupportingText(supporting);
         item.setLeading(HMCLDemoIcons.create(iconPath));
         item.setOnAction(event -> action.run());
         return item;
@@ -204,28 +207,40 @@ public final class HMCLHomeView extends StackPane {
     private M3Text sectionLabel(String value) {
         M3Text label = new M3Text(value, M3TextRole.LABEL_SMALL);
         label.getStyleClass().add("hmcl-sidebar-section-label");
+        label.setMaxWidth(Double.MAX_VALUE);
         VBox.setMargin(label, new Insets(11.0, 12.0, 3.0, 12.0));
         return label;
     }
 
-    /// Creates the compact launcher-update notice at the top-right of the wallpaper.
+    /// Creates the preview-channel notice above the wallpaper content.
     ///
     /// @return the update card
     private M3Card createUpdateNotice() {
-        M3Text channel = new M3Text(text("home.update.channel"), M3TextRole.LABEL_MEDIUM);
-        M3Text title = new M3Text(text("home.update.title"), M3TextRole.TITLE_SMALL);
-        title.setWrapText(true);
-        M3Text supporting = new M3Text(text("home.update.supporting"), M3TextRole.BODY_SMALL);
+        M3Text title = new M3Text(text("home.preview.title"), M3TextRole.TITLE_MEDIUM);
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        M3IconButton close = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
+        close.setAccessibleText(text("common.close"));
+        close.setOnAction(event -> {
+            updateNoticeVisible = false;
+            rebuildContent();
+        });
+        HBox header = new HBox(8.0, title, headerSpacer, close);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        M3Text supporting = new M3Text(text("home.preview.body"), M3TextRole.BODY_MEDIUM);
         supporting.setWrapText(true);
+        M3Text feedback = new M3Text(text("home.preview.feedback"), M3TextRole.BODY_SMALL);
+        feedback.setWrapText(true);
         M3Button view = new M3Button(text("action.view_update"), M3ButtonVariant.TEXT);
         view.setOnAction(event -> actions.dispatch(HMCLDemoActions.ACTION_REFRESH));
 
-        VBox content = new VBox(5.0, channel, title, supporting, view);
-        content.setPadding(new Insets(12.0, 14.0, 10.0, 14.0));
-        M3Card card = new M3Card(content, M3CardVariant.FILLED);
+        VBox content = new VBox(8.0, header, supporting, feedback, view);
+        M3Card card = new M3Card(content, M3CardVariant.ELEVATED);
         card.getStyleClass().add("hmcl-home-update");
-        card.setPrefWidth(276.0);
-        card.setMaxWidth(276.0);
+        card.setPrefWidth(560.0);
+        card.setMaxWidth(680.0);
+        card.setMaxHeight(Region.USE_PREF_SIZE);
         return card;
     }
 
@@ -247,11 +262,11 @@ public final class HMCLHomeView extends StackPane {
         M3SplitButton button = new M3SplitButton();
         button.getStyleClass().add("hmcl-home-launch");
         button.setVariant(M3ButtonVariant.FILLED);
-        button.setSize(M3ButtonSize.LARGE);
+        button.setSize(M3ButtonSize.MEDIUM);
         button.setGraphic(label);
-        button.setPrefWidth(246.0);
-        button.setMinWidth(246.0);
-        button.setMaxWidth(246.0);
+        button.setPrefWidth(230.0);
+        button.setMinWidth(230.0);
+        button.setMaxWidth(230.0);
         button.setDisable(instance == null || account == null);
         button.setAccessibleText(text("home.launch"));
         button.setOnAction(event -> actions.dispatch(HMCLDemoActions.ACTION_PLAY));
@@ -263,7 +278,7 @@ public final class HMCLHomeView extends StackPane {
                     candidate.gameVersion(),
                     candidate.loader()
             ));
-            item.setLeading(instanceIcon(candidate, 32.0));
+            item.setLeading(instanceIcon());
             item.setSelected(candidate.equals(instance));
             item.setOnAction(event -> {
                 state.selectInstance(candidate.id());
@@ -285,23 +300,11 @@ public final class HMCLHomeView extends StackPane {
         wallpaperView.setImage(HMCLDemoAssets.image(path));
     }
 
-    /// Returns an HMCL instance image matching the displayed loader.
+    /// Returns the classic Minecraft grass icon used by the Home instance entry.
     ///
-    /// @param instance the represented instance
-    /// @param size the requested square size
     /// @return the image view
-    private ImageView instanceIcon(HMCLDemoInstance instance, double size) {
-        String loader = instance.loader().toLowerCase(Locale.ROOT);
-        String image = loader.contains("neoforge")
-                ? "neoforge"
-                : loader.contains("forge")
-                ? "forge"
-                : loader.contains("fabric")
-                ? "fabric"
-                : loader.contains("quilt")
-                ? "quilt"
-                : "grass";
-        return HMCLDemoAssets.imageView("img/" + image + ".png", size, size);
+    private ImageView instanceIcon() {
+        return HMCLDemoAssets.imageView("img/grass.png", 32.0, 32.0);
     }
 
     /// Returns a deterministic Minecraft skin face for one account.

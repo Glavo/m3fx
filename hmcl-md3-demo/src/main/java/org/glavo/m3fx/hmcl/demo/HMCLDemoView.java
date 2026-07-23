@@ -9,7 +9,6 @@ import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -47,7 +46,9 @@ abstract class HMCLDemoView extends BorderPane {
         this.actions = Objects.requireNonNull(actions, "actions");
 
         scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("hmcl-page-scroll");
         setCenter(scrollPane);
     }
 
@@ -84,28 +85,12 @@ abstract class HMCLDemoView extends BorderPane {
     /// @param children the page children in display order
     /// @return the configured page body
     protected final VBox page(Node... children) {
-        VBox page = new VBox(24.0, children);
-        page.setPadding(new Insets(28.0, 32.0, 40.0, 32.0));
+        VBox page = new VBox(18.0, children);
+        page.setPadding(new Insets(16.0, 18.0, 24.0, 18.0));
         page.setFillWidth(true);
         page.setMinWidth(0.0);
         page.setMaxWidth(Double.MAX_VALUE);
         return page;
-    }
-
-    /// Creates a page heading with title and supporting text.
-    ///
-    /// @param title      the localized title
-    /// @param supporting the localized supporting text
-    /// @return the heading node
-    protected final VBox heading(String title, String supporting) {
-        M3Text titleText = new M3Text(title, M3TextRole.HEADLINE_LARGE);
-        titleText.setWrapText(true);
-        M3Text supportingText = new M3Text(supporting, M3TextRole.BODY_LARGE);
-        supportingText.setWrapText(true);
-        VBox heading = new VBox(6.0, titleText, supportingText);
-        heading.setMinWidth(0.0);
-        heading.setMaxWidth(Double.MAX_VALUE);
-        return heading;
     }
 
     /// Creates a localized section heading.
@@ -113,22 +98,43 @@ abstract class HMCLDemoView extends BorderPane {
     /// @param title the localized section title
     /// @return the section heading
     protected final M3Text sectionTitle(String title) {
-        M3Text text = new M3Text(title, M3TextRole.TITLE_LARGE);
+        M3Text text = new M3Text(title, M3TextRole.TITLE_SMALL);
+        text.getStyleClass().add("hmcl-section-label");
         text.setWrapText(true);
         return text;
     }
 
+    /// Creates HMCL's shared fixed-sidebar page structure with compact Material spacing.
+    ///
+    /// @param sidebar the page-specific navigation and bottom actions
+    /// @param body    the page content shown beside the sidebar
+    /// @return the two-pane page root
+    protected final BorderPane contextualPage(Node sidebar, Node body) {
+        sidebar.getStyleClass().add("hmcl-context-sidebar");
+        body.getStyleClass().add("hmcl-page-center");
+        BorderPane.setMargin(body, new Insets(10.0));
+
+        BorderPane page = new BorderPane();
+        page.getStyleClass().add("hmcl-context-page");
+        page.setLeft(sidebar);
+        page.setCenter(body);
+        page.setMinWidth(0.0);
+        page.setMinHeight(0.0);
+        page.setMaxWidth(Double.MAX_VALUE);
+        page.setMaxHeight(Double.MAX_VALUE);
+        return page;
+    }
+
     /// Creates a standard vertical card.
     ///
-    /// @param variant  the Material card variant
     /// @param children the card children
     /// @return the configured card
-    protected final M3Card card(M3CardVariant variant, Node... children) {
+    protected final M3Card card(Node... children) {
         VBox content = new VBox(14.0, children);
         content.setFillWidth(true);
         content.setMinWidth(0.0);
         content.setMaxWidth(Double.MAX_VALUE);
-        M3Card card = new M3Card(content, variant);
+        M3Card card = new M3Card(content, M3CardVariant.FILLED);
         card.setMinWidth(0.0);
         card.setMaxWidth(Double.MAX_VALUE);
         return card;
@@ -150,19 +156,12 @@ abstract class HMCLDemoView extends BorderPane {
     /// Creates a Material button that dispatches one command token.
     ///
     /// @param label   the localized button label
-    /// @param variant the Material button variant
     /// @param command the command token
     /// @return the configured button
-    protected final M3Button commandButton(String label, M3ButtonVariant variant, String command) {
-        M3Button button = new M3Button(label, variant);
+    protected final M3Button commandButton(String label, String command) {
+        M3Button button = new M3Button(label, M3ButtonVariant.FILLED);
         button.setOnAction(event -> actions.dispatch(command));
         return button;
     }
 
-    /// Lets one child consume the available vertical space in a `VBox`.
-    ///
-    /// @param child the child whose vertical grow priority is set
-    protected final void grow(Node child) {
-        VBox.setVgrow(child, Priority.ALWAYS);
-    }
 }

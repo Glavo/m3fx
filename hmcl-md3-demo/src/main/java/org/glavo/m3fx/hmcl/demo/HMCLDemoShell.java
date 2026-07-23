@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.controls.M3Button;
@@ -103,15 +104,22 @@ final class HMCLDemoShell extends StackPane {
 
         getStyleClass().add("hmcl-demo-shell");
         topAppBar.getStyleClass().add("hmcl-window-title-bar");
-        topAppBar.setMinHeight(48.0);
-        topAppBar.setPrefHeight(48.0);
-        topAppBar.setMaxHeight(48.0);
+        topAppBar.setContainerHeight(40.0);
+        topAppBar.setMinHeight(40.0);
+        topAppBar.setPrefHeight(40.0);
+        topAppBar.setMaxHeight(40.0);
         topAppBar.setOnMousePressed(this::handleWindowDragPressed);
         topAppBar.setOnMouseDragged(this::handleWindowDragged);
 
         routeHost.getStyleClass().add("hmcl-route-host");
         VBox windowFrame = new VBox(topAppBar, routeHost);
         windowFrame.getStyleClass().add("hmcl-window-frame");
+        Rectangle windowClip = new Rectangle();
+        windowClip.widthProperty().bind(windowFrame.widthProperty());
+        windowClip.heightProperty().bind(windowFrame.heightProperty());
+        windowClip.setArcWidth(10.0);
+        windowClip.setArcHeight(10.0);
+        windowFrame.setClip(windowClip);
         VBox.setVgrow(routeHost, Priority.ALWAYS);
         getChildren().add(windowFrame);
 
@@ -138,8 +146,16 @@ final class HMCLDemoShell extends StackPane {
                 state.addDemoInstance();
                 showMessage(strings.get("snackbar.instance_added"));
             }
-            case "copy-instance" -> showMessage(strings.get("snackbar.instance_copied"));
-            case "delete-instance" -> showMessage(strings.get("snackbar.instance_deleted"));
+            case "copy-instance" -> {
+                state.copySelectedInstance();
+                showMessage(strings.get("snackbar.instance_copied"));
+                renderCurrentRoute();
+            }
+            case "delete-instance" -> {
+                state.deleteSelectedInstance();
+                showMessage(strings.get("snackbar.instance_deleted"));
+                renderCurrentRoute();
+            }
             case "add-account" -> {
                 HMCLDemoAccount.AccountType type = "microsoft".equals(target)
                         ? HMCLDemoAccount.AccountType.MICROSOFT
@@ -147,8 +163,16 @@ final class HMCLDemoShell extends StackPane {
                 state.addDummyAccount(type);
                 showMessage(strings.get("snackbar.account_added"));
             }
-            case "remove-account" -> showMessage(strings.get("snackbar.account_removed"));
+            case "remove-account" -> {
+                if (target != null) {
+                    state.selectAccount(target);
+                }
+                state.removeSelectedAccount();
+                showMessage(strings.get("snackbar.account_removed"));
+                renderCurrentRoute();
+            }
             case "install" -> showInstallMessage();
+            case "discover-mode" -> updateTopAppBar();
             case "refresh" -> showMessage(strings.get("snackbar.refreshed"));
             case "brightness", "theme-color", "wallpaper" ->
                     showMessage(strings.get("snackbar.settings_saved"));
@@ -241,9 +265,16 @@ final class HMCLDemoShell extends StackPane {
             topAppBar.setNavigation(null);
         } else {
             topAppBar.setTitleContent(null);
-            M3IconButton back = new M3IconButton(HMCLDemoIcons.directional(HMCLDemoIcons.BACK));
+            M3IconButton back = new M3IconButton(HMCLDemoIcons.back());
             back.setAccessibleText(strings.get("common.back"));
-            back.setOnAction(event -> navigateBack());
+            back.setOnAction(event -> {
+                if (currentRoute instanceof HMCLDemoRoute.Discover && discoverView.isInstallerMode()) {
+                    discoverView.exitInstallerMode();
+                    updateTopAppBar();
+                } else {
+                    navigateBack();
+                }
+            });
             topAppBar.setNavigation(back);
         }
 
@@ -295,6 +326,9 @@ final class HMCLDemoShell extends StackPane {
         if (currentRoute instanceof HMCLDemoRoute.ContentDetail) {
             @Nullable HMCLDemoContent content = state.getSelectedContent();
             return content == null ? strings.get("discover.title") : content.title();
+        }
+        if (currentRoute instanceof HMCLDemoRoute.Discover) {
+            return discoverView.getPageTitle();
         }
         return strings.get(currentRoute.titleKey());
     }

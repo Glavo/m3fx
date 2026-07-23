@@ -33,10 +33,10 @@ public final class HMCLM3DemoApp extends Application {
     private static final double SCALED_OUTPUT_THRESHOLD = 1.0;
 
     /// The initial scene width in logical pixels.
-    private static final double INITIAL_WIDTH = 1_000.0;
+    private static final double INITIAL_WIDTH = 818.0;
 
     /// The initial scene height in logical pixels.
-    private static final double INITIAL_HEIGHT = 625.0;
+    private static final double INITIAL_HEIGHT = 508.0;
 
     /// The minimum supported window width in logical pixels.
     private static final double MINIMUM_WIDTH = 818.0;
