@@ -3,67 +3,51 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
-import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Shared page and section transitions for the HMCL Material 3 demo.
+/// Shared content transforms for the HMCL Material 3 demo.
 ///
-/// Transform choices follow HMCL `ContainerAnimations` semantics while using M3FX enter and exit effects.
+/// Page and section replacements use M3FX's Material fade-through default rather than HMCL's slide distances.
+/// Curves and durations still come from the active theme; reduced-motion requests settle immediately in the
+/// animated host.
 @NotNullByDefault
 final class HMCLDemoTransitions {
-    /// Enter slide distance used by shared-axis navigation.
-    private static final double PAGE_ENTER_DISTANCE = 48.0;
-
-    /// Exit slide distance used by shared-axis navigation.
-    private static final double PAGE_EXIT_DISTANCE = 36.0;
-
-    /// Vertical distance used by section transitions.
-    private static final double SECTION_ENTER_DISTANCE = 40.0;
-
     /// Prevents utility-class instantiation.
     private HMCLDemoTransitions() {
     }
 
-    /// Returns the primary-destination fade-through transform.
+    /// Returns the Material fade-through transform used for ordinary page navigation.
     ///
     /// @return the transform
     static M3ContentTransform navigation() {
         return M3ContentTransform.DEFAULT;
     }
 
-    /// Returns a forward navigation transform.
+    /// Returns the Material fade-through transform used when pushing a secondary route.
     ///
     /// @return the transform
     static M3ContentTransform forward() {
-        return slide(M3TransitionEdge.END, M3TransitionEdge.START);
+        return M3ContentTransform.DEFAULT;
     }
 
-    /// Returns a backward navigation transform.
+    /// Returns the Material fade-through transform used when popping a secondary route.
     ///
     /// @return the transform
     static M3ContentTransform backward() {
-        return slide(M3TransitionEdge.START, M3TransitionEdge.END);
+        return M3ContentTransform.DEFAULT;
     }
 
-    /// Returns a slide-up fade transform used for in-page section changes.
+    /// Returns the Material fade-through transform used for in-page section changes.
     ///
     /// @return the transform
     static M3ContentTransform sectionUp() {
-        return new M3ContentTransform(
-                M3EnterTransition.fade(0.0)
-                        .withDelay(Duration.millis(40.0))
-                        .and(M3EnterTransition.slideFrom(M3TransitionEdge.BOTTOM, SECTION_ENTER_DISTANCE)),
-                M3ExitTransition.fade(0.0),
-                null,
-                0.0
-        );
+        return M3ContentTransform.DEFAULT;
     }
 
-    /// Returns an immediate snap transform used when reduced motion is active.
+    /// Returns an immediate snap transform used for first paint and when animation is disabled.
     ///
     /// @return the transform
     static M3ContentTransform none() {
@@ -73,19 +57,5 @@ final class HMCLDemoTransitions {
                 null,
                 0.0
         );
-    }
-
-    /// Builds a shared-axis slide transform.
-    ///
-    /// @param enterEdge the edge from which the next page enters
-    /// @param exitEdge the edge toward which the previous page exits
-    /// @return the transform
-    private static M3ContentTransform slide(M3TransitionEdge enterEdge, M3TransitionEdge exitEdge) {
-        M3EnterTransition enter = M3EnterTransition.fade(0.0)
-                .withDelay(Duration.millis(30.0))
-                .and(M3EnterTransition.slideFrom(enterEdge, PAGE_ENTER_DISTANCE));
-        M3ExitTransition exit = M3ExitTransition.fade(0.0)
-                .and(M3ExitTransition.slideTo(exitEdge, PAGE_EXIT_DISTANCE));
-        return new M3ContentTransform(enter, exit, null, 0.0);
     }
 }
