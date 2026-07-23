@@ -677,6 +677,12 @@ tasks.register("runDemo") {
     dependsOn(":demo:run")
 }
 
+tasks.register("runHmclMd3Demo") {
+    group = "application"
+    description = "Runs the HMCL Material Design 3 demonstration application."
+    dependsOn(":hmcl-md3-demo:run")
+}
+
 tasks.register("jlinkDemoRuntime") {
     group = "distribution"
     description = "Builds a jlink runtime image for the M3FX demo application."
@@ -709,7 +715,7 @@ tasks.register("shadowCatalogJar") {
 
 tasks.register("fullTest") {
     group = "verification"
-    description = "Runs all library, demo, and catalog test tiers."
+    description = "Runs all library and sample-application test tiers."
     dependsOn(
         tasks.named("test"),
         tasks.named("testTier2"),
@@ -719,7 +725,10 @@ tasks.register("fullTest") {
         project(":demo").tasks.named("testTier3"),
         project(":catalog").tasks.named("test"),
         project(":catalog").tasks.named("testTier2"),
-        project(":catalog").tasks.named("testTier3")
+        project(":catalog").tasks.named("testTier3"),
+        project(":hmcl-md3-demo").tasks.named("test"),
+        project(":hmcl-md3-demo").tasks.named("testTier2"),
+        project(":hmcl-md3-demo").tasks.named("testTier3")
     )
 }
 

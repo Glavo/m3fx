@@ -32,7 +32,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
-        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar --no-daemon
+        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar :hmcl-md3-demo:test --no-daemon
 
       - name: Run full release check
         if: github.event_name == 'workflow_dispatch'
@@ -61,9 +61,11 @@ jobs:
             build/reports/tests \
             demo/build/reports/tests \
             catalog/build/reports/tests \
+            hmcl-md3-demo/build/reports/tests \
             build/test-results \
             demo/build/test-results \
-            catalog/build/test-results; do
+            catalog/build/test-results \
+            hmcl-md3-demo/build/test-results; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi

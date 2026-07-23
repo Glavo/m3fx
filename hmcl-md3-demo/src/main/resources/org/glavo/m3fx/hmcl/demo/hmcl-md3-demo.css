@@ -1,0 +1,42 @@
+.hmcl-demo-shell {
+    -fx-background-color: -m3-surface;
+}
+
+.hmcl-demo-shell.hmcl-wallpaper-meadow {
+    -fx-background-color: linear-gradient(to bottom right, -m3-surface 22%, derive(-m3-primary-container, 34%));
+}
+
+.hmcl-demo-shell.hmcl-wallpaper-caves {
+    -fx-background-color: linear-gradient(to bottom right, -m3-surface 18%, derive(-m3-secondary-container, -18%));
+}
+
+.hmcl-demo-shell.hmcl-wallpaper-sunset {
+    -fx-background-color: linear-gradient(to bottom right, -m3-surface 18%, derive(-m3-tertiary-container, 18%));
+}
+
+.hmcl-demo-scaffold,
+.hmcl-demo-scaffold > .m3-scaffold-main-pane,
+.hmcl-demo-detail-page {
+    -fx-background-color: transparent;
+}
+
+.hmcl-demo-drawer {
+    -fx-background-color: -m3-surface-container;
+}
+
+.hmcl-demo-drawer-content {
+    -fx-background-color: -m3-surface-container;
+    -fx-fill-width: true;
+}
+
+.hmcl-demo-drawer-header {
+    -fx-background-color: -m3-surface-container;
+}
+
+.hmcl-demo-icon {
+    -fx-fill: -m3-on-surface-variant;
+}
+
+.hmcl-demo-detail-page {
+    -fx-max-width: 840px;
+}
