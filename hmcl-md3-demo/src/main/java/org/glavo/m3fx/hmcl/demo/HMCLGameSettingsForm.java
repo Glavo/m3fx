@@ -123,83 +123,150 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        ToggleGroup group = new ToggleGroup();
-        List<Node> rows = new ArrayList<>();
-        rows.add(radioItem(
-                strings.get("settings.game.java.auto"),
-                strings.get("settings.game.java.auto.support"),
-                "auto".equals(settings.javaMode()),
-                group,
-                () -> settingsConsumer.accept(settingsSupplier.get().withJava("auto", "", settings.javaVersion(), ""))
-        ));
-        rows.add(radioItem(
-                strings.get("settings.game.java.version"),
-                strings.format("settings.game.java.version.support", settings.javaVersion()),
-                "version".equals(settings.javaMode()),
-                group,
-                () -> openTextDialog(
-                        controller,
-                        strings.get("settings.game.java.version"),
-                        settings.javaVersion(),
-                        value -> settingsConsumer.accept(
-                                settingsSupplier.get().withJava("version", "", value.strip(), ""))
-                )
-        ));
-        for (HMCLDemoJavaRuntime runtime : controller.state().getJavaRuntimes()) {
-            boolean selected = "detected".equals(settings.javaMode()) && runtime.id().equals(settings.javaId());
-            rows.add(radioItem(
-                    runtime.name(),
-                    runtime.version() + " · " + runtime.path(),
-                    selected,
-                    group,
-                    () -> settingsConsumer.accept(
-                            settingsSupplier.get().withJava("detected", runtime.id(), settings.javaVersion(), ""))
-            ));
-        }
-        rows.add(radioItem(
-                strings.get("settings.game.java.custom"),
-                settings.javaPath().isBlank()
-                        ? strings.get("settings.game.java.custom.support")
-                        : settings.javaPath(),
-                "custom".equals(settings.javaMode()),
-                group,
-                () -> openTextDialog(
-                        controller,
-                        strings.get("settings.game.java.custom"),
-                        settings.javaPath().isBlank() ? "C:\\Program Files\\Java\\bin\\java.exe" : settings.javaPath(),
-                        value -> settingsConsumer.accept(
-                                settingsSupplier.get().withJava("custom", "", settings.javaVersion(), value.strip()))
-                )
-        ));
-        // FileChooser-backed path pick is deferred: M3FX has no path-selector control.
-        return sublist(
-                "java",
-                strings.get("settings.game.java_directory"),
-                javaSummary(strings, settings, controller.state()),
-                rows.toArray(Node[]::new)
-        );
+        HMCLDemoState state = controller.state();
+        List<JavaChoice> choices = buildJavaChoices(strings, state, settings);
+        JavaChoice current = resolveJavaChoice(choices, settings);
+
+        M3SelectSettingItem<JavaChoice> select = new M3SelectSettingItem<>(strings.get("settings.game.java_directory"));
+        select.setItems(choices);
+        select.setConverter(JavaChoice::title);
+        select.setDescriptionConverter(JavaChoice::description);
+        select.setValue(current);
+
+        // Selecting a special option may open a dialog; keep the menu value and trailing label in sync afterwards.
+        select.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || sameJavaChoice(oldValue, newValue)) {
+                return;
+            }
+            applyJavaChoice(controller, settingsSupplier, settingsConsumer, select, newValue);
+        });
+
+        return section(strings.get("settings.game.java_directory"), select);
     }
 
-    private static String javaSummary(
+    /// Builds the Java dropdown options: auto, detected runtimes, required major version, and custom path.
+    private static List<JavaChoice> buildJavaChoices(
             HMCLDemoStrings strings,
-            HMCLDemoGameSettings settings,
-            HMCLDemoState state
+            HMCLDemoState state,
+            HMCLDemoGameSettings settings
     ) {
-        return switch (settings.javaMode()) {
-            case "version" -> strings.format("settings.game.java.version.support", settings.javaVersion());
-            case "custom" -> settings.javaPath().isBlank()
-                    ? strings.get("settings.game.java.custom")
-                    : settings.javaPath();
-            case "detected" -> {
-                for (HMCLDemoJavaRuntime runtime : state.getJavaRuntimes()) {
-                    if (runtime.id().equals(settings.javaId())) {
-                        yield runtime.name() + " · " + runtime.version();
-                    }
-                }
-                yield strings.get("settings.game.java.auto");
+        List<JavaChoice> choices = new ArrayList<>();
+        choices.add(new JavaChoice(
+                "auto",
+                "",
+                strings.get("settings.game.java.auto"),
+                strings.get("settings.game.java.auto.support")
+        ));
+        for (HMCLDemoJavaRuntime runtime : state.getJavaRuntimes()) {
+            choices.add(new JavaChoice(
+                    "detected",
+                    runtime.id(),
+                    runtime.name(),
+                    runtime.version() + " · " + runtime.path()
+            ));
+        }
+        String versionDescription = settings.javaVersion().isBlank()
+                ? strings.get("settings.game.java.version")
+                : strings.format("settings.game.java.version.support", settings.javaVersion());
+        choices.add(new JavaChoice(
+                "version",
+                "",
+                strings.get("settings.game.java.version"),
+                versionDescription
+        ));
+        String customDescription = settings.javaPath().isBlank()
+                ? strings.get("settings.game.java.custom.support")
+                : settings.javaPath();
+        choices.add(new JavaChoice(
+                "custom",
+                "",
+                strings.get("settings.game.java.custom"),
+                customDescription
+        ));
+        return choices;
+    }
+
+    /// Resolves the dropdown value matching the current game-settings Java fields.
+    private static JavaChoice resolveJavaChoice(List<JavaChoice> choices, HMCLDemoGameSettings settings) {
+        for (JavaChoice choice : choices) {
+            if (!choice.mode().equals(settings.javaMode())) {
+                continue;
             }
-            default -> strings.get("settings.game.java.auto");
-        };
+            if ("detected".equals(choice.mode()) && !choice.runtimeId().equals(settings.javaId())) {
+                continue;
+            }
+            return choice;
+        }
+        return choices.get(0);
+    }
+
+    /// Applies a Java dropdown selection, prompting for version or path when needed.
+    private static void applyJavaChoice(
+            HMCLDemoController controller,
+            Supplier<HMCLDemoGameSettings> settingsSupplier,
+            Consumer<HMCLDemoGameSettings> settingsConsumer,
+            M3SelectSettingItem<JavaChoice> select,
+            JavaChoice choice
+    ) {
+        HMCLDemoStrings strings = controller.strings();
+        HMCLDemoGameSettings current = settingsSupplier.get();
+        switch (choice.mode()) {
+            case "auto" -> settingsConsumer.accept(current.withJava("auto", "", current.javaVersion(), ""));
+            case "detected" -> settingsConsumer.accept(
+                    current.withJava("detected", choice.runtimeId(), current.javaVersion(), ""));
+            case "version" -> openTextDialog(
+                    controller,
+                    strings.get("settings.game.java.version"),
+                    current.javaVersion().isBlank() ? "21" : current.javaVersion(),
+                    value -> {
+                        String version = value.strip();
+                        settingsConsumer.accept(settingsSupplier.get().withJava("version", "", version, ""));
+                        refreshJavaChoiceDescriptions(controller, select, settingsSupplier.get());
+                    }
+            );
+            case "custom" -> openTextDialog(
+                    controller,
+                    strings.get("settings.game.java.custom"),
+                    current.javaPath().isBlank()
+                            ? "C:\\Program Files\\Java\\bin\\java.exe"
+                            : current.javaPath(),
+                    value -> {
+                        String path = value.strip();
+                        settingsConsumer.accept(settingsSupplier.get().withJava("custom", "", current.javaVersion(), path));
+                        refreshJavaChoiceDescriptions(controller, select, settingsSupplier.get());
+                    }
+            );
+            default -> {
+            }
+        }
+    }
+
+    /// Rebuilds menu descriptions after a version/path dialog so trailing labels stay current.
+    private static void refreshJavaChoiceDescriptions(
+            HMCLDemoController controller,
+            M3SelectSettingItem<JavaChoice> select,
+            HMCLDemoGameSettings settings
+    ) {
+        List<JavaChoice> choices = buildJavaChoices(controller.strings(), controller.state(), settings);
+        JavaChoice current = resolveJavaChoice(choices, settings);
+        select.setItems(choices);
+        select.setValue(current);
+    }
+
+    /// Returns whether two Java menu choices refer to the same logical option.
+    private static boolean sameJavaChoice(@Nullable JavaChoice left, JavaChoice right) {
+        return left != null
+                && left.mode().equals(right.mode())
+                && left.runtimeId().equals(right.runtimeId());
+    }
+
+    /// One entry in the Java runtime select menu.
+    ///
+    /// @param mode       `auto`, `detected`, `version`, or `custom`
+    /// @param runtimeId  detected runtime id when `mode` is `detected`
+    /// @param title      primary menu label
+    /// @param description supporting menu text
+    private record JavaChoice(String mode, String runtimeId, String title, String description) {
     }
 
     private static Node memorySection(
