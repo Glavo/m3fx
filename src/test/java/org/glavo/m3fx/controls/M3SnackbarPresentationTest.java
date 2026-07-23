@@ -46,9 +46,9 @@ final class M3SnackbarPresentationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Verifies that one presenter and one surface are reused while observable messages change.
+    /// Verifies that one presenter and one surface are reused while queued messages advance.
     @Test
-    void onePresenterReusesItsSurfaceAcrossMessages() {
+    void onePresenterReusesItsSurfaceAcrossQueuedMessages() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3OverlayPane overlayPane = overlayPane();
             M3Snackbar first = new M3Snackbar("Saved");
@@ -80,10 +80,15 @@ final class M3SnackbarPresentationTest {
             assertEquals(1, directPresenterCount(overlayPane));
             assertSame(presenter, snackbarPresenter(overlayPane));
             assertSame(firstSurface, snackbarSurface(presenter));
-            assertEquals("Offline", text.getText());
-            assertFalse(action.isManaged());
-            assertTrue(close.isManaged());
+            assertEquals("Saved", text.getText());
+            assertTrue(action.isManaged());
+            assertFalse(close.isManaged());
+            assertSame(first, overlayPane.getSnackbar());
+            assertEquals(List.of(second), overlayPane.getSnackbarQueue());
+
+            overlayPane.dismissSnackbar();
             assertSame(second, overlayPane.getSnackbar());
+            assertTrue(overlayPane.getSnackbarQueue().isEmpty());
         });
     }
 

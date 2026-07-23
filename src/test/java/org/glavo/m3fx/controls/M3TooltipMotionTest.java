@@ -4,10 +4,13 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Skin;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -212,6 +216,156 @@ final class M3TooltipMotionTest {
         } finally {
             disposeFixture(fixtureReference.get());
         }
+    }
+
+    /// Verifies that programmatic focus restoration does not schedule a keyboard tooltip activation.
+    @Test
+    void programmaticFocusRestorationDoesNotActivateTooltip() throws InterruptedException {
+        AtomicReference<@Nullable TooltipFixture> fixtureReference = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null
+                                && fixture.owner().isFocused()
+                                && !fixture.tooltip().isShowing();
+                    },
+                    3,
+                    () -> {
+                        TooltipFixture fixture = createFixture(false);
+                        fixture.tooltip().setShowDelay(Duration.ZERO);
+                        M3Tooltip.install(fixture.owner(), fixture.tooltip());
+                        fixtureReference.set(fixture);
+                        fixture.owner().requestFocus();
+                    },
+                    () -> {
+                        TooltipFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
+                        assertTrue(fixture.owner().isFocused());
+                        assertFalse(fixture.tooltip().isShowing(),
+                                "programmatic owner focus must not open a tooltip");
+                    }
+            );
+        } finally {
+            @Nullable TooltipFixture fixture = fixtureReference.get();
+            if (fixture != null) {
+                M3Tooltip.uninstall(fixture.owner(), fixture.tooltip());
+            }
+            disposeFixture(fixture);
+        }
+    }
+
+    /// Verifies that pointer exit hides a transient tooltip even when the owner retains focus.
+    @Test
+    void pointerExitHidesTooltipWhenOwnerRetainsFocus() throws InterruptedException {
+        AtomicReference<@Nullable TooltipFixture> fixtureReference = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null && fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                        TooltipFixture fixture = createFixture(false);
+                        fixture.tooltip().setShowDelay(Duration.ZERO);
+                        fixture.tooltip().setHideDelay(Duration.ZERO);
+                        M3Tooltip.install(fixture.owner(), fixture.tooltip());
+                        fixtureReference.set(fixture);
+                        M3MotionSettings.setReducedMotionRequested(fixture.root(), true);
+                        fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_ENTERED));
+                    },
+                    () -> {
+                        TooltipFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
+                        fixture.owner().requestFocus();
+                        fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_EXITED));
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null && !fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                    },
+                    () -> assertFalse(
+                            Objects.requireNonNull(fixtureReference.get(), "fixture").tooltip().isShowing()
+                    )
+            );
+        } finally {
+            @Nullable TooltipFixture fixture = fixtureReference.get();
+            if (fixture != null) {
+                M3Tooltip.uninstall(fixture.owner(), fixture.tooltip());
+            }
+            disposeFixture(fixture);
+        }
+    }
+
+    /// Verifies that hiding an installed target cancels a delayed tooltip activation.
+    @Test
+    void hiddenTargetCancelsDelayedActivation() throws InterruptedException {
+        AtomicReference<@Nullable TooltipFixture> fixtureReference = new AtomicReference<>();
+        AtomicLong activationStartNanos = new AtomicLong();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null
+                                && activationStartNanos.get() != 0L
+                                && System.nanoTime() - activationStartNanos.get() >= 600_000_000L
+                                && !fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                        TooltipFixture fixture = createFixture(false);
+                        fixture.tooltip().setShowDelay(Duration.millis(300.0));
+                        M3Tooltip.install(fixture.owner(), fixture.tooltip());
+                        fixtureReference.set(fixture);
+
+                        fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_ENTERED));
+                        fixture.owner().setVisible(false);
+                        activationStartNanos.set(System.nanoTime());
+                    },
+                    () -> {
+                        TooltipFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
+                        assertFalse(fixture.tooltip().isShowing());
+                    }
+            );
+        } finally {
+            @Nullable TooltipFixture fixture = fixtureReference.get();
+            if (fixture != null) {
+                M3Tooltip.uninstall(fixture.owner(), fixture.tooltip());
+            }
+            disposeFixture(fixture);
+        }
+    }
+
+    /// Creates a synthetic pointer transition for tooltip lifecycle tests.
+    ///
+    /// @param eventType the pointer transition type
+    /// @return a pointer event at a stable local coordinate
+    private static MouseEvent pointerEvent(EventType<MouseEvent> eventType) {
+        return new MouseEvent(
+                eventType,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                MouseButton.NONE,
+                0,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null
+        );
     }
 
     /// Creates a real window and an optionally visible tooltip with an observable test-local motion scheme.

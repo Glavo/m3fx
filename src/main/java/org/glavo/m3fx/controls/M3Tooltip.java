@@ -35,6 +35,7 @@ import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
@@ -1136,8 +1137,11 @@ public class M3Tooltip extends PopupControl {
         /// Handles keyboard dismissal while the target owns focus.
         private final javafx.event.EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
-        /// Handles focus changes on the target node.
-        private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
+        /// Tracks keyboard-visible focus on the target node.
+        private final M3FocusVisibleTracker focusVisibleTracker;
+
+        /// Handles changes that make the target invisible for popup activation.
+        private final ChangeListener<Boolean> visibilityListener = this::handleVisibilityChanged;
 
         /// Handles tooltip popup visibility changes.
         private final ChangeListener<Boolean> showingListener = this::handleTooltipShowingChanged;
@@ -1148,6 +1152,7 @@ public class M3Tooltip extends PopupControl {
             this.tooltip = tooltip;
             timer.setOnFinished(event -> handleTimerFinished());
             motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings, false);
+            focusVisibleTracker = new M3FocusVisibleTracker(node, this::handleFocusVisibleChanged);
             accessibleHelpListener = (observable, oldValue, newValue) ->
                     node.setAccessibleHelp(accessibleHelpText(newValue));
         }
@@ -1174,7 +1179,8 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
             node.addEventFilter(MouseEvent.MOUSE_CLICKED, clickedHandler);
             node.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-            node.focusedProperty().addListener(focusListener);
+            focusVisibleTracker.install();
+            node.visibleProperty().addListener(visibilityListener);
             tooltip.showingProperty().addListener(showingListener);
         }
 
@@ -1189,7 +1195,8 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
             node.removeEventFilter(MouseEvent.MOUSE_CLICKED, clickedHandler);
             node.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-            node.focusedProperty().removeListener(focusListener);
+            focusVisibleTracker.uninstall();
+            node.visibleProperty().removeListener(visibilityListener);
             tooltip.showingProperty().removeListener(showingListener);
             stopTimer();
             motionSettingsObserver.dispose();
@@ -1250,18 +1257,26 @@ public class M3Tooltip extends PopupControl {
             persistentShowingBeforePress = false;
         }
 
-        /// Shows or hides the tooltip when keyboard focus enters or leaves the target.
-        private void handleFocusedChanged(
+        /// Shows or hides the tooltip when keyboard-visible focus changes on the target.
+        private void handleFocusVisibleChanged() {
+            if (tooltip.usesPersistentActivation()) {
+                return;
+            }
+            if (ownerHasKeyboardFocus()) {
+                scheduleShow();
+            } else if (!ownerContainsPointer) {
+                scheduleHide();
+            }
+        }
+
+        /// Cancels activation and hides a tooltip when its target becomes invisible.
+        private void handleVisibilityChanged(
                 ObservableValue<? extends Boolean> observable,
                 Boolean oldValue,
                 Boolean newValue
         ) {
-            if (!tooltip.usesPersistentActivation()) {
-                if (newValue) {
-                    scheduleShow();
-                } else {
-                    scheduleHide();
-                }
+            if (!newValue) {
+                requestHide();
             }
         }
 
@@ -1374,13 +1389,10 @@ public class M3Tooltip extends PopupControl {
             }
         }
 
-        /// Returns whether keyboard focus is currently owned by the target node.
+        /// Returns whether the target owns keyboard-visible focus.
         private boolean ownerHasKeyboardFocus() {
-            if (node.isFocused()) {
-                return true;
-            }
-            @Nullable Scene scene = node.getScene();
-            return scene != null && scene.getFocusOwner() == node;
+            return node.isFocused()
+                    && node.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS);
         }
 
         /// Returns the current focus owner inside the tooltip popup scene.
@@ -1644,7 +1656,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Returns whether an interactive tooltip still has pointer or keyboard focus ownership.
         private boolean isTooltipActive() {
-            return ownerContainsPointer || node.isFocused() || tooltipContainsPointer || tooltipContainsFocus;
+            return ownerContainsPointer || ownerHasKeyboardFocus() || tooltipContainsPointer || tooltipContainsFocus;
         }
 
         /// Applies changed runtime motion settings to delayed tooltip activation timers.

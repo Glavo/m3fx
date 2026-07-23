@@ -5,10 +5,14 @@ package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -46,6 +50,21 @@ final class M3StateLayerTest {
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
+    }
+
+    /// Verifies that exact circular bounds use a Circle clip while rounded rectangles keep the reusable path clip.
+    @Test
+    void exactCircleBoundsUseCircleClip() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3StateLayer stateLayer = new M3StateLayer();
+            stateLayer.layoutLayer(0.0, 0.0, 40.0, 40.0, 999.0);
+            Parent clippedContent = assertInstanceOf(Parent.class, stateLayer.getChildrenUnmodifiable().get(0));
+            assertInstanceOf(Circle.class, clippedContent.getClip());
+
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            Node roundedClip = Objects.requireNonNull(clippedContent.getClip(), "rounded state layer clip");
+            assertInstanceOf(Path.class, roundedClip);
+        });
     }
 
     /// Verifies that optional visual nodes are created on first use and inherit previously configured state.
@@ -190,12 +209,12 @@ final class M3StateLayerTest {
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
             M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
-                Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
-                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
                 owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
                 stateLayer.animateOverlayOpacityFromOwnerState();
                 stateLayer.playRipple(20.0, 20.0);
 
+                Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
                 assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
                 assertTrue(stateLayer.isRippleAnimationRunning());
 

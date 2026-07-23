@@ -73,7 +73,7 @@ final class M3DelayedTimerLifecycleTest {
 
                 fixture.root.getChildren().clear();
 
-                fixture.assertDelaysReleased();
+                fixture.assertDelaysReleasedAfterSceneDetachment();
             } finally {
                 fixture.dispose();
             }
@@ -240,6 +240,15 @@ final class M3DelayedTimerLifecycleTest {
             assertEquals(typeAheadOwnerPropertyCount, typeAheadOwner.getProperties().size());
             assertEquals(tooltipOwnerPropertyCount, tooltipOwner.getProperties().size());
             assertEquals(scenePropertyCount, scene.getProperties().size());
+            assertFalse(tooltip.isShowing());
+        }
+
+        /// Asserts that detaching every owner releases all scene-level delayed-interaction observation.
+        private void assertDelaysReleasedAfterSceneDetachment() {
+            assertEquals("", typeAheadState.getPrefix());
+            assertEquals(typeAheadOwnerPropertyCount, typeAheadOwner.getProperties().size());
+            assertEquals(tooltipOwnerPropertyCount, tooltipOwner.getProperties().size());
+            assertEquals(0, scene.getProperties().size());
             assertFalse(tooltip.isShowing());
         }
 

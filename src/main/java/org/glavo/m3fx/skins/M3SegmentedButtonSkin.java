@@ -67,6 +67,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The selected-state check indicator appearance animation.
     private final M3NodeTransition selectionIndicatorAnimation = new M3NodeTransition(selectionIndicator);
 
+    /// The label position transition used while the indicator slot enters or leaves the content row.
+    private @Nullable M3NodeTransition labelPositionAnimation;
+
     /// Whether the built-in indicator currently participates in the centered content row.
     private boolean selectionIndicatorOccupiesContentSlot;
 
@@ -121,6 +124,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         updateSelectionContainerImmediate(control.isSelected());
         updateSelectionIndicatorImmediate();
         updateManagedGraphic(null, control.getGraphic());
+        updateLabelPositionImmediate(shouldDisplaySelectionIndicator());
         control.selectedProperty().addListener(selectedListener);
         control.selectionIndicatorEnabledProperty().addListener(selectionIndicatorInvalidation);
         control.graphicProperty().addListener(graphicListener);
@@ -133,6 +137,11 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         M3SegmentedButton button = getSkinnable();
         selectionAnimation.stop();
         selectionIndicatorAnimation.stop();
+        @Nullable M3NodeTransition labelAnimation = labelPositionAnimation;
+        if (labelAnimation != null) {
+            labelAnimation.stop();
+        }
+        labelPositionAnimation = null;
         button.selectedProperty().removeListener(selectedListener);
         button.selectionIndicatorEnabledProperty().removeListener(selectionIndicatorInvalidation);
         button.graphicProperty().removeListener(graphicListener);
@@ -189,9 +198,6 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
         double iconY = snapPositionY((controlHeight - INDICATOR_SIZE) / 2.0);
         @Nullable Text label = labelTextNode();
-        if (label != null) {
-            label.setTranslateX(0.0);
-        }
         @Nullable Node graphic = button.getGraphic();
         if (selectionIndicatorOccupiesContentSlot && graphic != null) {
             Bounds graphicBounds = graphic.getBoundsInParent();
@@ -207,9 +213,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         }
 
         Bounds labelBounds = label.getBoundsInParent();
-        double labelShift = (INDICATOR_SIZE + INDICATOR_GAP) / 2.0;
-        label.setTranslateX(labelShift);
-        double iconX = snapPositionX(labelBounds.getMinX() + labelShift - INDICATOR_GAP - INDICATOR_SIZE);
+        double iconX = snapPositionX(labelBounds.getMinX() - INDICATOR_GAP - INDICATOR_SIZE);
         selectionIndicator.resizeRelocate(iconX, iconY, INDICATOR_SIZE, INDICATOR_SIZE);
     }
 
@@ -329,9 +333,13 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// Animates all selected-state visuals and keeps content measurement stable.
     private void animateSelection(boolean selected) {
-        updateGraphicReplacement(getSkinnable().getGraphic(), shouldDisplaySelectionIndicator(selected));
+        boolean indicatorVisible = shouldDisplaySelectionIndicator(selected);
+        if (indicatorVisible) {
+            setGraphicReplacement(true);
+        }
         animateSelectionContainer(selected);
-        animateSelectionIndicator(shouldDisplaySelectionIndicator(selected));
+        animateSelectionIndicator(indicatorVisible);
+        animateLabelPosition(indicatorVisible);
         getSkinnable().requestLayout();
     }
 
@@ -357,6 +365,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// Releases the indicator's content slot after its exit transition has completed.
     private void finishSelectionIndicatorAnimation() {
         if (!shouldDisplaySelectionIndicator()) {
+            setGraphicReplacement(false);
             selectionIndicatorOccupiesContentSlot = false;
             getSkinnable().requestLayout();
         }
@@ -366,7 +375,12 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     private void refreshSelectionIndicator() {
         M3SegmentedButton button = getSkinnable();
         updateManagedGraphic(button.getGraphic(), button.getGraphic());
-        animateSelectionIndicator(shouldDisplaySelectionIndicator());
+        boolean indicatorVisible = shouldDisplaySelectionIndicator();
+        if (!indicatorVisible) {
+            setGraphicReplacement(false);
+        }
+        animateSelectionIndicator(indicatorVisible);
+        animateLabelPosition(indicatorVisible);
         button.requestLayout();
     }
 
@@ -376,7 +390,63 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
             updateGraphicReplacement(oldGraphic, false);
         }
         if (newGraphic != null) {
-            updateGraphicReplacement(newGraphic, shouldDisplaySelectionIndicator());
+            boolean replaced = shouldDisplaySelectionIndicator();
+            updateGraphicReplacement(newGraphic, replaced);
+            if (replaced) {
+                newGraphic.applyCss();
+            }
+        }
+    }
+
+    /// Animates the label translation required by the optional selected-state indicator slot.
+    private void animateLabelPosition(boolean indicatorVisible) {
+        @Nullable Text label = labelTextNode();
+        M3SegmentedButton button = getSkinnable();
+        if (label == null || button.getGraphic() != null || button.getText().isEmpty()) {
+            @Nullable M3NodeTransition animation = labelPositionAnimation;
+            if (animation != null) {
+                animation.stop();
+            }
+            if (label != null) {
+                label.setTranslateX(0.0);
+            }
+            return;
+        }
+
+        double targetTranslateX = indicatorVisible ? (INDICATOR_SIZE + INDICATOR_GAP) / 2.0 : 0.0;
+        M3NodeTransition animation = labelPositionAnimation;
+        if (animation == null) {
+            animation = new M3NodeTransition(label);
+            labelPositionAnimation = animation;
+        }
+        animation.stop();
+        animation.configure(
+                M3Animation.defaultSpatial(button),
+                label.getOpacity(),
+                label.getScaleX(),
+                label.getScaleY(),
+                targetTranslateX,
+                label.getTranslateY()
+        );
+        M3Animation.playFromStart(button, animation);
+    }
+
+    /// Updates the label translation without animation.
+    private void updateLabelPositionImmediate(boolean indicatorVisible) {
+        @Nullable Text label = labelTextNode();
+        M3SegmentedButton button = getSkinnable();
+        if (label != null && button.getGraphic() == null && !button.getText().isEmpty()) {
+            label.setTranslateX(indicatorVisible ? (INDICATOR_SIZE + INDICATOR_GAP) / 2.0 : 0.0);
+        }
+    }
+
+    /// Updates whether CSS hides an application graphic behind the built-in selected-state check.
+    private void setGraphicReplacement(boolean replaced) {
+        @Nullable Node graphic = getSkinnable().getGraphic();
+        if (graphic != null
+                && graphic.getPseudoClassStates().contains(GRAPHIC_REPLACED_PSEUDO_CLASS) != replaced) {
+            graphic.pseudoClassStateChanged(GRAPHIC_REPLACED_PSEUDO_CLASS, replaced);
+            graphic.applyCss();
         }
     }
 

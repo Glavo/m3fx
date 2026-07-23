@@ -2750,9 +2750,9 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies that utility and foundation demo pages expose concrete controls with stable rendered geometry.
+    /// Verifies that utility, settings, and foundation demo pages expose concrete controls with stable rendered geometry.
     @Test
-    void foundationDemoPagesRenderUtilityComponentsWithConcreteGeometry() throws InterruptedException {
+    void foundationAndSettingsDemoPagesRenderUtilityComponentsWithConcreteGeometry() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -2806,6 +2806,12 @@ final class M3FXDemoVisualMatrixTest {
                         sceneReference,
                         "Forms",
                         M3FXDemoVisualMatrixTest::assertFormsPageVisualState
+                );
+                assertFoundationDemoPage(
+                        appReference,
+                        sceneReference,
+                        "Settings",
+                        M3FXDemoVisualMatrixTest::assertSettingsPageVisualState
                 );
                 assertFoundationDemoPage(
                         appReference,
@@ -3298,6 +3304,7 @@ final class M3FXDemoVisualMatrixTest {
                             assertMirroredTextInputLayoutContracts(scene, layouts);
                         }
                         assertFocusedTextInputStateMatrix(scene, layouts, modeName);
+                        assertDemoErrorExamplesRecoverOnValidEdits(layouts);
                         assertTextInputModeSpecificRootState(scene, modeName);
                     }));
         } finally {
@@ -10193,6 +10200,40 @@ final class M3FXDemoVisualMatrixTest {
         assertTextInputLayoutContainerGeometry(layout, "Text Fields validation");
     }
 
+    /// Verifies that the dedicated error examples recover when their validators accept edited content.
+    private static void assertDemoErrorExamplesRecoverOnValidEdits(List<M3TextInputLayout> layouts) {
+        M3TextInputLayout filledErrorLayout = requireTextInputLayout(layouts, "Invalid value", "Filled error");
+        M3TextInputLayout outlinedErrorLayout = requireTextInputLayout(layouts, "", "Outlined error");
+        M3TextInputLayout passwordErrorLayout = requireTextInputLayout(layouts, "", "Password error");
+        M3TextInputLayout areaErrorLayout = requireTextInputLayout(layouts, "Needs review", "Text area error");
+
+        replaceDemoInputText(filledErrorLayout, "support@example.com");
+        replaceDemoInputText(outlinedErrorLayout, "Project name");
+        replaceDemoInputText(passwordErrorLayout, "password");
+        replaceDemoInputText(areaErrorLayout, "This text now contains enough detail to satisfy the validation rule.");
+
+        assertDemoInputHasNoValidationError(filledErrorLayout, "filled error text input");
+        assertDemoInputHasNoValidationError(outlinedErrorLayout, "outlined error text input");
+        assertDemoInputHasNoValidationError(passwordErrorLayout, "password error text input");
+        assertDemoInputHasNoValidationError(areaErrorLayout, "text area error input");
+    }
+
+    /// Replaces one demo input's content through its editable text-control contract.
+    private static void replaceDemoInputText(M3TextInputLayout layout, String text) {
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "demo input");
+        input.replaceText(0, input.getLength(), text);
+    }
+
+    /// Verifies that an edited error example has returned to its normal validation state.
+    private static void assertDemoInputHasNoValidationError(M3TextInputLayout layout, String description) {
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), description + " input");
+        M3TextInput textInput = assertInstanceOf(M3TextInput.class, input, description + " text input");
+        assertEquals("", layout.getValidationErrorText(),
+                () -> description + " should clear validation feedback after valid input");
+        assertFalse(textInput.isError(),
+                () -> description + " should clear its input error state after valid input");
+    }
+
     /// Verifies that an already visible supporting row is not replaying its entry transition.
     private static Bounds assertVisibleSupportingRowIsSettled(HBox supportingRow, String description) {
         assertTrue(supportingRow.isVisible(), () -> description + " supporting row should be visible");
@@ -12033,10 +12074,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(8, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(9, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(46, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(47, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -15424,6 +15465,15 @@ final class M3FXDemoVisualMatrixTest {
                     "action snackbar button"
             );
             actionButton.fire();
+            applySceneCssAndLayout(scene);
+            assertSnackbarOverlayShowsCompactMessage(scene, overlay, "Theme-aware snackbar");
+            assertNull(firstVisibleSnackbarAction(overlay),
+                    "a later snackbar must remain queued until the current message is dismissed");
+            assertEquals(1, overlay.getSnackbarQueue().size(),
+                    "showing an action snackbar while another message is visible should enqueue it");
+            writePageSnapshot(scene, "overlay-snackbars-action-queued.png", "Queued snackbar action state");
+
+            overlay.dismissSnackbar();
             applySceneCssAndLayout(scene);
             assertSnackbarOverlayShowsCompactMessage(scene, overlay, "Theme-aware snackbar");
             M3Button snackbarAction = Objects.requireNonNull(

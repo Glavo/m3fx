@@ -322,16 +322,17 @@ public final class M3OverlayPane extends Pane {
         snackbarPresenter.enqueue(Objects.requireNonNull(snackbar, "snackbar"));
     }
 
-    /// Shows a snackbar immediately without changing the pending queue.
+    /// Shows a snackbar by appending it to the FIFO presentation queue.
     ///
-    /// Any current snackbar is replaced. The supplied message remains observable, so subsequent property changes on
-    /// the JavaFX Application Thread update the existing surface. Use [#enqueueSnackbar(M3Snackbar)] when existing
-    /// FIFO order must be preserved.
+    /// If the snackbar layer is idle, the supplied snackbar becomes current immediately. Otherwise it remains pending
+    /// until every earlier message has completed its display and exit lifecycle. The message is retained by identity;
+    /// property changes made on the JavaFX Application Thread are shown immediately while current, or read when a
+    /// pending message is promoted.
     ///
-    /// @param snackbar the snackbar to show
+    /// @param snackbar the snackbar to enqueue
     /// @throws NullPointerException if `snackbar` is `null`
     public void showSnackbar(M3Snackbar snackbar) {
-        snackbarPresenter.show(Objects.requireNonNull(snackbar, "snackbar"));
+        snackbarPresenter.enqueue(Objects.requireNonNull(snackbar, "snackbar"));
     }
 
     /// Dismisses the current snackbar and then promotes the first queued snackbar.

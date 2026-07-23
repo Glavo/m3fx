@@ -62,6 +62,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurveTo;
 import javafx.scene.shape.FillRule;
 import javafx.scene.shape.LineTo;
@@ -18315,9 +18316,14 @@ final class M3ControlContractMatrixTest {
             assertEquals(0.0, graphic.getOpacity(), 0.0001);
             assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
 
-            graphicButton.setSelected(false);
-            root.applyCss();
-            assertEquals(1.0, graphic.getOpacity(), 0.0001);
+            M3MotionSettings.setReducedMotionRequested(root, true);
+            try {
+                graphicButton.setSelected(false);
+                root.applyCss();
+                assertEquals(1.0, graphic.getOpacity(), 0.0001);
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(root, false);
+            }
         });
     }
 
@@ -40817,8 +40823,6 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies the resolved shape radius used by a control's state layer.
     private static void assertStateLayerShape(Node node, double expectedRadius) {
-        Region overlay = lookupRegion(node, ".m3-state-layer");
-        assertInstanceOf(Path.class, Objects.requireNonNull(overlay.getParent(), "clipped state content").getClip());
         assertStateLayerRadii(node, expectedRadius, expectedRadius, expectedRadius, expectedRadius);
     }
 
@@ -40832,8 +40836,18 @@ final class M3ControlContractMatrixTest {
     ) {
         Region overlay = lookupRegion(node, ".m3-state-layer");
         Node clippedContent = Objects.requireNonNull(overlay.getParent(), "clipped state content");
-        Path clip = assertInstanceOf(Path.class, clippedContent.getClip());
-        assertPathRadii(clip, topLeft, topRight, bottomRight, bottomLeft);
+        Node clip = Objects.requireNonNull(clippedContent.getClip(), "state layer clip");
+        if (clip instanceof Circle circle) {
+            assertEquals(topLeft, topRight, 0.0001, "circular clip top-right radius");
+            assertEquals(topLeft, bottomRight, 0.0001, "circular clip bottom-right radius");
+            assertEquals(topLeft, bottomLeft, 0.0001, "circular clip bottom-left radius");
+            assertEquals(topLeft, circle.getRadius(), 0.0001, "circular clip radius");
+            assertEquals(circle.getRadius(), circle.getCenterX(), 0.0001, "circular clip centerX");
+            assertEquals(circle.getRadius(), circle.getCenterY(), 0.0001, "circular clip centerY");
+            return;
+        }
+        Path path = assertInstanceOf(Path.class, clip);
+        assertPathRadii(path, topLeft, topRight, bottomRight, bottomLeft);
     }
 
     /// Verifies which corners are rounded on a region's background.

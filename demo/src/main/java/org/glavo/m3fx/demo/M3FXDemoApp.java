@@ -167,6 +167,12 @@ public final class M3FXDemoApp extends Application {
     /// The header action that opens navigation while the persistent drawer is unavailable.
     private @Nullable M3IconButton navigationButton;
 
+    /// The tooltip installed on the header navigation button.
+    private @Nullable M3Tooltip navigationTooltip;
+
+    /// Whether the header navigation tooltip is currently installed.
+    private boolean navigationTooltipInstalled;
+
     /// The active modal navigation presentation, or `null` while no drawer overlay is shown.
     private @Nullable M3OverlayPane.OverlayHandle navigationOverlayHandle;
 
@@ -316,7 +322,10 @@ public final class M3FXDemoApp extends Application {
         menuButton.getStyleClass().add("demo-navigation-button");
         menuButton.setAccessibleText("Open component navigation");
         menuButton.setOnAction(event -> showNavigationDrawer());
-        M3Tooltip.install(menuButton, new M3Tooltip("Open component navigation"));
+        M3Tooltip navigationTooltip = new M3Tooltip("Open component navigation");
+        M3Tooltip.install(menuButton, navigationTooltip);
+        this.navigationTooltip = navigationTooltip;
+        navigationTooltipInstalled = true;
         navigationButton = menuButton;
 
         M3IconButton settingsButton =
@@ -533,6 +542,19 @@ public final class M3FXDemoApp extends Application {
         if (menuButton != null) {
             menuButton.setManaged(!persistentNavigation);
             menuButton.setVisible(!persistentNavigation);
+        }
+
+        M3Tooltip tooltip = navigationTooltip;
+        if (menuButton != null && tooltip != null) {
+            if (persistentNavigation) {
+                if (navigationTooltipInstalled) {
+                    M3Tooltip.uninstall(menuButton, tooltip);
+                    navigationTooltipInstalled = false;
+                }
+            } else if (!navigationTooltipInstalled) {
+                M3Tooltip.install(menuButton, tooltip);
+                navigationTooltipInstalled = true;
+            }
         }
 
         if (persistentNavigation) {
@@ -1167,7 +1189,7 @@ public final class M3FXDemoApp extends Application {
         if (activeOverlay == null) {
             return;
         }
-        activeOverlay.showSnackbar(new M3Snackbar(message));
+        activeOverlay.enqueueSnackbar(new M3Snackbar(message));
     }
 
     /// Applies the current theme to the scene.

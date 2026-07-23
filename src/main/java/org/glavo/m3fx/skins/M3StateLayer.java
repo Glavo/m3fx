@@ -25,6 +25,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.ArcTo;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
@@ -112,8 +113,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The explicitly resolved content paint used by controls that cannot retain CSS lookups while detached.
     private @Nullable Paint contentPaint;
 
-    /// The clip that bounds container, overlay, and ripple visuals to the component shape.
+    /// The clip that bounds container, overlay, and ripple visuals to a rounded rectangle component shape.
     private final Path clip = new Path();
+
+    /// The retained circular clip used for exact circular component bounds.
+    private final Circle circleClip = new Circle();
 
     /// The retained clipped group containing the container, persistent overlay, and, after first use, the ripple.
     private final Group clippedContent = new Group();
@@ -268,6 +272,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The height currently represented by the rounded-rectangle clip.
     private double clipHeight = Double.NaN;
 
+    /// Whether the circular clip is currently installed on the clipped content group.
+    private boolean circleClipActive;
+
     /// The top-left radius currently represented by the rounded-rectangle clip.
     private double clipTopLeftRadius = Double.NaN;
 
@@ -309,6 +316,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         clippedContent.setManaged(false);
         clippedContent.setMouseTransparent(true);
         clip.setFill(Color.BLACK);
+        circleClip.setFill(Color.BLACK);
         clip.getElements().addAll(
                 clipStart,
                 clipTopEdge,
@@ -465,10 +473,26 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         double bottomRight = resolvedShapeRadius(width, height, bottomRightRadius);
         double bottomLeft = resolvedShapeRadius(width, height, bottomLeftRadius);
         resizeRelocate(x, y, width, height);
+        if (isExactCircle(width, height, topLeft, topRight, bottomRight, bottomLeft)) {
+            if (!circleClipActive) {
+                invalidateClipGeometryCache();
+                circleClipActive = true;
+                clippedContent.setClip(circleClip);
+            }
+            circleClip.setCenterX(width / 2.0);
+            circleClip.setCenterY(height / 2.0);
+            circleClip.setRadius(width / 2.0);
+        } else {
+            if (circleClipActive) {
+                invalidateClipGeometryCache();
+                circleClipActive = false;
+                clippedContent.setClip(clip);
+            }
+            updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
+        }
         containerPaintLayer.resizeRelocate(0.0, 0.0, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
         updateFocusIndicatorShape(0.0, 0.0, width, height, topLeft, topRight, bottomRight, bottomLeft);
-        updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
     }
 
     /// Lays out the keyboard focus indicator independently from the bounded overlay and ripple geometry.
@@ -1298,6 +1322,39 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Adjusts a rounded corner for an inner or outer focus indicator offset.
     private static double adjustedIndicatorRadius(double radius, double offset) {
         return Math.max(0.0, radius + offset);
+    }
+
+    /// Returns whether the resolved bounds form an exact circle.
+    private static boolean isExactCircle(
+            double width,
+            double height,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft
+    ) {
+        double radius = Math.min(width, height) / 2.0;
+        return width > 0.0
+                && nearlyEqual(width, height)
+                && nearlyEqual(topLeft, radius)
+                && nearlyEqual(topRight, radius)
+                && nearlyEqual(bottomRight, radius)
+                && nearlyEqual(bottomLeft, radius);
+    }
+
+    /// Compares layout geometry within the tolerance needed for JavaFX pixel snapping.
+    private static boolean nearlyEqual(double first, double second) {
+        return Math.abs(first - second) <= 1.0e-6;
+    }
+
+    /// Invalidates the cached rounded-rectangle clip geometry after switching clip representations.
+    private void invalidateClipGeometryCache() {
+        clipWidth = Double.NaN;
+        clipHeight = Double.NaN;
+        clipTopLeftRadius = Double.NaN;
+        clipTopRightRadius = Double.NaN;
+        clipBottomRightRadius = Double.NaN;
+        clipBottomLeftRadius = Double.NaN;
     }
 
     /// Updates the clip path to match the resolved rounded rectangle shape.

@@ -41,13 +41,10 @@ final class TextFieldsDemoPage extends DemoPageSupport {
         password.setPromptText("Password");
         password.setPrefWidth(320.0);
         M3TextField filledError = createTextField("Filled error", "Invalid value", M3TextInputVariant.FILLED, false);
-        filledError.setError(true);
         M3TextField outlinedError = createTextField("Outlined error", "", M3TextInputVariant.OUTLINED, false);
-        outlinedError.setError(true);
         M3PasswordField passwordError = new M3PasswordField("");
         passwordError.setVariant(M3TextInputVariant.OUTLINED);
         passwordError.setPromptText("Password error");
-        passwordError.setError(true);
         passwordError.setPrefWidth(280.0);
         M3TextArea filledArea = createTextArea(
                 "Filled text area",
@@ -61,10 +58,9 @@ final class TextFieldsDemoPage extends DemoPageSupport {
         );
         M3TextArea areaError = createTextArea(
                 "Text area error",
-                "This content needs review.",
+                "Needs review",
                 M3TextInputVariant.FILLED
         );
-        areaError.setError(true);
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
         filledTextLayout.setLeading(createSurfaceVariantIcon("email"));
@@ -98,18 +94,24 @@ final class TextFieldsDemoPage extends DemoPageSupport {
         requiredProjectLayout.setValidator(M3TextInputValidators.required("Project name is required"));
         requiredProjectLayout.setValidateOnTextChange(true);
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
-        filledErrorLayout.setErrorText("Use a valid value");
+        filledErrorLayout.setValidator(M3TextInputValidators.pattern(
+                Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                "Use an email address"
+        ));
+        filledErrorLayout.validate();
         M3TextInputLayout outlinedErrorLayout = createTextInputLayout(outlinedError, "Supporting text");
-        outlinedErrorLayout.setLeading(createErrorIcon("error"));
-        outlinedErrorLayout.setErrorText("This field is required");
+        outlinedErrorLayout.setValidator(M3TextInputValidators.required("This field is required"));
+        outlinedErrorLayout.validate();
         M3TextInputLayout passwordErrorLayout = createTextInputLayout(passwordError, "Supporting text");
-        passwordErrorLayout.setErrorText("Password cannot be empty");
+        passwordErrorLayout.setValidator(M3TextInputValidators.minLength(8, "Use at least 8 characters"));
+        passwordErrorLayout.validate();
         M3TextInputLayout filledAreaLayout = createTextInputLayout(filledArea, "Filled multi-line input");
         M3TextInputLayout outlinedAreaLayout = createTextInputLayout(outlinedArea, "Outlined multi-line input");
         outlinedAreaLayout.setCharacterCounterVisible(true);
         outlinedAreaLayout.setCharacterLimit(96);
         M3TextInputLayout areaErrorLayout = createTextInputLayout(areaError, "Supporting text");
-        areaErrorLayout.setErrorText("Review this text before continuing");
+        areaErrorLayout.setValidator(M3TextInputValidators.minLength(40, "Add more detail before continuing"));
+        areaErrorLayout.validate();
         return createGallery(
                 createShowcaseGroup("Filled", filledLayout, filledTextLayout),
                 createShowcaseGroup("Outlined", outlinedLayout, outlinedTextLayout, passwordLayout),

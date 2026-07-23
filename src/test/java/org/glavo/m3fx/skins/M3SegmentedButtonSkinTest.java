@@ -9,6 +9,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -161,6 +162,94 @@ final class M3SegmentedButtonSkinTest {
         }
     }
 
+    /// Verifies that graphic replacement remains active until the selected-state exit transition has finished.
+    @Tier2Test
+    @Test
+    void graphicReplacementAndIndicatorExitTogether() throws InterruptedException {
+        LiveFixture fixture = createLiveFixture();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> isGraphicReplaced(fixture.graphic())
+                            && fixture.graphic().getOpacity() == 0.0
+                            && selectionIndicator(fixture.button()).getOpacity() == 1.0,
+                    2,
+                    () -> fixture.button().setSelected(true),
+                    () -> {
+                    }
+            );
+
+            FxTestUtils.runOnFxThread(() -> {
+                fixture.button().setSelected(false);
+                assertTrue(isGraphicReplaced(fixture.graphic()));
+                assertTrue(fixture.graphic().getOpacity() < 0.01);
+                assertTrue(selectionIndicator(fixture.button()).getOpacity() > 0.0);
+            });
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> !isGraphicReplaced(fixture.graphic())
+                            && fixture.graphic().getOpacity() == 1.0
+                            && selectionIndicator(fixture.button()).getOpacity() == 0.0,
+                    2,
+                    () -> {
+                    },
+                    () -> assertEquals(fixture.buttonWidth(), fixture.button().getWidth(), 0.0001)
+            );
+        } finally {
+            fixture.close();
+        }
+    }
+
+    /// Verifies that a text-only segmented button keeps its content slot during indicator exit.
+    @Tier2Test
+    @Test
+    void textOnlySelectionExitPreservesContentTransition() throws InterruptedException {
+        TextLiveFixture fixture = createTextLiveFixture();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> selectionIndicator(fixture.button()).getOpacity() == 1.0
+                            && fixture.label().getTranslateX() > 12.0,
+                    2,
+                    () -> fixture.button().setSelected(true),
+                    () -> { }
+            );
+
+            FxTestUtils.runOnFxThread(() -> {
+                fixture.button().setSelected(false);
+                assertTrue(fixture.label().getTranslateX() > 0.5);
+            });
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> selectionIndicator(fixture.button()).getOpacity() == 0.0
+                            && fixture.label().getTranslateX() == 0.0,
+                    2,
+                    () -> { },
+                    () -> assertEquals(fixture.buttonWidth(), fixture.button().getWidth(), 0.0001)
+            );
+        } finally {
+            fixture.close();
+        }
+    }
+
+    /// Creates a text-only segmented button in a real test window.
+    ///
+    /// @return the initialized fixture
+    private static TextLiveFixture createTextLiveFixture() {
+        return FxTestUtils.callOnFxThread(() -> {
+            M3SegmentedButton button = new M3SegmentedButton("Medium");
+            HBox root = new HBox(button);
+            Scene scene = new Scene(root, 240.0, 80.0);
+            Stage stage = new Stage();
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+            button.layout();
+            Text label = assertInstanceOf(Text.class, button.lookup(".text"));
+            return new TextLiveFixture(stage, root, button, label, button.getWidth());
+        });
+    }
+
     /// Creates an application-owned graphic used by replacement tests.
     ///
     /// @param id the application-owned node identifier
@@ -233,6 +322,23 @@ final class M3SegmentedButtonSkinTest {
             assertEquals(1.0, graphic.getOpacity(), 0.0001);
             return new LiveFixture(stage, root, button, graphic, button.getWidth());
         });
+    }
+
+    /// Holds the nodes in a text-only live animation test.
+    ///
+    /// @param stage       the real test window
+    /// @param root        the themed scene root
+    /// @param button      the segmented button under test
+    /// @param label       the skin-owned label node
+    /// @param buttonWidth the stable laid-out button width
+    private record TextLiveFixture(Stage stage, HBox root, M3SegmentedButton button, Text label, double buttonWidth) {
+        /// Closes the test window and restores motion settings.
+        private void close() {
+            FxTestUtils.runOnFxThread(() -> {
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                stage.close();
+            });
+        }
     }
 
     /// Holds the nodes in a live-scene CSS invalidation test.
