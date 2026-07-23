@@ -12,9 +12,10 @@ import java.util.Objects;
 
 /// Provides the common interaction model for Material Design 3 setting rows.
 ///
-/// A setting row is one focusable and actionable control. Its trailing control is a visual value indicator rather
-/// than an independently interactive child. Pointer and keyboard activation therefore target the row, while
-/// concrete setting rows define the value transition that occurs before their action event is fired.
+/// A setting row is one focusable and actionable control. Trailing value controls are owned by the row and mirror its
+/// disabled state. Some rows install a passive indicator that is not pointer-interactive; others, such as
+/// [M3SwitchSettingItem], install a nested control that accepts pointer input while the row remains the keyboard and
+/// accessibility target.
 ///
 /// This type is package-private because applications use one of its concrete subclasses.
 @NotNullByDefault
@@ -63,11 +64,24 @@ abstract sealed class M3SettingItemBase extends M3ListItemBase
     /// @param indicator the value indicator to display at the logical trailing edge
     /// @throws NullPointerException if `indicator` is `null`
     final void installTrailingIndicator(Control indicator) {
-        Objects.requireNonNull(indicator, "indicator");
-        indicator.setAccessibleRole(AccessibleRole.NODE);
-        indicator.setFocusTraversable(false);
-        indicator.setMouseTransparent(true);
-        indicator.disableProperty().bind(disabledProperty());
-        setTrailing(indicator);
+        installTrailingControl(indicator, false);
+    }
+
+    /// Installs a trailing value control owned by this row.
+    ///
+    /// The control mirrors this row's disabled state and is never an independent keyboard or accessibility focus
+    /// target. When `pointerInteractive` is `true`, the control may receive pointer input (for example switch
+    /// dragging); when `false`, pointer events pass through to the row.
+    ///
+    /// @param control            the value control to display at the logical trailing edge
+    /// @param pointerInteractive whether the control may receive pointer events
+    /// @throws NullPointerException if `control` is `null`
+    final void installTrailingControl(Control control, boolean pointerInteractive) {
+        Objects.requireNonNull(control, "control");
+        control.setAccessibleRole(AccessibleRole.NODE);
+        control.setFocusTraversable(false);
+        control.setMouseTransparent(!pointerInteractive);
+        control.disableProperty().bind(disabledProperty());
+        setTrailing(control);
     }
 }

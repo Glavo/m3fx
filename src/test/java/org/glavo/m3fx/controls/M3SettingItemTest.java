@@ -60,7 +60,7 @@ final class M3SettingItemTest {
         });
     }
 
-    /// Verifies that a switch setting row toggles before its action event and owns a passive trailing indicator.
+    /// Verifies that a switch setting row toggles before its action event and owns an interactive trailing switch.
     @Test
     void switchSettingItemTogglesOncePerActivation() {
         FxTestUtils.runOnFxThread(() -> {
@@ -73,8 +73,9 @@ final class M3SettingItemTest {
 
             assertEquals(AccessibleRole.CHECK_BOX, item.getAccessibleRole());
             M3Switch indicator = assertInstanceOf(M3Switch.class, item.getTrailing());
-            assertTrue(indicator.isMouseTransparent());
-            assertFalse(indicator.isFocusTraversable());
+            assertSame(indicator, item.getSwitch());
+            assertFalse(indicator.isMouseTransparent(), "the trailing switch must accept pointer input");
+            assertFalse(indicator.isFocusTraversable(), "the row remains the keyboard target");
 
             item.fire();
             assertTrue(item.isSelected());
@@ -92,6 +93,25 @@ final class M3SettingItemTest {
             item.setDisable(true);
             item.fire();
             assertTrue(item.isSelected());
+            assertEquals(2, actionCount.get());
+        });
+    }
+
+    /// Verifies that activating the nested switch forwards one row action without a second value toggle.
+    @Test
+    void switchSettingItemForwardsNestedSwitchActionOnce() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SwitchSettingItem item = new M3SwitchSettingItem("Notifications");
+            AtomicInteger actionCount = new AtomicInteger();
+            item.setOnAction(event -> actionCount.incrementAndGet());
+
+            item.getSwitch().fire();
+            assertTrue(item.isSelected());
+            assertTrue(item.getSwitch().isSelected());
+            assertEquals(1, actionCount.get());
+
+            item.getSwitch().fire();
+            assertFalse(item.isSelected());
             assertEquals(2, actionCount.get());
         });
     }

@@ -7,6 +7,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -122,17 +123,20 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
+        ToggleGroup group = new ToggleGroup();
         List<Node> rows = new ArrayList<>();
         rows.add(radioItem(
                 strings.get("settings.game.java.auto"),
                 strings.get("settings.game.java.auto.support"),
                 "auto".equals(settings.javaMode()),
+                group,
                 () -> settingsConsumer.accept(settingsSupplier.get().withJava("auto", "", settings.javaVersion(), ""))
         ));
         rows.add(radioItem(
                 strings.get("settings.game.java.version"),
                 strings.format("settings.game.java.version.support", settings.javaVersion()),
                 "version".equals(settings.javaMode()),
+                group,
                 () -> openTextDialog(
                         controller,
                         strings.get("settings.game.java.version"),
@@ -147,6 +151,7 @@ final class HMCLGameSettingsForm {
                     runtime.name(),
                     runtime.version() + " · " + runtime.path(),
                     selected,
+                    group,
                     () -> settingsConsumer.accept(
                             settingsSupplier.get().withJava("detected", runtime.id(), settings.javaVersion(), ""))
             ));
@@ -157,6 +162,7 @@ final class HMCLGameSettingsForm {
                         ? strings.get("settings.game.java.custom.support")
                         : settings.javaPath(),
                 "custom".equals(settings.javaMode()),
+                group,
                 () -> openTextDialog(
                         controller,
                         strings.get("settings.game.java.custom"),
@@ -203,21 +209,7 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        M3RadioButtonSettingItem auto = radioItem(
-                strings.get("settings.memory.auto"),
-                strings.get("settings.memory.auto.support"),
-                settings.autoMemory(),
-                () -> settingsConsumer.accept(settingsSupplier.get().withMemory(
-                        true, settings.maxMemoryMb(), settings.minMemoryMb(), settings.metaspaceMb()))
-        );
-        M3RadioButtonSettingItem manual = radioItem(
-                strings.get("settings.memory.manual"),
-                settings.maxMemoryMb() + " MiB",
-                !settings.autoMemory(),
-                () -> settingsConsumer.accept(settingsSupplier.get().withMemory(
-                        false, settings.maxMemoryMb(), settings.minMemoryMb(), settings.metaspaceMb()))
-        );
-
+        ToggleGroup memoryGroup = new ToggleGroup();
         M3Slider slider = new M3Slider();
         slider.setMin(1024);
         slider.setMax(16384);
@@ -226,14 +218,6 @@ final class HMCLGameSettingsForm {
         slider.setDisable(settings.autoMemory());
         slider.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(slider, Priority.ALWAYS);
-        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (settingsSupplier.get().autoMemory()) {
-                return;
-            }
-            int mb = (int) Math.round(newValue.doubleValue() / 256.0) * 256;
-            settingsConsumer.accept(settingsSupplier.get().withMemory(
-                    false, mb, settingsSupplier.get().minMemoryMb(), settingsSupplier.get().metaspaceMb()));
-        });
 
         M3Text maxLabel = new M3Text(settings.maxMemoryMb() + " MiB", M3TextRole.BODY_MEDIUM);
         HBox manualRow = new HBox(12.0, slider, maxLabel);
@@ -241,10 +225,63 @@ final class HMCLGameSettingsForm {
         manualRow.setPadding(new Insets(0.0, 16.0, 8.0, 16.0));
         manualRow.setDisable(settings.autoMemory());
 
+        M3Text status = new M3Text(
+                strings.format("settings.memory.status", "16384", String.valueOf(settings.maxMemoryMb())),
+                M3TextRole.BODY_SMALL
+        );
+        status.setPadding(new Insets(0.0, 16.0, 0.0, 16.0));
+
+        Runnable refreshManualUi = () -> {
+            HMCLDemoGameSettings current = settingsSupplier.get();
+            boolean auto = current.autoMemory();
+            slider.setDisable(auto);
+            manualRow.setDisable(auto);
+            maxLabel.setText(current.maxMemoryMb() + " MiB");
+            status.setText(strings.format("settings.memory.status", "16384", String.valueOf(current.maxMemoryMb())));
+        };
+
+        M3RadioButtonSettingItem auto = radioItem(
+                strings.get("settings.memory.auto"),
+                strings.get("settings.memory.auto.support"),
+                settings.autoMemory(),
+                memoryGroup,
+                () -> {
+                    HMCLDemoGameSettings current = settingsSupplier.get();
+                    settingsConsumer.accept(current.withMemory(
+                            true, current.maxMemoryMb(), current.minMemoryMb(), current.metaspaceMb()));
+                    refreshManualUi.run();
+                }
+        );
+        M3RadioButtonSettingItem manual = radioItem(
+                strings.get("settings.memory.manual"),
+                settings.maxMemoryMb() + " MiB",
+                !settings.autoMemory(),
+                memoryGroup,
+                () -> {
+                    HMCLDemoGameSettings current = settingsSupplier.get();
+                    settingsConsumer.accept(current.withMemory(
+                            false, current.maxMemoryMb(), current.minMemoryMb(), current.metaspaceMb()));
+                    refreshManualUi.run();
+                }
+        );
+
+        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (settingsSupplier.get().autoMemory()) {
+                return;
+            }
+            int mb = (int) Math.round(newValue.doubleValue() / 256.0) * 256;
+            HMCLDemoGameSettings current = settingsSupplier.get();
+            settingsConsumer.accept(current.withMemory(
+                    false, mb, current.minMemoryMb(), current.metaspaceMb()));
+            maxLabel.setText(mb + " MiB");
+            manual.setSupportingText(mb + " MiB");
+            status.setText(strings.format("settings.memory.status", "16384", String.valueOf(mb)));
+        });
+
         M3SettingItem minMemory = cycleItem(
                 strings.get("settings.memory.min"),
                 settings.minMemoryMb() + " MiB",
-                () -> {
+                item -> {
                     int next = switch (settingsSupplier.get().minMemoryMb()) {
                         case 256 -> 512;
                         case 512 -> 1024;
@@ -254,12 +291,13 @@ final class HMCLGameSettingsForm {
                     HMCLDemoGameSettings current = settingsSupplier.get();
                     settingsConsumer.accept(current.withMemory(
                             current.autoMemory(), current.maxMemoryMb(), next, current.metaspaceMb()));
+                    item.setSupportingText(next + " MiB");
                 }
         );
         M3SettingItem metaspace = cycleItem(
                 strings.get("settings.memory.metaspace"),
                 settings.metaspaceMb() + " MiB",
-                () -> {
+                item -> {
                     int next = switch (settingsSupplier.get().metaspaceMb()) {
                         case 128 -> 256;
                         case 256 -> 512;
@@ -269,14 +307,9 @@ final class HMCLGameSettingsForm {
                     HMCLDemoGameSettings current = settingsSupplier.get();
                     settingsConsumer.accept(current.withMemory(
                             current.autoMemory(), current.maxMemoryMb(), current.minMemoryMb(), next));
+                    item.setSupportingText(next + " MiB");
                 }
         );
-
-        M3Text status = new M3Text(
-                strings.format("settings.memory.status", "16384", String.valueOf(settings.maxMemoryMb())),
-                M3TextRole.BODY_SMALL
-        );
-        status.setPadding(new Insets(0.0, 16.0, 0.0, 16.0));
 
         String summary = settings.autoMemory()
                 ? strings.get("settings.memory.auto")
@@ -307,21 +340,26 @@ final class HMCLGameSettingsForm {
             case "maximized" -> strings.get("settings.game.window.maximized");
             default -> strings.get("settings.game.window.windowed") + " · " + settings.resolution();
         };
+        ToggleGroup windowGroup = new ToggleGroup();
         return sublist(
                 "window",
                 strings.get("settings.game.window_type"),
                 summary,
                 radioItem(strings.get("settings.game.window.windowed"), settings.resolution(),
                         "windowed".equals(settings.windowType()),
+                        windowGroup,
                         () -> settingsConsumer.accept(settingsSupplier.get().withWindow("windowed", settings.resolution()))),
                 radioItem(strings.get("settings.game.window.fullscreen"), "",
                         "fullscreen".equals(settings.windowType()),
+                        windowGroup,
                         () -> settingsConsumer.accept(settingsSupplier.get().withWindow("fullscreen", settings.resolution()))),
                 radioItem(strings.get("settings.game.window.borderless"), "",
                         "borderless".equals(settings.windowType()),
+                        windowGroup,
                         () -> settingsConsumer.accept(settingsSupplier.get().withWindow("borderless", settings.resolution()))),
                 radioItem(strings.get("settings.game.window.maximized"), "",
                         "maximized".equals(settings.windowType()),
+                        windowGroup,
                         () -> settingsConsumer.accept(settingsSupplier.get().withWindow("maximized", settings.resolution()))),
                 selectItem(
                         strings.get("settings.game.resolution"),
@@ -417,12 +455,14 @@ final class HMCLGameSettingsForm {
                     : settings.quickPlayRealms();
             default -> strings.get("settings.game.quick_play.none");
         };
+        ToggleGroup quickPlayGroup = new ToggleGroup();
         return sublist(
                 "quick-play",
                 strings.get("settings.game.quick_play"),
                 summary,
                 radioItem(strings.get("settings.game.quick_play.none"), "",
                         "none".equals(settings.quickPlayType()),
+                        quickPlayGroup,
                         () -> settingsConsumer.accept(settingsSupplier.get().withQuickPlay(
                                 "none", settings.quickPlayMultiplayer(), settings.quickPlaySingleplayer(),
                                 settings.quickPlayRealms()))),
@@ -431,6 +471,7 @@ final class HMCLGameSettingsForm {
                                 ? strings.get("settings.game.quick_play.multiplayer.support")
                                 : settings.quickPlayMultiplayer(),
                         "multiplayer".equals(settings.quickPlayType()),
+                        quickPlayGroup,
                         () -> openTextDialog(controller, strings.get("settings.game.quick_play.multiplayer"),
                                 settings.quickPlayMultiplayer().isBlank() ? "localhost:25565" : settings.quickPlayMultiplayer(),
                                 value -> settingsConsumer.accept(settingsSupplier.get().withQuickPlay(
@@ -441,6 +482,7 @@ final class HMCLGameSettingsForm {
                                 ? strings.get("settings.game.quick_play.singleplayer.support")
                                 : settings.quickPlaySingleplayer(),
                         "singleplayer".equals(settings.quickPlayType()),
+                        quickPlayGroup,
                         () -> openTextDialog(controller, strings.get("settings.game.quick_play.singleplayer"),
                                 settings.quickPlaySingleplayer().isBlank() ? "New World" : settings.quickPlaySingleplayer(),
                                 value -> settingsConsumer.accept(settingsSupplier.get().withQuickPlay(
@@ -451,6 +493,7 @@ final class HMCLGameSettingsForm {
                                 ? strings.get("settings.game.quick_play.realms.support")
                                 : settings.quickPlayRealms(),
                         "realms".equals(settings.quickPlayType()),
+                        quickPlayGroup,
                         () -> openTextDialog(controller, strings.get("settings.game.quick_play.realms"),
                                 settings.quickPlayRealms().isBlank() ? "realm-id" : settings.quickPlayRealms(),
                                 value -> settingsConsumer.accept(settingsSupplier.get().withQuickPlay(
@@ -706,22 +749,32 @@ final class HMCLGameSettingsForm {
             String title,
             String support,
             boolean selected,
+            ToggleGroup group,
             Runnable onSelect
     ) {
         M3RadioButtonSettingItem item = new M3RadioButtonSettingItem(title);
         if (!support.isBlank()) {
             item.setSupportingText(support);
         }
+        item.setToggleGroup(group);
         item.setSelected(selected);
         item.setOnAction(event -> onSelect.run());
         return item;
     }
 
-    private static M3SettingItem cycleItem(String title, String support, Runnable onAction) {
+    private static M3SettingItem cycleItem(
+            String title,
+            String support,
+            Consumer<M3SettingItem> onAction
+    ) {
         M3SettingItem item = new M3SettingItem(title);
         item.setSupportingText(support);
-        item.setOnAction(event -> onAction.run());
+        item.setOnAction(event -> onAction.accept(item));
         return item;
+    }
+
+    private static M3SettingItem cycleItem(String title, String support, Runnable onAction) {
+        return cycleItem(title, support, item -> onAction.run());
     }
 
     private static M3SelectSettingItem<String> selectItem(

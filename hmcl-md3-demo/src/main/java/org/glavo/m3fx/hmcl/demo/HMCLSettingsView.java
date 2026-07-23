@@ -193,32 +193,25 @@ final class HMCLSettingsView extends BorderPane {
         setLeft(sidebar);
         setCenter(contentHost);
 
-        state.globalGameSettingsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
+        // Rebuild only when displayed supporting text or structure must change. Switch-only booleans keep the
+        // live control so M3Switch motion and drag interaction are not destroyed mid-gesture.
         state.defaultIsolationProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
         state.selectedJavaIdProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.JAVA));
         state.updateChannelProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
-        state.acceptPreviewUpdateProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
-        state.disableAutoShowUpdateDialogProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
-        state.disableAprilFoolsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
         state.languageProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
         state.brightnessProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
         state.themeColorProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.animationDisabledProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.titleBarTransparentProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.windowTransparentProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
         state.backgroundOpacityProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
         state.versionListSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.fileDownloadSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.defaultAddonSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.downloadSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.downloadThreadsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.autoDownloadThreadsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.cacheDirectoryTypeProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.proxyTypeProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.proxyHostProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
         state.proxyPortProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.proxyAuthenticationProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
 
         refreshLocale();
         showSection(Section.GENERAL);
@@ -345,10 +338,7 @@ final class HMCLSettingsView extends BorderPane {
         return HMCLGameSettingsForm.create(
                 controller,
                 state::getGlobalGameSettings,
-                value -> {
-                    state.setGlobalGameSettings(value);
-                    renderSection(false);
-                },
+                state::setGlobalGameSettings,
                 false
         );
     }

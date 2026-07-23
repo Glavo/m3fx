@@ -213,10 +213,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         ScrollPane form = HMCLGameSettingsForm.create(
                 controller,
                 () -> state.getInstanceGameSettings(instance.id()),
-                value -> {
-                    state.setInstanceGameSettings(instance.id(), value);
-                    renderSection(false);
-                },
+                value -> state.setInstanceGameSettings(instance.id(), value),
                 true
         );
         VBox host = new VBox(identity, form);

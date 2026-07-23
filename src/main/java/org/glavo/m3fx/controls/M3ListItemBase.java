@@ -859,6 +859,16 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// grouped radio setting is already selected; rejected activation does not deliver an event.
     public final void fire() {
         if (!isDisabled() && prepareAction()) {
+            dispatchActionEvent();
+        }
+    }
+
+    /// Delivers an [ActionEvent] for this row without running [#prepareAction()].
+    ///
+    /// Setting rows use this when a nested interactive value control has already applied the value transition and the
+    /// row must only notify action listeners.
+    final void dispatchActionEvent() {
+        if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
         }
     }
