@@ -89,6 +89,8 @@ final class HMCLSettingsView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
+        HMCLDemoUi.fill(contentHost);
         globalGameItem.setOnAction(event -> showSection(Section.GLOBAL_GAME));
         javaItem.setOnAction(event -> showSection(Section.JAVA));
         generalItem.setOnAction(event -> showSection(Section.GENERAL));

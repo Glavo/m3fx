@@ -71,6 +71,7 @@ final class HMCLMultiplayerView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
         statusItem.setSelected(true);
         accountItem.getStyleClass().add("hmcl-sidebar-item");
         accountItem.setOnAction(event -> controller.openAccounts());

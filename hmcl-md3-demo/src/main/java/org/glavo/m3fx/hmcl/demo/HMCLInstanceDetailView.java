@@ -110,6 +110,8 @@ final class HMCLInstanceDetailView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
+        HMCLDemoUi.fill(contentHost);
         settingsItem.setOnAction(event -> showSection(Section.SETTINGS));
         installersItem.setOnAction(event -> showSection(Section.INSTALLERS));
         modsItem.setOnAction(event -> showSection(Section.MODS));
@@ -291,9 +293,10 @@ final class HMCLInstanceDetailView extends BorderPane {
                 createTextAction(strings.get("instance.mods.check_updates"), () ->
                         controller.showMessageKey("snackbar.refreshed"))
         );
-        VBox body = new VBox(toolbar, list);
+        var listScroll = HMCLDemoUi.listHost(list);
+        VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
         body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(list, Priority.ALWAYS);
+        VBox.setVgrow(listScroll, Priority.ALWAYS);
         VBox column = HMCLDemoUi.contentColumn(body);
         VBox.setVgrow(body, Priority.ALWAYS);
         return column;

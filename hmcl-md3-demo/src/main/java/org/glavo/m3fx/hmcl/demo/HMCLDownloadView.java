@@ -106,6 +106,8 @@ final class HMCLDownloadView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
+        HMCLDemoUi.fill(centerHost);
         gameItem.setOnAction(event -> showCategory(Category.GAME));
         modpackItem.setOnAction(event -> showCategory(Category.MODPACK));
         modItem.setOnAction(event -> showCategory(Category.MOD));
@@ -230,9 +232,11 @@ final class HMCLDownloadView extends BorderPane {
             list.getItems().add(versionRow(version));
         }
 
-        VBox body = new VBox(toolbar, list);
+        // Scroll host keeps M3ListPane's full preferred height out of stage min-size calculations.
+        var listScroll = HMCLDemoUi.listHost(list);
+        VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
         body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(list, Priority.ALWAYS);
+        VBox.setVgrow(listScroll, Priority.ALWAYS);
         VBox column = HMCLDemoUi.contentColumn(body);
         VBox.setVgrow(body, Priority.ALWAYS);
         return column;

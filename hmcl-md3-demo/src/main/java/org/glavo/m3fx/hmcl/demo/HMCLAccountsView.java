@@ -64,6 +64,7 @@ final class HMCLAccountsView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
         accountList.setListStyle(M3ListStyle.SEGMENTED);
         accountList.setSelectionMode(M3SelectionMode.SINGLE);
         accountList.getStyleClass().add("hmcl-dense-list");
@@ -84,9 +85,7 @@ final class HMCLAccountsView extends BorderPane {
         VBox sidebar = HMCLDemoUi.sidebar(addSection, microsoftItem, offlineItem, externalItem, addServerItem);
         setLeft(sidebar);
 
-        VBox body = HMCLDemoUi.contentColumn(accountList);
-        VBox.setVgrow(accountList, Priority.ALWAYS);
-        setCenter(HMCLDemoUi.scroll(body));
+        setCenter(HMCLDemoUi.listHost(accountList));
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> rebuildAccounts());
         state.getAccounts().addListener((ListChangeListener<HMCLDemoAccount>) change -> rebuildAccounts());

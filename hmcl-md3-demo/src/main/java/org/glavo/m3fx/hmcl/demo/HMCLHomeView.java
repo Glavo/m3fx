@@ -93,6 +93,7 @@ final class HMCLHomeView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-home-page");
+        HMCLDemoUi.fill(this);
         configureSidebar();
         configureAnnouncement();
         configureLaunchPane();

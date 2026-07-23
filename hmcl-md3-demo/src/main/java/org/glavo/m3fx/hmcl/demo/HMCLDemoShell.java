@@ -9,12 +9,21 @@ import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -32,9 +41,11 @@ import java.util.Deque;
 
 /// HMCL-style undecorated window shell modeled on `DecoratorSkin`.
 ///
-/// Layout mirrors HMCL:
-/// `window(padding 8)` → `body(shadow)` → clipped `parent(arc 8)` → wallpaper + `BorderPane`
-/// with a 40px `primary-container` title bar and page content.
+/// Critical layout contract matching HMCL:
+/// - outer window padding 8 for shadow
+/// - clipped body with 8px corner radius
+/// - fixed 40px title bar that never shrinks
+/// - page content uses `min size = 0` so list preferred heights cannot steal title-bar space
 @NotNullByDefault
 final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Title-bar height used by HMCL's `.jfx-tool-bar`.
@@ -46,6 +57,12 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Outer transparent inset reserved for the window shadow.
     private static final double WINDOW_PADDING = 8.0;
 
+    /// Minimum content width from HMCL `Controllers.MIN_CONTENT_WIDTH` without outer shadow.
+    private static final double MIN_CONTENT_WIDTH = 802.0;
+
+    /// Minimum content height from HMCL `Controllers.MIN_CONTENT_HEIGHT` without outer shadow.
+    private static final double MIN_CONTENT_HEIGHT = 492.0;
+
     /// The overlay host used for transient Material feedback.
     private final M3OverlayPane overlay;
 
@@ -55,8 +72,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// The deterministic application state.
     private final HMCLDemoState state;
 
-    /// Full-window wallpaper behind title bar and pages, matching HMCL `contentBackground`.
-    private final ImageView wallpaperView = new ImageView();
+    /// Wallpaper region behind the decorator frame.
+    private final Region wallpaper = new Region();
 
     /// Page host in the decorator center slot.
     private final StackPane routeHost = new StackPane();
@@ -125,16 +142,24 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         downloadView = new HMCLDownloadView(strings, state, this);
         settingsView = new HMCLSettingsView(strings, state, this);
         multiplayerView = new HMCLMultiplayerView(strings, state, this);
+        preparePage(homeView);
+        preparePage(accountsView);
+        preparePage(instancesView);
+        preparePage(instanceDetailView);
+        preparePage(downloadView);
+        preparePage(settingsView);
+        preparePage(multiplayerView);
 
         getStyleClass().add("hmcl-demo-shell");
         setPadding(new Insets(WINDOW_PADDING));
+        setMinSize(MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0, MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        wallpaperView.getStyleClass().add("hmcl-window-wallpaper");
-        wallpaperView.setPreserveRatio(false);
-        wallpaperView.setSmooth(true);
-        wallpaperView.setMouseTransparent(true);
+        wallpaper.getStyleClass().add("hmcl-window-wallpaper");
+        wallpaper.setMouseTransparent(true);
+        HMCLDemoUi.fill(wallpaper);
 
-        StackPane parent = new StackPane();
+        StackPane parent = HMCLDemoUi.fill(new StackPane());
         parent.getStyleClass().add("hmcl-window-parent");
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(parent.widthProperty());
@@ -144,20 +169,23 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         parent.setClip(clip);
 
         configureTitleBar();
-        BorderPane frame = new BorderPane();
-        frame.getStyleClass().add("hmcl-window-frame");
-        frame.setTop(titleContainer);
+
+        HMCLDemoUi.fill(routeHost);
         routeHost.getStyleClass().add("hmcl-route-host");
-        frame.setCenter(routeHost);
+        VBox.setVgrow(routeHost, Priority.ALWAYS);
 
-        wallpaperView.fitWidthProperty().bind(parent.widthProperty());
-        wallpaperView.fitHeightProperty().bind(parent.heightProperty());
-        parent.getChildren().setAll(wallpaperView, frame);
+        // Title is a non-growing sibling; content alone absorbs remaining height.
+        VBox frame = new VBox(titleContainer, routeHost);
+        frame.getStyleClass().add("hmcl-window-frame");
+        HMCLDemoUi.fill(frame);
 
-        StackPane body = new StackPane(parent);
+        parent.getChildren().setAll(wallpaper, frame);
+
+        StackPane body = HMCLDemoUi.fill(new StackPane(parent));
         body.getStyleClass().add("hmcl-window-body");
         body.setEffect(new DropShadow(BlurType.ONE_PASS_BOX, Color.rgb(0, 0, 0, 0.4), 10.0, 0.3, 0.0, 0.0));
         getChildren().setAll(body);
+        StackPane.setAlignment(body, Pos.CENTER);
 
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
         strings.localeProperty().addListener((observable, oldLocale, newLocale) -> {
@@ -166,6 +194,30 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         });
         updateWallpaper();
         showRoute(currentRoute, false);
+    }
+
+    /// Shell minimum size follows HMCL content metrics, never the active page list height.
+    @Override
+    protected double computeMinWidth(double height) {
+        return MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0;
+    }
+
+    /// Shell minimum size follows HMCL content metrics, never the active page list height.
+    @Override
+    protected double computeMinHeight(double width) {
+        return MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0;
+    }
+
+    /// Preferred size stays at the HMCL default window, independent of page content.
+    @Override
+    protected double computePrefWidth(double height) {
+        return computeMinWidth(height);
+    }
+
+    /// Preferred size stays at the HMCL default window, independent of page content.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
     }
 
     @Override
@@ -282,7 +334,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
             state.selectInstance(instanceRoute.instanceId());
         }
-        routeHost.getChildren().setAll(pageFor(route));
+        Node page = pageFor(route);
+        routeHost.getChildren().setAll(page);
         updateTitleBar();
         if (!fromNavigation && route instanceof HMCLDemoRoute.Home) {
             backStack.clear();
@@ -319,12 +372,22 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         throw new IllegalStateException("Unsupported route: " + route);
     }
 
+    /// Ensures a page never contributes a content-driven minimum size to the decorator.
+    ///
+    /// @param page the page root
+    private static void preparePage(Region page) {
+        HMCLDemoUi.fill(page);
+    }
+
     /// Builds the HMCL 40px title bar once.
     private void configureTitleBar() {
         titleContainer.getStyleClass().add("hmcl-window-title-bar");
         titleContainer.setMinHeight(TITLE_HEIGHT);
         titleContainer.setPrefHeight(TITLE_HEIGHT);
         titleContainer.setMaxHeight(TITLE_HEIGHT);
+        titleContainer.setMinWidth(0.0);
+        titleContainer.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(titleContainer, Priority.NEVER);
         titleContainer.setOnMousePressed(this::handleWindowDragPressed);
         titleContainer.setOnMouseDragged(this::handleWindowDragged);
         titleContainer.setOnMouseClicked(event -> {
@@ -343,8 +406,11 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         brandTitle.getChildren().setAll(brandIcon, brandText);
 
         titleLabel.getStyleClass().add("hmcl-window-title-label");
+        titleLabel.setMaxWidth(Double.MAX_VALUE);
         titleLeading.setAlignment(Pos.CENTER_LEFT);
         titleLeading.setPadding(new Insets(0.0, 5.0, 0.0, 5.0));
+        titleLeading.setMinWidth(0.0);
+        HBox.setHgrow(titleLeading, Priority.ALWAYS);
 
         styleWindowButton(backButton);
         styleWindowButton(helpButton);
@@ -370,12 +436,17 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         HBox windowButtons = new HBox(helpButton, minimizeButton, closeButton);
         windowButtons.getStyleClass().add("hmcl-window-buttons");
         windowButtons.setAlignment(Pos.CENTER_RIGHT);
+        windowButtons.setMinWidth(Region.USE_PREF_SIZE);
+        windowButtons.setMaxWidth(Region.USE_PREF_SIZE);
 
         BorderPane titleBar = new BorderPane();
         titleBar.setLeft(titleLeading);
         titleBar.setRight(windowButtons);
         BorderPane.setAlignment(titleLeading, Pos.CENTER_LEFT);
         BorderPane.setAlignment(windowButtons, Pos.CENTER_RIGHT);
+        titleBar.setMinHeight(TITLE_HEIGHT);
+        titleBar.setPrefHeight(TITLE_HEIGHT);
+        titleBar.setMaxHeight(TITLE_HEIGHT);
         titleContainer.getChildren().setAll(titleBar);
 
         refreshLocale();
@@ -421,6 +492,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             titleLeading.getChildren().add(backButton);
             titleLabel.setText(titleFor(currentRoute));
             HBox.setMargin(titleLabel, new Insets(0.0, 0.0, 0.0, 4.0));
+            HBox.setHgrow(titleLabel, Priority.ALWAYS);
             titleLeading.getChildren().add(titleLabel);
         }
     }
@@ -452,14 +524,21 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         return strings.get("app.title");
     }
 
-    /// Updates the decorator wallpaper image.
+    /// Updates the decorator wallpaper image without letting image metrics affect layout.
     private void updateWallpaper() {
         String path = switch (state.getWallpaper()) {
             case MEADOW -> "img/wallpapers/2021-08-26.jpg";
             case CAVES -> "img/wallpapers/2016-02-25.jpg";
             case SUNSET -> "img/wallpapers/2015-06-22.jpg";
         };
-        wallpaperView.setImage(HMCLDemoAssets.image(path));
+        Image image = HMCLDemoAssets.image(path);
+        wallpaper.setBackground(new Background(new BackgroundImage(
+                image,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(1.0, 1.0, true, true, false, true)
+        )));
     }
 
     /// Captures the pointer offset used by title-bar window dragging.

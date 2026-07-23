@@ -20,6 +20,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// Shared layout helpers for the HMCL Material 3 demo pages.
+///
+/// HMCL pages never let list preferred heights drive the stage size. Scroll hosts and grow regions use
+/// `min size = 0` so the decorator title bar keeps its fixed 40px allocation.
 @NotNullByDefault
 final class HMCLDemoUi {
     /// Standard HMCL left-pane width in logical pixels.
@@ -29,7 +32,19 @@ final class HMCLDemoUi {
     private HMCLDemoUi() {
     }
 
-    /// Creates a transparent vertical scroll host that grows with its parent.
+    /// Makes a region fill its parent without contributing a content-driven minimum size.
+    ///
+    /// @param region the region to configure
+    /// @param <T> the region type
+    /// @return `region`
+    static <T extends Region> T fill(T region) {
+        region.setMinSize(0.0, 0.0);
+        region.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+        region.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return region;
+    }
+
+    /// Creates a vertical scroll host that can shrink below its content height.
     ///
     /// @param content the scrolled content
     /// @return the configured scroll pane
@@ -39,23 +54,27 @@ final class HMCLDemoUi {
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setMinSize(0.0, 0.0);
+        scrollPane.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+        scrollPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         M3ScrollPanes.style(scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         HBox.setHgrow(scrollPane, Priority.ALWAYS);
         return scrollPane;
     }
 
-    /// Creates a fixed-width left sidebar shell.
+    /// Creates a fixed-width left sidebar shell that can shrink vertically.
     ///
     /// @param children the sidebar children
     /// @return the configured sidebar
     static VBox sidebar(Node... children) {
-        VBox sidebar = new VBox(4.0, children);
+        VBox sidebar = new VBox(0.0, children);
         sidebar.getStyleClass().add("hmcl-context-sidebar");
-        sidebar.setPadding(new Insets(10.0, 8.0, 10.0, 8.0));
         sidebar.setPrefWidth(SIDEBAR_WIDTH);
         sidebar.setMinWidth(SIDEBAR_WIDTH);
         sidebar.setMaxWidth(SIDEBAR_WIDTH);
+        sidebar.setMinHeight(0.0);
+        sidebar.setMaxHeight(Double.MAX_VALUE);
         return sidebar;
     }
 
@@ -114,6 +133,7 @@ final class HMCLDemoUi {
     /// @return the spacer region
     static Region vgrow() {
         Region spacer = new Region();
+        spacer.setMinHeight(0.0);
         VBox.setVgrow(spacer, Priority.ALWAYS);
         return spacer;
     }
@@ -123,6 +143,7 @@ final class HMCLDemoUi {
     /// @return the spacer region
     static Region hgrow() {
         Region spacer = new Region();
+        spacer.setMinWidth(0.0);
         HBox.setHgrow(spacer, Priority.ALWAYS);
         return spacer;
     }
@@ -177,7 +198,7 @@ final class HMCLDemoUi {
     /// @param children the column children
     /// @return the content column
     static VBox contentColumn(Node... children) {
-        VBox column = new VBox(12.0, children);
+        VBox column = fill(new VBox(12.0, children));
         column.getStyleClass().add("hmcl-page-body");
         column.setPadding(new Insets(16.0));
         column.setFillWidth(true);
@@ -192,6 +213,20 @@ final class HMCLDemoUi {
         HBox bar = new HBox(8.0, children);
         bar.getStyleClass().add("hmcl-page-toolbar");
         bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setMinHeight(Region.USE_PREF_SIZE);
+        bar.setMaxHeight(Region.USE_PREF_SIZE);
         return bar;
+    }
+
+    /// Wraps a non-virtualized list so its full preferred height cannot resize the window.
+    ///
+    /// @param list the list node
+    /// @return a scroll host with zero minimum height
+    static ScrollPane listHost(Node list) {
+        if (list instanceof Region region) {
+            region.setMinHeight(0.0);
+            region.setMaxHeight(Double.MAX_VALUE);
+        }
+        return scroll(list);
     }
 }

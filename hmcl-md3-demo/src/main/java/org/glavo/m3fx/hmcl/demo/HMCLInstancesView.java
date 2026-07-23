@@ -71,6 +71,7 @@ final class HMCLInstancesView extends BorderPane {
         this.controller = controller;
 
         getStyleClass().add("hmcl-secondary-page");
+        HMCLDemoUi.fill(this);
         instanceList.setListStyle(M3ListStyle.SEGMENTED);
         instanceList.setSelectionMode(M3SelectionMode.SINGLE);
         instanceList.getStyleClass().add("hmcl-dense-list");
@@ -100,9 +101,10 @@ final class HMCLInstancesView extends BorderPane {
 
         HBox toolbar = HMCLDemoUi.toolbar(searchBar, HMCLDemoUi.hgrow(), refreshButton, addButton);
         HBox.setHgrow(searchBar, Priority.ALWAYS);
-        VBox body = new VBox(toolbar, instanceList);
+        var listScroll = HMCLDemoUi.listHost(instanceList);
+        VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
         body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(instanceList, Priority.ALWAYS);
+        VBox.setVgrow(listScroll, Priority.ALWAYS);
         VBox center = HMCLDemoUi.contentColumn(body);
         VBox.setVgrow(body, Priority.ALWAYS);
         setCenter(center);
