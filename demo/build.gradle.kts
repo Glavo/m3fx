@@ -1,10 +1,11 @@
+import org.glavo.m3fx.build.nativeimage.StageNativeExecutableTask
+import org.glavo.m3fx.build.nativeimage.VerifyNativeImageToolchainTask
 import org.gradle.api.Task
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
-import java.io.RandomAccessFile
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -202,117 +203,30 @@ tasks.register("verifyShadowJar") {
     }
 }
 
-val verifyNativeImageToolchain = tasks.register("verifyNativeImageToolchain") {
+val verifyNativeImageToolchain = tasks.register<VerifyNativeImageToolchainTask>("verifyNativeImageToolchain") {
     group = "verification"
     description = "Verifies that the active Native Image toolchain is Liberica NIK Full."
-
-    doLast {
-        val configuredHome = System.getenv("GRAALVM_HOME")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-        val nativeImageHome = configuredHome?.let(::file) ?: file(System.getProperty("java.home"))
-        val nativeImageExecutable = listOf("native-image", "native-image.cmd", "native-image.exe")
-            .map { executableName -> nativeImageHome.resolve("bin").resolve(executableName) }
-            .firstOrNull(File::isFile)
-            ?: throw GradleException(
-                "No native-image executable was found under ${nativeImageHome.absolutePath}. " +
-                        "Set GRAALVM_HOME to a Liberica NIK Full installation."
-            )
-        val javafxControlsJmod = nativeImageHome.resolve("jmods/javafx.controls.jmod")
-        if (!javafxControlsJmod.isFile) {
-            throw GradleException(
-                "The Native Image toolchain at ${nativeImageHome.absolutePath} does not include JavaFX. " +
-                        "Use the Full distribution of Liberica NIK."
-            )
-        }
-
-        val process = ProcessBuilder(nativeImageExecutable.absolutePath, "--version")
-            .redirectErrorStream(true)
-            .start()
-        val versionOutput = process.inputStream.bufferedReader().use { reader -> reader.readText() }
-        val exitCode = process.waitFor()
-        if (exitCode != 0 || "Liberica-NIK" !in versionOutput) {
-            throw GradleException(
-                "Unsupported Native Image toolchain at ${nativeImageHome.absolutePath}. " +
-                        "Use Liberica NIK Full. Detected output:\n$versionOutput"
-            )
-        }
-    }
+    requiredJmods.add("javafx.controls")
 }
 
-tasks.named<BuildNativeImageTask>("nativeCompile") {
+val nativeCompile = tasks.named<BuildNativeImageTask>("nativeCompile") {
     dependsOn(verifyNativeImageToolchain, shadowJar)
     classpathJar.set(shadowJar.flatMap { it.archiveFile })
 }
 
 val nativeExecutableName = if (nativeHostOs == "windows") "m3fx-demo.exe" else "m3fx-demo"
-val compiledNativeExecutable = layout.buildDirectory.file("native/nativeCompile/$nativeExecutableName")
 val stagedNativeExecutable = layout.buildDirectory.file(
     "distributions/native/$nativeHostOs-$nativeHostArch/$nativeExecutableName"
 )
 
-tasks.register("stageNativeExecutable") {
+tasks.register<StageNativeExecutableTask>("stageNativeExecutable") {
     group = "distribution"
     description = "Builds and stages the Liberica NIK executable as one distributable file."
-    dependsOn(tasks.named("nativeCompile"))
-    inputs.file(compiledNativeExecutable)
-    outputs.file(stagedNativeExecutable)
-
-    doLast {
-        val sourceExecutable = compiledNativeExecutable.get().asFile
-        if (!sourceExecutable.isFile || sourceExecutable.length() == 0L) {
-            throw GradleException("The compiled Native Image is missing or empty: ${sourceExecutable.absolutePath}")
-        }
-        if (nativeHostOs == "windows") {
-            RandomAccessFile(sourceExecutable, "r").use { executable ->
-                fun readUnsignedShortLittleEndian(): Int =
-                    executable.readUnsignedByte() or (executable.readUnsignedByte() shl 8)
-
-                fun readUnsignedIntLittleEndian(): Long =
-                    readUnsignedShortLittleEndian().toLong() or
-                            (readUnsignedShortLittleEndian().toLong() shl 16)
-
-                if (executable.length() < 0x40L || readUnsignedShortLittleEndian() != 0x5a4d) {
-                    throw GradleException("The compiled Native Image is not a Windows PE executable")
-                }
-                executable.seek(0x3cL)
-                val peHeaderOffset = readUnsignedIntLittleEndian()
-                if (peHeaderOffset > executable.length() - 94L) {
-                    throw GradleException("The compiled Native Image has an invalid PE header offset")
-                }
-                executable.seek(peHeaderOffset)
-                if (readUnsignedIntLittleEndian() != 0x00004550L) {
-                    throw GradleException("The compiled Native Image has an invalid PE signature")
-                }
-                executable.seek(peHeaderOffset + 24L)
-                val optionalHeaderMagic = readUnsignedShortLittleEndian()
-                if (optionalHeaderMagic != 0x010b && optionalHeaderMagic != 0x020b) {
-                    throw GradleException("The compiled Native Image has an unsupported PE optional header")
-                }
-                executable.seek(peHeaderOffset + 92L)
-                val subsystem = readUnsignedShortLittleEndian()
-                if (subsystem != 2) {
-                    throw GradleException(
-                        "The Windows Native Image must use the GUI subsystem, but its PE subsystem is $subsystem"
-                    )
-                }
-            }
-        }
-        val targetExecutable = stagedNativeExecutable.get().asFile
-        targetExecutable.parentFile.mkdirs()
-        Files.copy(
-            sourceExecutable.toPath(),
-            targetExecutable.toPath(),
-            StandardCopyOption.COPY_ATTRIBUTES,
-            StandardCopyOption.REPLACE_EXISTING
-        )
-        if (!targetExecutable.isFile || targetExecutable.length() == 0L) {
-            throw GradleException("The staged Native Image is missing or empty: ${targetExecutable.absolutePath}")
-        }
-        if (nativeHostOs != "windows" && !targetExecutable.setExecutable(true, false)) {
-            throw GradleException("Could not mark ${targetExecutable.absolutePath} as executable")
-        }
-    }
+    dependsOn(nativeCompile)
+    sourceExecutable.set(nativeCompile.flatMap { it.outputFile })
+    targetExecutable.set(stagedNativeExecutable)
+    windowsHost.set(nativeHostOs == "windows")
+    windowsGuiApplication.set(true)
 }
 
 val jlinkRuntime = registerJlinkRuntime(
