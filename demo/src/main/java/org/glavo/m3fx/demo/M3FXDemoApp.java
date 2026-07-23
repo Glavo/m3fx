@@ -11,7 +11,6 @@ import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -25,7 +24,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -90,13 +88,6 @@ public final class M3FXDemoApp extends Application {
             Color.web("#386a20"),
             Color.web("#7d5260")
     );
-
-    /// The bundled demo font resource path.
-    private static final String DEMO_FONT_RESOURCE =
-            "/org/glavo/m3fx/demo/fonts/AlibabaPuHuiTi-3-65-Medium.ttf";
-
-    /// The size used only when registering the bundled demo font with JavaFX.
-    private static final double DEMO_FONT_LOAD_SIZE = 12.0;
 
     /// The fixed width of the persistent and modal navigation drawer.
     private static final double NAVIGATION_DRAWER_WIDTH = 360.0;
@@ -196,7 +187,6 @@ public final class M3FXDemoApp extends Application {
         M3OverlayPane root = new M3OverlayPane();
         root.getStyleClass().add("demo-root");
         overlayPane = root;
-        applyDemoFont(root);
 
         List<DemoPage> createdPages = DemoPageCatalog.createPages(new DemoPageContext(this));
         pages = createdPages;
@@ -277,37 +267,6 @@ public final class M3FXDemoApp extends Application {
                 activeScene.getRoot().requestLayout();
             }
         });
-    }
-
-    /// Applies the bundled default font to the demo root when the resource is present.
-    ///
-    /// The loaded font family is read from JavaFX rather than hard-coded so the CSS uses the exact family name
-    /// reported by the font file on the current runtime.
-    ///
-    /// @param root the demo root node
-    private static void applyDemoFont(Region root) {
-        @Nullable String fontFamily = loadDemoFontFamily();
-        if (fontFamily == null) {
-            return;
-        }
-
-        String escapedFontFamily = fontFamily.replace("\\", "\\\\").replace("\"", "\\\"");
-        String fontStyle = "-fx-font-family: \"" + escapedFontFamily + "\";";
-        String currentStyle = root.getStyle();
-        root.setStyle(currentStyle.isBlank() ? fontStyle : currentStyle + " " + fontStyle);
-    }
-
-    /// Loads the bundled demo font and returns the JavaFX font family name.
-    ///
-    /// @return the loaded font family, or `null` when the resource cannot be loaded
-    private static @Nullable String loadDemoFontFamily() {
-        @Nullable URL fontUrl = M3FXDemoApp.class.getResource(DEMO_FONT_RESOURCE);
-        if (fontUrl == null) {
-            return null;
-        }
-
-        @Nullable Font font = Font.loadFont(fontUrl.toExternalForm(), DEMO_FONT_LOAD_SIZE);
-        return font == null ? null : font.getFamily();
     }
 
     /// Creates the small Material top app bar used by the demo shell.

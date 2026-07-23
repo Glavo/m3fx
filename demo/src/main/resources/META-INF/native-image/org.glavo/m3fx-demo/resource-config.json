@@ -6,9 +6,6 @@
       },
       {
         "pattern": "org/glavo/m3fx/demo/.*\\.css"
-      },
-      {
-        "pattern": "org/glavo/m3fx/demo/fonts/.*\\.ttf"
       }
     ]
   }

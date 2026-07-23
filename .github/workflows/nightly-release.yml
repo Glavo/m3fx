@@ -240,7 +240,7 @@ jobs:
           This prerelease is updated in place by the daily Nightly workflow and by manual dispatches. Assets always represent the commit linked above.
 
           - Windows x64, Linux x64, and macOS AArch64 Native Image distributions are self-contained platform builds.
-          - The Shadow JAR includes M3FX, MonetFX, Demo resources, and the bundled Demo font, but intentionally excludes JavaFX.
+          - The Shadow JAR includes M3FX, MonetFX, and Demo resources, but intentionally excludes JavaFX and fonts.
           - SHA256SUMS covers every downloadable build asset and the build metadata file.
 
           Workflow run: [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})

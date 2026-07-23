@@ -23,9 +23,7 @@ Use the platform classifier that matches the target runtime: `win`, `linux`, or 
 
 ## Demo Shadow Jar
 
-The demo shadow jar is intended for quick inspection of the demo application. It packages the demo classes, M3FX, non-JavaFX runtime dependencies, and the demo default font. It intentionally excludes JavaFX artifacts.
-
-During resource processing, the demo downloads `https://registry.npmmirror.com/@fontpkg/alibaba-puhuiti-3-0/-/alibaba-puhuiti-3-0-0.0.0.tgz`, extracts `AlibabaPuHuiTi-3-65-Medium.ttf`, and packages it under the demo resources so the application can use it as its default font. The download URL can be overridden with `-Pm3fx.demo.fontPackageUrl=...` when building from a different mirror.
+The demo shadow jar is intended for quick inspection of the demo application. It packages the demo classes, M3FX, and non-JavaFX runtime dependencies. It intentionally excludes JavaFX artifacts and fonts, so text uses fonts provided by the host system.
 
 Build it with:
 
@@ -236,7 +234,7 @@ creating one release per day.
 
 `check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources and Javadoc classifier availability is covered by the publication layout verification above.
 
-`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, if required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
+`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX content or font resources are bundled into the shadow jar, or if the executable manifest, required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent.
 
 `shadowCatalogJar` runs the corresponding Catalog verification. It rejects bundled JavaFX content and requires the
 Catalog launcher, application, stylesheet, M3FX controls, and MonetFX classes.

@@ -29,16 +29,6 @@ val detectedJavafxPlatform = when {
 }
 val javafxPlatform = providers.gradleProperty("m3fx.javafx.platform").orElse(detectedJavafxPlatform).get()
 val javafxModules = listOf("base", "graphics", "controls")
-val demoFontPackageUrl = providers.gradleProperty("m3fx.demo.fontPackageUrl")
-    .orElse("https://registry.npmmirror.com/@fontpkg/alibaba-puhuiti-3-0/-/alibaba-puhuiti-3-0-0.0.0.tgz")
-val demoFontFileName = "AlibabaPuHuiTi-3-65-Medium.ttf"
-val demoFontResourcePath = "org/glavo/m3fx/demo/fonts/$demoFontFileName"
-val demoFontArchive = layout.buildDirectory.file("downloaded-fonts/alibaba-puhuiti-3-0-0.0.0.tgz")
-val generatedDemoFontResources = layout.buildDirectory.dir("generated/resources/demo-font")
-
-sourceSets.main {
-    resources.srcDir(generatedDemoFontResources)
-}
 
 fun DependencyHandler.addJavafxDependencies(configurationName: String, version: String) {
     for (module in javafxModules) {
@@ -71,69 +61,6 @@ val jlinkExecutable = providers.gradleProperty("m3fx.jlink.executable")
 tasks.withType<JavaCompile>().configureEach {
     options.release = 17
     options.encoding = "UTF-8"
-}
-
-val downloadDemoFont = tasks.register("downloadDemoFont") {
-    group = "build setup"
-    description = "Downloads the Alibaba PuHuiTi font package used by the demo."
-    inputs.property("demoFontPackageUrl", demoFontPackageUrl)
-    outputs.file(demoFontArchive)
-    outputs.upToDateWhen {
-        val archive = demoFontArchive.get().asFile
-        archive.isFile && archive.length() > 0L
-    }
-
-    doLast {
-        val archive = demoFontArchive.get().asFile
-        if (archive.isFile && archive.length() > 0L) {
-            return@doLast
-        }
-
-        archive.parentFile.mkdirs()
-        val partialArchive = archive.resolveSibling("${archive.name}.part")
-        if (partialArchive.isFile) {
-            partialArchive.delete()
-        }
-
-        val resolvedUrl = demoFontPackageUrl.get()
-        logger.lifecycle("Downloading demo font package from $resolvedUrl")
-        URI(resolvedUrl).toURL().openStream().use { input ->
-            partialArchive.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-        Files.move(
-            partialArchive.toPath(),
-            archive.toPath(),
-            StandardCopyOption.ATOMIC_MOVE,
-            StandardCopyOption.REPLACE_EXISTING
-        )
-    }
-}
-
-val extractDemoFont = tasks.register("extractDemoFont", Sync::class) {
-    group = "build setup"
-    description = "Extracts the Alibaba PuHuiTi Medium TTF used as the demo default font."
-    dependsOn(downloadDemoFont)
-    from(tarTree(resources.gzip(demoFontArchive))) {
-        include("**/$demoFontFileName")
-        eachFile {
-            path = demoFontResourcePath
-        }
-        includeEmptyDirs = false
-    }
-    into(generatedDemoFontResources)
-
-    doLast {
-        val fontFile = generatedDemoFontResources.get().asFile.resolve(demoFontResourcePath)
-        if (!fontFile.isFile) {
-            throw GradleException("Font package does not contain $demoFontFileName")
-        }
-    }
-}
-
-tasks.processResources {
-    dependsOn(extractDemoFont)
 }
 
 application {
@@ -238,6 +165,22 @@ tasks.register("verifyShadowJar") {
                 )
             }
 
+            val bundledFonts = entryNames.asSequence()
+                .filter { entryName ->
+                    val normalizedName = entryName.lowercase()
+                    normalizedName.endsWith(".ttf")
+                            || normalizedName.endsWith(".ttc")
+                            || normalizedName.endsWith(".otf")
+                            || normalizedName.endsWith(".woff")
+                            || normalizedName.endsWith(".woff2")
+                }
+                .toList()
+            if (bundledFonts.isNotEmpty()) {
+                throw GradleException(
+                    "The demo shadow JAR must not bundle font resources: ${bundledFonts.take(10)}"
+                )
+            }
+
             val manifestEntry = zip.getEntry("META-INF/MANIFEST.MF")
                 ?: throw GradleException("The demo shadow JAR is missing META-INF/MANIFEST.MF")
             val manifest = zip.getInputStream(manifestEntry).bufferedReader().use { it.readText() }
@@ -254,14 +197,6 @@ tasks.register("verifyShadowJar") {
             requireEntry("META-INF/native-image/org.glavo/m3fx-demo/reflect-config.json")
             if (entryNames.none { entryName -> entryName.startsWith("org/glavo/monetfx/") && entryName.endsWith(".class") }) {
                 throw GradleException("The demo shadow JAR is missing MonetFX runtime classes")
-            }
-
-            val fontEntry = zip.getEntry(demoFontResourcePath)
-            if (fontEntry == null) {
-                throw GradleException("The demo shadow JAR is missing $demoFontResourcePath")
-            }
-            if (fontEntry.size <= 0L) {
-                throw GradleException("The demo shadow JAR bundles an empty $demoFontResourcePath")
             }
         }
     }
