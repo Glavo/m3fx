@@ -20,6 +20,7 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies drawer disclosure keys do not steal focus from an embedded text input.
+    @Tier2Test
     @Test
     void embeddedTextInputKeepsDrawerDisclosureKeys() {
         FxTestUtils.runOnFxThread(() -> {
@@ -83,6 +85,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies modified drawer disclosure keys are left to application shortcuts.
+    @Tier2Test
     @Test
     void modifiedDrawerDisclosureKeysAreIgnored() {
         FxTestUtils.runOnFxThread(() -> {
@@ -127,6 +130,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies drawer type-ahead does not steal printable keys from an embedded text input.
+    @Tier2Test
     @Test
     void embeddedTextInputKeepsDrawerTypeAheadKeys() {
         FxTestUtils.runOnFxThread(() -> {
@@ -303,6 +307,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies collapsing a focused drawer child reports the group header as the active focus node.
+    @Tier2Test
     @Test
     void collapsingFocusedChildReportsHeaderFocus() {
         FxTestUtils.runOnFxThread(() -> {
@@ -360,6 +365,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies accessibility focus moves to the selected visible drawer item.
+    @Tier2Test
     @Test
     void selectedDrawerItemAcceptsAccessibleFocus() {
         FxTestUtils.runOnFxThread(() -> {
@@ -449,6 +455,7 @@ final class M3NavigationDrawerGroupTest {
     }
 
     /// Verifies accessibility reveal expands a collapsed group and focuses the requested child item.
+    @Tier2Test
     @Test
     void collapsedDrawerGroupChildAcceptsAccessibleReveal() {
         FxTestUtils.runOnFxThread(() -> {

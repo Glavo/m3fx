@@ -155,10 +155,10 @@ import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
-import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
@@ -1420,6 +1420,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies that disabled action controls render container and content opacity as separate Material layers.
+    @Tier2Test
     @Test
     void disabledActionControlsDoNotCompoundContainerAndContentOpacity() {
         M3Theme theme = M3Theme.defaultTheme();
@@ -4014,6 +4015,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies the published Standard and Vibrant toolbar color mappings for action states.
+    @Tier2Test
     @Test
     void toolbarColorStylesMapActionStates() {
         FxTestUtils.runOnFxThread(() -> {
@@ -10082,6 +10084,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies that rich tooltip token CSS leaves caller-provided button styles untouched.
+    @Tier2Test
     @Test
     void richTooltipTokenCssDoesNotRewriteActionButtonInlineStyle() {
         FxTestUtils.runOnFxThread(() -> {
@@ -36054,6 +36057,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies that long tooltip popups keep their preferred wrap width when the popup is sized by JavaFX.
+    @Tier2Test
     @Test
     void tooltipPopupWrapsLongTextAtPreferredWidth() {
         FxTestUtils.runOnFxThread(() -> {

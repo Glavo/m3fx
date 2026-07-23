@@ -19,9 +19,9 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
-import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
@@ -279,6 +279,7 @@ final class M3DatePickerTest {
     }
 
     /// Verifies that composite owners skip date pickers whose value route rejects an out-of-range target.
+    @Tier2Test
     @Test
     void datePickerAccessibleRouteRejectsOutOfRangeTargetsInCompositeOwners() {
         FxTestUtils.runOnFxThread(() -> {
@@ -314,6 +315,7 @@ final class M3DatePickerTest {
     }
 
     /// Verifies that accessibility selection ignores unreachable rendered day cell nodes.
+    @Tier2Test
     @Test
     void datePickerAccessibleSelectionIgnoresUnreachableDayCells() {
         FxTestUtils.runOnFxThread(() -> {
@@ -352,6 +354,7 @@ final class M3DatePickerTest {
     }
 
     /// Verifies that default accessibility focus actions preserve the focused visible day cell.
+    @Tier2Test
     @Test
     void datePickerAccessibleFocusPreservesFocusedVisibleCell() {
         FxTestUtils.runOnFxThread(() -> {

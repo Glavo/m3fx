@@ -24,6 +24,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ final class M3IconToggleButtonMotionTest {
     }
 
     /// Verifies selected and unselected targets interpolate without changing button or sibling layout metrics.
+    @Tier2Test
     @Test
     void selectionInterpolatesContainerAndContentWithoutRelayout() throws InterruptedException {
         MotionFixture fixture = createFixture(false);

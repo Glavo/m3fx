@@ -31,9 +31,9 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
-import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
@@ -272,6 +272,7 @@ final class M3TimePickerTest {
     }
 
     /// Verifies accessibility adjustment, indexed children, selection, and focus routing.
+    @Tier2Test
     @Test
     void accessibilityRoutesThroughVisibleDialLabels() {
         FxTestUtils.runOnFxThread(() -> {

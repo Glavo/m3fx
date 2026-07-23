@@ -22,6 +22,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3PresetNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies shared focus traversal behavior.
+@Tier2Test
 @NotNullByDefault
 final class M3FocusTraversalTest {
     /// Starts the JavaFX toolkit for focus traversal tests.

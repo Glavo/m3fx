@@ -19,6 +19,7 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,10 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies the fast lifecycle and host contracts of dialogs presented in dedicated native windows.
+/// Verifies lifecycle and host contracts of dialogs presented in dedicated native windows.
 ///
 /// These tests exercise public standalone-window behavior without inspecting animation frames or platform-specific
 /// window decoration. Native stages are retained only long enough to drive close and owner-lifecycle events.
+@Tier2Test
 @NotNullByDefault
 final class M3DialogWindowPresentationTest {
     /// Starts the JavaFX toolkit before any test creates a native dialog window.

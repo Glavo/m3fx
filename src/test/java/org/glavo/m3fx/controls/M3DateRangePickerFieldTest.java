@@ -20,9 +20,9 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
-import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -279,6 +279,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that the range field can show its popup when attached to a visible window.
+    @Tier2Test
     @Test
     void dateRangePickerFieldCanShowPopupFromVisibleWindow() {
         FxTestUtils.runOnFxThread(() -> {
@@ -309,6 +310,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that keyboard dismissal from range popup picker content returns focus to the start editor.
+    @Tier2Test
     @Test
     void dateRangePickerFieldRestoresStartEditorFocusAfterKeyboardDismissal() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -346,6 +348,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that range field popup presets preserve accessibility focus while the popup is open.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPresetFocusIsPreservedByAccessibleActions() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -409,6 +412,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that range field preset columns mirror picker handoff keys in right-to-left layout.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPresetKeyboardNavigationMirrorsPickerHandoff() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -456,6 +460,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that the range field popup inherits a locally installed parent theme.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPopupInheritsLocalParentThemeContext() {
         FxTestUtils.runOnFxThread(() -> {

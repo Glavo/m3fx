@@ -15,6 +15,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -203,6 +204,7 @@ final class M3SettingItemTest {
     }
 
     /// Verifies that unselected list panes move focus across setting rows with directional keys.
+    @Tier2Test
     @Test
     void nonSelectableListTraversesSettingRowsWithDirectionKeys() {
         FxTestUtils.runOnFxThread(() -> {

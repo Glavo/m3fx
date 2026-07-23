@@ -19,6 +19,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -530,6 +531,7 @@ final class M3ControlAccessibilityTest {
     }
 
     /// Verifies that popup-backed controls expose expanded state through accessibility actions.
+    @Tier2Test
     @Test
     void popupControlsExposeExpandedAccessibleStateActions() {
         FxTestUtils.runOnFxThread(() -> {
@@ -564,6 +566,7 @@ final class M3ControlAccessibilityTest {
     }
 
     /// Verifies popup-backed controls forward accessible selection only while enabled.
+    @Tier2Test
     @Test
     void popupControlsExposeSelectedItemsAccessibleStateActions() {
         FxTestUtils.runOnFxThread(() -> {

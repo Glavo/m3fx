@@ -18,6 +18,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -386,6 +387,7 @@ final class M3PickerDialogTest {
     }
 
     /// Verifies that picker bounds and incremental preset changes preserve unaffected controls, skins, and focus.
+    @Tier2Test
     @Test
     void pickerDialogPresetUpdatesPreserveNodesAndFocus() {
         FxTestUtils.runOnFxThread(() -> {
@@ -584,6 +586,7 @@ final class M3PickerDialogTest {
     }
 
     /// Verifies that picker dialogs distinguish confirmation from cancellation and programmatic dismissal.
+    @Tier2Test
     @Test
     void pickerDialogHiddenEventsExposeActionsAndCurrentState() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -804,6 +807,7 @@ final class M3PickerDialogTest {
     }
 
     /// Verifies that dialog preset grids and the vertical time column support keyboard traversal.
+    @Tier2Test
     @Test
     void pickerDialogPresetKeyboardNavigationMovesWithinListsAndGrid() {
         FxTestUtils.runOnFxThread(() -> {

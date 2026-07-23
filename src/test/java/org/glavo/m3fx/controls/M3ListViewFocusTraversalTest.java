@@ -20,6 +20,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies scene traversal and logical cell focus for virtualized Material lists.
+@Tier2Test
 @NotNullByDefault
 final class M3ListViewFocusTraversalTest {
     /// The pseudo-class used to expose keyboard-visible logical row focus.

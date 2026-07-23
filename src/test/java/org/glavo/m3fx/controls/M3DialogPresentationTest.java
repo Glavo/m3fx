@@ -32,11 +32,11 @@ import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3OverlayDialogPresentation;
-import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -409,6 +409,7 @@ final class M3DialogPresentationTest {
     }
 
     /// Verifies an animated entrance makes the dialog surface visibly contribute to a real window.
+    @Tier2Test
     @Test
     void animatedEntranceRendersDialogSurface() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
