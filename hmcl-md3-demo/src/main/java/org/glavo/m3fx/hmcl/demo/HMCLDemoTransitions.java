@@ -10,44 +10,65 @@ import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Shared page and section transitions modeled on HMCL `ContainerAnimations`.
+/// Shared page and section transitions for the HMCL Material 3 demo.
+///
+/// Transform choices follow HMCL `ContainerAnimations` semantics while using M3FX enter and exit effects.
 @NotNullByDefault
 final class HMCLDemoTransitions {
-    /// Enter slide distance used by primary navigation.
-    private static final double PAGE_ENTER_DISTANCE = 36.0;
+    /// Enter slide distance used by shared-axis navigation.
+    private static final double PAGE_ENTER_DISTANCE = 48.0;
 
-    /// Exit slide distance used by primary navigation.
-    private static final double PAGE_EXIT_DISTANCE = 24.0;
+    /// Exit slide distance used by shared-axis navigation.
+    private static final double PAGE_EXIT_DISTANCE = 36.0;
 
-    /// Enter delay used by fade-through section changes.
-    private static final Duration SECTION_ENTER_DELAY = Duration.millis(40.0);
+    /// Vertical distance used by section transitions.
+    private static final double SECTION_ENTER_DISTANCE = 40.0;
 
     /// Prevents utility-class instantiation.
     private HMCLDemoTransitions() {
     }
 
-    /// Returns a forward navigation transform (content enters from the logical end).
+    /// Returns the primary-destination fade-through transform.
+    ///
+    /// @return the transform
+    static M3ContentTransform navigation() {
+        return M3ContentTransform.DEFAULT;
+    }
+
+    /// Returns a forward navigation transform.
     ///
     /// @return the transform
     static M3ContentTransform forward() {
         return slide(M3TransitionEdge.END, M3TransitionEdge.START);
     }
 
-    /// Returns a backward navigation transform (content enters from the logical start).
+    /// Returns a backward navigation transform.
     ///
     /// @return the transform
     static M3ContentTransform backward() {
         return slide(M3TransitionEdge.START, M3TransitionEdge.END);
     }
 
-    /// Returns a fade-through transform used for left-pane tab changes.
+    /// Returns a slide-up fade transform used for in-page section changes.
     ///
     /// @return the transform
-    static M3ContentTransform sectionFade() {
+    static M3ContentTransform sectionUp() {
         return new M3ContentTransform(
                 M3EnterTransition.fade(0.0)
-                        .withDelay(SECTION_ENTER_DELAY)
-                        .and(M3EnterTransition.scale(0.98)),
+                        .withDelay(Duration.millis(40.0))
+                        .and(M3EnterTransition.slideFrom(M3TransitionEdge.BOTTOM, SECTION_ENTER_DISTANCE)),
+                M3ExitTransition.fade(0.0),
+                null,
+                0.0
+        );
+    }
+
+    /// Returns an immediate snap transform used when reduced motion is active.
+    ///
+    /// @return the transform
+    static M3ContentTransform none() {
+        return new M3ContentTransform(
+                M3EnterTransition.fade(0.0),
                 M3ExitTransition.fade(0.0),
                 null,
                 0.0

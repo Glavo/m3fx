@@ -3,111 +3,75 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.Node;
-import javafx.scene.effect.BlurType;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundImage;
-import javafx.scene.layout.BackgroundPosition;
-import javafx.scene.layout.BackgroundRepeat;
-import javafx.scene.layout.BackgroundSize;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3NavigationBar;
+import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Snackbar;
-import org.glavo.m3fx.controls.M3Text;
-import org.glavo.m3fx.controls.M3TextRole;
+import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 
-/// HMCL-style undecorated window shell modeled on `DecoratorSkin`.
-///
-/// Critical layout contract matching HMCL:
-/// - outer window padding 8 for shadow
-/// - clipped body with 8px corner radius
-/// - fixed 40px title bar that never shrinks
-/// - page content uses `min size = 0` so list preferred heights cannot steal title-bar space
+/// Adaptive Material shell for the HMCL-inspired demo.
 @NotNullByDefault
 final class HMCLDemoShell extends StackPane implements HMCLDemoController {
-    /// Title-bar height used by HMCL's `.jfx-tool-bar`.
-    private static final double TITLE_HEIGHT = 40.0;
-
-    /// Corner radius used by HMCL's decorator clip.
-    private static final double WINDOW_RADIUS = 8.0;
-
-    /// Outer transparent inset reserved for the window shadow.
-    private static final double WINDOW_PADDING = 8.0;
-
-    /// Minimum content width from HMCL `Controllers.MIN_CONTENT_WIDTH` without outer shadow.
-    private static final double MIN_CONTENT_WIDTH = 802.0;
-
-    /// Minimum content height from HMCL `Controllers.MIN_CONTENT_HEIGHT` without outer shadow.
-    private static final double MIN_CONTENT_HEIGHT = 492.0;
-
-    /// The overlay host used for transient Material feedback.
+    /// The overlay host used for dialogs and snackbars.
     private final M3OverlayPane overlay;
 
-    /// The localization service shared with every page.
+    /// The localization service.
     private final HMCLDemoStrings strings;
 
     /// The deterministic application state.
     private final HMCLDemoState state;
 
-    /// Wallpaper region behind the decorator frame.
-    private final Region wallpaper = new Region();
+    /// Adaptive scaffold chrome.
+    private final M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
 
-    /// Animated page host in the decorator center slot.
-    private final M3AnimatedContent pageHost = new M3AnimatedContent();
+    /// Shared top app bar.
+    private final M3TopAppBar topAppBar = new M3TopAppBar();
 
-    /// HMCL-style title bar container.
-    private final StackPane titleContainer = new StackPane();
+    /// Compact navigation bar.
+    private final M3NavigationBar navigationBar = new M3NavigationBar();
 
-    /// Left side of the title bar (back + title / brand).
-    private final HBox titleLeading = new HBox(4.0);
+    /// Expanded navigation rail.
+    private final M3NavigationRail navigationRail = new M3NavigationRail();
 
-    /// Center title text for non-home routes.
-    private final M3Text titleLabel = new M3Text("", M3TextRole.TITLE_SMALL);
+    /// Animated route host.
+    private final M3AnimatedContent routeHost = new M3AnimatedContent();
 
-    /// Brand mark used on the home route.
-    private final HBox brandTitle = new HBox(8.0);
+    /// Primary navigation items shared conceptually between bar and rail.
+    private final M3NavigationItem homeBarItem = new M3NavigationItem();
+    private final M3NavigationItem instancesBarItem = new M3NavigationItem();
+    private final M3NavigationItem downloadBarItem = new M3NavigationItem();
+    private final M3NavigationItem settingsBarItem = new M3NavigationItem();
+    private final M3NavigationItem homeRailItem = new M3NavigationItem();
+    private final M3NavigationItem instancesRailItem = new M3NavigationItem();
+    private final M3NavigationItem downloadRailItem = new M3NavigationItem();
+    private final M3NavigationItem settingsRailItem = new M3NavigationItem();
 
-    /// Brand title label.
-    private final M3Text brandText = new M3Text("", M3TextRole.TITLE_SMALL);
-
-    /// Back navigation control.
+    /// Back control for secondary routes.
     private final M3IconButton backButton = new M3IconButton(HMCLDemoIcons.back());
 
-    /// Help window button.
+    /// Help action.
     private final M3IconButton helpButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.HELP));
 
-    /// Minimize window button.
-    private final M3IconButton minimizeButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.MINIMIZE));
-
-    /// Close window button.
-    private final M3IconButton closeButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
-
-    /// Routes retained for Back navigation.
+    /// Secondary route stack.
     private final Deque<HMCLDemoRoute> backStack = new ArrayDeque<>();
+
+    /// Active route.
+    private HMCLDemoRoute currentRoute = new HMCLDemoRoute.Home();
 
     private final HMCLHomeView homeView;
     private final HMCLAccountsView accountsView;
@@ -117,111 +81,48 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     private final HMCLSettingsView settingsView;
     private final HMCLMultiplayerView multiplayerView;
 
-    /// The active route.
-    private HMCLDemoRoute currentRoute = new HMCLDemoRoute.Home();
-
-    /// Drag origin for title-bar window movement.
-    private double dragOffsetX;
-
-    /// Drag origin for title-bar window movement.
-    private double dragOffsetY;
-
-    /// Creates the HMCL-style application shell.
+    /// Creates the adaptive shell.
     ///
     /// @param overlay the overlay host
     /// @param strings the localization service
-    /// @param state the shared deterministic state
-    HMCLDemoShell(M3OverlayPane overlay, HMCLDemoStrings strings, HMCLDemoState state) {
+    /// @param state the shared state
+    HMCLDemoShell(
+            M3OverlayPane overlay,
+            HMCLDemoStrings strings,
+            HMCLDemoState state
+    ) {
         this.overlay = overlay;
         this.strings = strings;
         this.state = state;
 
-        homeView = new HMCLHomeView(strings, state, this);
-        accountsView = new HMCLAccountsView(strings, state, this);
-        instancesView = new HMCLInstancesView(strings, state, this);
-        instanceDetailView = new HMCLInstanceDetailView(strings, state, this);
-        downloadView = new HMCLDownloadView(strings, state, this);
-        settingsView = new HMCLSettingsView(strings, state, this);
-        multiplayerView = new HMCLMultiplayerView(strings, state, this);
-        preparePage(homeView);
-        preparePage(accountsView);
-        preparePage(instancesView);
-        preparePage(instanceDetailView);
-        preparePage(downloadView);
-        preparePage(settingsView);
-        preparePage(multiplayerView);
+        homeView = new HMCLHomeView(this);
+        accountsView = new HMCLAccountsView(this);
+        instancesView = new HMCLInstancesView(this);
+        instanceDetailView = new HMCLInstanceDetailView(this);
+        downloadView = new HMCLDownloadView(this);
+        settingsView = new HMCLSettingsView(this);
+        multiplayerView = new HMCLMultiplayerView(this);
 
         getStyleClass().add("hmcl-demo-shell");
-        setPadding(new Insets(WINDOW_PADDING));
-        setMinSize(MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0, MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0);
-        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        HMCLDemoUi.fill(this);
+        configureChrome();
+        getChildren().setAll(scaffold);
+        StackPane.setAlignment(scaffold, Pos.CENTER);
+        HMCLDemoUi.fill(scaffold);
 
-        wallpaper.getStyleClass().add("hmcl-window-wallpaper");
-        wallpaper.setMouseTransparent(true);
-        HMCLDemoUi.fill(wallpaper);
-
-        StackPane parent = HMCLDemoUi.fill(new StackPane());
-        parent.getStyleClass().add("hmcl-window-parent");
-        Rectangle clip = new Rectangle();
-        clip.widthProperty().bind(parent.widthProperty());
-        clip.heightProperty().bind(parent.heightProperty());
-        clip.setArcWidth(WINDOW_RADIUS);
-        clip.setArcHeight(WINDOW_RADIUS);
-        parent.setClip(clip);
-
-        configureTitleBar();
-
-        HMCLDemoUi.fill(pageHost);
-        pageHost.getStyleClass().add("hmcl-route-host");
-        pageHost.setFitToWidth(true);
-        pageHost.setFitToHeight(true);
-        pageHost.setContentTransform(HMCLDemoTransitions.forward());
-        VBox.setVgrow(pageHost, Priority.ALWAYS);
-
-        // Title is a non-growing sibling; content alone absorbs remaining height.
-        VBox frame = new VBox(titleContainer, pageHost);
-        frame.getStyleClass().add("hmcl-window-frame");
-        HMCLDemoUi.fill(frame);
-
-        parent.getChildren().setAll(wallpaper, frame);
-
-        StackPane body = HMCLDemoUi.fill(new StackPane(parent));
-        body.getStyleClass().add("hmcl-window-body");
-        body.setEffect(new DropShadow(BlurType.ONE_PASS_BOX, Color.rgb(0, 0, 0, 0.4), 10.0, 0.3, 0.0, 0.0));
-        getChildren().setAll(body);
-        StackPane.setAlignment(body, Pos.CENTER);
-
-        state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
         strings.localeProperty().addListener((observable, oldLocale, newLocale) -> {
-            refreshLocale();
-            updateTitleBar();
+            refreshLocaleLabels();
+            refreshChrome();
+            homeView.refreshLocale();
+            accountsView.refreshLocale();
+            instancesView.refreshLocale();
+            instanceDetailView.refreshLocale();
+            downloadView.refreshLocale();
+            settingsView.refreshLocale();
+            multiplayerView.refreshLocale();
         });
-        updateWallpaper();
-        showRoute(currentRoute, NavigationKind.IMMEDIATE);
-    }
-
-    /// Shell minimum size follows HMCL content metrics, never the active page list height.
-    @Override
-    protected double computeMinWidth(double height) {
-        return MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0;
-    }
-
-    /// Shell minimum size follows HMCL content metrics, never the active page list height.
-    @Override
-    protected double computeMinHeight(double width) {
-        return MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0;
-    }
-
-    /// Preferred size stays at the HMCL default window, independent of page content.
-    @Override
-    protected double computePrefWidth(double height) {
-        return computeMinWidth(height);
-    }
-
-    /// Preferred size stays at the HMCL default window, independent of page content.
-    @Override
-    protected double computePrefHeight(double width) {
-        return computeMinHeight(width);
+        refreshLocaleLabels();
+        showRoute(currentRoute, TransitionKind.IMMEDIATE);
     }
 
     @Override
@@ -230,66 +131,83 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     }
 
     @Override
+    public HMCLDemoState state() {
+        return state;
+    }
+
+    @Override
+    public HMCLDemoStrings strings() {
+        return strings;
+    }
+
+    @Override
     public void goHome() {
-        if (currentRoute instanceof HMCLDemoRoute.Home) {
-            backStack.clear();
-            return;
-        }
-        backStack.clear();
-        showRoute(new HMCLDemoRoute.Home(), NavigationKind.BACKWARD);
+        selectPrimary(new HMCLDemoRoute.Home());
     }
 
     @Override
     public void openAccounts() {
-        navigate(new HMCLDemoRoute.Accounts());
+        pushRoute(new HMCLDemoRoute.Accounts());
     }
 
     @Override
     public void openInstances() {
-        navigate(new HMCLDemoRoute.Instances());
+        selectPrimary(new HMCLDemoRoute.Instances());
     }
 
     @Override
     public void openSelectedInstance() {
         @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
         if (instance != null) {
-            openInstance(instance.id());
+            openInstance(instance.id(), HMCLDemoRoute.InstanceSection.SETTINGS);
         }
     }
 
     @Override
-    public void openInstance(String instanceId) {
+    public void openInstance(String instanceId, HMCLDemoRoute.InstanceSection section) {
         if (state.selectInstance(instanceId)) {
-            navigate(new HMCLDemoRoute.Instance(instanceId));
+            HMCLDemoRoute target = new HMCLDemoRoute.Instance(instanceId, section);
+            if (currentRoute instanceof HMCLDemoRoute.Instance current
+                    && current.instanceId().equals(instanceId)) {
+                replaceSection(target);
+                return;
+            }
+            pushRoute(target);
         }
     }
 
     @Override
-    public void openDownload() {
-        navigate(new HMCLDemoRoute.Download());
+    public void openDownload(HMCLDemoRoute.DownloadCategory category) {
+        HMCLDemoRoute target = new HMCLDemoRoute.Download(category);
+        if (currentRoute instanceof HMCLDemoRoute.Download) {
+            replaceSection(target);
+            return;
+        }
+        selectPrimary(target);
     }
 
     @Override
-    public void openSettings() {
-        navigate(new HMCLDemoRoute.Settings());
+    public void openSettings(HMCLDemoRoute.SettingsSection section) {
+        HMCLDemoRoute target = new HMCLDemoRoute.Settings(section);
+        if (currentRoute instanceof HMCLDemoRoute.Settings) {
+            replaceSection(target);
+            return;
+        }
+        selectPrimary(target);
     }
 
     @Override
     public void openMultiplayer() {
-        navigate(new HMCLDemoRoute.Multiplayer());
+        pushRoute(new HMCLDemoRoute.Multiplayer());
     }
 
     @Override
     public void goBack() {
-        if (downloadView.consumeBack()) {
-            updateTitleBar();
-            return;
-        }
         if (backStack.isEmpty()) {
-            goHome();
+            selectPrimary(currentRoute.primaryDestination());
             return;
         }
-        showRoute(backStack.pop(), NavigationKind.BACKWARD);
+        showRoute(backStack.pop(), TransitionKind.BACKWARD);
     }
 
     @Override
@@ -304,6 +222,22 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             showMessageKey("snackbar.no_account");
             return;
         }
+        showMessageKey("snackbar.launching", instance.name(), account.displayName());
+    }
+
+    @Override
+    public void startInstallWizard(HMCLDemoMinecraftVersion version) {
+        HMCLInstallWizard.show(this, version);
+    }
+
+    @Override
+    public void runTask(
+            String title,
+            List<String> steps,
+            @Nullable Runnable onCompleted,
+            @Nullable Runnable onCancelled
+    ) {
+        HMCLTaskDialogs.run(overlay, strings, title, steps, onCompleted, onCancelled);
     }
 
     @Override
@@ -318,58 +252,137 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     @Override
     public void refreshChrome() {
-        updateTitleBar();
+        configureTopAppBar();
+        syncPrimarySelection();
     }
 
-    /// Pushes the current route and shows `route` with a forward transition.
+    /// Configures scaffold, navigation, and route host once.
+    private void configureChrome() {
+        scaffold.getStyleClass().add("hmcl-demo-scaffold");
+        scaffold.setContentMargin(0.0);
+        topAppBar.getStyleClass().add("hmcl-demo-top-app-bar");
+        scaffold.setTopBar(topAppBar);
+        scaffold.setNavigationBar(navigationBar);
+        scaffold.setNavigationRail(navigationRail);
+
+        configurePrimaryItem(homeBarItem, HMCLDemoIcons.HOME, () -> selectPrimary(new HMCLDemoRoute.Home()));
+        configurePrimaryItem(instancesBarItem, HMCLDemoIcons.INSTANCES, () -> selectPrimary(new HMCLDemoRoute.Instances()));
+        configurePrimaryItem(downloadBarItem, HMCLDemoIcons.DOWNLOAD, () -> selectPrimary(new HMCLDemoRoute.Download()));
+        configurePrimaryItem(settingsBarItem, HMCLDemoIcons.SETTINGS, () -> selectPrimary(new HMCLDemoRoute.Settings()));
+        configurePrimaryItem(homeRailItem, HMCLDemoIcons.HOME, () -> selectPrimary(new HMCLDemoRoute.Home()));
+        configurePrimaryItem(instancesRailItem, HMCLDemoIcons.INSTANCES, () -> selectPrimary(new HMCLDemoRoute.Instances()));
+        configurePrimaryItem(downloadRailItem, HMCLDemoIcons.DOWNLOAD, () -> selectPrimary(new HMCLDemoRoute.Download()));
+        configurePrimaryItem(settingsRailItem, HMCLDemoIcons.SETTINGS, () -> selectPrimary(new HMCLDemoRoute.Settings()));
+
+        navigationBar.getItems().setAll(homeBarItem, instancesBarItem, downloadBarItem, settingsBarItem);
+        navigationRail.getItems().setAll(homeRailItem, instancesRailItem, downloadRailItem, settingsRailItem);
+
+        backButton.setOnAction(event -> goBack());
+        helpButton.setOnAction(event -> openSettings(HMCLDemoRoute.SettingsSection.HELP));
+
+        HMCLDemoUi.fill(routeHost);
+        routeHost.getStyleClass().add("hmcl-route-host");
+        routeHost.setFitToWidth(true);
+        routeHost.setFitToHeight(true);
+        scaffold.setMainPane(routeHost);
+    }
+
+    /// Configures one primary navigation item.
     ///
-    /// @param route the destination route
-    private void navigate(HMCLDemoRoute route) {
+    /// @param item the navigation item
+    /// @param iconPath the icon path data
+    /// @param action the selection action
+    private void configurePrimaryItem(M3NavigationItem item, String iconPath, Runnable action) {
+        item.setGraphic(HMCLDemoIcons.create(iconPath));
+        item.setOnAction(event -> action.run());
+    }
+
+    /// Refreshes labels that depend only on locale.
+    private void refreshLocaleLabels() {
+        homeBarItem.setText(strings.get("nav.home"));
+        instancesBarItem.setText(strings.get("nav.instances"));
+        downloadBarItem.setText(strings.get("nav.download"));
+        settingsBarItem.setText(strings.get("nav.settings"));
+        homeRailItem.setText(strings.get("nav.home"));
+        instancesRailItem.setText(strings.get("nav.instances"));
+        downloadRailItem.setText(strings.get("nav.download"));
+        settingsRailItem.setText(strings.get("nav.settings"));
+        backButton.setAccessibleText(strings.get("common.back"));
+        helpButton.setAccessibleText(strings.get("common.help"));
+    }
+
+    /// Selects a primary destination and clears the secondary stack.
+    ///
+    /// @param route the primary route
+    private void selectPrimary(HMCLDemoRoute route) {
+        Objects.requireNonNull(route, "route");
+        HMCLDemoRoute primary = route.isPrimary() ? route : route.primaryDestination();
+        if (primary.equals(currentRoute) && backStack.isEmpty()) {
+            return;
+        }
+        backStack.clear();
+        showRoute(primary, TransitionKind.NAVIGATION);
+    }
+
+    /// Pushes the current route and shows a secondary route.
+    ///
+    /// @param route the secondary route
+    private void pushRoute(HMCLDemoRoute route) {
         if (route.equals(currentRoute)) {
             return;
         }
         backStack.push(currentRoute);
-        showRoute(route, NavigationKind.FORWARD);
+        showRoute(route, TransitionKind.FORWARD);
     }
 
-    /// Displays `route` in the animated page host.
+    /// Replaces the active route without stacking when only a section changed.
+    ///
+    /// @param route the replacement route
+    private void replaceSection(HMCLDemoRoute route) {
+        if (route.equals(currentRoute)) {
+            return;
+        }
+        showRoute(route, TransitionKind.SECTION);
+    }
+
+    /// Displays `route` with the requested transition.
     ///
     /// @param route the route to show
-    /// @param navigation the transition direction
-    private void showRoute(HMCLDemoRoute route, NavigationKind navigation) {
+    /// @param kind the transition kind
+    private void showRoute(HMCLDemoRoute route, TransitionKind kind) {
         currentRoute = route;
         if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
             state.selectInstance(instanceRoute.instanceId());
         }
-        Node page = pageFor(route);
-        switch (navigation) {
-            case FORWARD -> pageHost.setContentTransform(HMCLDemoTransitions.forward());
-            case BACKWARD -> pageHost.setContentTransform(HMCLDemoTransitions.backward());
-            case IMMEDIATE -> pageHost.setContentTransform(HMCLDemoTransitions.sectionFade());
+        routeHost.setContentTransform(transformFor(kind));
+        routeHost.setContent(pageFor(route));
+        if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
+            routeHost.snapToCurrentState();
         }
-        pageHost.setContent(page);
-        if (navigation == NavigationKind.IMMEDIATE) {
-            pageHost.snapToCurrentState();
-        }
-        updateTitleBar();
-        if (route instanceof HMCLDemoRoute.Home && navigation != NavigationKind.FORWARD) {
+        refreshChrome();
+        if (route.isPrimary()) {
             backStack.clear();
         }
     }
 
-    /// Identifies how a route replacement should animate.
-    private enum NavigationKind {
-        /// Forward stack push.
-        FORWARD,
-
-        /// Back stack pop or explicit home return.
-        BACKWARD,
-
-        /// Initial presentation without motion.
-        IMMEDIATE
+    /// Returns the transform for a transition kind.
+    ///
+    /// @param kind the transition kind
+    /// @return the content transform
+    private M3ContentTransform transformFor(TransitionKind kind) {
+        if (state.isAnimationDisabled() || kind == TransitionKind.IMMEDIATE) {
+            return HMCLDemoTransitions.none();
+        }
+        return switch (kind) {
+            case NAVIGATION -> HMCLDemoTransitions.navigation();
+            case FORWARD -> HMCLDemoTransitions.forward();
+            case BACKWARD -> HMCLDemoTransitions.backward();
+            case SECTION -> HMCLDemoTransitions.sectionUp();
+            case IMMEDIATE -> HMCLDemoTransitions.none();
+        };
     }
 
-    /// Returns the retained page node for `route`.
+    /// Returns the retained page for `route`.
     ///
     /// @param route the route
     /// @return the page node
@@ -384,13 +397,15 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             return instancesView;
         }
         if (route instanceof HMCLDemoRoute.Instance instance) {
-            instanceDetailView.showInstance(instance.instanceId());
+            instanceDetailView.showInstance(instance.instanceId(), instance.section());
             return instanceDetailView;
         }
-        if (route instanceof HMCLDemoRoute.Download) {
+        if (route instanceof HMCLDemoRoute.Download download) {
+            downloadView.showCategory(download.category());
             return downloadView;
         }
-        if (route instanceof HMCLDemoRoute.Settings) {
+        if (route instanceof HMCLDemoRoute.Settings settings) {
+            settingsView.showSection(settings.section());
             return settingsView;
         }
         if (route instanceof HMCLDemoRoute.Multiplayer) {
@@ -399,149 +414,55 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         throw new IllegalStateException("Unsupported route: " + route);
     }
 
-    /// Ensures a page never contributes a content-driven minimum size to the decorator.
-    ///
-    /// @param page the page root
-    private static void preparePage(Region page) {
-        HMCLDemoUi.fill(page);
+    /// Updates the top app bar for the active route.
+    private void configureTopAppBar() {
+        topAppBar.setTitle(routeTitle(currentRoute));
+        boolean showBack = !currentRoute.isPrimary() || !backStack.isEmpty();
+        topAppBar.setNavigation(showBack ? backButton : null);
+        topAppBar.getActions().setAll(helpButton);
     }
 
-    /// Builds the HMCL 40px title bar once.
-    private void configureTitleBar() {
-        titleContainer.getStyleClass().add("hmcl-window-title-bar");
-        titleContainer.setMinHeight(TITLE_HEIGHT);
-        titleContainer.setPrefHeight(TITLE_HEIGHT);
-        titleContainer.setMaxHeight(TITLE_HEIGHT);
-        titleContainer.setMinWidth(0.0);
-        titleContainer.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(titleContainer, Priority.NEVER);
-        titleContainer.setOnMousePressed(this::handleWindowDragPressed);
-        titleContainer.setOnMouseDragged(this::handleWindowDragged);
-        titleContainer.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                @Nullable Stage stage = currentStage();
-                if (stage != null) {
-                    stage.setMaximized(!stage.isMaximized());
-                }
-            }
-        });
-
-        ImageView brandIcon = HMCLDemoAssets.imageView("img/icon-title.png", 20.0, 20.0);
-        brandTitle.getStyleClass().add("hmcl-window-brand");
-        brandTitle.setAlignment(Pos.CENTER_LEFT);
-        brandTitle.setPadding(new Insets(0.0, 0.0, 0.0, 2.0));
-        brandTitle.getChildren().setAll(brandIcon, brandText);
-
-        titleLabel.getStyleClass().add("hmcl-window-title-label");
-        titleLabel.setMaxWidth(Double.MAX_VALUE);
-        titleLeading.setAlignment(Pos.CENTER_LEFT);
-        titleLeading.setPadding(new Insets(0.0, 5.0, 0.0, 5.0));
-        titleLeading.setMinWidth(0.0);
-        HBox.setHgrow(titleLeading, Priority.ALWAYS);
-
-        styleWindowButton(backButton);
-        styleWindowButton(helpButton);
-        styleWindowButton(minimizeButton);
-        styleWindowButton(closeButton);
-        closeButton.getStyleClass().add("hmcl-window-close");
-
-        backButton.setOnAction(event -> goBack());
-        helpButton.setOnAction(event -> {
-        });
-        minimizeButton.setOnAction(event -> {
-            @Nullable Stage stage = currentStage();
-            if (stage != null) {
-                stage.setIconified(true);
-            }
-        });
-        closeButton.setOnAction(event -> {
-            @Nullable Stage stage = currentStage();
-            if (stage != null) {
-                stage.close();
-            }
-        });
-
-        HBox windowButtons = new HBox(helpButton, minimizeButton, closeButton);
-        windowButtons.getStyleClass().add("hmcl-window-buttons");
-        windowButtons.setAlignment(Pos.CENTER_RIGHT);
-        windowButtons.setMinWidth(Region.USE_PREF_SIZE);
-        windowButtons.setMaxWidth(Region.USE_PREF_SIZE);
-
-        BorderPane titleBar = new BorderPane();
-        titleBar.setLeft(titleLeading);
-        titleBar.setRight(windowButtons);
-        BorderPane.setAlignment(titleLeading, Pos.CENTER_LEFT);
-        BorderPane.setAlignment(windowButtons, Pos.CENTER_RIGHT);
-        titleBar.setMinHeight(TITLE_HEIGHT);
-        titleBar.setPrefHeight(TITLE_HEIGHT);
-        titleBar.setMaxHeight(TITLE_HEIGHT);
-        titleContainer.getChildren().setAll(titleBar);
-
-        refreshLocale();
-        updateTitleBar();
-    }
-
-    /// Applies HMCL decorator-button sizing to one title-bar icon button.
-    ///
-    /// @param button the button
-    private static void styleWindowButton(M3IconButton button) {
-        button.getStyleClass().add("hmcl-window-button");
-        button.setMinSize(TITLE_HEIGHT, TITLE_HEIGHT);
-        button.setPrefSize(TITLE_HEIGHT, TITLE_HEIGHT);
-        button.setMaxSize(TITLE_HEIGHT, TITLE_HEIGHT);
-        button.setFocusTraversable(false);
-        button.setCursor(Cursor.HAND);
-    }
-
-    /// Updates title-bar labels that depend on the current locale.
-    private void refreshLocale() {
-        brandText.setText(strings.get("app.title"));
-        backButton.setAccessibleText(strings.get("common.back"));
-        helpButton.setAccessibleText(strings.get("common.help"));
-        minimizeButton.setAccessibleText(strings.get("common.minimize"));
-        closeButton.setAccessibleText(strings.get("common.close"));
-        homeView.refreshLocale();
-        accountsView.refreshLocale();
-        instancesView.refreshLocale();
-        instanceDetailView.refreshLocale();
-        downloadView.refreshLocale();
-        settingsView.refreshLocale();
-        multiplayerView.refreshLocale();
-    }
-
-    /// Synchronizes title-bar navigation and title content with the active route.
-    private void updateTitleBar() {
-        boolean atHome = currentRoute instanceof HMCLDemoRoute.Home;
-        titleLeading.getChildren().clear();
-        if (atHome) {
-            titleLeading.getChildren().add(brandTitle);
-            titleLabel.setText("");
-        } else {
-            titleLeading.getChildren().add(backButton);
-            titleLabel.setText(titleFor(currentRoute));
-            HBox.setMargin(titleLabel, new Insets(0.0, 0.0, 0.0, 4.0));
-            HBox.setHgrow(titleLabel, Priority.ALWAYS);
-            titleLeading.getChildren().add(titleLabel);
+    /// Synchronizes bar and rail selection with the active primary destination.
+    private void syncPrimarySelection() {
+        HMCLDemoRoute primary = currentRoute.primaryDestination();
+        if (primary instanceof HMCLDemoRoute.Home) {
+            navigationBar.select(homeBarItem);
+            navigationRail.select(homeRailItem);
+        } else if (primary instanceof HMCLDemoRoute.Instances) {
+            navigationBar.select(instancesBarItem);
+            navigationRail.select(instancesRailItem);
+        } else if (primary instanceof HMCLDemoRoute.Download) {
+            navigationBar.select(downloadBarItem);
+            navigationRail.select(downloadRailItem);
+        } else if (primary instanceof HMCLDemoRoute.Settings) {
+            navigationBar.select(settingsBarItem);
+            navigationRail.select(settingsRailItem);
         }
     }
 
-    /// Returns the localized title for a non-home route.
+    /// Returns the top-app-bar title for `route`.
     ///
-    /// @param route the active route
+    /// @param route the route
     /// @return the title text
-    private String titleFor(HMCLDemoRoute route) {
+    private String routeTitle(HMCLDemoRoute route) {
+        if (route instanceof HMCLDemoRoute.Home) {
+            return strings.get("app.title");
+        }
         if (route instanceof HMCLDemoRoute.Accounts) {
             return strings.get("accounts.title");
         }
         if (route instanceof HMCLDemoRoute.Instances) {
             return strings.get("instances.title");
         }
-        if (route instanceof HMCLDemoRoute.Instance) {
+        if (route instanceof HMCLDemoRoute.Instance instance) {
             @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
-            return selected == null ? strings.get("instance.title") : selected.name();
+            if (selected != null && selected.id().equals(instance.instanceId())) {
+                return selected.name();
+            }
+            return strings.get("instance.title");
         }
         if (route instanceof HMCLDemoRoute.Download) {
-            return downloadView.titleText();
+            return strings.get("download.title");
         }
         if (route instanceof HMCLDemoRoute.Settings) {
             return strings.get("settings.title");
@@ -552,58 +473,21 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         return strings.get("app.title");
     }
 
-    /// Updates the decorator wallpaper image without letting image metrics affect layout.
-    private void updateWallpaper() {
-        String path = switch (state.getWallpaper()) {
-            case MEADOW -> "img/wallpapers/2021-08-26.jpg";
-            case CAVES -> "img/wallpapers/2016-02-25.jpg";
-            case SUNSET -> "img/wallpapers/2015-06-22.jpg";
-        };
-        Image image = HMCLDemoAssets.image(path);
-        wallpaper.setBackground(new Background(new BackgroundImage(
-                image,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundPosition.CENTER,
-                new BackgroundSize(1.0, 1.0, true, true, false, true)
-        )));
-    }
+    /// Identifies how a route replacement should animate.
+    private enum TransitionKind {
+        /// Primary destination switch.
+        NAVIGATION,
 
-    /// Captures the pointer offset used by title-bar window dragging.
-    ///
-    /// @param event the press event
-    private void handleWindowDragPressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) {
-            return;
-        }
-        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
-        if (window == null) {
-            return;
-        }
-        dragOffsetX = event.getScreenX() - window.getX();
-        dragOffsetY = event.getScreenY() - window.getY();
-    }
+        /// Secondary stack push.
+        FORWARD,
 
-    /// Moves the undecorated window while the title bar is dragged.
-    ///
-    /// @param event the drag event
-    private void handleWindowDragged(MouseEvent event) {
-        if (!event.isPrimaryButtonDown()) {
-            return;
-        }
-        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
-        if (window == null) {
-            return;
-        }
-        window.setX(event.getScreenX() - dragOffsetX);
-        window.setY(event.getScreenY() - dragOffsetY);
-    }
+        /// Secondary stack pop.
+        BACKWARD,
 
-    /// Returns the owning stage when available.
-    ///
-    /// @return the stage, or `null`
-    private @Nullable Stage currentStage() {
-        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
-        return window instanceof Stage stage ? stage : null;
+        /// In-page section replacement.
+        SECTION,
+
+        /// Initial presentation without motion.
+        IMMEDIATE
     }
 }

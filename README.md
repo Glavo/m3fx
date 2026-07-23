@@ -466,9 +466,10 @@ lists, and example routes isolate one working specimen. Theme and display contro
 ./gradlew :catalog:run
 ```
 
-The `hmcl-md3-demo` project is a focused Material Design 3 reinterpretation of the HMCL launcher shell. It uses
-deterministic sample data instead of launcher services, downloads the pinned HMCL v3.16.2 source archive, and
-extracts the upstream artwork and default skin assets used by the demonstration:
+The `hmcl-md3-demo` project is a pure Material Design 3 launcher shell inspired by HMCL's information
+architecture. It uses `M3AdaptiveScaffold`, top app bar navigation, animated route transitions, install wizards,
+and task dialogs with deterministic offline sample data. Artwork is still extracted from the pinned HMCL v3.16.2
+source archive:
 
 ```shell
 ./gradlew runHmclMd3Demo

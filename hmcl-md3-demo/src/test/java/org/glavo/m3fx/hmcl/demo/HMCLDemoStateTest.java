@@ -72,6 +72,19 @@ final class HMCLDemoStateTest {
         assertEquals("fabulously-optimized", state.getFilteredInstances().get(0).id());
     }
 
+    /// Verifies install wizard state writes a selected instance with the chosen loader.
+    @Test
+    void installsInstanceFromWizardDraft() {
+        HMCLDemoState state = new HMCLDemoState(new HMCLDemoStrings(Locale.ENGLISH));
+
+        HMCLDemoInstance installed = state.installInstance("Demo Fabric", "1.21.11", "fabric", "0.16.14");
+        assertEquals("Demo Fabric", installed.name());
+        assertEquals("1.21.11", installed.gameVersion());
+        assertTrue(installed.loader().contains("Fabric"));
+        assertEquals(installed, state.getSelectedInstance());
+        assertEquals(6, state.getInstances().size());
+    }
+
     /// Verifies Minecraft version channel and search filters.
     @Test
     void filtersMinecraftVersionsDeterministically() {

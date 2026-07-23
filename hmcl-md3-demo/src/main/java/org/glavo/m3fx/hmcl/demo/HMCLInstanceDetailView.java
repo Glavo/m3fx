@@ -9,19 +9,13 @@ import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3ListItem;
-import org.glavo.m3fx.controls.M3ListPane;
-import org.glavo.m3fx.controls.M3ListSectionHeader;
-import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SearchBar;
-import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
@@ -32,128 +26,68 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-/// Displays one selected instance with HMCL-style left tabs and management content.
+/// Instance management secondary route with animated sections.
 @NotNullByDefault
 final class HMCLInstanceDetailView extends BorderPane {
-    /// Cycled max-memory values in megabytes.
     private static final int @org.jetbrains.annotations.Unmodifiable [] MEMORY_OPTIONS =
             {2048, 4096, 6144, 8192, 12288};
-
-    /// Cycled window-resolution labels.
     private static final String @org.jetbrains.annotations.Unmodifiable [] RESOLUTION_OPTIONS =
             {"854x480", "1280x720", "1600x900", "1920x1080", "2560x1440"};
 
-    /// Left-pane management sections.
-    private enum Section {
-        /// Version settings.
-        SETTINGS,
-
-        /// Auto installers.
-        INSTALLERS,
-
-        /// Mods.
-        MODS,
-
-        /// Resource packs.
-        RESOURCE_PACKS,
-
-        /// Worlds.
-        WORLDS,
-
-        /// Shader packs.
-        SHADERS,
-
-        /// Schematics.
-        SCHEMATICS
-    }
-
-    /// The localization source.
+    private final HMCLDemoController controller;
     private final HMCLDemoStrings strings;
-
-    /// The shared state.
     private final HMCLDemoState state;
 
-    /// The application controller.
-    private final HMCLDemoController controller;
-
-    /// The settings tab.
     private final M3ListItem settingsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
-
-    /// The installers tab.
     private final M3ListItem installersItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
-
-    /// The mods tab.
     private final M3ListItem modsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.EXTENSION, null);
-
-    /// The resource-packs tab.
     private final M3ListItem resourcePacksItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-
-    /// The worlds tab.
     private final M3ListItem worldsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.WORLD, null);
-
-    /// The shaders tab.
     private final M3ListItem shadersItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
+    private final M3ListItem schematicsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.FOLDER, null);
 
-    /// The schematics tab.
-    private final M3ListItem schematicsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CODE, null);
+    private final M3Button updateButton = new M3Button();
+    private final M3Button testButton = new M3Button();
+    private final M3Button folderButton = new M3Button();
+    private final M3Button manageButton = new M3Button();
 
-    /// The update-modpack bottom action.
-    private final M3ListItem updateItem = HMCLDemoUi.navItem("", HMCLDemoIcons.REFRESH, null);
-
-    /// The test-game bottom action.
-    private final M3ListItem testItem = HMCLDemoUi.navItem("", HMCLDemoIcons.PLAY, null);
-
-    /// The open-folder bottom action.
-    private final M3ListItem folderItem = HMCLDemoUi.navItem("", HMCLDemoIcons.FOLDER, null);
-
-    /// The manage bottom action.
-    private final M3ListItem manageItem = HMCLDemoUi.navItem("", HMCLDemoIcons.MANAGE, null);
-
-    /// The animated center content host.
-    private final M3AnimatedContent contentHost = new M3AnimatedContent();
-
-    /// Local mods search query used by the mods section.
-    private String modsQuery = "";
-
-    /// The currently displayed section.
-    private Section section = Section.SETTINGS;
-
-    /// The currently bound instance identifier.
+    private final M3AnimatedContent centerHost = new M3AnimatedContent();
     private @Nullable String instanceId;
+    private HMCLDemoRoute.InstanceSection section = HMCLDemoRoute.InstanceSection.SETTINGS;
 
     /// Creates the instance detail page.
     ///
-    /// @param strings the localization source
-    /// @param state the shared state
     /// @param controller the application controller
-    HMCLInstanceDetailView(HMCLDemoStrings strings, HMCLDemoState state, HMCLDemoController controller) {
-        this.strings = strings;
-        this.state = state;
+    HMCLInstanceDetailView(HMCLDemoController controller) {
         this.controller = controller;
+        this.strings = controller.strings();
+        this.state = controller.state();
 
-        getStyleClass().add("hmcl-secondary-page");
+        getStyleClass().add("hmcl-instance-detail-page");
         HMCLDemoUi.fill(this);
-        HMCLDemoUi.fill(contentHost);
-        contentHost.setFitToWidth(true);
-        contentHost.setFitToHeight(true);
-        contentHost.setContentTransform(HMCLDemoTransitions.sectionFade());
-        settingsItem.setOnAction(event -> showSection(Section.SETTINGS));
-        installersItem.setOnAction(event -> showSection(Section.INSTALLERS));
-        modsItem.setOnAction(event -> showSection(Section.MODS));
-        resourcePacksItem.setOnAction(event -> showSection(Section.RESOURCE_PACKS));
-        worldsItem.setOnAction(event -> showSection(Section.WORLDS));
-        shadersItem.setOnAction(event -> showSection(Section.SHADERS));
-        schematicsItem.setOnAction(event -> showSection(Section.SCHEMATICS));
-        updateItem.setOnAction(event -> {
-        });
-        testItem.setOnAction(event -> controller.launchSelected());
-        folderItem.setOnAction(event -> {
-        });
-        manageItem.setOnAction(event -> showManageDialog());
+
+        settingsItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.SETTINGS));
+        installersItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.INSTALLERS));
+        modsItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.MODS));
+        resourcePacksItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.RESOURCE_PACKS));
+        worldsItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.WORLDS));
+        shadersItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.SHADERS));
+        schematicsItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.SCHEMATICS));
+
+        updateButton.setVariant(M3ButtonVariant.TEXT);
+        testButton.setVariant(M3ButtonVariant.TEXT);
+        folderButton.setVariant(M3ButtonVariant.TEXT);
+        manageButton.setVariant(M3ButtonVariant.TONAL);
+        updateButton.setMaxWidth(Double.MAX_VALUE);
+        testButton.setMaxWidth(Double.MAX_VALUE);
+        folderButton.setMaxWidth(Double.MAX_VALUE);
+        manageButton.setMaxWidth(Double.MAX_VALUE);
+        updateButton.setOnAction(event -> runUpdateTask());
+        testButton.setOnAction(event -> controller.launchSelected());
+        folderButton.setOnAction(event -> controller.showMessageKey("snackbar.open_folder"));
+        manageButton.setOnAction(event -> showManageDialog());
 
         VBox sidebar = HMCLDemoUi.sidebar(
                 settingsItem,
@@ -163,14 +97,16 @@ final class HMCLInstanceDetailView extends BorderPane {
                 worldsItem,
                 shadersItem,
                 schematicsItem,
-                HMCLDemoUi.vgrow(),
-                updateItem,
-                testItem,
-                folderItem,
-                manageItem
+                updateButton,
+                testButton,
+                folderButton,
+                manageButton
         );
+        HMCLDemoUi.fill(centerHost);
+        centerHost.setFitToWidth(true);
+        centerHost.setFitToHeight(true);
         setLeft(sidebar);
-        setCenter(contentHost);
+        setCenter(centerHost);
 
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null && newValue.id().equals(instanceId)) {
@@ -178,19 +114,22 @@ final class HMCLInstanceDetailView extends BorderPane {
             }
         });
         refreshLocale();
-        showSection(Section.SETTINGS);
-    }
-
-    /// Binds the page to the requested instance and refreshes content.
-    ///
-    /// @param id the instance identifier
-    void showInstance(String id) {
-        instanceId = id;
-        state.selectInstance(id);
         renderSection(false);
     }
 
-    /// Updates static labels.
+    /// Shows management UI for the given instance and section.
+    ///
+    /// @param id the instance id
+    /// @param next the section to show
+    void showInstance(String id, HMCLDemoRoute.InstanceSection next) {
+        boolean sectionChanged = instanceId != null && instanceId.equals(id) && section != next;
+        instanceId = id;
+        section = next;
+        renderSection(sectionChanged);
+        syncNavSelection();
+    }
+
+    /// Refreshes locale-dependent labels.
     void refreshLocale() {
         settingsItem.setHeadlineText(strings.get("instance.nav.settings"));
         installersItem.setHeadlineText(strings.get("instance.nav.installers"));
@@ -199,705 +138,406 @@ final class HMCLInstanceDetailView extends BorderPane {
         worldsItem.setHeadlineText(strings.get("instance.nav.worlds"));
         shadersItem.setHeadlineText(strings.get("instance.nav.shaders"));
         schematicsItem.setHeadlineText(strings.get("instance.nav.schematics"));
-        updateItem.setHeadlineText(strings.get("instance.action.update"));
-        testItem.setHeadlineText(strings.get("instance.action.test"));
-        folderItem.setHeadlineText(strings.get("instance.action.folder"));
-        manageItem.setHeadlineText(strings.get("instance.action.manage"));
+        updateButton.setText(strings.get("instance.action.update"));
+        testButton.setText(strings.get("instance.action.test"));
+        folderButton.setText(strings.get("instance.action.folder"));
+        manageButton.setText(strings.get("instance.action.manage"));
         renderSection(false);
     }
 
-    /// Selects a left-pane section.
-    ///
-    /// @param next the section to show
-    private void showSection(Section next) {
-        boolean changed = section != next;
-        section = next;
-        settingsItem.setSelected(next == Section.SETTINGS);
-        installersItem.setSelected(next == Section.INSTALLERS);
-        modsItem.setSelected(next == Section.MODS);
-        resourcePacksItem.setSelected(next == Section.RESOURCE_PACKS);
-        worldsItem.setSelected(next == Section.WORLDS);
-        shadersItem.setSelected(next == Section.SHADERS);
-        schematicsItem.setSelected(next == Section.SCHEMATICS);
-        renderSection(changed);
+    private void showSection(HMCLDemoRoute.InstanceSection next) {
+        if (instanceId == null) {
+            return;
+        }
+        controller.openInstance(instanceId, next);
     }
 
-    /// Rebuilds the center content for the active section and instance.
-    ///
-    /// @param animate whether to animate the section replacement
+    private void syncNavSelection() {
+        settingsItem.setSelected(section == HMCLDemoRoute.InstanceSection.SETTINGS);
+        installersItem.setSelected(section == HMCLDemoRoute.InstanceSection.INSTALLERS);
+        modsItem.setSelected(section == HMCLDemoRoute.InstanceSection.MODS);
+        resourcePacksItem.setSelected(section == HMCLDemoRoute.InstanceSection.RESOURCE_PACKS);
+        worldsItem.setSelected(section == HMCLDemoRoute.InstanceSection.WORLDS);
+        shadersItem.setSelected(section == HMCLDemoRoute.InstanceSection.SHADERS);
+        schematicsItem.setSelected(section == HMCLDemoRoute.InstanceSection.SCHEMATICS);
+    }
+
     private void renderSection(boolean animate) {
-        @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
-        Node content;
-        if (instance == null || (instanceId != null && !instance.id().equals(instanceId))) {
-            content = emptyState();
-        } else {
-            content = switch (section) {
-                case SETTINGS -> settingsContent(instance);
-                case INSTALLERS -> installersContent(instance);
-                case MODS -> modsContent(instance);
-                case RESOURCE_PACKS -> resourcePacksContent(instance);
-                case WORLDS -> worldsContent(instance);
-                case SHADERS -> shadersContent(instance);
-                case SCHEMATICS -> schematicsContent(instance);
-            };
+        syncNavSelection();
+        @Nullable HMCLDemoInstance instance = currentInstance();
+        centerHost.setContentTransform(animate && !state.isAnimationDisabled()
+                ? HMCLDemoTransitions.sectionUp()
+                : HMCLDemoTransitions.none());
+        if (instance == null) {
+            centerHost.setContent(padded(HMCLDemoUi.emptyState(strings.get("instance.empty"))));
+            return;
         }
-        if (content instanceof Region region) {
-            HMCLDemoUi.fill(region);
-        }
-        contentHost.setContent(content);
-        if (!animate) {
-            contentHost.snapToCurrentState();
+        Node content = switch (section) {
+            case SETTINGS -> settingsContent(instance);
+            case INSTALLERS -> installersContent(instance);
+            case MODS -> modsContent(instance);
+            case RESOURCE_PACKS -> packsContent(instance.resourcePacks(), true);
+            case SHADERS -> packsContent(instance.shaderPacks(), false);
+            case WORLDS -> worldsContent(instance);
+            case SCHEMATICS -> schematicsContent(instance);
+        };
+        centerHost.setContent(content);
+        if (!animate || state.isAnimationDisabled()) {
+            centerHost.snapToCurrentState();
         }
     }
 
-    /// Creates the version-settings form as HMCL-style sectioned cards.
-    ///
-    /// @param instance the selected instance
-    /// @return the settings content
     private Node settingsContent(HMCLDemoInstance instance) {
-        M3SettingItem name = new M3SettingItem(strings.get("instance.settings.name"));
-        name.setSupportingText(instance.name());
-        name.setOnAction(event -> showRenameDialog(instance.name()));
+        M3SettingItem name = HMCLDemoUi.settingItem(strings.get("instance.settings.name"), instance.name());
+        name.setOnAction(event -> showRenameDialog(instance));
 
-        M3SettingItem gameVersion = new M3SettingItem(strings.get("instance.settings.game_version_label"));
-        gameVersion.setSupportingText(instance.gameVersion());
-        gameVersion.setDisable(true);
-
-        M3SettingItem loader = new M3SettingItem(strings.get("instance.settings.loader_label"));
-        loader.setSupportingText(instance.loader());
-        loader.setDisable(true);
+        M3SettingItem gameVersion = HMCLDemoUi.settingItem(strings.get("instance.settings.game_version_label"), instance.gameVersion()
+        );
+        M3SettingItem loader = HMCLDemoUi.settingItem(strings.get("instance.settings.loader_label"), instance.loader()
+        );
 
         M3SwitchSettingItem isolated = new M3SwitchSettingItem(strings.get("instance.settings.isolated"));
         isolated.setSupportingText(strings.get("instance.settings.isolated.support"));
         isolated.setSelected(instance.isolated());
         isolated.selectedProperty().addListener((observable, oldValue, newValue) ->
-                applySettings(instance, newValue, instance.maxMemoryMb(), instance.resolution(),
-                        instance.fullscreen(), instance.javaId()));
-
-        M3SettingItem java = new M3SettingItem(strings.get("instance.settings.java"));
-        java.setSupportingText(javaLabel(instance.javaId()));
-        java.setOnAction(event -> cycleJava(instance));
-
-        M3SettingItem memory = new M3SettingItem(strings.get("instance.settings.memory"));
-        memory.setSupportingText(memoryLabel(instance.maxMemoryMb()));
-        memory.setOnAction(event -> cycleMemory(instance));
-
-        M3SettingItem resolution = new M3SettingItem(strings.get("instance.settings.resolution"));
-        resolution.setSupportingText(instance.resolution().replace("x", " x "));
-        resolution.setOnAction(event -> cycleResolution(instance));
+                state.updateSelectedInstanceSettings(
+                        Boolean.TRUE.equals(newValue),
+                        instance.maxMemoryMb(),
+                        instance.resolution(),
+                        instance.fullscreen(),
+                        instance.javaId()
+                ));
 
         M3SwitchSettingItem fullscreen = new M3SwitchSettingItem(strings.get("instance.settings.fullscreen"));
         fullscreen.setSupportingText(strings.get("instance.settings.fullscreen.support"));
         fullscreen.setSelected(instance.fullscreen());
         fullscreen.selectedProperty().addListener((observable, oldValue, newValue) ->
-                applySettings(instance, instance.isolated(), instance.maxMemoryMb(), instance.resolution(),
-                        newValue, instance.javaId()));
+                state.updateSelectedInstanceSettings(
+                        instance.isolated(),
+                        instance.maxMemoryMb(),
+                        instance.resolution(),
+                        Boolean.TRUE.equals(newValue),
+                        instance.javaId()
+                ));
 
-        M3SettingItem launcherVisibility = new M3SettingItem(strings.get("instance.settings.launcher_visibility"));
-        launcherVisibility.setSupportingText(strings.get("instance.settings.launcher_visibility.support"));
-        M3SettingItem showLogs = new M3SettingItem(strings.get("instance.settings.show_logs"));
-        showLogs.setSupportingText(strings.get("instance.settings.show_logs.support"));
-
-        M3SettingItem jvmArgs = new M3SettingItem(strings.get("instance.settings.jvm_args"));
-        jvmArgs.setSupportingText(strings.get("instance.settings.jvm_args.support"));
-
-        M3SettingItem gameArgs = new M3SettingItem(strings.get("instance.settings.game_args"));
-        gameArgs.setSupportingText(strings.get("instance.settings.game_args.support"));
-
-        VBox root = new VBox(16.0);
-        root.setMinHeight(0.0);
-        root.getChildren().addAll(
-                settingsSection(
-                        strings.get("instance.settings.section.basic"),
-                        name,
-                        gameVersion,
-                        loader,
-                        isolated
-                ),
-                settingsSection(
-                        strings.get("instance.settings.section.game"),
-                        java,
-                        memory,
-                        resolution,
-                        fullscreen
-                ),
-                settingsSection(
-                        strings.get("instance.settings.section.launcher"),
-                        launcherVisibility,
-                        showLogs
-                ),
-                settingsSection(
-                        strings.get("instance.settings.section.advanced"),
-                        jvmArgs,
-                        gameArgs
-                )
+        M3SettingItem memory = HMCLDemoUi.settingItem(strings.get("instance.settings.memory"), instance.maxMemoryMb() + " MB"
         );
-        return HMCLDemoUi.scroll(HMCLDemoUi.contentColumn(root));
+        memory.setOnAction(event -> cycleMemory(instance));
+
+        M3SettingItem resolution = HMCLDemoUi.settingItem(strings.get("instance.settings.resolution"), instance.resolution()
+        );
+        resolution.setOnAction(event -> cycleResolution(instance));
+
+        VBox column = HMCLDemoUi.pageColumn(
+                heading(strings.get("instance.settings.section.basic")),
+                name,
+                gameVersion,
+                loader,
+                isolated,
+                heading(strings.get("instance.settings.section.game")),
+                memory,
+                resolution,
+                fullscreen
+        );
+        return HMCLDemoUi.scroll(column);
     }
 
-    /// Builds one titled settings card used by the version-settings form.
-    ///
-    /// @param title the section title
-    /// @param rows the setting rows
-    /// @return the section block
-    private VBox settingsSection(String title, Node... rows) {
-        M3ListSectionHeader header = new M3ListSectionHeader(title);
-        header.getStyleClass().add("hmcl-settings-section-header");
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().addAll("hmcl-dense-list", "hmcl-settings-card");
-        list.setMinHeight(0.0);
-        list.getItems().setAll(rows);
-
-        VBox block = new VBox(8.0, header, list);
-        block.setMinHeight(0.0);
-        block.setFillWidth(true);
-        return block;
-    }
-
-    /// Creates the installer slot list.
-    ///
-    /// @param instance the selected instance
-    /// @return the installers content
     private Node installersContent(HMCLDemoInstance instance) {
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-
+        VBox list = new VBox(8.0);
         for (HMCLDemoInstaller installer : instance.installers()) {
-            list.getItems().add(installerRow(installer));
-        }
-
-        var listScroll = HMCLDemoUi.listHost(list);
-        VBox body = HMCLDemoUi.fill(new VBox(listScroll));
-        body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(listScroll, Priority.ALWAYS);
-        VBox column = HMCLDemoUi.contentColumn(body);
-        VBox.setVgrow(body, Priority.ALWAYS);
-        return column;
-    }
-
-    /// Creates one installer management row.
-    ///
-    /// @param installer the installer slot
-    /// @return the list item
-    private M3ListItem installerRow(HMCLDemoInstaller installer) {
-        String support = installer.isInstalled()
-                ? installer.installedVersion()
-                : strings.get("instance.installers.not_installed");
-
-        M3Button primary = new M3Button(
-                installer.isInstalled()
-                        ? strings.get("instance.installers.change")
-                        : strings.get("instance.installers.install"),
-                M3ButtonVariant.TONAL);
-        primary.setOnAction(event ->
-                state.setInstallerVersion(installer.id(), nextInstallerVersion(installer)));
-
-        HBox trailing = new HBox(6.0, primary);
-        trailing.setAlignment(Pos.CENTER_RIGHT);
-        if (installer.isInstalled() && !"game".equals(installer.id())) {
-            M3Button remove = new M3Button(strings.get("instance.installers.remove"), M3ButtonVariant.TEXT);
-            remove.setOnAction(event -> state.setInstallerVersion(installer.id(), null));
-            trailing.getChildren().add(0, remove);
-        }
-
-        M3ListItem row = new M3ListItem(installer.name());
-        row.getStyleClass().add("hmcl-installer-row");
-        row.setSupportingText(support);
-        row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.DOWNLOAD));
-        row.setTrailing(trailing);
-        return row;
-    }
-
-    /// Creates the searchable mod list.
-    ///
-    /// @param instance the selected instance
-    /// @return the mods content
-    private Node modsContent(HMCLDemoInstance instance) {
-        M3SearchBar searchBar = new M3SearchBar();
-        searchBar.setPromptText(strings.get("instance.mods.search"));
-        searchBar.setText(modsQuery);
-
-        M3Button refresh = createTextAction(strings.get("common.refresh"), () -> {
-        });
-        M3Button add = createTextAction(strings.get("instance.mods.add"), () -> state.addDemoMod());
-        M3Button checkUpdates = createTextAction(strings.get("instance.mods.check_updates"), () -> {
-        });
-
-        HBox toolbar = HMCLDemoUi.toolbar(
-                searchBar,
-                HMCLDemoUi.hgrow(),
-                refresh,
-                add,
-                checkUpdates
-        );
-        HBox.setHgrow(searchBar, Priority.ALWAYS);
-
-        if (instance.mods().isEmpty()) {
-            return listSurface(
-                    toolbar,
-                    placeholderContent(strings.get("instance.nav.mods"), strings.get("instance.mods.empty")));
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-        M3Text count = new M3Text("", M3TextRole.LABEL_SMALL);
-
-        Runnable refill = () -> {
-            String query = modsQuery.strip().toLowerCase(Locale.ROOT);
-            list.getItems().clear();
-            int visible = 0;
-            for (HMCLDemoMod mod : instance.mods()) {
-                if (query.isEmpty()
-                        || mod.name().toLowerCase(Locale.ROOT).contains(query)
-                        || mod.fileName().toLowerCase(Locale.ROOT).contains(query)
-                        || mod.version().toLowerCase(Locale.ROOT).contains(query)) {
-                    list.getItems().add(modRow(mod));
-                    visible++;
-                }
-            }
-            count.setText(strings.format("instance.mods.count", visible));
-        };
-        searchBar.textProperty().addListener((observable, oldValue, newValue) -> {
-            modsQuery = newValue == null ? "" : newValue;
-            refill.run();
-        });
-        refill.run();
-
-        var listScroll = HMCLDemoUi.listHost(list);
-        VBox body = HMCLDemoUi.fill(new VBox(8.0, toolbar, count, listScroll));
-        body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(listScroll, Priority.ALWAYS);
-        VBox column = HMCLDemoUi.contentColumn(body);
-        VBox.setVgrow(body, Priority.ALWAYS);
-        return column;
-    }
-
-    /// Creates one mod row with enable switch and remove action.
-    ///
-    /// @param mod the mod
-    /// @return the list item
-    private M3ListItem modRow(HMCLDemoMod mod) {
-        M3Switch enabled = new M3Switch();
-        enabled.setSelected(mod.enabled());
-        enabled.selectedProperty().addListener((observable, oldValue, newValue) ->
-                state.setSelectedModEnabled(mod.id(), newValue));
-
-        M3Button remove = new M3Button(strings.get("instance.mods.remove"), M3ButtonVariant.TEXT);
-        remove.setOnAction(event -> state.removeMod(mod.id()));
-
-        HBox trailing = new HBox(8.0, enabled, remove);
-        trailing.setAlignment(Pos.CENTER_RIGHT);
-
-        M3ListItem row = new M3ListItem(mod.name());
-        row.getStyleClass().add("hmcl-mod-row");
-        row.setSupportingText(mod.fileName() + " · " + mod.version());
-        row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.EXTENSION));
-        row.setTrailing(trailing);
-        return row;
-    }
-
-    /// Creates the resource-pack list.
-    ///
-    /// @param instance the selected instance
-    /// @return the resource-packs content
-    private Node resourcePacksContent(HMCLDemoInstance instance) {
-        M3Button add = createTextAction(strings.get("instance.resource_packs.add"), () -> {
-            state.addDemoResourcePack();
-        });
-        HBox toolbar = HMCLDemoUi.toolbar(
-                new M3Text(strings.get("instance.nav.resource_packs"), M3TextRole.TITLE_SMALL),
-                HMCLDemoUi.hgrow(),
-                add);
-
-        if (instance.resourcePacks().isEmpty()) {
-            return listSurface(
-                    toolbar,
-                    placeholderContent(
-                            strings.get("instance.nav.resource_packs"),
-                            strings.get("instance.resource_packs.empty")));
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-        for (HMCLDemoPack pack : instance.resourcePacks()) {
-            M3Switch enabled = new M3Switch();
-            enabled.setSelected(pack.enabled());
-            enabled.selectedProperty().addListener((observable, oldValue, newValue) ->
-                    state.setResourcePackEnabled(pack.id(), newValue));
-
-            M3ListItem row = new M3ListItem(pack.name());
-            row.setSupportingText(pack.detail());
-            row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.IMAGE));
-            row.setTrailing(enabled);
-            list.getItems().add(row);
-        }
-        return listSurface(toolbar, HMCLDemoUi.listHost(list));
-    }
-
-    /// Creates the worlds list.
-    ///
-    /// @param instance the selected instance
-    /// @return the worlds content
-    private Node worldsContent(HMCLDemoInstance instance) {
-        M3Button add = createTextAction(strings.get("instance.worlds.add"), () -> {
-            state.addDemoWorld();
-        });
-        HBox toolbar = HMCLDemoUi.toolbar(
-                new M3Text(strings.get("instance.nav.worlds"), M3TextRole.TITLE_SMALL),
-                HMCLDemoUi.hgrow(),
-                add);
-
-        if (instance.worlds().isEmpty()) {
-            return listSurface(
-                    toolbar,
-                    placeholderContent(strings.get("instance.nav.worlds"), strings.get("instance.worlds.empty")));
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-        for (HMCLDemoWorld world : instance.worlds()) {
-            M3Button remove = new M3Button(strings.get("instance.worlds.remove"), M3ButtonVariant.TEXT);
-            remove.setOnAction(event -> state.removeWorld(world.id()));
-
-            M3ListItem row = new M3ListItem(world.name());
-            row.setSupportingText(world.gameMode() + " · " + world.lastPlayed());
-            row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.WORLD));
-            row.setTrailing(remove);
-            list.getItems().add(row);
-        }
-        return listSurface(toolbar, HMCLDemoUi.listHost(list));
-    }
-
-    /// Creates the shader-pack list.
-    ///
-    /// @param instance the selected instance
-    /// @return the shaders content
-    private Node shadersContent(HMCLDemoInstance instance) {
-        M3Button add = createTextAction(strings.get("instance.shaders.add"), () -> {
-            state.addDemoShader();
-        });
-        HBox toolbar = HMCLDemoUi.toolbar(
-                new M3Text(strings.get("instance.nav.shaders"), M3TextRole.TITLE_SMALL),
-                HMCLDemoUi.hgrow(),
-                add);
-
-        if (instance.shaderPacks().isEmpty()) {
-            return listSurface(
-                    toolbar,
-                    placeholderContent(strings.get("instance.nav.shaders"), strings.get("instance.shaders.empty")));
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-        for (HMCLDemoPack pack : instance.shaderPacks()) {
-            M3Switch enabled = new M3Switch();
-            enabled.setSelected(pack.enabled());
-            enabled.selectedProperty().addListener((observable, oldValue, newValue) ->
-                    state.setShaderEnabled(pack.id(), newValue));
-
-            M3ListItem row = new M3ListItem(pack.name());
-            row.setSupportingText(pack.detail());
-            row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.IMAGE));
-            row.setTrailing(enabled);
-            list.getItems().add(row);
-        }
-        return listSurface(toolbar, HMCLDemoUi.listHost(list));
-    }
-
-    /// Creates the schematics list.
-    ///
-    /// @param instance the selected instance
-    /// @return the schematics content
-    private Node schematicsContent(HMCLDemoInstance instance) {
-        M3Button add = createTextAction(strings.get("instance.schematics.add"), () -> {
-            state.addDemoSchematic();
-        });
-        HBox toolbar = HMCLDemoUi.toolbar(
-                new M3Text(strings.get("instance.nav.schematics"), M3TextRole.TITLE_SMALL),
-                HMCLDemoUi.hgrow(),
-                add);
-
-        if (instance.schematics().isEmpty()) {
-            return listSurface(
-                    toolbar,
-                    placeholderContent(
-                            strings.get("instance.nav.schematics"),
-                            strings.get("instance.schematics.empty")));
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
-        for (HMCLDemoPack pack : instance.schematics()) {
-            M3ListItem row = new M3ListItem(pack.name());
-            row.setSupportingText(pack.detail());
-            row.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.CODE));
-            list.getItems().add(row);
-        }
-        return listSurface(toolbar, HMCLDemoUi.listHost(list));
-    }
-
-    /// Shows the manage dialog with rename, copy, and delete actions.
-    private void showManageDialog() {
-        @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
-        if (instance == null) {
-            return;
-        }
-
-        M3Button rename = new M3Button(strings.get("instance.manage.rename"), M3ButtonVariant.TEXT);
-        M3Button copy = new M3Button(strings.get("instance.manage.copy"), M3ButtonVariant.TEXT);
-        M3Button delete = new M3Button(strings.get("instance.manage.delete"), M3ButtonVariant.TEXT);
-        M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
-        cancel.setCancelButton(true);
-
-        M3Text body = new M3Text(strings.format("instance.manage.body", instance.name()), M3TextRole.BODY_MEDIUM);
-        body.setWrapText(true);
-        VBox content = new VBox(12.0, body);
-        content.setPadding(new Insets(4.0, 0.0, 0.0, 0.0));
-        content.setPrefWidth(360.0);
-
-        M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instance.action.manage"));
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getActions().setAll(cancel, rename, copy, delete);
-        dialog.setOnHidden(event -> {
-            if (event.getAction() == rename) {
-                showRenameDialog(instance.name());
-            } else if (event.getAction() == copy) {
-                @Nullable HMCLDemoInstance copied = state.copySelectedInstance();
-                if (copied != null) {
-                    instanceId = copied.id();
+            M3ListItem row = new M3ListItem(installer.name());
+            row.setSupportingText(installer.installedVersion() == null
+                    ? strings.get("instance.installers.not_installed")
+                    : installer.installedVersion());
+            row.setMaxWidth(Double.MAX_VALUE);
+            if (!"game".equals(installer.id())) {
+                M3Button action = new M3Button(
+                        installer.installedVersion() == null
+                                ? strings.get("instance.installers.install")
+                                : strings.get("instance.installers.remove"),
+                        M3ButtonVariant.TEXT
+                );
+                action.setOnAction(event -> {
+                    if (installer.installedVersion() == null) {
+                        state.setInstallerVersion(installer.id(), "latest");
+                        controller.showMessageKey("snackbar.installer_updated", installer.name(), "latest");
+                    } else {
+                        state.setInstallerVersion(installer.id(), null);
+                        controller.showMessageKey("snackbar.installer_removed", installer.name());
+                    }
                     renderSection(false);
-                }
-            } else if (event.getAction() == delete) {
-                if (state.deleteSelectedInstance()) {
-                    controller.goBack();
-                }
+                });
+                row.setTrailing(action);
             }
-        });
-        controller.overlay().showDialog(dialog);
+            list.getChildren().add(row);
+        }
+        return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(
+                new M3Text(strings.get("instance.installers.body"), M3TextRole.BODY_MEDIUM),
+                list
+        ));
     }
 
-    /// Shows a rename dialog for the selected instance.
-    ///
-    /// @param currentName the current display name
-    private void showRenameDialog(String currentName) {
-        M3TextField field = new M3TextField(currentName);
+    private Node modsContent(HMCLDemoInstance instance) {
+        M3SearchBar search = new M3SearchBar(strings.get("instance.mods.search"));
+        VBox list = new VBox(4.0);
+        Runnable rebuild = () -> {
+            list.getChildren().clear();
+            String query = search.getText().strip().toLowerCase();
+            for (HMCLDemoMod mod : instance.mods()) {
+                if (!query.isEmpty()
+                        && !mod.name().toLowerCase().contains(query)
+                        && !mod.fileName().toLowerCase().contains(query)) {
+                    continue;
+                }
+                M3Switch enabled = new M3Switch();
+                enabled.setSelected(mod.enabled());
+                enabled.selectedProperty().addListener((observable, oldValue, newValue) ->
+                        state.setSelectedModEnabled(mod.id(), Boolean.TRUE.equals(newValue)));
+                M3Button remove = new M3Button(strings.get("instance.mods.remove"), M3ButtonVariant.TEXT);
+                remove.setOnAction(event -> {
+                    state.removeMod(mod.id());
+                    controller.showMessageKey("snackbar.mod_removed", mod.name());
+                    renderSection(false);
+                });
+                HBox trailing = new HBox(4.0, remove, enabled);
+                trailing.setAlignment(Pos.CENTER_RIGHT);
+                M3ListItem row = new M3ListItem(mod.name());
+                row.setSupportingText(mod.version());
+                row.setTrailing(trailing);
+                row.setMaxWidth(Double.MAX_VALUE);
+                list.getChildren().add(row);
+            }
+            if (list.getChildren().isEmpty()) {
+                list.getChildren().add(HMCLDemoUi.emptyState(strings.get("instance.mods.empty")));
+            }
+        };
+        search.textProperty().addListener((observable, oldValue, newValue) -> rebuild.run());
+        M3Button add = new M3Button(strings.get("instance.mods.add"), M3ButtonVariant.TONAL);
+        add.setOnAction(event -> {
+            @Nullable HMCLDemoMod mod = state.addDemoMod();
+            if (mod != null) {
+                controller.showMessageKey("snackbar.mod_added", mod.name());
+                renderSection(false);
+            }
+        });
+        rebuild.run();
+        return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(
+                HMCLDemoUi.toolbar(search, add),
+                new M3Text(strings.format("instance.mods.count", instance.mods().size()), M3TextRole.BODY_SMALL),
+                list
+        ));
+    }
+
+    private Node packsContent(List<HMCLDemoPack> packs, boolean resourcePacks) {
+        VBox list = new VBox(4.0);
+        if (packs.isEmpty()) {
+            list.getChildren().add(HMCLDemoUi.emptyState(resourcePacks
+                    ? strings.get("instance.resource_packs.empty")
+                    : strings.get("instance.shaders.empty")));
+        } else {
+            for (HMCLDemoPack pack : packs) {
+                M3Switch enabled = new M3Switch();
+                enabled.setSelected(pack.enabled());
+                enabled.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                    if (resourcePacks) {
+                        state.setResourcePackEnabled(pack.id(), Boolean.TRUE.equals(newValue));
+                    } else {
+                        state.setShaderEnabled(pack.id(), Boolean.TRUE.equals(newValue));
+                    }
+                });
+                M3ListItem row = new M3ListItem(pack.name());
+                row.setSupportingText(pack.detail());
+                row.setTrailing(enabled);
+                row.setMaxWidth(Double.MAX_VALUE);
+                list.getChildren().add(row);
+            }
+        }
+        M3Button add = new M3Button(
+                resourcePacks ? strings.get("instance.resource_packs.add") : strings.get("instance.shaders.add"),
+                M3ButtonVariant.TONAL
+        );
+        add.setOnAction(event -> {
+            @Nullable HMCLDemoPack pack = resourcePacks ? state.addDemoResourcePack() : state.addDemoShader();
+            if (pack != null) {
+                controller.showMessageKey("snackbar.pack_added", pack.name());
+                renderSection(false);
+            }
+        });
+        return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(add, list));
+    }
+
+    private Node worldsContent(HMCLDemoInstance instance) {
+        VBox list = new VBox(4.0);
+        if (instance.worlds().isEmpty()) {
+            list.getChildren().add(HMCLDemoUi.emptyState(strings.get("instance.worlds.empty")));
+        } else {
+            for (HMCLDemoWorld world : instance.worlds()) {
+                M3Button remove = new M3Button(strings.get("instance.worlds.remove"), M3ButtonVariant.TEXT);
+                remove.setOnAction(event -> {
+                    state.removeWorld(world.id());
+                    controller.showMessageKey("snackbar.world_removed", world.name());
+                    renderSection(false);
+                });
+                M3ListItem row = new M3ListItem(world.name());
+                row.setSupportingText(world.gameMode() + " · " + world.lastPlayed());
+                row.setTrailing(remove);
+                row.setMaxWidth(Double.MAX_VALUE);
+                list.getChildren().add(row);
+            }
+        }
+        M3Button add = new M3Button(strings.get("instance.worlds.add"), M3ButtonVariant.TONAL);
+        add.setOnAction(event -> {
+            @Nullable HMCLDemoWorld world = state.addDemoWorld();
+            if (world != null) {
+                controller.showMessageKey("snackbar.world_added", world.name());
+                renderSection(false);
+            }
+        });
+        return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(add, list));
+    }
+
+    private Node schematicsContent(HMCLDemoInstance instance) {
+        VBox list = new VBox(4.0);
+        if (instance.schematics().isEmpty()) {
+            list.getChildren().add(HMCLDemoUi.emptyState(strings.get("instance.schematics.empty")));
+        } else {
+            for (HMCLDemoPack pack : instance.schematics()) {
+                M3ListItem row = new M3ListItem(pack.name());
+                row.setSupportingText(pack.detail());
+                row.setMaxWidth(Double.MAX_VALUE);
+                list.getChildren().add(row);
+            }
+        }
+        M3Button add = new M3Button(strings.get("instance.schematics.add"), M3ButtonVariant.TONAL);
+        add.setOnAction(event -> {
+            @Nullable HMCLDemoPack pack = state.addDemoSchematic();
+            if (pack != null) {
+                controller.showMessageKey("snackbar.pack_added", pack.name());
+                renderSection(false);
+            }
+        });
+        return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(add, list));
+    }
+
+    private void cycleMemory(HMCLDemoInstance instance) {
+        int next = MEMORY_OPTIONS[0];
+        for (int index = 0; index < MEMORY_OPTIONS.length; index++) {
+            if (MEMORY_OPTIONS[index] == instance.maxMemoryMb()) {
+                next = MEMORY_OPTIONS[(index + 1) % MEMORY_OPTIONS.length];
+                break;
+            }
+        }
+        state.updateSelectedInstanceSettings(
+                instance.isolated(), next, instance.resolution(), instance.fullscreen(), instance.javaId());
+        renderSection(false);
+    }
+
+    private void cycleResolution(HMCLDemoInstance instance) {
+        String next = RESOLUTION_OPTIONS[0];
+        for (int index = 0; index < RESOLUTION_OPTIONS.length; index++) {
+            if (RESOLUTION_OPTIONS[index].equals(instance.resolution())) {
+                next = RESOLUTION_OPTIONS[(index + 1) % RESOLUTION_OPTIONS.length];
+                break;
+            }
+        }
+        state.updateSelectedInstanceSettings(
+                instance.isolated(), instance.maxMemoryMb(), next, instance.fullscreen(), instance.javaId());
+        renderSection(false);
+    }
+
+    private void showRenameDialog(HMCLDemoInstance instance) {
+        M3TextField field = new M3TextField(instance.name());
         M3TextInputLayout layout = new M3TextInputLayout(field);
         layout.setLabelText(strings.get("instance.settings.name"));
-
+        M3Dialog dialog = new M3Dialog();
+        dialog.getDialogPane().setHeaderText(strings.get("instance.manage.rename"));
+        dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);
         M3Button apply = new M3Button(strings.get("common.apply"), M3ButtonVariant.TEXT);
         apply.setDefaultButton(true);
-
-        M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instance.manage.rename"));
-        dialog.getDialogPane().setContent(layout);
         dialog.getDialogPane().getActions().setAll(cancel, apply);
-        dialog.setOnHidden(event -> {
-            if (event.getAction() != apply) {
-                return;
+        apply.setOnAction(event -> {
+            if (state.renameSelectedInstance(field.getText())) {
+                controller.showMessageKey("snackbar.instance_renamed", field.getText().strip());
+                controller.refreshChrome();
+                renderSection(false);
             }
-            String value = field.getText().strip();
-            if (value.isEmpty()) {
-                return;
-            }
-            state.renameSelectedInstance(value);
         });
         controller.overlay().showDialog(dialog);
     }
 
-    /// Applies settings fields through the shared state.
-    ///
-    /// @param baseline the instance snapshot used only for identity checks
-    /// @param isolated whether the instance uses an isolated working directory
-    /// @param maxMemoryMb configured max memory
-    /// @param resolution window resolution label
-    /// @param fullscreen whether fullscreen is preferred
-    /// @param javaId selected Java runtime id, or `auto`
-    private void applySettings(
-            HMCLDemoInstance baseline,
-            boolean isolated,
-            int maxMemoryMb,
-            String resolution,
-            boolean fullscreen,
-            String javaId
-    ) {
-        @Nullable HMCLDemoInstance current = state.getSelectedInstance();
-        if (current == null || !current.id().equals(baseline.id())) {
+    private void showManageDialog() {
+        @Nullable HMCLDemoInstance instance = currentInstance();
+        if (instance == null) {
             return;
         }
-        state.updateSelectedInstanceSettings(isolated, maxMemoryMb, resolution, fullscreen, javaId);
+        M3Dialog dialog = new M3Dialog();
+        dialog.getDialogPane().setHeaderText(strings.get("instance.action.manage"));
+        dialog.getDialogPane().setContentText(strings.format("instance.manage.body", instance.name()));
+        M3Button rename = new M3Button(strings.get("instance.manage.rename"), M3ButtonVariant.TEXT);
+        M3Button copy = new M3Button(strings.get("instance.manage.copy"), M3ButtonVariant.TEXT);
+        M3Button delete = new M3Button(strings.get("instance.manage.delete"), M3ButtonVariant.TEXT);
+        M3Button close = new M3Button(strings.get("common.close"), M3ButtonVariant.TEXT);
+        close.setCancelButton(true);
+        dialog.getDialogPane().getActions().setAll(close, rename, copy, delete);
+        rename.setOnAction(event -> showRenameDialog(instance));
+        copy.setOnAction(event -> {
+            @Nullable HMCLDemoInstance copied = state.copySelectedInstance();
+            if (copied != null) {
+                controller.showMessageKey("snackbar.instance_copied", copied.name());
+                controller.openInstance(copied.id(), HMCLDemoRoute.InstanceSection.SETTINGS);
+            }
+        });
+        delete.setOnAction(event -> {
+            String name = instance.name();
+            if (state.deleteSelectedInstance()) {
+                controller.showMessageKey("snackbar.instance_deleted", name);
+                controller.openInstances();
+            }
+        });
+        controller.overlay().showDialog(dialog);
     }
 
-    /// Cycles the selected Java runtime id.
-    ///
-    /// @param instance the selected instance
-    private void cycleJava(HMCLDemoInstance instance) {
-        List<String> options = new ArrayList<>();
-        options.add("auto");
-        for (HMCLDemoJavaRuntime runtime : state.getJavaRuntimes()) {
-            options.add(runtime.id());
+    private void runUpdateTask() {
+        @Nullable HMCLDemoInstance instance = currentInstance();
+        if (instance == null) {
+            return;
         }
-        int index = options.indexOf(instance.javaId());
-        String next = options.get((Math.max(index, 0) + 1) % options.size());
-        applySettings(instance, instance.isolated(), instance.maxMemoryMb(), instance.resolution(),
-                instance.fullscreen(), next);
+        controller.runTask(
+                strings.get("instance.action.update"),
+                List.of(
+                        strings.get("wizard.step.client"),
+                        strings.get("wizard.step.libraries"),
+                        strings.get("wizard.step.assets"),
+                        strings.get("wizard.step.finalize")
+                ),
+                () -> controller.showMessageKey("snackbar.installed", instance.name()),
+                () -> controller.showMessageKey("snackbar.install_cancelled")
+        );
     }
 
-    /// Cycles the selected max-memory value.
-    ///
-    /// @param instance the selected instance
-    private void cycleMemory(HMCLDemoInstance instance) {
-        int index = indexOf(MEMORY_OPTIONS, instance.maxMemoryMb());
-        int next = MEMORY_OPTIONS[(index + 1) % MEMORY_OPTIONS.length];
-        applySettings(instance, instance.isolated(), next, instance.resolution(),
-                instance.fullscreen(), instance.javaId());
-    }
-
-    /// Cycles the selected resolution label.
-    ///
-    /// @param instance the selected instance
-    private void cycleResolution(HMCLDemoInstance instance) {
-        int index = indexOf(RESOLUTION_OPTIONS, instance.resolution());
-        String next = RESOLUTION_OPTIONS[(index + 1) % RESOLUTION_OPTIONS.length];
-        applySettings(instance, instance.isolated(), instance.maxMemoryMb(), next,
-                instance.fullscreen(), instance.javaId());
-    }
-
-    /// Returns a deterministic next installer version label.
-    ///
-    /// @param installer the installer slot
-    /// @return the next version string
-    private static String nextInstallerVersion(HMCLDemoInstaller installer) {
-        if (!installer.isInstalled()) {
-            return "latest";
+    private @Nullable HMCLDemoInstance currentInstance() {
+        if (instanceId == null) {
+            return null;
         }
-        String current = installer.installedVersion();
-        if ("latest".equals(current)) {
-            return "stable";
-        }
-        if ("stable".equals(current)) {
-            return "1.0.0";
-        }
-        return "latest";
-    }
-
-    /// Resolves the Java supporting label for a runtime id.
-    ///
-    /// @param javaId the runtime id, or `auto`
-    /// @return the display label
-    private String javaLabel(String javaId) {
-        if ("auto".equals(javaId)) {
-            return strings.get("instance.settings.java.support");
-        }
-        for (HMCLDemoJavaRuntime runtime : state.getJavaRuntimes()) {
-            if (runtime.id().equals(javaId)) {
-                return runtime.name() + " · " + runtime.version();
+        for (HMCLDemoInstance instance : state.getInstances()) {
+            if (instance.id().equals(instanceId)) {
+                return instance;
             }
         }
-        return javaId;
+        return state.getSelectedInstance();
     }
 
-    /// Formats a memory supporting label.
-    ///
-    /// @param maxMemoryMb the memory limit
-    /// @return the display label
-    private static String memoryLabel(int maxMemoryMb) {
-        return maxMemoryMb + " MB";
+    private static M3Text heading(String text) {
+        M3Text heading = new M3Text(text, M3TextRole.TITLE_SMALL);
+        heading.setMaxWidth(Double.MAX_VALUE);
+        return heading;
     }
 
-    /// Returns the index of `value` in `options`, or `0` when absent.
-    ///
-    /// @param options the option array
-    /// @param value the searched value
-    /// @return the matching index
-    private static int indexOf(int[] options, int value) {
-        for (int i = 0; i < options.length; i++) {
-            if (options[i] == value) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    /// Returns the index of `value` in `options`, or `0` when absent.
-    ///
-    /// @param options the option array
-    /// @param value the searched value
-    /// @return the matching index
-    private static int indexOf(String[] options, String value) {
-        for (int i = 0; i < options.length; i++) {
-            if (options[i].equals(value)) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    /// Creates a list surface with a fixed toolbar and growing body.
-    ///
-    /// @param toolbar the toolbar row
-    /// @param bodyContent the body node
-    /// @return the page content
-    private Node listSurface(HBox toolbar, Node bodyContent) {
-        VBox body = HMCLDemoUi.fill(new VBox(toolbar, bodyContent));
-        body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(bodyContent, Priority.ALWAYS);
-        VBox column = HMCLDemoUi.contentColumn(body);
-        VBox.setVgrow(body, Priority.ALWAYS);
-        return column;
-    }
-
-    /// Creates a centered empty or placeholder panel.
-    ///
-    /// @param title the title
-    /// @param body the supporting body
-    /// @return the placeholder node
-    private Node placeholderContent(String title, String body) {
-        M3Text titleText = new M3Text(title, M3TextRole.TITLE_LARGE);
-        M3Text bodyText = new M3Text(body, M3TextRole.BODY_MEDIUM);
-        bodyText.setWrapText(true);
-        VBox box = new VBox(12.0, titleText, bodyText);
-        box.setAlignment(Pos.CENTER_LEFT);
+    private static Node padded(Node node) {
+        VBox box = new VBox(node);
         box.setPadding(new Insets(24.0));
-        box.setMaxWidth(520.0);
-        StackPane host = HMCLDemoUi.fill(new StackPane(box));
-        host.getStyleClass().add("hmcl-page-body");
-        StackPane.setAlignment(box, Pos.TOP_LEFT);
-        return host;
-    }
-
-    /// Creates a simple empty-state message when no instance is selected.
-    ///
-    /// @return the empty-state node
-    private Node emptyState() {
-        return placeholderContent(strings.get("instance.title"), strings.get("instance.empty"));
-    }
-
-    /// Creates a compact text action button.
-    ///
-    /// @param text the button text
-    /// @param action the activation handler
-    /// @return the button
-    private M3Button createTextAction(String text, Runnable action) {
-        M3Button button = new M3Button(text, M3ButtonVariant.TEXT);
-        button.setOnAction(event -> action.run());
-        return button;
+        return box;
     }
 }

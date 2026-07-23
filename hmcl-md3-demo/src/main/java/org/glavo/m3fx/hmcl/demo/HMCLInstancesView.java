@@ -6,7 +6,6 @@ package org.glavo.m3fx.hmcl.demo;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -14,212 +13,164 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
-import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SelectionMode;
-import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// Displays game directories and the searchable instance list.
+/// Instance list primary destination.
 @NotNullByDefault
 final class HMCLInstancesView extends BorderPane {
-    /// The localization source.
+    private final HMCLDemoController controller;
     private final HMCLDemoStrings strings;
-
-    /// The shared state.
     private final HMCLDemoState state;
 
-    /// The application controller.
-    private final HMCLDemoController controller;
-
-    /// The directories section label.
-    private final M3Text directoriesSection = HMCLDemoUi.sectionLabel("");
-
-    /// The left directory list host.
-    private final VBox directoryList = new VBox(4.0);
-
-    /// The new-directory action.
-    private final M3ListItem newDirectoryItem = HMCLDemoUi.navItem("", HMCLDemoIcons.FOLDER, null);
-
-    /// The install-new-game action.
-    private final M3ListItem newGameItem = HMCLDemoUi.navItem("", HMCLDemoIcons.ADD, null);
-
-    /// The import-modpack action.
-    private final M3ListItem importItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
-
-    /// The global-settings action.
-    private final M3ListItem globalSettingsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
-
-    /// The instance search field.
+    private final VBox directoryList = new VBox(0.0);
+    private final M3Button newDirectoryButton = new M3Button();
+    private final M3Button newGameButton = new M3Button();
+    private final M3Button importButton = new M3Button();
+    private final M3Button globalSettingsButton = new M3Button();
     private final M3SearchBar searchBar = new M3SearchBar();
-
-    /// The refresh control.
-    private final M3IconButton refreshButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.REFRESH));
-
-    /// The add-instance control.
-    private final M3IconButton addButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.ADD));
-
-    /// The instance list surface.
     private final M3ListPane instanceList = new M3ListPane();
 
     /// Creates the instances page.
     ///
-    /// @param strings the localization source
-    /// @param state the shared state
     /// @param controller the application controller
-    HMCLInstancesView(HMCLDemoStrings strings, HMCLDemoState state, HMCLDemoController controller) {
-        this.strings = strings;
-        this.state = state;
+    HMCLInstancesView(HMCLDemoController controller) {
         this.controller = controller;
+        this.strings = controller.strings();
+        this.state = controller.state();
 
-        getStyleClass().add("hmcl-secondary-page");
+        getStyleClass().add("hmcl-instances-page");
         HMCLDemoUi.fill(this);
-        instanceList.setListStyle(M3ListStyle.SEGMENTED);
-        instanceList.setSelectionMode(M3SelectionMode.SINGLE);
-        instanceList.getStyleClass().add("hmcl-dense-list");
 
-        newDirectoryItem.setOnAction(event -> showNewDirectoryDialog());
-        newGameItem.setOnAction(event -> controller.openDownload());
-        importItem.setOnAction(event -> {
-        });
-        globalSettingsItem.setOnAction(event -> controller.openSettings());
-        refreshButton.setOnAction(event -> {
-        });
-        addButton.setOnAction(event -> state.addDemoInstance());
-        searchBar.textProperty().bindBidirectional(state.instanceSearchQueryProperty());
+        newDirectoryButton.setVariant(M3ButtonVariant.TEXT);
+        newGameButton.setVariant(M3ButtonVariant.FILLED);
+        importButton.setVariant(M3ButtonVariant.TONAL);
+        globalSettingsButton.setVariant(M3ButtonVariant.TEXT);
+        newDirectoryButton.setMaxWidth(Double.MAX_VALUE);
+        newGameButton.setMaxWidth(Double.MAX_VALUE);
+        importButton.setMaxWidth(Double.MAX_VALUE);
+        globalSettingsButton.setMaxWidth(Double.MAX_VALUE);
+
+        newDirectoryButton.setOnAction(event -> showNewDirectoryDialog());
+        newGameButton.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.GAME));
+        importButton.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+        globalSettingsButton.setOnAction(event ->
+                controller.openSettings(HMCLDemoRoute.SettingsSection.GLOBAL_GAME));
 
         VBox sidebar = HMCLDemoUi.sidebar(
-                directoriesSection,
+                HMCLDemoUi.sectionLabel(""),
                 directoryList,
-                HMCLDemoUi.vgrow(),
-                newDirectoryItem,
-                newGameItem,
-                importItem,
-                globalSettingsItem
+                newDirectoryButton,
+                newGameButton,
+                importButton,
+                globalSettingsButton
         );
-        setLeft(sidebar);
+        VBox.setVgrow(directoryList, Priority.ALWAYS);
 
-        HBox toolbar = HMCLDemoUi.toolbar(searchBar, HMCLDemoUi.hgrow(), refreshButton, addButton);
-        HBox.setHgrow(searchBar, Priority.ALWAYS);
-        var listScroll = HMCLDemoUi.listHost(instanceList);
-        VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
-        body.getStyleClass().add("hmcl-list-surface");
-        VBox.setVgrow(listScroll, Priority.ALWAYS);
-        VBox center = HMCLDemoUi.contentColumn(body);
-        VBox.setVgrow(body, Priority.ALWAYS);
+        searchBar.textProperty().addListener((observable, oldValue, newValue) ->
+                state.setInstanceSearchQuery(newValue == null ? "" : newValue));
+        instanceList.setListStyle(M3ListStyle.STANDARD);
+        instanceList.setSelectionMode(M3SelectionMode.SINGLE);
+        instanceList.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        VBox center = HMCLDemoUi.fill(new VBox(12.0, searchBar, instanceList));
+        center.setPadding(new Insets(16.0, 20.0, 24.0, 20.0));
+        VBox.setVgrow(instanceList, Priority.ALWAYS);
+
+        setLeft(sidebar);
         setCenter(center);
 
-        state.selectedDirectoryProperty().addListener((observable, oldValue, newValue) -> {
-            rebuildDirectories();
-            rebuildInstances();
-        });
+        state.getDirectories().addListener((ListChangeListener<HMCLDemoGameDirectory>) change -> rebuildDirectories());
+        state.selectedDirectoryProperty().addListener((observable, oldValue, newValue) -> rebuildDirectories());
+        state.getFilteredInstances().addListener((ListChangeListener<HMCLDemoInstance>) change -> rebuildInstances());
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> rebuildInstances());
-        state.getDirectories().addListener(
-                (ListChangeListener<HMCLDemoGameDirectory>) change -> rebuildDirectories());
-        state.getFilteredInstances().addListener(
-                (ListChangeListener<HMCLDemoInstance>) change -> rebuildInstances());
-        state.getInstances().addListener((ListChangeListener<HMCLDemoInstance>) change -> rebuildInstances());
 
         refreshLocale();
         rebuildDirectories();
         rebuildInstances();
     }
 
-    /// Updates static labels.
+    /// Refreshes locale-dependent labels.
     void refreshLocale() {
-        directoriesSection.setText(strings.get("instances.section.directories"));
-        newDirectoryItem.setHeadlineText(strings.get("instances.new_directory"));
-        newGameItem.setHeadlineText(strings.get("instances.new_game"));
-        importItem.setHeadlineText(strings.get("instances.import"));
-        globalSettingsItem.setHeadlineText(strings.get("instances.global_settings"));
+        VBox sidebar = (VBox) getLeft();
+        sidebar.getChildren().set(0, HMCLDemoUi.sectionLabel(strings.get("instances.section.directories")));
+        newDirectoryButton.setText(strings.get("instances.new_directory"));
+        newGameButton.setText(strings.get("instances.new_game"));
+        importButton.setText(strings.get("instances.import"));
+        globalSettingsButton.setText(strings.get("instances.global_settings"));
         searchBar.setPromptText(strings.get("instances.search"));
-        refreshButton.setAccessibleText(strings.get("common.refresh"));
-        addButton.setAccessibleText(strings.get("instances.add"));
         rebuildDirectories();
         rebuildInstances();
     }
 
-    /// Rebuilds the left directory list.
     private void rebuildDirectories() {
         directoryList.getChildren().clear();
         HMCLDemoGameDirectory selected = state.getSelectedDirectory();
         for (HMCLDemoGameDirectory directory : state.getDirectories()) {
-            M3ListItem item = HMCLDemoUi.navItem(
-                    directory.name(),
-                    directory.path(),
-                    HMCLDemoIcons.create(HMCLDemoIcons.FOLDER),
-                    () -> state.selectDirectory(directory.id())
-            );
+            M3ListItem item = new M3ListItem(directory.name());
+            item.setSupportingText(directory.path());
+            item.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.FOLDER));
             item.setSelected(directory.equals(selected));
+            item.setMaxWidth(Double.MAX_VALUE);
+            item.setOnAction(event -> state.selectDirectory(directory.id()));
             directoryList.getChildren().add(item);
         }
     }
 
-    /// Rebuilds the instance rows for the current filters.
     private void rebuildInstances() {
         instanceList.getItems().clear();
         @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
         for (HMCLDemoInstance instance : state.getFilteredInstances()) {
-            M3IconButton manage = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.MANAGE));
-            manage.setAccessibleText(strings.get("instances.manage"));
-            manage.setOnAction(event -> controller.openInstance(instance.id()));
-
-            M3Button launch = new M3Button(strings.get("instances.launch"), M3ButtonVariant.TONAL);
+            M3Button manage = new M3Button(strings.get("instances.manage"), M3ButtonVariant.TEXT);
+            manage.setOnAction(event ->
+                    controller.openInstance(instance.id(), HMCLDemoRoute.InstanceSection.SETTINGS));
+            M3Button launch = new M3Button(strings.get("instances.launch"), M3ButtonVariant.TEXT);
             launch.setOnAction(event -> {
                 state.selectInstance(instance.id());
                 controller.launchSelected();
             });
-
-            HBox trailing = new HBox(6.0, manage, launch);
+            HBox trailing = new HBox(4.0, manage, launch);
             trailing.setAlignment(Pos.CENTER_RIGHT);
 
             M3ListItem row = new M3ListItem(instance.name());
-            row.getStyleClass().add("hmcl-instance-row");
             row.setSupportingText(instance.gameVersion() + " · " + instance.loader());
-            row.setLeading(HMCLDemoUi.instanceIcon(instance, 32.0));
+            row.setLeading(HMCLDemoAssets.imageView(instance.iconPath(), 36.0, 36.0));
             row.setTrailing(trailing);
             row.setSelected(instance.equals(selected));
-            row.setOnAction(event -> state.selectInstance(instance.id()));
-            row.setOnMouseClicked(event -> {
-                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                    controller.openInstance(instance.id());
-                }
+            row.setMaxWidth(Double.MAX_VALUE);
+            row.setOnAction(event -> {
+                state.selectInstance(instance.id());
+                controller.openInstance(instance.id(), HMCLDemoRoute.InstanceSection.SETTINGS);
             });
             instanceList.getItems().add(row);
         }
     }
 
-    /// Shows a dialog that creates and selects a new game directory.
     private void showNewDirectoryDialog() {
-        M3TextField field = new M3TextField(strings.get("instances.directory.default_name"));
-        M3TextInputLayout layout = new M3TextInputLayout(field);
+        M3TextField nameField = new M3TextField(strings.get("instances.directory.default_name"));
+        M3TextInputLayout layout = new M3TextInputLayout(nameField);
         layout.setLabelText(strings.get("instances.directory.name"));
-        layout.setPadding(new Insets(4.0, 0.0, 0.0, 0.0));
-
+        M3Dialog dialog = new M3Dialog();
+        dialog.getDialogPane().setHeaderText(strings.get("instances.new_directory"));
+        dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);
         M3Button create = new M3Button(strings.get("common.apply"), M3ButtonVariant.TEXT);
         create.setDefaultButton(true);
-
-        M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instances.new_directory"));
-        dialog.getDialogPane().setContent(layout);
         dialog.getDialogPane().getActions().setAll(cancel, create);
-        dialog.setOnHidden(event -> {
-            if (event.getAction() != create) {
-                return;
-            }
-            String name = field.getText().strip();
-            if (name.isEmpty()) {
-                return;
-            }
-            state.addDirectory(name);
+        create.setOnAction(event -> {
+            HMCLDemoGameDirectory directory = state.addDirectory(
+                    nameField.getText().isBlank()
+                            ? strings.get("instances.directory.default_name")
+                            : nameField.getText().strip()
+            );
+            controller.showMessageKey("snackbar.directory_added", directory.name());
         });
         controller.overlay().showDialog(dialog);
     }

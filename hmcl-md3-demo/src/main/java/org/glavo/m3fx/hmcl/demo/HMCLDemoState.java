@@ -17,6 +17,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.tokens.M3Profile;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -25,6 +26,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /// Owns deterministic, offline state for the HMCL-inspired M3FX demo.
@@ -167,6 +169,10 @@ public final class HMCLDemoState {
     /// The theme seed color.
     private final ObjectProperty<Color> themeColor =
             new SimpleObjectProperty<>(this, "themeColor", Color.web("#5C6BC0"));
+
+    /// The Material component profile.
+    private final ObjectProperty<M3Profile> profile =
+            new SimpleObjectProperty<>(this, "profile", M3Profile.BASELINE_2021);
 
     /// The brightness mode.
     private final ObjectProperty<Brightness> brightness =
@@ -576,28 +582,43 @@ public final class HMCLDemoState {
     ///
     /// @return the new instance
     public HMCLDemoInstance addDemoInstance() {
+        return installInstance("New Instance " + nextInstanceNumber, "1.21.11", null, null);
+    }
+
+    /// Installs a deterministic instance from the download wizard.
+    ///
+    /// @param name the instance display name
+    /// @param gameVersion the Minecraft version id
+    /// @param loaderId the loader family id, or `null` for vanilla
+    /// @param loaderVersion the loader version label when a loader is selected
+    /// @return the new selected instance
+    public HMCLDemoInstance installInstance(
+            String name,
+            String gameVersion,
+            @Nullable String loaderId,
+            @Nullable String loaderVersion
+    ) {
         int number = nextInstanceNumber++;
+        String loaderLabel = switch (loaderId == null ? "" : loaderId) {
+            case "fabric" -> "Fabric " + Objects.requireNonNullElse(loaderVersion, "");
+            case "forge" -> "Forge " + Objects.requireNonNullElse(loaderVersion, "");
+            case "neoforge" -> "NeoForge " + Objects.requireNonNullElse(loaderVersion, "");
+            case "quilt" -> "Quilt " + Objects.requireNonNullElse(loaderVersion, "");
+            default -> "Vanilla";
+        };
         HMCLDemoInstance instance = new HMCLDemoInstance(
                 "instance-" + number,
-                "New Instance " + number,
-                "1.21.11",
-                "Vanilla",
+                name.strip().isEmpty() ? "New Instance " + number : name.strip(),
+                gameVersion,
+                loaderLabel.strip(),
                 selectedDirectory.get().id(),
                 "img/grass.png",
+                loaderId != null,
+                getGlobalMaxMemoryMb(),
+                getGlobalResolution(),
                 false,
-                4096,
-                "854x480",
-                false,
-                "auto",
-                List.of(
-                        new HMCLDemoInstaller("game", "Game", "1.21.11"),
-                        new HMCLDemoInstaller("fabric", "Fabric", null),
-                        new HMCLDemoInstaller("forge", "Forge", null),
-                        new HMCLDemoInstaller("neoforge", "NeoForge", null),
-                        new HMCLDemoInstaller("quilt", "Quilt", null),
-                        new HMCLDemoInstaller("liteLoader", "LiteLoader", null),
-                        new HMCLDemoInstaller("optifine", "OptiFine", null)
-                ),
+                getSelectedJavaId(),
+                installers(gameVersion, loaderId, loaderVersion),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -1143,6 +1164,27 @@ public final class HMCLDemoState {
     /// @return the property
     public ObjectProperty<Color> themeColorProperty() {
         return themeColor;
+    }
+
+    /// Returns the Material component profile.
+    ///
+    /// @return the profile
+    public M3Profile getProfile() {
+        return profile.get();
+    }
+
+    /// Sets the Material component profile.
+    ///
+    /// @param value the profile
+    public void setProfile(M3Profile value) {
+        profile.set(value);
+    }
+
+    /// Returns the profile property.
+    ///
+    /// @return the property
+    public ObjectProperty<M3Profile> profileProperty() {
+        return profile;
     }
 
     /// Returns the brightness mode.
