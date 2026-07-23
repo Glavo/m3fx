@@ -5,9 +5,10 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
@@ -102,8 +103,8 @@ final class HMCLSettingsView extends BorderPane {
     private final M3ListItem feedbackItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CHAT, null);
     private final M3ListItem aboutItem = HMCLDemoUi.navItem("", HMCLDemoIcons.INFO, null);
 
-    /// The center content host.
-    private final StackPane contentHost = new StackPane();
+    /// The animated center content host.
+    private final M3AnimatedContent contentHost = new M3AnimatedContent();
 
     /// The active section.
     private Section section = Section.GENERAL;
@@ -130,6 +131,8 @@ final class HMCLSettingsView extends BorderPane {
         getStyleClass().add("hmcl-secondary-page");
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(contentHost);
+        contentHost.setFitToWidth(true);
+        contentHost.setContentTransform(HMCLDemoTransitions.sectionFade());
 
         globalGameItem.setOnAction(event -> showSection(Section.GLOBAL_GAME));
         javaItem.setOnAction(event -> showSection(Section.JAVA));
@@ -157,37 +160,37 @@ final class HMCLSettingsView extends BorderPane {
 
         state.globalMaxMemoryMbProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.GLOBAL_GAME) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.updateChannelProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.GENERAL) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.downloadSourceProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.DOWNLOAD) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.downloadThreadsProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.DOWNLOAD) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.brightnessProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.APPEARANCE) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.themeColorProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.APPEARANCE) {
-                renderSection();
+                renderSection(false);
             }
         });
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> {
             if (section == Section.APPEARANCE) {
-                renderSection();
+                renderSection(false);
             }
         });
 
@@ -207,13 +210,14 @@ final class HMCLSettingsView extends BorderPane {
         helpItem.setHeadlineText(strings.get("settings.nav.help"));
         feedbackItem.setHeadlineText(strings.get("settings.nav.feedback"));
         aboutItem.setHeadlineText(strings.get("settings.nav.about"));
-        renderSection();
+        renderSection(false);
     }
 
     /// Selects a settings section and updates navigation selection.
     ///
     /// @param next the section
     private void showSection(Section next) {
+        boolean changed = section != next;
         section = next;
         globalGameItem.setSelected(next == Section.GLOBAL_GAME);
         javaItem.setSelected(next == Section.JAVA);
@@ -223,12 +227,14 @@ final class HMCLSettingsView extends BorderPane {
         helpItem.setSelected(next == Section.HELP);
         feedbackItem.setSelected(next == Section.FEEDBACK);
         aboutItem.setSelected(next == Section.ABOUT);
-        renderSection();
+        renderSection(changed);
     }
 
     /// Rebuilds the center content for the active section.
-    private void renderSection() {
-        contentHost.getChildren().setAll(switch (section) {
+    ///
+    /// @param animate whether to animate the section replacement
+    private void renderSection(boolean animate) {
+        Node content = switch (section) {
             case GLOBAL_GAME -> globalGameContent();
             case JAVA -> javaContent();
             case GENERAL -> generalContent();
@@ -237,7 +243,14 @@ final class HMCLSettingsView extends BorderPane {
             case HELP -> placeholder(strings.get("settings.nav.help"), strings.get("settings.help.body"));
             case FEEDBACK -> placeholder(strings.get("settings.nav.feedback"), strings.get("settings.feedback.body"));
             case ABOUT -> placeholder(strings.get("settings.nav.about"), strings.get("settings.about.body"));
-        });
+        };
+        if (content instanceof Region region) {
+            HMCLDemoUi.fill(region);
+        }
+        contentHost.setContent(content);
+        if (!animate) {
+            contentHost.snapToCurrentState();
+        }
     }
 
     /// Creates the global game settings list.

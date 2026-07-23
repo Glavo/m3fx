@@ -13,9 +13,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
@@ -84,8 +85,8 @@ final class HMCLDownloadView extends BorderPane {
     private final M3ListItem shaderItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
     private final M3ListItem worldItem = HMCLDemoUi.navItem("", HMCLDemoIcons.WORLD, null);
 
-    /// The center host for list or installer mode.
-    private final StackPane centerHost = new StackPane();
+    /// The animated center host for list or installer mode.
+    private final M3AnimatedContent centerHost = new M3AnimatedContent();
 
     /// The currently selected category.
     private Category category = Category.GAME;
@@ -109,6 +110,8 @@ final class HMCLDownloadView extends BorderPane {
         getStyleClass().add("hmcl-secondary-page");
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(centerHost);
+        centerHost.setFitToWidth(true);
+        centerHost.setContentTransform(HMCLDemoTransitions.sectionFade());
         gameItem.setOnAction(event -> showCategory(Category.GAME));
         modpackItem.setOnAction(event -> showCategory(Category.MODPACK));
         modItem.setOnAction(event -> showCategory(Category.MOD));
@@ -132,17 +135,17 @@ final class HMCLDownloadView extends BorderPane {
         state.getFilteredMinecraftVersions().addListener(
                 (ListChangeListener<HMCLDemoMinecraftVersion>) change -> {
                     if (!installerOpen && category == Category.GAME) {
-                        renderCenter();
+                        renderCenter(false);
                     }
                 });
         state.getCatalogItems().addListener((ListChangeListener<HMCLDemoCatalogItem>) change -> {
             if (!installerOpen && category != Category.GAME) {
-                renderCenter();
+                renderCenter(false);
             }
         });
         state.catalogSearchQueryProperty().addListener((observable, oldValue, newValue) -> {
             if (!installerOpen && category != Category.GAME) {
-                renderCenter();
+                renderCenter(false);
             }
         });
         refreshLocale();
@@ -168,7 +171,7 @@ final class HMCLDownloadView extends BorderPane {
         }
         installerOpen = false;
         installingVersion = null;
-        renderCenter();
+        renderCenter(true);
         controller.refreshChrome();
         return true;
     }
@@ -183,13 +186,14 @@ final class HMCLDownloadView extends BorderPane {
         resourcePackItem.setHeadlineText(strings.get("download.nav.resource_pack"));
         shaderItem.setHeadlineText(strings.get("download.nav.shader"));
         worldItem.setHeadlineText(strings.get("download.nav.world"));
-        renderCenter();
+        renderCenter(false);
     }
 
     /// Selects a download category.
     ///
     /// @param next the category
     private void showCategory(Category next) {
+        boolean changed = category != next || installerOpen;
         category = next;
         installerOpen = false;
         installingVersion = null;
@@ -199,24 +203,34 @@ final class HMCLDownloadView extends BorderPane {
         resourcePackItem.setSelected(next == Category.RESOURCE_PACK);
         shaderItem.setSelected(next == Category.SHADER);
         worldItem.setSelected(next == Category.WORLD);
-        renderCenter();
+        renderCenter(changed);
         controller.refreshChrome();
     }
 
     /// Rebuilds the center pane for the current mode.
-    private void renderCenter() {
+    ///
+    /// @param animate whether to animate the center replacement
+    private void renderCenter(boolean animate) {
+        Node content;
         if (installerOpen && installingVersion != null) {
-            centerHost.getChildren().setAll(installerContent(installingVersion));
-            return;
+            content = installerContent(installingVersion);
+        } else {
+            content = switch (category) {
+                case GAME -> gameVersionContent();
+                case MODPACK -> catalogContent(HMCLDemoCatalogItem.Kind.MODPACK);
+                case MOD -> catalogContent(HMCLDemoCatalogItem.Kind.MOD);
+                case RESOURCE_PACK -> catalogContent(HMCLDemoCatalogItem.Kind.RESOURCE_PACK);
+                case SHADER -> catalogContent(HMCLDemoCatalogItem.Kind.SHADER);
+                case WORLD -> catalogContent(HMCLDemoCatalogItem.Kind.WORLD);
+            };
         }
-        centerHost.getChildren().setAll(switch (category) {
-            case GAME -> gameVersionContent();
-            case MODPACK -> catalogContent(HMCLDemoCatalogItem.Kind.MODPACK);
-            case MOD -> catalogContent(HMCLDemoCatalogItem.Kind.MOD);
-            case RESOURCE_PACK -> catalogContent(HMCLDemoCatalogItem.Kind.RESOURCE_PACK);
-            case SHADER -> catalogContent(HMCLDemoCatalogItem.Kind.SHADER);
-            case WORLD -> catalogContent(HMCLDemoCatalogItem.Kind.WORLD);
-        });
+        if (content instanceof Region region) {
+            HMCLDemoUi.fill(region);
+        }
+        centerHost.setContent(content);
+        if (!animate) {
+            centerHost.snapToCurrentState();
+        }
     }
 
     /// Creates the searchable Minecraft version list.
@@ -339,7 +353,7 @@ final class HMCLDownloadView extends BorderPane {
     private void openInstaller(HMCLDemoMinecraftVersion version) {
         installingVersion = version;
         installerOpen = true;
-        renderCenter();
+        renderCenter(true);
         controller.refreshChrome();
     }
 
@@ -400,7 +414,7 @@ final class HMCLDownloadView extends BorderPane {
             controller.showMessageKey("snackbar.installed", title);
             installerOpen = false;
             installingVersion = null;
-            renderCenter();
+            renderCenter(true);
             controller.refreshChrome();
         });
     }

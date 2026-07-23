@@ -9,8 +9,10 @@ import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
@@ -110,8 +112,8 @@ final class HMCLInstanceDetailView extends BorderPane {
     /// The manage bottom action.
     private final M3ListItem manageItem = HMCLDemoUi.navItem("", HMCLDemoIcons.MANAGE, null);
 
-    /// The center content host.
-    private final StackPane contentHost = new StackPane();
+    /// The animated center content host.
+    private final M3AnimatedContent contentHost = new M3AnimatedContent();
 
     /// Local mods search query used by the mods section.
     private String modsQuery = "";
@@ -135,6 +137,8 @@ final class HMCLInstanceDetailView extends BorderPane {
         getStyleClass().add("hmcl-secondary-page");
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(contentHost);
+        contentHost.setFitToWidth(true);
+        contentHost.setContentTransform(HMCLDemoTransitions.sectionFade());
         settingsItem.setOnAction(event -> showSection(Section.SETTINGS));
         installersItem.setOnAction(event -> showSection(Section.INSTALLERS));
         modsItem.setOnAction(event -> showSection(Section.MODS));
@@ -166,7 +170,7 @@ final class HMCLInstanceDetailView extends BorderPane {
 
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null && newValue.id().equals(instanceId)) {
-                renderSection();
+                renderSection(false);
             }
         });
         refreshLocale();
@@ -179,7 +183,7 @@ final class HMCLInstanceDetailView extends BorderPane {
     void showInstance(String id) {
         instanceId = id;
         state.selectInstance(id);
-        renderSection();
+        renderSection(false);
     }
 
     /// Updates static labels.
@@ -195,13 +199,14 @@ final class HMCLInstanceDetailView extends BorderPane {
         testItem.setHeadlineText(strings.get("instance.action.test"));
         folderItem.setHeadlineText(strings.get("instance.action.folder"));
         manageItem.setHeadlineText(strings.get("instance.action.manage"));
-        renderSection();
+        renderSection(false);
     }
 
     /// Selects a left-pane section.
     ///
     /// @param next the section to show
     private void showSection(Section next) {
+        boolean changed = section != next;
         section = next;
         settingsItem.setSelected(next == Section.SETTINGS);
         installersItem.setSelected(next == Section.INSTALLERS);
@@ -210,26 +215,35 @@ final class HMCLInstanceDetailView extends BorderPane {
         worldsItem.setSelected(next == Section.WORLDS);
         shadersItem.setSelected(next == Section.SHADERS);
         schematicsItem.setSelected(next == Section.SCHEMATICS);
-        renderSection();
+        renderSection(changed);
     }
 
     /// Rebuilds the center content for the active section and instance.
-    private void renderSection() {
+    ///
+    /// @param animate whether to animate the section replacement
+    private void renderSection(boolean animate) {
         @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
+        Node content;
         if (instance == null || (instanceId != null && !instance.id().equals(instanceId))) {
-            contentHost.getChildren().setAll(emptyState());
-            return;
+            content = emptyState();
+        } else {
+            content = switch (section) {
+                case SETTINGS -> settingsContent(instance);
+                case INSTALLERS -> installersContent(instance);
+                case MODS -> modsContent(instance);
+                case RESOURCE_PACKS -> resourcePacksContent(instance);
+                case WORLDS -> worldsContent(instance);
+                case SHADERS -> shadersContent(instance);
+                case SCHEMATICS -> schematicsContent(instance);
+            };
         }
-        Node content = switch (section) {
-            case SETTINGS -> settingsContent(instance);
-            case INSTALLERS -> installersContent(instance);
-            case MODS -> modsContent(instance);
-            case RESOURCE_PACKS -> resourcePacksContent(instance);
-            case WORLDS -> worldsContent(instance);
-            case SHADERS -> shadersContent(instance);
-            case SCHEMATICS -> schematicsContent(instance);
-        };
-        contentHost.getChildren().setAll(content);
+        if (content instanceof Region region) {
+            HMCLDemoUi.fill(region);
+        }
+        contentHost.setContent(content);
+        if (!animate) {
+            contentHost.snapToCurrentState();
+        }
     }
 
     /// Creates the version-settings form.
@@ -654,7 +668,7 @@ final class HMCLInstanceDetailView extends BorderPane {
                 if (copied != null) {
                     instanceId = copied.id();
                     controller.showMessageKey("snackbar.instance_copied", copied.name());
-                    renderSection();
+                    renderSection(false);
                 }
             } else if (event.getAction() == delete) {
                 String name = instance.name();

@@ -28,6 +28,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -75,8 +76,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Wallpaper region behind the decorator frame.
     private final Region wallpaper = new Region();
 
-    /// Page host in the decorator center slot.
-    private final StackPane routeHost = new StackPane();
+    /// Animated page host in the decorator center slot.
+    private final M3AnimatedContent pageHost = new M3AnimatedContent();
 
     /// HMCL-style title bar container.
     private final StackPane titleContainer = new StackPane();
@@ -170,12 +171,14 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
         configureTitleBar();
 
-        HMCLDemoUi.fill(routeHost);
-        routeHost.getStyleClass().add("hmcl-route-host");
-        VBox.setVgrow(routeHost, Priority.ALWAYS);
+        HMCLDemoUi.fill(pageHost);
+        pageHost.getStyleClass().add("hmcl-route-host");
+        pageHost.setFitToWidth(true);
+        pageHost.setContentTransform(HMCLDemoTransitions.forward());
+        VBox.setVgrow(pageHost, Priority.ALWAYS);
 
         // Title is a non-growing sibling; content alone absorbs remaining height.
-        VBox frame = new VBox(titleContainer, routeHost);
+        VBox frame = new VBox(titleContainer, pageHost);
         frame.getStyleClass().add("hmcl-window-frame");
         HMCLDemoUi.fill(frame);
 
@@ -193,7 +196,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             updateTitleBar();
         });
         updateWallpaper();
-        showRoute(currentRoute, false);
+        showRoute(currentRoute, NavigationKind.IMMEDIATE);
     }
 
     /// Shell minimum size follows HMCL content metrics, never the active page list height.
@@ -227,8 +230,12 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     @Override
     public void goHome() {
+        if (currentRoute instanceof HMCLDemoRoute.Home) {
+            backStack.clear();
+            return;
+        }
         backStack.clear();
-        showRoute(new HMCLDemoRoute.Home(), false);
+        showRoute(new HMCLDemoRoute.Home(), NavigationKind.BACKWARD);
     }
 
     @Override
@@ -281,7 +288,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             goHome();
             return;
         }
-        showRoute(backStack.pop(), false);
+        showRoute(backStack.pop(), NavigationKind.BACKWARD);
     }
 
     @Override
@@ -314,7 +321,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         updateTitleBar();
     }
 
-    /// Pushes the current route and shows `route`.
+    /// Pushes the current route and shows `route` with a forward transition.
     ///
     /// @param route the destination route
     private void navigate(HMCLDemoRoute route) {
@@ -322,24 +329,44 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             return;
         }
         backStack.push(currentRoute);
-        showRoute(route, true);
+        showRoute(route, NavigationKind.FORWARD);
     }
 
-    /// Displays `route` in the retained page host.
+    /// Displays `route` in the animated page host.
     ///
     /// @param route the route to show
-    /// @param fromNavigation whether the call originated from a forward navigation
-    private void showRoute(HMCLDemoRoute route, boolean fromNavigation) {
+    /// @param navigation the transition direction
+    private void showRoute(HMCLDemoRoute route, NavigationKind navigation) {
         currentRoute = route;
         if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
             state.selectInstance(instanceRoute.instanceId());
         }
         Node page = pageFor(route);
-        routeHost.getChildren().setAll(page);
+        switch (navigation) {
+            case FORWARD -> pageHost.setContentTransform(HMCLDemoTransitions.forward());
+            case BACKWARD -> pageHost.setContentTransform(HMCLDemoTransitions.backward());
+            case IMMEDIATE -> pageHost.setContentTransform(HMCLDemoTransitions.sectionFade());
+        }
+        pageHost.setContent(page);
+        if (navigation == NavigationKind.IMMEDIATE) {
+            pageHost.snapToCurrentState();
+        }
         updateTitleBar();
-        if (!fromNavigation && route instanceof HMCLDemoRoute.Home) {
+        if (route instanceof HMCLDemoRoute.Home && navigation != NavigationKind.FORWARD) {
             backStack.clear();
         }
+    }
+
+    /// Identifies how a route replacement should animate.
+    private enum NavigationKind {
+        /// Forward stack push.
+        FORWARD,
+
+        /// Back stack pop or explicit home return.
+        BACKWARD,
+
+        /// Initial presentation without motion.
+        IMMEDIATE
     }
 
     /// Returns the retained page node for `route`.

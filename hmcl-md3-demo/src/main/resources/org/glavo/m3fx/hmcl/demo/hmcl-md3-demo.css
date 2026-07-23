@@ -23,7 +23,8 @@
     -fx-background-color: transparent;
 }
 
-.hmcl-route-host {
+.hmcl-route-host,
+.hmcl-route-host .m3-animated-content-item {
     -fx-background-color: transparent;
 }
 
