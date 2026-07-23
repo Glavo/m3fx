@@ -1004,7 +1004,9 @@ public final class M3SnackbarPresenter extends Control {
                 return;
             }
             node.setOpacity(interpolate(startOpacity, targetOpacity, fraction));
-            node.setTranslateY(interpolate(startTranslateY, targetTranslateY, fraction));
+            node.setTranslateY(M3SnackbarPresenter.this.snapPositionY(
+                    interpolate(startTranslateY, targetTranslateY, fraction)
+            ));
         }
 
         /// Interpolates one primitive channel.

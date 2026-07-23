@@ -16,17 +16,23 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -336,6 +342,108 @@ final class M3SnackbarPresentationTest {
             assertTrue(rightToLeftAction.getMaxX() < rightToLeftText.getMinX());
             assertTrue(rightToLeftClose.getMaxX() <= rightToLeftAction.getMinX());
         });
+    }
+
+    /// Verifies that entrance motion remains pixel aligned and text geometry stays stable after settlement.
+    @Test
+    void entranceMotionSnapsToOutputPixelsAndSettlesTextGeometry() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> surfaceReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> textReference = new AtomicReference<>();
+        AtomicBoolean observedIntermediateOffset = new AtomicBoolean();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        Region surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                        double translateY = surface.getTranslateY();
+                        double scaledTranslateY = translateY * stage.getOutputScaleY();
+                        assertEquals(
+                                Math.rint(scaledTranslateY),
+                                scaledTranslateY,
+                                1.0e-6,
+                                "snackbar translation must align to a physical output pixel"
+                        );
+                        if (Math.abs(translateY) > 1.0e-6 && Math.abs(translateY - 16.0) > 1.0e-6) {
+                            observedIntermediateOffset.set(true);
+                        }
+                        return observedIntermediateOffset.get()
+                                && Math.abs(translateY) <= 1.0e-6
+                                && Math.abs(surface.getOpacity() - 1.0) <= 1.0e-6;
+                    },
+                    () -> {
+                        M3OverlayPane overlayPane = overlayPane();
+                        M3MotionSpec motionSpec =
+                                M3MotionSpec.of(Duration.millis(400.0), M3MotionEasing.LINEAR);
+                        FxTestUtils.setMotionScheme(
+                                overlayPane,
+                                M3MotionScheme.builder(M3MotionScheme.standard())
+                                        .fastSpatial(motionSpec)
+                                        .build()
+                        );
+                        overlayPane.setContent(new Pane());
+
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(overlayPane, 640.0, 240.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        overlayPane.applyCss();
+                        overlayPane.layout();
+
+                        overlayPane.showSnackbar(new M3Snackbar("Stable snackbar text"));
+                        overlayPane.applyCss();
+                        overlayPane.layout();
+                        Node presenter = snackbarPresenter(overlayPane);
+
+                        stageReference.set(stage);
+                        overlayReference.set(overlayPane);
+                        surfaceReference.set(snackbarSurface(presenter));
+                        textReference.set(assertInstanceOf(Label.class, presenter.lookup(".m3-snackbar-text")));
+                    },
+                    () -> {
+                        assertTrue(observedIntermediateOffset.get(), "the test must observe an entrance frame");
+                        assertTrue(Objects.requireNonNull(overlayReference.get(), "overlay").isSnackbarShowing());
+                    }
+            );
+
+            AtomicReference<@Nullable Bounds> settledBoundsReference = new AtomicReference<>();
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Label text = Objects.requireNonNull(textReference.get(), "text");
+                        Bounds currentBounds = text.localToScene(text.getBoundsInLocal());
+                        @Nullable Bounds settledBounds = settledBoundsReference.get();
+                        if (settledBounds == null) {
+                            settledBoundsReference.set(currentBounds);
+                        } else {
+                            assertEquals(settledBounds.getMinX(), currentBounds.getMinX(), 0.0);
+                            assertEquals(settledBounds.getMinY(), currentBounds.getMinY(), 0.0);
+                            assertEquals(settledBounds.getWidth(), currentBounds.getWidth(), 0.0);
+                            assertEquals(settledBounds.getHeight(), currentBounds.getHeight(), 0.0);
+                        }
+                        Region surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                        return Math.abs(surface.getTranslateY()) <= 1.0e-6
+                                && Math.abs(surface.getOpacity() - 1.0) <= 1.0e-6;
+                    },
+                    8,
+                    () -> {
+                    },
+                    () -> assertFalse(Objects.requireNonNull(surfaceReference.get(), "surface").isNeedsLayout())
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3OverlayPane overlayPane = overlayReference.get();
+                if (overlayPane != null) {
+                    FxTestUtils.clearMotionScheme(overlayPane);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Creates an overlay pane with automatic dismissal disabled.
