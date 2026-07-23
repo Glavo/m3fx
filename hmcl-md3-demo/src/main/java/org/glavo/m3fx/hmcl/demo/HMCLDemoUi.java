@@ -60,7 +60,9 @@ final class HMCLDemoUi {
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
         scrollPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        // Styling and smooth wheel motion are separate M3FX opt-ins.
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         HBox.setHgrow(scrollPane, Priority.ALWAYS);
         return scrollPane;
