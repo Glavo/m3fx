@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
@@ -20,6 +22,7 @@ import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.glavo.m3fx.controls.M3Text;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Locale;
@@ -291,8 +294,21 @@ final class HMCLSettingsView extends BorderPane {
 
     /// Rebuilds the center content for the active section.
     ///
+    /// When the same section is refreshed after a setting mutation, the previous scroll offsets are restored so a
+    /// mid-page click does not jump back to the top.
+    ///
     /// @param animate whether to animate the section replacement
     private void renderSection(boolean animate) {
+        double previousV = 0.0;
+        double previousH = 0.0;
+        boolean restoreScroll = false;
+        @Nullable Node previousContent = contentHost.getContent();
+        if (!animate && previousContent instanceof ScrollPane previousScroll) {
+            previousV = previousScroll.getVvalue();
+            previousH = previousScroll.getHvalue();
+            restoreScroll = true;
+        }
+
         Node content = switch (section) {
             case GLOBAL_GAME -> globalGameContent();
             case JAVA -> javaContent();
@@ -309,6 +325,19 @@ final class HMCLSettingsView extends BorderPane {
         contentHost.setContent(content);
         if (!animate) {
             contentHost.snapToCurrentState();
+        }
+        if (restoreScroll && content instanceof ScrollPane scrollPane) {
+            double v = previousV;
+            double h = previousH;
+            // Apply after layout so vmax/hmax are valid for the rebuilt content.
+            scrollPane.setVvalue(v);
+            scrollPane.setHvalue(h);
+            Platform.runLater(() -> {
+                scrollPane.applyCss();
+                scrollPane.layout();
+                scrollPane.setVvalue(v);
+                scrollPane.setHvalue(h);
+            });
         }
     }
 
