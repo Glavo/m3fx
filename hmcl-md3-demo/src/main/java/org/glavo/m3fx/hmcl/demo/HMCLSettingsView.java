@@ -165,6 +165,7 @@ final class HMCLSettingsView extends BorderPane {
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(contentHost);
         contentHost.setFitToWidth(true);
+        contentHost.setFitToHeight(true);
         contentHost.setContentTransform(HMCLDemoTransitions.sectionFade());
 
         globalGameItem.setOnAction(event -> showSection(Section.GLOBAL_GAME));

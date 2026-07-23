@@ -105,9 +105,10 @@ final class HMCLHomeView extends BorderPane {
         StackPane.setAlignment(launchPane, Pos.BOTTOM_RIGHT);
         center.getChildren().setAll(announcementCard, launchPane);
 
-        sidebar.setMinHeight(0.0);
         setLeft(sidebar);
         setCenter(center);
+        // BorderPane left children default to their pref height; force stretch.
+        BorderPane.setMargin(sidebar, Insets.EMPTY);
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> refreshAccount());
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> refreshInstance());
@@ -143,7 +144,12 @@ final class HMCLHomeView extends BorderPane {
         sidebar.setPrefWidth(HMCLDemoUi.SIDEBAR_WIDTH);
         sidebar.setMinWidth(HMCLDemoUi.SIDEBAR_WIDTH);
         sidebar.setMaxWidth(HMCLDemoUi.SIDEBAR_WIDTH);
+        sidebar.setMinHeight(0.0);
+        sidebar.setPrefHeight(Region.USE_COMPUTED_SIZE);
+        sidebar.setMaxHeight(Double.MAX_VALUE);
+        sidebar.setFillWidth(true);
         sidebar.setPadding(new Insets(12.0, 0.0, 0.0, 0.0));
+        BorderPane.setAlignment(sidebar, Pos.TOP_LEFT);
 
         styleNav(accountItem);
         styleNav(currentInstanceItem);

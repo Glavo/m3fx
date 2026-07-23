@@ -130,6 +130,9 @@ public final class M3AnimatedContent extends Region {
     /// The width used by the latest fit-to-width target measurement, or `NaN` when unconstrained.
     private double measuredFitWidth = Double.NaN;
 
+    /// The height used by the latest fit-to-height target measurement, or `NaN` when unconstrained.
+    private double measuredFitHeight = Double.NaN;
+
     /// Whether an initial content size has been established.
     private boolean sizeInitialized = true;
 
@@ -212,6 +215,48 @@ public final class M3AnimatedContent extends Region {
     /// @return the fit-to-width property
     public BooleanProperty fitToWidthProperty() {
         return fitToWidth;
+    }
+
+    /// Whether current and incoming content are measured and laid out at this region's assigned height.
+    ///
+    /// When `false`, the default, this region measures content at its independent preferred height and positions the
+    /// retained holder at that size. When `true`, a positive assigned height constrains the holder and its content,
+    /// allowing full-bleed page roots such as sidebars in a [javafx.scene.layout.BorderPane] to stretch with the
+    /// host. Pair with [#fitToWidthProperty()] when the animated content is the sole child of a stretched shell slot.
+    private final BooleanProperty fitToHeight = new SimpleBooleanProperty(this, "fitToHeight", false) {
+        /// Re-measures the current target after the holder's height constraint changes.
+        @Override
+        protected void invalidated() {
+            measuredFitHeight = Double.NaN;
+            measurementPending = true;
+            requestLayout();
+        }
+    };
+
+    /// Returns whether content is fitted to this region's assigned height.
+    ///
+    /// @return `true` when the current and incoming holders use the assigned height while it is positive
+    public boolean isFitToHeight() {
+        return fitToHeight.get();
+    }
+
+    /// Sets whether content is fitted to this region's assigned height.
+    ///
+    /// Changing this value requests a target remeasurement. It does not alter the configured enter, exit, or size
+    /// transform and may retarget an active size transition when the measured width changes.
+    ///
+    /// @param fitToHeight whether the assigned height constrains retained content
+    public void setFitToHeight(boolean fitToHeight) {
+        this.fitToHeight.set(fitToHeight);
+    }
+
+    /// Returns the observable fit-to-height property.
+    ///
+    /// The default value is `false`.
+    ///
+    /// @return the fit-to-height property
+    public BooleanProperty fitToHeightProperty() {
+        return fitToHeight;
     }
 
     /// The alignment shared by current and outgoing content within this region.
@@ -415,6 +460,9 @@ public final class M3AnimatedContent extends Region {
     /// Returns the animated minimum height including snapped insets.
     @Override
     protected double computeMinHeight(double width) {
+        if (isFitToHeight()) {
+            return verticalInsets();
+        }
         return verticalInsets() + Math.max(0.0, animatedContentHeight);
     }
 
@@ -430,6 +478,9 @@ public final class M3AnimatedContent extends Region {
     /// Returns the animated preferred height including snapped insets.
     @Override
     protected double computePrefHeight(double width) {
+        if (isFitToHeight()) {
+            return verticalInsets();
+        }
         return verticalInsets() + Math.max(0.0, animatedContentHeight);
     }
 
@@ -452,10 +503,13 @@ public final class M3AnimatedContent extends Region {
         double top = snappedTopInset();
         double width = Math.max(0.0, getWidth() - left - snappedRightInset());
         double height = Math.max(0.0, getHeight() - top - snappedBottomInset());
-        if (isFitToWidth()
-                && currentState != null
+        if (currentState != null
+                && ((isFitToWidth()
                 && (Double.isNaN(measuredFitWidth)
-                || Math.abs(measuredFitWidth - width) > SIZE_VISIBILITY_THRESHOLD)) {
+                || Math.abs(measuredFitWidth - width) > SIZE_VISIBILITY_THRESHOLD))
+                || (isFitToHeight()
+                && (Double.isNaN(measuredFitHeight)
+                || Math.abs(measuredFitHeight - height) > SIZE_VISIBILITY_THRESHOLD)))) {
             measurementPending = true;
         }
         if (measurementPending) {
@@ -536,7 +590,7 @@ public final class M3AnimatedContent extends Region {
         }
     }
 
-    /// Measures the target holder at its independent preferred size or current fit-to-width constraint.
+    /// Measures the target holder at its independent preferred size or current fit constraints.
     private void measureTargetContent() {
         measurementPending = false;
         @Nullable HolderState current = currentState;
@@ -544,23 +598,31 @@ public final class M3AnimatedContent extends Region {
             targetContentWidth = 0.0;
             targetContentHeight = 0.0;
             measuredFitWidth = Double.NaN;
+            measuredFitHeight = Double.NaN;
             return;
         }
 
         boolean constrainedToWidth = isFitToWidth() && getWidth() > 0.0;
+        boolean constrainedToHeight = isFitToHeight() && getHeight() > 0.0;
         measuring = true;
         try {
             current.holder.applyCss();
             double width = constrainedToWidth
                     ? Math.max(0.0, getWidth() - snappedLeftInset() - snappedRightInset())
                     : finiteSize(current.holder.prefWidth(-1.0));
-            double height = finiteSize(current.holder.prefHeight(width));
+            double height = constrainedToHeight
+                    ? Math.max(0.0, getHeight() - snappedTopInset() - snappedBottomInset())
+                    : finiteSize(current.holder.prefHeight(width));
+            if (!constrainedToWidth && constrainedToHeight) {
+                width = finiteSize(current.holder.prefWidth(height));
+            }
             current.holder.resize(width, height);
             current.holder.layout();
             current.updateClipGeometry();
             targetContentWidth = width;
             targetContentHeight = height;
             measuredFitWidth = constrainedToWidth ? width : Double.NaN;
+            measuredFitHeight = constrainedToHeight ? height : Double.NaN;
         } finally {
             measuring = false;
         }

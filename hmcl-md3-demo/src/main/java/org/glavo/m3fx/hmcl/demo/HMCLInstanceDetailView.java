@@ -138,6 +138,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(contentHost);
         contentHost.setFitToWidth(true);
+        contentHost.setFitToHeight(true);
         contentHost.setContentTransform(HMCLDemoTransitions.sectionFade());
         settingsItem.setOnAction(event -> showSection(Section.SETTINGS));
         installersItem.setOnAction(event -> showSection(Section.INSTALLERS));

@@ -174,6 +174,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         HMCLDemoUi.fill(pageHost);
         pageHost.getStyleClass().add("hmcl-route-host");
         pageHost.setFitToWidth(true);
+        pageHost.setFitToHeight(true);
         pageHost.setContentTransform(HMCLDemoTransitions.forward());
         VBox.setVgrow(pageHost, Priority.ALWAYS);
 

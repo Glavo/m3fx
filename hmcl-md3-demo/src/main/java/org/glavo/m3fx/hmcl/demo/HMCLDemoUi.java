@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -11,6 +12,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ScrollPanes;
@@ -228,5 +230,68 @@ final class HMCLDemoUi {
             region.setMaxHeight(Double.MAX_VALUE);
         }
         return scroll(list);
+    }
+
+    /// Wraps page content so [org.glavo.m3fx.animation.M3AnimatedContent] stretches it to the host size.
+    ///
+    /// `M3AnimatedContent` sizes children to their preferred height. Pages with sidebars must claim the full host
+    /// height; otherwise left panes only cover the content intrinsic height.
+    ///
+    /// @param content the page root
+    /// @param hostWidth the animated host width
+    /// @param hostHeight the animated host height
+    /// @return a fill wrapper
+    static Region fillHost(Node content, ReadOnlyDoubleProperty hostWidth, ReadOnlyDoubleProperty hostHeight) {
+        return new PageFillHost(content, hostWidth, hostHeight);
+    }
+
+    /// Stack pane that reports the animated host size as its preferred size.
+    private static final class PageFillHost extends StackPane {
+        /// Width of the surrounding animated content host.
+        private final ReadOnlyDoubleProperty hostWidth;
+
+        /// Height of the surrounding animated content host.
+        private final ReadOnlyDoubleProperty hostHeight;
+
+        /// Creates a fill host around page content.
+        ///
+        /// @param content the page root
+        /// @param hostWidth the host width
+        /// @param hostHeight the host height
+        PageFillHost(Node content, ReadOnlyDoubleProperty hostWidth, ReadOnlyDoubleProperty hostHeight) {
+            this.hostWidth = hostWidth;
+            this.hostHeight = hostHeight;
+            getStyleClass().add("hmcl-page-fill-host");
+            setMinSize(0.0, 0.0);
+            setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            if (content instanceof Region region) {
+                fill(region);
+            }
+            getChildren().setAll(content);
+            hostWidth.addListener((observable, oldValue, newValue) -> requestLayout());
+            hostHeight.addListener((observable, oldValue, newValue) -> requestLayout());
+        }
+
+        @Override
+        protected double computeMinWidth(double height) {
+            return 0.0;
+        }
+
+        @Override
+        protected double computeMinHeight(double width) {
+            return 0.0;
+        }
+
+        @Override
+        protected double computePrefWidth(double height) {
+            double width = hostWidth.get();
+            return width > 0.0 ? width : super.computePrefWidth(height);
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            double height = hostHeight.get();
+            return height > 0.0 ? height : super.computePrefHeight(width);
+        }
     }
 }

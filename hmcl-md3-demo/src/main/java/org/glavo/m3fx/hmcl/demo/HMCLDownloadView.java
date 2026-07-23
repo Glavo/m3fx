@@ -111,6 +111,7 @@ final class HMCLDownloadView extends BorderPane {
         HMCLDemoUi.fill(this);
         HMCLDemoUi.fill(centerHost);
         centerHost.setFitToWidth(true);
+        centerHost.setFitToHeight(true);
         centerHost.setContentTransform(HMCLDemoTransitions.sectionFade());
         gameItem.setOnAction(event -> showCategory(Category.GAME));
         modpackItem.setOnAction(event -> showCategory(Category.MODPACK));
