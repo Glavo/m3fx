@@ -98,13 +98,14 @@ final class HMCLHomeView extends BorderPane {
         configureAnnouncement();
         configureLaunchPane();
 
-        StackPane center = new StackPane();
+        StackPane center = HMCLDemoUi.fill(new StackPane());
         center.getStyleClass().add("hmcl-home-center");
         center.setPadding(new Insets(20.0));
         StackPane.setAlignment(announcementCard, Pos.TOP_CENTER);
         StackPane.setAlignment(launchPane, Pos.BOTTOM_RIGHT);
         center.getChildren().setAll(announcementCard, launchPane);
 
+        sidebar.setMinHeight(0.0);
         setLeft(sidebar);
         setCenter(center);
 

@@ -4,13 +4,16 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
@@ -18,6 +21,8 @@ import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3Text;
+import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +44,10 @@ final class HMCLInstancesView extends BorderPane {
     /// The left directory list host.
     private final VBox directoryList = new VBox(4.0);
 
-    /// The new-game action.
+    /// The new-directory action.
+    private final M3ListItem newDirectoryItem = HMCLDemoUi.navItem("", HMCLDemoIcons.FOLDER, null);
+
+    /// The install-new-game action.
     private final M3ListItem newGameItem = HMCLDemoUi.navItem("", HMCLDemoIcons.ADD, null);
 
     /// The import-modpack action.
@@ -76,10 +84,8 @@ final class HMCLInstancesView extends BorderPane {
         instanceList.setSelectionMode(M3SelectionMode.SINGLE);
         instanceList.getStyleClass().add("hmcl-dense-list");
 
-        newGameItem.setOnAction(event -> {
-            state.addDemoInstance();
-            controller.showMessageKey("snackbar.instance_added");
-        });
+        newDirectoryItem.setOnAction(event -> showNewDirectoryDialog());
+        newGameItem.setOnAction(event -> controller.openDownload());
         importItem.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
         globalSettingsItem.setOnAction(event -> controller.openSettings());
         refreshButton.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
@@ -93,6 +99,7 @@ final class HMCLInstancesView extends BorderPane {
                 directoriesSection,
                 directoryList,
                 HMCLDemoUi.vgrow(),
+                newDirectoryItem,
                 newGameItem,
                 importItem,
                 globalSettingsItem
@@ -128,6 +135,7 @@ final class HMCLInstancesView extends BorderPane {
     /// Updates static labels.
     void refreshLocale() {
         directoriesSection.setText(strings.get("instances.section.directories"));
+        newDirectoryItem.setHeadlineText(strings.get("instances.new_directory"));
         newGameItem.setHeadlineText(strings.get("instances.new_game"));
         importItem.setHeadlineText(strings.get("instances.import"));
         globalSettingsItem.setHeadlineText(strings.get("instances.global_settings"));
@@ -159,7 +167,7 @@ final class HMCLInstancesView extends BorderPane {
         instanceList.getItems().clear();
         @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
         for (HMCLDemoInstance instance : state.getFilteredInstances()) {
-            M3IconButton manage = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.SETTINGS));
+            M3IconButton manage = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.MANAGE));
             manage.setAccessibleText(strings.get("instances.manage"));
             manage.setOnAction(event -> controller.openInstance(instance.id()));
 
@@ -174,12 +182,47 @@ final class HMCLInstancesView extends BorderPane {
 
             M3ListItem row = new M3ListItem(instance.name());
             row.getStyleClass().add("hmcl-instance-row");
-            row.setSupportingText(instance.gameVersion() + "  " + instance.loader());
+            row.setSupportingText(instance.gameVersion() + " · " + instance.loader());
             row.setLeading(HMCLDemoUi.instanceIcon(instance, 32.0));
             row.setTrailing(trailing);
             row.setSelected(instance.equals(selected));
             row.setOnAction(event -> state.selectInstance(instance.id()));
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                    controller.openInstance(instance.id());
+                }
+            });
             instanceList.getItems().add(row);
         }
+    }
+
+    /// Shows a dialog that creates and selects a new game directory.
+    private void showNewDirectoryDialog() {
+        M3TextField field = new M3TextField(strings.get("instances.directory.default_name"));
+        M3TextInputLayout layout = new M3TextInputLayout(field);
+        layout.setLabelText(strings.get("instances.directory.name"));
+        layout.setPadding(new Insets(4.0, 0.0, 0.0, 0.0));
+
+        M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
+        cancel.setCancelButton(true);
+        M3Button create = new M3Button(strings.get("common.apply"), M3ButtonVariant.TEXT);
+        create.setDefaultButton(true);
+
+        M3Dialog dialog = new M3Dialog();
+        dialog.getDialogPane().setHeaderText(strings.get("instances.new_directory"));
+        dialog.getDialogPane().setContent(layout);
+        dialog.getDialogPane().getActions().setAll(cancel, create);
+        dialog.setOnHidden(event -> {
+            if (event.getAction() != create) {
+                return;
+            }
+            String name = field.getText().strip();
+            if (name.isEmpty()) {
+                return;
+            }
+            HMCLDemoGameDirectory directory = state.addDirectory(name);
+            controller.showMessageKey("snackbar.directory_added", directory.name());
+        });
+        controller.overlay().showDialog(dialog);
     }
 }

@@ -5,15 +5,19 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListPane;
+import org.glavo.m3fx.controls.M3ListStyle;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
@@ -45,20 +49,14 @@ final class HMCLMultiplayerView extends BorderPane {
     /// The launch-current-instance row.
     private final M3ListItem launchItem = new M3ListItem();
 
-    /// The status card title.
-    private final M3Text statusTitle = new M3Text("", M3TextRole.TITLE_LARGE);
+    /// Hosts the phase-dependent status card.
+    private final StackPane cardHost = new StackPane();
 
-    /// The status card body.
-    private final M3Text statusBody = new M3Text("", M3TextRole.BODY_MEDIUM);
+    /// The room-code editor used while waiting to join.
+    private final M3TextField roomCodeField = new M3TextField();
 
-    /// The room-code field.
-    private final M3TextInputLayout roomCode = new M3TextInputLayout(new M3TextField());
-
-    /// The create-room action.
-    private final M3Button createRoom = new M3Button("", M3ButtonVariant.FILLED);
-
-    /// The join-room action.
-    private final M3Button joinRoom = new M3Button("", M3ButtonVariant.TONAL);
+    /// The room-code input layout.
+    private final M3TextInputLayout roomCodeLayout = new M3TextInputLayout(roomCodeField);
 
     /// Creates the multiplayer page.
     ///
@@ -72,13 +70,13 @@ final class HMCLMultiplayerView extends BorderPane {
 
         getStyleClass().add("hmcl-secondary-page");
         HMCLDemoUi.fill(this);
+        HMCLDemoUi.fill(cardHost);
         statusItem.setSelected(true);
+
         accountItem.getStyleClass().add("hmcl-sidebar-item");
         accountItem.setOnAction(event -> controller.openAccounts());
         launchItem.getStyleClass().add("hmcl-sidebar-item");
         launchItem.setOnAction(event -> controller.launchSelected());
-        createRoom.setOnAction(event -> controller.showMessageKey("snackbar.multiplayer_create"));
-        joinRoom.setOnAction(event -> controller.showMessageKey("snackbar.multiplayer_join"));
 
         VBox sidebar = HMCLDemoUi.sidebar(
                 statusSection,
@@ -89,18 +87,18 @@ final class HMCLMultiplayerView extends BorderPane {
         );
         setLeft(sidebar);
 
-        statusBody.setWrapText(true);
-        HBox actions = new HBox(12.0, createRoom, joinRoom);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        VBox cardContent = new VBox(16.0, statusTitle, statusBody, roomCode, actions);
-        cardContent.setPadding(new Insets(8.0));
-        M3Card card = new M3Card(cardContent, M3CardVariant.ELEVATED);
-        card.setMaxWidth(560.0);
-        VBox center = HMCLDemoUi.contentColumn(card);
+        VBox center = HMCLDemoUi.contentColumn(cardHost);
         setCenter(HMCLDemoUi.scroll(center));
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> refreshDynamic());
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> refreshDynamic());
+        state.multiplayerPhaseProperty().addListener((observable, oldValue, newValue) -> renderCard());
+        state.multiplayerRoomCodeProperty().addListener((observable, oldValue, newValue) -> {
+            if (state.getMultiplayerPhase() != HMCLDemoState.MultiplayerPhase.WAITING) {
+                renderCard();
+            }
+        });
+
         refreshLocale();
     }
 
@@ -108,12 +106,9 @@ final class HMCLMultiplayerView extends BorderPane {
     void refreshLocale() {
         statusSection.setText(strings.get("multiplayer.section.status"));
         statusItem.setHeadlineText(strings.get("multiplayer.nav.status"));
-        statusTitle.setText(strings.get("multiplayer.status.title"));
-        statusBody.setText(strings.get("multiplayer.status.body"));
-        roomCode.setLabelText(strings.get("multiplayer.room_code"));
-        createRoom.setText(strings.get("multiplayer.create"));
-        joinRoom.setText(strings.get("multiplayer.join"));
+        roomCodeLayout.setLabelText(strings.get("multiplayer.room_code"));
         refreshDynamic();
+        renderCard();
     }
 
     /// Synchronizes the account and launch summary rows.
@@ -140,5 +135,133 @@ final class HMCLMultiplayerView extends BorderPane {
             launchItem.setLeading(HMCLDemoUi.instanceIcon(instance, 28.0));
             launchItem.setDisable(false);
         }
+    }
+
+    /// Rebuilds the center card for the active multiplayer phase.
+    private void renderCard() {
+        Node content = switch (state.getMultiplayerPhase()) {
+            case WAITING -> waitingContent();
+            case HOSTING -> hostingContent();
+            case JOINING -> joiningContent();
+        };
+        M3Card card = new M3Card(content, M3CardVariant.ELEVATED);
+        card.setMaxWidth(560.0);
+        card.setMinWidth(0.0);
+        cardHost.getChildren().setAll(card);
+    }
+
+    /// Builds the idle create/join card.
+    ///
+    /// @return the card content
+    private Node waitingContent() {
+        M3Text title = new M3Text(strings.get("multiplayer.status.title"), M3TextRole.TITLE_LARGE);
+        M3Text body = new M3Text(strings.get("multiplayer.status.body"), M3TextRole.BODY_MEDIUM);
+        body.setWrapText(true);
+
+        M3Button createRoom = new M3Button(strings.get("multiplayer.create"), M3ButtonVariant.FILLED);
+        createRoom.setOnAction(event -> {
+            state.startHost();
+            controller.showMessageKey("snackbar.multiplayer_create");
+        });
+
+        M3Button joinRoom = new M3Button(strings.get("multiplayer.join"), M3ButtonVariant.TONAL);
+        joinRoom.setOnAction(event -> {
+            String code = roomCodeField.getText() == null ? "" : roomCodeField.getText().strip();
+            if (code.isEmpty()) {
+                code = "HMCL-JOIN";
+            }
+            state.startJoin(code);
+            controller.showMessageKey("snackbar.multiplayer_join");
+        });
+
+        HBox actions = new HBox(12.0, createRoom, joinRoom);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        actions.setMinWidth(0.0);
+
+        VBox box = new VBox(16.0, title, body, roomCodeLayout, actions);
+        box.setPadding(new Insets(8.0));
+        box.setFillWidth(true);
+        box.setMinWidth(0.0);
+        return box;
+    }
+
+    /// Builds the hosting card with room code and fake players.
+    ///
+    /// @return the card content
+    private Node hostingContent() {
+        String code = state.getMultiplayerRoomCode();
+        M3Text title = new M3Text(strings.get("multiplayer.hosting.title"), M3TextRole.TITLE_LARGE);
+        M3Text body = new M3Text(strings.format("multiplayer.hosting.body", code), M3TextRole.BODY_MEDIUM);
+        body.setWrapText(true);
+
+        M3Text codeLabel = new M3Text(code, M3TextRole.HEADLINE_SMALL);
+        codeLabel.getStyleClass().add("hmcl-multiplayer-code");
+
+        M3Button copy = new M3Button(strings.get("multiplayer.copy_code"), M3ButtonVariant.TONAL);
+        copy.setOnAction(event -> controller.showMessageKey("snackbar.multiplayer_copied", code));
+
+        M3Button back = new M3Button(strings.get("multiplayer.back"), M3ButtonVariant.TEXT);
+        back.setOnAction(event -> state.resetMultiplayer());
+
+        HBox actions = new HBox(12.0, copy, back);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        actions.setMinWidth(0.0);
+
+        M3Text playersTitle = new M3Text(strings.get("multiplayer.players"), M3TextRole.TITLE_SMALL);
+        M3ListPane players = new M3ListPane();
+        players.setListStyle(M3ListStyle.SEGMENTED);
+        players.setSelectionMode(M3SelectionMode.NONE);
+        players.setMinHeight(0.0);
+        players.getItems().setAll(fakePlayers());
+
+        VBox box = new VBox(16.0, title, body, codeLabel, actions, playersTitle, players);
+        box.setPadding(new Insets(8.0));
+        box.setFillWidth(true);
+        box.setMinWidth(0.0);
+        return box;
+    }
+
+    /// Builds the joining/connecting card.
+    ///
+    /// @return the card content
+    private Node joiningContent() {
+        String code = state.getMultiplayerRoomCode();
+        M3Text title = new M3Text(strings.get("multiplayer.joining.title"), M3TextRole.TITLE_LARGE);
+        M3Text body = new M3Text(strings.format("multiplayer.joining.body", code), M3TextRole.BODY_MEDIUM);
+        body.setWrapText(true);
+
+        M3Button back = new M3Button(strings.get("multiplayer.back"), M3ButtonVariant.TEXT);
+        back.setOnAction(event -> state.resetMultiplayer());
+
+        HBox actions = new HBox(back);
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        VBox box = new VBox(16.0, title, body, actions);
+        box.setPadding(new Insets(8.0));
+        box.setFillWidth(true);
+        box.setMinWidth(0.0);
+        return box;
+    }
+
+    /// Builds a small deterministic fake player list for the hosting card.
+    ///
+    /// @return the player rows
+    private M3ListItem[] fakePlayers() {
+        @Nullable HMCLDemoAccount account = state.getSelectedAccount();
+        M3ListItem host = new M3ListItem(account == null ? strings.get("home.no_account") : account.displayName());
+        host.setSupportingText(strings.get("multiplayer.player.host"));
+        host.setLeading(account == null
+                ? HMCLDemoIcons.create(HMCLDemoIcons.ACCOUNTS)
+                : HMCLDemoUi.accountFace(account, 28.0));
+
+        M3ListItem guestA = new M3ListItem("Guest Alpha");
+        guestA.setSupportingText(strings.get("multiplayer.player.member"));
+        guestA.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.ACCOUNTS));
+
+        M3ListItem guestB = new M3ListItem("Guest Beta");
+        guestB.setSupportingText(strings.get("multiplayer.player.member"));
+        guestB.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.ACCOUNTS));
+
+        return new M3ListItem[] {host, guestA, guestB};
     }
 }

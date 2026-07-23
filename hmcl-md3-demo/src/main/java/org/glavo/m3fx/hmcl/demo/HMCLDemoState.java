@@ -3,9 +3,13 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -21,6 +25,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.UnaryOperator;
 
 /// Owns deterministic, offline state for the HMCL-inspired M3FX demo.
 ///
@@ -90,7 +95,7 @@ public final class HMCLDemoState {
     private final @UnmodifiableView ObservableList<HMCLDemoMinecraftVersion> filteredMinecraftVersionsView =
             FXCollections.unmodifiableObservableList(filteredMinecraftVersions);
 
-    /// The download-center search query.
+    /// The download-center search query for Minecraft versions.
     private final StringProperty versionSearchQuery =
             new SimpleStringProperty(this, "versionSearchQuery", "");
 
@@ -105,6 +110,59 @@ public final class HMCLDemoState {
     /// Whether old beta and alpha versions are included by the download filter.
     private final ObjectProperty<Boolean> showOldVersions =
             new SimpleObjectProperty<>(this, "showOldVersions", false);
+
+    /// The mutable download-catalog item list.
+    private final ObservableList<HMCLDemoCatalogItem> catalogItems = FXCollections.observableArrayList();
+
+    /// The read-only download-catalog item list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogItemsView =
+            FXCollections.unmodifiableObservableList(catalogItems);
+
+    /// Catalog mods filtered by [#catalogSearchQuery].
+    private final FilteredList<HMCLDemoCatalogItem> catalogMods = new FilteredList<>(catalogItems);
+
+    /// Catalog modpacks filtered by [#catalogSearchQuery].
+    private final FilteredList<HMCLDemoCatalogItem> catalogModpacks = new FilteredList<>(catalogItems);
+
+    /// Catalog resource packs filtered by [#catalogSearchQuery].
+    private final FilteredList<HMCLDemoCatalogItem> catalogResourcePacks = new FilteredList<>(catalogItems);
+
+    /// Catalog shaders filtered by [#catalogSearchQuery].
+    private final FilteredList<HMCLDemoCatalogItem> catalogShaders = new FilteredList<>(catalogItems);
+
+    /// Catalog worlds filtered by [#catalogSearchQuery].
+    private final FilteredList<HMCLDemoCatalogItem> catalogWorlds = new FilteredList<>(catalogItems);
+
+    /// The read-only filtered catalog-mod list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogModsView =
+            FXCollections.unmodifiableObservableList(catalogMods);
+
+    /// The read-only filtered catalog-modpack list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogModpacksView =
+            FXCollections.unmodifiableObservableList(catalogModpacks);
+
+    /// The read-only filtered catalog-resource-pack list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogResourcePacksView =
+            FXCollections.unmodifiableObservableList(catalogResourcePacks);
+
+    /// The read-only filtered catalog-shader list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogShadersView =
+            FXCollections.unmodifiableObservableList(catalogShaders);
+
+    /// The read-only filtered catalog-world list.
+    private final @UnmodifiableView ObservableList<HMCLDemoCatalogItem> catalogWorldsView =
+            FXCollections.unmodifiableObservableList(catalogWorlds);
+
+    /// The download-catalog search query.
+    private final StringProperty catalogSearchQuery =
+            new SimpleStringProperty(this, "catalogSearchQuery", "");
+
+    /// The mutable discovered Java runtime list.
+    private final ObservableList<HMCLDemoJavaRuntime> javaRuntimes = FXCollections.observableArrayList();
+
+    /// The read-only Java runtime list.
+    private final @UnmodifiableView ObservableList<HMCLDemoJavaRuntime> javaRuntimesView =
+            FXCollections.unmodifiableObservableList(javaRuntimes);
 
     /// The theme seed color.
     private final ObjectProperty<Color> themeColor =
@@ -125,6 +183,38 @@ public final class HMCLDemoState {
     /// The active download installation progress from `0.0` through `1.0`.
     private final DoubleProperty installProgress = new SimpleDoubleProperty(this, "installProgress", 0.0);
 
+    /// The multiplayer session phase.
+    private final ObjectProperty<MultiplayerPhase> multiplayerPhase =
+            new SimpleObjectProperty<>(this, "multiplayerPhase", MultiplayerPhase.WAITING);
+
+    /// The multiplayer room code shown while hosting or joining.
+    private final StringProperty multiplayerRoomCode =
+            new SimpleStringProperty(this, "multiplayerRoomCode", "");
+
+    /// The launcher update channel label (`stable` or `dev`).
+    private final StringProperty updateChannel =
+            new SimpleStringProperty(this, "updateChannel", "stable");
+
+    /// Whether the launcher auto-allocates game memory.
+    private final BooleanProperty autoAllocateMemory =
+            new SimpleBooleanProperty(this, "autoAllocateMemory", true);
+
+    /// The concurrent download thread count.
+    private final IntegerProperty downloadThreads =
+            new SimpleIntegerProperty(this, "downloadThreads", 64);
+
+    /// The selected download source label.
+    private final StringProperty downloadSource =
+            new SimpleStringProperty(this, "downloadSource", "official");
+
+    /// Whether launcher animations are disabled.
+    private final BooleanProperty animationDisabled =
+            new SimpleBooleanProperty(this, "animationDisabled", false);
+
+    /// The global max memory in megabytes.
+    private final IntegerProperty globalMaxMemoryMb =
+            new SimpleIntegerProperty(this, "globalMaxMemoryMb", 4096);
+
     /// The deterministic suffix counter for copied instances.
     private int nextCopyNumber = 1;
 
@@ -133,6 +223,15 @@ public final class HMCLDemoState {
 
     /// The deterministic suffix counter for dummy instances.
     private int nextInstanceNumber = 1;
+
+    /// The deterministic suffix counter for dummy directories.
+    private int nextDirectoryNumber = 1;
+
+    /// The deterministic suffix counter for added content rows.
+    private int nextContentNumber = 1;
+
+    /// The deterministic suffix counter for multiplayer room codes.
+    private int nextRoomNumber = 1;
 
     /// Creates state using an internal string resolver.
     public HMCLDemoState() {
@@ -148,6 +247,8 @@ public final class HMCLDemoState {
         directories.setAll(createDirectories());
         instances.setAll(createInstances());
         minecraftVersions.setAll(createMinecraftVersions());
+        catalogItems.setAll(createCatalogItems());
+        javaRuntimes.setAll(createJavaRuntimes());
         selectedAccount.set(accounts.get(0));
         selectedDirectory.set(directories.get(0));
         selectedInstance.set(instances.get(0));
@@ -157,8 +258,10 @@ public final class HMCLDemoState {
         showReleaseVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
         showSnapshotVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
         showOldVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
+        catalogSearchQuery.addListener((observable, oldValue, newValue) -> updateCatalogFilters());
         updateInstanceFilter();
         updateVersionFilter();
+        updateCatalogFilters();
     }
 
     /// Returns the localization service.
@@ -276,6 +379,22 @@ public final class HMCLDemoState {
         return false;
     }
 
+    /// Adds and selects a dummy game directory.
+    ///
+    /// @param name the displayed directory name
+    /// @return the new directory
+    public HMCLDemoGameDirectory addDirectory(String name) {
+        int number = nextDirectoryNumber++;
+        HMCLDemoGameDirectory directory = new HMCLDemoGameDirectory(
+                "directory-" + number,
+                name,
+                "D:\\Games\\Minecraft\\" + name
+        );
+        directories.add(directory);
+        selectedDirectory.set(directory);
+        return directory;
+    }
+
     /// Returns the immutable instance list.
     ///
     /// @return the instance list
@@ -305,6 +424,8 @@ public final class HMCLDemoState {
     }
 
     /// Selects an instance by identifier.
+    ///
+    /// Also selects the instance game directory when it differs from the current selection.
     ///
     /// @param id the instance identifier
     /// @return whether a match was selected
@@ -387,11 +508,65 @@ public final class HMCLDemoState {
                 "Vanilla",
                 selectedDirectory.get().id(),
                 "img/grass.png",
+                false,
+                4096,
+                "854x480",
+                false,
+                "auto",
+                List.of(
+                        new HMCLDemoInstaller("game", "Game", "1.21.11"),
+                        new HMCLDemoInstaller("fabric", "Fabric", null),
+                        new HMCLDemoInstaller("forge", "Forge", null),
+                        new HMCLDemoInstaller("neoforge", "NeoForge", null),
+                        new HMCLDemoInstaller("quilt", "Quilt", null),
+                        new HMCLDemoInstaller("liteLoader", "LiteLoader", null),
+                        new HMCLDemoInstaller("optifine", "OptiFine", null)
+                ),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
                 List.of()
         );
         instances.add(0, instance);
         selectedInstance.set(instance);
         return instance;
+    }
+
+    /// Renames the selected instance.
+    ///
+    /// @param name the new display name
+    /// @return whether the selected instance was renamed
+    public boolean renameSelectedInstance(String name) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withName(name));
+        return true;
+    }
+
+    /// Updates settings fields on the selected instance.
+    ///
+    /// @param isolated whether the instance uses an isolated working directory
+    /// @param maxMemoryMb configured max memory
+    /// @param resolution window resolution label
+    /// @param fullscreen whether fullscreen is preferred
+    /// @param javaId selected Java runtime id, or `auto`
+    /// @return whether the selected instance was updated
+    public boolean updateSelectedInstanceSettings(
+            boolean isolated,
+            int maxMemoryMb,
+            String resolution,
+            boolean fullscreen,
+            String javaId
+    ) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withSettings(isolated, maxMemoryMb, resolution, fullscreen, javaId));
+        return true;
     }
 
     /// Changes the enabled state of one mod in the selected instance.
@@ -400,26 +575,213 @@ public final class HMCLDemoState {
     /// @param enabled the requested enabled state
     /// @return whether the mod was found
     public boolean setSelectedModEnabled(String modId, boolean enabled) {
+        return updateSelectedMods(mods -> {
+            List<HMCLDemoMod> updated = new ArrayList<>(mods.size());
+            boolean found = false;
+            for (HMCLDemoMod mod : mods) {
+                if (mod.id().equals(modId)) {
+                    updated.add(mod.withEnabled(enabled));
+                    found = true;
+                } else {
+                    updated.add(mod);
+                }
+            }
+            return found ? updated : null;
+        });
+    }
+
+    /// Adds a dummy mod to the selected instance.
+    ///
+    /// @return the new mod, or `null` when nothing is selected
+    public @Nullable HMCLDemoMod addDemoMod() {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return null;
+        }
+        int number = nextContentNumber++;
+        HMCLDemoMod mod = new HMCLDemoMod(
+                "mod-" + number,
+                "Demo Mod " + number,
+                "demo-mod-" + number + ".jar",
+                "1.0." + number,
+                true
+        );
+        List<HMCLDemoMod> updated = new ArrayList<>(instance.mods());
+        updated.add(mod);
+        replaceSelectedInstance(instance.withMods(updated));
+        return mod;
+    }
+
+    /// Removes one mod from the selected instance.
+    ///
+    /// @param modId the mod identifier
+    /// @return whether the mod was removed
+    public boolean removeMod(String modId) {
+        return updateSelectedMods(mods -> {
+            List<HMCLDemoMod> updated = new ArrayList<>(mods.size());
+            boolean found = false;
+            for (HMCLDemoMod mod : mods) {
+                if (mod.id().equals(modId)) {
+                    found = true;
+                } else {
+                    updated.add(mod);
+                }
+            }
+            return found ? updated : null;
+        });
+    }
+
+    /// Changes the enabled state of one resource pack in the selected instance.
+    ///
+    /// @param packId the pack identifier
+    /// @param enabled the requested enabled state
+    /// @return whether the pack was found
+    public boolean setResourcePackEnabled(String packId, boolean enabled) {
+        return updateSelectedResourcePacks(packs -> togglePack(packs, packId, enabled));
+    }
+
+    /// Adds a dummy resource pack to the selected instance.
+    ///
+    /// @return the new pack, or `null` when nothing is selected
+    public @Nullable HMCLDemoPack addDemoResourcePack() {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return null;
+        }
+        int number = nextContentNumber++;
+        HMCLDemoPack pack = new HMCLDemoPack(
+                "resource-pack-" + number,
+                "Demo Resource Pack " + number,
+                "1.21 / " + number + " files",
+                true
+        );
+        List<HMCLDemoPack> updated = new ArrayList<>(instance.resourcePacks());
+        updated.add(pack);
+        replaceSelectedInstance(instance.withResourcePacks(updated));
+        return pack;
+    }
+
+    /// Changes the enabled state of one shader pack in the selected instance.
+    ///
+    /// @param packId the pack identifier
+    /// @param enabled the requested enabled state
+    /// @return whether the pack was found
+    public boolean setShaderEnabled(String packId, boolean enabled) {
+        return updateSelectedShaderPacks(packs -> togglePack(packs, packId, enabled));
+    }
+
+    /// Adds a dummy shader pack to the selected instance.
+    ///
+    /// @return the new pack, or `null` when nothing is selected
+    public @Nullable HMCLDemoPack addDemoShader() {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return null;
+        }
+        int number = nextContentNumber++;
+        HMCLDemoPack pack = new HMCLDemoPack(
+                "shader-" + number,
+                "Demo Shader " + number,
+                "Iris / " + number,
+                true
+        );
+        List<HMCLDemoPack> updated = new ArrayList<>(instance.shaderPacks());
+        updated.add(pack);
+        replaceSelectedInstance(instance.withShaderPacks(updated));
+        return pack;
+    }
+
+    /// Adds a dummy world to the selected instance.
+    ///
+    /// @return the new world, or `null` when nothing is selected
+    public @Nullable HMCLDemoWorld addDemoWorld() {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return null;
+        }
+        int number = nextContentNumber++;
+        HMCLDemoWorld world = new HMCLDemoWorld(
+                "world-" + number,
+                "New World " + number,
+                "Survival",
+                "Just now"
+        );
+        List<HMCLDemoWorld> updated = new ArrayList<>(instance.worlds());
+        updated.add(world);
+        replaceSelectedInstance(instance.withWorlds(updated));
+        return world;
+    }
+
+    /// Removes one world from the selected instance.
+    ///
+    /// @param worldId the world identifier
+    /// @return whether the world was removed
+    public boolean removeWorld(String worldId) {
         HMCLDemoInstance instance = selectedInstance.get();
         if (instance == null) {
             return false;
         }
-        List<HMCLDemoMod> updatedMods = new ArrayList<>(instance.mods().size());
+        List<HMCLDemoWorld> updated = new ArrayList<>(instance.worlds().size());
         boolean found = false;
-        for (HMCLDemoMod mod : instance.mods()) {
-            if (mod.id().equals(modId)) {
-                updatedMods.add(mod.withEnabled(enabled));
+        for (HMCLDemoWorld world : instance.worlds()) {
+            if (world.id().equals(worldId)) {
                 found = true;
             } else {
-                updatedMods.add(mod);
+                updated.add(world);
             }
         }
         if (!found) {
             return false;
         }
-        HMCLDemoInstance updated = instance.withMods(updatedMods);
-        instances.set(instances.indexOf(instance), updated);
-        selectedInstance.set(updated);
+        replaceSelectedInstance(instance.withWorlds(updated));
+        return true;
+    }
+
+    /// Adds a dummy schematic to the selected instance.
+    ///
+    /// @return the new schematic, or `null` when nothing is selected
+    public @Nullable HMCLDemoPack addDemoSchematic() {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return null;
+        }
+        int number = nextContentNumber++;
+        HMCLDemoPack schematic = new HMCLDemoPack(
+                "schematic-" + number,
+                "Demo Schematic " + number,
+                number + " blocks",
+                true
+        );
+        List<HMCLDemoPack> updated = new ArrayList<>(instance.schematics());
+        updated.add(schematic);
+        replaceSelectedInstance(instance.withSchematics(updated));
+        return schematic;
+    }
+
+    /// Sets the installed version of one installer slot on the selected instance.
+    ///
+    /// @param installerId the installer family id
+    /// @param version the installed version, or `null` to clear
+    /// @return whether the installer slot was found
+    public boolean setInstallerVersion(String installerId, @Nullable String version) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        List<HMCLDemoInstaller> updated = new ArrayList<>(instance.installers().size());
+        boolean found = false;
+        for (HMCLDemoInstaller installer : instance.installers()) {
+            if (installer.id().equals(installerId)) {
+                updated.add(installer.withVersion(version));
+                found = true;
+            } else {
+                updated.add(installer);
+            }
+        }
+        if (!found) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withInstallers(updated));
         return true;
     }
 
@@ -521,6 +883,55 @@ public final class HMCLDemoState {
         return showOldVersions;
     }
 
+    /// Returns the immutable download-catalog item list.
+    ///
+    /// @return the full catalog
+    public @UnmodifiableView ObservableList<HMCLDemoCatalogItem> getCatalogItems() {
+        return catalogItemsView;
+    }
+
+    /// Returns catalog rows matching `kind` and [#getCatalogSearchQuery()].
+    ///
+    /// @param kind the content kind
+    /// @return the filtered catalog list for the kind
+    public @UnmodifiableView ObservableList<HMCLDemoCatalogItem> getCatalog(HMCLDemoCatalogItem.Kind kind) {
+        return switch (kind) {
+            case MOD -> catalogModsView;
+            case MODPACK -> catalogModpacksView;
+            case RESOURCE_PACK -> catalogResourcePacksView;
+            case SHADER -> catalogShadersView;
+            case WORLD -> catalogWorldsView;
+        };
+    }
+
+    /// Returns the catalog search query.
+    ///
+    /// @return the search query
+    public String getCatalogSearchQuery() {
+        return catalogSearchQuery.get();
+    }
+
+    /// Sets the catalog search query.
+    ///
+    /// @param value the search query
+    public void setCatalogSearchQuery(String value) {
+        catalogSearchQuery.set(value);
+    }
+
+    /// Returns the catalog search-query property.
+    ///
+    /// @return the search-query property
+    public StringProperty catalogSearchQueryProperty() {
+        return catalogSearchQuery;
+    }
+
+    /// Returns the immutable Java runtime list.
+    ///
+    /// @return the runtime list
+    public @UnmodifiableView ObservableList<HMCLDemoJavaRuntime> getJavaRuntimes() {
+        return javaRuntimesView;
+    }
+
     /// Starts a dummy installation for the supplied title.
     ///
     /// @param title the installation title shown by the progress UI
@@ -582,6 +993,59 @@ public final class HMCLDemoState {
     /// @return the property
     public DoubleProperty installProgressProperty() {
         return installProgress;
+    }
+
+    /// Returns the multiplayer session phase.
+    ///
+    /// @return the phase
+    public MultiplayerPhase getMultiplayerPhase() {
+        return multiplayerPhase.get();
+    }
+
+    /// Returns the multiplayer-phase property.
+    ///
+    /// @return the property
+    public ObjectProperty<MultiplayerPhase> multiplayerPhaseProperty() {
+        return multiplayerPhase;
+    }
+
+    /// Returns the multiplayer room code.
+    ///
+    /// @return the room code, or an empty string while waiting
+    public String getMultiplayerRoomCode() {
+        return multiplayerRoomCode.get();
+    }
+
+    /// Returns the multiplayer room-code property.
+    ///
+    /// @return the property
+    public StringProperty multiplayerRoomCodeProperty() {
+        return multiplayerRoomCode;
+    }
+
+    /// Starts hosting and assigns a deterministic room code.
+    ///
+    /// @return the generated room code
+    public String startHost() {
+        int number = nextRoomNumber++;
+        String code = String.format(Locale.ROOT, "HMCL-%04d", number);
+        multiplayerRoomCode.set(code);
+        multiplayerPhase.set(MultiplayerPhase.HOSTING);
+        return code;
+    }
+
+    /// Starts joining using the supplied room code.
+    ///
+    /// @param roomCode the room code to join
+    public void startJoin(String roomCode) {
+        multiplayerRoomCode.set(roomCode);
+        multiplayerPhase.set(MultiplayerPhase.JOINING);
+    }
+
+    /// Clears multiplayer session state.
+    public void resetMultiplayer() {
+        multiplayerPhase.set(MultiplayerPhase.WAITING);
+        multiplayerRoomCode.set("");
     }
 
     /// Returns the theme seed color.
@@ -668,6 +1132,222 @@ public final class HMCLDemoState {
         return strings.localeProperty();
     }
 
+    /// Returns the launcher update channel.
+    ///
+    /// @return `stable` or `dev`
+    public String getUpdateChannel() {
+        return updateChannel.get();
+    }
+
+    /// Sets the launcher update channel.
+    ///
+    /// @param value the channel label
+    public void setUpdateChannel(String value) {
+        updateChannel.set(value);
+    }
+
+    /// Returns the update-channel property.
+    ///
+    /// @return the property
+    public StringProperty updateChannelProperty() {
+        return updateChannel;
+    }
+
+    /// Returns whether auto memory allocation is enabled.
+    ///
+    /// @return `true` when enabled
+    public boolean isAutoAllocateMemory() {
+        return autoAllocateMemory.get();
+    }
+
+    /// Sets whether auto memory allocation is enabled.
+    ///
+    /// @param value the flag
+    public void setAutoAllocateMemory(boolean value) {
+        autoAllocateMemory.set(value);
+    }
+
+    /// Returns the auto-allocate-memory property.
+    ///
+    /// @return the property
+    public BooleanProperty autoAllocateMemoryProperty() {
+        return autoAllocateMemory;
+    }
+
+    /// Returns the download thread count.
+    ///
+    /// @return the thread count
+    public int getDownloadThreads() {
+        return downloadThreads.get();
+    }
+
+    /// Sets the download thread count.
+    ///
+    /// @param value the thread count
+    public void setDownloadThreads(int value) {
+        downloadThreads.set(value);
+    }
+
+    /// Returns the download-threads property.
+    ///
+    /// @return the property
+    public IntegerProperty downloadThreadsProperty() {
+        return downloadThreads;
+    }
+
+    /// Returns the download source label.
+    ///
+    /// @return the source label
+    public String getDownloadSource() {
+        return downloadSource.get();
+    }
+
+    /// Sets the download source label.
+    ///
+    /// @param value the source label
+    public void setDownloadSource(String value) {
+        downloadSource.set(value);
+    }
+
+    /// Returns the download-source property.
+    ///
+    /// @return the property
+    public StringProperty downloadSourceProperty() {
+        return downloadSource;
+    }
+
+    /// Returns whether animations are disabled.
+    ///
+    /// @return `true` when disabled
+    public boolean isAnimationDisabled() {
+        return animationDisabled.get();
+    }
+
+    /// Sets whether animations are disabled.
+    ///
+    /// @param value the flag
+    public void setAnimationDisabled(boolean value) {
+        animationDisabled.set(value);
+    }
+
+    /// Returns the animation-disabled property.
+    ///
+    /// @return the property
+    public BooleanProperty animationDisabledProperty() {
+        return animationDisabled;
+    }
+
+    /// Returns the global max memory in megabytes.
+    ///
+    /// @return the memory limit
+    public int getGlobalMaxMemoryMb() {
+        return globalMaxMemoryMb.get();
+    }
+
+    /// Sets the global max memory in megabytes.
+    ///
+    /// @param value the memory limit
+    public void setGlobalMaxMemoryMb(int value) {
+        globalMaxMemoryMb.set(value);
+    }
+
+    /// Returns the global max-memory property.
+    ///
+    /// @return the property
+    public IntegerProperty globalMaxMemoryMbProperty() {
+        return globalMaxMemoryMb;
+    }
+
+    /// Replaces the selected instance in the list and selection properties.
+    ///
+    /// @param updated the replacement instance
+    private void replaceSelectedInstance(HMCLDemoInstance updated) {
+        HMCLDemoInstance current = selectedInstance.get();
+        if (current == null) {
+            return;
+        }
+        int index = instances.indexOf(current);
+        if (index >= 0) {
+            instances.set(index, updated);
+        }
+        selectedInstance.set(updated);
+    }
+
+    /// Updates mods on the selected instance when the operator returns a non-null list.
+    ///
+    /// @param operator returns the replacement list, or `null` to abort
+    /// @return whether the instance was updated
+    private boolean updateSelectedMods(UnaryOperator<@Unmodifiable List<HMCLDemoMod>> operator) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        @Nullable List<HMCLDemoMod> updated = operator.apply(instance.mods());
+        if (updated == null) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withMods(updated));
+        return true;
+    }
+
+    /// Updates resource packs on the selected instance when the operator returns a non-null list.
+    ///
+    /// @param operator returns the replacement list, or `null` to abort
+    /// @return whether the instance was updated
+    private boolean updateSelectedResourcePacks(UnaryOperator<@Unmodifiable List<HMCLDemoPack>> operator) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        @Nullable List<HMCLDemoPack> updated = operator.apply(instance.resourcePacks());
+        if (updated == null) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withResourcePacks(updated));
+        return true;
+    }
+
+    /// Updates shader packs on the selected instance when the operator returns a non-null list.
+    ///
+    /// @param operator returns the replacement list, or `null` to abort
+    /// @return whether the instance was updated
+    private boolean updateSelectedShaderPacks(UnaryOperator<@Unmodifiable List<HMCLDemoPack>> operator) {
+        HMCLDemoInstance instance = selectedInstance.get();
+        if (instance == null) {
+            return false;
+        }
+        @Nullable List<HMCLDemoPack> updated = operator.apply(instance.shaderPacks());
+        if (updated == null) {
+            return false;
+        }
+        replaceSelectedInstance(instance.withShaderPacks(updated));
+        return true;
+    }
+
+    /// Returns a pack list with one enabled flag flipped, or `null` when the id is absent.
+    ///
+    /// @param packs the source packs
+    /// @param packId the pack identifier
+    /// @param enabled the requested enabled state
+    /// @return the updated list, or `null` when not found
+    private static @Nullable List<HMCLDemoPack> togglePack(
+            @Unmodifiable List<HMCLDemoPack> packs,
+            String packId,
+            boolean enabled
+    ) {
+        List<HMCLDemoPack> updated = new ArrayList<>(packs.size());
+        boolean found = false;
+        for (HMCLDemoPack pack : packs) {
+            if (pack.id().equals(packId)) {
+                updated.add(pack.withEnabled(enabled));
+                found = true;
+            } else {
+                updated.add(pack);
+            }
+        }
+        return found ? updated : null;
+    }
+
     /// Recomputes the instance-list predicate.
     private void updateInstanceFilter() {
         String directoryId = selectedDirectory.get().id();
@@ -708,6 +1388,56 @@ public final class HMCLDemoState {
         });
     }
 
+    /// Recomputes catalog predicates for every content kind.
+    private void updateCatalogFilters() {
+        String query = catalogSearchQuery.get().strip().toLowerCase(Locale.ROOT);
+        catalogMods.setPredicate(item -> matchesCatalog(item, HMCLDemoCatalogItem.Kind.MOD, query));
+        catalogModpacks.setPredicate(item -> matchesCatalog(item, HMCLDemoCatalogItem.Kind.MODPACK, query));
+        catalogResourcePacks.setPredicate(item -> matchesCatalog(item, HMCLDemoCatalogItem.Kind.RESOURCE_PACK, query));
+        catalogShaders.setPredicate(item -> matchesCatalog(item, HMCLDemoCatalogItem.Kind.SHADER, query));
+        catalogWorlds.setPredicate(item -> matchesCatalog(item, HMCLDemoCatalogItem.Kind.WORLD, query));
+    }
+
+    /// Returns whether a catalog item matches the kind and optional query.
+    ///
+    /// @param item the catalog item
+    /// @param kind the required kind
+    /// @param query the lower-case query, or empty for no text filter
+    /// @return whether the item is visible
+    private static boolean matchesCatalog(HMCLDemoCatalogItem item, HMCLDemoCatalogItem.Kind kind, String query) {
+        if (item.kind() != kind) {
+            return false;
+        }
+        if (query.isEmpty()) {
+            return true;
+        }
+        return item.title().toLowerCase(Locale.ROOT).contains(query)
+                || item.author().toLowerCase(Locale.ROOT).contains(query)
+                || item.summary().toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    /// Creates the default installer slot list for a game version and optional loader install.
+    ///
+    /// @param gameVersion the installed game version
+    /// @param loaderId the installed loader family id, or `null` for vanilla
+    /// @param loaderVersion the installed loader version when `loaderId` is set
+    /// @return the installer list
+    private static @Unmodifiable List<HMCLDemoInstaller> installers(
+            String gameVersion,
+            @Nullable String loaderId,
+            @Nullable String loaderVersion
+    ) {
+        return List.of(
+                new HMCLDemoInstaller("game", "Game", gameVersion),
+                new HMCLDemoInstaller("fabric", "Fabric", "fabric".equals(loaderId) ? loaderVersion : null),
+                new HMCLDemoInstaller("forge", "Forge", "forge".equals(loaderId) ? loaderVersion : null),
+                new HMCLDemoInstaller("neoforge", "NeoForge", "neoforge".equals(loaderId) ? loaderVersion : null),
+                new HMCLDemoInstaller("quilt", "Quilt", "quilt".equals(loaderId) ? loaderVersion : null),
+                new HMCLDemoInstaller("liteLoader", "LiteLoader", null),
+                new HMCLDemoInstaller("optifine", "OptiFine", null)
+        );
+    }
+
     /// Creates account fixtures inspired by the HMCL screenshots.
     private static @Unmodifiable List<HMCLDemoAccount> createAccounts() {
         return List.of(
@@ -738,15 +1468,53 @@ public final class HMCLDemoState {
                         "Fabric",
                         "minecraft",
                         "img/command.png",
+                        true,
+                        6144,
+                        "1920x1080",
+                        false,
+                        "java-21",
+                        installers("1.21.11", "fabric", "0.16.14"),
                         List.of(
-                                new HMCLDemoMod("sodium", "Sodium", "sodium-fabric-0.7.3+mc1.21.11.jar", true),
-                                new HMCLDemoMod("iris", "Iris", "iris-fabric-1.9.6+mc1.21.11.jar", true),
-                                new HMCLDemoMod("modmenu", "Mod Menu", "modmenu-16.0.0-rc.1.jar", true),
+                                new HMCLDemoMod("sodium", "Sodium",
+                                        "sodium-fabric-0.7.3+mc1.21.11.jar", "0.7.3+mc1.21.11", true),
+                                new HMCLDemoMod("iris", "Iris",
+                                        "iris-fabric-1.9.6+mc1.21.11.jar", "1.9.6+mc1.21.11", true),
+                                new HMCLDemoMod("modmenu", "Mod Menu",
+                                        "modmenu-16.0.0-rc.1.jar", "16.0.0-rc.1", true),
                                 new HMCLDemoMod("fabric-api", "Fabric API",
-                                        "fabric-api-0.140.2+1.21.11.jar", true),
+                                        "fabric-api-0.140.2+1.21.11.jar", "0.140.2+1.21.11", true),
                                 new HMCLDemoMod("dynamic-fps", "Dynamic FPS",
-                                        "dynamic-fps-3.11.3+minecraft-1.21.11-fabric.jar", true)
-                        )),
+                                        "dynamic-fps-3.11.3+minecraft-1.21.11-fabric.jar", "3.11.3", true),
+                                new HMCLDemoMod("lithium", "Lithium",
+                                        "lithium-fabric-mc1.21.11-0.16.2.jar", "0.16.2", true),
+                                new HMCLDemoMod("entityculling", "Entity Culling",
+                                        "entityculling-fabric-1.8.2-mc1.21.11.jar", "1.8.2", true),
+                                new HMCLDemoMod("ferritecore", "FerriteCore",
+                                        "ferritecore-8.0.0-fabric.jar", "8.0.0", true),
+                                new HMCLDemoMod("immediatelyfast", "ImmediatelyFast",
+                                        "ImmediatelyFast-Fabric-1.12.1+1.21.11.jar", "1.12.1", true),
+                                new HMCLDemoMod("zoomify", "Zoomify",
+                                        "Zoomify-2.14.6+1.21.11.jar", "2.14.6", true)
+                        ),
+                        List.of(
+                                new HMCLDemoPack("faithful", "Faithful 32x", "1.21.11 / 32x", true),
+                                new HMCLDemoPack("continuity", "Continuity", "3.0.0 / connected textures", true),
+                                new HMCLDemoPack("lambdabettergrass", "LambdaBetterGrass", "1.7.4 / grass", false)
+                        ),
+                        List.of(
+                                new HMCLDemoPack("complementary", "Complementary Unbound", "r5.5.1 / Iris", true),
+                                new HMCLDemoPack("bsl", "BSL Shaders", "v8.4 / medium", false)
+                        ),
+                        List.of(
+                                new HMCLDemoWorld("fo-survival", "Fabulously Survival", "Survival", "Yesterday"),
+                                new HMCLDemoWorld("fo-creative", "Shader Showcase", "Creative", "3 days ago"),
+                                new HMCLDemoWorld("fo-superflat", "Flat Lab", "Creative", "Last week")
+                        ),
+                        List.of(
+                                new HMCLDemoPack("fo-house", "Starter House", "4,812 blocks", true),
+                                new HMCLDemoPack("fo-farm", "Auto Farm", "2,104 blocks", true)
+                        )
+                ),
                 new HMCLDemoInstance(
                         "snapshot-26-3-4",
                         "26.3 Snapshot 4",
@@ -754,7 +1522,20 @@ public final class HMCLDemoState {
                         "Vanilla",
                         "minecraft",
                         "img/grass.png",
-                        List.of()),
+                        false,
+                        4096,
+                        "854x480",
+                        false,
+                        "auto",
+                        installers("26.3-snapshot-4", null, null),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(
+                                new HMCLDemoWorld("snap-test", "Snapshot Test", "Creative", "Today")
+                        ),
+                        List.of()
+                ),
                 new HMCLDemoInstance(
                         "forge-1-12-2",
                         "1.12.2-Forge_14.23.5.2860",
@@ -762,9 +1543,29 @@ public final class HMCLDemoState {
                         "Forge 14.23.5.2860",
                         "minecraft",
                         "img/furnace.png",
+                        true,
+                        4096,
+                        "1280x720",
+                        false,
+                        "java-8",
+                        installers("1.12.2", "forge", "14.23.5.2860"),
                         List.of(
-                                new HMCLDemoMod("jei", "Just Enough Items", "jei_1.12.2-4.16.1.1000.jar", true)
-                        )),
+                                new HMCLDemoMod("jei", "Just Enough Items",
+                                        "jei_1.12.2-4.16.1.1000.jar", "4.16.1.1000", true),
+                                new HMCLDemoMod("hwyla", "HWYLA",
+                                        "Hwyla-1.8.26-B41_1.12.2.jar", "1.8.26", true),
+                                new HMCLDemoMod("journeymap", "JourneyMap",
+                                        "journeymap-1.12.2-5.7.1.jar", "5.7.1", false)
+                        ),
+                        List.of(
+                                new HMCLDemoPack("default-dark", "Default Dark Mode", "1.12.2", true)
+                        ),
+                        List.of(),
+                        List.of(
+                                new HMCLDemoWorld("legacy-base", "Legacy Base", "Survival", "2024/8/12")
+                        ),
+                        List.of()
+                ),
                 new HMCLDemoInstance(
                         "release-1-21-11",
                         "1.21.11",
@@ -772,7 +1573,20 @@ public final class HMCLDemoState {
                         "Vanilla",
                         "minecraft",
                         "img/grass.png",
-                        List.of()),
+                        false,
+                        4096,
+                        "854x480",
+                        true,
+                        "auto",
+                        installers("1.21.11", null, null),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(
+                                new HMCLDemoWorld("vanilla-world", "New World", "Survival", "2 hours ago")
+                        ),
+                        List.of()
+                ),
                 new HMCLDemoInstance(
                         "lab-minecraft2",
                         "Modding Lab",
@@ -780,10 +1594,31 @@ public final class HMCLDemoState {
                         "NeoForge",
                         "minecraft2",
                         "img/command.png",
+                        true,
+                        8192,
+                        "1600x900",
+                        false,
+                        "java-17",
+                        installers("1.20.1", "neoforge", "47.1.106"),
                         List.of(
-                                new HMCLDemoMod("create", "Create", "create-1.20.1-0.5.1.jar", true),
-                                new HMCLDemoMod("jei-neo", "Just Enough Items", "jei-1.20.1-15.20.0.jar", true)
-                        ))
+                                new HMCLDemoMod("create", "Create",
+                                        "create-1.20.1-0.5.1.jar", "0.5.1", true),
+                                new HMCLDemoMod("jei-neo", "Just Enough Items",
+                                        "jei-1.20.1-15.20.0.jar", "15.20.0", true),
+                                new HMCLDemoMod("flywheel", "Flywheel",
+                                        "flywheel-forge-1.20.1-0.6.10.jar", "0.6.10", true)
+                        ),
+                        List.of(
+                                new HMCLDemoPack("create-style", "Create Style", "1.20.1", true)
+                        ),
+                        List.of(),
+                        List.of(
+                                new HMCLDemoWorld("create-factory", "Create Factory", "Creative", "Last month")
+                        ),
+                        List.of(
+                                new HMCLDemoPack("train-station", "Train Station", "18,440 blocks", true)
+                        )
+                )
         );
     }
 
@@ -815,6 +1650,157 @@ public final class HMCLDemoState {
                 new HMCLDemoMinecraftVersion("a1.2.6", "a1.2.6", "2010/12/3 12:00:00",
                         HMCLDemoMinecraftVersion.Channel.OLD_ALPHA)
         );
+    }
+
+    /// Creates download-catalog fixtures for every content kind.
+    private static @Unmodifiable List<HMCLDemoCatalogItem> createCatalogItems() {
+        return List.of(
+                new HMCLDemoCatalogItem(
+                        "mod-sodium", "Sodium", "JellySquid",
+                        "Modern rendering engine with a huge FPS boost.", "48.2M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+                new HMCLDemoCatalogItem(
+                        "mod-iris", "Iris Shaders", "IrisShaders",
+                        "Shader loader compatible with Sodium.", "21.4M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+                new HMCLDemoCatalogItem(
+                        "mod-jei", "Just Enough Items", "mezz",
+                        "Item and recipe browser for almost every pack.", "96.1M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+                new HMCLDemoCatalogItem(
+                        "mod-create", "Create", "simibubi",
+                        "Aesthetic engineering with kinetic power.", "33.8M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+                new HMCLDemoCatalogItem(
+                        "mod-lithium", "Lithium", "JellySquid",
+                        "General-purpose server and client optimization.", "40.5M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+                new HMCLDemoCatalogItem(
+                        "mod-modmenu", "Mod Menu", "Terraformers",
+                        "Adds a mods button and configuration screen.", "52.0M",
+                        HMCLDemoCatalogItem.Kind.MOD),
+
+                new HMCLDemoCatalogItem(
+                        "pack-fo", "Fabulously Optimized", "robotkoer",
+                        "A simple Minecraft modpack focused on performance.", "8.9M",
+                        HMCLDemoCatalogItem.Kind.MODPACK),
+                new HMCLDemoCatalogItem(
+                        "pack-atm", "All the Mods 10", "ATMTeam",
+                        "Kitchen-sink progression with hundreds of mods.", "4.1M",
+                        HMCLDemoCatalogItem.Kind.MODPACK),
+                new HMCLDemoCatalogItem(
+                        "pack-cobblemon", "Cobblemon", "Cobblemon",
+                        "Pokemon-inspired adventure on modern Minecraft.", "6.3M",
+                        HMCLDemoCatalogItem.Kind.MODPACK),
+                new HMCLDemoCatalogItem(
+                        "pack-create-astral", "Create: Astral", "Lasky",
+                        "Space-age Create progression and automation.", "1.8M",
+                        HMCLDemoCatalogItem.Kind.MODPACK),
+                new HMCLDemoCatalogItem(
+                        "pack-better-mc", "Better MC", "LunaPixel",
+                        "Vanilla+ exploration with quality-of-life mods.", "12.7M",
+                        HMCLDemoCatalogItem.Kind.MODPACK),
+
+                new HMCLDemoCatalogItem(
+                        "rp-faithful", "Faithful 32x", "Faithful Team",
+                        "A classic higher-resolution vanilla look.", "19.4M",
+                        HMCLDemoCatalogItem.Kind.RESOURCE_PACK),
+                new HMCLDemoCatalogItem(
+                        "rp-default-dark", "Default Dark Mode", "nebuIr",
+                        "Dark UI textures without changing gameplay art.", "7.2M",
+                        HMCLDemoCatalogItem.Kind.RESOURCE_PACK),
+                new HMCLDemoCatalogItem(
+                        "rp-continuity", "Continuity", "PepperCode1",
+                        "Connected textures and emissive support.", "5.6M",
+                        HMCLDemoCatalogItem.Kind.RESOURCE_PACK),
+                new HMCLDemoCatalogItem(
+                        "rp-fresh", "Fresh Animations", "FreshLX",
+                        "Entity animation overhaul for vanilla mobs.", "11.0M",
+                        HMCLDemoCatalogItem.Kind.RESOURCE_PACK),
+                new HMCLDemoCatalogItem(
+                        "rp-xray", "Xray Ultimate", "TheXray",
+                        "Highlight ores and valuable blocks.", "3.3M",
+                        HMCLDemoCatalogItem.Kind.RESOURCE_PACK),
+
+                new HMCLDemoCatalogItem(
+                        "shader-complementary", "Complementary Shaders", "EminGT",
+                        "Balanced visuals from potato to ultra settings.", "15.8M",
+                        HMCLDemoCatalogItem.Kind.SHADER),
+                new HMCLDemoCatalogItem(
+                        "shader-bsl", "BSL Shaders", "capttatsu",
+                        "Clean lighting with configurable profiles.", "12.1M",
+                        HMCLDemoCatalogItem.Kind.SHADER),
+                new HMCLDemoCatalogItem(
+                        "shader-sildurs", "Sildur's Vibrant", "Sildur",
+                        "Colorful outdoor lighting and water effects.", "9.4M",
+                        HMCLDemoCatalogItem.Kind.SHADER),
+                new HMCLDemoCatalogItem(
+                        "shader-potato", "Potato Shaders", "RRe36",
+                        "Ultra-lightweight shaders for low-end devices.", "4.7M",
+                        HMCLDemoCatalogItem.Kind.SHADER),
+                new HMCLDemoCatalogItem(
+                        "shader-makeup", "MakeUp - Ultra Fast", "XavierFST",
+                        "Fast cinematic look with modest cost.", "6.0M",
+                        HMCLDemoCatalogItem.Kind.SHADER),
+
+                new HMCLDemoCatalogItem(
+                        "world-skyblock", "Classic Skyblock", "SkyGen",
+                        "One tree, one island, endless progression.", "2.9M",
+                        HMCLDemoCatalogItem.Kind.WORLD),
+                new HMCLDemoCatalogItem(
+                        "world-parkour", "Parkour Spiral", "JumpCraft",
+                        "A tall spiral course with checkpoint stages.", "1.1M",
+                        HMCLDemoCatalogItem.Kind.WORLD),
+                new HMCLDemoCatalogItem(
+                        "world-city", "Modern City", "BuildHub",
+                        "A dense city map ready for adventure maps.", "3.5M",
+                        HMCLDemoCatalogItem.Kind.WORLD),
+                new HMCLDemoCatalogItem(
+                        "world-survival", "Hardcore Survival Island", "Islanders",
+                        "Sparse resources and dangerous nights.", "2.2M",
+                        HMCLDemoCatalogItem.Kind.WORLD),
+                new HMCLDemoCatalogItem(
+                        "world-redstone", "Redstone Lab", "Circuitry",
+                        "Prebuilt contraptions for testing machines.", "1.6M",
+                        HMCLDemoCatalogItem.Kind.WORLD)
+        );
+    }
+
+    /// Creates discovered Java runtime fixtures.
+    private static @Unmodifiable List<HMCLDemoJavaRuntime> createJavaRuntimes() {
+        return List.of(
+                new HMCLDemoJavaRuntime(
+                        "java-21",
+                        "Microsoft Build of OpenJDK 21",
+                        "21.0.6",
+                        "C:\\Program Files\\Microsoft\\jdk-21.0.6.7-hotspot",
+                        "x86_64"),
+                new HMCLDemoJavaRuntime(
+                        "java-17",
+                        "Eclipse Temurin 17",
+                        "17.0.14",
+                        "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.14.7-hotspot",
+                        "x86_64"),
+                new HMCLDemoJavaRuntime(
+                        "java-8",
+                        "Eclipse Temurin 8",
+                        "1.8.0_442",
+                        "C:\\Program Files\\Eclipse Adoptium\\jdk-8.0.442.6-hotspot",
+                        "x86_64")
+        );
+    }
+
+    /// Describes the multiplayer session lifecycle for the offline demo.
+    @NotNullByDefault
+    public enum MultiplayerPhase {
+        /// No multiplayer session is active.
+        WAITING,
+
+        /// The local player is hosting a room.
+        HOSTING,
+
+        /// The local player is joining a room.
+        JOINING
     }
 
     /// Describes the selected application brightness mode.

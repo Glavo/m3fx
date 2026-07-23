@@ -8,8 +8,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
@@ -68,24 +68,24 @@ final class HMCLAccountsView extends BorderPane {
         accountList.setListStyle(M3ListStyle.SEGMENTED);
         accountList.setSelectionMode(M3SelectionMode.SINGLE);
         accountList.getStyleClass().add("hmcl-dense-list");
+        accountList.setMinHeight(0.0);
 
         microsoftItem.setOnAction(event -> showMicrosoftDialog());
         offlineItem.setOnAction(event -> {
             state.addDummyAccount(HMCLDemoAccount.AccountType.OFFLINE);
             controller.showMessageKey("snackbar.account_added");
-            rebuildAccounts();
         });
         externalItem.setOnAction(event -> {
             state.addDummyAccount(HMCLDemoAccount.AccountType.EXTERNAL);
             controller.showMessageKey("snackbar.account_added");
-            rebuildAccounts();
         });
         addServerItem.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
 
         VBox sidebar = HMCLDemoUi.sidebar(addSection, microsoftItem, offlineItem, externalItem, addServerItem);
         setLeft(sidebar);
 
-        setCenter(HMCLDemoUi.listHost(accountList));
+        VBox column = HMCLDemoUi.contentColumn(accountList);
+        setCenter(HMCLDemoUi.listHost(column));
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> rebuildAccounts());
         state.getAccounts().addListener((ListChangeListener<HMCLDemoAccount>) change -> rebuildAccounts());
@@ -103,13 +103,15 @@ final class HMCLAccountsView extends BorderPane {
         rebuildAccounts();
     }
 
-    /// Rebuilds account rows from the current state.
+    /// Rebuilds account cards from the current state.
     private void rebuildAccounts() {
         accountList.getItems().clear();
         @Nullable HMCLDemoAccount selected = state.getSelectedAccount();
         for (HMCLDemoAccount account : state.getAccounts()) {
+            boolean isSelected = account.equals(selected);
+
             M3RadioButton selector = new M3RadioButton();
-            selector.setSelected(account.equals(selected));
+            selector.setSelected(isSelected);
             selector.setMouseTransparent(true);
             selector.setFocusTraversable(false);
 
@@ -120,12 +122,16 @@ final class HMCLAccountsView extends BorderPane {
                 controller.showMessageKey("snackbar.account_removed");
             });
 
+            HBox trailing = new HBox(8.0, remove, selector);
+            trailing.setAlignment(Pos.CENTER_RIGHT);
+            trailing.setMinWidth(0.0);
+
             M3ListItem row = new M3ListItem(account.displayName());
             row.getStyleClass().add("hmcl-account-row");
             row.setSupportingText(HMCLDemoUi.accountTypeLabel(strings, account.type()));
             row.setLeading(HMCLDemoUi.accountFace(account, 36.0));
-            row.setTrailing(new HBox(8.0, remove, selector));
-            row.setSelected(account.equals(selected));
+            row.setTrailing(trailing);
+            row.setSelected(isSelected);
             row.setOnAction(event -> state.selectAccount(account.id()));
             accountList.getItems().add(row);
         }
@@ -136,13 +142,17 @@ final class HMCLAccountsView extends BorderPane {
         M3Dialog dialog = new M3Dialog();
         dialog.getDialogPane().setHeaderText(strings.get("accounts.microsoft.title"));
 
-        M3Text warning = new M3Text(strings.get("accounts.microsoft.warning"), M3TextRole.BODY_MEDIUM);
-        warning.getStyleClass().add("hmcl-dialog-warning");
-        warning.setWrapText(true);
+        M3Banner warning = new M3Banner(strings.get("accounts.microsoft.warning"));
+        warning.setIcon(HMCLDemoIcons.create(HMCLDemoIcons.INFO));
+        warning.getStyleClass().add("hmcl-dialog-warning-banner");
+
         M3Text body = new M3Text(strings.get("accounts.microsoft.body"), M3TextRole.BODY_MEDIUM);
         body.setWrapText(true);
+
         VBox content = new VBox(12.0, warning, body);
         content.setPadding(new Insets(4.0, 0.0, 0.0, 0.0));
+        content.setFillWidth(true);
+        content.setMinWidth(0.0);
         dialog.getDialogPane().setContent(content);
 
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);

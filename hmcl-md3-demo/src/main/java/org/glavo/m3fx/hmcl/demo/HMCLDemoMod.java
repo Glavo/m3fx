@@ -5,19 +5,17 @@ package org.glavo.m3fx.hmcl.demo;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes one immutable mod entry in a dummy game instance.
+/// One in-memory mod entry.
 ///
-/// @param id the stable mod identifier
-/// @param name the displayed mod name
-/// @param fileName the displayed jar file name
-/// @param enabled whether the mod is enabled
+/// @param id stable identifier
+/// @param name display name
+/// @param fileName jar file name
+/// @param version version label
+/// @param enabled whether enabled
 @NotNullByDefault
-public record HMCLDemoMod(String id, String name, String fileName, boolean enabled) {
+public record HMCLDemoMod(String id, String name, String fileName, String version, boolean enabled) {
     /// Returns a copy with the requested enabled state.
-    ///
-    /// @param value the new enabled state
-    /// @return this value when unchanged, otherwise an updated copy
     public HMCLDemoMod withEnabled(boolean value) {
-        return enabled == value ? this : new HMCLDemoMod(id, name, fileName, value);
+        return enabled == value ? this : new HMCLDemoMod(id, name, fileName, version, value);
     }
 }

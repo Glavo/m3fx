@@ -21,6 +21,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Dialog;
+import org.glavo.m3fx.controls.M3DialogHandle;
 import org.glavo.m3fx.controls.M3FilterChip;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -36,7 +37,7 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// Displays the download center with category navigation, version list, and installer selection.
+/// Displays the download center with category navigation, version list, catalog browsers, and installer selection.
 @NotNullByDefault
 final class HMCLDownloadView extends BorderPane {
     /// Download center categories.
@@ -134,6 +135,16 @@ final class HMCLDownloadView extends BorderPane {
                         renderCenter();
                     }
                 });
+        state.getCatalogItems().addListener((ListChangeListener<HMCLDemoCatalogItem>) change -> {
+            if (!installerOpen && category != Category.GAME) {
+                renderCenter();
+            }
+        });
+        state.catalogSearchQueryProperty().addListener((observable, oldValue, newValue) -> {
+            if (!installerOpen && category != Category.GAME) {
+                renderCenter();
+            }
+        });
         refreshLocale();
         showCategory(Category.GAME);
     }
@@ -189,6 +200,7 @@ final class HMCLDownloadView extends BorderPane {
         shaderItem.setSelected(next == Category.SHADER);
         worldItem.setSelected(next == Category.WORLD);
         renderCenter();
+        controller.refreshChrome();
     }
 
     /// Rebuilds the center pane for the current mode.
@@ -199,7 +211,11 @@ final class HMCLDownloadView extends BorderPane {
         }
         centerHost.getChildren().setAll(switch (category) {
             case GAME -> gameVersionContent();
-            case MODPACK, MOD, RESOURCE_PACK, SHADER, WORLD -> categoryPlaceholder();
+            case MODPACK -> catalogContent(HMCLDemoCatalogItem.Kind.MODPACK);
+            case MOD -> catalogContent(HMCLDemoCatalogItem.Kind.MOD);
+            case RESOURCE_PACK -> catalogContent(HMCLDemoCatalogItem.Kind.RESOURCE_PACK);
+            case SHADER -> catalogContent(HMCLDemoCatalogItem.Kind.SHADER);
+            case WORLD -> catalogContent(HMCLDemoCatalogItem.Kind.WORLD);
         });
     }
 
@@ -219,6 +235,7 @@ final class HMCLDownloadView extends BorderPane {
         old.setOnAction(event -> state.setShowOldVersions(old.isSelected()));
 
         M3IconButton refresh = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.REFRESH));
+        refresh.setAccessibleText(strings.get("common.refresh"));
         refresh.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
 
         HBox toolbar = HMCLDemoUi.toolbar(searchBar, release, snapshot, old, HMCLDemoUi.hgrow(), refresh);
@@ -232,7 +249,39 @@ final class HMCLDownloadView extends BorderPane {
             list.getItems().add(versionRow(version));
         }
 
-        // Scroll host keeps M3ListPane's full preferred height out of stage min-size calculations.
+        var listScroll = HMCLDemoUi.listHost(list);
+        VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
+        body.getStyleClass().add("hmcl-list-surface");
+        VBox.setVgrow(listScroll, Priority.ALWAYS);
+        VBox column = HMCLDemoUi.contentColumn(body);
+        VBox.setVgrow(body, Priority.ALWAYS);
+        return column;
+    }
+
+    /// Creates a searchable catalog browser for one content kind.
+    ///
+    /// @param kind the catalog kind
+    /// @return the catalog content
+    private Node catalogContent(HMCLDemoCatalogItem.Kind kind) {
+        M3SearchBar searchBar = new M3SearchBar();
+        searchBar.setPromptText(strings.get("download.search.catalog"));
+        searchBar.textProperty().bindBidirectional(state.catalogSearchQueryProperty());
+
+        M3IconButton refresh = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.REFRESH));
+        refresh.setAccessibleText(strings.get("common.refresh"));
+        refresh.setOnAction(event -> controller.showMessageKey("snackbar.refreshed"));
+
+        HBox toolbar = HMCLDemoUi.toolbar(searchBar, HMCLDemoUi.hgrow(), refresh);
+        HBox.setHgrow(searchBar, Priority.ALWAYS);
+
+        M3ListPane list = new M3ListPane();
+        list.setListStyle(M3ListStyle.SEGMENTED);
+        list.setSelectionMode(M3SelectionMode.NONE);
+        list.getStyleClass().add("hmcl-dense-list");
+        for (HMCLDemoCatalogItem item : state.getCatalog(kind)) {
+            list.getItems().add(catalogRow(item));
+        }
+
         var listScroll = HMCLDemoUi.listHost(list);
         VBox body = HMCLDemoUi.fill(new VBox(toolbar, listScroll));
         body.getStyleClass().add("hmcl-list-surface");
@@ -261,6 +310,26 @@ final class HMCLDownloadView extends BorderPane {
         row.setSupportingText(version.releaseTime());
         row.setLeading(HMCLDemoAssets.imageView("img/grass.png", 28.0, 28.0));
         row.setTrailing(trailing);
+        return row;
+    }
+
+    /// Creates one catalog content row.
+    ///
+    /// @param item the catalog item
+    /// @return the list item
+    private M3ListItem catalogRow(HMCLDemoCatalogItem item) {
+        M3Button install = new M3Button(strings.get("download.install"), M3ButtonVariant.TONAL);
+        install.setOnAction(event -> startCatalogInstall(item));
+
+        M3ListItem row = new M3ListItem(item.title());
+        row.getStyleClass().add("hmcl-catalog-row");
+        row.setSupportingText(strings.format(
+                "download.catalog.support",
+                item.author(),
+                item.downloads(),
+                item.summary()));
+        row.setLeading(HMCLDemoIcons.create(iconFor(item.kind())));
+        row.setTrailing(install);
         return row;
     }
 
@@ -316,16 +385,54 @@ final class HMCLDownloadView extends BorderPane {
         content.setMinHeight(96.0);
         M3Card card = new M3Card(content, M3CardVariant.OUTLINED);
         card.getStyleClass().add("hmcl-installer-card");
-        card.setOnAction(event -> startInstall(version, title));
+        card.setOnAction(event -> startGameInstall(version, title));
         return card;
     }
 
-    /// Starts the dummy installation progress dialog.
+    /// Starts the dummy game installation progress dialog.
     ///
     /// @param version the Minecraft version
     /// @param installer the installer name
-    private void startInstall(HMCLDemoMinecraftVersion version, String installer) {
+    private void startGameInstall(HMCLDemoMinecraftVersion version, String installer) {
         String title = version.name() + " + " + installer;
+        runInstall(title, () -> {
+            state.addDemoInstance();
+            controller.showMessageKey("snackbar.installed", title);
+            installerOpen = false;
+            installingVersion = null;
+            renderCenter();
+            controller.refreshChrome();
+        });
+    }
+
+    /// Starts a dummy catalog installation and attaches content when possible.
+    ///
+    /// @param item the catalog item
+    private void startCatalogInstall(HMCLDemoCatalogItem item) {
+        runInstall(item.title(), () -> {
+            applyCatalogResult(item);
+            controller.showMessageKey("snackbar.installed", item.title());
+        });
+    }
+
+    /// Applies the installed catalog item to the selected instance when possible.
+    ///
+    /// @param item the installed catalog item
+    private void applyCatalogResult(HMCLDemoCatalogItem item) {
+        switch (item.kind()) {
+            case MOD -> state.addDemoMod();
+            case RESOURCE_PACK -> state.addDemoResourcePack();
+            case SHADER -> state.addDemoShader();
+            case WORLD -> state.addDemoWorld();
+            case MODPACK -> state.addDemoInstance();
+        }
+    }
+
+    /// Runs a dummy installation timeline behind a progress dialog.
+    ///
+    /// @param title the installation title
+    /// @param onComplete the completion callback
+    private void runInstall(String title, Runnable onComplete) {
         state.beginInstallation(title);
 
         M3Text heading = new M3Text(strings.get("download.progress.title"), M3TextRole.TITLE_MEDIUM);
@@ -348,16 +455,17 @@ final class HMCLDownloadView extends BorderPane {
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);
         dialog.getDialogPane().getActions().setAll(cancel);
-        dialog.setOnHidden(event -> {
-            state.cancelInstallation();
-            installerOpen = false;
-            installingVersion = null;
-            renderCenter();
-            controller.refreshChrome();
-        });
-        controller.overlay().showDialog(dialog);
 
         Timeline timeline = new Timeline();
+        final boolean[] completed = {false};
+        dialog.setOnHidden(event -> {
+            if (!completed[0]) {
+                state.cancelInstallation();
+            }
+            timeline.stop();
+        });
+        M3DialogHandle handle = controller.overlay().showDialog(dialog);
+
         timeline.getKeyFrames().add(new KeyFrame(Duration.millis(120.0), event -> {
             if (state.getInstallingTitle() == null) {
                 timeline.stop();
@@ -366,34 +474,26 @@ final class HMCLDownloadView extends BorderPane {
             double next = Math.min(1.0, state.getInstallProgress() + 0.08);
             state.setInstallProgress(next);
             if (next >= 1.0) {
+                completed[0] = true;
                 timeline.stop();
-                controller.showMessageKey("snackbar.installed", title);
-                state.addDemoInstance();
+                handle.requestClose();
+                onComplete.run();
             }
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
     }
 
-    /// Creates a placeholder for non-game download categories.
+    /// Returns the sidebar icon path for a catalog kind.
     ///
-    /// @return the placeholder node
-    private Node categoryPlaceholder() {
-        String title = switch (category) {
-            case GAME -> strings.get("download.nav.game");
-            case MODPACK -> strings.get("download.nav.modpack");
-            case MOD -> strings.get("download.nav.mod");
-            case RESOURCE_PACK -> strings.get("download.nav.resource_pack");
-            case SHADER -> strings.get("download.nav.shader");
-            case WORLD -> strings.get("download.nav.world");
+    /// @param kind the catalog kind
+    /// @return the icon path
+    private static String iconFor(HMCLDemoCatalogItem.Kind kind) {
+        return switch (kind) {
+            case MOD, MODPACK -> HMCLDemoIcons.EXTENSION;
+            case RESOURCE_PACK, SHADER -> HMCLDemoIcons.IMAGE;
+            case WORLD -> HMCLDemoIcons.WORLD;
         };
-        M3Text titleText = new M3Text(title, M3TextRole.TITLE_LARGE);
-        M3Text bodyText = new M3Text(strings.get("download.placeholder"), M3TextRole.BODY_MEDIUM);
-        bodyText.setWrapText(true);
-        VBox box = new VBox(12.0, titleText, bodyText);
-        box.setPadding(new Insets(24.0));
-        box.setMaxWidth(520.0);
-        return HMCLDemoUi.scroll(box);
     }
 
     /// Creates a selected filter chip.
