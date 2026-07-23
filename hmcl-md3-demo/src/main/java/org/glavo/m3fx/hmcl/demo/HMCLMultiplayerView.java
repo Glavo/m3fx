@@ -46,7 +46,7 @@ final class HMCLMultiplayerView extends BorderPane {
         this.strings = controller.strings();
         this.state = controller.state();
 
-        getStyleClass().add("hmcl-multiplayer-page");
+        getStyleClass().addAll("hmcl-multiplayer-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
         statusBody.setWrapText(true);

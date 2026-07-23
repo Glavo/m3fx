@@ -40,7 +40,7 @@ final class HMCLAccountsView extends BorderPane {
         this.strings = controller.strings();
         this.state = controller.state();
 
-        getStyleClass().add("hmcl-accounts-page");
+        getStyleClass().addAll("hmcl-accounts-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
         VBox sidebar = HMCLDemoUi.sidebar(

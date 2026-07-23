@@ -65,7 +65,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         this.strings = controller.strings();
         this.state = controller.state();
 
-        getStyleClass().add("hmcl-instance-detail-page");
+        getStyleClass().addAll("hmcl-instance-detail-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
         settingsItem.setOnAction(event -> showSection(HMCLDemoRoute.InstanceSection.SETTINGS));

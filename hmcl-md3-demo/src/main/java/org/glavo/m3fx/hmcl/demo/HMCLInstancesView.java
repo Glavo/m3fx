@@ -46,7 +46,7 @@ final class HMCLInstancesView extends BorderPane {
         this.strings = controller.strings();
         this.state = controller.state();
 
-        getStyleClass().add("hmcl-instances-page");
+        getStyleClass().addAll("hmcl-instances-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
         newDirectoryButton.setVariant(M3ButtonVariant.TEXT);

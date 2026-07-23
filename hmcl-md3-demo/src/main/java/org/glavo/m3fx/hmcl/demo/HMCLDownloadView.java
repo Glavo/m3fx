@@ -46,7 +46,7 @@ final class HMCLDownloadView extends BorderPane {
         this.strings = controller.strings();
         this.state = controller.state();
 
-        getStyleClass().add("hmcl-download-page");
+        getStyleClass().addAll("hmcl-download-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
         gameItem.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.GAME));

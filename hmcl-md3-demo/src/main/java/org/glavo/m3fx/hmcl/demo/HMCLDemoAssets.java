@@ -42,10 +42,13 @@ final class HMCLDemoAssets {
 
     /// Loads a generated image.
     ///
+    /// Images load on the calling thread so wallpaper and avatar pixels are available for the first layout and
+    /// snapshot pass. Background loading left home chrome blank until a later pulse.
+    ///
     /// @param relativePath the generated image path
     /// @return the loaded image
     static Image image(String relativePath) {
-        return new Image(resource(relativePath).toExternalForm(), true);
+        return new Image(resource(relativePath).toExternalForm(), false);
     }
 
     /// Creates an image view with bounded, aspect-preserving dimensions.
