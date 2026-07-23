@@ -6,7 +6,9 @@ package org.glavo.m3fx.animation;
 import javafx.animation.Animation;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -21,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -453,6 +456,116 @@ final class M3LayoutAnimationTest {
             assertEquals(0.0, animatedContent.prefWidth(-1.0), 0.0);
             assertEquals(0.0, animatedContent.prefHeight(-1.0), 0.0);
         }));
+    }
+
+    /// Verifies slide transitions remain aligned to physical output pixels throughout a natural windowed run.
+    @Test
+    @Tier2Test
+    void animatedContentSnapsSlideOffsetsToOutputPixels() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3AnimatedContent> contentReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> incomingReference = new AtomicReference<>();
+        AtomicBoolean observedIntermediateOffset = new AtomicBoolean();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        M3AnimatedContent animatedContent =
+                                Objects.requireNonNull(contentReference.get(), "animatedContent");
+                        Region incoming = Objects.requireNonNull(incomingReference.get(), "incoming");
+                        Node holder = Objects.requireNonNull(incoming.getParent(), "incoming holder");
+                        double translateX = holder.getTranslateX();
+                        if (animatedContent.isTransitioning()) {
+                            double scaledTranslateX = translateX * stage.getOutputScaleX();
+                            assertEquals(
+                                    Math.rint(scaledTranslateX),
+                                    scaledTranslateX,
+                                    1.0e-6,
+                                    "slide translation must align to a physical output pixel"
+                            );
+                            if (Math.abs(translateX) > 1.0e-6 && Math.abs(translateX - 24.0) > 1.0e-6) {
+                                observedIntermediateOffset.set(true);
+                            }
+                        }
+                        return !animatedContent.isTransitioning();
+                    },
+                    () -> {
+                        Region first = fixedRegion(80.0, 32.0);
+                        Region incoming = fixedRegion(120.0, 40.0);
+                        M3MotionSpec motionSpec =
+                                M3MotionSpec.of(Duration.millis(400.0), M3MotionEasing.LINEAR);
+                        M3AnimatedContent animatedContent = new M3AnimatedContent(first);
+                        animatedContent.setContentTransform(new M3ContentTransform(
+                                M3EnterTransition.slideFrom(M3TransitionEdge.END, 24.0)
+                                        .withMotionSpec(motionSpec),
+                                M3ExitTransition.slideTo(M3TransitionEdge.START, 12.0)
+                                        .withMotionSpec(motionSpec),
+                                null,
+                                0.0
+                        ));
+
+                        StackPane root = new StackPane(animatedContent);
+                        Stage stage = new Stage();
+                        stage.setScene(new Scene(root, 320.0, 120.0));
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        stageReference.set(stage);
+                        contentReference.set(animatedContent);
+                        incomingReference.set(incoming);
+                        animatedContent.setContent(incoming);
+                    },
+                    () -> {
+                        M3AnimatedContent animatedContent =
+                                Objects.requireNonNull(contentReference.get(), "animatedContent");
+                        Region incoming = Objects.requireNonNull(incomingReference.get(), "incoming");
+                        Node holder = Objects.requireNonNull(incoming.getParent(), "incoming holder");
+                        assertTrue(
+                                observedIntermediateOffset.get(),
+                                "the test must observe an intermediate slide frame"
+                        );
+                        assertEquals(0.0, holder.getTranslateX(), 0.0);
+                        assertFalse(animatedContent.isTransitioning());
+                    }
+            );
+
+            AtomicReference<@Nullable Bounds> settledBoundsReference = new AtomicReference<>();
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Region incoming = Objects.requireNonNull(incomingReference.get(), "incoming");
+                        Bounds currentBounds = incoming.localToScene(incoming.getBoundsInLocal());
+                        @Nullable Bounds settledBounds = settledBoundsReference.get();
+                        if (settledBounds == null) {
+                            settledBoundsReference.set(currentBounds);
+                        } else {
+                            assertEquals(settledBounds.getMinX(), currentBounds.getMinX(), 0.0);
+                            assertEquals(settledBounds.getMinY(), currentBounds.getMinY(), 0.0);
+                            assertEquals(settledBounds.getWidth(), currentBounds.getWidth(), 0.0);
+                            assertEquals(settledBounds.getHeight(), currentBounds.getHeight(), 0.0);
+                        }
+                        M3AnimatedContent animatedContent =
+                                Objects.requireNonNull(contentReference.get(), "animatedContent");
+                        return !animatedContent.isTransitioning();
+                    },
+                    8,
+                    () -> {
+                    },
+                    () -> {
+                        M3AnimatedContent animatedContent =
+                                Objects.requireNonNull(contentReference.get(), "animatedContent");
+                        assertFalse(animatedContent.isNeedsLayout());
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies rapid target reversal reuses the outgoing holder without resetting the target node.

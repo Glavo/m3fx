@@ -46,9 +46,10 @@ import java.util.Objects;
 ///
 /// Fade, scale, logical-edge slide, and reveal effects are composed by [M3EnterTransition] and [M3ExitTransition].
 /// They are applied to private holders, leaving each content node's opacity, scale, translation, clip, and transform
-/// list under caller ownership. [M3SizeTransform] independently controls animated preferred size and viewport
-/// clipping. A target that is already the outgoing node reverses naturally from its current visual state instead of
-/// being reparented or reset.
+/// list under caller ownership. Slide offsets follow this region's [Region#snapToPixelProperty()] so text and other
+/// pixel-sensitive content settle without a subpixel spring tail. [M3SizeTransform] independently controls animated
+/// preferred size and viewport clipping. A target that is already the outgoing node reverses naturally from its
+/// current visual state rather than being reparented or reset.
 ///
 /// This class follows the retained-mode semantics of JavaFX rather than accepting a state-to-content composition
 /// callback. Callers create and retain their nodes, then assign the desired target through [#setContent(Node)]. A
@@ -1257,8 +1258,8 @@ public final class M3AnimatedContent extends Region {
             double scaleValue = state.scale.valueAt(elapsedSeconds);
             state.holder.setScaleX(scaleValue);
             state.holder.setScaleY(scaleValue);
-            state.holder.setTranslateX(state.translateX.valueAt(elapsedSeconds));
-            state.holder.setTranslateY(state.translateY.valueAt(elapsedSeconds));
+            state.holder.setTranslateX(snapPositionX(state.translateX.valueAt(elapsedSeconds)));
+            state.holder.setTranslateY(snapPositionY(state.translateY.valueAt(elapsedSeconds)));
             if (state.clipActive) {
                 state.applyClip(
                         state.clipMinX.valueAt(elapsedSeconds),
