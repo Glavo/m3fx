@@ -19,7 +19,11 @@ import java.util.Objects;
 /// This type is package-private because applications use one of its concrete subclasses.
 @NotNullByDefault
 abstract sealed class M3SettingItemBase extends M3ListItemBase
-        permits M3SettingItem, M3SwitchSettingItem, M3CheckBoxSettingItem, M3RadioButtonSettingItem {
+        permits M3SettingItem,
+                M3SwitchSettingItem,
+                M3CheckBoxSettingItem,
+                M3RadioButtonSettingItem,
+                M3SelectSettingItem {
     /// The common style class assigned to all setting rows.
     private static final String DEFAULT_STYLE_CLASS = "m3-setting-item";
 

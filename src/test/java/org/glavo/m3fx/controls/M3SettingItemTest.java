@@ -175,6 +175,48 @@ final class M3SettingItemTest {
         });
     }
 
+    /// Verifies that a select setting row formats values, owns a passive disclosure indicator, and fires on choice.
+    @Test
+    void selectSettingItemFormatsValueAndFiresOnChoice() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SelectSettingItem<String> item = new M3SelectSettingItem<>("Language");
+            item.setItems("English", "中文", "日本語");
+            item.setConverter(value -> switch (value) {
+                case "English" -> "English";
+                case "中文" -> "Chinese";
+                case "日本語" -> "Japanese";
+                default -> value;
+            });
+            item.setValue("English");
+            AtomicInteger actionCount = new AtomicInteger();
+            item.setOnAction(event -> actionCount.incrementAndGet());
+
+            assertEquals(AccessibleRole.COMBO_BOX, item.getAccessibleRole());
+            assertEquals("English", item.getTrailingSupportingText());
+            assertInstanceOf(org.glavo.m3fx.internal.M3DisclosureIcon.class, item.getTrailing());
+            assertTrue(item.getTrailing().isMouseTransparent());
+            assertFalse(item.getTrailing().isFocusTraversable());
+
+            item.fire();
+            assertEquals(0, actionCount.get(), "opening the menu must not fire a value action");
+            assertFalse(item.isShowing(), "popup requires a showing window and stays closed in headless fire()");
+
+            item.setValue("中文");
+            assertEquals("Chinese", item.getTrailingSupportingText());
+            assertEquals(0, actionCount.get(), "direct value changes must not fire actions");
+
+            item.setShowValue(false);
+            assertEquals("", item.getTrailingSupportingText());
+            item.setShowValue(true);
+            assertEquals("Chinese", item.getTrailingSupportingText());
+
+            assertInstanceOf(M3MenuItem.class, item.getMenu().getItems().get(2)).fire();
+            assertEquals("日本語", item.getValue());
+            assertEquals("Japanese", item.getTrailingSupportingText());
+            assertEquals(1, actionCount.get(), "choosing a menu item must fire one action");
+        });
+    }
+
     /// Verifies that segmented lists insert their official gap only between adjacent list-derived rows.
     @Test
     void segmentedListAppliesGapToSettingRowsOnly() {
@@ -184,10 +226,11 @@ final class M3SettingItemTest {
             M3Divider divider = new M3Divider();
             M3RadioButtonSettingItem third = new M3RadioButtonSettingItem("Third");
             M3SettingItem fourth = new M3SettingItem("Fourth");
+            M3SelectSettingItem<String> fifth = new M3SelectSettingItem<>("Fifth");
             M3ListPane listPane = new M3ListPane();
             listPane.setListStyle(M3ListStyle.SEGMENTED);
             listPane.setSelectionMode(M3SelectionMode.NONE);
-            listPane.getItems().addAll(first, second, divider, third, fourth);
+            listPane.getItems().addAll(first, second, divider, third, fourth, fifth);
 
             StackPane root = new StackPane(listPane);
             Scene scene = new Scene(root, 400.0, 300.0);
@@ -199,7 +242,8 @@ final class M3SettingItemTest {
             assertNull(VBox.getMargin(second), "a divider must not inherit a segmented list gap");
             assertNull(VBox.getMargin(divider), "a divider must not receive a segmented list gap");
             assertEquals(new Insets(0.0, 0.0, 2.0, 0.0), VBox.getMargin(third));
-            assertNull(VBox.getMargin(fourth), "the final row must not receive trailing list spacing");
+            assertEquals(new Insets(0.0, 0.0, 2.0, 0.0), VBox.getMargin(fourth));
+            assertNull(VBox.getMargin(fifth), "the final row must not receive trailing list spacing");
         });
     }
 

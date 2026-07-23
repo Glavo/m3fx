@@ -227,6 +227,14 @@
     -m3-list-item-selected-content-color: -m3-color-on-surface;
 }
 
+.m3-select-setting-item .m3-list-item-trailing-supporting {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-select-setting-item:disabled .m3-list-item-trailing-supporting {
+    -fx-opacity: 0.38;
+}
+
 .m3-setting-item:selected .m3-list-item-selection-container {
     -fx-background-color: transparent;
 }

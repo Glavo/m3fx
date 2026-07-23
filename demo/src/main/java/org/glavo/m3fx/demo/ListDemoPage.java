@@ -15,6 +15,7 @@ import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
+import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -100,12 +101,31 @@ final class ListDemoPage extends DemoPageSupport {
                         : mobileData.isSelected() ? "Mobile data enabled" : "Mobile data disabled"
         ));
 
+        M3SelectSettingItem<String> language = new M3SelectSettingItem<>("Language");
+        language.setSupportingText("Displayed language for system text");
+        language.setLeading(createSurfaceVariantIcon("translate"));
+        language.setItems("English", "中文", "日本語");
+        language.setConverter(value -> switch (value) {
+            case "English" -> "English";
+            case "中文" -> "Chinese";
+            case "日本語" -> "Japanese";
+            default -> value;
+        });
+        language.setDescriptionConverter(value -> switch (value) {
+            case "English" -> "Default UI language";
+            case "中文" -> "Simplified Chinese";
+            case "日本語" -> "Japanese";
+            default -> "";
+        });
+        language.setValue("English");
+        language.setOnAction(event -> context.showSnackbar("Language: " + language.getTrailingSupportingText()));
+
         M3ListPane settingsList = new M3ListPane();
         settingsList.getStyleClass().add("demo-list");
         configureResponsiveWidth(settingsList, 520.0);
         settingsList.setListStyle(M3ListStyle.SEGMENTED);
         settingsList.setSelectionMode(M3SelectionMode.NONE);
-        settingsList.getItems().addAll(updates, mobileData);
+        settingsList.getItems().addAll(updates, mobileData, language);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Standard", standardList),

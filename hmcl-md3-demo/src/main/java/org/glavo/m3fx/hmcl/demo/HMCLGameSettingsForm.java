@@ -20,6 +20,7 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3SVGIcon;
+import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3Slider;
@@ -87,16 +88,13 @@ final class HMCLGameSettingsForm {
             );
             blocks.add(section(strings.get("settings.game.section.basic"), followGlobal, isolation));
         } else {
-            M3SettingItem isolation = cycleItem(
+            M3SelectSettingItem<String> isolation = selectItem(
                     strings.get("settings.game.default_isolation"),
-                    isolationLabel(strings, state.getDefaultIsolation()),
-                    () -> {
-                        String next = switch (state.getDefaultIsolation()) {
-                            case "never" -> "always";
-                            case "always" -> "modded";
-                            default -> "never";
-                        };
-                        state.setDefaultIsolation(next);
+                    List.of("never", "always", "modded"),
+                    state.getDefaultIsolation(),
+                    value -> isolationLabel(strings, value),
+                    value -> {
+                        state.setDefaultIsolation(value);
                         settingsConsumer.accept(settingsSupplier.get());
                     }
             );
@@ -325,17 +323,15 @@ final class HMCLGameSettingsForm {
                 radioItem(strings.get("settings.game.window.maximized"), "",
                         "maximized".equals(settings.windowType()),
                         () -> settingsConsumer.accept(settingsSupplier.get().withWindow("maximized", settings.resolution()))),
-                cycleItem(strings.get("settings.game.resolution"), settings.resolution(), () -> {
-                    HMCLDemoGameSettings current = settingsSupplier.get();
-                    String next = RESOLUTIONS[0];
-                    for (int index = 0; index < RESOLUTIONS.length; index++) {
-                        if (RESOLUTIONS[index].equals(current.resolution())) {
-                            next = RESOLUTIONS[(index + 1) % RESOLUTIONS.length];
-                            break;
-                        }
-                    }
-                    settingsConsumer.accept(current.withWindow(current.windowType(), next));
-                })
+                selectItem(
+                        strings.get("settings.game.resolution"),
+                        List.of(RESOLUTIONS),
+                        settings.resolution(),
+                        value -> value,
+                        value -> {
+                            HMCLDemoGameSettings current = settingsSupplier.get();
+                            settingsConsumer.accept(current.withWindow(current.windowType(), value));
+                        })
         );
     }
 
@@ -348,16 +344,12 @@ final class HMCLGameSettingsForm {
         HMCLDemoStrings strings = controller.strings();
         return section(
                 strings.get("settings.launcher"),
-                cycleItem(strings.get("settings.advanced.launcher_visibility"),
-                        visibilityLabel(strings, settings.launcherVisibility()),
-                        () -> {
-                            String next = switch (settingsSupplier.get().launcherVisibility()) {
-                                case "hide" -> "keep";
-                                case "keep" -> "close";
-                                default -> "hide";
-                            };
-                            settingsConsumer.accept(settingsSupplier.get().withLauncherVisibility(next));
-                        }),
+                selectItem(
+                        strings.get("settings.advanced.launcher_visibility"),
+                        List.of("hide", "keep", "close"),
+                        settings.launcherVisibility(),
+                        value -> visibilityLabel(strings, value),
+                        value -> settingsConsumer.accept(settingsSupplier.get().withLauncherVisibility(value))),
                 switchItem(strings.get("settings.launcher.allow_auto_agent"),
                         strings.get("settings.launcher.allow_auto_agent.support"),
                         settings.allowAutoAgent(),
@@ -515,18 +507,16 @@ final class HMCLGameSettingsForm {
                                             current.runningDirectory(), current.gameArguments(), value,
                                             current.processPriority()));
                                 })),
-                cycleItem(strings.get("settings.advanced.process_priority"),
-                        priorityLabel(strings, settings.processPriority()),
-                        () -> {
-                            String next = switch (settingsSupplier.get().processPriority()) {
-                                case "high" -> "normal";
-                                case "normal" -> "low";
-                                default -> "high";
-                            };
+                selectItem(
+                        strings.get("settings.advanced.process_priority"),
+                        List.of("high", "normal", "low"),
+                        settings.processPriority(),
+                        value -> priorityLabel(strings, value),
+                        value -> {
                             HMCLDemoGameSettings current = settingsSupplier.get();
                             settingsConsumer.accept(current.withAdvancedLaunch(
                                     current.runningDirectory(), current.gameArguments(),
-                                    current.environmentVariables(), next));
+                                    current.environmentVariables(), value));
                         })
         );
     }
@@ -683,7 +673,8 @@ final class HMCLGameSettingsForm {
         for (Node item : items) {
             if (item instanceof M3SettingItem
                     || item instanceof M3SwitchSettingItem
-                    || item instanceof M3RadioButtonSettingItem) {
+                    || item instanceof M3RadioButtonSettingItem
+                    || item instanceof M3SelectSettingItem<?>) {
                 listItems.add(item);
             } else {
                 extra.add(item);
@@ -730,6 +721,25 @@ final class HMCLGameSettingsForm {
         M3SettingItem item = new M3SettingItem(title);
         item.setSupportingText(support);
         item.setOnAction(event -> onAction.run());
+        return item;
+    }
+
+    private static M3SelectSettingItem<String> selectItem(
+            String title,
+            List<String> choices,
+            String value,
+            java.util.function.Function<String, String> converter,
+            Consumer<String> onChange
+    ) {
+        M3SelectSettingItem<String> item = new M3SelectSettingItem<>(title);
+        item.setItems(choices);
+        item.setConverter(converter);
+        item.setValue(value);
+        item.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                onChange.accept(newValue);
+            }
+        });
         return item;
     }
 
