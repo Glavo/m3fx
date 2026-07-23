@@ -32,7 +32,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
-        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar :hmcl-md3-demo:test --no-daemon
+        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar :hmcl-md3-demo:test :hmcl-md3-demo:verifyShadowJar --no-daemon
 
       - name: Run full release check
         if: github.event_name == 'workflow_dispatch'
@@ -105,5 +105,13 @@ jobs:
         with:
           name: m3fx-catalog-shadow-jar
           path: catalog/build/libs/m3fx-catalog-*-shadow.jar
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload HMCL MD3 demo shadow jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: hmcl-md3-demo-shadow-jar
+          path: hmcl-md3-demo/build/libs/hmcl-md3-demo-*-shadow.jar
           if-no-files-found: error
           archive: false

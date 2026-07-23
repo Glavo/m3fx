@@ -695,6 +695,12 @@ tasks.register("shadowDemoJar") {
     dependsOn(":demo:verifyShadowJar")
 }
 
+tasks.register("shadowHmclMd3DemoJar") {
+    group = "distribution"
+    description = "Builds an executable fat JAR for the HMCL Material Design 3 demo application."
+    dependsOn(":hmcl-md3-demo:verifyShadowJar")
+}
+
 tasks.register("nativeBuildDemo") {
     group = "distribution"
     description = "Builds the M3FX demo as a host-platform Liberica NIK executable."
@@ -739,6 +745,7 @@ tasks.register("releaseCheck") {
         tasks.named("check"),
         tasks.named("fullTest"),
         tasks.named("shadowDemoJar"),
+        tasks.named("shadowHmclMd3DemoJar"),
         tasks.named("shadowCatalogJar"),
         tasks.named("jlinkDemoRuntime")
     )

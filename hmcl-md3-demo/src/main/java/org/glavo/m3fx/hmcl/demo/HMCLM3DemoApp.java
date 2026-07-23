@@ -5,7 +5,10 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.paint.Color;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -14,6 +17,7 @@ import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /// Runs the HMCL-inspired Material 3 launcher demonstration.
@@ -22,33 +26,43 @@ import java.util.Objects;
 /// directory and keeps every interaction in deterministic in-memory state.
 @NotNullByDefault
 public final class HMCLM3DemoApp extends Application {
+    /// The JavaFX system property controlling LCD subpixel text rendering.
+    private static final String LCD_TEXT_PROPERTY = "prism.lcdtext";
+
+    /// The output scale above which Windows uses grayscale text antialiasing by default.
+    private static final double SCALED_OUTPUT_THRESHOLD = 1.0;
+
     /// The initial scene width in logical pixels.
-    private static final double INITIAL_WIDTH = 1_180.0;
+    private static final double INITIAL_WIDTH = 1_000.0;
 
     /// The initial scene height in logical pixels.
-    private static final double INITIAL_HEIGHT = 800.0;
+    private static final double INITIAL_HEIGHT = 625.0;
 
     /// The minimum supported window width in logical pixels.
-    private static final double MINIMUM_WIDTH = 420.0;
+    private static final double MINIMUM_WIDTH = 818.0;
 
     /// The minimum supported window height in logical pixels.
-    private static final double MINIMUM_HEIGHT = 560.0;
+    private static final double MINIMUM_HEIGHT = 508.0;
 
     /// Creates an application instance.
     public HMCLM3DemoApp() {
     }
 
-    /// Creates the localized demo state, adaptive shell, and expressive Material theme.
+    /// Creates the localized HMCL shell and expressive Material theme.
     ///
     /// @param stage the JavaFX primary stage
     @Override
     public void start(Stage stage) {
+        configureFontAntialiasing();
+        stage.initStyle(StageStyle.TRANSPARENT);
+
         HMCLDemoStrings strings = new HMCLDemoStrings();
         HMCLDemoState state = new HMCLDemoState(strings);
         M3OverlayPane root = new M3OverlayPane();
         root.setContent(new HMCLDemoShell(root, strings, state));
 
         Scene scene = new Scene(root, INITIAL_WIDTH, INITIAL_HEIGHT);
+        scene.setFill(Color.TRANSPARENT);
         scene.getStylesheets().add(Objects.requireNonNull(
                 HMCLM3DemoApp.class.getResource("hmcl-md3-demo.css"),
                 "HMCL demo stylesheet"
@@ -73,5 +87,21 @@ public final class HMCLM3DemoApp extends Application {
                 (observable, oldLocale, newLocale) -> stage.setTitle(strings.get("app.title"))
         );
         stage.show();
+    }
+
+    /// Disables LCD subpixel antialiasing on scaled Windows primary displays unless explicitly configured.
+    ///
+    /// An existing `prism.lcdtext` value is preserved. On non-Windows systems and Windows displays using
+    /// 100% scaling, this method leaves JavaFX's default unchanged.
+    private static void configureFontAntialiasing() {
+        if (System.getProperty(LCD_TEXT_PROPERTY) != null) {
+            return;
+        }
+
+        String operatingSystemName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (operatingSystemName.startsWith("windows")
+                && Screen.getPrimary().getOutputScaleX() > SCALED_OUTPUT_THRESHOLD) {
+            System.setProperty(LCD_TEXT_PROPERTY, Boolean.FALSE.toString());
+        }
     }
 }

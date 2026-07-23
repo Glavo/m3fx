@@ -55,6 +55,20 @@ final class HMCLDemoIcons {
     static final String SEARCH =
             "M9.5 3a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm5.4 8.5L22 20.6 20.6 22l-7.1-7.1z";
 
+    /// The help icon path.
+    static final String HELP =
+            "M11 18h2v2h-2zm1-16a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8c-1.7 0-3 1.1-3 2.7h2c0-.5.4-.9 1-.9s1 .4 1 .9c0 .7-.4 1-1.1 1.5-.8.5-1.9 1.3-1.9 2.8h2c0-.5.4-.8 1.1-1.3.8-.6 1.9-1.4 1.9-3 0-1.6-1.3-2.7-3-2.7z";
+
+    /// The window-minimize icon path.
+    static final String MINIMIZE = "M5 11h14v2H5z";
+
+    /// The window-close icon path.
+    static final String CLOSE = "M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z";
+
+    /// The chat icon path.
+    static final String CHAT =
+            "M4 4h16v12H7l-3 3zm2 2v8h10.8l1.2 1.2V6z";
+
     /// Prevents utility-class instantiation.
     private HMCLDemoIcons() {
     }

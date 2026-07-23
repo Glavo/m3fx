@@ -3,189 +3,130 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
-import org.glavo.m3fx.controls.M3Card;
-import org.glavo.m3fx.controls.M3CardVariant;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
-import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
-import org.glavo.m3fx.controls.M3Tab;
-import org.glavo.m3fx.controls.M3TabBar;
-import org.glavo.m3fx.controls.M3TabBarVariant;
-import org.glavo.m3fx.controls.M3Text;
-import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
-
-/// Displays a focused overview, settings sample, and mod list for the selected game instance.
+/// Displays a selected instance through a contextual sidebar and dense line-form content.
 @NotNullByDefault
 public final class HMCLInstanceDetailView extends HMCLDemoView {
     /// Creates the selected-instance detail page.
     ///
     /// @param strings the localization source
-    /// @param state   the shared demo state
+    /// @param state the shared demo state
     /// @param actions the application command sink
     public HMCLInstanceDetailView(HMCLDemoStrings strings, HMCLDemoState state, HMCLDemoActions actions) {
         super(strings, state, actions);
         initializeView();
     }
 
-    /// Creates the localized instance-detail content.
+    /// Creates the selected instance page.
     ///
     /// @return the instance-detail page tree
     @Override
     protected Node createContent() {
         @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
         if (instance == null) {
-            return page(
-                    heading(text("instance.detail.empty.title"), text("instance.detail.empty.subtitle")),
-                    commandButton(
-                            text("action.back_to_instances"),
-                            M3ButtonVariant.FILLED,
-                            HMCLDemoActions.command("navigate", HMCLDemoActions.ROUTE_INSTANCES)
-                    )
-            );
+            return page(heading(text("instance.detail.empty.title"), text("instance.detail.empty.subtitle")),
+                    commandButton(text("action.back_to_instances"), M3ButtonVariant.FILLED,
+                            HMCLDemoActions.command("navigate", HMCLDemoActions.ROUTE_INSTANCES)));
         }
-
-        StackPane contentHost = new StackPane();
-        contentHost.setMinWidth(0.0);
-        contentHost.setMaxWidth(Double.MAX_VALUE);
-
-        M3Tab overviewTab = new M3Tab(text("instance.tab.overview"));
-        M3Tab settingsTab = new M3Tab(text("instance.tab.settings"));
-        M3Tab modsTab = new M3Tab(text("instance.tab.mods"));
-        overviewTab.setSelected(true);
-
-        overviewTab.setOnAction(event -> contentHost.getChildren().setAll(createOverview(instance)));
-        settingsTab.setOnAction(event -> contentHost.getChildren().setAll(createSettings(instance)));
-        modsTab.setOnAction(event -> contentHost.getChildren().setAll(createMods(instance)));
-
-        M3TabBar tabs = new M3TabBar();
-        tabs.setVariant(M3TabBarVariant.SECONDARY);
-        tabs.getTabs().addAll(overviewTab, settingsTab, modsTab);
-        contentHost.getChildren().setAll(createOverview(instance));
-
-        return page(
-                heading(instance.name(), text("instance.detail.subtitle", instance.gameVersion(), instance.loader())),
-                tabs,
-                contentHost
-        );
+        StackPane content = new StackPane(createGameSettings(instance));
+        content.setMinWidth(0.0);
+        content.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(content, Priority.ALWAYS);
+        HBox layout = new HBox(24.0, createSidebar(instance, content), content);
+        layout.setMinWidth(0.0);
+        layout.setMaxWidth(Double.MAX_VALUE);
+        return page(heading(instance.name(), text("instance.detail.subtitle", instance.gameVersion(), instance.loader())), layout);
     }
 
-    /// Creates the instance overview tab.
+    /// Creates the approximately 200-pixel contextual navigation and bottom instance actions.
     ///
-    /// @param instance the represented instance
-    /// @return the overview content
-    private Node createOverview(HMCLDemoInstance instance) {
-        M3AssistChip status = new M3AssistChip(text(
-                "instance.status." + instance.status().name().toLowerCase(Locale.ROOT)
-        ));
-        status.setDisable(true);
-
-        M3Text description = new M3Text(
-                HMCLDemoModelText.instanceDescription(strings, instance),
-                M3TextRole.BODY_LARGE
-        );
-        description.setWrapText(true);
-        M3Text lastPlayed = new M3Text(
-                text("instance.last_played", HMCLDemoModelText.instanceLastPlayed(strings, instance)),
-                M3TextRole.BODY_MEDIUM
-        );
-
-        M3Button play = new M3Button(text("action.play"), M3ButtonVariant.FILLED);
-        play.setGraphic(HMCLDemoIcons.create(HMCLDemoIcons.PLAY));
-        play.setOnAction(event -> actions.dispatch(HMCLDemoActions.ACTION_PLAY));
-        M3Button folder = new M3Button(text("instance.open_folder"), M3ButtonVariant.OUTLINED);
-        folder.setOnAction(event -> actions.dispatch("open-instance-folder", instance.id()));
-
-        M3Card summary = card(
-                M3CardVariant.ELEVATED,
-                status,
-                new M3Text(instance.name(), M3TextRole.HEADLINE_SMALL),
-                description,
-                lastPlayed,
-                new HBox(10.0, play, folder)
-        );
-
-        M3SettingItem gameVersion = new M3SettingItem(text("instance.game_version"));
-        gameVersion.setSupportingText(instance.gameVersion());
-        M3SettingItem loader = new M3SettingItem(text("instance.loader"));
-        loader.setSupportingText(instance.loader());
-        M3SettingItem installedMods = new M3SettingItem(text("instance.installed_mods"));
-        installedMods.setSupportingText(text("instance.installed_mods.count", instance.mods().size()));
-
-        M3ListPane facts = createList(gameVersion, loader, installedMods);
-        return new VBox(20.0, summary, sectionTitle(text("instance.overview.details")), facts);
+    /// @param instance the selected instance
+    /// @param content the content host to replace
+    /// @return the sidebar node
+    private Node createSidebar(HMCLDemoInstance instance, StackPane content) {
+        M3ListPane sections = createList();
+        addSection(sections, text("instance.settings"), () -> createGameSettings(instance), content);
+        addSection(sections, text("common.install"), () -> createAutoInstall(instance), content);
+        addSection(sections, text("instance.mods"), () -> createMods(instance), content);
+        addSection(sections, text("discover.filter.resources"), () -> createContentAction(text("discover.filter.resources"), instance), content);
+        addSection(sections, text("common.open"), () -> createContentAction(text("common.open"), instance), content);
+        addSection(sections, text("discover.filter.shaders"), () -> createContentAction(text("discover.filter.shaders"), instance), content);
+        M3Button testLaunch = new M3Button(text("action.play"), M3ButtonVariant.FILLED);
+        testLaunch.setMaxWidth(Double.MAX_VALUE);
+        testLaunch.setOnAction(event -> actions.dispatch(HMCLDemoActions.ACTION_PLAY));
+        M3Button browse = new M3Button(text("common.open"), M3ButtonVariant.TEXT);
+        browse.setMaxWidth(Double.MAX_VALUE);
+        browse.setOnAction(event -> actions.dispatch("open-instance-folder", instance.id()));
+        M3Button manage = new M3Button(text("common.manage"), M3ButtonVariant.TEXT);
+        manage.setMaxWidth(Double.MAX_VALUE);
+        manage.setOnAction(event -> actions.dispatch("manage-instance", instance.id()));
+        VBox sidebar = new VBox(8.0, sections, testLaunch, browse, manage);
+        sidebar.setPrefWidth(200.0);
+        sidebar.setMinWidth(180.0);
+        sidebar.setMaxWidth(220.0);
+        return sidebar;
     }
 
-    /// Creates the representative instance settings tab.
+    /// Adds a sidebar section that replaces the central content when activated.
     ///
-    /// @param instance the represented instance
+    /// @param list the section list
+    /// @param label the localized section label
+    /// @param factory the section content factory
+    /// @param content the central content host
+    private static void addSection(M3ListPane list, String label, java.util.function.Supplier<Node> factory,
+                                   StackPane content) {
+        M3ListItem item = new M3ListItem(label);
+        item.setOnAction(event -> content.getChildren().setAll(factory.get()));
+        list.getItems().add(item);
+    }
+
+    /// Creates the game settings line form.
+    ///
+    /// @param instance the selected instance
     /// @return the settings content
-    private Node createSettings(HMCLDemoInstance instance) {
-        M3SettingItem javaRuntime = new M3SettingItem(text("instance.settings.java"));
-        javaRuntime.setSupportingText(text("instance.settings.java.value"));
-        javaRuntime.setOnAction(event -> actions.dispatch("choose-java", instance.id()));
-
-        M3SettingItem resolution = new M3SettingItem(text("instance.settings.resolution"));
-        resolution.setSupportingText(text("instance.settings.resolution.value"));
-        resolution.setOnAction(event -> actions.dispatch("choose-resolution", instance.id()));
-
+    private Node createGameSettings(HMCLDemoInstance instance) {
+        M3SettingItem version = actionItem(text("instance.game_version"), instance.gameVersion(), "choose-game-version", instance);
+        M3SettingItem loader = actionItem(text("instance.loader"), instance.loader(), "choose-loader", instance);
+        M3SettingItem javaRuntime = actionItem(text("instance.settings.java"), text("instance.settings.java.value"), "choose-java", instance);
+        M3SettingItem resolution = actionItem(text("instance.settings.resolution"), text("instance.settings.resolution.value"), "choose-resolution", instance);
         M3SwitchSettingItem isolation = new M3SwitchSettingItem(text("instance.settings.isolation"));
         isolation.setSupportingText(text("instance.settings.isolation.supporting"));
         isolation.setSelected(true);
         isolation.setOnAction(event -> actions.dispatch("toggle-isolation", instance.id()));
-
-        M3SwitchSettingItem showLogs = new M3SwitchSettingItem(text("instance.settings.logs"));
-        showLogs.setSupportingText(text("instance.settings.logs.supporting"));
-        showLogs.setSelected(false);
-        showLogs.setOnAction(event -> actions.dispatch("toggle-game-logs", instance.id()));
-
-        M3ListPane settings = createList(javaRuntime, resolution, isolation, showLogs);
-
-        M3Text memoryTitle = new M3Text(text("instance.settings.memory"), M3TextRole.TITLE_MEDIUM);
-        M3Text memoryValue = new M3Text(text("instance.settings.memory.value", 8), M3TextRole.BODY_MEDIUM);
-        M3Slider memory = new M3Slider(2.0, 24.0, 8.0);
-        memory.valueProperty().addListener((observable, oldValue, newValue) ->
-                memoryValue.setText(text("instance.settings.memory.value", Math.round(newValue.doubleValue()))));
-        M3Card memoryCard = card(M3CardVariant.FILLED, memoryTitle, memoryValue, memory);
-
-        return new VBox(20.0, sectionTitle(text("instance.settings.gameplay")), settings, memoryCard);
+        return createList(version, loader, javaRuntime, resolution, isolation);
     }
 
-    /// Creates the installed-mod tab.
+    /// Creates the automatic-install line form.
     ///
-    /// @param instance the represented instance
+    /// @param instance the selected instance
+    /// @return the automatic-install content
+    private Node createAutoInstall(HMCLDemoInstance instance) {
+        M3SettingItem install = actionItem(text("common.install"), text("instance.detail.subtitle", instance.gameVersion(), instance.loader()), HMCLDemoActions.ACTION_INSTALL, instance);
+        M3SettingItem refresh = actionItem(text("common.refresh"), HMCLDemoModelText.instanceLastPlayed(strings, instance), HMCLDemoActions.ACTION_REFRESH, instance);
+        return createList(install, refresh);
+    }
+
+    /// Creates the installed-mod line form.
+    ///
+    /// @param instance the selected instance
     /// @return the mod-management content
     private Node createMods(HMCLDemoInstance instance) {
-        if (instance.mods().isEmpty()) {
-            return card(
-                    M3CardVariant.FILLED,
-                    new M3Text(text("instance.mods.empty.title"), M3TextRole.TITLE_MEDIUM),
-                    new M3Text(text("instance.mods.empty.subtitle"), M3TextRole.BODY_MEDIUM),
-                    commandButton(
-                            text("instance.mods.discover"),
-                            M3ButtonVariant.TONAL,
-                            HMCLDemoActions.command("navigate", HMCLDemoActions.ROUTE_DISCOVER)
-                    )
-            );
-        }
-
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
-        list.setSelectionMode(M3SelectionMode.NONE);
+        M3ListPane list = createList();
         for (HMCLDemoMod mod : instance.mods()) {
             M3SwitchSettingItem item = new M3SwitchSettingItem(mod.name());
             item.setSupportingText(text("instance.mods.version", mod.version()));
@@ -196,16 +137,34 @@ public final class HMCLInstanceDetailView extends HMCLDemoView {
             });
             list.getItems().add(item);
         }
-
-        M3Button discover = new M3Button(text("instance.mods.discover"), M3ButtonVariant.TONAL);
-        discover.setOnAction(event -> actions.navigate(HMCLDemoActions.ROUTE_DISCOVER));
-        HBox actionsRow = new HBox(discover);
-        actionsRow.setAlignment(Pos.CENTER_LEFT);
-
-        return new VBox(20.0, sectionTitle(text("instance.mods.title")), list, actionsRow);
+        if (list.getItems().isEmpty()) list.getItems().add(new M3ListItem(text("instance.mods.empty.title")));
+        return list;
     }
 
-    /// Creates a non-selecting segmented list.
+    /// Creates one generic content-management line-form row.
+    ///
+    /// @param label the localized content category label
+    /// @param instance the selected instance
+    /// @return the compact content list
+    private Node createContentAction(String label, HMCLDemoInstance instance) {
+        return createList(actionItem(label, text("common.manage"), "manage-instance-content", instance));
+    }
+
+    /// Creates an action row with supporting text and an instance-targeted command.
+    ///
+    /// @param label the row label
+    /// @param supporting the supporting text
+    /// @param action the dispatched action token
+    /// @param instance the selected instance
+    /// @return the configured action row
+    private M3SettingItem actionItem(String label, String supporting, String action, HMCLDemoInstance instance) {
+        M3SettingItem item = new M3SettingItem(label);
+        item.setSupportingText(supporting);
+        item.setOnAction(event -> actions.dispatch(action, instance.id()));
+        return item;
+    }
+
+    /// Creates a non-selecting segmented line-form list.
     ///
     /// @param items the list rows
     /// @return the configured list pane
