@@ -323,3 +323,16 @@
     -m3-container-shape: 0px;
     -fx-pref-width: 260px;
 }
+
+/* HMCL ComponentSublist-style expandable setting groups */
+.hmcl-settings-sublist {
+    -fx-background-color: -m3-color-surface-container-lowest;
+    -fx-background-radius: 8px;
+    -fx-padding: 0;
+}
+.hmcl-settings-sublist-header {
+    -m3-container-shape: 8px;
+}
+.hmcl-settings-sublist-body {
+    -fx-padding: 0 8 12 8;
+}

@@ -92,6 +92,9 @@ final class HMCLDemoIcons {
     /// Arrow drop up used by HMCL's launch menu button.
     static final String ARROW_DROP_UP = "M7 14l5-5 5 5z";
 
+    /// Expand chevron used by HMCL-style settings sublists.
+    static final String EXPAND_MORE = "M16.6 8.6 12 13.2 7.4 8.6 6 10l6 6 6-6z";
+
     /// Prevents utility-class instantiation.
     private HMCLDemoIcons() {
     }
