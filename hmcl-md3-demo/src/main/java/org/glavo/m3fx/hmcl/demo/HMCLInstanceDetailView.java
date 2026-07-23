@@ -6,6 +6,7 @@ package org.glavo.m3fx.hmcl.demo;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -191,55 +192,37 @@ final class HMCLInstanceDetailView extends BorderPane {
         M3SettingItem name = HMCLDemoUi.settingItem(strings.get("instance.settings.name"), instance.name());
         name.setOnAction(event -> showRenameDialog(instance));
 
-        M3SettingItem gameVersion = HMCLDemoUi.settingItem(strings.get("instance.settings.game_version_label"), instance.gameVersion()
+        M3SettingItem gameVersion = HMCLDemoUi.settingItem(
+                strings.get("instance.settings.game_version_label"),
+                instance.gameVersion()
         );
-        M3SettingItem loader = HMCLDemoUi.settingItem(strings.get("instance.settings.loader_label"), instance.loader()
+        M3SettingItem loader = HMCLDemoUi.settingItem(
+                strings.get("instance.settings.loader_label"),
+                instance.loader()
         );
 
-        M3SwitchSettingItem isolated = new M3SwitchSettingItem(strings.get("instance.settings.isolated"));
-        isolated.setSupportingText(strings.get("instance.settings.isolated.support"));
-        isolated.setSelected(instance.isolated());
-        isolated.selectedProperty().addListener((observable, oldValue, newValue) ->
-                state.updateSelectedInstanceSettings(
-                        Boolean.TRUE.equals(newValue),
-                        instance.maxMemoryMb(),
-                        instance.resolution(),
-                        instance.fullscreen(),
-                        instance.javaId()
-                ));
-
-        M3SwitchSettingItem fullscreen = new M3SwitchSettingItem(strings.get("instance.settings.fullscreen"));
-        fullscreen.setSupportingText(strings.get("instance.settings.fullscreen.support"));
-        fullscreen.setSelected(instance.fullscreen());
-        fullscreen.selectedProperty().addListener((observable, oldValue, newValue) ->
-                state.updateSelectedInstanceSettings(
-                        instance.isolated(),
-                        instance.maxMemoryMb(),
-                        instance.resolution(),
-                        Boolean.TRUE.equals(newValue),
-                        instance.javaId()
-                ));
-
-        M3SettingItem memory = HMCLDemoUi.settingItem(strings.get("instance.settings.memory"), instance.maxMemoryMb() + " MB"
-        );
-        memory.setOnAction(event -> cycleMemory(instance));
-
-        M3SettingItem resolution = HMCLDemoUi.settingItem(strings.get("instance.settings.resolution"), instance.resolution()
-        );
-        resolution.setOnAction(event -> cycleResolution(instance));
-
-        VBox column = HMCLDemoUi.pageColumn(
-                heading(strings.get("instance.settings.section.basic")),
+        VBox identity = new VBox(
+                8.0,
+                heading(strings.get("settings.game.section.basic")),
                 name,
                 gameVersion,
-                loader,
-                isolated,
-                heading(strings.get("instance.settings.section.game")),
-                memory,
-                resolution,
-                fullscreen
+                loader
         );
-        return HMCLDemoUi.scroll(column);
+        identity.setPadding(new Insets(0.0, 0.0, 8.0, 0.0));
+
+        ScrollPane form = HMCLGameSettingsForm.create(
+                controller,
+                () -> state.getInstanceGameSettings(instance.id()),
+                value -> {
+                    state.setInstanceGameSettings(instance.id(), value);
+                    renderSection(false);
+                },
+                true
+        );
+        VBox host = new VBox(identity, form);
+        VBox.setVgrow(form, Priority.ALWAYS);
+        HMCLDemoUi.fill(host);
+        return host;
     }
 
     private Node installersContent(HMCLDemoInstance instance) {

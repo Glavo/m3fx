@@ -193,11 +193,8 @@ final class HMCLSettingsView extends BorderPane {
         setLeft(sidebar);
         setCenter(contentHost);
 
-        state.globalMaxMemoryMbProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
-        state.globalResolutionProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
-        state.launcherVisibilityProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
+        state.globalGameSettingsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
         state.defaultIsolationProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
-        state.autoAllocateMemoryProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
         state.selectedJavaIdProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.JAVA));
         state.updateChannelProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
         state.acceptPreviewUpdateProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
@@ -341,126 +338,19 @@ final class HMCLSettingsView extends BorderPane {
         }
     }
 
-    /// Creates the global game settings form.
+    /// Creates the global game settings form aligned with HMCL `GameSettingsPage` (preset mode).
     ///
     /// @return the content node
     private Node globalGameContent() {
-        M3SettingItem isolation = cycleSetting(
-                "settings.global.isolation",
-                isolationLabel(state.getDefaultIsolation()),
-                () -> {
-                    state.setDefaultIsolation(cycleString(ISOLATION_STEPS, state.getDefaultIsolation()));
-                    saved();
-                }
-        );
-
-        M3SwitchSettingItem autoMemory = switchSetting(
-                "settings.general.auto_memory",
-                "settings.general.auto_memory.support",
-                state.isAutoAllocateMemory(),
-                selected -> {
-                    state.setAutoAllocateMemory(selected);
-                    saved();
-                }
-        );
-
-        M3SettingItem memory = cycleSetting(
-                "settings.global.memory",
-                state.getGlobalMaxMemoryMb() + " MB · " + strings.get("settings.global.memory.support"),
-                () -> {
-                    state.setGlobalMaxMemoryMb(cycleInt(MEMORY_STEPS_MB, state.getGlobalMaxMemoryMb()));
-                    saved();
-                }
-        );
-
-        M3SettingItem resolution = cycleSetting(
-                "settings.global.resolution",
-                state.getGlobalResolution() + " · " + strings.get("settings.global.resolution.support"),
-                () -> {
-                    state.setGlobalResolution(cycleString(RESOLUTION_STEPS, state.getGlobalResolution()));
-                    saved();
-                }
-        );
-
-        M3SettingItem visibility = cycleSetting(
-                "settings.global.launcher_visibility",
-                visibilityLabel(state.getLauncherVisibility()),
-                () -> {
-                    state.setLauncherVisibility(cycleString(VISIBILITY_STEPS, state.getLauncherVisibility()));
-                    saved();
-                }
-        );
-
-        M3SettingItem priority = cycleSetting(
-                "settings.global.process_priority",
-                priorityLabel(processPriority),
-                () -> {
-                    processPriority = cycleString(PRIORITY_STEPS, processPriority);
-                    saved();
+        return HMCLGameSettingsForm.create(
+                controller,
+                state::getGlobalGameSettings,
+                value -> {
+                    state.setGlobalGameSettings(value);
                     renderSection(false);
-                }
+                },
+                false
         );
-
-        M3SwitchSettingItem showLogsItem = switchSetting(
-                "settings.global.show_logs",
-                "settings.global.show_logs.support",
-                showLogs,
-                selected -> {
-                    showLogs = selected;
-                    saved();
-                }
-        );
-
-        M3SwitchSettingItem debugLogItem = switchSetting(
-                "settings.global.debug_log",
-                "settings.global.debug_log.support",
-                debugLog,
-                selected -> {
-                    debugLog = selected;
-                    saved();
-                }
-        );
-
-        M3SwitchSettingItem skipIntegrity = switchSetting(
-                "settings.global.skip_integrity",
-                "settings.global.skip_integrity.support",
-                skipIntegrityCheck,
-                selected -> {
-                    skipIntegrityCheck = selected;
-                    saved();
-                }
-        );
-
-        M3SettingItem jvmArgs = actionSetting(
-                "settings.global.jvm_args",
-                "settings.global.jvm_args.support",
-                "snackbar.settings_jvm_args"
-        );
-        M3SettingItem wrapper = actionSetting(
-                "settings.global.wrapper",
-                "settings.global.wrapper.support",
-                "snackbar.settings_wrapper"
-        );
-        M3SettingItem preLaunch = actionSetting(
-                "settings.global.pre_launch",
-                "settings.global.pre_launch.support",
-                "snackbar.settings_pre_launch"
-        );
-        M3SettingItem postExit = actionSetting(
-                "settings.global.post_exit",
-                "settings.global.post_exit.support",
-                "snackbar.settings_post_exit"
-        );
-
-        VBox root = new VBox(16.0);
-        root.setMinHeight(0.0);
-        root.getChildren().addAll(
-                sectionBlock(strings.get("settings.global.section.basic"), isolation, autoMemory),
-                sectionBlock(strings.get("settings.global.section.game"), memory, resolution, visibility, priority),
-                sectionBlock(strings.get("settings.global.section.launcher"), showLogsItem, debugLogItem, skipIntegrity),
-                sectionBlock(strings.get("settings.global.section.advanced"), jvmArgs, wrapper, preLaunch, postExit)
-        );
-        return HMCLDemoUi.scroll(HMCLDemoUi.contentColumn(root));
     }
 
     /// Creates the Java management form.

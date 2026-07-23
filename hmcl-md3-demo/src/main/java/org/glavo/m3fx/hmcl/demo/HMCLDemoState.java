@@ -24,8 +24,10 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -165,6 +167,13 @@ public final class HMCLDemoState {
     /// The read-only Java runtime list.
     private final @UnmodifiableView ObservableList<HMCLDemoJavaRuntime> javaRuntimesView =
             FXCollections.unmodifiableObservableList(javaRuntimes);
+
+    /// Global game-launch settings used by the settings page.
+    private final ObjectProperty<HMCLDemoGameSettings> globalGameSettings =
+            new SimpleObjectProperty<>(this, "globalGameSettings", HMCLDemoGameSettings.globalDefaults());
+
+    /// Per-instance game settings keyed by instance id.
+    private final Map<String, HMCLDemoGameSettings> instanceGameSettings = new HashMap<>();
 
     /// The theme seed color.
     private final ObjectProperty<Color> themeColor =
@@ -328,6 +337,25 @@ public final class HMCLDemoState {
         accounts.setAll(createAccounts());
         directories.setAll(createDirectories());
         instances.setAll(createInstances());
+        for (HMCLDemoInstance instance : instances) {
+            instanceGameSettings.put(
+                    instance.id(),
+                    HMCLDemoGameSettings.instanceDefaults(globalGameSettings.get(), instance.isolated())
+                            .withMemory(
+                                    false,
+                                    instance.maxMemoryMb(),
+                                    512,
+                                    256)
+                            .withWindow(
+                                    instance.fullscreen() ? "fullscreen" : "windowed",
+                                    instance.resolution())
+                            .withJava(
+                                    "auto".equals(instance.javaId()) ? "auto" : "detected",
+                                    "auto".equals(instance.javaId()) ? "" : instance.javaId(),
+                                    "21",
+                                    "")
+            );
+        }
         minecraftVersions.setAll(createMinecraftVersions());
         catalogItems.setAll(createCatalogItems());
         javaRuntimes.setAll(createJavaRuntimes());
@@ -558,6 +586,7 @@ public final class HMCLDemoState {
                 source.id() + "-copy-" + copyNumber,
                 source.name() + " (" + copyNumber + ")");
         instances.add(instances.indexOf(source) + 1, copy);
+        instanceGameSettings.put(copy.id(), getInstanceGameSettings(source.id()));
         selectedInstance.set(copy);
         return copy;
     }
@@ -626,6 +655,12 @@ public final class HMCLDemoState {
                 List.of()
         );
         instances.add(0, instance);
+        instanceGameSettings.put(
+                instance.id(),
+                HMCLDemoGameSettings.instanceDefaults(globalGameSettings.get(), instance.isolated())
+                        .withMemory(false, instance.maxMemoryMb(), 512, 256)
+                        .withWindow(instance.fullscreen() ? "fullscreen" : "windowed", instance.resolution())
+        );
         selectedInstance.set(instance);
         return instance;
     }
@@ -663,7 +698,90 @@ public final class HMCLDemoState {
             return false;
         }
         replaceSelectedInstance(instance.withSettings(isolated, maxMemoryMb, resolution, fullscreen, javaId));
+        HMCLDemoGameSettings previous = getInstanceGameSettings(instance.id());
+        instanceGameSettings.put(
+                instance.id(),
+                previous.withIsolated(isolated)
+                        .withMemory(previous.autoMemory(), maxMemoryMb, previous.minMemoryMb(), previous.metaspaceMb())
+                        .withWindow(fullscreen ? "fullscreen" : previous.windowType(), resolution)
+                        .withJava(
+                                "auto".equals(javaId) ? "auto" : "detected",
+                                "auto".equals(javaId) ? "" : javaId,
+                                previous.javaVersion(),
+                                previous.javaPath())
+        );
         return true;
+    }
+
+    /// Returns the global game-settings model.
+    ///
+    /// @return the global settings
+    public HMCLDemoGameSettings getGlobalGameSettings() {
+        return globalGameSettings.get();
+    }
+
+    /// Replaces the global game-settings model.
+    ///
+    /// @param value the new settings
+    public void setGlobalGameSettings(HMCLDemoGameSettings value) {
+        globalGameSettings.set(value);
+        setAutoAllocateMemory(value.autoMemory());
+        setGlobalMaxMemoryMb(value.maxMemoryMb());
+        setGlobalResolution(value.resolution());
+        setLauncherVisibility(value.launcherVisibility());
+    }
+
+    /// Returns the global game-settings property.
+    ///
+    /// @return the property
+    public ObjectProperty<HMCLDemoGameSettings> globalGameSettingsProperty() {
+        return globalGameSettings;
+    }
+
+    /// Returns game settings for one instance, creating defaults when absent.
+    ///
+    /// @param instanceId the instance id
+    /// @return the settings
+    public HMCLDemoGameSettings getInstanceGameSettings(String instanceId) {
+        @Nullable HMCLDemoGameSettings existing = instanceGameSettings.get(instanceId);
+        if (existing != null) {
+            return existing;
+        }
+        HMCLDemoGameSettings created = HMCLDemoGameSettings.instanceDefaults(globalGameSettings.get(), false);
+        instanceGameSettings.put(instanceId, created);
+        return created;
+    }
+
+    /// Replaces game settings for one instance and keeps legacy instance fields in sync.
+    ///
+    /// @param instanceId the instance id
+    /// @param value the new settings
+    public void setInstanceGameSettings(String instanceId, HMCLDemoGameSettings value) {
+        instanceGameSettings.put(instanceId, value);
+        for (int index = 0; index < instances.size(); index++) {
+            HMCLDemoInstance instance = instances.get(index);
+            if (!instance.id().equals(instanceId)) {
+                continue;
+            }
+            String javaId = switch (value.javaMode()) {
+                case "detected" -> value.javaId().isBlank() ? "auto" : value.javaId();
+                case "custom", "version" -> value.javaId().isBlank() ? "auto" : value.javaId();
+                default -> "auto";
+            };
+            HMCLDemoInstance updated = instance.withSettings(
+                    value.isolated(),
+                    value.maxMemoryMb(),
+                    value.resolution(),
+                    "fullscreen".equals(value.windowType()),
+                    javaId
+            );
+            instances.set(index, updated);
+            if (instance.equals(selectedInstance.get()) || instanceId.equals(
+                    selectedInstance.get() == null ? "" : selectedInstance.get().id())) {
+                selectedInstance.set(updated);
+            }
+            return;
+        }
     }
 
     /// Changes the enabled state of one mod in the selected instance.
