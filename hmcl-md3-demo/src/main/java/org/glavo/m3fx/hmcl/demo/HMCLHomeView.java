@@ -6,18 +6,16 @@ package org.glavo.m3fx.hmcl.demo;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
-import javafx.scene.Cursor;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.CustomMenuItem;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.controls.M3ButtonSize;
+import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -64,14 +62,8 @@ final class HMCLHomeView extends BorderPane {
     /// Whether the preview notice remains visible for this session.
     private boolean announcementVisible = true;
 
-    /// HMCL `.launch-pane` container.
-    private final HBox launchPane = new HBox();
-
-    /// Primary launch control (plain region so CSS can match HMCL radii exactly).
-    private final StackPane launchButton = new StackPane();
-
-    /// Version-switch menu control.
-    private final StackPane menuButton = new StackPane();
+    /// Material 3 split launch control (primary action + instance menu).
+    private final M3SplitButton launchButton = new M3SplitButton();
 
     /// Launch label ("启动").
     private final M3Text launchLabel = new M3Text("", M3TextRole.TITLE_MEDIUM);
@@ -80,7 +72,7 @@ final class HMCLHomeView extends BorderPane {
     private final M3Text launchInstance = new M3Text("", M3TextRole.BODY_SMALL);
 
     /// Graphic stack for the launch button.
-    private final VBox launchGraphic = new VBox(0.0);
+    private final VBox launchGraphic = new VBox(1.0);
 
     /// Creates the wallpaper-first home page.
     ///
@@ -102,8 +94,8 @@ final class HMCLHomeView extends BorderPane {
         center.getStyleClass().add("hmcl-home-center");
         center.setPadding(new Insets(20.0));
         StackPane.setAlignment(announcementCard, Pos.TOP_CENTER);
-        StackPane.setAlignment(launchPane, Pos.BOTTOM_RIGHT);
-        center.getChildren().setAll(announcementCard, launchPane);
+        StackPane.setAlignment(launchButton, Pos.BOTTOM_RIGHT);
+        center.getChildren().setAll(announcementCard, launchButton);
 
         setLeft(sidebar);
         setCenter(center);
@@ -111,9 +103,15 @@ final class HMCLHomeView extends BorderPane {
         BorderPane.setMargin(sidebar, Insets.EMPTY);
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> refreshAccount());
-        state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> refreshInstance());
+        state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
+            refreshInstance();
+            rebuildLaunchMenu();
+        });
         state.getAccounts().addListener((ListChangeListener<HMCLDemoAccount>) change -> refreshAccount());
-        state.getInstances().addListener((ListChangeListener<HMCLDemoInstance>) change -> refreshInstance());
+        state.getInstances().addListener((ListChangeListener<HMCLDemoInstance>) change -> {
+            refreshInstance();
+            rebuildLaunchMenu();
+        });
 
         refreshLocale();
         refreshAccount();
@@ -133,7 +131,7 @@ final class HMCLHomeView extends BorderPane {
         announcementTitle.setText(strings.get("home.preview.title"));
         announcementBody.setText(strings.get("home.preview.body") + "\n" + strings.get("home.preview.feedback"));
         launchLabel.setText(strings.get("home.launch"));
-        menuButton.setAccessibleText(strings.get("home.switch_instance"));
+        launchButton.setAccessibleText(strings.get("home.launch"));
         refreshAccount();
         refreshInstance();
     }
@@ -210,77 +208,37 @@ final class HMCLHomeView extends BorderPane {
         announcementCard.setManaged(announcementVisible);
     }
 
-    /// Builds the HMCL launch pane once.
-    ///
-    /// Uses plain regions instead of [org.glavo.m3fx.controls.M3Button] so the 4px HMCL radii are not overridden by
-    /// Material pill geometry.
+    /// Builds the Material 3 split launch control once.
     private void configureLaunchPane() {
-        launchPane.getStyleClass().add("hmcl-launch-pane");
-        launchPane.setAlignment(Pos.CENTER_LEFT);
-        launchPane.setMinSize(230.0, 55.0);
-        launchPane.setPrefSize(230.0, 55.0);
-        launchPane.setMaxSize(230.0, 55.0);
-
         launchLabel.getStyleClass().add("hmcl-launch-label");
         launchInstance.getStyleClass().add("hmcl-launch-instance");
         launchGraphic.setAlignment(Pos.CENTER_LEFT);
         launchGraphic.setMouseTransparent(true);
         launchGraphic.getChildren().setAll(launchLabel, launchInstance);
 
-        launchButton.getStyleClass().add("hmcl-launch-button");
-        launchButton.setMinSize(200.0, 55.0);
-        launchButton.setPrefSize(200.0, 55.0);
-        launchButton.setMaxSize(200.0, 55.0);
-        launchButton.setCursor(Cursor.HAND);
-        launchButton.setPadding(new Insets(0.0, 16.0, 0.0, 20.0));
-        launchButton.setAlignment(Pos.CENTER_LEFT);
-        launchButton.getChildren().setAll(launchGraphic);
-        launchButton.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && !launchButton.isDisabled()) {
-                controller.launchSelected();
-            } else if (event.getButton() == MouseButton.SECONDARY) {
-                showInstanceMenu();
-            }
-        });
-
-        var menuIcon = HMCLDemoIcons.create(HMCLDemoIcons.ARROW_DROP_UP);
-        menuIcon.getStyleClass().add("hmcl-launch-menu-icon");
-        menuIcon.setMouseTransparent(true);
-        menuButton.getStyleClass().add("hmcl-launch-menu-button");
-        menuButton.setMinSize(30.0, 55.0);
-        menuButton.setPrefSize(30.0, 55.0);
-        menuButton.setMaxSize(30.0, 55.0);
-        menuButton.setCursor(Cursor.HAND);
-        menuButton.getChildren().setAll(menuIcon);
-        menuButton.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && !menuButton.isDisabled()) {
-                showInstanceMenu();
-            }
-        });
-
-        launchPane.getChildren().setAll(launchButton, menuButton);
+        launchButton.getStyleClass().add("hmcl-home-launch");
+        launchButton.setVariant(M3ButtonVariant.FILLED);
+        launchButton.setSize(M3ButtonSize.MEDIUM);
+        launchButton.setGraphic(launchGraphic);
+        launchButton.setOnAction(event -> controller.launchSelected());
+        rebuildLaunchMenu();
     }
 
-    /// Shows the instance-switch popup anchored to the menu button.
-    private void showInstanceMenu() {
-        ContextMenu menu = new ContextMenu();
-        menu.getStyleClass().add("hmcl-instance-menu");
+    /// Rebuilds the instance-switch menu attached to the split button.
+    private void rebuildLaunchMenu() {
+        launchButton.getItems().clear();
         @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
         for (HMCLDemoInstance instance : state.getInstances()) {
-            M3ListItem item = new M3ListItem(instance.name());
-            item.getStyleClass().add("hmcl-instance-menu-item");
+            M3MenuItem item = new M3MenuItem(instance.name());
             item.setSupportingText(instance.gameVersion() + " · " + instance.loader());
             item.setLeading(HMCLDemoUi.instanceIcon(instance, 24.0));
             item.setSelected(instance.equals(selected));
             item.setOnAction(event -> {
                 state.selectInstance(instance.id());
-                menu.hide();
+                launchButton.hideMenu();
             });
-            CustomMenuItem menuItem = new CustomMenuItem(item);
-            menuItem.setHideOnClick(false);
-            menu.getItems().add(menuItem);
+            launchButton.getItems().add(item);
         }
-        menu.show(menuButton, Side.TOP, 0.0, -menuButton.getHeight());
     }
 
     /// Synchronizes the account sidebar row.
@@ -325,9 +283,6 @@ final class HMCLHomeView extends BorderPane {
     private void refreshLaunchEnabled() {
         boolean ready = state.getSelectedAccount() != null && state.getSelectedInstance() != null;
         launchButton.setDisable(!ready);
-        launchButton.setOpacity(ready ? 1.0 : 0.55);
-        menuButton.setDisable(state.getInstances().isEmpty());
-        menuButton.setOpacity(state.getInstances().isEmpty() ? 0.55 : 1.0);
     }
 
     /// Applies HMCL advanced-list-item styling hooks.

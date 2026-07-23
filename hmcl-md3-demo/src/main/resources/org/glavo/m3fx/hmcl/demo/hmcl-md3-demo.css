@@ -142,61 +142,22 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-/* launch-pane from HMCL root.css — plain regions, not M3 pill buttons */
-.hmcl-launch-pane {
-    -fx-max-height: 55px;
-    -fx-min-height: 55px;
-    -fx-pref-height: 55px;
-    -fx-max-width: 230px;
-    -fx-min-width: 230px;
-    -fx-pref-width: 230px;
+/* Home launch control: Material 3 filled split button */
+.m3-split-button.hmcl-home-launch {
+    -m3-split-button-container-height: 56px;
+    -m3-split-button-outer-corner: 28px;
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-hovered-inner-corner: 12px;
+    -m3-split-button-pressed-inner-corner: 12px;
+    -m3-split-button-selected-inner-corner: 28px;
+    -m3-split-button-action-leading-space: 24px;
+    -m3-split-button-action-trailing-space: 20px;
+    -m3-split-button-menu-width: 56px;
 }
 
-.hmcl-launch-button,
-.hmcl-launch-menu-button {
-    -fx-background-color: -m3-color-primary-container;
-    -fx-cursor: hand;
-}
-
-.hmcl-launch-button {
-    -fx-background-radius: 4px 0 0 4px;
-    -fx-border-radius: 4px 0 0 4px;
-    -fx-border-width: 0 3 0 0;
-    -fx-border-color: linear-gradient(
-        to bottom,
-        transparent 0%,
-        transparent 20%,
-        -m3-color-on-surface-variant 20%,
-        -m3-color-on-surface-variant 80%,
-        transparent 80%,
-        transparent 100%
-    );
-}
-
-.hmcl-launch-button:hover {
-    -fx-background-color: derive(-m3-color-primary-container, -6%);
-}
-
-.hmcl-launch-button:pressed {
-    -fx-background-color: derive(-m3-color-primary-container, -12%);
-}
-
-.hmcl-launch-menu-button {
-    -fx-background-radius: 0 4px 4px 0;
-    -fx-border-radius: 0 4px 4px 0;
-}
-
-.hmcl-launch-menu-button:hover {
-    -fx-background-color: derive(-m3-color-primary-container, -6%);
-}
-
-.hmcl-launch-menu-button:pressed {
-    -fx-background-color: derive(-m3-color-primary-container, -12%);
-}
-
-.hmcl-launch-label,
-.hmcl-launch-instance {
-    -fx-text-fill: -m3-color-on-primary-container;
+.m3-split-button.hmcl-home-launch .hmcl-launch-label,
+.m3-split-button.hmcl-home-launch .hmcl-launch-instance {
+    -fx-text-fill: -m3-color-on-primary;
 }
 
 .hmcl-launch-label {
@@ -206,11 +167,6 @@
 
 .hmcl-launch-instance {
     -fx-font-size: 12px;
-}
-
-.hmcl-launch-menu-icon,
-.hmcl-launch-menu-button .hmcl-demo-icon {
-    -fx-fill: -m3-color-on-primary-container;
 }
 
 /* Secondary pages: opaque surface (HMCL content-background), not see-through wallpaper */
