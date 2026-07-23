@@ -1,5 +1,8 @@
 /* Window chrome modeled on HMCL DecoratorSkin + root.css */
 
+/* Transparent stage: keep the 8px shadow gutter clear of the M3 surface fill. */
+.m3-root,
+.m3-overlay-pane,
 .hmcl-demo-shell {
     -fx-background-color: transparent;
 }

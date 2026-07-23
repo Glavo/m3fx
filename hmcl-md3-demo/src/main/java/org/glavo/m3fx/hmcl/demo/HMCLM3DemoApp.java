@@ -68,7 +68,7 @@ public final class HMCLM3DemoApp extends Application {
 
         Runnable applyTheme = () -> M3ThemeManager.install(scene, M3Theme.fromSeed(
                 state.getThemeColor(),
-                M3Profile.EXPRESSIVE_2025,
+                M3Profile.BASELINE_2021,
                 resolveBrightness(state.getBrightness()),
                 M3Density.standard()
         ));
