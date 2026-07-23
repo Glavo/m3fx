@@ -61,6 +61,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         textLabel.textProperty().bind(control.textProperty());
         actions.setMinWidth(Region.USE_PREF_SIZE);
         actions.setMaxWidth(Region.USE_PREF_SIZE);
+        iconSlot.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         container.setAlignment(Pos.CENTER_LEFT);
         actions.setAlignment(Pos.CENTER_RIGHT);
 

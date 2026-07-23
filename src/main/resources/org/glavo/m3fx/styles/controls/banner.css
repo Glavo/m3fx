@@ -11,8 +11,7 @@
 
 
 .m3-banner-icon {
-    -fx-alignment: top-center;
-    -fx-padding: 2px 0 0 0;
+    -fx-alignment: center;
 }
 
 .m3-banner-text {

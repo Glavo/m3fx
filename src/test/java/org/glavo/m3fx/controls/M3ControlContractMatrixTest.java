@@ -28748,6 +28748,42 @@ final class M3ControlContractMatrixTest {
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
     }
 
+    /// Verifies that banner leading icons remain centered with single-line and wrapping messages.
+    @Test
+    void bannersCenterLeadingIconsWithMessageContent() {
+        FxTestUtils.runOnFxThread(() -> {
+            Region singleLineIcon = new Region();
+            singleLineIcon.setPrefSize(24.0, 24.0);
+            singleLineIcon.setMinSize(24.0, 24.0);
+            singleLineIcon.setMaxSize(24.0, 24.0);
+            M3Banner singleLine = createBanner(
+                    "A concise banner message.",
+                    singleLineIcon,
+                    new M3Button("Action", M3ButtonVariant.TEXT)
+            );
+
+            Region wrappingIcon = new Region();
+            wrappingIcon.setPrefSize(24.0, 24.0);
+            wrappingIcon.setMinSize(24.0, 24.0);
+            wrappingIcon.setMaxSize(24.0, 24.0);
+            M3Banner wrapping = createBanner(
+                    "A longer banner message that wraps onto a second line at this width.",
+                    wrappingIcon,
+                    new M3Button("Action", M3ButtonVariant.TEXT)
+            );
+
+            VBox root = new VBox(singleLine, wrapping);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 480.0, 240.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            assertBannerIconCenteredWithText(singleLine, singleLineIcon);
+            assertBannerIconCenteredWithText(wrapping, wrappingIcon);
+        });
+    }
+
     /// Verifies that app bars and banners mirror logical leading and trailing slots in right-to-left layouts.
     @Test
     void appBarsAndBannersMirrorLogicalSlotsForRightToLeft() {
@@ -43812,6 +43848,16 @@ final class M3ControlContractMatrixTest {
         M3Banner banner = banner(text, actions);
         banner.setIcon(Objects.requireNonNull(icon, "icon"));
         return banner;
+    }
+
+    /// Verifies that a banner icon and its rendered message share one vertical center.
+    private static void assertBannerIconCenteredWithText(M3Banner banner, Node icon) {
+        Label text = assertInstanceOf(Label.class, banner.lookup("." + M3Banner.TEXT_STYLE_CLASS));
+        Bounds iconBounds = icon.localToScene(icon.getBoundsInLocal());
+        Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+        assertEquals(textBounds.getCenterY(), iconBounds.getCenterY(), 0.5,
+                () -> "banner icon should be centered with its message: icon="
+                        + iconBounds + ", text=" + textBounds);
     }
 
     /// Creates a text field with the requested variant.

@@ -18937,6 +18937,10 @@ final class M3FXDemoVisualMatrixTest {
             assertTrue(containsBoundsWithTolerance(bannerBounds, iconBounds, CONTROL_EDGE_TOLERANCE),
                     () -> "banner icon should stay inside the control bounds: banner="
                             + bannerBounds + ", icon=" + iconBounds);
+            Bounds graphicBounds = banner.getIcon().localToScene(banner.getIcon().getBoundsInLocal());
+            assertEquals(textBounds.getCenterY(), graphicBounds.getCenterY(), 0.5,
+                    () -> "banner icon should be vertically centered with the rendered message: icon="
+                            + graphicBounds + ", text=" + textBounds);
             if (banner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT && actions != null) {
                 Bounds actionBounds = actions.localToScene(actions.getBoundsInLocal());
                 assertTrue(iconBounds.getMinX() > actionBounds.getMaxX(),
