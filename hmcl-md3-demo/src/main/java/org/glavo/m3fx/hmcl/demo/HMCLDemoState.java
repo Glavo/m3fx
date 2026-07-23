@@ -215,6 +215,82 @@ public final class HMCLDemoState {
     private final IntegerProperty globalMaxMemoryMb =
             new SimpleIntegerProperty(this, "globalMaxMemoryMb", 4096);
 
+    /// The default game window resolution label.
+    private final StringProperty globalResolution =
+            new SimpleStringProperty(this, "globalResolution", "854x480");
+
+    /// The launcher visibility policy label.
+    private final StringProperty launcherVisibility =
+            new SimpleStringProperty(this, "launcherVisibility", "hide");
+
+    /// The default isolation policy: `never`, `always`, or `modded`.
+    private final StringProperty defaultIsolation =
+            new SimpleStringProperty(this, "defaultIsolation", "modded");
+
+    /// Whether the selected Java runtime id is forced; empty means auto.
+    private final StringProperty selectedJavaId =
+            new SimpleStringProperty(this, "selectedJavaId", "auto");
+
+    /// Whether preview update builds are accepted.
+    private final BooleanProperty acceptPreviewUpdate =
+            new SimpleBooleanProperty(this, "acceptPreviewUpdate", false);
+
+    /// Whether the automatic update dialog is suppressed.
+    private final BooleanProperty disableAutoShowUpdateDialog =
+            new SimpleBooleanProperty(this, "disableAutoShowUpdateDialog", false);
+
+    /// Whether April Fools content is disabled.
+    private final BooleanProperty disableAprilFools =
+            new SimpleBooleanProperty(this, "disableAprilFools", false);
+
+    /// Whether the title bar is transparent over the wallpaper.
+    private final BooleanProperty titleBarTransparent =
+            new SimpleBooleanProperty(this, "titleBarTransparent", false);
+
+    /// Whether the outer window chrome is transparent.
+    private final BooleanProperty windowTransparent =
+            new SimpleBooleanProperty(this, "windowTransparent", false);
+
+    /// Background opacity percentage from `20` through `100`.
+    private final IntegerProperty backgroundOpacity =
+            new SimpleIntegerProperty(this, "backgroundOpacity", 100);
+
+    /// Version-list download source: `auto`, `official`, or `mirror`.
+    private final StringProperty versionListSource =
+            new SimpleStringProperty(this, "versionListSource", "auto");
+
+    /// File download source: `auto`, `official`, or `mirror`.
+    private final StringProperty fileDownloadSource =
+            new SimpleStringProperty(this, "fileDownloadSource", "auto");
+
+    /// Default addon catalog source: `modrinth` or `curseforge`.
+    private final StringProperty defaultAddonSource =
+            new SimpleStringProperty(this, "defaultAddonSource", "modrinth");
+
+    /// Whether download thread count is chosen automatically.
+    private final BooleanProperty autoDownloadThreads =
+            new SimpleBooleanProperty(this, "autoDownloadThreads", true);
+
+    /// Cache directory mode: `default` or `custom`.
+    private final StringProperty cacheDirectoryType =
+            new SimpleStringProperty(this, "cacheDirectoryType", "default");
+
+    /// Proxy type: `system`, `none`, `http`, or `socks`.
+    private final StringProperty proxyType =
+            new SimpleStringProperty(this, "proxyType", "system");
+
+    /// Custom proxy host.
+    private final StringProperty proxyHost =
+            new SimpleStringProperty(this, "proxyHost", "127.0.0.1");
+
+    /// Custom proxy port.
+    private final IntegerProperty proxyPort =
+            new SimpleIntegerProperty(this, "proxyPort", 7890);
+
+    /// Whether proxy authentication is enabled.
+    private final BooleanProperty proxyAuthentication =
+            new SimpleBooleanProperty(this, "proxyAuthentication", false);
+
     /// The deterministic suffix counter for copied instances.
     private int nextCopyNumber = 1;
 
@@ -1256,6 +1332,291 @@ public final class HMCLDemoState {
     /// @return the property
     public IntegerProperty globalMaxMemoryMbProperty() {
         return globalMaxMemoryMb;
+    }
+
+    /// Returns the default game resolution label.
+    public String getGlobalResolution() {
+        return globalResolution.get();
+    }
+
+    /// Sets the default game resolution label.
+    public void setGlobalResolution(String value) {
+        globalResolution.set(value);
+    }
+
+    /// Returns the global-resolution property.
+    public StringProperty globalResolutionProperty() {
+        return globalResolution;
+    }
+
+    /// Returns the launcher visibility policy label.
+    public String getLauncherVisibility() {
+        return launcherVisibility.get();
+    }
+
+    /// Sets the launcher visibility policy label.
+    public void setLauncherVisibility(String value) {
+        launcherVisibility.set(value);
+    }
+
+    /// Returns the launcher-visibility property.
+    public StringProperty launcherVisibilityProperty() {
+        return launcherVisibility;
+    }
+
+    /// Returns the default isolation policy.
+    public String getDefaultIsolation() {
+        return defaultIsolation.get();
+    }
+
+    /// Sets the default isolation policy.
+    public void setDefaultIsolation(String value) {
+        defaultIsolation.set(value);
+    }
+
+    /// Returns the default-isolation property.
+    public StringProperty defaultIsolationProperty() {
+        return defaultIsolation;
+    }
+
+    /// Returns the selected Java runtime id, or `auto`.
+    public String getSelectedJavaId() {
+        return selectedJavaId.get();
+    }
+
+    /// Sets the selected Java runtime id, or `auto`.
+    public void setSelectedJavaId(String value) {
+        selectedJavaId.set(value);
+    }
+
+    /// Returns the selected-java property.
+    public StringProperty selectedJavaIdProperty() {
+        return selectedJavaId;
+    }
+
+    /// Returns whether preview updates are accepted.
+    public boolean isAcceptPreviewUpdate() {
+        return acceptPreviewUpdate.get();
+    }
+
+    /// Sets whether preview updates are accepted.
+    public void setAcceptPreviewUpdate(boolean value) {
+        acceptPreviewUpdate.set(value);
+    }
+
+    /// Returns the accept-preview-update property.
+    public BooleanProperty acceptPreviewUpdateProperty() {
+        return acceptPreviewUpdate;
+    }
+
+    /// Returns whether the automatic update dialog is suppressed.
+    public boolean isDisableAutoShowUpdateDialog() {
+        return disableAutoShowUpdateDialog.get();
+    }
+
+    /// Sets whether the automatic update dialog is suppressed.
+    public void setDisableAutoShowUpdateDialog(boolean value) {
+        disableAutoShowUpdateDialog.set(value);
+    }
+
+    /// Returns the disable-auto-show-update-dialog property.
+    public BooleanProperty disableAutoShowUpdateDialogProperty() {
+        return disableAutoShowUpdateDialog;
+    }
+
+    /// Returns whether April Fools content is disabled.
+    public boolean isDisableAprilFools() {
+        return disableAprilFools.get();
+    }
+
+    /// Sets whether April Fools content is disabled.
+    public void setDisableAprilFools(boolean value) {
+        disableAprilFools.set(value);
+    }
+
+    /// Returns the disable-april-fools property.
+    public BooleanProperty disableAprilFoolsProperty() {
+        return disableAprilFools;
+    }
+
+    /// Returns whether the title bar is transparent.
+    public boolean isTitleBarTransparent() {
+        return titleBarTransparent.get();
+    }
+
+    /// Sets whether the title bar is transparent.
+    public void setTitleBarTransparent(boolean value) {
+        titleBarTransparent.set(value);
+    }
+
+    /// Returns the title-bar-transparent property.
+    public BooleanProperty titleBarTransparentProperty() {
+        return titleBarTransparent;
+    }
+
+    /// Returns whether the outer window is transparent.
+    public boolean isWindowTransparent() {
+        return windowTransparent.get();
+    }
+
+    /// Sets whether the outer window is transparent.
+    public void setWindowTransparent(boolean value) {
+        windowTransparent.set(value);
+    }
+
+    /// Returns the window-transparent property.
+    public BooleanProperty windowTransparentProperty() {
+        return windowTransparent;
+    }
+
+    /// Returns the background opacity percentage.
+    public int getBackgroundOpacity() {
+        return backgroundOpacity.get();
+    }
+
+    /// Sets the background opacity percentage.
+    public void setBackgroundOpacity(int value) {
+        backgroundOpacity.set(value);
+    }
+
+    /// Returns the background-opacity property.
+    public IntegerProperty backgroundOpacityProperty() {
+        return backgroundOpacity;
+    }
+
+    /// Returns the version-list source id.
+    public String getVersionListSource() {
+        return versionListSource.get();
+    }
+
+    /// Sets the version-list source id.
+    public void setVersionListSource(String value) {
+        versionListSource.set(value);
+    }
+
+    /// Returns the version-list-source property.
+    public StringProperty versionListSourceProperty() {
+        return versionListSource;
+    }
+
+    /// Returns the file-download source id.
+    public String getFileDownloadSource() {
+        return fileDownloadSource.get();
+    }
+
+    /// Sets the file-download source id.
+    public void setFileDownloadSource(String value) {
+        fileDownloadSource.set(value);
+    }
+
+    /// Returns the file-download-source property.
+    public StringProperty fileDownloadSourceProperty() {
+        return fileDownloadSource;
+    }
+
+    /// Returns the default addon source id.
+    public String getDefaultAddonSource() {
+        return defaultAddonSource.get();
+    }
+
+    /// Sets the default addon source id.
+    public void setDefaultAddonSource(String value) {
+        defaultAddonSource.set(value);
+    }
+
+    /// Returns the default-addon-source property.
+    public StringProperty defaultAddonSourceProperty() {
+        return defaultAddonSource;
+    }
+
+    /// Returns whether download threads are chosen automatically.
+    public boolean isAutoDownloadThreads() {
+        return autoDownloadThreads.get();
+    }
+
+    /// Sets whether download threads are chosen automatically.
+    public void setAutoDownloadThreads(boolean value) {
+        autoDownloadThreads.set(value);
+    }
+
+    /// Returns the auto-download-threads property.
+    public BooleanProperty autoDownloadThreadsProperty() {
+        return autoDownloadThreads;
+    }
+
+    /// Returns the cache directory type.
+    public String getCacheDirectoryType() {
+        return cacheDirectoryType.get();
+    }
+
+    /// Sets the cache directory type.
+    public void setCacheDirectoryType(String value) {
+        cacheDirectoryType.set(value);
+    }
+
+    /// Returns the cache-directory-type property.
+    public StringProperty cacheDirectoryTypeProperty() {
+        return cacheDirectoryType;
+    }
+
+    /// Returns the proxy type.
+    public String getProxyType() {
+        return proxyType.get();
+    }
+
+    /// Sets the proxy type.
+    public void setProxyType(String value) {
+        proxyType.set(value);
+    }
+
+    /// Returns the proxy-type property.
+    public StringProperty proxyTypeProperty() {
+        return proxyType;
+    }
+
+    /// Returns the proxy host.
+    public String getProxyHost() {
+        return proxyHost.get();
+    }
+
+    /// Sets the proxy host.
+    public void setProxyHost(String value) {
+        proxyHost.set(value);
+    }
+
+    /// Returns the proxy-host property.
+    public StringProperty proxyHostProperty() {
+        return proxyHost;
+    }
+
+    /// Returns the proxy port.
+    public int getProxyPort() {
+        return proxyPort.get();
+    }
+
+    /// Sets the proxy port.
+    public void setProxyPort(int value) {
+        proxyPort.set(value);
+    }
+
+    /// Returns the proxy-port property.
+    public IntegerProperty proxyPortProperty() {
+        return proxyPort;
+    }
+
+    /// Returns whether proxy authentication is enabled.
+    public boolean isProxyAuthentication() {
+        return proxyAuthentication.get();
+    }
+
+    /// Sets whether proxy authentication is enabled.
+    public void setProxyAuthentication(boolean value) {
+        proxyAuthentication.set(value);
+    }
+
+    /// Returns the proxy-authentication property.
+    public BooleanProperty proxyAuthenticationProperty() {
+        return proxyAuthentication;
     }
 
     /// Replaces the selected instance in the list and selection properties.
