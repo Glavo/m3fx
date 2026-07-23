@@ -10,15 +10,13 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// @param id the stable account identifier
 /// @param displayName the displayed profile name
 /// @param type the account provider category
-/// @param subtitle the secondary account description
-/// @param avatarGlyph the short text rendered by a generated avatar
+/// @param skinPath the generated skin asset path used for the face avatar
 @NotNullByDefault
 public record HMCLDemoAccount(
         String id,
         String displayName,
         AccountType type,
-        String subtitle,
-        String avatarGlyph
+        String skinPath
 ) {
     /// Identifies the authentication presentation used by a dummy account.
     @NotNullByDefault

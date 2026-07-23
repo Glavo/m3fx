@@ -23,62 +23,74 @@ final class HMCLDemoStateTest {
         HMCLDemoState state = new HMCLDemoState(new HMCLDemoStrings(Locale.ENGLISH));
 
         assertEquals(3, state.getAccounts().size());
-        assertEquals(6, state.getInstances().size());
-        assertEquals(8, state.getContents().size());
+        assertEquals(2, state.getDirectories().size());
+        assertEquals(5, state.getInstances().size());
+        assertEquals(12, state.getMinecraftVersions().size());
         assertEquals(Color.web("#5C6BC0"), state.getThemeColor());
 
-        assertTrue(state.selectInstance("engineering-lab"));
+        assertTrue(state.selectInstance("forge-1-12-2"));
         HMCLDemoInstance copy = Objects.requireNonNull(state.copySelectedInstance());
-        assertEquals(7, state.getInstances().size());
+        assertEquals(6, state.getInstances().size());
         assertEquals(copy, state.getSelectedInstance());
         assertTrue(state.deleteSelectedInstance());
-        assertEquals(6, state.getInstances().size());
+        assertEquals(5, state.getInstances().size());
 
-        assertTrue(state.selectInstance("creative-workshop"));
+        assertTrue(state.selectInstance("fabulously-optimized"));
         assertTrue(state.setSelectedModEnabled("sodium", false));
         HMCLDemoInstance selected = Objects.requireNonNull(state.getSelectedInstance());
-        assertFalse(selected.mods().get(1).enabled());
+        assertFalse(selected.mods().get(0).enabled());
 
-        assertTrue(state.selectAccount("maple"));
+        assertTrue(state.selectAccount("alex"));
         assertTrue(state.removeSelectedAccount());
         assertEquals(2, state.getAccounts().size());
     }
 
-    /// Verifies case-insensitive catalog filtering across metadata fields.
+    /// Verifies directory and search filtering for the instance list.
     @Test
-    void filtersDiscoverCatalogDeterministically() {
+    void filtersInstancesByDirectoryAndQuery() {
         HMCLDemoState state = new HMCLDemoState();
 
-        state.setSearchQuery("northwind");
-        assertEquals(1, state.getFilteredContents().size());
-        assertEquals("sodium-skies", state.getFilteredContents().get(0).id());
+        assertEquals(4, state.getFilteredInstances().size());
+        assertTrue(state.selectDirectory("minecraft2"));
+        assertEquals(1, state.getFilteredInstances().size());
+        assertEquals("lab-minecraft2", state.getFilteredInstances().get(0).id());
 
-        state.setSearchQuery("SHADER");
-        assertEquals(1, state.getFilteredContents().size());
-        assertEquals("aurora-path", state.getFilteredContents().get(0).id());
-
-        state.setSearchQuery("   ");
-        assertEquals(state.getContents(), state.getFilteredContents());
+        assertTrue(state.selectDirectory("minecraft"));
+        state.setInstanceSearchQuery("fabric");
+        assertEquals(1, state.getFilteredInstances().size());
+        assertEquals("fabulously-optimized", state.getFilteredInstances().get(0).id());
     }
 
-    /// Verifies failure, cancellation, retry, completion, and installed-item guards.
+    /// Verifies Minecraft version channel and search filters.
     @Test
-    void advancesInstallationState() {
+    void filtersMinecraftVersionsDeterministically() {
         HMCLDemoState state = new HMCLDemoState();
-        assertTrue(state.selectContent("builders-compass"));
-        HMCLDemoContent content = Objects.requireNonNull(state.getSelectedContent());
 
-        assertEquals(HMCLDemoState.InstallState.AVAILABLE, state.installStateFor(content));
-        assertTrue(state.startInstallation(content));
+        state.setShowSnapshotVersions(false);
+        state.setShowOldVersions(false);
+        assertTrue(state.getFilteredMinecraftVersions().stream()
+                .allMatch(version -> version.channel() == HMCLDemoMinecraftVersion.Channel.RELEASE));
+
+        state.setShowReleaseVersions(false);
+        state.setShowSnapshotVersions(true);
+        state.setVersionSearchQuery("26.3");
+        assertEquals(1, state.getFilteredMinecraftVersions().size());
+        assertEquals("26.3-snapshot-4", state.getFilteredMinecraftVersions().get(0).id());
+    }
+
+    /// Verifies installation progress completion and cancellation.
+    @Test
+    void advancesInstallationProgress() {
+        HMCLDemoState state = new HMCLDemoState();
+        state.beginInstallation("1.21.11 + Fabric");
+        assertEquals("1.21.11 + Fabric", state.getInstallingTitle());
         state.setInstallProgress(0.5);
         assertEquals(0.5, state.getInstallProgress());
-        assertTrue(state.failInstallation());
-        assertEquals(HMCLDemoState.InstallState.FAILED, state.installStateFor(content));
         assertTrue(state.cancelInstallation());
+        assertEquals(null, state.getInstallingTitle());
 
-        assertTrue(state.startInstallation(content));
+        state.beginInstallation("26.1 + Vanilla");
         state.setInstallProgress(1.0);
-        assertEquals(HMCLDemoState.InstallState.INSTALLED, state.installStateFor(content));
-        assertFalse(state.startInstallation(content));
+        assertEquals(null, state.getInstallingTitle());
     }
 }

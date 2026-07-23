@@ -11,7 +11,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.ObservableSet;
 import javafx.collections.transformation.FilteredList;
 import javafx.scene.paint.Color;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -25,138 +24,175 @@ import java.util.Locale;
 
 /// Owns deterministic, offline state for the HMCL-inspired M3FX demo.
 ///
-/// The state is intentionally independent from user accounts, local game directories, and network repositories.
-/// Its observable properties let pages demonstrate selection, search, installation, instance mutation, appearance,
-/// and runtime language changes without external side effects.
+/// The state never reads a real HMCL configuration or game directory. Pages observe its properties and mutate it
+/// through typed methods so the shell can demonstrate launcher navigation without external side effects.
 @NotNullByDefault
 public final class HMCLDemoState {
-    /// Resolves strings and owns the runtime language property.
+    /// The localization service shared with pages.
     private final HMCLDemoStrings strings;
 
-    /// The mutable dummy-account source list.
+    /// The mutable account list.
     private final ObservableList<HMCLDemoAccount> accounts = FXCollections.observableArrayList();
 
-    /// The read-only account-list view exposed to pages.
+    /// The read-only account list.
     private final @UnmodifiableView ObservableList<HMCLDemoAccount> accountsView =
             FXCollections.unmodifiableObservableList(accounts);
 
-    /// The currently selected account, or `null` after the last account is removed.
+    /// The selected account, or `null` when empty.
     private final ObjectProperty<@Nullable HMCLDemoAccount> selectedAccount =
             new SimpleObjectProperty<>(this, "selectedAccount");
 
-    /// The mutable dummy-instance source list.
+    /// The mutable game-directory list.
+    private final ObservableList<HMCLDemoGameDirectory> directories = FXCollections.observableArrayList();
+
+    /// The read-only game-directory list.
+    private final @UnmodifiableView ObservableList<HMCLDemoGameDirectory> directoriesView =
+            FXCollections.unmodifiableObservableList(directories);
+
+    /// The selected game directory.
+    private final ObjectProperty<HMCLDemoGameDirectory> selectedDirectory =
+            new SimpleObjectProperty<>(this, "selectedDirectory");
+
+    /// The mutable instance list.
     private final ObservableList<HMCLDemoInstance> instances = FXCollections.observableArrayList();
 
-    /// The read-only instance-list view exposed to pages.
+    /// The read-only instance list.
     private final @UnmodifiableView ObservableList<HMCLDemoInstance> instancesView =
             FXCollections.unmodifiableObservableList(instances);
 
-    /// The currently selected instance, or `null` after the last instance is removed.
+    /// Instances filtered by the selected game directory and instance search query.
+    private final FilteredList<HMCLDemoInstance> filteredInstances = new FilteredList<>(instances);
+
+    /// The read-only filtered instance list.
+    private final @UnmodifiableView ObservableList<HMCLDemoInstance> filteredInstancesView =
+            FXCollections.unmodifiableObservableList(filteredInstances);
+
+    /// The selected instance, or `null` when empty.
     private final ObjectProperty<@Nullable HMCLDemoInstance> selectedInstance =
             new SimpleObjectProperty<>(this, "selectedInstance");
 
-    /// The fixed Discover catalog.
-    private final ObservableList<HMCLDemoContent> contents = FXCollections.observableArrayList();
+    /// The instance-list search query.
+    private final StringProperty instanceSearchQuery =
+            new SimpleStringProperty(this, "instanceSearchQuery", "");
 
-    /// The read-only catalog view exposed to pages.
-    private final @UnmodifiableView ObservableList<HMCLDemoContent> contentsView =
-            FXCollections.unmodifiableObservableList(contents);
+    /// The immutable Minecraft version catalog.
+    private final ObservableList<HMCLDemoMinecraftVersion> minecraftVersions = FXCollections.observableArrayList();
 
-    /// The catalog view filtered by [#searchQueryProperty()].
-    private final FilteredList<HMCLDemoContent> filteredContents = new FilteredList<>(contents);
+    /// The read-only Minecraft version catalog.
+    private final @UnmodifiableView ObservableList<HMCLDemoMinecraftVersion> minecraftVersionsView =
+            FXCollections.unmodifiableObservableList(minecraftVersions);
 
-    /// The read-only filtered catalog view exposed to pages.
-    private final @UnmodifiableView ObservableList<HMCLDemoContent> filteredContentsView =
-            FXCollections.unmodifiableObservableList(filteredContents);
+    /// Versions filtered by the download search query and channel filter.
+    private final FilteredList<HMCLDemoMinecraftVersion> filteredMinecraftVersions =
+            new FilteredList<>(minecraftVersions);
 
-    /// The currently selected Discover item.
-    private final ObjectProperty<@Nullable HMCLDemoContent> selectedContent =
-            new SimpleObjectProperty<>(this, "selectedContent");
+    /// The read-only filtered version catalog.
+    private final @UnmodifiableView ObservableList<HMCLDemoMinecraftVersion> filteredMinecraftVersionsView =
+            FXCollections.unmodifiableObservableList(filteredMinecraftVersions);
 
-    /// The case-insensitive Discover search query.
-    private final StringProperty searchQuery = new SimpleStringProperty(this, "searchQuery", "");
+    /// The download-center search query.
+    private final StringProperty versionSearchQuery =
+            new SimpleStringProperty(this, "versionSearchQuery", "");
 
-    /// The current foreground installation state.
-    private final ObjectProperty<InstallState> installState =
-            new SimpleObjectProperty<>(this, "installState", InstallState.AVAILABLE);
+    /// Whether release versions are included by the download filter.
+    private final ObjectProperty<Boolean> showReleaseVersions =
+            new SimpleObjectProperty<>(this, "showReleaseVersions", true);
 
-    /// The content associated with the foreground installation.
-    private final ObjectProperty<@Nullable HMCLDemoContent> installingContent =
-            new SimpleObjectProperty<>(this, "installingContent");
+    /// Whether snapshot versions are included by the download filter.
+    private final ObjectProperty<Boolean> showSnapshotVersions =
+            new SimpleObjectProperty<>(this, "showSnapshotVersions", true);
 
-    /// The current foreground installation progress in the range from `0.0` through `1.0`.
-    private final DoubleProperty installProgress = new SimpleDoubleProperty(this, "installProgress", 0.0);
+    /// Whether old beta and alpha versions are included by the download filter.
+    private final ObjectProperty<Boolean> showOldVersions =
+            new SimpleObjectProperty<>(this, "showOldVersions", false);
 
-    /// The stable identifiers of content already installed by the fixture or completed interaction.
-    private final ObservableSet<String> installedContentIds = FXCollections.observableSet();
-
-    /// The selected Material theme seed color.
+    /// The theme seed color.
     private final ObjectProperty<Color> themeColor =
             new SimpleObjectProperty<>(this, "themeColor", Color.web("#5C6BC0"));
 
-    /// The selected light, dark, or system brightness mode.
+    /// The brightness mode.
     private final ObjectProperty<Brightness> brightness =
-            new SimpleObjectProperty<>(this, "brightness", Brightness.SYSTEM);
+            new SimpleObjectProperty<>(this, "brightness", Brightness.LIGHT);
 
-    /// The selected dummy wallpaper.
+    /// The home wallpaper selection.
     private final ObjectProperty<Wallpaper> wallpaper =
             new SimpleObjectProperty<>(this, "wallpaper", Wallpaper.MEADOW);
 
-    /// The deterministic suffix counter used by [#copySelectedInstance()].
+    /// The active download installation title, or `null` when idle.
+    private final ObjectProperty<@Nullable String> installingTitle =
+            new SimpleObjectProperty<>(this, "installingTitle");
+
+    /// The active download installation progress from `0.0` through `1.0`.
+    private final DoubleProperty installProgress = new SimpleDoubleProperty(this, "installProgress", 0.0);
+
+    /// The deterministic suffix counter for copied instances.
     private int nextCopyNumber = 1;
 
-    /// The deterministic suffix counter used by [#addDummyAccount(HMCLDemoAccount.AccountType)].
+    /// The deterministic suffix counter for dummy accounts.
     private int nextAccountNumber = 1;
 
-    /// The deterministic suffix counter used by [#addDemoInstance()].
+    /// The deterministic suffix counter for dummy instances.
     private int nextInstanceNumber = 1;
 
-    /// Creates a state object with its own locale-aware string resolver.
+    /// Creates state using an internal string resolver.
     public HMCLDemoState() {
         this(new HMCLDemoStrings());
     }
 
-    /// Creates a state object backed by the supplied string resolver.
+    /// Creates state backed by the supplied string resolver.
     ///
-    /// @param strings the runtime localization service shared with the pages
+    /// @param strings the localization service
     public HMCLDemoState(HMCLDemoStrings strings) {
         this.strings = strings;
         accounts.setAll(createAccounts());
+        directories.setAll(createDirectories());
         instances.setAll(createInstances());
-        contents.setAll(createContents());
-        installedContentIds.add("sodium-skies");
+        minecraftVersions.setAll(createMinecraftVersions());
         selectedAccount.set(accounts.get(0));
+        selectedDirectory.set(directories.get(0));
         selectedInstance.set(instances.get(0));
-        selectedContent.set(contents.get(0));
-        searchQuery.addListener((observable, oldValue, newValue) -> updateContentFilter());
-        updateContentFilter();
+        instanceSearchQuery.addListener((observable, oldValue, newValue) -> updateInstanceFilter());
+        selectedDirectory.addListener((observable, oldValue, newValue) -> updateInstanceFilter());
+        versionSearchQuery.addListener((observable, oldValue, newValue) -> updateVersionFilter());
+        showReleaseVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
+        showSnapshotVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
+        showOldVersions.addListener((observable, oldValue, newValue) -> updateVersionFilter());
+        updateInstanceFilter();
+        updateVersionFilter();
     }
 
-    /// Returns the localization service used by this state.
+    /// Returns the localization service.
     ///
     /// @return the string resolver
     public HMCLDemoStrings getStrings() {
         return strings;
     }
 
-    /// Returns the immutable observable account list.
+    /// Returns the immutable account list.
     ///
-    /// @return the account-list view
+    /// @return the account list
     public @UnmodifiableView ObservableList<HMCLDemoAccount> getAccounts() {
         return accountsView;
     }
 
     /// Returns the selected account.
     ///
-    /// @return the selected account, or `null` when the account list is empty
+    /// @return the selected account, or `null` when empty
     public @Nullable HMCLDemoAccount getSelectedAccount() {
         return selectedAccount.get();
     }
 
-    /// Selects an account by stable identifier.
+    /// Returns the selected-account property.
     ///
-    /// @param id the requested account identifier
-    /// @return whether a matching account was selected
+    /// @return the selected-account property
+    public ObjectProperty<@Nullable HMCLDemoAccount> selectedAccountProperty() {
+        return selectedAccount;
+    }
+
+    /// Selects an account by identifier.
+    ///
+    /// @param id the account identifier
+    /// @return whether a match was selected
     public boolean selectAccount(String id) {
         for (HMCLDemoAccount account : accounts) {
             if (account.id().equals(id)) {
@@ -167,14 +203,7 @@ public final class HMCLDemoState {
         return false;
     }
 
-    /// Returns the selected-account property.
-    ///
-    /// @return the selected-account property
-    public ObjectProperty<@Nullable HMCLDemoAccount> selectedAccountProperty() {
-        return selectedAccount;
-    }
-
-    /// Removes the selected account and selects the nearest remaining account.
+    /// Removes the selected account.
     ///
     /// @return whether an account was removed
     public boolean removeSelectedAccount() {
@@ -190,55 +219,82 @@ public final class HMCLDemoState {
         return true;
     }
 
-    /// Adds and selects a fictional account of the requested provider type.
+    /// Adds and selects a dummy account.
     ///
-    /// @param type the provider category shown by the new account
-    /// @return the newly added account
+    /// @param type the provider type
+    /// @return the new account
     public HMCLDemoAccount addDummyAccount(HMCLDemoAccount.AccountType type) {
         int number = nextAccountNumber++;
-        String provider = switch (type) {
-            case MICROSOFT -> "Microsoft";
-            case OFFLINE -> "Offline";
-            case EXTERNAL -> "Community";
+        String skin = switch (type) {
+            case MICROSOFT -> "img/skin/wide/steve.png";
+            case OFFLINE -> "img/skin/slim/alex.png";
+            case EXTERNAL -> "img/skin/wide/noor.png";
         };
         HMCLDemoAccount account = new HMCLDemoAccount(
-                "demo-account-" + number,
-                "Demo Player " + number,
+                "account-" + number,
+                "Player " + number,
                 type,
-                provider + " dummy profile",
-                "D" + number
+                skin
         );
         accounts.add(account);
         selectedAccount.set(account);
         return account;
     }
 
-    /// Returns the immutable observable instance list.
+    /// Returns the immutable game-directory list.
     ///
-    /// @return the instance-list view
-    public @UnmodifiableView ObservableList<HMCLDemoInstance> getInstances() {
-        return instancesView;
+    /// @return the directory list
+    public @UnmodifiableView ObservableList<HMCLDemoGameDirectory> getDirectories() {
+        return directoriesView;
     }
 
-    /// Returns the selected instance.
+    /// Returns the selected game directory.
     ///
-    /// @return the selected instance, or `null` when the instance list is empty
-    public @Nullable HMCLDemoInstance getSelectedInstance() {
-        return selectedInstance.get();
+    /// @return the selected directory
+    public HMCLDemoGameDirectory getSelectedDirectory() {
+        return selectedDirectory.get();
     }
 
-    /// Selects an instance by stable identifier.
+    /// Returns the selected-directory property.
     ///
-    /// @param id the requested instance identifier
-    /// @return whether a matching instance was selected
-    public boolean selectInstance(String id) {
-        for (HMCLDemoInstance instance : instances) {
-            if (instance.id().equals(id)) {
-                selectedInstance.set(instance);
+    /// @return the selected-directory property
+    public ObjectProperty<HMCLDemoGameDirectory> selectedDirectoryProperty() {
+        return selectedDirectory;
+    }
+
+    /// Selects a game directory by identifier.
+    ///
+    /// @param id the directory identifier
+    /// @return whether a match was selected
+    public boolean selectDirectory(String id) {
+        for (HMCLDemoGameDirectory directory : directories) {
+            if (directory.id().equals(id)) {
+                selectedDirectory.set(directory);
                 return true;
             }
         }
         return false;
+    }
+
+    /// Returns the immutable instance list.
+    ///
+    /// @return the instance list
+    public @UnmodifiableView ObservableList<HMCLDemoInstance> getInstances() {
+        return instancesView;
+    }
+
+    /// Returns instances matching the selected directory and search query.
+    ///
+    /// @return the filtered instance list
+    public @UnmodifiableView ObservableList<HMCLDemoInstance> getFilteredInstances() {
+        return filteredInstancesView;
+    }
+
+    /// Returns the selected instance.
+    ///
+    /// @return the selected instance, or `null` when empty
+    public @Nullable HMCLDemoInstance getSelectedInstance() {
+        return selectedInstance.get();
     }
 
     /// Returns the selected-instance property.
@@ -248,9 +304,47 @@ public final class HMCLDemoState {
         return selectedInstance;
     }
 
-    /// Copies the selected instance and selects the copy.
+    /// Selects an instance by identifier.
     ///
-    /// @return the new copy, or `null` when no instance is selected
+    /// @param id the instance identifier
+    /// @return whether a match was selected
+    public boolean selectInstance(String id) {
+        for (HMCLDemoInstance instance : instances) {
+            if (instance.id().equals(id)) {
+                selectedInstance.set(instance);
+                if (!selectedDirectory.get().id().equals(instance.directoryId())) {
+                    selectDirectory(instance.directoryId());
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns the instance search query.
+    ///
+    /// @return the search query
+    public String getInstanceSearchQuery() {
+        return instanceSearchQuery.get();
+    }
+
+    /// Sets the instance search query.
+    ///
+    /// @param value the search query
+    public void setInstanceSearchQuery(String value) {
+        instanceSearchQuery.set(value);
+    }
+
+    /// Returns the instance search-query property.
+    ///
+    /// @return the search-query property
+    public StringProperty instanceSearchQueryProperty() {
+        return instanceSearchQuery;
+    }
+
+    /// Copies the selected instance.
+    ///
+    /// @return the copy, or `null` when nothing is selected
     public @Nullable HMCLDemoInstance copySelectedInstance() {
         HMCLDemoInstance source = selectedInstance.get();
         if (source == null) {
@@ -259,14 +353,13 @@ public final class HMCLDemoState {
         int copyNumber = nextCopyNumber++;
         HMCLDemoInstance copy = source.copyAs(
                 source.id() + "-copy-" + copyNumber,
-                source.name() + " (Copy " + copyNumber + ")");
-        int insertionIndex = instances.indexOf(source) + 1;
-        instances.add(insertionIndex, copy);
+                source.name() + " (" + copyNumber + ")");
+        instances.add(instances.indexOf(source) + 1, copy);
         selectedInstance.set(copy);
         return copy;
     }
 
-    /// Deletes the selected instance and selects the nearest remaining instance.
+    /// Deletes the selected instance.
     ///
     /// @return whether an instance was deleted
     public boolean deleteSelectedInstance() {
@@ -282,20 +375,18 @@ public final class HMCLDemoState {
         return true;
     }
 
-    /// Adds and selects a new fictional vanilla game instance.
+    /// Adds and selects a dummy vanilla instance in the selected directory.
     ///
-    /// @return the newly added instance
+    /// @return the new instance
     public HMCLDemoInstance addDemoInstance() {
         int number = nextInstanceNumber++;
         HMCLDemoInstance instance = new HMCLDemoInstance(
-                "demo-instance-" + number,
-                "New Profile " + number,
-                "1.21.1",
+                "instance-" + number,
+                "New Instance " + number,
+                "1.21.11",
                 "Vanilla",
-                "Never",
-                "A locally generated profile used only by the UI demo.",
-                "grass",
-                HMCLDemoInstance.InstanceStatus.READY,
+                selectedDirectory.get().id(),
+                "img/grass.png",
                 List.of()
         );
         instances.add(0, instance);
@@ -305,9 +396,9 @@ public final class HMCLDemoState {
 
     /// Changes the enabled state of one mod in the selected instance.
     ///
-    /// @param modId the stable mod identifier
+    /// @param modId the mod identifier
     /// @param enabled the requested enabled state
-    /// @return whether the selected instance contained that mod
+    /// @return whether the mod was found
     public boolean setSelectedModEnabled(String modId, boolean enabled) {
         HMCLDemoInstance instance = selectedInstance.get();
         if (instance == null) {
@@ -326,188 +417,181 @@ public final class HMCLDemoState {
         if (!found) {
             return false;
         }
-        HMCLDemoInstance updatedInstance = instance.withMods(updatedMods);
-        int index = instances.indexOf(instance);
-        instances.set(index, updatedInstance);
-        selectedInstance.set(updatedInstance);
+        HMCLDemoInstance updated = instance.withMods(updatedMods);
+        instances.set(instances.indexOf(instance), updated);
+        selectedInstance.set(updated);
         return true;
     }
 
-    /// Returns the immutable full Discover catalog.
+    /// Returns the immutable Minecraft version catalog.
     ///
-    /// @return the complete catalog view
-    public @UnmodifiableView ObservableList<HMCLDemoContent> getContents() {
-        return contentsView;
+    /// @return the version catalog
+    public @UnmodifiableView ObservableList<HMCLDemoMinecraftVersion> getMinecraftVersions() {
+        return minecraftVersionsView;
     }
 
-    /// Returns the immutable catalog view matching the current search query.
+    /// Returns versions matching the download filters.
     ///
-    /// @return the filtered catalog view
-    public @UnmodifiableView ObservableList<HMCLDemoContent> getFilteredContents() {
-        return filteredContentsView;
+    /// @return the filtered version catalog
+    public @UnmodifiableView ObservableList<HMCLDemoMinecraftVersion> getFilteredMinecraftVersions() {
+        return filteredMinecraftVersionsView;
     }
 
-    /// Returns the current Discover search query.
+    /// Returns the download search query.
     ///
     /// @return the search query
-    public String getSearchQuery() {
-        return searchQuery.get();
+    public String getVersionSearchQuery() {
+        return versionSearchQuery.get();
     }
 
-    /// Sets the Discover search query.
+    /// Sets the download search query.
     ///
-    /// A blank query matches every item.
-    ///
-    /// @param value the new query
-    public void setSearchQuery(String value) {
-        searchQuery.set(value);
+    /// @param value the search query
+    public void setVersionSearchQuery(String value) {
+        versionSearchQuery.set(value);
     }
 
-    /// Returns the Discover search-query property.
+    /// Returns the download search-query property.
     ///
     /// @return the search-query property
-    public StringProperty searchQueryProperty() {
-        return searchQuery;
+    public StringProperty versionSearchQueryProperty() {
+        return versionSearchQuery;
     }
 
-    /// Returns the selected Discover item.
+    /// Returns whether release versions are shown.
     ///
-    /// @return the selected content, or `null` if no item is selected
-    public @Nullable HMCLDemoContent getSelectedContent() {
-        return selectedContent.get();
+    /// @return `true` when releases are included
+    public boolean isShowReleaseVersions() {
+        return showReleaseVersions.get();
     }
 
-    /// Selects a Discover item by stable identifier.
+    /// Sets whether release versions are shown.
     ///
-    /// @param id the requested content identifier
-    /// @return whether a matching item was selected
-    public boolean selectContent(String id) {
-        for (HMCLDemoContent content : contents) {
-            if (content.id().equals(id)) {
-                selectedContent.set(content);
-                return true;
-            }
-        }
-        return false;
+    /// @param value the visibility flag
+    public void setShowReleaseVersions(boolean value) {
+        showReleaseVersions.set(value);
     }
 
-    /// Returns the selected-content property.
+    /// Returns the release-visibility property.
     ///
-    /// @return the selected-content property
-    public ObjectProperty<@Nullable HMCLDemoContent> selectedContentProperty() {
-        return selectedContent;
+    /// @return the property
+    public ObjectProperty<Boolean> showReleaseVersionsProperty() {
+        return showReleaseVersions;
     }
 
-    /// Returns the installation state applicable to a catalog item.
+    /// Returns whether snapshot versions are shown.
     ///
-    /// @param content the catalog item
-    /// @return the current installation state for that item
-    public InstallState installStateFor(HMCLDemoContent content) {
-        if (installedContentIds.contains(content.id())) {
-            return InstallState.INSTALLED;
-        }
-        return content.equals(installingContent.get()) ? installState.get() : InstallState.AVAILABLE;
+    /// @return `true` when snapshots are included
+    public boolean isShowSnapshotVersions() {
+        return showSnapshotVersions.get();
     }
 
-    /// Starts or retries installation of a catalog item.
+    /// Sets whether snapshot versions are shown.
     ///
-    /// @param content the item to install
-    /// @return `false` when the item is already installed, otherwise `true`
-    public boolean startInstallation(HMCLDemoContent content) {
-        if (installedContentIds.contains(content.id())) {
-            return false;
-        }
-        selectedContent.set(content);
-        installingContent.set(content);
+    /// @param value the visibility flag
+    public void setShowSnapshotVersions(boolean value) {
+        showSnapshotVersions.set(value);
+    }
+
+    /// Returns the snapshot-visibility property.
+    ///
+    /// @return the property
+    public ObjectProperty<Boolean> showSnapshotVersionsProperty() {
+        return showSnapshotVersions;
+    }
+
+    /// Returns whether old versions are shown.
+    ///
+    /// @return `true` when old versions are included
+    public boolean isShowOldVersions() {
+        return showOldVersions.get();
+    }
+
+    /// Sets whether old versions are shown.
+    ///
+    /// @param value the visibility flag
+    public void setShowOldVersions(boolean value) {
+        showOldVersions.set(value);
+    }
+
+    /// Returns the old-version visibility property.
+    ///
+    /// @return the property
+    public ObjectProperty<Boolean> showOldVersionsProperty() {
+        return showOldVersions;
+    }
+
+    /// Starts a dummy installation for the supplied title.
+    ///
+    /// @param title the installation title shown by the progress UI
+    public void beginInstallation(String title) {
+        installingTitle.set(title);
         installProgress.set(0.0);
-        installState.set(InstallState.INSTALLING);
-        return true;
     }
 
-    /// Updates foreground installation progress and completes installation at `1.0`.
+    /// Updates installation progress and clears the installation when it reaches `1.0`.
     ///
-    /// Values outside the supported range are clamped.
-    ///
-    /// @param value the requested progress
+    /// @param value the progress value
     /// @throws IllegalStateException if no installation is active
     public void setInstallProgress(double value) {
-        if (installingContent.get() == null || installState.get() != InstallState.INSTALLING) {
+        if (installingTitle.get() == null) {
             throw new IllegalStateException("No installation is active");
         }
         double normalized = Math.max(0.0, Math.min(1.0, value));
         installProgress.set(normalized);
         if (normalized >= 1.0) {
-            completeInstallation();
+            installingTitle.set(null);
         }
     }
 
-    /// Marks the foreground installation as failed while retaining it for retry.
+    /// Cancels the active installation.
     ///
-    /// @return whether an active installation was marked failed
-    public boolean failInstallation() {
-        if (installingContent.get() == null || installState.get() != InstallState.INSTALLING) {
-            return false;
-        }
-        installState.set(InstallState.FAILED);
-        return true;
-    }
-
-    /// Cancels the foreground installation or failure.
-    ///
-    /// @return whether an installation state was cleared
+    /// @return whether an installation was cancelled
     public boolean cancelInstallation() {
-        if (installingContent.get() == null) {
+        if (installingTitle.get() == null) {
             return false;
         }
-        installingContent.set(null);
+        installingTitle.set(null);
         installProgress.set(0.0);
-        installState.set(InstallState.AVAILABLE);
         return true;
     }
 
-    /// Returns the foreground install-state property.
+    /// Returns the active installation title.
     ///
-    /// @return the install-state property
-    public ObjectProperty<InstallState> installStateProperty() {
-        return installState;
+    /// @return the title, or `null` when idle
+    public @Nullable String getInstallingTitle() {
+        return installingTitle.get();
     }
 
-    /// Returns the content associated with the foreground installation.
+    /// Returns the installing-title property.
     ///
-    /// @return the installing content, or `null` when no installation is active
-    public @Nullable HMCLDemoContent getInstallingContent() {
-        return installingContent.get();
+    /// @return the property
+    public ObjectProperty<@Nullable String> installingTitleProperty() {
+        return installingTitle;
     }
 
-    /// Returns the installing-content property.
-    ///
-    /// @return the installing-content property
-    public ObjectProperty<@Nullable HMCLDemoContent> installingContentProperty() {
-        return installingContent;
-    }
-
-    /// Returns foreground installation progress.
+    /// Returns installation progress.
     ///
     /// @return a value from `0.0` through `1.0`
     public double getInstallProgress() {
         return installProgress.get();
     }
 
-    /// Returns the foreground install-progress property.
+    /// Returns the install-progress property.
     ///
-    /// @return the progress property
+    /// @return the property
     public DoubleProperty installProgressProperty() {
         return installProgress;
     }
 
-    /// Returns the selected theme seed color.
+    /// Returns the theme seed color.
     ///
     /// @return the theme color
     public Color getThemeColor() {
         return themeColor.get();
     }
 
-    /// Sets the selected theme seed color.
+    /// Sets the theme seed color.
     ///
     /// @param value the theme color
     public void setThemeColor(Color value) {
@@ -516,12 +600,12 @@ public final class HMCLDemoState {
 
     /// Returns the theme-color property.
     ///
-    /// @return the theme-color property
+    /// @return the property
     public ObjectProperty<Color> themeColorProperty() {
         return themeColor;
     }
 
-    /// Returns the selected brightness mode.
+    /// Returns the brightness mode.
     ///
     /// @return the brightness mode
     public Brightness getBrightness() {
@@ -537,7 +621,7 @@ public final class HMCLDemoState {
 
     /// Returns the brightness property.
     ///
-    /// @return the brightness property
+    /// @return the property
     public ObjectProperty<Brightness> brightnessProperty() {
         return brightness;
     }
@@ -558,190 +642,185 @@ public final class HMCLDemoState {
 
     /// Returns the wallpaper property.
     ///
-    /// @return the wallpaper property
+    /// @return the property
     public ObjectProperty<Wallpaper> wallpaperProperty() {
         return wallpaper;
     }
 
-    /// Returns the selected runtime language.
+    /// Returns the runtime language.
     ///
-    /// @return the normalized locale
+    /// @return the locale
     public Locale getLanguage() {
         return strings.getLocale();
     }
 
     /// Sets the runtime language.
     ///
-    /// @param value the requested locale
+    /// @param value the locale
     public void setLanguage(Locale value) {
         strings.setLocale(value);
     }
 
-    /// Returns the runtime language property owned by the string resolver.
+    /// Returns the language property.
     ///
-    /// @return the language property
+    /// @return the property
     public ObjectProperty<Locale> languageProperty() {
         return strings.localeProperty();
     }
 
-    /// Recomputes the Discover predicate from the current query.
-    private void updateContentFilter() {
-        String normalizedQuery = searchQuery.get().strip().toLowerCase(Locale.ROOT);
-        if (normalizedQuery.isEmpty()) {
-            filteredContents.setPredicate(content -> true);
-            return;
-        }
-        filteredContents.setPredicate(content ->
-                content.title().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || content.author().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || content.summary().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || content.kind().name().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || content.gameVersions().stream()
-                        .anyMatch(version -> version.toLowerCase(Locale.ROOT).contains(normalizedQuery)));
+    /// Recomputes the instance-list predicate.
+    private void updateInstanceFilter() {
+        String directoryId = selectedDirectory.get().id();
+        String query = instanceSearchQuery.get().strip().toLowerCase(Locale.ROOT);
+        filteredInstances.setPredicate(instance -> {
+            if (!instance.directoryId().equals(directoryId)) {
+                return false;
+            }
+            if (query.isEmpty()) {
+                return true;
+            }
+            return instance.name().toLowerCase(Locale.ROOT).contains(query)
+                    || instance.gameVersion().toLowerCase(Locale.ROOT).contains(query)
+                    || instance.loader().toLowerCase(Locale.ROOT).contains(query);
+        });
     }
 
-    /// Completes and records the foreground installation.
-    private void completeInstallation() {
-        HMCLDemoContent content = installingContent.get();
-        if (content == null) {
-            throw new IllegalStateException("No installation is active");
-        }
-        installedContentIds.add(content.id());
-        installProgress.set(1.0);
-        installState.set(InstallState.INSTALLED);
+    /// Recomputes the download-version predicate.
+    private void updateVersionFilter() {
+        String query = versionSearchQuery.get().strip().toLowerCase(Locale.ROOT);
+        boolean release = Boolean.TRUE.equals(showReleaseVersions.get());
+        boolean snapshot = Boolean.TRUE.equals(showSnapshotVersions.get());
+        boolean old = Boolean.TRUE.equals(showOldVersions.get());
+        filteredMinecraftVersions.setPredicate(version -> {
+            boolean channelAllowed = switch (version.channel()) {
+                case RELEASE -> release;
+                case SNAPSHOT -> snapshot;
+                case OLD_BETA, OLD_ALPHA -> old;
+            };
+            if (!channelAllowed) {
+                return false;
+            }
+            if (query.isEmpty()) {
+                return true;
+            }
+            return version.name().toLowerCase(Locale.ROOT).contains(query)
+                    || version.releaseTime().toLowerCase(Locale.ROOT).contains(query);
+        });
     }
 
-    /// Creates the three deterministic account fixtures.
+    /// Creates account fixtures inspired by the HMCL screenshots.
     private static @Unmodifiable List<HMCLDemoAccount> createAccounts() {
         return List.of(
-                new HMCLDemoAccount(
-                        "river", "River Chen", HMCLDemoAccount.AccountType.MICROSOFT,
-                        "Microsoft account", "RC"),
-                new HMCLDemoAccount(
-                        "maple", "MapleFox", HMCLDemoAccount.AccountType.OFFLINE,
-                        "Offline profile", "MF"),
-                new HMCLDemoAccount(
-                        "orbit", "Orbit Builder", HMCLDemoAccount.AccountType.EXTERNAL,
-                        "Community authentication", "OB")
+                new HMCLDemoAccount("glavo", "Glavo", HMCLDemoAccount.AccountType.MICROSOFT,
+                        "img/skin/wide/steve.png"),
+                new HMCLDemoAccount("alex", "Alex", HMCLDemoAccount.AccountType.OFFLINE,
+                        "img/skin/slim/alex.png"),
+                new HMCLDemoAccount("noor", "Noor", HMCLDemoAccount.AccountType.EXTERNAL,
+                        "img/skin/wide/noor.png")
         );
     }
 
-    /// Creates the six deterministic instance fixtures.
+    /// Creates game-directory fixtures.
+    private static @Unmodifiable List<HMCLDemoGameDirectory> createDirectories() {
+        return List.of(
+                new HMCLDemoGameDirectory("minecraft", ".minecraft", "D:\\Games\\Minecraft\\.minecraft"),
+                new HMCLDemoGameDirectory("minecraft2", ".minecraft2", "D:\\Games\\Minecraft\\.minecraft2")
+        );
+    }
+
+    /// Creates instance fixtures inspired by the HMCL screenshots.
     private static @Unmodifiable List<HMCLDemoInstance> createInstances() {
         return List.of(
                 new HMCLDemoInstance(
-                        "creative-workshop", "Creative Workshop", "1.21.4", "Fabric 0.16.10", "Today, 09:42",
-                        "A lightweight building workspace with visual utilities.", "palette",
-                        HMCLDemoInstance.InstanceStatus.READY,
+                        "fabulously-optimized",
+                        "Fabulously Optimized",
+                        "1.21.11",
+                        "Fabric",
+                        "minecraft",
+                        "img/command.png",
                         List.of(
-                                new HMCLDemoMod("worldedit", "WorldEdit", "7.3.10", true),
-                                new HMCLDemoMod("sodium", "Sodium", "0.6.7", true),
-                                new HMCLDemoMod("iris", "Iris Shaders", "1.8.1", false)
+                                new HMCLDemoMod("sodium", "Sodium", "sodium-fabric-0.7.3+mc1.21.11.jar", true),
+                                new HMCLDemoMod("iris", "Iris", "iris-fabric-1.9.6+mc1.21.11.jar", true),
+                                new HMCLDemoMod("modmenu", "Mod Menu", "modmenu-16.0.0-rc.1.jar", true),
+                                new HMCLDemoMod("fabric-api", "Fabric API",
+                                        "fabric-api-0.140.2+1.21.11.jar", true),
+                                new HMCLDemoMod("dynamic-fps", "Dynamic FPS",
+                                        "dynamic-fps-3.11.3+minecraft-1.21.11-fabric.jar", true)
                         )),
                 new HMCLDemoInstance(
-                        "vanilla-evening", "Vanilla Evening", "1.21.4", "Vanilla", "Yesterday, 21:18",
-                        "A clean survival profile for relaxed evening sessions.", "home",
-                        HMCLDemoInstance.InstanceStatus.RUNNING,
+                        "snapshot-26-3-4",
+                        "26.3 Snapshot 4",
+                        "26.3-snapshot-4",
+                        "Vanilla",
+                        "minecraft",
+                        "img/grass.png",
                         List.of()),
                 new HMCLDemoInstance(
-                        "engineering-lab", "Engineering Lab", "1.20.1", "NeoForge 47.1", "Monday, 18:06",
-                        "Automation experiments with a carefully curated mod set.", "settings",
-                        HMCLDemoInstance.InstanceStatus.UPDATE_AVAILABLE,
+                        "forge-1-12-2",
+                        "1.12.2-Forge_14.23.5.2860",
+                        "1.12.2",
+                        "Forge 14.23.5.2860",
+                        "minecraft",
+                        "img/furnace.png",
                         List.of(
-                                new HMCLDemoMod("create", "Create", "0.5.1", true),
-                                new HMCLDemoMod("jei", "Just Enough Items", "15.20.0", true),
-                                new HMCLDemoMod("journeymap", "JourneyMap", "5.10.3", true)
+                                new HMCLDemoMod("jei", "Just Enough Items", "jei_1.12.2-4.16.1.1000.jar", true)
                         )),
                 new HMCLDemoInstance(
-                        "sky-islands", "Sky Islands", "1.20.4", "Quilt 0.26", "May 18, 14:33",
-                        "A compact adventure pack designed around floating islands.", "navigation",
-                        HMCLDemoInstance.InstanceStatus.READY,
-                        List.of(
-                                new HMCLDemoMod("trinkets", "Trinkets", "3.8.1", true),
-                                new HMCLDemoMod("emi", "EMI", "1.1.13", true)
-                        )),
+                        "release-1-21-11",
+                        "1.21.11",
+                        "1.21.11",
+                        "Vanilla",
+                        "minecraft",
+                        "img/grass.png",
+                        List.of()),
                 new HMCLDemoInstance(
-                        "redstone-archive", "Redstone Archive", "1.19.2", "Forge 43.4", "April 02, 10:15",
-                        "Archived technical worlds and compatibility test maps.", "archive",
-                        HMCLDemoInstance.InstanceStatus.NEEDS_REPAIR,
+                        "lab-minecraft2",
+                        "Modding Lab",
+                        "1.20.1",
+                        "NeoForge",
+                        "minecraft2",
+                        "img/command.png",
                         List.of(
-                                new HMCLDemoMod("architectury", "Architectury API", "6.6.92", true),
-                                new HMCLDemoMod("configured", "Configured", "2.1.1", false)
-                        )),
-                new HMCLDemoInstance(
-                        "snapshot-playground", "Snapshot Playground", "25w18a", "Vanilla", "March 27, 16:48",
-                        "A disposable profile for previewing upcoming game changes.", "spark",
-                        HMCLDemoInstance.InstanceStatus.READY,
-                        List.of())
+                                new HMCLDemoMod("create", "Create", "create-1.20.1-0.5.1.jar", true),
+                                new HMCLDemoMod("jei-neo", "Just Enough Items", "jei-1.20.1-15.20.0.jar", true)
+                        ))
         );
     }
 
-    /// Creates the eight deterministic Discover fixtures.
-    private static @Unmodifiable List<HMCLDemoContent> createContents() {
+    /// Creates Minecraft version fixtures inspired by the HMCL screenshots.
+    private static @Unmodifiable List<HMCLDemoMinecraftVersion> createMinecraftVersions() {
         return List.of(
-                new HMCLDemoContent(
-                        "sodium-skies", "Sodium Skies", "Northwind Labs",
-                        "Smooth rendering defaults for modest hardware.",
-                        HMCLDemoContent.ContentKind.MOD, List.of("1.21.4", "1.21.1"),
-                        "spark", 12_480_000L, true),
-                new HMCLDemoContent(
-                        "builders-compass", "Builder's Compass", "Cedar Works",
-                        "Fast navigation tools for large creative projects.",
-                        HMCLDemoContent.ContentKind.MOD, List.of("1.21.4", "1.20.6"),
-                        "navigation", 2_870_000L, true),
-                new HMCLDemoContent(
-                        "copper-horizons", "Copper Horizons", "Amber Studio",
-                        "A warm exploration pack with compact automation.",
-                        HMCLDemoContent.ContentKind.MODPACK, List.of("1.21.1"),
-                        "work", 864_000L, true),
-                new HMCLDemoContent(
-                        "quiet-blocks", "Quiet Blocks", "Moss Collective",
-                        "Soft, readable textures for focused building sessions.",
-                        HMCLDemoContent.ContentKind.RESOURCE_PACK, List.of("1.21.4", "1.21.1", "1.20.4"),
-                        "image", 4_310_000L, false),
-                new HMCLDemoContent(
-                        "aurora-path", "Aurora Path", "Prism Workshop",
-                        "Colorful skies and restrained cinematic lighting.",
-                        HMCLDemoContent.ContentKind.SHADER_PACK, List.of("1.21.4", "1.20.1"),
-                        "visibility", 6_920_000L, true),
-                new HMCLDemoContent(
-                        "inventory-notes", "Inventory Notes", "Paper Crane",
-                        "Pins short reminders beside frequently used items.",
-                        HMCLDemoContent.ContentKind.MOD, List.of("1.21.4"),
-                        "task", 740_000L, false),
-                new HMCLDemoContent(
-                        "weekend-vanilla-plus", "Weekend Vanilla Plus", "Campfire Team",
-                        "A small cooperative pack that stays close to vanilla.",
-                        HMCLDemoContent.ContentKind.MODPACK, List.of("1.20.1"),
-                        "group", 1_920_000L, false),
-                new HMCLDemoContent(
-                        "paper-cut-ui", "Paper Cut UI", "Mono Lake",
-                        "High-contrast interface textures with clear item silhouettes.",
-                        HMCLDemoContent.ContentKind.RESOURCE_PACK, List.of("1.21.4", "1.21.1"),
-                        "dashboard", 525_000L, false)
+                new HMCLDemoMinecraftVersion("26.1", "26.1", "2026/3/24 19:05:36",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.11", "1.21.11", "2025/12/10 1:36:31",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.10", "1.21.10", "2025/10/7 19:01:13",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.9", "1.21.9", "2025/9/30 17:38:40",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.8", "1.21.8", "2025/7/17 20:25:32",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.7", "1.21.7", "2025/6/30 19:24:33",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.6", "1.21.6", "2025/6/18 1:24:40",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("1.21.5", "1.21.5", "2025/3/25 23:04:38",
+                        HMCLDemoMinecraftVersion.Channel.RELEASE),
+                new HMCLDemoMinecraftVersion("26.3-snapshot-4", "26.3 Snapshot 4", "2026/4/2 18:12:00",
+                        HMCLDemoMinecraftVersion.Channel.SNAPSHOT),
+                new HMCLDemoMinecraftVersion("25w46a", "25w46a", "2025/11/12 14:22:10",
+                        HMCLDemoMinecraftVersion.Channel.SNAPSHOT),
+                new HMCLDemoMinecraftVersion("1.7.3-pre", "1.7.3-pre", "2013/10/1 12:00:00",
+                        HMCLDemoMinecraftVersion.Channel.OLD_BETA),
+                new HMCLDemoMinecraftVersion("a1.2.6", "a1.2.6", "2010/12/3 12:00:00",
+                        HMCLDemoMinecraftVersion.Channel.OLD_ALPHA)
         );
-    }
-
-    /// Describes installation state for one Discover item.
-    @NotNullByDefault
-    public enum InstallState {
-        /// The item can be installed.
-        AVAILABLE,
-
-        /// The item is currently installing.
-        INSTALLING,
-
-        /// The item is installed.
-        INSTALLED,
-
-        /// The most recent installation attempt failed and may be retried.
-        FAILED
     }
 
     /// Describes the selected application brightness mode.
     @NotNullByDefault
     public enum Brightness {
-        /// Follows the host operating-system preference.
+        /// Follows a light appearance for this offline demo.
         SYSTEM,
 
         /// Forces a light color scheme.
@@ -751,7 +830,7 @@ public final class HMCLDemoState {
         DARK
     }
 
-    /// Identifies one generated, non-branded demo wallpaper.
+    /// Identifies one generated demo wallpaper.
     @NotNullByDefault
     public enum Wallpaper {
         /// A bright green landscape treatment.

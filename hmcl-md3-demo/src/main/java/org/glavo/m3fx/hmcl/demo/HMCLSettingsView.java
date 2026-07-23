@@ -3,352 +3,355 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.scene.Node;
-import javafx.scene.control.ToggleGroup;
 import javafx.geometry.Insets;
-import javafx.scene.layout.FlowPane;
+import javafx.scene.Node;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import org.glavo.m3fx.controls.M3Button;
-import org.glavo.m3fx.controls.M3ButtonVariant;
-import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
-import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
-import org.glavo.m3fx.controls.M3Slider;
-import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Locale;
 
-/// Displays representative launcher, appearance, and download settings backed by the dummy state.
+/// Displays launcher settings with HMCL-style section navigation.
 @NotNullByDefault
-public final class HMCLSettingsView extends HMCLDemoView {
+final class HMCLSettingsView extends BorderPane {
+    /// Settings sections.
+    private enum Section {
+        /// Global game settings.
+        GLOBAL_GAME,
+
+        /// Java management.
+        JAVA,
+
+        /// General launcher settings.
+        GENERAL,
+
+        /// Appearance settings.
+        APPEARANCE,
+
+        /// Download settings.
+        DOWNLOAD,
+
+        /// Help.
+        HELP,
+
+        /// Feedback.
+        FEEDBACK,
+
+        /// About.
+        ABOUT
+    }
+
+    /// The localization source.
+    private final HMCLDemoStrings strings;
+
+    /// The shared state.
+    private final HMCLDemoState state;
+
+    /// The application controller.
+    private final HMCLDemoController controller;
+
+    /// Section labels and items.
+    private final M3Text gameSection = HMCLDemoUi.sectionLabel("");
+    private final M3Text launcherSection = HMCLDemoUi.sectionLabel("");
+    private final M3Text helpSection = HMCLDemoUi.sectionLabel("");
+    private final M3ListItem globalGameItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
+    private final M3ListItem javaItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CODE, null);
+    private final M3ListItem generalItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
+    private final M3ListItem appearanceItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
+    private final M3ListItem downloadItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
+    private final M3ListItem helpItem = HMCLDemoUi.navItem("", HMCLDemoIcons.HELP, null);
+    private final M3ListItem feedbackItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CHAT, null);
+    private final M3ListItem aboutItem = HMCLDemoUi.navItem("", HMCLDemoIcons.INFO, null);
+
+    /// The center host.
+    private final StackPane contentHost = new StackPane();
+
+    /// The active section.
+    private Section section = Section.GENERAL;
+
     /// Creates the settings page.
     ///
     /// @param strings the localization source
-    /// @param state   the shared demo state
-    /// @param actions the application command sink
-    public HMCLSettingsView(HMCLDemoStrings strings, HMCLDemoState state, HMCLDemoActions actions) {
-        super(strings, state, actions);
-        initializeView();
+    /// @param state the shared state
+    /// @param controller the application controller
+    HMCLSettingsView(HMCLDemoStrings strings, HMCLDemoState state, HMCLDemoController controller) {
+        this.strings = strings;
+        this.state = state;
+        this.controller = controller;
+
+        getStyleClass().add("hmcl-secondary-page");
+        globalGameItem.setOnAction(event -> showSection(Section.GLOBAL_GAME));
+        javaItem.setOnAction(event -> showSection(Section.JAVA));
+        generalItem.setOnAction(event -> showSection(Section.GENERAL));
+        appearanceItem.setOnAction(event -> showSection(Section.APPEARANCE));
+        downloadItem.setOnAction(event -> showSection(Section.DOWNLOAD));
+        helpItem.setOnAction(event -> showSection(Section.HELP));
+        feedbackItem.setOnAction(event -> showSection(Section.FEEDBACK));
+        aboutItem.setOnAction(event -> showSection(Section.ABOUT));
+
+        VBox sidebar = HMCLDemoUi.sidebar(
+                gameSection,
+                globalGameItem,
+                javaItem,
+                launcherSection,
+                generalItem,
+                appearanceItem,
+                downloadItem,
+                helpSection,
+                helpItem,
+                feedbackItem,
+                aboutItem
+        );
+        setLeft(sidebar);
+        setCenter(contentHost);
+        refreshLocale();
+        showSection(Section.GENERAL);
     }
 
-    /// Creates the localized settings content.
-    ///
-    /// @return the settings page tree
-    @Override
-    protected Node createContent() {
-        StackPane contentHost = new StackPane();
-        contentHost.getStyleClass().add("hmcl-settings-surface");
-        contentHost.setPadding(new Insets(12.0));
-        contentHost.setMinWidth(0.0);
-        contentHost.setMaxWidth(Double.MAX_VALUE);
-        contentHost.getChildren().setAll(createGeneralSettings());
-        return contextualPage(createSidebar(contentHost), contentHost);
+    /// Updates static labels.
+    void refreshLocale() {
+        gameSection.setText(strings.get("settings.section.game"));
+        launcherSection.setText(strings.get("settings.section.launcher"));
+        helpSection.setText(strings.get("settings.section.help"));
+        globalGameItem.setHeadlineText(strings.get("settings.nav.global_game"));
+        javaItem.setHeadlineText(strings.get("settings.nav.java"));
+        generalItem.setHeadlineText(strings.get("settings.nav.general"));
+        appearanceItem.setHeadlineText(strings.get("settings.nav.appearance"));
+        downloadItem.setHeadlineText(strings.get("settings.nav.download"));
+        helpItem.setHeadlineText(strings.get("settings.nav.help"));
+        feedbackItem.setHeadlineText(strings.get("settings.nav.feedback"));
+        aboutItem.setHeadlineText(strings.get("settings.nav.about"));
+        renderSection();
     }
 
-    /// Creates the fixed launcher-settings category sidebar.
+    /// Selects a settings section.
     ///
-    /// @param contentHost the central content host replaced by category actions
-    /// @return the configured settings sidebar
-    private Node createSidebar(StackPane contentHost) {
-        M3Text label = new M3Text(text("settings.title"), M3TextRole.TITLE_MEDIUM);
-        M3ListPane categories = new M3ListPane();
-        categories.setListStyle(M3ListStyle.SEGMENTED);
-        categories.setSelectionMode(M3SelectionMode.SINGLE);
-        categories.setAllowEmptySelection(false);
-
-        M3ListItem general = settingsCategory(
-                text("settings.tab.general"),
-                HMCLDemoIcons.SETTINGS,
-                () -> contentHost.getChildren().setAll(createGeneralSettings())
-        );
-        M3ListItem appearance = settingsCategory(
-                text("settings.tab.appearance"),
-                HMCLDemoIcons.PALETTE,
-                () -> contentHost.getChildren().setAll(createAppearanceSettings())
-        );
-        M3ListItem downloads = settingsCategory(
-                text("settings.tab.downloads"),
-                HMCLDemoIcons.DISCOVER,
-                () -> contentHost.getChildren().setAll(createDownloadSettings())
-        );
-        general.setSelected(true);
-        categories.getItems().addAll(general, appearance, downloads);
-
-        VBox sidebar = new VBox(8.0, label, categories);
-        sidebar.setPadding(new Insets(12.0, 8.0, 10.0, 8.0));
-        sidebar.setPrefWidth(200.0);
-        sidebar.setMinWidth(200.0);
-        sidebar.setMaxWidth(200.0);
-        return sidebar;
+    /// @param next the section
+    private void showSection(Section next) {
+        section = next;
+        globalGameItem.setSelected(next == Section.GLOBAL_GAME);
+        javaItem.setSelected(next == Section.JAVA);
+        generalItem.setSelected(next == Section.GENERAL);
+        appearanceItem.setSelected(next == Section.APPEARANCE);
+        downloadItem.setSelected(next == Section.DOWNLOAD);
+        helpItem.setSelected(next == Section.HELP);
+        feedbackItem.setSelected(next == Section.FEEDBACK);
+        aboutItem.setSelected(next == Section.ABOUT);
+        renderSection();
     }
 
-    /// Creates one launcher-settings sidebar category.
-    ///
-    /// @param label    the localized category label
-    /// @param iconPath the category icon path
-    /// @param action   the content replacement action
-    /// @return the configured category row
-    private static M3ListItem settingsCategory(String label, String iconPath, Runnable action) {
-        M3ListItem item = new M3ListItem(label);
-        item.getStyleClass().add("hmcl-sidebar-item");
-        item.setLeading(HMCLDemoIcons.create(iconPath));
-        item.setOneLineHeight(40.0);
-        item.setOnAction(event -> action.run());
-        return item;
-    }
-
-    /// Creates the general launcher settings.
-    ///
-    /// @return the general settings content
-    private Node createGeneralSettings() {
-        M3SwitchSettingItem previewUpdates = new M3SwitchSettingItem(text("settings.updates.preview"));
-        previewUpdates.setSupportingText(text("settings.updates.preview.supporting"));
-        previewUpdates.setSelected(false);
-        previewUpdates.setOnAction(event -> actions.dispatch("toggle-preview-updates"));
-
-        M3SwitchSettingItem updateNotices = new M3SwitchSettingItem(text("settings.updates.notices"));
-        updateNotices.setSupportingText(text("settings.updates.notices.supporting"));
-        updateNotices.setSelected(true);
-        updateNotices.setOnAction(event -> actions.dispatch("toggle-update-notices"));
-
-        M3SettingItem logs = new M3SettingItem(text("settings.logs"));
-        logs.setSupportingText(text("settings.logs.supporting"));
-        logs.setOnAction(event -> actions.dispatch("export-logs"));
-
-        M3ListPane launcher = createList(previewUpdates, updateNotices, logs);
-
-        ToggleGroup languages = new ToggleGroup();
-        M3RadioButtonSettingItem english = radio(
-                text("settings.language.english"),
-                text("settings.language.english.supporting"),
-                languages
-        );
-        M3RadioButtonSettingItem chinese = radio(
-                text("settings.language.chinese"),
-                text("settings.language.chinese.supporting"),
-                languages
-        );
-        english.setSelected(!"zh".equalsIgnoreCase(state.getLanguage().getLanguage()));
-        chinese.setSelected("zh".equalsIgnoreCase(state.getLanguage().getLanguage()));
-        english.setOnAction(event -> state.setLanguage(HMCLDemoStrings.ENGLISH));
-        chinese.setOnAction(event -> state.setLanguage(HMCLDemoStrings.SIMPLIFIED_CHINESE));
-
-        return new VBox(
-                20.0,
-                sectionTitle(text("settings.section.launcher")),
-                launcher,
-                sectionTitle(text("settings.section.language")),
-                createList(english, chinese)
-        );
-    }
-
-    /// Creates the theme and wallpaper settings.
-    ///
-    /// @return the appearance settings content
-    private Node createAppearanceSettings() {
-        ToggleGroup brightness = new ToggleGroup();
-        M3RadioButtonSettingItem system = brightnessItem(
-                "settings.appearance.system",
-                HMCLDemoState.Brightness.SYSTEM,
-                brightness
-        );
-        M3RadioButtonSettingItem light = brightnessItem(
-                "settings.appearance.light",
-                HMCLDemoState.Brightness.LIGHT,
-                brightness
-        );
-        M3RadioButtonSettingItem dark = brightnessItem(
-                "settings.appearance.dark",
-                HMCLDemoState.Brightness.DARK,
-                brightness
-        );
-
-        M3Button purple = colorButton("settings.color.purple", Color.web("#6750A4"));
-        M3Button green = colorButton("settings.color.green", Color.web("#386A20"));
-        M3Button orange = colorButton("settings.color.orange", Color.web("#8B5000"));
-        FlowPane colors = flow(purple, green, orange);
-        M3Card colorCard = card(
-                new M3Text(text("settings.appearance.color"), M3TextRole.TITLE_MEDIUM),
-                wrapped(text("settings.appearance.color.supporting")),
-                colors
-        );
-
-        ToggleGroup wallpapers = new ToggleGroup();
-        M3RadioButtonSettingItem meadow = wallpaperItem(
-                "settings.wallpaper.meadow",
-                HMCLDemoState.Wallpaper.MEADOW,
-                wallpapers
-        );
-        M3RadioButtonSettingItem caves = wallpaperItem(
-                "settings.wallpaper.caves",
-                HMCLDemoState.Wallpaper.CAVES,
-                wallpapers
-        );
-        M3RadioButtonSettingItem sunset = wallpaperItem(
-                "settings.wallpaper.sunset",
-                HMCLDemoState.Wallpaper.SUNSET,
-                wallpapers
-        );
-
-        return new VBox(
-                20.0,
-                sectionTitle(text("settings.appearance.brightness")),
-                createList(system, light, dark),
-                colorCard,
-                sectionTitle(text("settings.appearance.wallpaper")),
-                createList(meadow, caves, sunset)
-        );
-    }
-
-    /// Creates the representative download settings.
-    ///
-    /// @return the download settings content
-    private Node createDownloadSettings() {
-        M3SettingItem source = new M3SettingItem(text("settings.download.source"));
-        source.setSupportingText(text("settings.download.source.value"));
-        source.setOnAction(event -> actions.dispatch("choose-download-source"));
-
-        M3SettingItem cache = new M3SettingItem(text("settings.download.cache"));
-        cache.setSupportingText(text("settings.download.cache.value"));
-        cache.setOnAction(event -> actions.dispatch("clear-download-cache"));
-
-        M3SwitchSettingItem proxy = new M3SwitchSettingItem(text("settings.download.proxy"));
-        proxy.setSupportingText(text("settings.download.proxy.supporting"));
-        proxy.setSelected(false);
-        proxy.setOnAction(event -> actions.dispatch("toggle-proxy"));
-
-        M3SwitchSettingItem verify = new M3SwitchSettingItem(text("settings.download.verify"));
-        verify.setSupportingText(text("settings.download.verify.supporting"));
-        verify.setSelected(true);
-        verify.setOnAction(event -> actions.dispatch("toggle-download-verification"));
-
-        M3Text threadValue = new M3Text(text("settings.download.threads.value", 8), M3TextRole.BODY_MEDIUM);
-        M3Slider threads = new M3Slider(1.0, 16.0, 8.0);
-        threads.valueProperty().addListener((observable, oldValue, newValue) ->
-                threadValue.setText(text("settings.download.threads.value", Math.round(newValue.doubleValue()))));
-        M3Card threadCard = card(
-                new M3Text(text("settings.download.threads"), M3TextRole.TITLE_MEDIUM),
-                threadValue,
-                threads
-        );
-
-        return new VBox(
-                20.0,
-                sectionTitle(text("settings.section.downloads")),
-                createList(source, cache, proxy, verify),
-                threadCard
-        );
-    }
-
-    /// Creates a brightness choice bound to the shared state.
-    ///
-    /// @param key         the localized title key
-    /// @param value       the represented brightness value
-    /// @param toggleGroup the owning toggle group
-    /// @return the configured setting row
-    private M3RadioButtonSettingItem brightnessItem(
-            String key,
-            HMCLDemoState.Brightness value,
-            ToggleGroup toggleGroup
-    ) {
-        M3RadioButtonSettingItem item = radio(
-                text(key),
-                text(key + ".supporting"),
-                toggleGroup
-        );
-        item.setSelected(state.getBrightness() == value);
-        item.setOnAction(event -> {
-            state.setBrightness(value);
-            actions.dispatch("brightness", value.name().toLowerCase(Locale.ROOT));
+    /// Rebuilds the center content.
+    private void renderSection() {
+        contentHost.getChildren().setAll(switch (section) {
+            case GLOBAL_GAME -> simpleList(
+                    setting(strings.get("settings.global.memory"), strings.get("settings.global.memory.support")),
+                    setting(strings.get("settings.global.resolution"),
+                            strings.get("settings.global.resolution.support")),
+                    setting(strings.get("settings.global.launcher_visibility"),
+                            strings.get("settings.global.launcher_visibility.support"))
+            );
+            case JAVA -> simpleList(
+                    setting(strings.get("settings.java.current"), strings.get("settings.java.current.support")),
+                    setting(strings.get("settings.java.add"), strings.get("settings.java.add.support"))
+            );
+            case GENERAL -> generalContent();
+            case APPEARANCE -> appearanceContent();
+            case DOWNLOAD -> simpleList(
+                    setting(strings.get("settings.download.source"), strings.get("settings.download.source.support")),
+                    setting(strings.get("settings.download.threads"),
+                            strings.get("settings.download.threads.support"))
+            );
+            case HELP -> placeholder(strings.get("settings.nav.help"), strings.get("settings.help.body"));
+            case FEEDBACK -> placeholder(strings.get("settings.nav.feedback"), strings.get("settings.feedback.body"));
+            case ABOUT -> placeholder(strings.get("settings.nav.about"), strings.get("settings.about.body"));
         });
-        return item;
     }
 
-    /// Creates a wallpaper choice bound to the shared state.
+    /// Creates the general settings content.
     ///
-    /// @param key         the localized title key
-    /// @param value       the represented wallpaper
-    /// @param toggleGroup the owning toggle group
-    /// @return the configured setting row
-    private M3RadioButtonSettingItem wallpaperItem(
-            String key,
-            HMCLDemoState.Wallpaper value,
-            ToggleGroup toggleGroup
-    ) {
-        M3RadioButtonSettingItem item = radio(
-                text(key),
-                text(key + ".supporting"),
-                toggleGroup
-        );
-        item.setSelected(state.getWallpaper() == value);
-        item.setOnAction(event -> {
-            state.setWallpaper(value);
-            actions.dispatch("wallpaper", value.name().toLowerCase(Locale.ROOT));
+    /// @return the content node
+    private Node generalContent() {
+        M3SettingItem language = new M3SettingItem(strings.get("settings.general.language"));
+        language.setSupportingText(languageLabel(state.getLanguage()));
+        language.setOnAction(event -> {
+            Locale next = state.getLanguage().equals(HMCLDemoStrings.SIMPLIFIED_CHINESE)
+                    ? HMCLDemoStrings.ENGLISH
+                    : HMCLDemoStrings.SIMPLIFIED_CHINESE;
+            state.setLanguage(next);
+            language.setSupportingText(languageLabel(next));
+            controller.showMessageKey("snackbar.settings_saved");
         });
-        return item;
+
+        M3SettingItem updateChannel = setting(
+                strings.get("settings.general.update_channel"),
+                strings.get("settings.general.update_channel.support"));
+        M3SettingItem fileAssociation = setting(
+                strings.get("settings.general.file_association"),
+                strings.get("settings.general.file_association.support"));
+        return simpleList(language, updateChannel, fileAssociation);
     }
 
-    /// Creates a theme-color action button.
+    /// Creates the appearance settings content.
     ///
-    /// @param key   the localized color-name key
-    /// @param color the represented seed color
-    /// @return the configured button
-    private M3Button colorButton(String key, Color color) {
-        M3Button button = new M3Button(text(key), M3ButtonVariant.TONAL);
-        button.setOnAction(event -> {
-            state.setThemeColor(color);
-            actions.dispatch("theme-color", color.toString());
+    /// @return the content node
+    private Node appearanceContent() {
+        M3SettingItem brightness = new M3SettingItem(strings.get("settings.appearance.brightness"));
+        brightness.setSupportingText(brightnessLabel(state.getBrightness()));
+        brightness.setOnAction(event -> {
+            HMCLDemoState.Brightness next = switch (state.getBrightness()) {
+                case LIGHT -> HMCLDemoState.Brightness.DARK;
+                case DARK -> HMCLDemoState.Brightness.SYSTEM;
+                case SYSTEM -> HMCLDemoState.Brightness.LIGHT;
+            };
+            state.setBrightness(next);
+            brightness.setSupportingText(brightnessLabel(next));
+            controller.showMessageKey("snackbar.settings_saved");
         });
-        return button;
+
+        M3SettingItem theme = new M3SettingItem(strings.get("settings.appearance.theme"));
+        theme.setSupportingText(colorLabel(state.getThemeColor()));
+        theme.setOnAction(event -> {
+            Color next = nextThemeColor(state.getThemeColor());
+            state.setThemeColor(next);
+            theme.setSupportingText(colorLabel(next));
+            controller.showMessageKey("snackbar.settings_saved");
+        });
+
+        M3SettingItem wallpaper = new M3SettingItem(strings.get("settings.appearance.wallpaper"));
+        wallpaper.setSupportingText(wallpaperLabel(state.getWallpaper()));
+        wallpaper.setOnAction(event -> {
+            HMCLDemoState.Wallpaper next = switch (state.getWallpaper()) {
+                case MEADOW -> HMCLDemoState.Wallpaper.CAVES;
+                case CAVES -> HMCLDemoState.Wallpaper.SUNSET;
+                case SUNSET -> HMCLDemoState.Wallpaper.MEADOW;
+            };
+            state.setWallpaper(next);
+            wallpaper.setSupportingText(wallpaperLabel(next));
+            controller.showMessageKey("snackbar.settings_saved");
+        });
+        return simpleList(brightness, theme, wallpaper);
     }
 
-    /// Creates one radio setting row.
+    /// Creates a simple segmented settings list.
     ///
-    /// @param headline   the headline text
-    /// @param supporting the supporting text
-    /// @param group      the owning toggle group
-    /// @return the configured row
-    private static M3RadioButtonSettingItem radio(
-            String headline,
-            String supporting,
-            ToggleGroup group
-    ) {
-        M3RadioButtonSettingItem item = new M3RadioButtonSettingItem(headline);
-        item.setSupportingText(supporting);
-        item.setToggleGroup(group);
-        return item;
-    }
-
-    /// Creates a non-selecting segmented list.
-    ///
-    /// @param items the list rows
-    /// @return the configured list
-    private static M3ListPane createList(Node... items) {
+    /// @param items the rows
+    /// @return the scrollable list
+    private Node simpleList(M3SettingItem... items) {
         M3ListPane list = new M3ListPane();
         list.setListStyle(M3ListStyle.SEGMENTED);
         list.setSelectionMode(M3SelectionMode.NONE);
-        list.getItems().addAll(items);
-        list.setMinWidth(0.0);
-        list.setMaxWidth(Double.MAX_VALUE);
-        return list;
+        list.getItems().setAll(items);
+        return HMCLDemoUi.scroll(HMCLDemoUi.contentColumn(list));
     }
 
-    /// Creates wrapping supporting text.
+    /// Creates a placeholder panel.
     ///
-    /// @param value the localized value
-    /// @return the configured text node
-    private static M3Text wrapped(String value) {
-        M3Text text = new M3Text(value, M3TextRole.BODY_MEDIUM);
-        text.setWrapText(true);
-        return text;
+    /// @param title the title
+    /// @param body the body
+    /// @return the placeholder
+    private Node placeholder(String title, String body) {
+        M3Text titleText = new M3Text(title, M3TextRole.TITLE_LARGE);
+        M3Text bodyText = new M3Text(body, M3TextRole.BODY_MEDIUM);
+        bodyText.setWrapText(true);
+        VBox box = new VBox(12.0, titleText, bodyText);
+        box.setPadding(new Insets(24.0));
+        box.setMaxWidth(520.0);
+        return HMCLDemoUi.scroll(box);
+    }
+
+    /// Creates a settings row with a simulated action.
+    ///
+    /// @param headline the headline
+    /// @param supporting the supporting text
+    /// @return the row
+    private M3SettingItem setting(String headline, String supporting) {
+        M3SettingItem item = new M3SettingItem(headline);
+        item.setSupportingText(supporting);
+        item.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+        return item;
+    }
+
+    /// Returns the localized language label.
+    ///
+    /// @param locale the locale
+    /// @return the label
+    private String languageLabel(Locale locale) {
+        return locale.equals(HMCLDemoStrings.SIMPLIFIED_CHINESE)
+                ? strings.get("settings.language.zh_cn")
+                : strings.get("settings.language.en");
+    }
+
+    /// Returns the localized brightness label.
+    ///
+    /// @param brightness the brightness mode
+    /// @return the label
+    private String brightnessLabel(HMCLDemoState.Brightness brightness) {
+        return strings.get(switch (brightness) {
+            case SYSTEM -> "settings.brightness.system";
+            case LIGHT -> "settings.brightness.light";
+            case DARK -> "settings.brightness.dark";
+        });
+    }
+
+    /// Returns the localized wallpaper label.
+    ///
+    /// @param wallpaper the wallpaper
+    /// @return the label
+    private String wallpaperLabel(HMCLDemoState.Wallpaper wallpaper) {
+        return strings.get(switch (wallpaper) {
+            case MEADOW -> "settings.wallpaper.meadow";
+            case CAVES -> "settings.wallpaper.caves";
+            case SUNSET -> "settings.wallpaper.sunset";
+        });
+    }
+
+    /// Returns a compact color label.
+    ///
+    /// @param color the color
+    /// @return the hex label
+    private static String colorLabel(Color color) {
+        int red = (int) Math.round(color.getRed() * 255.0);
+        int green = (int) Math.round(color.getGreen() * 255.0);
+        int blue = (int) Math.round(color.getBlue() * 255.0);
+        return String.format("#%02X%02X%02X", red, green, blue);
+    }
+
+    /// Cycles through a small set of HMCL-like theme seeds.
+    ///
+    /// @param current the current color
+    /// @return the next color
+    private static Color nextThemeColor(Color current) {
+        Color blue = Color.web("#5C6BC0");
+        Color teal = Color.web("#00897B");
+        Color orange = Color.web("#FB8C00");
+        Color purple = Color.web("#8E24AA");
+        if (colorsEqual(current, blue)) {
+            return teal;
+        }
+        if (colorsEqual(current, teal)) {
+            return orange;
+        }
+        if (colorsEqual(current, orange)) {
+            return purple;
+        }
+        return blue;
+    }
+
+    /// Compares two colors in sRGB 8-bit space.
+    ///
+    /// @param left the first color
+    /// @param right the second color
+    /// @return whether both colors match
+    private static boolean colorsEqual(Color left, Color right) {
+        return colorLabel(left).equals(colorLabel(right));
     }
 }

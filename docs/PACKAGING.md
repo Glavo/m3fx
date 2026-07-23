@@ -102,6 +102,41 @@ compile the application ahead of time. Install the JavaFX-enabled Full distribut
 and point `GRAALVM_HOME` at it before starting Gradle, or run Gradle with that installation. The build verifies the
 `native-image` executable, the JavaFX controls module, and the Liberica NIK runtime identity before compilation.
 
+Reusable Native Image operations live as task types under `buildSrc`. A demo keeps its own GraalVM binary
+configuration and registers the shared toolchain verification and executable staging tasks:
+
+```kotlin
+import org.glavo.m3fx.build.nativeimage.StageNativeExecutableTask
+import org.glavo.m3fx.build.nativeimage.VerifyNativeImageToolchainTask
+import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
+
+val windowsHost = System.getProperty("os.name").lowercase().contains("win")
+
+val verifyNativeImageToolchain = tasks.register<VerifyNativeImageToolchainTask>(
+    "verifyNativeImageToolchain"
+) {
+    requiredJmods.add("javafx.controls")
+}
+
+val nativeCompile = tasks.named<BuildNativeImageTask>("nativeCompile") {
+    dependsOn(verifyNativeImageToolchain, shadowJar)
+}
+
+tasks.register<StageNativeExecutableTask>("stageNativeExecutable") {
+    sourceExecutable.set(nativeCompile.flatMap { it.outputFile })
+    targetExecutable.set(layout.buildDirectory.file(
+        if (windowsHost) "distributions/native/example-demo.exe" else "distributions/native/example-demo"
+    ))
+    windowsHost.set(windowsHost)
+    windowsGuiApplication.set(true)
+}
+```
+
+`VerifyNativeImageToolchainTask` validates Liberica NIK Full and required JMOD modules.
+`StageNativeExecutableTask` validates the compiled file, optionally enforces the Windows GUI PE subsystem, copies it
+to the configured distribution path, and restores the executable bit on non-Windows hosts. Additional demos retain
+full control over their Native Image arguments, entry point, input JAR, platform naming, and output path.
+
 Build and run the executable with:
 
 ```shell
@@ -120,9 +155,9 @@ Native Image intermediate files remain under `demo/build/native/nativeCompile/` 
 artifacts. On Windows the staged result is a single `m3fx-demo.exe` linked as a Windows GUI application, so launching
 it does not allocate a console window. The build reads the staged PE metadata and fails unless the executable uses the
 Windows GUI subsystem. The executable is not an installer and may still depend on operating-system libraries. The
-metadata under `META-INF/native-image/org.glavo/m3fx-demo` retains M3FX and demo CSS, the packaged Alibaba PuHuiTi
-font, and the post-JavaFX-17 focus-visible method reached by the guarded runtime path. The shadow jar itself continues
-to exclude OpenJFX artifacts because JavaFX comes from Liberica NIK Full.
+metadata under `META-INF/native-image/org.glavo/m3fx-demo` retains M3FX and demo CSS and the post-JavaFX-17
+focus-visible method reached by the guarded runtime path. The shadow jar itself continues to exclude OpenJFX
+artifacts and fonts because JavaFX and text rendering resources come from the target environment.
 
 Native Image does not cross-compile desktop executables. Run the task on each target operating system and
 architecture. The manually dispatched `Build Demo Native Image` workflow accepts the Liberica NIK Java feature

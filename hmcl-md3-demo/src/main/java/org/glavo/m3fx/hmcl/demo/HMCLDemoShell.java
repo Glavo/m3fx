@@ -5,40 +5,47 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.effect.BlurType;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import org.glavo.m3fx.controls.M3Button;
-import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
-import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3OverlayPane;
-import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
-import org.glavo.m3fx.controls.M3TopAppBar;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-/// Coordinates HMCL-style page replacement, window chrome, and dummy actions for the Material 3 demo.
+/// HMCL-style undecorated window shell modeled on `DecoratorSkin`.
 ///
-/// The home page owns HMCL's launcher navigation sidebar. Opening accounts, instances, downloads, or settings
-/// replaces that page with a contextual two-pane view and exposes a Back button in the title bar.
+/// Layout mirrors HMCL:
+/// `window(padding 8)` → `body(shadow)` → clipped `parent(arc 8)` → wallpaper + `BorderPane`
+/// with a 40px `primary-container` title bar and page content.
 @NotNullByDefault
-final class HMCLDemoShell extends StackPane {
+final class HMCLDemoShell extends StackPane implements HMCLDemoController {
+    /// Title-bar height used by HMCL's `.jfx-tool-bar`.
+    private static final double TITLE_HEIGHT = 40.0;
+
+    /// Corner radius used by HMCL's decorator clip.
+    private static final double WINDOW_RADIUS = 8.0;
+
+    /// Outer transparent inset reserved for the window shadow.
+    private static final double WINDOW_PADDING = 8.0;
+
     /// The overlay host used for transient Material feedback.
     private final M3OverlayPane overlay;
 
@@ -48,452 +55,448 @@ final class HMCLDemoShell extends StackPane {
     /// The deterministic application state.
     private final HMCLDemoState state;
 
-    /// The stable page host below the custom title bar.
+    /// Full-window wallpaper behind title bar and pages, matching HMCL `contentBackground`.
+    private final ImageView wallpaperView = new ImageView();
+
+    /// Page host in the decorator center slot.
     private final StackPane routeHost = new StackPane();
 
-    /// The custom title bar shared by every route.
-    private final M3TopAppBar topAppBar = new M3TopAppBar();
+    /// HMCL-style title bar container.
+    private final StackPane titleContainer = new StackPane();
 
-    /// Routes retained for HMCL-style Back navigation.
+    /// Left side of the title bar (back + title / brand).
+    private final HBox titleLeading = new HBox(4.0);
+
+    /// Center title text for non-home routes.
+    private final M3Text titleLabel = new M3Text("", M3TextRole.TITLE_SMALL);
+
+    /// Brand mark used on the home route.
+    private final HBox brandTitle = new HBox(8.0);
+
+    /// Brand title label.
+    private final M3Text brandText = new M3Text("", M3TextRole.TITLE_SMALL);
+
+    /// Back navigation control.
+    private final M3IconButton backButton = new M3IconButton(HMCLDemoIcons.back());
+
+    /// Help window button.
+    private final M3IconButton helpButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.HELP));
+
+    /// Minimize window button.
+    private final M3IconButton minimizeButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.MINIMIZE));
+
+    /// Close window button.
+    private final M3IconButton closeButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
+
+    /// Routes retained for Back navigation.
     private final Deque<HMCLDemoRoute> backStack = new ArrayDeque<>();
 
-    /// The home page retaining its local control state.
     private final HMCLHomeView homeView;
-
-    /// The instance-list page retaining its local control state.
-    private final HMCLInstancesView instancesView;
-
-    /// The selected-instance page retaining its local control state.
-    private final HMCLInstanceDetailView instanceDetailView;
-
-    /// The download and content page retaining its local control state.
-    private final HMCLDiscoverView discoverView;
-
-    /// The account page retaining its local control state.
     private final HMCLAccountsView accountsView;
-
-    /// The launcher-settings page retaining its local control state.
+    private final HMCLInstancesView instancesView;
+    private final HMCLInstanceDetailView instanceDetailView;
+    private final HMCLDownloadView downloadView;
     private final HMCLSettingsView settingsView;
+    private final HMCLMultiplayerView multiplayerView;
 
     /// The active route.
     private HMCLDemoRoute currentRoute = new HMCLDemoRoute.Home();
 
-    /// The horizontal window offset captured when title-bar dragging starts.
+    /// Drag origin for title-bar window movement.
     private double dragOffsetX;
 
-    /// The vertical window offset captured when title-bar dragging starts.
+    /// Drag origin for title-bar window movement.
     private double dragOffsetY;
 
     /// Creates the HMCL-style application shell.
     ///
-    /// @param overlay the overlay host used by this shell
-    /// @param strings the runtime localization service
+    /// @param overlay the overlay host
+    /// @param strings the localization service
     /// @param state the shared deterministic state
     HMCLDemoShell(M3OverlayPane overlay, HMCLDemoStrings strings, HMCLDemoState state) {
         this.overlay = overlay;
         this.strings = strings;
         this.state = state;
 
-        HMCLDemoActions actions = this::dispatch;
-        homeView = new HMCLHomeView(strings, state, actions);
-        instancesView = new HMCLInstancesView(strings, state, actions);
-        instanceDetailView = new HMCLInstanceDetailView(strings, state, actions);
-        discoverView = new HMCLDiscoverView(strings, state, actions);
-        accountsView = new HMCLAccountsView(strings, state, actions);
-        settingsView = new HMCLSettingsView(strings, state, actions);
+        homeView = new HMCLHomeView(strings, state, this);
+        accountsView = new HMCLAccountsView(strings, state, this);
+        instancesView = new HMCLInstancesView(strings, state, this);
+        instanceDetailView = new HMCLInstanceDetailView(strings, state, this);
+        downloadView = new HMCLDownloadView(strings, state, this);
+        settingsView = new HMCLSettingsView(strings, state, this);
+        multiplayerView = new HMCLMultiplayerView(strings, state, this);
 
         getStyleClass().add("hmcl-demo-shell");
-        topAppBar.getStyleClass().add("hmcl-window-title-bar");
-        topAppBar.setContainerHeight(40.0);
-        topAppBar.setMinHeight(40.0);
-        topAppBar.setPrefHeight(40.0);
-        topAppBar.setMaxHeight(40.0);
-        topAppBar.setOnMousePressed(this::handleWindowDragPressed);
-        topAppBar.setOnMouseDragged(this::handleWindowDragged);
+        setPadding(new Insets(WINDOW_PADDING));
 
+        wallpaperView.getStyleClass().add("hmcl-window-wallpaper");
+        wallpaperView.setPreserveRatio(false);
+        wallpaperView.setSmooth(true);
+        wallpaperView.setMouseTransparent(true);
+
+        StackPane parent = new StackPane();
+        parent.getStyleClass().add("hmcl-window-parent");
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(parent.widthProperty());
+        clip.heightProperty().bind(parent.heightProperty());
+        clip.setArcWidth(WINDOW_RADIUS);
+        clip.setArcHeight(WINDOW_RADIUS);
+        parent.setClip(clip);
+
+        configureTitleBar();
+        BorderPane frame = new BorderPane();
+        frame.getStyleClass().add("hmcl-window-frame");
+        frame.setTop(titleContainer);
         routeHost.getStyleClass().add("hmcl-route-host");
-        VBox windowFrame = new VBox(topAppBar, routeHost);
-        windowFrame.getStyleClass().add("hmcl-window-frame");
-        Rectangle windowClip = new Rectangle();
-        windowClip.widthProperty().bind(windowFrame.widthProperty());
-        windowClip.heightProperty().bind(windowFrame.heightProperty());
-        windowClip.setArcWidth(10.0);
-        windowClip.setArcHeight(10.0);
-        windowFrame.setClip(windowClip);
-        VBox.setVgrow(routeHost, Priority.ALWAYS);
-        getChildren().add(windowFrame);
+        frame.setCenter(routeHost);
 
-        renderCurrentRoute();
-        strings.localeProperty().addListener((observable, oldLocale, newLocale) -> renderCurrentRoute());
+        wallpaperView.fitWidthProperty().bind(parent.widthProperty());
+        wallpaperView.fitHeightProperty().bind(parent.heightProperty());
+        parent.getChildren().setAll(wallpaperView, frame);
+
+        StackPane body = new StackPane(parent);
+        body.getStyleClass().add("hmcl-window-body");
+        body.setEffect(new DropShadow(BlurType.ONE_PASS_BOX, Color.rgb(0, 0, 0, 0.4), 10.0, 0.3, 0.0, 0.0));
+        getChildren().setAll(body);
+
+        state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
+        strings.localeProperty().addListener((observable, oldLocale, newLocale) -> {
+            refreshLocale();
+            updateTitleBar();
+        });
+        updateWallpaper();
+        showRoute(currentRoute, false);
     }
 
-    /// Handles one page command encoded by [HMCLDemoActions].
-    ///
-    /// @param command the encoded command
-    private void dispatch(String command) {
-        int separator = command.indexOf(':');
-        String action = separator < 0 ? command : command.substring(0, separator);
-        @Nullable String target = separator < 0 ? null : command.substring(separator + 1);
-        switch (action) {
-            case "navigate" -> navigate(routeForId(target));
-            case "content-detail" -> {
-                if (target != null && state.selectContent(target)) {
-                    navigate(new HMCLDemoRoute.ContentDetail(target));
-                }
-            }
-            case "play" -> showLaunchMessage();
-            case "add-instance" -> {
-                state.addDemoInstance();
-                showMessage(strings.get("snackbar.instance_added"));
-            }
-            case "copy-instance" -> {
-                state.copySelectedInstance();
-                showMessage(strings.get("snackbar.instance_copied"));
-                renderCurrentRoute();
-            }
-            case "delete-instance" -> {
-                state.deleteSelectedInstance();
-                showMessage(strings.get("snackbar.instance_deleted"));
-                renderCurrentRoute();
-            }
-            case "add-account" -> {
-                HMCLDemoAccount.AccountType type = "microsoft".equals(target)
-                        ? HMCLDemoAccount.AccountType.MICROSOFT
-                        : HMCLDemoAccount.AccountType.OFFLINE;
-                state.addDummyAccount(type);
-                showMessage(strings.get("snackbar.account_added"));
-            }
-            case "remove-account" -> {
-                if (target != null) {
-                    state.selectAccount(target);
-                }
-                state.removeSelectedAccount();
-                showMessage(strings.get("snackbar.account_removed"));
-                renderCurrentRoute();
-            }
-            case "install" -> showInstallMessage();
-            case "discover-mode" -> updateTopAppBar();
-            case "refresh" -> showMessage(strings.get("snackbar.refreshed"));
-            case "brightness", "theme-color", "wallpaper" ->
-                    showMessage(strings.get("snackbar.settings_saved"));
-            case "select-instance", "select-account", "toggle-mod" -> renderCurrentRoute();
-            default -> showMessage(strings.get("snackbar.action_simulated"));
+    @Override
+    public M3OverlayPane overlay() {
+        return overlay;
+    }
+
+    @Override
+    public void goHome() {
+        backStack.clear();
+        showRoute(new HMCLDemoRoute.Home(), false);
+    }
+
+    @Override
+    public void openAccounts() {
+        navigate(new HMCLDemoRoute.Accounts());
+    }
+
+    @Override
+    public void openInstances() {
+        navigate(new HMCLDemoRoute.Instances());
+    }
+
+    @Override
+    public void openSelectedInstance() {
+        @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
+        if (instance != null) {
+            openInstance(instance.id());
         }
     }
 
-    /// Resolves a route identifier emitted by a page.
-    ///
-    /// @param id the route identifier, or `null`
-    /// @return the resolved route
-    private HMCLDemoRoute routeForId(@Nullable String id) {
-        if (id == null) {
-            return new HMCLDemoRoute.Home();
+    @Override
+    public void openInstance(String instanceId) {
+        if (state.selectInstance(instanceId)) {
+            navigate(new HMCLDemoRoute.Instance(instanceId));
         }
-        return switch (id) {
-            case HMCLDemoActions.ROUTE_INSTANCES -> new HMCLDemoRoute.Instances();
-            case HMCLDemoActions.ROUTE_INSTANCE_DETAIL -> {
-                @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
-                yield instance == null
-                        ? new HMCLDemoRoute.Instances()
-                        : new HMCLDemoRoute.InstanceDetail(instance.id());
-            }
-            case HMCLDemoActions.ROUTE_DISCOVER -> new HMCLDemoRoute.Discover();
-            case HMCLDemoActions.ROUTE_ACCOUNTS -> new HMCLDemoRoute.Accounts();
-            case HMCLDemoActions.ROUTE_SETTINGS -> new HMCLDemoRoute.Settings();
-            default -> new HMCLDemoRoute.Home();
-        };
     }
 
-    /// Replaces the current page and records a route for Back navigation.
+    @Override
+    public void openDownload() {
+        navigate(new HMCLDemoRoute.Download());
+    }
+
+    @Override
+    public void openSettings() {
+        navigate(new HMCLDemoRoute.Settings());
+    }
+
+    @Override
+    public void openMultiplayer() {
+        navigate(new HMCLDemoRoute.Multiplayer());
+    }
+
+    @Override
+    public void goBack() {
+        if (downloadView.consumeBack()) {
+            updateTitleBar();
+            return;
+        }
+        if (backStack.isEmpty()) {
+            goHome();
+            return;
+        }
+        showRoute(backStack.pop(), false);
+    }
+
+    @Override
+    public void launchSelected() {
+        @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
+        @Nullable HMCLDemoAccount account = state.getSelectedAccount();
+        if (instance == null) {
+            showMessageKey("snackbar.no_instance");
+            return;
+        }
+        if (account == null) {
+            showMessageKey("snackbar.no_account");
+            return;
+        }
+        showMessageKey("snackbar.launching", instance.name(), account.displayName());
+    }
+
+    @Override
+    public void showMessage(String message) {
+        overlay.showSnackbar(new M3Snackbar(message));
+    }
+
+    @Override
+    public void showMessageKey(String key, Object... args) {
+        showMessage(args.length == 0 ? strings.get(key) : strings.format(key, args));
+    }
+
+    @Override
+    public void refreshChrome() {
+        updateTitleBar();
+    }
+
+    /// Pushes the current route and shows `route`.
     ///
     /// @param route the destination route
     private void navigate(HMCLDemoRoute route) {
         if (route.equals(currentRoute)) {
             return;
         }
-        if (route instanceof HMCLDemoRoute.Home) {
-            backStack.clear();
-        } else {
-            backStack.push(currentRoute);
-        }
+        backStack.push(currentRoute);
+        showRoute(route, true);
+    }
+
+    /// Displays `route` in the retained page host.
+    ///
+    /// @param route the route to show
+    /// @param fromNavigation whether the call originated from a forward navigation
+    private void showRoute(HMCLDemoRoute route, boolean fromNavigation) {
         currentRoute = route;
-        renderCurrentRoute();
-    }
-
-    /// Returns to the previous route, or to Home when history is empty.
-    private void navigateBack() {
-        currentRoute = backStack.isEmpty() ? new HMCLDemoRoute.Home() : backStack.pop();
-        renderCurrentRoute();
-    }
-
-    /// Replaces route content and synchronizes the custom title bar.
-    private void renderCurrentRoute() {
-        Node content;
-        if (currentRoute instanceof HMCLDemoRoute.Home) {
-            content = homeView;
-        } else if (currentRoute instanceof HMCLDemoRoute.Instances) {
-            content = instancesView;
-        } else if (currentRoute instanceof HMCLDemoRoute.InstanceDetail detail) {
-            state.selectInstance(detail.instanceId());
-            content = instanceDetailView;
-        } else if (currentRoute instanceof HMCLDemoRoute.Discover) {
-            content = discoverView;
-        } else if (currentRoute instanceof HMCLDemoRoute.ContentDetail detail) {
-            content = createContentDetail(detail.contentId());
-        } else if (currentRoute instanceof HMCLDemoRoute.Accounts) {
-            content = accountsView;
-        } else {
-            content = settingsView;
+        if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
+            state.selectInstance(instanceRoute.instanceId());
         }
-        routeHost.getChildren().setAll(content);
-        updateTopAppBar();
+        routeHost.getChildren().setAll(pageFor(route));
+        updateTitleBar();
+        if (!fromNavigation && route instanceof HMCLDemoRoute.Home) {
+            backStack.clear();
+        }
     }
 
-    /// Updates title, Back affordance, and window actions for the active route.
-    private void updateTopAppBar() {
-        topAppBar.setTitle(routeTitle());
-        topAppBar.setSubtitle("");
-        if (currentRoute instanceof HMCLDemoRoute.Home) {
-            HBox brand = new HBox(
-                    8.0,
-                    HMCLDemoAssets.imageView("img/icon-title.png", 24.0, 24.0),
-                    new M3Text(strings.get("app.launcher_title"), M3TextRole.TITLE_MEDIUM)
-            );
-            brand.setAlignment(Pos.CENTER_LEFT);
-            brand.getStyleClass().add("hmcl-window-brand");
-            topAppBar.setTitleContent(brand);
-            topAppBar.setNavigation(null);
-        } else {
-            topAppBar.setTitleContent(null);
-            M3IconButton back = new M3IconButton(HMCLDemoIcons.back());
-            back.setAccessibleText(strings.get("common.back"));
-            back.setOnAction(event -> {
-                if (currentRoute instanceof HMCLDemoRoute.Discover && discoverView.isInstallerMode()) {
-                    discoverView.exitInstallerMode();
-                    updateTopAppBar();
-                } else {
-                    navigateBack();
+    /// Returns the retained page node for `route`.
+    ///
+    /// @param route the route
+    /// @return the page node
+    private Node pageFor(HMCLDemoRoute route) {
+        if (route instanceof HMCLDemoRoute.Home) {
+            return homeView;
+        }
+        if (route instanceof HMCLDemoRoute.Accounts) {
+            return accountsView;
+        }
+        if (route instanceof HMCLDemoRoute.Instances) {
+            return instancesView;
+        }
+        if (route instanceof HMCLDemoRoute.Instance instance) {
+            instanceDetailView.showInstance(instance.instanceId());
+            return instanceDetailView;
+        }
+        if (route instanceof HMCLDemoRoute.Download) {
+            return downloadView;
+        }
+        if (route instanceof HMCLDemoRoute.Settings) {
+            return settingsView;
+        }
+        if (route instanceof HMCLDemoRoute.Multiplayer) {
+            return multiplayerView;
+        }
+        throw new IllegalStateException("Unsupported route: " + route);
+    }
+
+    /// Builds the HMCL 40px title bar once.
+    private void configureTitleBar() {
+        titleContainer.getStyleClass().add("hmcl-window-title-bar");
+        titleContainer.setMinHeight(TITLE_HEIGHT);
+        titleContainer.setPrefHeight(TITLE_HEIGHT);
+        titleContainer.setMaxHeight(TITLE_HEIGHT);
+        titleContainer.setOnMousePressed(this::handleWindowDragPressed);
+        titleContainer.setOnMouseDragged(this::handleWindowDragged);
+        titleContainer.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                @Nullable Stage stage = currentStage();
+                if (stage != null) {
+                    stage.setMaximized(!stage.isMaximized());
                 }
-            });
-            topAppBar.setNavigation(back);
-        }
-
-        M3IconButton help = windowAction(
-                HMCLDemoIcons.HELP,
-                strings.get("window.help"),
-                () -> showMessage(strings.get("snackbar.action_simulated"))
-        );
-        M3IconButton minimize = windowAction(
-                HMCLDemoIcons.MINIMIZE,
-                strings.get("window.minimize"),
-                this::minimizeWindow
-        );
-        M3IconButton close = windowAction(
-                HMCLDemoIcons.CLOSE,
-                strings.get("window.close"),
-                this::closeWindow
-        );
-        close.getStyleClass().add("hmcl-window-close");
-        topAppBar.getActions().setAll(help, minimize, close);
-    }
-
-    /// Creates one title-bar action button.
-    ///
-    /// @param iconPath the SVG path rendered by the button
-    /// @param accessibleText the localized accessibility label
-    /// @param action the operation invoked by the button
-    /// @return the configured icon button
-    private M3IconButton windowAction(String iconPath, String accessibleText, Runnable action) {
-        M3IconButton button = new M3IconButton(HMCLDemoIcons.create(iconPath));
-        button.setAccessibleText(accessibleText);
-        button.setOnAction(event -> action.run());
-        return button;
-    }
-
-    /// Returns the localized or model-derived active route title.
-    ///
-    /// @return the title shown by the top application bar
-    private String routeTitle() {
-        if (currentRoute instanceof HMCLDemoRoute.Home) {
-            return strings.get("app.launcher_title");
-        }
-        if (currentRoute instanceof HMCLDemoRoute.InstanceDetail) {
-            @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
-            return instance == null
-                    ? strings.get("instance.title")
-                    : strings.format("instance.manage_title", instance.name());
-        }
-        if (currentRoute instanceof HMCLDemoRoute.ContentDetail) {
-            @Nullable HMCLDemoContent content = state.getSelectedContent();
-            return content == null ? strings.get("discover.title") : content.title();
-        }
-        if (currentRoute instanceof HMCLDemoRoute.Discover) {
-            return discoverView.getPageTitle();
-        }
-        return strings.get(currentRoute.titleKey());
-    }
-
-    /// Creates a focused content detail with the same contextual sidebar used by downloads.
-    ///
-    /// @param contentId the requested content identifier
-    /// @return the localized detail content
-    private Node createContentDetail(String contentId) {
-        if (!state.selectContent(contentId) || state.getSelectedContent() == null) {
-            return discoverView;
-        }
-        HMCLDemoContent content = state.getSelectedContent();
-
-        M3ListItem catalog = new M3ListItem(strings.get("discover.all"));
-        catalog.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.DISCOVER));
-        catalog.setOnAction(event -> navigateBack());
-        catalog.setSelected(true);
-        VBox sidebar = new VBox(
-                6.0,
-                new M3Text(strings.get("discover.title"), M3TextRole.LABEL_LARGE),
-                catalog
-        );
-        sidebar.getStyleClass().add("hmcl-context-sidebar");
-        sidebar.setPrefWidth(208.0);
-        sidebar.setMinWidth(208.0);
-        sidebar.setPadding(new Insets(20.0, 8.0, 16.0, 8.0));
-
-        M3Text title = new M3Text(content.title(), M3TextRole.HEADLINE_MEDIUM);
-        M3Text author = new M3Text(
-                strings.format("discover.by_author", content.author()),
-                M3TextRole.TITLE_MEDIUM
-        );
-        M3Text summary = new M3Text(
-                HMCLDemoModelText.contentSummary(strings, content),
-                M3TextRole.BODY_LARGE
-        );
-        summary.setWrapText(true);
-        M3Text versions = new M3Text(
-                strings.format("discover.versions", String.join(", ", content.gameVersions())),
-                M3TextRole.BODY_MEDIUM
-        );
-        M3Text downloads = new M3Text(
-                strings.format("discover.downloads", content.downloadCount()),
-                M3TextRole.BODY_MEDIUM
-        );
-        M3Button install = new M3Button(strings.get("common.install"), M3ButtonVariant.FILLED);
-        install.setDisable(state.installStateFor(content) == HMCLDemoState.InstallState.INSTALLED);
-        install.setOnAction(event -> {
-            if (state.startInstallation(content)) {
-                state.setInstallProgress(1.0);
             }
-            showInstallMessage();
-            renderCurrentRoute();
         });
 
-        VBox body = new VBox(16.0, title, author, summary, versions, downloads, install);
-        body.getStyleClass().add("hmcl-context-body");
-        body.setPadding(new Insets(28.0, 32.0, 40.0, 32.0));
-        ScrollPane scrollPane = new ScrollPane(body);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        M3ScrollPanes.style(scrollPane);
+        ImageView brandIcon = HMCLDemoAssets.imageView("img/icon-title.png", 20.0, 20.0);
+        brandTitle.getStyleClass().add("hmcl-window-brand");
+        brandTitle.setAlignment(Pos.CENTER_LEFT);
+        brandTitle.setPadding(new Insets(0.0, 0.0, 0.0, 2.0));
+        brandTitle.getChildren().setAll(brandIcon, brandText);
 
-        BorderPane page = new BorderPane();
-        page.getStyleClass().add("hmcl-secondary-page");
-        page.setLeft(sidebar);
-        page.setCenter(scrollPane);
-        return page;
-    }
+        titleLabel.getStyleClass().add("hmcl-window-title-label");
+        titleLeading.setAlignment(Pos.CENTER_LEFT);
+        titleLeading.setPadding(new Insets(0.0, 5.0, 0.0, 5.0));
 
-    /// Captures the title-bar offset used for subsequent window dragging.
-    ///
-    /// @param event the mouse press delivered by the title bar
-    private void handleWindowDragPressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY || isWindowActionTarget(event.getTarget())) {
-            return;
-        }
-        @Nullable Stage stage = stage();
-        if (stage != null) {
-            dragOffsetX = event.getScreenX() - stage.getX();
-            dragOffsetY = event.getScreenY() - stage.getY();
-        }
-    }
+        styleWindowButton(backButton);
+        styleWindowButton(helpButton);
+        styleWindowButton(minimizeButton);
+        styleWindowButton(closeButton);
+        closeButton.getStyleClass().add("hmcl-window-close");
 
-    /// Moves the window while the primary pointer drags the title bar.
-    ///
-    /// @param event the mouse drag delivered by the title bar
-    private void handleWindowDragged(MouseEvent event) {
-        if (!event.isPrimaryButtonDown() || isWindowActionTarget(event.getTarget())) {
-            return;
-        }
-        @Nullable Stage stage = stage();
-        if (stage != null) {
-            stage.setX(event.getScreenX() - dragOffsetX);
-            stage.setY(event.getScreenY() - dragOffsetY);
-        }
-    }
-
-    /// Returns whether an event target belongs to a title-bar action button.
-    ///
-    /// @param target the JavaFX event target
-    /// @return `true` when the target is inside an icon button
-    private boolean isWindowActionTarget(Object target) {
-        @Nullable Node current = target instanceof Node node ? node : null;
-        while (current != null && current != topAppBar) {
-            if (current instanceof M3IconButton) {
-                return true;
+        backButton.setOnAction(event -> goBack());
+        helpButton.setOnAction(event -> showMessageKey("snackbar.feedback"));
+        minimizeButton.setOnAction(event -> {
+            @Nullable Stage stage = currentStage();
+            if (stage != null) {
+                stage.setIconified(true);
             }
-            current = current.getParent();
-        }
-        return false;
+        });
+        closeButton.setOnAction(event -> {
+            @Nullable Stage stage = currentStage();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+
+        HBox windowButtons = new HBox(helpButton, minimizeButton, closeButton);
+        windowButtons.getStyleClass().add("hmcl-window-buttons");
+        windowButtons.setAlignment(Pos.CENTER_RIGHT);
+
+        BorderPane titleBar = new BorderPane();
+        titleBar.setLeft(titleLeading);
+        titleBar.setRight(windowButtons);
+        BorderPane.setAlignment(titleLeading, Pos.CENTER_LEFT);
+        BorderPane.setAlignment(windowButtons, Pos.CENTER_RIGHT);
+        titleContainer.getChildren().setAll(titleBar);
+
+        refreshLocale();
+        updateTitleBar();
     }
 
-    /// Returns the Stage currently hosting this shell.
+    /// Applies HMCL decorator-button sizing to one title-bar icon button.
     ///
-    /// @return the hosting stage, or `null` before attachment
-    private @Nullable Stage stage() {
-        if (getScene() == null) {
-            return null;
+    /// @param button the button
+    private static void styleWindowButton(M3IconButton button) {
+        button.getStyleClass().add("hmcl-window-button");
+        button.setMinSize(TITLE_HEIGHT, TITLE_HEIGHT);
+        button.setPrefSize(TITLE_HEIGHT, TITLE_HEIGHT);
+        button.setMaxSize(TITLE_HEIGHT, TITLE_HEIGHT);
+        button.setFocusTraversable(false);
+        button.setCursor(Cursor.HAND);
+    }
+
+    /// Updates title-bar labels that depend on the current locale.
+    private void refreshLocale() {
+        brandText.setText(strings.get("app.title"));
+        backButton.setAccessibleText(strings.get("common.back"));
+        helpButton.setAccessibleText(strings.get("common.help"));
+        minimizeButton.setAccessibleText(strings.get("common.minimize"));
+        closeButton.setAccessibleText(strings.get("common.close"));
+        homeView.refreshLocale();
+        accountsView.refreshLocale();
+        instancesView.refreshLocale();
+        instanceDetailView.refreshLocale();
+        downloadView.refreshLocale();
+        settingsView.refreshLocale();
+        multiplayerView.refreshLocale();
+    }
+
+    /// Synchronizes title-bar navigation and title content with the active route.
+    private void updateTitleBar() {
+        boolean atHome = currentRoute instanceof HMCLDemoRoute.Home;
+        titleLeading.getChildren().clear();
+        if (atHome) {
+            titleLeading.getChildren().add(brandTitle);
+            titleLabel.setText("");
+        } else {
+            titleLeading.getChildren().add(backButton);
+            titleLabel.setText(titleFor(currentRoute));
+            HBox.setMargin(titleLabel, new Insets(0.0, 0.0, 0.0, 4.0));
+            titleLeading.getChildren().add(titleLabel);
         }
-        @Nullable Window window = getScene().getWindow();
+    }
+
+    /// Returns the localized title for a non-home route.
+    ///
+    /// @param route the active route
+    /// @return the title text
+    private String titleFor(HMCLDemoRoute route) {
+        if (route instanceof HMCLDemoRoute.Accounts) {
+            return strings.get("accounts.title");
+        }
+        if (route instanceof HMCLDemoRoute.Instances) {
+            return strings.get("instances.title");
+        }
+        if (route instanceof HMCLDemoRoute.Instance) {
+            @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
+            return selected == null ? strings.get("instance.title") : selected.name();
+        }
+        if (route instanceof HMCLDemoRoute.Download) {
+            return downloadView.titleText();
+        }
+        if (route instanceof HMCLDemoRoute.Settings) {
+            return strings.get("settings.title");
+        }
+        if (route instanceof HMCLDemoRoute.Multiplayer) {
+            return strings.get("multiplayer.title");
+        }
+        return strings.get("app.title");
+    }
+
+    /// Updates the decorator wallpaper image.
+    private void updateWallpaper() {
+        String path = switch (state.getWallpaper()) {
+            case MEADOW -> "img/wallpapers/2021-08-26.jpg";
+            case CAVES -> "img/wallpapers/2016-02-25.jpg";
+            case SUNSET -> "img/wallpapers/2015-06-22.jpg";
+        };
+        wallpaperView.setImage(HMCLDemoAssets.image(path));
+    }
+
+    /// Captures the pointer offset used by title-bar window dragging.
+    ///
+    /// @param event the press event
+    private void handleWindowDragPressed(MouseEvent event) {
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
+        if (window == null) {
+            return;
+        }
+        dragOffsetX = event.getScreenX() - window.getX();
+        dragOffsetY = event.getScreenY() - window.getY();
+    }
+
+    /// Moves the undecorated window while the title bar is dragged.
+    ///
+    /// @param event the drag event
+    private void handleWindowDragged(MouseEvent event) {
+        if (!event.isPrimaryButtonDown()) {
+            return;
+        }
+        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
+        if (window == null) {
+            return;
+        }
+        window.setX(event.getScreenX() - dragOffsetX);
+        window.setY(event.getScreenY() - dragOffsetY);
+    }
+
+    /// Returns the owning stage when available.
+    ///
+    /// @return the stage, or `null`
+    private @Nullable Stage currentStage() {
+        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
         return window instanceof Stage stage ? stage : null;
-    }
-
-    /// Minimizes the hosting window when it is attached.
-    private void minimizeWindow() {
-        @Nullable Stage stage = stage();
-        if (stage != null) {
-            stage.setIconified(true);
-        }
-    }
-
-    /// Closes the hosting window when it is attached.
-    private void closeWindow() {
-        @Nullable Stage stage = stage();
-        if (stage != null) {
-            stage.close();
-        }
-    }
-
-    /// Shows localized launch feedback for the selected instance.
-    private void showLaunchMessage() {
-        @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
-        showMessage(instance == null
-                ? strings.get("home.no_instance")
-                : strings.format("home.launching", instance.name()));
-    }
-
-    /// Shows feedback matching the current foreground installation state.
-    private void showInstallMessage() {
-        @Nullable HMCLDemoContent content = state.getInstallingContent();
-        String title = content == null && state.getSelectedContent() != null
-                ? state.getSelectedContent().title()
-                : content == null ? strings.get("discover.title") : content.title();
-        String key = state.installStateProperty().get() == HMCLDemoState.InstallState.INSTALLED
-                ? "snackbar.install_completed"
-                : "snackbar.install_started";
-        showMessage(strings.format(key, title));
-    }
-
-    /// Enqueues a Material snackbar at the overlay root.
-    ///
-    /// @param message the localized message
-    private void showMessage(String message) {
-        overlay.enqueueSnackbar(new M3Snackbar(message));
     }
 }

@@ -9,15 +9,15 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// @param id the stable mod identifier
 /// @param name the displayed mod name
-/// @param version the displayed installed version
+/// @param fileName the displayed jar file name
 /// @param enabled whether the mod is enabled
 @NotNullByDefault
-public record HMCLDemoMod(String id, String name, String version, boolean enabled) {
+public record HMCLDemoMod(String id, String name, String fileName, boolean enabled) {
     /// Returns a copy with the requested enabled state.
     ///
     /// @param value the new enabled state
     /// @return this value when unchanged, otherwise an updated copy
     public HMCLDemoMod withEnabled(boolean value) {
-        return enabled == value ? this : new HMCLDemoMod(id, name, version, value);
+        return enabled == value ? this : new HMCLDemoMod(id, name, fileName, value);
     }
 }

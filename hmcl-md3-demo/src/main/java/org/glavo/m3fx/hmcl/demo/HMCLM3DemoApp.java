@@ -71,7 +71,7 @@ public final class HMCLM3DemoApp extends Application {
         Runnable applyTheme = () -> M3ThemeManager.install(scene, M3Theme.fromSeed(
                 state.getThemeColor(),
                 M3Profile.EXPRESSIVE_2025,
-                state.getBrightness() == HMCLDemoState.Brightness.DARK ? Brightness.DARK : Brightness.LIGHT,
+                resolveBrightness(state.getBrightness()),
                 M3Density.standard()
         ));
         state.themeColorProperty().addListener((observable, oldColor, newColor) -> applyTheme.run());
@@ -87,6 +87,17 @@ public final class HMCLM3DemoApp extends Application {
                 (observable, oldLocale, newLocale) -> stage.setTitle(strings.get("app.title"))
         );
         stage.show();
+    }
+
+    /// Maps demo brightness settings onto MonetFX brightness values.
+    ///
+    /// @param brightness the demo brightness mode
+    /// @return the MonetFX brightness
+    private static Brightness resolveBrightness(HMCLDemoState.Brightness brightness) {
+        return switch (brightness) {
+            case DARK -> Brightness.DARK;
+            case LIGHT, SYSTEM -> Brightness.LIGHT;
+        };
     }
 
     /// Disables LCD subpixel antialiasing on scaled Windows primary displays unless explicitly configured.

@@ -61,14 +61,14 @@ final class HMCLDemoStringsTest {
     @Test
     void resolvesAndRebindsRuntimeStrings() {
         HMCLDemoStrings strings = new HMCLDemoStrings(Locale.FRENCH);
-        StringBinding title = strings.bind("home.title");
+        StringBinding title = strings.bind("app.title");
 
         assertEquals(HMCLDemoStrings.ENGLISH, strings.getLocale());
-        assertEquals("Home", title.get());
+        assertEquals("Hello Minecraft! Launcher", title.get());
 
         strings.setLocale(Locale.SIMPLIFIED_CHINESE);
-        assertEquals("主页", title.get());
-        assertEquals("正在启动 Creative Workshop", strings.format("home.launching", "Creative Workshop"));
+        assertEquals("Hello Minecraft! Launcher", title.get());
+        assertEquals("正在以 Glavo 启动 Creative Workshop", strings.format("snackbar.launching", "Creative Workshop", "Glavo"));
     }
 
     /// Loads a UTF-8 properties resource as an immutable map.

@@ -507,7 +507,8 @@ Native Image builds require a JavaFX-enabled Liberica NIK Full installation thro
 running Gradle. The build rejects other Native Image distributions and NIK installations without JavaFX, compiles
 with `--no-fallback`, and stages one distributable executable under
 `demo/build/distributions/native/<os>-<arch>/`. Native executables are platform-specific and do not replace the
-cross-platform jlink tasks.
+cross-platform jlink tasks. Reusable Liberica NIK verification and executable staging task types live in `buildSrc`,
+so additional demo modules can adopt the same validation while keeping their own Native Image configuration.
 
 Build all supported platform and architecture runtime images:
 

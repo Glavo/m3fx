@@ -13,11 +13,9 @@ import java.util.List;
 /// @param id the stable instance identifier
 /// @param name the displayed instance name
 /// @param gameVersion the displayed game version
-/// @param loader the displayed loader name
-/// @param lastPlayed the deterministic localized-neutral last-played label
-/// @param description the instance summary
-/// @param iconName the logical demo icon name
-/// @param status the current instance status
+/// @param loader the displayed loader or distribution label
+/// @param directoryId the owning game-directory identifier
+/// @param iconPath the generated icon asset path
 /// @param mods the immutable installed-mod list
 @NotNullByDefault
 public record HMCLDemoInstance(
@@ -25,10 +23,8 @@ public record HMCLDemoInstance(
         String name,
         String gameVersion,
         String loader,
-        String lastPlayed,
-        String description,
-        String iconName,
-        InstanceStatus status,
+        String directoryId,
+        String iconPath,
         @Unmodifiable List<HMCLDemoMod> mods
 ) {
     /// Copies mutable constructor inputs to retain value semantics.
@@ -42,8 +38,7 @@ public record HMCLDemoInstance(
     /// @param newName the copied instance display name
     /// @return the copied instance
     public HMCLDemoInstance copyAs(String newId, String newName) {
-        return new HMCLDemoInstance(
-                newId, newName, gameVersion, loader, lastPlayed, description, iconName, status, mods);
+        return new HMCLDemoInstance(newId, newName, gameVersion, loader, directoryId, iconPath, mods);
     }
 
     /// Returns a copy with a replacement mod list.
@@ -51,23 +46,6 @@ public record HMCLDemoInstance(
     /// @param newMods the replacement list
     /// @return the updated instance
     public HMCLDemoInstance withMods(@Unmodifiable List<HMCLDemoMod> newMods) {
-        return new HMCLDemoInstance(
-                id, name, gameVersion, loader, lastPlayed, description, iconName, status, newMods);
-    }
-
-    /// Describes the launch readiness of a dummy instance.
-    @NotNullByDefault
-    public enum InstanceStatus {
-        /// The instance is ready to launch.
-        READY,
-
-        /// The instance has an available update.
-        UPDATE_AVAILABLE,
-
-        /// The instance is currently running.
-        RUNNING,
-
-        /// The instance requires repair before launch.
-        NEEDS_REPAIR
+        return new HMCLDemoInstance(id, name, gameVersion, loader, directoryId, iconPath, newMods);
     }
 }
