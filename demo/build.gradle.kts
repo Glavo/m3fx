@@ -157,7 +157,11 @@ graalvmNative {
     binaries.named("main") {
         imageName.set("m3fx-demo")
         mainClass.set(application.mainClass)
-        buildArgs.addAll("--no-fallback", "--enable-native-access=javafx.graphics")
+        buildArgs.addAll(
+            "--no-fallback",
+            "--enable-native-access=javafx.graphics",
+            "--gc=parallel"
+        )
         if (nativeHostOs == "windows") {
             buildArgs.addAll(
                 "-H:NativeLinkerOption=/SUBSYSTEM:WINDOWS",
