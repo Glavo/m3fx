@@ -551,11 +551,11 @@ public final class M3FXDemoApp extends Application {
     /// Returns whether a breakpoint retains the component drawer beside a sufficiently wide page pane.
     ///
     /// @param breakpoint the current Material width breakpoint
-    /// @return `true` for large and extra-large layouts
+    /// @return `true` for expanded, large, and extra-large layouts
     private static boolean usesPersistentNavigation(M3Breakpoint breakpoint) {
         return switch (breakpoint) {
-            case COMPACT, MEDIUM, EXPANDED -> false;
-            case LARGE, EXTRA_LARGE -> true;
+            case COMPACT, MEDIUM -> false;
+            case EXPANDED, LARGE, EXTRA_LARGE -> true;
         };
     }
 
@@ -687,7 +687,7 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Releases one completed modal drawer presentation and restores persistent-drawer styling.
+    /// Releases one completed modal drawer presentation and restores the breakpoint-selected drawer layout.
     ///
     /// @param handle the presentation that completed its exit
     private void finishNavigationDrawerClose(M3OverlayPane.OverlayHandle handle) {
@@ -711,6 +711,7 @@ public final class M3FXDemoApp extends Application {
         if (drawer != null) {
             drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
         }
+        updateAdaptiveLayout();
     }
 
     /// Creates sidebar groups from ordered demo pages.
