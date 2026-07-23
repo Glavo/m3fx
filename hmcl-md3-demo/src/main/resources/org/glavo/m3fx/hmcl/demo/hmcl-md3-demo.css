@@ -280,10 +280,16 @@
     -fx-spacing: 6;
 }
 
-.hmcl-list-surface {
-    -fx-background-color: -m3-color-surface;
+.hmcl-list-surface,
+.hmcl-settings-card {
+    -fx-background-color: -m3-color-surface-container-lowest;
     -fx-background-radius: 4px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.10, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.14), 8, 0.10, 0, 1);
+}
+
+.hmcl-settings-section-header {
+    -fx-padding: 0 4 0 4;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .hmcl-dense-list .m3-list-item,

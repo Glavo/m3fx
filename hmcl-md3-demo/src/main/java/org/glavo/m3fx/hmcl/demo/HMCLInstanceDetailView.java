@@ -18,6 +18,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
+import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SelectionMode;
@@ -247,35 +248,22 @@ final class HMCLInstanceDetailView extends BorderPane {
         }
     }
 
-    /// Creates the version-settings form.
+    /// Creates the version-settings form as HMCL-style sectioned cards.
     ///
     /// @param instance the selected instance
     /// @return the settings content
     private Node settingsContent(HMCLDemoInstance instance) {
-        M3TextField nameField = new M3TextField(instance.name());
-        M3TextInputLayout name = new M3TextInputLayout(nameField);
-        name.setLabelText(strings.get("instance.settings.name"));
+        M3SettingItem name = new M3SettingItem(strings.get("instance.settings.name"));
+        name.setSupportingText(instance.name());
+        name.setOnAction(event -> showRenameDialog(instance.name()));
 
-        M3Button applyName = new M3Button(strings.get("common.apply"), M3ButtonVariant.TONAL);
-        applyName.setOnAction(event -> {
-            String value = nameField.getText().strip();
-            if (value.isEmpty()) {
-                return;
-            }
-            if (state.renameSelectedInstance(value)) {
-                controller.showMessageKey("snackbar.instance_renamed", value);
-            }
-        });
-        HBox nameRow = new HBox(8.0, name, applyName);
-        nameRow.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(name, Priority.ALWAYS);
+        M3SettingItem gameVersion = new M3SettingItem(strings.get("instance.settings.game_version_label"));
+        gameVersion.setSupportingText(instance.gameVersion());
+        gameVersion.setDisable(true);
 
-        M3Text gameVersion = new M3Text(
-                strings.format("instance.settings.game_version", instance.gameVersion()),
-                M3TextRole.BODY_MEDIUM);
-        M3Text loader = new M3Text(
-                strings.format("instance.settings.loader", instance.loader()),
-                M3TextRole.BODY_MEDIUM);
+        M3SettingItem loader = new M3SettingItem(strings.get("instance.settings.loader_label"));
+        loader.setSupportingText(instance.loader());
+        loader.setDisable(true);
 
         M3SwitchSettingItem isolated = new M3SwitchSettingItem(strings.get("instance.settings.isolated"));
         isolated.setSupportingText(strings.get("instance.settings.isolated.support"));
@@ -283,12 +271,6 @@ final class HMCLInstanceDetailView extends BorderPane {
         isolated.selectedProperty().addListener((observable, oldValue, newValue) ->
                 applySettings(instance, newValue, instance.maxMemoryMb(), instance.resolution(),
                         instance.fullscreen(), instance.javaId()));
-
-        M3SwitchSettingItem fullscreen = new M3SwitchSettingItem(strings.get("instance.settings.fullscreen"));
-        fullscreen.setSelected(instance.fullscreen());
-        fullscreen.selectedProperty().addListener((observable, oldValue, newValue) ->
-                applySettings(instance, instance.isolated(), instance.maxMemoryMb(), instance.resolution(),
-                        newValue, instance.javaId()));
 
         M3SettingItem java = new M3SettingItem(strings.get("instance.settings.java"));
         java.setSupportingText(javaLabel(instance.javaId()));
@@ -302,13 +284,80 @@ final class HMCLInstanceDetailView extends BorderPane {
         resolution.setSupportingText(instance.resolution().replace("x", " x "));
         resolution.setOnAction(event -> cycleResolution(instance));
 
+        M3SwitchSettingItem fullscreen = new M3SwitchSettingItem(strings.get("instance.settings.fullscreen"));
+        fullscreen.setSupportingText(strings.get("instance.settings.fullscreen.support"));
+        fullscreen.setSelected(instance.fullscreen());
+        fullscreen.selectedProperty().addListener((observable, oldValue, newValue) ->
+                applySettings(instance, instance.isolated(), instance.maxMemoryMb(), instance.resolution(),
+                        newValue, instance.javaId()));
+
+        M3SettingItem launcherVisibility = new M3SettingItem(strings.get("instance.settings.launcher_visibility"));
+        launcherVisibility.setSupportingText(strings.get("instance.settings.launcher_visibility.support"));
+        launcherVisibility.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+
+        M3SettingItem showLogs = new M3SettingItem(strings.get("instance.settings.show_logs"));
+        showLogs.setSupportingText(strings.get("instance.settings.show_logs.support"));
+        showLogs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+
+        M3SettingItem jvmArgs = new M3SettingItem(strings.get("instance.settings.jvm_args"));
+        jvmArgs.setSupportingText(strings.get("instance.settings.jvm_args.support"));
+        jvmArgs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+
+        M3SettingItem gameArgs = new M3SettingItem(strings.get("instance.settings.game_args"));
+        gameArgs.setSupportingText(strings.get("instance.settings.game_args.support"));
+        gameArgs.setOnAction(event -> controller.showMessageKey("snackbar.action_simulated"));
+
+        VBox root = new VBox(16.0);
+        root.setMinHeight(0.0);
+        root.getChildren().addAll(
+                settingsSection(
+                        strings.get("instance.settings.section.basic"),
+                        name,
+                        gameVersion,
+                        loader,
+                        isolated
+                ),
+                settingsSection(
+                        strings.get("instance.settings.section.game"),
+                        java,
+                        memory,
+                        resolution,
+                        fullscreen
+                ),
+                settingsSection(
+                        strings.get("instance.settings.section.launcher"),
+                        launcherVisibility,
+                        showLogs
+                ),
+                settingsSection(
+                        strings.get("instance.settings.section.advanced"),
+                        jvmArgs,
+                        gameArgs
+                )
+        );
+        return HMCLDemoUi.scroll(HMCLDemoUi.contentColumn(root));
+    }
+
+    /// Builds one titled settings card used by the version-settings form.
+    ///
+    /// @param title the section title
+    /// @param rows the setting rows
+    /// @return the section block
+    private VBox settingsSection(String title, Node... rows) {
+        M3ListSectionHeader header = new M3ListSectionHeader(title);
+        header.getStyleClass().add("hmcl-settings-section-header");
+
         M3ListPane list = new M3ListPane();
         list.setListStyle(M3ListStyle.SEGMENTED);
         list.setSelectionMode(M3SelectionMode.NONE);
-        list.getItems().setAll(isolated, fullscreen, java, memory, resolution);
+        list.getStyleClass().addAll("hmcl-dense-list", "hmcl-settings-card");
+        list.setMinHeight(0.0);
+        list.getItems().setAll(rows);
 
-        VBox column = HMCLDemoUi.contentColumn(nameRow, gameVersion, loader, list);
-        return HMCLDemoUi.scroll(column);
+        VBox block = new VBox(8.0, header, list);
+        block.setMinHeight(0.0);
+        block.setFillWidth(true);
+        return block;
     }
 
     /// Creates the installer slot list.
