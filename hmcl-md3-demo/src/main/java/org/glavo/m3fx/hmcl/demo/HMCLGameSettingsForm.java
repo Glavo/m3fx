@@ -278,36 +278,26 @@ final class HMCLGameSettingsForm {
             status.setText(strings.format("settings.memory.status", "16384", String.valueOf(mb)));
         });
 
-        M3SettingItem minMemory = cycleItem(
+        M3SelectSettingItem<Integer> minMemory = selectItem(
                 strings.get("settings.memory.min"),
-                settings.minMemoryMb() + " MiB",
-                item -> {
-                    int next = switch (settingsSupplier.get().minMemoryMb()) {
-                        case 256 -> 512;
-                        case 512 -> 1024;
-                        case 1024 -> 2048;
-                        default -> 256;
-                    };
+                List.of(256, 512, 1024, 2048),
+                settings.minMemoryMb(),
+                value -> value + " MiB",
+                value -> {
                     HMCLDemoGameSettings current = settingsSupplier.get();
                     settingsConsumer.accept(current.withMemory(
-                            current.autoMemory(), current.maxMemoryMb(), next, current.metaspaceMb()));
-                    item.setSupportingText(next + " MiB");
+                            current.autoMemory(), current.maxMemoryMb(), value, current.metaspaceMb()));
                 }
         );
-        M3SettingItem metaspace = cycleItem(
+        M3SelectSettingItem<Integer> metaspace = selectItem(
                 strings.get("settings.memory.metaspace"),
-                settings.metaspaceMb() + " MiB",
-                item -> {
-                    int next = switch (settingsSupplier.get().metaspaceMb()) {
-                        case 128 -> 256;
-                        case 256 -> 512;
-                        case 512 -> 1024;
-                        default -> 128;
-                    };
+                List.of(128, 256, 512, 1024),
+                settings.metaspaceMb(),
+                value -> value + " MiB",
+                value -> {
                     HMCLDemoGameSettings current = settingsSupplier.get();
                     settingsConsumer.accept(current.withMemory(
-                            current.autoMemory(), current.maxMemoryMb(), current.minMemoryMb(), next));
-                    item.setSupportingText(next + " MiB");
+                            current.autoMemory(), current.maxMemoryMb(), current.minMemoryMb(), value));
                 }
         );
 
@@ -777,19 +767,19 @@ final class HMCLGameSettingsForm {
         return cycleItem(title, support, item -> onAction.run());
     }
 
-    private static M3SelectSettingItem<String> selectItem(
+    private static <T> M3SelectSettingItem<T> selectItem(
             String title,
-            List<String> choices,
-            String value,
-            java.util.function.Function<String, String> converter,
-            Consumer<String> onChange
+            List<T> choices,
+            T value,
+            java.util.function.Function<T, String> converter,
+            Consumer<T> onChange
     ) {
-        M3SelectSettingItem<String> item = new M3SelectSettingItem<>(title);
+        M3SelectSettingItem<T> item = new M3SelectSettingItem<>(title);
         item.setItems(choices);
         item.setConverter(converter);
         item.setValue(value);
         item.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
+            if (newValue != null && !java.util.Objects.equals(oldValue, newValue)) {
                 onChange.accept(newValue);
             }
         });

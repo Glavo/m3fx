@@ -17,15 +17,18 @@ import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
+import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.glavo.m3fx.controls.M3Text;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /// Displays launcher settings with HMCL-style section navigation and interactive offline controls.
 @NotNullByDefault
@@ -57,47 +60,74 @@ final class HMCLSettingsView extends BorderPane {
         ABOUT
     }
 
-    /// Default memory steps cycled by the global memory row.
-    private static final int @Unmodifiable [] MEMORY_STEPS_MB = {2048, 4096, 8192, 12288};
-
-    /// Default resolution labels cycled by the global resolution row.
-    private static final String @Unmodifiable [] RESOLUTION_STEPS = {
-            "854x480", "1280x720", "1920x1080", "2560x1440"
-    };
-
-    /// Isolation policy ids cycled by the isolation row.
-    private static final String @Unmodifiable [] ISOLATION_STEPS = {"never", "always", "modded"};
-
-    /// Launcher visibility policy ids.
-    private static final String @Unmodifiable [] VISIBILITY_STEPS = {"hide", "keep", "close"};
-
-    /// Process priority ids.
-    private static final String @Unmodifiable [] PRIORITY_STEPS = {"high", "normal", "low"};
-
-    /// Proxy host presets cycled by the host row.
-    private static final String @Unmodifiable [] PROXY_HOST_STEPS = {
+    /// Proxy host presets shown by the host select row.
+    private static final List<String> PROXY_HOST_OPTIONS = List.of(
             "127.0.0.1", "localhost", "proxy.example.com"
-    };
+    );
 
-    /// Proxy port presets cycled by the port row.
-    private static final int @Unmodifiable [] PROXY_PORT_STEPS = {7890, 1080, 8080, 3128};
+    /// Proxy port presets shown by the port select row.
+    private static final List<Integer> PROXY_PORT_OPTIONS = List.of(7890, 1080, 8080, 3128);
 
-    /// Concurrent thread counts cycled by the download-threads row.
-    private static final int @Unmodifiable [] THREAD_STEPS = {16, 32, 64, 128};
+    /// Concurrent thread counts shown by the download-threads select row.
+    private static final List<Integer> THREAD_OPTIONS = List.of(16, 32, 64, 128);
 
     /// Background opacity percentages.
-    private static final int @Unmodifiable [] OPACITY_STEPS = {100, 80, 60, 40};
+    private static final List<Integer> OPACITY_OPTIONS = List.of(100, 80, 60, 40);
 
     /// Font size steps in points.
-    private static final int @Unmodifiable [] FONT_SIZE_STEPS = {12, 13, 14, 16};
+    private static final List<Integer> FONT_SIZE_OPTIONS = List.of(12, 13, 14, 16);
 
-    /// Theme seed colors cycled by the theme-color row.
-    private static final Color @Unmodifiable [] THEME_COLORS = {
+    /// Theme seed colors shown by the theme-color select row.
+    private static final List<Color> THEME_COLORS = List.of(
             Color.web("#5C6BC0"),
             Color.web("#00897B"),
             Color.web("#FB8C00"),
             Color.web("#8E24AA")
-    };
+    );
+
+    /// Update channel ids.
+    private static final List<String> CHANNEL_OPTIONS = List.of("stable", "dev");
+
+    /// Language options for the general settings row.
+    private static final List<Locale> LANGUAGE_OPTIONS =
+            List.of(HMCLDemoStrings.ENGLISH, HMCLDemoStrings.SIMPLIFIED_CHINESE);
+
+    /// Brightness modes.
+    private static final List<HMCLDemoState.Brightness> BRIGHTNESS_OPTIONS =
+            List.of(
+                    HMCLDemoState.Brightness.SYSTEM,
+                    HMCLDemoState.Brightness.LIGHT,
+                    HMCLDemoState.Brightness.DARK
+            );
+
+    /// Wallpaper presets.
+    private static final List<HMCLDemoState.Wallpaper> WALLPAPER_OPTIONS =
+            List.of(
+                    HMCLDemoState.Wallpaper.MEADOW,
+                    HMCLDemoState.Wallpaper.CAVES,
+                    HMCLDemoState.Wallpaper.SUNSET
+            );
+
+    /// Background image load policies.
+    private static final List<String> BACKGROUND_LOAD_OPTIONS = List.of("eager", "lazy");
+
+    /// Font family ids.
+    private static final List<String> FONT_FAMILY_OPTIONS = List.of("system", "sans", "serif");
+
+    /// Font antialias modes.
+    private static final List<String> FONT_ANTIALIAS_OPTIONS = List.of("default", "lcd", "gray");
+
+    /// Auto / official / mirror source modes.
+    private static final List<String> SOURCE_MODE_OPTIONS = List.of("auto", "official", "mirror");
+
+    /// Addon catalog sources.
+    private static final List<String> ADDON_SOURCE_OPTIONS = List.of("modrinth", "curseforge");
+
+    /// Cache directory modes.
+    private static final List<String> CACHE_TYPE_OPTIONS = List.of("default", "custom");
+
+    /// Proxy type ids.
+    private static final List<String> PROXY_TYPE_OPTIONS = List.of("system", "none", "http", "socks");
 
     /// The localization source.
     private final HMCLDemoStrings strings;
@@ -407,11 +437,13 @@ final class HMCLSettingsView extends BorderPane {
     ///
     /// @return the content node
     private Node generalContent() {
-        M3SettingItem channel = cycleSetting(
+        M3SelectSettingItem<String> channel = selectSetting(
                 "settings.general.update_channel",
-                channelLabel(state.getUpdateChannel()),
-                () -> {
-                    state.setUpdateChannel("stable".equals(state.getUpdateChannel()) ? "dev" : "stable");
+                CHANNEL_OPTIONS,
+                state.getUpdateChannel(),
+                this::channelLabel,
+                value -> {
+                    state.setUpdateChannel(value);
                     saved();
                 }
         );
@@ -442,17 +474,17 @@ final class HMCLSettingsView extends BorderPane {
                 "snackbar.settings_check_updates"
         );
 
-        M3SettingItem language = cycleSetting(
+        M3SelectSettingItem<Locale> language = selectSetting(
                 "settings.general.language",
-                languageLabel(state.getLanguage()) + " · " + strings.get("settings.general.language.support"),
-                () -> {
-                    Locale next = state.getLanguage().equals(HMCLDemoStrings.SIMPLIFIED_CHINESE)
-                            ? HMCLDemoStrings.ENGLISH
-                            : HMCLDemoStrings.SIMPLIFIED_CHINESE;
-                    state.setLanguage(next);
+                LANGUAGE_OPTIONS,
+                state.getLanguage(),
+                this::languageLabel,
+                value -> {
+                    state.setLanguage(value);
                     saved();
                 }
         );
+        language.setSupportingText(strings.get("settings.general.language.support"));
 
         M3SwitchSettingItem aprilFools = switchSetting(
                 "settings.general.disable_april_fools",
@@ -490,11 +522,14 @@ final class HMCLSettingsView extends BorderPane {
     ///
     /// @return the content node
     private Node appearanceContent() {
-        M3SettingItem theme = cycleSetting(
+        Color currentTheme = nearestThemeColor(state.getThemeColor());
+        M3SelectSettingItem<Color> theme = selectSetting(
                 "settings.appearance.theme",
-                colorLabel(state.getThemeColor()),
-                () -> {
-                    state.setThemeColor(nextThemeColor(state.getThemeColor()));
+                THEME_COLORS,
+                currentTheme,
+                HMCLSettingsView::colorLabel,
+                value -> {
+                    state.setThemeColor(value);
                     saved();
                 }
         );
@@ -505,16 +540,13 @@ final class HMCLSettingsView extends BorderPane {
                 "snackbar.settings_color_style"
         );
 
-        M3SettingItem brightness = cycleSetting(
+        M3SelectSettingItem<HMCLDemoState.Brightness> brightness = selectSetting(
                 "settings.appearance.brightness",
-                brightnessLabel(state.getBrightness()),
-                () -> {
-                    HMCLDemoState.Brightness next = switch (state.getBrightness()) {
-                        case LIGHT -> HMCLDemoState.Brightness.DARK;
-                        case DARK -> HMCLDemoState.Brightness.SYSTEM;
-                        case SYSTEM -> HMCLDemoState.Brightness.LIGHT;
-                    };
-                    state.setBrightness(next);
+                BRIGHTNESS_OPTIONS,
+                state.getBrightness(),
+                this::brightnessLabel,
+                value -> {
+                    state.setBrightness(value);
                     saved();
                 }
         );
@@ -539,36 +571,36 @@ final class HMCLSettingsView extends BorderPane {
                 }
         );
 
-        M3SettingItem opacity = cycleSetting(
+        M3SelectSettingItem<Integer> opacity = selectSetting(
                 "settings.appearance.background_opacity",
-                state.getBackgroundOpacity() + "%",
-                () -> {
-                    state.setBackgroundOpacity(cycleInt(OPACITY_STEPS, state.getBackgroundOpacity()));
+                OPACITY_OPTIONS,
+                nearestOption(OPACITY_OPTIONS, state.getBackgroundOpacity()),
+                value -> value + "%",
+                value -> {
+                    state.setBackgroundOpacity(value);
                     saved();
                 }
         );
 
-        M3SettingItem wallpaper = cycleSetting(
+        M3SelectSettingItem<HMCLDemoState.Wallpaper> wallpaper = selectSetting(
                 "settings.appearance.wallpaper",
-                wallpaperLabel(state.getWallpaper()),
-                () -> {
-                    HMCLDemoState.Wallpaper next = switch (state.getWallpaper()) {
-                        case MEADOW -> HMCLDemoState.Wallpaper.CAVES;
-                        case CAVES -> HMCLDemoState.Wallpaper.SUNSET;
-                        case SUNSET -> HMCLDemoState.Wallpaper.MEADOW;
-                    };
-                    state.setWallpaper(next);
+                WALLPAPER_OPTIONS,
+                state.getWallpaper(),
+                this::wallpaperLabel,
+                value -> {
+                    state.setWallpaper(value);
                     saved();
                 }
         );
 
-        M3SettingItem loadPolicy = cycleSetting(
+        M3SelectSettingItem<String> loadPolicy = selectSetting(
                 "settings.appearance.background_load",
-                backgroundLoadLabel(backgroundLoadPolicy),
-                () -> {
-                    backgroundLoadPolicy = "eager".equals(backgroundLoadPolicy) ? "lazy" : "eager";
+                BACKGROUND_LOAD_OPTIONS,
+                backgroundLoadPolicy,
+                this::backgroundLoadLabel,
+                value -> {
+                    backgroundLoadPolicy = value;
                     saved();
-                    renderSection(false);
                 }
         );
 
@@ -594,41 +626,36 @@ final class HMCLSettingsView extends BorderPane {
                 }
         );
 
-        M3SettingItem fontFamilyItem = cycleSetting(
+        M3SelectSettingItem<String> fontFamilyItem = selectSetting(
                 "settings.appearance.font_family",
-                fontFamilyLabel(fontFamily),
-                () -> {
-                    fontFamily = switch (fontFamily) {
-                        case "sans" -> "serif";
-                        case "serif" -> "system";
-                        default -> "sans";
-                    };
+                FONT_FAMILY_OPTIONS,
+                fontFamily,
+                this::fontFamilyLabel,
+                value -> {
+                    fontFamily = value;
                     saved();
-                    renderSection(false);
                 }
         );
 
-        M3SettingItem fontSizeItem = cycleSetting(
+        M3SelectSettingItem<Integer> fontSizeItem = selectSetting(
                 "settings.appearance.font_size",
-                fontSize + " pt",
-                () -> {
-                    fontSize = cycleInt(FONT_SIZE_STEPS, fontSize);
+                FONT_SIZE_OPTIONS,
+                nearestOption(FONT_SIZE_OPTIONS, fontSize),
+                value -> value + " pt",
+                value -> {
+                    fontSize = value;
                     saved();
-                    renderSection(false);
                 }
         );
 
-        M3SettingItem antialias = cycleSetting(
+        M3SelectSettingItem<String> antialias = selectSetting(
                 "settings.appearance.font_antialias",
-                fontAntialiasLabel(fontAntialias),
-                () -> {
-                    fontAntialias = switch (fontAntialias) {
-                        case "lcd" -> "gray";
-                        case "gray" -> "default";
-                        default -> "lcd";
-                    };
+                FONT_ANTIALIAS_OPTIONS,
+                fontAntialias,
+                this::fontAntialiasLabel,
+                value -> {
+                    fontAntialias = value;
                     saved();
-                    renderSection(false);
                 }
         );
 
@@ -650,40 +677,46 @@ final class HMCLSettingsView extends BorderPane {
     ///
     /// @return the content node
     private Node downloadContent() {
-        M3SettingItem versionList = cycleSetting(
+        M3SelectSettingItem<String> versionList = selectSetting(
                 "settings.download.version_list_source",
-                sourceModeLabel(state.getVersionListSource()),
-                () -> {
-                    state.setVersionListSource(cycleSourceMode(state.getVersionListSource()));
+                SOURCE_MODE_OPTIONS,
+                state.getVersionListSource(),
+                this::sourceModeLabel,
+                value -> {
+                    state.setVersionListSource(value);
                     saved();
                 }
         );
 
-        M3SettingItem fileSource = cycleSetting(
+        M3SelectSettingItem<String> fileSource = selectSetting(
                 "settings.download.file_source",
-                sourceModeLabel(state.getFileDownloadSource()),
-                () -> {
-                    state.setFileDownloadSource(cycleSourceMode(state.getFileDownloadSource()));
+                SOURCE_MODE_OPTIONS,
+                state.getFileDownloadSource(),
+                this::sourceModeLabel,
+                value -> {
+                    state.setFileDownloadSource(value);
                     saved();
                 }
         );
 
-        M3SettingItem addonSource = cycleSetting(
+        M3SelectSettingItem<String> addonSource = selectSetting(
                 "settings.download.addon_source",
-                addonSourceLabel(state.getDefaultAddonSource()),
-                () -> {
-                    state.setDefaultAddonSource(
-                            "modrinth".equals(state.getDefaultAddonSource()) ? "curseforge" : "modrinth");
+                ADDON_SOURCE_OPTIONS,
+                state.getDefaultAddonSource(),
+                this::addonSourceLabel,
+                value -> {
+                    state.setDefaultAddonSource(value);
                     saved();
                 }
         );
 
-        M3SettingItem cacheType = cycleSetting(
+        M3SelectSettingItem<String> cacheType = selectSetting(
                 "settings.download.cache_directory",
-                cacheDirectoryLabel(state.getCacheDirectoryType()),
-                () -> {
-                    state.setCacheDirectoryType(
-                            "default".equals(state.getCacheDirectoryType()) ? "custom" : "default");
+                CACHE_TYPE_OPTIONS,
+                state.getCacheDirectoryType(),
+                this::cacheDirectoryLabel,
+                value -> {
+                    state.setCacheDirectoryType(value);
                     saved();
                 }
         );
@@ -694,49 +727,58 @@ final class HMCLSettingsView extends BorderPane {
                 "snackbar.settings_clean_cache"
         );
 
+        M3SelectSettingItem<Integer> threads = selectSetting(
+                "settings.download.threads",
+                THREAD_OPTIONS,
+                nearestOption(THREAD_OPTIONS, state.getDownloadThreads()),
+                String::valueOf,
+                value -> {
+                    state.setDownloadThreads(value);
+                    saved();
+                }
+        );
+        threads.setDisable(state.isAutoDownloadThreads());
+
         M3SwitchSettingItem autoThreads = switchSetting(
                 "settings.download.auto_threads",
                 "settings.download.auto_threads.support",
                 state.isAutoDownloadThreads(),
                 selected -> {
                     state.setAutoDownloadThreads(selected);
+                    threads.setDisable(selected);
                     saved();
                 }
         );
 
-        M3SettingItem threads = cycleSetting(
-                "settings.download.threads",
-                String.valueOf(state.getDownloadThreads()),
-                () -> {
-                    state.setDownloadThreads(cycleInt(THREAD_STEPS, state.getDownloadThreads()));
-                    saved();
-                }
-        );
-        threads.setDisable(state.isAutoDownloadThreads());
-
-        M3SettingItem proxyType = cycleSetting(
+        M3SelectSettingItem<String> proxyType = selectSetting(
                 "settings.download.proxy_type",
-                proxyTypeLabel(state.getProxyType()),
-                () -> {
-                    state.setProxyType(cycleProxyType(state.getProxyType()));
+                PROXY_TYPE_OPTIONS,
+                state.getProxyType(),
+                this::proxyTypeLabel,
+                value -> {
+                    state.setProxyType(value);
                     saved();
                 }
         );
 
-        M3SettingItem proxyHost = cycleSetting(
+        M3SelectSettingItem<String> proxyHost = selectSetting(
                 "settings.download.proxy_host",
-                state.getProxyHost(),
-                () -> {
-                    state.setProxyHost(cycleString(PROXY_HOST_STEPS, state.getProxyHost()));
+                PROXY_HOST_OPTIONS,
+                nearestOption(PROXY_HOST_OPTIONS, state.getProxyHost()),
+                value -> value,
+                value -> {
+                    state.setProxyHost(value);
                     saved();
                 }
         );
 
-        M3SettingItem proxyPort = cycleSetting(
+        M3SelectSettingItem<Integer> proxyPort = selectSetting(
                 "settings.download.proxy_port",
-                String.valueOf(state.getProxyPort()),
-                () -> {
-                    state.setProxyPort(cycleInt(PROXY_PORT_STEPS, state.getProxyPort()));
+                PROXY_PORT_OPTIONS,
+                nearestOption(PROXY_PORT_OPTIONS, state.getProxyPort()),
+                String::valueOf,
+                value -> {
+                    state.setProxyPort(value);
                     saved();
                 }
         );
@@ -903,16 +945,31 @@ final class HMCLSettingsView extends BorderPane {
         return list;
     }
 
-    /// Creates a cycling action setting row.
+    /// Creates a dropdown select setting row for a fixed option list.
     ///
+    /// @param <T>         the option type
     /// @param headlineKey the headline message key
-    /// @param supporting the supporting text
-    /// @param action the activation handler
-    /// @return the setting row
-    private M3SettingItem cycleSetting(String headlineKey, String supporting, Runnable action) {
-        M3SettingItem item = new M3SettingItem(strings.get(headlineKey));
-        item.setSupportingText(supporting);
-        item.setOnAction(event -> action.run());
+    /// @param choices     the selectable values
+    /// @param value       the current value
+    /// @param converter   formats trailing and menu labels
+    /// @param onChange    receives the newly selected value
+    /// @return the select setting row
+    private <T> M3SelectSettingItem<T> selectSetting(
+            String headlineKey,
+            List<T> choices,
+            T value,
+            Function<T, String> converter,
+            Consumer<T> onChange
+    ) {
+        M3SelectSettingItem<T> item = new M3SelectSettingItem<>(strings.get(headlineKey));
+        item.setItems(choices);
+        item.setConverter(converter);
+        item.setValue(value);
+        item.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && !java.util.Objects.equals(oldValue, newValue)) {
+                onChange.accept(newValue);
+            }
+        });
         return item;
     }
 
@@ -1136,31 +1193,6 @@ final class HMCLSettingsView extends BorderPane {
         });
     }
 
-    /// Cycles auto → official → mirror → auto.
-    ///
-    /// @param current the current source id
-    /// @return the next source id
-    private static String cycleSourceMode(String current) {
-        return switch (current) {
-            case "official" -> "mirror";
-            case "mirror" -> "auto";
-            default -> "official";
-        };
-    }
-
-    /// Cycles system → none → http → socks → system.
-    ///
-    /// @param current the current proxy type
-    /// @return the next proxy type
-    private static String cycleProxyType(String current) {
-        return switch (current) {
-            case "none" -> "http";
-            case "http" -> "socks";
-            case "socks" -> "system";
-            default -> "none";
-        };
-    }
-
     /// Returns a compact sRGB hex label.
     ///
     /// @param color the color
@@ -1172,45 +1204,30 @@ final class HMCLSettingsView extends BorderPane {
         return String.format("#%02X%02X%02X", red, green, blue);
     }
 
-    /// Cycles through the demo theme seeds.
+    /// Maps an arbitrary theme color onto the nearest selectable seed.
     ///
-    /// @param current the current color
-    /// @return the next color
-    private static Color nextThemeColor(Color current) {
+    /// @param current the current theme color
+    /// @return a color from [#THEME_COLORS]
+    private static Color nearestThemeColor(Color current) {
         String label = colorLabel(current);
-        for (int index = 0; index < THEME_COLORS.length; index++) {
-            if (label.equals(colorLabel(THEME_COLORS[index]))) {
-                return THEME_COLORS[(index + 1) % THEME_COLORS.length];
+        for (Color candidate : THEME_COLORS) {
+            if (label.equals(colorLabel(candidate))) {
+                return candidate;
             }
         }
-        return THEME_COLORS[0];
+        return THEME_COLORS.get(0);
     }
 
-    /// Returns the next integer step after `current`, wrapping to the first value.
+    /// Returns `current` when present in `options`, otherwise the first option.
     ///
-    /// @param steps the cycle values
+    /// @param <T>     the option type
+    /// @param options the selectable options
     /// @param current the current value
-    /// @return the next value
-    private static int cycleInt(int[] steps, int current) {
-        for (int index = 0; index < steps.length; index++) {
-            if (steps[index] == current) {
-                return steps[(index + 1) % steps.length];
-            }
+    /// @return a value present in `options`
+    private static <T> T nearestOption(List<T> options, T current) {
+        if (options.contains(current)) {
+            return current;
         }
-        return steps[0];
-    }
-
-    /// Returns the next string step after `current`, wrapping to the first value.
-    ///
-    /// @param steps the cycle values
-    /// @param current the current value
-    /// @return the next value
-    private static String cycleString(String[] steps, String current) {
-        for (int index = 0; index < steps.length; index++) {
-            if (steps[index].equals(current)) {
-                return steps[(index + 1) % steps.length];
-            }
-        }
-        return steps[0];
+        return options.get(0);
     }
 }
