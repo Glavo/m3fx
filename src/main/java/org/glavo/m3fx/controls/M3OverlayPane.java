@@ -4,11 +4,13 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
@@ -92,7 +94,8 @@ public final class M3OverlayPane extends Pane {
         snackbarPresenter = new M3SnackbarPresenter(
                 snackbarValue,
                 snackbarShowingValue,
-                snackbarDisplayDurationValue
+                snackbarDisplayDurationValue,
+                snackbarSwipeToDismissEnabled
         );
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
@@ -250,6 +253,44 @@ public final class M3OverlayPane extends Pane {
     /// @return the snackbar display-duration property
     public ObjectProperty<@Nullable Duration> snackbarDisplayDurationProperty() {
         return snackbarDisplayDurationValue;
+    }
+
+    /// Whether a horizontal pointer swipe may dismiss the current snackbar.
+    ///
+    /// When enabled, dragging the non-interactive portion of a snackbar horizontally beyond the presenter's
+    /// dismissal threshold closes that message and advances the queue. A shorter horizontal drag returns the
+    /// snackbar to its resting position. Pointer gestures that begin on the text action or close button remain
+    /// reserved for that affordance.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty snackbarSwipeToDismissEnabled =
+            new SimpleBooleanProperty(this, "snackbarSwipeToDismissEnabled", true);
+
+    /// Returns whether horizontal pointer swipes may dismiss snackbars.
+    ///
+    /// @return `true` when swipe-to-dismiss interaction is enabled
+    public boolean isSnackbarSwipeToDismissEnabled() {
+        return snackbarSwipeToDismissEnabled.get();
+    }
+
+    /// Sets whether horizontal pointer swipes may dismiss snackbars.
+    ///
+    /// Disabling this property while a snackbar is being dragged cancels that gesture and returns the snackbar to
+    /// its resting position. This setting does not affect automatic dismissal, the close button, Escape, or
+    /// [#dismissSnackbar()].
+    ///
+    /// @param enabled whether swipe-to-dismiss interaction is enabled
+    public void setSnackbarSwipeToDismissEnabled(boolean enabled) {
+        snackbarSwipeToDismissEnabled.set(enabled);
+    }
+
+    /// Returns the property that controls snackbar swipe-to-dismiss interaction.
+    ///
+    /// The property is observable and bindable. Its default value is `true`.
+    ///
+    /// @return the swipe-to-dismiss enabled property
+    public BooleanProperty snackbarSwipeToDismissEnabledProperty() {
+        return snackbarSwipeToDismissEnabled;
     }
 
     /// Shows a regular node above the content and below snackbars and modal overlays.

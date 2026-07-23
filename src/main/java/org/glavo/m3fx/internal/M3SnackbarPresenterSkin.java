@@ -5,12 +5,14 @@ package org.glavo.m3fx.internal;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.event.EventHandler;
 import javafx.css.StyleOrigin;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.glavo.m3fx.controls.M3Button;
@@ -40,6 +42,18 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
 
     /// The observable message currently bound to the reusable node tree.
     private @Nullable M3Snackbar renderedSnackbar;
+
+    /// Forwards primary presses to the presenter's swipe gesture state machine.
+    private final EventHandler<MouseEvent> swipePressedHandler =
+            event -> getSkinnable().handleSwipeMousePressed(event);
+
+    /// Forwards primary drags to the presenter's swipe gesture state machine.
+    private final EventHandler<MouseEvent> swipeDraggedHandler =
+            event -> getSkinnable().handleSwipeMouseDragged(event);
+
+    /// Forwards primary releases to the presenter's swipe gesture state machine.
+    private final EventHandler<MouseEvent> swipeReleasedHandler =
+            event -> getSkinnable().handleSwipeMouseReleased(event);
 
     /// Replaces rendered content when the current message changes.
     private final ChangeListener<@Nullable M3Snackbar> snackbarListener =
@@ -84,6 +98,9 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
 
         container.getChildren().addAll(textLabel, actionButton, closeButton);
+        container.addEventFilter(MouseEvent.MOUSE_PRESSED, swipePressedHandler);
+        container.addEventFilter(MouseEvent.MOUSE_DRAGGED, swipeDraggedHandler);
+        container.addEventFilter(MouseEvent.MOUSE_RELEASED, swipeReleasedHandler);
         getChildren().setAll(container);
         updateSnackbar(control.getSnackbar());
         updateTokenStyles();
@@ -130,6 +147,18 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         return (actionButton.isManaged() ? 1 : 0) + (closeButton.isManaged() ? 1 : 0);
     }
 
+    /// Returns whether one event target belongs to a rendered snackbar affordance.
+    ///
+    /// @param target the event target to inspect
+    /// @return `true` when the target is inside the action or close button
+    boolean isSwipeExcludedTarget(Object target) {
+        if (!(target instanceof Node node)) {
+            return false;
+        }
+        return actionButton.isManaged() && M3Accessible.containsNode(actionButton, node)
+                || closeButton.isManaged() && M3Accessible.containsNode(closeButton, node);
+    }
+
     /// Removes listeners, handlers, bindings, and rendered message content.
     @Override
     public void dispose() {
@@ -145,6 +174,9 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         container.nodeOrientationProperty().unbind();
         actionButton.setOnAction(null);
         closeButton.setOnAction(null);
+        container.removeEventFilter(MouseEvent.MOUSE_PRESSED, swipePressedHandler);
+        container.removeEventFilter(MouseEvent.MOUSE_DRAGGED, swipeDraggedHandler);
+        container.removeEventFilter(MouseEvent.MOUSE_RELEASED, swipeReleasedHandler);
         detachRenderedSnackbar();
         textLabel.setText("");
         actionButton.setText("");

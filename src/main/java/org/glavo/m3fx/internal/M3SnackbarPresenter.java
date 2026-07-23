@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -27,6 +28,8 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -52,6 +55,18 @@ public final class M3SnackbarPresenter extends Control {
 
     /// The initial vertical offset used by entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
+
+    /// Horizontal movement required before a pointer gesture claims the snackbar, in logical pixels.
+    private static final double SWIPE_ACTIVATION_DISTANCE = 8.0;
+
+    /// Fraction of container width that commits a swipe dismissal.
+    private static final double SWIPE_DISMISS_THRESHOLD = 0.5;
+
+    /// Fraction of container width where drag opacity starts decreasing.
+    private static final double SWIPE_FADE_START = 0.1;
+
+    /// Fraction of container width where drag opacity reaches zero.
+    private static final double SWIPE_FADE_END = 0.6;
 
     /// The default snackbar container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 4.0;
@@ -83,6 +98,9 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Optional explicit automatic-dismissal duration owned by the overlay pane.
     private final ObjectProperty<@Nullable Duration> displayDuration;
+
+    /// Whether the owning overlay permits horizontal swipe dismissal.
+    private final BooleanProperty swipeToDismissEnabled;
 
     /// Automatic-dismissal timer reused for every passive message.
     private final PauseTransition displayTimer = new PauseTransition();
@@ -121,6 +139,21 @@ public final class M3SnackbarPresenter extends Control {
     /// Whether a modal overlay currently blocks snackbar interaction and timeout progress.
     private boolean modalBlocked;
 
+    /// Whether a primary pointer press is eligible to become a snackbar swipe.
+    private boolean swipePointerDown;
+
+    /// Whether the current pointer sequence has committed to horizontal snackbar movement.
+    private boolean swipeActive;
+
+    /// Whether vertical intent rejected the current pointer sequence.
+    private boolean swipeRejected;
+
+    /// Scene-space horizontal coordinate where the current pointer sequence began.
+    private double swipeStartSceneX;
+
+    /// Scene-space vertical coordinate where the current pointer sequence began.
+    private double swipeStartSceneY;
+
     /// Observes effective motion settings while snackbar work is active.
     private final M3MotionSettingsObserver motionSettingsObserver;
 
@@ -129,18 +162,21 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Creates an empty presenter backed by state properties owned by its overlay pane.
     ///
-    /// @param snackbar        current-message state to update
-    /// @param showing         visible-display state to update
-    /// @param displayDuration optional explicit automatic-dismissal duration to observe
+    /// @param snackbar              current-message state to update
+    /// @param showing               visible-display state to update
+    /// @param displayDuration       optional explicit automatic-dismissal duration to observe
+    /// @param swipeToDismissEnabled whether the owning overlay permits horizontal swipe dismissal
     /// @throws NullPointerException if any property is `null`
     public M3SnackbarPresenter(
             ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar,
             ReadOnlyBooleanWrapper showing,
-            ObjectProperty<@Nullable Duration> displayDuration
+            ObjectProperty<@Nullable Duration> displayDuration,
+            BooleanProperty swipeToDismissEnabled
     ) {
         this.snackbar = Objects.requireNonNull(snackbar, "snackbar");
         this.showing = Objects.requireNonNull(showing, "showing");
         this.displayDuration = Objects.requireNonNull(displayDuration, "displayDuration");
+        this.swipeToDismissEnabled = Objects.requireNonNull(swipeToDismissEnabled, "swipeToDismissEnabled");
         motionSettingsObserver = new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
         focusNotifier = new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
@@ -157,6 +193,7 @@ public final class M3SnackbarPresenter extends Control {
         });
         displayTimer.setOnFinished(event -> handleDisplayTimerFinished());
         displayDuration.addListener(observable -> refreshDisplayTimer());
+        swipeToDismissEnabled.addListener(observable -> handleSwipeAvailabilityChanged());
 
         // The stable node tree must exist before the first message is animated, including while detached.
         setSkin(createDefaultSkin());
@@ -217,6 +254,9 @@ public final class M3SnackbarPresenter extends Control {
         if (this.modalBlocked == modalBlocked) {
             return;
         }
+        if (modalBlocked) {
+            cancelSwipeGesture(false);
+        }
         this.modalBlocked = modalBlocked;
         refreshDisplayTimer();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
@@ -260,6 +300,7 @@ public final class M3SnackbarPresenter extends Control {
         stopDisplayTimer();
         stopTransition(showAnimation);
         stopTransition(hideAnimation);
+        clearSwipeTracking();
         transferFocusAfterHide = false;
 
         Node node = presentationNode();
@@ -267,6 +308,7 @@ public final class M3SnackbarPresenter extends Control {
         this.snackbar.set(checkedSnackbar);
         if (wasIdle) {
             node.setOpacity(0.0);
+            node.setTranslateX(0.0);
             node.setTranslateY(TRANSITION_OFFSET_Y);
         }
         showing.set(true);
@@ -287,6 +329,7 @@ public final class M3SnackbarPresenter extends Control {
         }
         stopDisplayTimer();
         stopTransition(showAnimation);
+        clearSwipeTracking();
         transferFocusAfterHide = nodeOwnsFocus(currentFocusNode());
         showing.set(false);
         playHideAnimation(currentSnackbar, presentationNode());
@@ -626,13 +669,33 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Plays entrance motion on the stable presentation node.
     private void playShowAnimation(M3Snackbar message, Node node) {
-        showAnimation.configure(M3Animation.fastSpatial(this), message, node, 1.0, 0.0);
+        showAnimation.configure(M3Animation.fastSpatial(this), message, node, 1.0, 0.0, 0.0);
         playConfiguredTransition(showAnimation);
     }
 
     /// Plays exit motion on the stable presentation node.
     private void playHideAnimation(M3Snackbar message, Node node) {
-        hideAnimation.configure(M3Animation.fastSpatial(this), message, node, 0.0, TRANSITION_OFFSET_Y);
+        hideAnimation.configure(
+                M3Animation.fastSpatial(this),
+                message,
+                node,
+                0.0,
+                node.getTranslateX(),
+                TRANSITION_OFFSET_Y
+        );
+        playConfiguredTransition(hideAnimation);
+    }
+
+    /// Plays horizontal dismissal motion after a committed swipe.
+    private void playSwipeHideAnimation(M3Snackbar message, Node node, double targetTranslateX) {
+        hideAnimation.configure(
+                M3Animation.fastSpatial(this),
+                message,
+                node,
+                0.0,
+                targetTranslateX,
+                node.getTranslateY()
+        );
         playConfiguredTransition(hideAnimation);
     }
 
@@ -745,6 +808,7 @@ public final class M3SnackbarPresenter extends Control {
         this.snackbar.set(null);
         setAccessibleText(null);
         node.setOpacity(1.0);
+        node.setTranslateX(0.0);
         node.setTranslateY(0.0);
         notifyMessageChanged();
         showNextQueuedSnackbar(transferFocus);
@@ -843,6 +907,151 @@ public final class M3SnackbarPresenter extends Control {
         return presenterSkin().getPresentationNode();
     }
 
+    /// Begins tracking a possible horizontal swipe from the snackbar surface.
+    void handleSwipeMousePressed(MouseEvent event) {
+        clearSwipeTracking();
+        if (event.getButton() != MouseButton.PRIMARY
+                || !event.isPrimaryButtonDown()
+                || !canStartSwipe(event)) {
+            return;
+        }
+        swipePointerDown = true;
+        swipeStartSceneX = event.getSceneX();
+        swipeStartSceneY = event.getSceneY();
+    }
+
+    /// Updates a claimed horizontal swipe without changing layout geometry.
+    void handleSwipeMouseDragged(MouseEvent event) {
+        if (!swipePointerDown || swipeRejected || !event.isPrimaryButtonDown()) {
+            return;
+        }
+
+        double deltaX = event.getSceneX() - swipeStartSceneX;
+        double deltaY = event.getSceneY() - swipeStartSceneY;
+        double absoluteX = Math.abs(deltaX);
+        double absoluteY = Math.abs(deltaY);
+        if (!swipeActive) {
+            if (absoluteY >= SWIPE_ACTIVATION_DISTANCE && absoluteY >= absoluteX) {
+                swipeRejected = true;
+                return;
+            }
+            if (absoluteX < SWIPE_ACTIVATION_DISTANCE || absoluteX <= absoluteY) {
+                return;
+            }
+            swipeActive = true;
+            stopDisplayTimer();
+            stopTransition(showAnimation);
+        }
+
+        Node node = presentationNode();
+        node.setTranslateX(snapPositionX(deltaX));
+        node.setOpacity(swipeOpacity(absoluteX, node.getLayoutBounds().getWidth()));
+        event.consume();
+    }
+
+    /// Commits or cancels the current horizontal swipe when the pointer is released.
+    void handleSwipeMouseReleased(MouseEvent event) {
+        if (!swipePointerDown) {
+            return;
+        }
+
+        boolean wasActive = swipeActive;
+        clearSwipeTracking();
+        if (!wasActive) {
+            return;
+        }
+
+        event.consume();
+        @Nullable M3Snackbar current = getSnackbar();
+        Node node = presentationNode();
+        double width = Math.max(1.0, node.getLayoutBounds().getWidth());
+        if (current != null
+                && showing.get()
+                && Math.abs(node.getTranslateX()) >= width * SWIPE_DISMISS_THRESHOLD) {
+            dismissBySwipe(current, node, Math.copySign(1.0, node.getTranslateX()));
+        } else if (current != null && showing.get()) {
+            playShowAnimation(current, node);
+        } else {
+            resetSwipeVisuals(node);
+        }
+    }
+
+    /// Returns whether the current pointer press can initiate a snackbar swipe.
+    private boolean canStartSwipe(MouseEvent event) {
+        return swipeToDismissEnabled.get()
+                && showing.get()
+                && getSnackbar() != null
+                && !modalBlocked
+                && !isDisabled()
+                && hideAnimation.getStatus() != Animation.Status.RUNNING
+                && showAnimation.getStatus() != Animation.Status.RUNNING
+                && !presenterSkin().isSwipeExcludedTarget(event.getTarget());
+    }
+
+    /// Dismisses the current message horizontally and preserves normal queue advancement.
+    private void dismissBySwipe(M3Snackbar current, Node node, double direction) {
+        stopDisplayTimer();
+        stopTransition(showAnimation);
+        stopTransition(hideAnimation);
+        transferFocusAfterHide = nodeOwnsFocus(currentFocusNode());
+        showing.set(false);
+        playSwipeHideAnimation(current, node, swipeExitTranslateX(node, direction));
+    }
+
+    /// Returns the horizontal translation that places the snackbar fully outside the presenter.
+    private double swipeExitTranslateX(Node node, double direction) {
+        double layoutMinX = node.getLayoutX() + node.getLayoutBounds().getMinX();
+        if (direction < 0.0) {
+            return -(layoutMinX + node.getLayoutBounds().getWidth());
+        }
+        return getWidth() - layoutMinX;
+    }
+
+    /// Returns drag opacity using Android's snackbar fade interval.
+    private static double swipeOpacity(double absoluteOffset, double width) {
+        double fraction = absoluteOffset / Math.max(1.0, width);
+        double fadeFraction = (fraction - SWIPE_FADE_START) / (SWIPE_FADE_END - SWIPE_FADE_START);
+        return 1.0 - Math.max(0.0, Math.min(1.0, fadeFraction));
+    }
+
+    /// Cancels an active swipe after host interaction becomes unavailable.
+    private void handleSwipeAvailabilityChanged() {
+        if (!swipeToDismissEnabled.get()) {
+            cancelSwipeGesture(true);
+        }
+    }
+
+    /// Cancels pointer tracking and optionally animates the surface back to rest.
+    private void cancelSwipeGesture(boolean animate) {
+        boolean wasActive = swipeActive;
+        clearSwipeTracking();
+        if (!wasActive) {
+            return;
+        }
+        Node node = presentationNode();
+        @Nullable M3Snackbar current = getSnackbar();
+        if (animate && current != null && showing.get()) {
+            playShowAnimation(current, node);
+        } else {
+            resetSwipeVisuals(node);
+        }
+    }
+
+    /// Clears transient pointer-sequence state without changing node visuals.
+    private void clearSwipeTracking() {
+        swipePointerDown = false;
+        swipeActive = false;
+        swipeRejected = false;
+        swipeStartSceneX = 0.0;
+        swipeStartSceneY = 0.0;
+    }
+
+    /// Restores visual channels owned by horizontal swipe interaction.
+    private static void resetSwipeVisuals(Node node) {
+        node.setOpacity(1.0);
+        node.setTranslateX(0.0);
+    }
+
     /// Returns the installed reusable presenter skin.
     private M3SnackbarPresenterSkin presenterSkin() {
         Skin<?> skin = getSkin();
@@ -935,6 +1144,12 @@ public final class M3SnackbarPresenter extends Control {
         /// Target opacity.
         private double targetOpacity;
 
+        /// Starting horizontal translation.
+        private double startTranslateX;
+
+        /// Target horizontal translation.
+        private double targetTranslateX;
+
         /// Starting vertical translation.
         private double startTranslateY;
 
@@ -956,6 +1171,7 @@ public final class M3SnackbarPresenter extends Control {
                 M3Snackbar message,
                 Node targetNode,
                 double targetOpacity,
+                double targetTranslateX,
                 double targetTranslateY
         ) {
             stop();
@@ -963,10 +1179,13 @@ public final class M3SnackbarPresenter extends Control {
             this.message = message;
             this.targetNode = targetNode;
             startOpacity = targetNode.getOpacity();
+            startTranslateX = targetNode.getTranslateX();
             startTranslateY = targetNode.getTranslateY();
             this.targetOpacity = targetOpacity;
+            this.targetTranslateX = targetTranslateX;
             this.targetTranslateY = targetTranslateY;
             visualChange = Double.compare(startOpacity, targetOpacity) != 0
+                    || Double.compare(startTranslateX, targetTranslateX) != 0
                     || Double.compare(startTranslateY, targetTranslateY) != 0;
             setCycleDuration(spec.duration());
             setInterpolator(spec.interpolator());
@@ -1004,6 +1223,9 @@ public final class M3SnackbarPresenter extends Control {
                 return;
             }
             node.setOpacity(interpolate(startOpacity, targetOpacity, fraction));
+            node.setTranslateX(M3SnackbarPresenter.this.snapPositionX(
+                    interpolate(startTranslateX, targetTranslateX, fraction)
+            ));
             node.setTranslateY(M3SnackbarPresenter.this.snapPositionY(
                     interpolate(startTranslateY, targetTranslateY, fraction)
             ));

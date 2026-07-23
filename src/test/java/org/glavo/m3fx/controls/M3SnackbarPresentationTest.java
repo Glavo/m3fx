@@ -6,11 +6,15 @@ package org.glavo.m3fx.controls;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
+import javafx.geometry.Point2D;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
@@ -344,6 +348,199 @@ final class M3SnackbarPresentationTest {
         });
     }
 
+    /// Verifies host configuration, gesture intent, affordance isolation, and mirrored swipe dismissal.
+    @Test
+    void swipeDismissalRespectsHostConfigurationAndGestureIntent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = overlayPane();
+            overlayPane.setContent(new Pane());
+            Scene scene = new Scene(overlayPane, 640.0, 240.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+
+            M3Snackbar snackbar = new M3Snackbar("Swipe interaction");
+            snackbar.setActionText("Undo");
+            overlayPane.showSnackbar(snackbar);
+            overlayPane.applyCss();
+            overlayPane.layout();
+
+            Node presenter = snackbarPresenter(overlayPane);
+            Region surface = snackbarSurface(presenter);
+            Bounds surfaceBounds = surface.localToScene(surface.getBoundsInLocal());
+            double centerX = surfaceBounds.getCenterX();
+            double centerY = surfaceBounds.getCenterY();
+            double dismissDistance = surface.getWidth() * 0.6;
+
+            assertTrue(overlayPane.isSnackbarSwipeToDismissEnabled());
+            assertSame(overlayPane, overlayPane.snackbarSwipeToDismissEnabledProperty().getBean());
+            assertEquals("snackbarSwipeToDismissEnabled",
+                    overlayPane.snackbarSwipeToDismissEnabledProperty().getName());
+
+            overlayPane.setSnackbarSwipeToDismissEnabled(false);
+            fireSwipe(surface, centerX, centerY, centerX + dismissDistance, centerY);
+            assertSame(snackbar, overlayPane.getSnackbar());
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+
+            overlayPane.setSnackbarSwipeToDismissEnabled(true);
+            fireSwipe(surface, centerX, centerY, centerX + surface.getWidth() * 0.25, centerY);
+            assertSame(snackbar, overlayPane.getSnackbar());
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+
+            surface.fireEvent(primaryMouseEvent(surface, MouseEvent.MOUSE_PRESSED, centerX, centerY, true));
+            surface.fireEvent(primaryMouseEvent(
+                    surface,
+                    MouseEvent.MOUSE_DRAGGED,
+                    centerX + surface.getWidth() * 0.25,
+                    centerY,
+                    true
+            ));
+            assertTrue(surface.getTranslateX() > 0.0);
+            overlayPane.setSnackbarSwipeToDismissEnabled(false);
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+            assertEquals(1.0, surface.getOpacity(), 0.0);
+
+            overlayPane.setSnackbarSwipeToDismissEnabled(true);
+            fireSwipe(surface, centerX, centerY, centerX + 12.0, centerY + 40.0);
+            assertSame(snackbar, overlayPane.getSnackbar());
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+
+            M3Button action = assertInstanceOf(M3Button.class, presenter.lookup(".m3-snackbar-action"));
+            action.setDisable(true);
+            Bounds actionBounds = action.localToScene(action.getBoundsInLocal());
+            fireSwipe(
+                    action,
+                    actionBounds.getCenterX(),
+                    actionBounds.getCenterY(),
+                    actionBounds.getCenterX() + dismissDistance,
+                    actionBounds.getCenterY()
+            );
+            assertSame(snackbar, overlayPane.getSnackbar());
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+
+            overlayPane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            overlayPane.applyCss();
+            overlayPane.layout();
+            Bounds rightToLeftBounds = surface.localToScene(surface.getBoundsInLocal());
+            fireSwipe(
+                    surface,
+                    rightToLeftBounds.getCenterX(),
+                    rightToLeftBounds.getCenterY(),
+                    rightToLeftBounds.getCenterX() - dismissDistance,
+                    rightToLeftBounds.getCenterY()
+            );
+            assertNull(overlayPane.getSnackbar());
+            assertFalse(overlayPane.isSnackbarShowing());
+            assertEquals(0.0, surface.getTranslateX(), 0.0);
+            assertEquals(1.0, surface.getOpacity(), 0.0);
+        });
+    }
+
+    /// Verifies that an animated swipe exits horizontally and promotes the queued message.
+    @Test
+    void animatedSwipeDismissalAdvancesTheQueue() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> surfaceReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+        AtomicBoolean observedHorizontalExit = new AtomicBoolean();
+
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay");
+                        Region surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                        return overlay.getSnackbar() == firstReference.get()
+                                && overlay.isSnackbarShowing()
+                                && Math.abs(surface.getTranslateY()) <= 1.0e-6
+                                && Math.abs(surface.getOpacity() - 1.0) <= 1.0e-6;
+                    },
+                    2,
+                    () -> {
+                        M3OverlayPane overlayPane = overlayPane();
+                        M3MotionSpec motionSpec =
+                                M3MotionSpec.of(Duration.millis(400.0), M3MotionEasing.LINEAR);
+                        FxTestUtils.setMotionScheme(
+                                overlayPane,
+                                M3MotionScheme.builder(M3MotionScheme.standard())
+                                        .fastSpatial(motionSpec)
+                                        .build()
+                        );
+                        overlayPane.setContent(new Pane());
+
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(overlayPane, 640.0, 240.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        overlayPane.applyCss();
+                        overlayPane.layout();
+
+                        M3Snackbar first = new M3Snackbar("First swipe message");
+                        M3Snackbar second = new M3Snackbar("Second queued message");
+                        overlayPane.showSnackbar(first);
+                        overlayPane.enqueueSnackbar(second);
+                        overlayPane.applyCss();
+                        overlayPane.layout();
+
+                        stageReference.set(stage);
+                        overlayReference.set(overlayPane);
+                        firstReference.set(first);
+                        secondReference.set(second);
+                        surfaceReference.set(snackbarSurface(snackbarPresenter(overlayPane)));
+                    },
+                    () -> assertEquals(1, Objects.requireNonNull(overlayReference.get(), "overlay")
+                            .getSnackbarQueue().size())
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay");
+                        Region surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                        double scaledTranslateX = surface.getTranslateX()
+                                * Objects.requireNonNull(stageReference.get(), "stage").getOutputScaleX();
+                        assertEquals(Math.rint(scaledTranslateX), scaledTranslateX, 1.0e-6);
+                        if (overlay.getSnackbar() == firstReference.get()
+                                && Math.abs(surface.getTranslateX()) > surface.getWidth() * 0.65) {
+                            observedHorizontalExit.set(true);
+                        }
+                        return overlay.getSnackbar() == secondReference.get()
+                                && overlay.isSnackbarShowing()
+                                && Math.abs(surface.getTranslateX()) <= 1.0e-6
+                                && Math.abs(surface.getTranslateY()) <= 1.0e-6
+                                && Math.abs(surface.getOpacity() - 1.0) <= 1.0e-6;
+                    },
+                    () -> {
+                        Region surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                        Bounds bounds = surface.localToScene(surface.getBoundsInLocal());
+                        double dragDistance = surface.getWidth() * 0.6;
+                        fireSwipe(
+                                surface,
+                                bounds.getCenterX(),
+                                bounds.getCenterY(),
+                                bounds.getCenterX() + dragDistance,
+                                bounds.getCenterY()
+                        );
+                    },
+                    () -> {
+                        assertTrue(observedHorizontalExit.get(), "the test must observe horizontal exit motion");
+                        assertTrue(Objects.requireNonNull(overlayReference.get(), "overlay")
+                                .getSnackbarQueue().isEmpty());
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3OverlayPane overlayPane = overlayReference.get();
+                if (overlayPane != null) {
+                    FxTestUtils.clearMotionScheme(overlayPane);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that entrance motion remains pixel aligned and text geometry stays stable after settlement.
     @Test
     void entranceMotionSnapsToOutputPixelsAndSettlesTextGeometry() throws InterruptedException {
@@ -463,6 +660,53 @@ final class M3SnackbarPresentationTest {
         return Objects.requireNonNull(
                 assertInstanceOf(Region.class, presenter.lookup(".m3-snackbar-container")),
                 "snackbar surface"
+        );
+    }
+
+    /// Sends one primary-button swipe through a concrete event target using scene-space coordinates.
+    private static void fireSwipe(
+            Node target,
+            double startSceneX,
+            double startSceneY,
+            double endSceneX,
+            double endSceneY
+    ) {
+        target.fireEvent(primaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, startSceneX, startSceneY, true));
+        target.fireEvent(primaryMouseEvent(target, MouseEvent.MOUSE_DRAGGED, endSceneX, endSceneY, true));
+        target.fireEvent(primaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, endSceneX, endSceneY, false));
+    }
+
+    /// Creates one primary mouse event at a scene-space coordinate.
+    private static MouseEvent primaryMouseEvent(
+            Node target,
+            javafx.event.EventType<MouseEvent> eventType,
+            double sceneX,
+            double sceneY,
+            boolean primaryButtonDown
+    ) {
+        Point2D localPoint = target.sceneToLocal(sceneX, sceneY);
+        Point2D screenPoint = target.localToScreen(localPoint);
+        double screenX = screenPoint == null ? sceneX : screenPoint.getX();
+        double screenY = screenPoint == null ? sceneY : screenPoint.getY();
+        return new MouseEvent(
+                eventType,
+                sceneX,
+                sceneY,
+                screenX,
+                screenY,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                primaryButtonDown,
+                false,
+                false,
+                false,
+                false,
+                false,
+                new PickResult(target, sceneX, sceneY)
         );
     }
 

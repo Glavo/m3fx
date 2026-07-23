@@ -85,7 +85,9 @@ public final class DemoApp extends Application {
 Snackbar messages are observable non-node models. Their text, action text, callback, and close-button visibility
 are JavaFX properties, so visible or queued messages can follow localization bindings. A non-blank action label
 shows the action button even when its callback is `null`; the presenter dismisses the current message after action
-activation. Queue any follow-up feedback instead of dismissing the active message from the callback:
+activation. The overlay pane enables horizontal swipe-to-dismiss by default; applications can bind or set
+`snackbarSwipeToDismissEnabledProperty()` without changing individual message models. Queue any follow-up feedback
+instead of dismissing the active message from the callback:
 
 ```java
 M3Snackbar archived = new M3Snackbar("Project archived");
