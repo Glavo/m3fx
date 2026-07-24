@@ -21,10 +21,10 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// HMCL home page modeled on `RootPage` + `MainPage`.
+/// HMCL home page modeled on `MainPage` content.
 ///
-/// The wallpaper is owned by the decorator shell. This page only contributes the left navigation
-/// (`AdvancedListBox` equivalent) and the bottom-right launch pane.
+/// Primary destinations live on the shell's adaptive navigation rail/bar. This page owns the wallpaper-facing
+/// launch surface plus compact account and current-instance shortcuts.
 @NotNullByDefault
 final class HMCLHomeView extends BorderPane {
     /// The localization source used by this page.
@@ -36,19 +36,11 @@ final class HMCLHomeView extends BorderPane {
     /// The application controller.
     private final HMCLDemoController controller;
 
-    /// Left navigation column matching HMCL's 200px sidebar.
-    private final VBox sidebar = new VBox(0.0);
+    /// Compact shortcuts for the selected account and instance.
+    private final VBox shortcuts = new VBox(4.0);
 
-    private final M3Text accountSection = sectionLabel();
-    private final M3Text versionSection = sectionLabel();
-    private final M3Text launcherSection = sectionLabel();
     private final M3ListItem accountItem = new M3ListItem();
     private final M3ListItem currentInstanceItem = new M3ListItem();
-    private final M3ListItem allInstancesItem = new M3ListItem();
-    private final M3ListItem downloadItem = new M3ListItem();
-    private final M3ListItem settingsItem = new M3ListItem();
-    private final M3ListItem multiplayerItem = new M3ListItem();
-    private final M3ListItem feedbackItem = new M3ListItem();
 
     /// Preview-channel announcement card.
     private final VBox announcementCard = new VBox(16.0);
@@ -84,21 +76,19 @@ final class HMCLHomeView extends BorderPane {
 
         getStyleClass().add("hmcl-home-page");
         HMCLDemoUi.fill(this);
-        configureSidebar();
+        configureShortcuts();
         configureAnnouncement();
         configureLaunchPane();
 
         StackPane center = HMCLDemoUi.fill(new StackPane());
         center.getStyleClass().add("hmcl-home-center");
         center.setPadding(new Insets(20.0));
+        StackPane.setAlignment(shortcuts, Pos.TOP_LEFT);
         StackPane.setAlignment(announcementCard, Pos.TOP_CENTER);
         StackPane.setAlignment(launchButton, Pos.BOTTOM_RIGHT);
-        center.getChildren().setAll(announcementCard, launchButton);
+        center.getChildren().setAll(shortcuts, announcementCard, launchButton);
 
-        setLeft(sidebar);
         setCenter(center);
-        // BorderPane left children default to their pref height; force stretch.
-        BorderPane.setMargin(sidebar, Insets.EMPTY);
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> refreshAccount());
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
@@ -118,14 +108,6 @@ final class HMCLHomeView extends BorderPane {
 
     /// Updates every static label owned by this page.
     void refreshLocale() {
-        accountSection.setText(strings.get("home.section.account"));
-        versionSection.setText(strings.get("home.section.version"));
-        launcherSection.setText(strings.get("home.section.launcher"));
-        allInstancesItem.setHeadlineText(strings.get("home.all_instances"));
-        downloadItem.setHeadlineText(strings.get("home.download"));
-        settingsItem.setHeadlineText(strings.get("home.launcher_settings"));
-        multiplayerItem.setHeadlineText(strings.get("home.multiplayer"));
-        feedbackItem.setHeadlineText(strings.get("home.feedback"));
         announcementTitle.setText(strings.get("home.preview.title"));
         announcementBody.setText(strings.get("home.preview.body") + "\n" + strings.get("home.preview.feedback"));
         launchLabel.setText(strings.get("home.launch"));
@@ -134,53 +116,18 @@ final class HMCLHomeView extends BorderPane {
         refreshInstance();
     }
 
-    /// Builds the fixed left navigation once.
-    private void configureSidebar() {
-        sidebar.getStyleClass().add("hmcl-home-sidebar");
-        sidebar.setPrefWidth(HMCLDemoUi.SIDEBAR_WIDTH);
-        sidebar.setMinWidth(HMCLDemoUi.SIDEBAR_WIDTH);
-        sidebar.setMaxWidth(HMCLDemoUi.SIDEBAR_WIDTH);
-        sidebar.setMinHeight(0.0);
-        sidebar.setPrefHeight(Region.USE_COMPUTED_SIZE);
-        sidebar.setMaxHeight(Double.MAX_VALUE);
-        sidebar.setFillWidth(true);
-        sidebar.setPadding(new Insets(12.0, 0.0, 0.0, 0.0));
-        BorderPane.setAlignment(sidebar, Pos.TOP_LEFT);
+    /// Builds the compact account/instance shortcuts once.
+    private void configureShortcuts() {
+        shortcuts.getStyleClass().add("hmcl-home-shortcuts");
+        shortcuts.setMaxWidth(320.0);
+        shortcuts.setFillWidth(true);
+        shortcuts.setPadding(new Insets(0.0, 0.0, 12.0, 0.0));
 
-        styleNav(accountItem);
-        styleNav(currentInstanceItem);
-        styleNav(allInstancesItem);
-        styleNav(downloadItem);
-        styleNav(settingsItem);
-        styleNav(multiplayerItem);
-        styleNav(feedbackItem);
-
+        styleShortcut(accountItem);
+        styleShortcut(currentInstanceItem);
         accountItem.setOnAction(event -> controller.openAccounts());
         currentInstanceItem.setOnAction(event -> controller.openSelectedInstance());
-        allInstancesItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.INSTANCES));
-        allInstancesItem.setOnAction(event -> controller.openInstances());
-        downloadItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.DOWNLOAD));
-        downloadItem.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.GAME));
-        settingsItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.SETTINGS));
-        settingsItem.setOnAction(event -> controller.openSettings(HMCLDemoRoute.SettingsSection.GLOBAL_GAME));
-        multiplayerItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.GROUP));
-        multiplayerItem.setOnAction(event -> controller.openMultiplayer());
-        feedbackItem.setLeading(HMCLDemoIcons.create(HMCLDemoIcons.CHAT));
-        feedbackItem.setOnAction(event -> controller.showMessageKey("snackbar.feedback"));
-
-        sidebar.getChildren().setAll(
-                accountSection,
-                accountItem,
-                versionSection,
-                currentInstanceItem,
-                allInstancesItem,
-                downloadItem,
-                launcherSection,
-                settingsItem,
-                multiplayerItem,
-                HMCLDemoUi.vgrow(),
-                feedbackItem
-        );
+        shortcuts.getChildren().setAll(accountItem, currentInstanceItem);
     }
 
     /// Builds the preview announcement once.
@@ -241,7 +188,7 @@ final class HMCLHomeView extends BorderPane {
         }
     }
 
-    /// Synchronizes the account sidebar row.
+    /// Synchronizes the account shortcut row.
     private void refreshAccount() {
         @Nullable HMCLDemoAccount account = state.getSelectedAccount();
         if (account == null) {
@@ -256,7 +203,7 @@ final class HMCLHomeView extends BorderPane {
         refreshLaunchEnabled();
     }
 
-    /// Synchronizes the current-instance sidebar row and launch subtitle.
+    /// Synchronizes the current-instance shortcut and launch subtitle.
     private void refreshInstance() {
         @Nullable HMCLDemoInstance instance = state.getSelectedInstance();
         currentInstanceItem.setHeadlineText(
@@ -285,21 +232,11 @@ final class HMCLHomeView extends BorderPane {
         launchButton.setDisable(!ready);
     }
 
-    /// Applies HMCL advanced-list-item styling hooks.
+    /// Applies compact list styling to a home shortcut row.
     ///
-    /// @param item the navigation row
-    private static void styleNav(M3ListItem item) {
-        item.getStyleClass().add("hmcl-advanced-list-item");
-    }
-
-    /// Creates a compact sidebar section label.
-    ///
-    /// @return the label
-    private static M3Text sectionLabel() {
-        M3Text label = new M3Text("", M3TextRole.LABEL_SMALL);
-        label.getStyleClass().add("hmcl-class-title");
-        label.setPadding(new Insets(16.0, 16.0, 8.0, 16.0));
-        label.setMaxWidth(Double.MAX_VALUE);
-        return label;
+    /// @param item the shortcut row
+    private static void styleShortcut(M3ListItem item) {
+        item.getStyleClass().addAll("hmcl-advanced-list-item", "hmcl-home-shortcut");
+        item.setMaxWidth(Double.MAX_VALUE);
     }
 }

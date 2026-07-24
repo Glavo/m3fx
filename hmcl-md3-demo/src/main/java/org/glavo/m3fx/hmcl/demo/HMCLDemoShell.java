@@ -41,6 +41,9 @@ import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
+import org.glavo.m3fx.layout.M3AdaptiveScaffold;
+import org.glavo.m3fx.layout.M3NavigationLayout;
+import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,9 +55,11 @@ import java.util.Objects;
 
 /// HMCL-style undecorated window shell with one title bar and one page host.
 ///
-/// There is no app-level [org.glavo.m3fx.controls.M3NavigationRail] or NavigationBar. Primary destinations are reached
-/// from the home page's fixed 200px context sidebar (HMCL `AdvancedListBox` style); secondary pages use their own
-/// section sidebars. Window chrome is self-drawn:
+/// Custom title-bar chrome hosts an [M3AdaptiveScaffold] for primary navigation and page content.
+///
+/// Compact widths present a bottom [org.glavo.m3fx.controls.M3NavigationBar]; medium and wider widths present a
+/// leading [org.glavo.m3fx.controls.M3NavigationRail] that expands labels from the expanded breakpoint upward.
+/// Secondary pages may still use their own section sidebars inside the main pane. Window chrome is self-drawn:
 /// - outer window padding 8 for shadow
 /// - clipped body with 16px MD3 corner radius
 /// - fixed title bar that never shrinks
@@ -103,8 +108,14 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Wallpaper region behind the decorator frame.
     private final Region wallpaper = new Region();
 
-    /// Animated page host in the decorator center slot.
+    /// Animated page host in the scaffold main pane.
     private final M3AnimatedContent pageHost = new M3AnimatedContent();
+
+    /// Adaptive host that switches primary navigation between bar and rail.
+    private final M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+
+    /// Primary destinations shared by the bar and rail.
+    private final HMCLDemoPrimaryNav primaryNav;
 
     /// HMCL-style title bar container.
     private final StackPane titleContainer = new StackPane();
@@ -182,6 +193,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         downloadView = new HMCLDownloadView(this);
         settingsView = new HMCLSettingsView(this);
         multiplayerView = new HMCLMultiplayerView(this);
+        primaryNav = new HMCLDemoPrimaryNav(this);
         preparePage(homeView);
         preparePage(accountsView);
         preparePage(instancesView);
@@ -212,19 +224,13 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         parent.setClip(clip);
 
         configureTitleBar();
+        configureAdaptiveScaffold();
 
-        HMCLDemoUi.fill(pageHost);
-        pageHost.getStyleClass().add("hmcl-route-host");
-        pageHost.setFitToWidth(true);
-        pageHost.setFitToHeight(true);
-        // Default to soft home navigation; hierarchical push still sets FORWARD per route.
-        pageHost.setContentTransform(HMCLDemoTransitions.navigation());
-        VBox.setVgrow(pageHost, Priority.ALWAYS);
-
-        // Title is a non-growing sibling; content alone absorbs remaining height.
-        VBox frame = new VBox(titleContainer, pageHost);
+        // Title is a non-growing sibling; the adaptive scaffold absorbs remaining height.
+        VBox frame = new VBox(titleContainer, scaffold);
         frame.getStyleClass().add("hmcl-window-frame");
         HMCLDemoUi.fill(frame);
+        VBox.setVgrow(scaffold, Priority.ALWAYS);
 
         parent.getChildren().setAll(wallpaper, frame);
 
@@ -239,6 +245,29 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         installWindowResizeSupport();
         updateWallpaper();
         showRoute(currentRoute, TransitionKind.IMMEDIATE);
+    }
+
+    /// Installs the adaptive bar/rail scaffold around the animated page host.
+    private void configureAdaptiveScaffold() {
+        HMCLDemoUi.fill(pageHost);
+        pageHost.getStyleClass().add("hmcl-route-host");
+        pageHost.setFitToWidth(true);
+        pageHost.setFitToHeight(true);
+        // Default to soft home navigation; hierarchical push still sets FORWARD per route.
+        pageHost.setContentTransform(HMCLDemoTransitions.navigation());
+
+        scaffold.getStyleClass().add("hmcl-adaptive-scaffold");
+        scaffold.setNavigationLayout(M3NavigationLayout.ADAPTIVE);
+        // Page-level section sidebars live inside each route; the scaffold only hosts primary navigation.
+        scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+        scaffold.setContentMargin(0.0);
+        scaffold.setNavigationBar(primaryNav.navigationBar());
+        scaffold.setNavigationRail(primaryNav.navigationRail());
+        scaffold.setMainPane(pageHost);
+        HMCLDemoUi.fill(scaffold);
+        scaffold.breakpointProperty().addListener((observable, oldBreakpoint, newBreakpoint) ->
+                primaryNav.applyBreakpoint(newBreakpoint));
+        primaryNav.applyBreakpoint(scaffold.getBreakpoint());
     }
 
     /// Returns the undecorated stage minimum width including shadow padding.
@@ -488,6 +517,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             // Host fades; left/center reassemble with ±30px like HMCL DecoratorAnimatedPage NAVIGATION.
             playNavigationSplitEnter(page);
         }
+        primaryNav.selectRoute(route);
         updateTitleBar(kind);
         if (route instanceof HMCLDemoRoute.Home
                 && kind != TransitionKind.FORWARD
@@ -704,6 +734,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         downloadView.refreshLocale();
         settingsView.refreshLocale();
         multiplayerView.refreshLocale();
+        primaryNav.refreshLocale();
         // Rebuild title content for the new language without a direction-specific pan.
         updateTitleBar(TransitionKind.SECTION);
     }

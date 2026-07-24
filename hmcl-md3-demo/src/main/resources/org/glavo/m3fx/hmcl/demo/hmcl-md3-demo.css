@@ -75,14 +75,29 @@
     -fx-fill: -m3-color-on-surface-variant;
 }
 
-/* Home: translucent rail over wallpaper */
-.hmcl-home-sidebar {
-    -fx-background-color: rgba(255, 255, 255, 0.78);
-    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
-    -fx-border-width: 0 1 0 0;
+/* Adaptive scaffold sits over the wallpaper host; keep chrome soft on home. */
+.hmcl-adaptive-scaffold,
+.hmcl-adaptive-scaffold > .m3-scaffold-main,
+.hmcl-route-host,
+.hmcl-route-host .m3-animated-content-item {
+    -fx-background-color: transparent;
 }
 
-.m3-dark .hmcl-home-sidebar {
+.hmcl-primary-nav-rail {
+    -fx-background-color: rgba(255, 255, 255, 0.86);
+}
+
+.m3-dark .hmcl-primary-nav-rail {
+    -fx-background-color: rgba(20, 18, 24, 0.88);
+}
+
+.hmcl-home-shortcuts {
+    -fx-background-color: rgba(255, 255, 255, 0.78);
+    -fx-background-radius: 16px;
+    -fx-padding: 8px;
+}
+
+.m3-dark .hmcl-home-shortcuts {
     -fx-background-color: rgba(20, 18, 24, 0.82);
 }
 
