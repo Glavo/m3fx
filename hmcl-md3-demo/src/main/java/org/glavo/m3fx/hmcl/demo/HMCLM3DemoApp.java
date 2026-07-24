@@ -21,8 +21,8 @@ import java.util.Objects;
 
 /// Runs the HMCL-inspired Material 3 launcher demonstration.
 ///
-/// Window metrics follow HMCL `Controllers` defaults:
-/// content 802×492 plus 8px shadow padding on each side → 818×508.
+/// The stage starts at the classic HMCL size (content 802×492 + 8px shadow padding → 818×508) but may shrink down to
+/// the shell minimum and grow freely; list content never drives stage min/pref size.
 @NotNullByDefault
 public final class HMCLM3DemoApp extends Application {
     /// The JavaFX system property controlling LCD subpixel text rendering.
@@ -30,12 +30,6 @@ public final class HMCLM3DemoApp extends Application {
 
     /// The output scale above which Windows uses grayscale text antialiasing by default.
     private static final double SCALED_OUTPUT_THRESHOLD = 1.0;
-
-    /// HMCL `MIN_WIDTH` including custom decoration shadow extent.
-    private static final double WINDOW_WIDTH = 818.0;
-
-    /// HMCL `MIN_HEIGHT` including custom decoration shadow extent.
-    private static final double WINDOW_HEIGHT = 508.0;
 
     /// The active scene after startup, or `null` before creation.
     private @Nullable Scene scene;
@@ -54,15 +48,20 @@ public final class HMCLM3DemoApp extends Application {
 
         HMCLDemoStrings strings = new HMCLDemoStrings();
         HMCLDemoState state = new HMCLDemoState(strings);
+        double minWidth = HMCLDemoShell.minWindowWidth();
+        double minHeight = HMCLDemoShell.minWindowHeight();
+        double prefWidth = HMCLDemoShell.prefWindowWidth();
+        double prefHeight = HMCLDemoShell.prefWindowHeight();
+
         M3OverlayPane root = new M3OverlayPane();
         // Overlay min/pref sizes must not follow page lists; the shell owns window metrics.
-        root.setMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-        root.setPrefSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        root.setMinSize(minWidth, minHeight);
+        root.setPrefSize(prefWidth, prefHeight);
         root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         root.getStyleClass().add("hmcl-demo-root");
         root.setContent(new HMCLDemoShell(root, strings, state));
 
-        Scene activeScene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
+        Scene activeScene = new Scene(root, prefWidth, prefHeight);
         activeScene.setFill(Color.TRANSPARENT);
         activeScene.getStylesheets().add(Objects.requireNonNull(
                 HMCLM3DemoApp.class.getResource("hmcl-md3-demo.css"),
@@ -83,17 +82,17 @@ public final class HMCLM3DemoApp extends Application {
         stage.setTitle(strings.get("app.title"));
         stage.getIcons().add(HMCLDemoAssets.image("img/icon.png"));
         stage.setResizable(true);
-        stage.setMinWidth(WINDOW_WIDTH);
-        stage.setMinHeight(WINDOW_HEIGHT);
-        stage.setWidth(WINDOW_WIDTH);
-        stage.setHeight(WINDOW_HEIGHT);
+        stage.setMinWidth(minWidth);
+        stage.setMinHeight(minHeight);
+        stage.setWidth(prefWidth);
+        stage.setHeight(prefHeight);
         strings.localeProperty().addListener(
                 (observable, oldLocale, newLocale) -> stage.setTitle(strings.get("app.title"))
         );
         stage.show();
         // Keep the initial HMCL-sized window even if later page content reports a larger preferred size.
-        stage.setWidth(WINDOW_WIDTH);
-        stage.setHeight(WINDOW_HEIGHT);
+        stage.setWidth(prefWidth);
+        stage.setHeight(prefHeight);
     }
 
     /// Installs the Material theme for the current appearance settings.

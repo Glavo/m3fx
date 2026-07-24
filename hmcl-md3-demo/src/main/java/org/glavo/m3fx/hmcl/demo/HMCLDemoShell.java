@@ -52,12 +52,14 @@ import java.util.Objects;
 
 /// HMCL-style undecorated window shell with one title bar and one page host.
 ///
-/// There is no app-level NavigationRail or NavigationBar. Primary destinations are reached from the home page
-/// sidebar; secondary pages use their own section sidebars. Window chrome is self-drawn:
+/// There is no app-level [org.glavo.m3fx.controls.M3NavigationRail] or NavigationBar. Primary destinations are reached
+/// from the home page's fixed 200px context sidebar (HMCL `AdvancedListBox` style); secondary pages use their own
+/// section sidebars. Window chrome is self-drawn:
 /// - outer window padding 8 for shadow
-/// - clipped body with 8px corner radius
-/// - fixed 40px title bar that never shrinks
+/// - clipped body with 16px MD3 corner radius
+/// - fixed title bar that never shrinks
 /// - page content uses `min size = 0` so list preferred heights cannot steal title-bar space
+/// - preferred size matches the classic HMCL window; minimum size is lower so the stage can shrink and grow freely
 @NotNullByDefault
 final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Title-bar height for the soft tonal chrome bar.
@@ -73,13 +75,21 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     private static final double WINDOW_CORNER_RADIUS = 16.0;
 
     /// Outer transparent inset reserved for the window shadow.
-    private static final double WINDOW_PADDING = 8.0;
+    static final double WINDOW_PADDING = 8.0;
 
-    /// Minimum content width from HMCL `Controllers.MIN_CONTENT_WIDTH` without outer shadow.
-    private static final double MIN_CONTENT_WIDTH = 802.0;
+    /// Smallest usable content width (sidebar + readable main column), without outer shadow.
+    ///
+    /// Lower than HMCL's fixed 802 so the demo window can shrink; 200px sidebars still fit with a compact main pane.
+    static final double MIN_CONTENT_WIDTH = 640.0;
 
-    /// Minimum content height from HMCL `Controllers.MIN_CONTENT_HEIGHT` without outer shadow.
-    private static final double MIN_CONTENT_HEIGHT = 492.0;
+    /// Smallest usable content height (title bar + scrollable body), without outer shadow.
+    static final double MIN_CONTENT_HEIGHT = 400.0;
+
+    /// Comfortable default content width aligned with HMCL `Controllers.MIN_CONTENT_WIDTH`.
+    static final double PREF_CONTENT_WIDTH = 802.0;
+
+    /// Comfortable default content height aligned with HMCL `Controllers.MIN_CONTENT_HEIGHT`.
+    static final double PREF_CONTENT_HEIGHT = 492.0;
 
     /// The overlay host used for transient Material feedback.
     private final M3OverlayPane overlay;
@@ -183,7 +193,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         getStyleClass().add("hmcl-demo-shell");
         setPadding(new Insets(WINDOW_PADDING));
         setPickOnBounds(true);
-        setMinSize(MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0, MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0);
+        setMinSize(minWindowWidth(), minWindowHeight());
+        setPrefSize(prefWindowWidth(), prefWindowHeight());
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         wallpaper.getStyleClass().add("hmcl-window-wallpaper");
@@ -230,28 +241,56 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         showRoute(currentRoute, TransitionKind.IMMEDIATE);
     }
 
-    /// Shell minimum size follows HMCL content metrics, never the active page list height.
-    @Override
-    protected double computeMinWidth(double height) {
+    /// Returns the undecorated stage minimum width including shadow padding.
+    ///
+    /// @return minimum window width in logical pixels
+    static double minWindowWidth() {
         return MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0;
     }
 
-    /// Shell minimum size follows HMCL content metrics, never the active page list height.
-    @Override
-    protected double computeMinHeight(double width) {
+    /// Returns the undecorated stage minimum height including shadow padding.
+    ///
+    /// @return minimum window height in logical pixels
+    static double minWindowHeight() {
         return MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0;
     }
 
-    /// Preferred size stays at the HMCL default window, independent of page content.
-    @Override
-    protected double computePrefWidth(double height) {
-        return computeMinWidth(height);
+    /// Returns the default stage width including shadow padding (HMCL-sized start).
+    ///
+    /// @return preferred window width in logical pixels
+    static double prefWindowWidth() {
+        return PREF_CONTENT_WIDTH + WINDOW_PADDING * 2.0;
     }
 
-    /// Preferred size stays at the HMCL default window, independent of page content.
+    /// Returns the default stage height including shadow padding (HMCL-sized start).
+    ///
+    /// @return preferred window height in logical pixels
+    static double prefWindowHeight() {
+        return PREF_CONTENT_HEIGHT + WINDOW_PADDING * 2.0;
+    }
+
+    /// Shell minimum size is intentionally below the classic HMCL window so users can shrink freely.
+    @Override
+    protected double computeMinWidth(double height) {
+        return minWindowWidth();
+    }
+
+    /// Shell minimum size is intentionally below the classic HMCL window so users can shrink freely.
+    @Override
+    protected double computeMinHeight(double width) {
+        return minWindowHeight();
+    }
+
+    /// Preferred size stays at the classic HMCL window, independent of page content.
+    @Override
+    protected double computePrefWidth(double height) {
+        return prefWindowWidth();
+    }
+
+    /// Preferred size stays at the classic HMCL window, independent of page content.
     @Override
     protected double computePrefHeight(double width) {
-        return computeMinHeight(width);
+        return prefWindowHeight();
     }
 
     @Override
