@@ -716,6 +716,9 @@ final class HMCLGameSettingsForm {
 
     /// Creates a settings group whose body is revealed by an expandable setting row.
     ///
+    /// Nested content is a sibling of the header row (not [#M3ExpandableSettingItem#setContent(Node)]). Sibling layout
+    /// participates in normal VBox sizing, which keeps following groups from being overpainted when a section opens.
+    ///
     /// @param stateKey         key used to remember expansion across form rebuilds
     /// @param title            the expandable row headline
     /// @param support          optional supporting text (typically the current value summary)
@@ -737,17 +740,23 @@ final class HMCLGameSettingsForm {
         expandable.setExpanded(expanded);
         expandable.expandedProperty().addListener((observable, wasExpanded, isExpanded) ->
                 EXPANDED_SECTIONS.put(stateKey, Boolean.TRUE.equals(isExpanded)));
-        expandable.setContent(settingBody(items));
 
-        M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.STANDARD);
-        list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().addAll("hmcl-settings-list", "hmcl-settings-group");
-        list.setMinHeight(0.0);
-        list.getItems().setAll(expandable);
+        M3ListPane headerList = new M3ListPane();
+        headerList.setListStyle(M3ListStyle.STANDARD);
+        headerList.setSelectionMode(M3SelectionMode.NONE);
+        headerList.getStyleClass().add("hmcl-settings-list");
+        headerList.setMinHeight(0.0);
+        headerList.getItems().setAll(expandable);
 
-        VBox block = new VBox(list);
+        VBox body = settingBody(items);
+        // Keep the nested body in the layout tree only while expanded so group height stays correct.
+        body.managedProperty().bind(expandable.expandedProperty());
+        body.visibleProperty().bind(expandable.expandedProperty());
+
+        VBox block = new VBox(headerList, body);
+        block.getStyleClass().add("hmcl-settings-group");
         block.setMinHeight(0.0);
+        block.setFillWidth(true);
         return block;
     }
 
