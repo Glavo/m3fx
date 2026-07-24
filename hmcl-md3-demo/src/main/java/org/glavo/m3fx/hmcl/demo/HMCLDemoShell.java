@@ -93,20 +93,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// HMCL-style title bar container.
     private final StackPane titleContainer = new StackPane();
 
-    /// Left side of the title bar (back + title / brand).
-    private final HBox titleLeading = new HBox(4.0);
-
-    /// Center title text for non-home routes.
-    private final M3Text titleLabel = new M3Text("", M3TextRole.TITLE_SMALL);
-
-    /// Brand mark used on the home route.
-    private final HBox brandTitle = new HBox(8.0);
-
-    /// Brand title label.
-    private final M3Text brandText = new M3Text("", M3TextRole.TITLE_SMALL);
-
-    /// Back navigation control.
-    private final M3IconButton backButton = new M3IconButton(HMCLDemoIcons.back());
+    /// Animated title navigation area (brand or back + title), matching HMCL decorator `TransitionPane`.
+    private final M3AnimatedContent titleNavHost = new M3AnimatedContent();
 
     /// Help window button.
     private final M3IconButton helpButton = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.HELP));
@@ -229,10 +217,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         StackPane.setAlignment(body, Pos.CENTER);
 
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
-        strings.localeProperty().addListener((observable, oldLocale, newLocale) -> {
-            refreshLocale();
-            updateTitleBar();
-        });
+        strings.localeProperty().addListener((observable, oldLocale, newLocale) -> refreshLocale());
         installWindowResizeSupport();
         updateWallpaper();
         showRoute(currentRoute, TransitionKind.IMMEDIATE);
@@ -396,7 +381,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     @Override
     public void refreshChrome() {
-        updateTitleBar();
+        updateTitleBar(TransitionKind.SECTION);
     }
 
     /// Pushes the current route and shows `route` with the requested enter transition.
@@ -451,7 +436,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
             pageHost.snapToCurrentState();
         }
-        updateTitleBar();
+        updateTitleBar(kind);
         if (route instanceof HMCLDemoRoute.Home
                 && kind != TransitionKind.FORWARD
                 && kind != TransitionKind.NAVIGATION) {
@@ -523,7 +508,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         HMCLDemoUi.fill(page);
     }
 
-    /// Builds the HMCL 40px title bar once.
+    /// Builds the HMCL-style title bar once, with an animated navigation center matching decorator transitions.
     private void configureTitleBar() {
         titleContainer.getStyleClass().add("hmcl-window-title-bar");
         titleContainer.setMinHeight(TITLE_HEIGHT);
@@ -543,26 +528,21 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             }
         });
 
-        ImageView brandIcon = HMCLDemoAssets.imageView("img/icon-title.png", 20.0, 20.0);
-        brandTitle.getStyleClass().add("hmcl-window-brand");
-        brandTitle.setAlignment(Pos.CENTER_LEFT);
-        brandTitle.setPadding(new Insets(0.0, 0.0, 0.0, 2.0));
-        brandTitle.getChildren().setAll(brandIcon, brandText);
+        titleNavHost.getStyleClass().add("hmcl-window-title-nav");
+        titleNavHost.setAlignment(Pos.CENTER_LEFT);
+        titleNavHost.setMinHeight(TITLE_HEIGHT);
+        titleNavHost.setPrefHeight(TITLE_HEIGHT);
+        titleNavHost.setMaxHeight(TITLE_HEIGHT);
+        titleNavHost.setMinWidth(0.0);
+        titleNavHost.setMaxWidth(Double.MAX_VALUE);
+        BorderPane.setAlignment(titleNavHost, Pos.CENTER_LEFT);
+        BorderPane.setMargin(titleNavHost, new Insets(0.0, 8.0, 0.0, 0.0));
 
-        titleLabel.getStyleClass().add("hmcl-window-title-label");
-        titleLabel.setMaxWidth(Double.MAX_VALUE);
-        titleLeading.setAlignment(Pos.CENTER_LEFT);
-        titleLeading.setPadding(new Insets(0.0, 5.0, 0.0, 5.0));
-        titleLeading.setMinWidth(0.0);
-        HBox.setHgrow(titleLeading, Priority.ALWAYS);
-
-        styleWindowButton(backButton);
         styleWindowButton(helpButton);
         styleWindowButton(minimizeButton);
         styleWindowButton(closeButton);
         closeButton.getStyleClass().add("hmcl-window-close");
 
-        backButton.setOnAction(event -> goBack());
         helpButton.setOnAction(event -> openSettings(HMCLDemoRoute.SettingsSection.HELP));
         minimizeButton.setOnAction(event -> {
             @Nullable Stage stage = currentStage();
@@ -584,9 +564,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         windowButtons.setMaxWidth(Region.USE_PREF_SIZE);
 
         BorderPane titleBar = new BorderPane();
-        titleBar.setLeft(titleLeading);
+        titleBar.setCenter(titleNavHost);
         titleBar.setRight(windowButtons);
-        BorderPane.setAlignment(titleLeading, Pos.CENTER_LEFT);
         BorderPane.setAlignment(windowButtons, Pos.CENTER_RIGHT);
         titleBar.setMinHeight(TITLE_HEIGHT);
         titleBar.setPrefHeight(TITLE_HEIGHT);
@@ -594,7 +573,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         titleContainer.getChildren().setAll(titleBar);
 
         refreshLocale();
-        updateTitleBar();
+        updateTitleBar(TransitionKind.IMMEDIATE);
     }
 
     /// Applies soft icon-button sizing to one title-bar control.
@@ -611,8 +590,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     /// Updates title-bar labels that depend on the current locale.
     private void refreshLocale() {
-        brandText.setText(strings.get("app.title"));
-        backButton.setAccessibleText(strings.get("common.back"));
         helpButton.setAccessibleText(strings.get("common.help"));
         minimizeButton.setAccessibleText(strings.get("common.minimize"));
         closeButton.setAccessibleText(strings.get("common.close"));
@@ -623,22 +600,75 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         downloadView.refreshLocale();
         settingsView.refreshLocale();
         multiplayerView.refreshLocale();
+        // Rebuild title content for the new language without a direction-specific pan.
+        updateTitleBar(TransitionKind.SECTION);
     }
 
-    /// Synchronizes title-bar navigation and title content with the active route.
-    private void updateTitleBar() {
-        boolean atHome = currentRoute instanceof HMCLDemoRoute.Home;
-        titleLeading.getChildren().clear();
-        if (atHome) {
-            titleLeading.getChildren().add(brandTitle);
-            titleLabel.setText("");
-        } else {
-            titleLeading.getChildren().add(backButton);
-            titleLabel.setText(titleFor(currentRoute));
-            HBox.setMargin(titleLabel, new Insets(0.0, 0.0, 0.0, 4.0));
-            HBox.setHgrow(titleLabel, Priority.ALWAYS);
-            titleLeading.getChildren().add(titleLabel);
+    /// Synchronizes animated title-bar navigation content with the active route.
+    ///
+    /// @param kind the page transition that owns this title update
+    private void updateTitleBar(TransitionKind kind) {
+        titleNavHost.setContentTransform(titleTransformFor(kind));
+        titleNavHost.setContent(createTitleNavContent());
+        if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
+            titleNavHost.snapToCurrentState();
         }
+    }
+
+    /// Returns the HMCL decorator title transform for a page transition kind.
+    ///
+    /// @param kind the page transition kind
+    /// @return the title navigation transform
+    private M3ContentTransform titleTransformFor(TransitionKind kind) {
+        if (state.isAnimationDisabled() || kind == TransitionKind.IMMEDIATE) {
+            return HMCLDemoTransitions.none();
+        }
+        return switch (kind) {
+            case FORWARD, NAVIGATION -> HMCLDemoTransitions.titleNext();
+            case BACKWARD, NAVIGATION_BACK -> HMCLDemoTransitions.titlePrevious();
+            case SECTION -> HMCLDemoTransitions.titleFade();
+            case IMMEDIATE -> HMCLDemoTransitions.none();
+        };
+    }
+
+    /// Creates a fresh title navigation row so enter/exit holders never share nodes.
+    ///
+    /// @return the leading title content
+    private Node createTitleNavContent() {
+        HBox leading = new HBox(4.0);
+        leading.getStyleClass().add("hmcl-window-title-leading");
+        leading.setAlignment(Pos.CENTER_LEFT);
+        leading.setPadding(new Insets(0.0, 5.0, 0.0, 5.0));
+        leading.setMinWidth(0.0);
+        leading.setMaxWidth(Double.MAX_VALUE);
+        leading.setMinHeight(TITLE_HEIGHT);
+        leading.setPrefHeight(TITLE_HEIGHT);
+        leading.setMaxHeight(TITLE_HEIGHT);
+
+        if (currentRoute instanceof HMCLDemoRoute.Home) {
+            ImageView brandIcon = HMCLDemoAssets.imageView("img/icon-title.png", 20.0, 20.0);
+            M3Text brandText = new M3Text(strings.get("app.title"), M3TextRole.TITLE_SMALL);
+            brandText.getStyleClass().add("hmcl-window-title-label");
+            HBox brand = new HBox(8.0, brandIcon, brandText);
+            brand.getStyleClass().add("hmcl-window-brand");
+            brand.setAlignment(Pos.CENTER_LEFT);
+            brand.setPadding(new Insets(0.0, 0.0, 0.0, 2.0));
+            leading.getChildren().add(brand);
+            return leading;
+        }
+
+        M3IconButton back = new M3IconButton(HMCLDemoIcons.back());
+        styleWindowButton(back);
+        back.setAccessibleText(strings.get("common.back"));
+        back.setOnAction(event -> goBack());
+
+        M3Text title = new M3Text(titleFor(currentRoute), M3TextRole.TITLE_SMALL);
+        title.getStyleClass().add("hmcl-window-title-label");
+        title.setMaxWidth(Double.MAX_VALUE);
+        HBox.setMargin(title, new Insets(0.0, 0.0, 0.0, 4.0));
+        HBox.setHgrow(title, Priority.ALWAYS);
+        leading.getChildren().addAll(back, title);
+        return leading;
     }
 
     /// Returns the localized title for a non-home route.

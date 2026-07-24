@@ -30,8 +30,47 @@ final class HMCLDemoTransitions {
     /// Vertical distance used by in-page section transitions.
     private static final double SECTION_ENTER_DISTANCE = 40.0;
 
+    /// Horizontal offset used by HMCL decorator title-bar `NavBarAnimations` (±50 logical pixels).
+    private static final double TITLE_NAV_DISTANCE = 50.0;
+
     /// Prevents utility-class instantiation.
     private HMCLDemoTransitions() {
+    }
+
+    /// Returns the title-bar transform for navigating deeper (HMCL `NavBarAnimations.NEXT`).
+    ///
+    /// @return the transform
+    static M3ContentTransform titleNext() {
+        M3EnterTransition enter = M3EnterTransition.fade(0.0)
+                .withDelay(Duration.millis(20.0))
+                .and(M3EnterTransition.slideFrom(M3TransitionEdge.END, TITLE_NAV_DISTANCE));
+        M3ExitTransition exit = M3ExitTransition.fade(0.0)
+                .and(M3ExitTransition.slideTo(M3TransitionEdge.START, TITLE_NAV_DISTANCE));
+        return new M3ContentTransform(enter, exit, null, 0.0);
+    }
+
+    /// Returns the title-bar transform for navigating back (HMCL `NavBarAnimations.PREVIOUS`).
+    ///
+    /// @return the transform
+    static M3ContentTransform titlePrevious() {
+        M3EnterTransition enter = M3EnterTransition.fade(0.0)
+                .withDelay(Duration.millis(20.0))
+                .and(M3EnterTransition.slideFrom(M3TransitionEdge.START, TITLE_NAV_DISTANCE));
+        M3ExitTransition exit = M3ExitTransition.fade(0.0)
+                .and(M3ExitTransition.slideTo(M3TransitionEdge.END, TITLE_NAV_DISTANCE));
+        return new M3ContentTransform(enter, exit, null, 0.0);
+    }
+
+    /// Returns the title-bar fade transform used for section or neutral title updates.
+    ///
+    /// @return the transform
+    static M3ContentTransform titleFade() {
+        return new M3ContentTransform(
+                M3EnterTransition.fade(0.0).withDelay(Duration.millis(20.0)),
+                M3ExitTransition.fade(0.0),
+                null,
+                0.0
+        );
     }
 
     /// Returns the ordinary shell navigation transform (home ↔ primary destinations).
