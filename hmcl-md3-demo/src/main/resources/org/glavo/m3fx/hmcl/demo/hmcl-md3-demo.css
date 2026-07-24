@@ -92,13 +92,20 @@
 }
 
 .hmcl-home-shortcuts {
-    -fx-background-color: rgba(255, 255, 255, 0.78);
+    -fx-background-color: rgba(255, 255, 255, 0.86);
     -fx-background-radius: 16px;
-    -fx-padding: 8px;
+    -fx-padding: 6px;
+    -fx-max-width: 280px;
+    -fx-pref-width: 280px;
 }
 
 .m3-dark .hmcl-home-shortcuts {
-    -fx-background-color: rgba(20, 18, 24, 0.82);
+    -fx-background-color: rgba(20, 18, 24, 0.88);
+}
+
+.hmcl-home-shortcut {
+    -m3-one-line-height: 52px;
+    -m3-two-line-height: 64px;
 }
 
 .hmcl-advanced-list-item {

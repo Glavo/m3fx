@@ -7,6 +7,8 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -23,8 +25,9 @@ import org.jetbrains.annotations.Nullable;
 
 /// HMCL home page modeled on `MainPage` content.
 ///
-/// Primary destinations live on the shell's adaptive navigation rail/bar. This page owns the wallpaper-facing
-/// launch surface plus compact account and current-instance shortcuts.
+/// Primary destinations live on the shell adaptive navigation rail or bar. This page only owns the wallpaper-facing
+/// launch surface, a compact announcement card, and small account/instance shortcuts that must not stretch to fill
+/// the window.
 @NotNullByDefault
 final class HMCLHomeView extends BorderPane {
     /// The localization source used by this page.
@@ -36,14 +39,14 @@ final class HMCLHomeView extends BorderPane {
     /// The application controller.
     private final HMCLDemoController controller;
 
-    /// Compact shortcuts for the selected account and instance.
+    /// Compact shortcuts for the selected account and instance (pref-sized, never full-bleed).
     private final VBox shortcuts = new VBox(4.0);
 
     private final M3ListItem accountItem = new M3ListItem();
     private final M3ListItem currentInstanceItem = new M3ListItem();
 
     /// Preview-channel announcement card.
-    private final VBox announcementCard = new VBox(16.0);
+    private final VBox announcementCard = new VBox(8.0);
 
     /// Announcement title.
     private final M3Text announcementTitle = new M3Text("", M3TextRole.TITLE_SMALL);
@@ -80,15 +83,28 @@ final class HMCLHomeView extends BorderPane {
         configureAnnouncement();
         configureLaunchPane();
 
-        StackPane center = HMCLDemoUi.fill(new StackPane());
-        center.getStyleClass().add("hmcl-home-center");
-        center.setPadding(new Insets(20.0));
-        StackPane.setAlignment(shortcuts, Pos.TOP_LEFT);
-        StackPane.setAlignment(announcementCard, Pos.TOP_CENTER);
-        StackPane.setAlignment(launchButton, Pos.BOTTOM_RIGHT);
-        center.getChildren().setAll(shortcuts, announcementCard, launchButton);
+        // Top row: shortcuts (left) + announcement (center). Prefer-size children so nothing paints a full-page card.
+        HBox topRow = new HBox(16.0);
+        topRow.setAlignment(Pos.TOP_LEFT);
+        topRow.setFillHeight(false);
+        Region topSpacer = new Region();
+        HBox.setHgrow(topSpacer, Priority.ALWAYS);
+        topRow.getChildren().setAll(shortcuts, topSpacer, announcementCard);
+        HBox.setHgrow(announcementCard, Priority.NEVER);
 
-        setCenter(center);
+        HBox bottomRow = new HBox();
+        bottomRow.setAlignment(Pos.BOTTOM_RIGHT);
+        bottomRow.getChildren().setAll(launchButton);
+
+        BorderPane content = HMCLDemoUi.fill(new BorderPane());
+        content.getStyleClass().add("hmcl-home-center");
+        content.setPadding(new Insets(20.0));
+        content.setTop(topRow);
+        content.setBottom(bottomRow);
+        BorderPane.setAlignment(bottomRow, Pos.BOTTOM_RIGHT);
+        BorderPane.setMargin(topRow, new Insets(0.0, 0.0, 12.0, 0.0));
+
+        setCenter(content);
 
         state.selectedAccountProperty().addListener((observable, oldValue, newValue) -> refreshAccount());
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
@@ -119,9 +135,12 @@ final class HMCLHomeView extends BorderPane {
     /// Builds the compact account/instance shortcuts once.
     private void configureShortcuts() {
         shortcuts.getStyleClass().add("hmcl-home-shortcuts");
-        shortcuts.setMaxWidth(320.0);
+        // Critical: Stack/Border children default to filling the parent; pin to preferred size.
+        shortcuts.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        shortcuts.setPrefWidth(280.0);
+        shortcuts.setMaxWidth(280.0);
+        shortcuts.setMaxHeight(Region.USE_PREF_SIZE);
         shortcuts.setFillWidth(true);
-        shortcuts.setPadding(new Insets(0.0, 0.0, 12.0, 0.0));
 
         styleShortcut(accountItem);
         styleShortcut(currentInstanceItem);
@@ -133,11 +152,12 @@ final class HMCLHomeView extends BorderPane {
     /// Builds the preview announcement once.
     private void configureAnnouncement() {
         announcementCard.getStyleClass().addAll("hmcl-card", "hmcl-announcement");
-        announcementCard.setMaxWidth(560.0);
+        announcementCard.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        announcementCard.setMaxWidth(420.0);
         announcementCard.setMaxHeight(Region.USE_PREF_SIZE);
         announcementCard.setPadding(new Insets(16.0, 20.0, 16.0, 20.0));
-        announcementCard.setSpacing(8.0);
         announcementBody.setWrapText(true);
+        announcementBody.setMaxWidth(380.0);
 
         M3IconButton close = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
         close.getStyleClass().add("hmcl-announcement-close");
@@ -167,6 +187,7 @@ final class HMCLHomeView extends BorderPane {
         launchButton.setVariant(M3ButtonVariant.FILLED);
         launchButton.setSize(M3ButtonSize.MEDIUM);
         launchButton.setGraphic(launchGraphic);
+        launchButton.setMaxHeight(Region.USE_PREF_SIZE);
         launchButton.setOnAction(event -> controller.launchSelected());
         rebuildLaunchMenu();
     }
@@ -238,5 +259,6 @@ final class HMCLHomeView extends BorderPane {
     private static void styleShortcut(M3ListItem item) {
         item.getStyleClass().addAll("hmcl-advanced-list-item", "hmcl-home-shortcut");
         item.setMaxWidth(Double.MAX_VALUE);
+        item.setMaxHeight(Region.USE_PREF_SIZE);
     }
 }
