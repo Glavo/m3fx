@@ -1,6 +1,7 @@
-/* Window chrome modeled on HMCL DecoratorSkin + root.css */
+/* HMCL MD3 demo — tonal surfaces, continuous lists, MD3-scale metrics.
+ * Prefer surface containers over hard shadows and avoid dense/segmented "plastic chips". */
 
-/* Transparent stage: keep the 8px shadow gutter clear of the M3 surface fill. */
+/* Transparent stage: keep the outer shadow gutter clear of the M3 surface fill. */
 .m3-root,
 .m3-overlay-pane,
 .hmcl-demo-shell {
@@ -28,39 +29,41 @@
     -fx-background-color: transparent;
 }
 
-/* .jfx-tool-bar.background → primary-container, 40px */
+/* Title bar: soft tonal bar instead of a saturated slab. */
 .hmcl-window-title-bar {
-    -fx-background-color: -m3-color-primary-container;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-max-height: 40px;
+    -fx-background-color: -m3-color-surface-container;
+    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-max-height: 48px;
 }
 
 .hmcl-window-title-label,
 .hmcl-window-brand .m3-text {
     -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -m3-color-on-primary-container;
+    -fx-font-weight: 600;
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .hmcl-window-button {
-    -m3-content-color: -m3-color-on-primary-container;
+    -m3-content-color: -m3-color-on-surface-variant;
     -m3-container-height: 40px;
     -m3-container-width: 40px;
-    -m3-container-shape: 0px;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
+    -m3-container-shape: 20px;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
     -fx-background-color: transparent;
 }
 
 .hmcl-window-button .m3-icon-graphic,
 .hmcl-window-button .hmcl-demo-icon {
-    -fx-fill: -m3-color-on-primary-container;
+    -fx-fill: -m3-color-on-surface-variant;
 }
 
 .hmcl-window-button .m3-state-layer,
 .hmcl-window-button .m3-ripple {
-    -fx-background-color: -m3-color-on-primary-container;
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .hmcl-window-close:hover,
@@ -68,6 +71,7 @@
 .hmcl-window-close:pressed {
     -m3-container-color: #e81123;
     -m3-content-color: white;
+    -fx-background-radius: 20px;
 }
 
 .hmcl-window-close:hover .hmcl-demo-icon,
@@ -80,7 +84,7 @@
     -fx-fill: -m3-color-on-surface-variant;
 }
 
-/* Home: RootPage left gray-background + MainPage launch pane */
+/* Home */
 
 .hmcl-home-page {
     -fx-background-color: transparent;
@@ -91,62 +95,63 @@
 }
 
 .hmcl-home-sidebar {
-    -fx-background-color: rgba(251, 248, 255, 0.72);
-    -fx-border-color: transparent rgba(73, 69, 79, 0.18) transparent transparent;
+    -fx-background-color: rgba(255, 255, 255, 0.78);
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1 0 0;
 }
 
 .m3-dark .hmcl-home-sidebar {
-    -fx-background-color: rgba(20, 18, 24, 0.78);
-    -fx-border-color: transparent rgba(202, 196, 208, 0.18) transparent transparent;
+    -fx-background-color: rgba(20, 18, 24, 0.82);
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
 }
 
-/* class-title */
 .hmcl-class-title {
-    -fx-font-size: 12px;
-    -fx-padding: 8 16 8 16;
-    -fx-text-fill: -m3-color-on-surface;
-    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-padding: 16 16 8 16;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.4;
 }
 
-/* advanced-list-item approximation */
+/* Home navigation rows: MD3 one-line scale with soft selection. */
 .hmcl-advanced-list-item {
-    -m3-one-line-height: 40px;
-    -m3-two-line-height: 52px;
-    -m3-three-line-height: 60px;
-    -m3-container-shape: 0px;
+    -m3-one-line-height: 56px;
+    -m3-two-line-height: 72px;
+    -m3-three-line-height: 88px;
+    -m3-container-shape: 28px;
     -m3-horizontal-padding: 16px;
-    -m3-vertical-padding: 10px;
-    -m3-content-spacing: 10px;
-    -m3-list-item-selected-container-color: derive(-m3-color-secondary-container, 0%);
-    -fx-background-radius: 0;
+    -m3-vertical-padding: 8px;
+    -m3-content-spacing: 16px;
+    -m3-list-item-selected-container-color: -m3-color-secondary-container;
+    -fx-background-radius: 28px;
 }
 
 .hmcl-advanced-list-item .m3-list-item-headline {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
 }
 
 .hmcl-advanced-list-item .m3-list-item-supporting {
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
 }
 
-/* announcement card */
+/* Announcement: tonal surface, no hard drop shadow. */
 .hmcl-card.hmcl-announcement {
-    -fx-background-color: -m3-color-surface;
-    -fx-background-radius: 4px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.26), 10, 0.12, -1, 2);
-    -fx-padding: 16px;
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-radius: 16px;
+    -fx-effect: null;
+    -fx-padding: 16px 20px 16px 20px;
 }
 
 .hmcl-announcement .m3-text {
     -fx-text-fill: -m3-color-on-surface;
 }
 
-/* Home launch control: Material 3 filled split button */
+/* Home launch control */
 .m3-split-button.hmcl-home-launch {
     -m3-split-button-container-height: 56px;
     -m3-split-button-outer-corner: 28px;
-    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-inner-corner: 8px;
     -m3-split-button-hovered-inner-corner: 12px;
     -m3-split-button-pressed-inner-corner: 12px;
     -m3-split-button-selected-inner-corner: 28px;
@@ -161,15 +166,15 @@
 }
 
 .hmcl-launch-label {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
 }
 
 .hmcl-launch-instance {
     -fx-font-size: 12px;
 }
 
-/* Secondary pages: opaque surface (HMCL content-background), not see-through wallpaper */
+/* Secondary pages */
 
 .hmcl-secondary-page {
     -fx-background-color: -m3-color-surface;
@@ -183,44 +188,61 @@
     -fx-background-color: -m3-color-surface-container-low;
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1 0 0;
+    -fx-padding: 8 8 12 8;
 }
 
 .hmcl-card-list {
-    -fx-spacing: 10;
+    -fx-spacing: 0;
 }
 
-.hmcl-account-card {
+/* Continuous list rows for accounts / instances — no per-row cards. */
+.hmcl-account-card,
+.hmcl-account-row,
+.hmcl-instance-row,
+.hmcl-mod-row,
+.hmcl-version-row {
     -m3-one-line-height: 56px;
-    -m3-two-line-height: 64px;
-    -m3-container-shape: 4px;
-    -m3-horizontal-padding: 12px;
-    -fx-background-color: -m3-color-surface-container-lowest;
-    -fx-background-radius: 4px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.12, 0, 1);
-}
-
-.hmcl-sidebar-item {
-    -m3-one-line-height: 40px;
-    -m3-two-line-height: 48px;
+    -m3-two-line-height: 72px;
+    -m3-three-line-height: 88px;
     -m3-container-shape: 0px;
     -m3-horizontal-padding: 16px;
     -m3-vertical-padding: 8px;
-    -m3-content-spacing: 10px;
+    -m3-content-spacing: 16px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-effect: null;
+}
+
+.hmcl-account-row:selected .m3-list-item-container,
+.hmcl-instance-row:selected .m3-list-item-container {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 0;
+}
+
+.hmcl-sidebar-item {
+    -m3-one-line-height: 48px;
+    -m3-two-line-height: 64px;
+    -m3-container-shape: 24px;
+    -m3-horizontal-padding: 12px;
+    -m3-vertical-padding: 8px;
+    -m3-content-spacing: 12px;
+    -fx-background-radius: 24px;
 }
 
 .hmcl-sidebar-item .m3-list-item-headline {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
 }
 
 .hmcl-sidebar-item .m3-list-item-supporting {
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
 }
 
 .hmcl-sidebar-section-label {
-    -fx-font-size: 12px;
-    -fx-padding: 8 16 8 16;
-    -fx-text-fill: -m3-color-on-surface;
-    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-padding: 12 12 6 12;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-weight: 700;
 }
 
 .hmcl-page-body {
@@ -232,70 +254,75 @@
     -fx-background-color: -m3-color-surface;
     -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 6 8 6 8;
-    -fx-spacing: 6;
+    -fx-padding: 8 12 8 12;
+    -fx-spacing: 8;
 }
 
+/* Group surfaces: subtle container, no floating shadow. */
 .hmcl-list-surface,
-.hmcl-settings-card {
-    -fx-background-color: -m3-color-surface-container-lowest;
-    -fx-background-radius: 4px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.14), 8, 0.10, 0, 1);
+.hmcl-settings-card,
+.hmcl-settings-group {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 16px;
+    -fx-effect: null;
+    -fx-padding: 4 0 4 0;
 }
 
-.hmcl-settings-section-header {
-    -fx-padding: 0 4 0 4;
+.hmcl-settings-section-header,
+.hmcl-settings-page .m3-list-section-header {
+    -fx-padding: 8 16 4 16;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
     -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
 }
 
-.hmcl-dense-list .m3-list-item,
-.hmcl-account-row,
-.hmcl-instance-row,
-.hmcl-mod-row,
-.hmcl-version-row {
-    -m3-one-line-height: 46px;
-    -m3-two-line-height: 52px;
-    -m3-three-line-height: 58px;
+/* Settings rows keep MD3 list metrics; continuous list inside a soft group. */
+.hmcl-settings-list .m3-list-item,
+.hmcl-settings-list .m3-setting-item {
+    -m3-one-line-height: 56px;
+    -m3-two-line-height: 72px;
+    -m3-three-line-height: 88px;
     -m3-container-shape: 0px;
-    -m3-horizontal-padding: 12px;
-    -m3-vertical-padding: 6px;
-    -m3-content-spacing: 10px;
+    -m3-horizontal-padding: 16px;
+    -m3-vertical-padding: 8px;
+    -m3-content-spacing: 16px;
 }
 
-.hmcl-dense-list .m3-list-item-headline,
-.hmcl-account-row .m3-list-item-headline,
-.hmcl-instance-row .m3-list-item-headline,
-.hmcl-mod-row .m3-list-item-headline,
-.hmcl-version-row .m3-list-item-headline {
+.hmcl-settings-list .m3-list-item-headline {
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+}
+
+.hmcl-settings-list .m3-list-item-supporting {
     -fx-font-size: 14px;
 }
 
-.hmcl-dense-list .m3-list-item-supporting,
-.hmcl-account-row .m3-list-item-supporting,
-.hmcl-instance-row .m3-list-item-supporting,
-.hmcl-mod-row .m3-list-item-supporting,
-.hmcl-version-row .m3-list-item-supporting {
-    -fx-font-size: 12px;
+.hmcl-settings-list .m3-list-item-trailing-supporting {
+    -fx-font-size: 14px;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .hmcl-version-tag {
     -fx-background-color: -m3-color-secondary-container;
-    -fx-background-radius: 4px;
-    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 8px;
+    -fx-padding: 4 10 4 10;
     -fx-text-fill: -m3-color-on-secondary-container;
-    -fx-font-size: 11px;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
 }
 
 .hmcl-installer-name-card .m3-card-container {
-    -fx-padding: 12 16 12 16;
+    -fx-padding: 16px;
 }
 
 .hmcl-installer-card {
-    -m3-container-shape: 4px;
+    -m3-container-shape: 16px;
 }
 
 .hmcl-installer-card .m3-card-container {
-    -fx-padding: 12px;
+    -fx-padding: 16px;
 }
 
 .hmcl-page-scroll,
@@ -306,8 +333,8 @@
 
 .hmcl-dialog-warning {
     -fx-background-color: -m3-color-error-container;
-    -fx-background-radius: 4px;
-    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 12px;
+    -fx-padding: 12 16 12 16;
     -fx-text-fill: -m3-color-on-error-container;
 }
 
@@ -318,21 +345,29 @@
 }
 
 .hmcl-instance-menu-item {
-    -m3-one-line-height: 44px;
-    -m3-two-line-height: 52px;
-    -m3-container-shape: 0px;
+    -m3-one-line-height: 48px;
+    -m3-two-line-height: 64px;
+    -m3-container-shape: 12px;
     -fx-pref-width: 260px;
 }
 
-/* HMCL ComponentSublist-style expandable setting groups */
+/* Legacy sublist class kept for any remaining hosts — match group surface, not plastic cards. */
 .hmcl-settings-sublist {
-    -fx-background-color: -m3-color-surface-container-lowest;
-    -fx-background-radius: 8px;
-    -fx-padding: 0;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 16px;
+    -fx-padding: 4 0 4 0;
+    -fx-effect: null;
 }
+
 .hmcl-settings-sublist-header {
-    -m3-container-shape: 8px;
+    -m3-container-shape: 0px;
 }
+
 .hmcl-settings-sublist-body {
-    -fx-padding: 0 8 12 8;
+    -fx-padding: 0 0 4 0;
+}
+
+.hmcl-empty-state {
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-padding: 24 16 24 16;
 }

@@ -15,12 +15,10 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
-import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
-import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
@@ -35,8 +33,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -47,9 +43,6 @@ final class HMCLGameSettingsForm {
     private static final String @org.jetbrains.annotations.Unmodifiable [] RESOLUTIONS = {
             "854x480", "1280x720", "1600x900", "1920x1080", "2560x1440"
     };
-
-    /// Expanded HMCL-style sublist keys retained across form rebuilds.
-    private static final Set<String> EXPANDED_SUBLISTS = ConcurrentHashMap.newKeySet();
 
     /// Creates a form host.
     private HMCLGameSettingsForm() {
@@ -368,13 +361,8 @@ final class HMCLGameSettingsForm {
                 }
         );
 
-        String summary = settings.autoMemory()
-                ? strings.get("settings.memory.auto")
-                : settings.maxMemoryMb() + " MiB";
-        return sublist(
-                "memory",
+        return section(
                 strings.get("settings.memory"),
-                summary,
                 auto,
                 manual,
                 manualRow,
@@ -391,17 +379,9 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        String summary = switch (settings.windowType()) {
-            case "fullscreen" -> strings.get("settings.game.window.fullscreen");
-            case "borderless" -> strings.get("settings.game.window.borderless");
-            case "maximized" -> strings.get("settings.game.window.maximized");
-            default -> strings.get("settings.game.window.windowed") + " · " + settings.resolution();
-        };
         ToggleGroup windowGroup = new ToggleGroup();
-        return sublist(
-                "window",
+        return section(
                 strings.get("settings.game.window_type"),
-                summary,
                 radioItem(strings.get("settings.game.window.windowed"), settings.resolution(),
                         "windowed".equals(settings.windowType()),
                         windowGroup,
@@ -500,23 +480,9 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        String summary = switch (settings.quickPlayType()) {
-            case "multiplayer" -> settings.quickPlayMultiplayer().isBlank()
-                    ? strings.get("settings.game.quick_play.multiplayer")
-                    : settings.quickPlayMultiplayer();
-            case "singleplayer" -> settings.quickPlaySingleplayer().isBlank()
-                    ? strings.get("settings.game.quick_play.singleplayer")
-                    : settings.quickPlaySingleplayer();
-            case "realms" -> settings.quickPlayRealms().isBlank()
-                    ? strings.get("settings.game.quick_play.realms")
-                    : settings.quickPlayRealms();
-            default -> strings.get("settings.game.quick_play.none");
-        };
         ToggleGroup quickPlayGroup = new ToggleGroup();
-        return sublist(
-                "quick-play",
+        return section(
                 strings.get("settings.game.quick_play"),
-                summary,
                 radioItem(strings.get("settings.game.quick_play.none"), "",
                         "none".equals(settings.quickPlayType()),
                         quickPlayGroup,
@@ -566,10 +532,8 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        return sublist(
-                "advanced-launch",
+        return section(
                 strings.get("settings.advanced.launch_options"),
-                strings.get("settings.advanced.launch_options.subtitle"),
                 // Path picker deferred: M3FX has no directory FileSelector control; text dialog is used instead.
                 textAction(strings.get("settings.game.running_directory"),
                         settings.runningDirectory().isBlank()
@@ -710,63 +674,22 @@ final class HMCLGameSettingsForm {
 
     private static VBox section(String title, Node... items) {
         M3ListSectionHeader header = new M3ListSectionHeader(title);
+        header.getStyleClass().add("hmcl-settings-section-header");
         VBox body = settingBody(items);
-        VBox block = new VBox(8.0, header, body);
+        VBox block = new VBox(4.0, header, body);
         block.setMinHeight(0.0);
         return block;
     }
 
-    /// Creates an HMCL `ComponentSublist`-style block: collapsed header with summary, expandable body.
-    ///
-    /// @param key stable expand-state key
-    /// @param title the sublist title
-    /// @param subtitle the collapsed summary text
-    /// @param items expanded body children
-    /// @return the sublist node
-    private static VBox sublist(String key, String title, String subtitle, Node... items) {
-        boolean expanded = EXPANDED_SUBLISTS.contains(key);
-        M3SVGIcon chevron = HMCLDemoIcons.create(HMCLDemoIcons.EXPAND_MORE);
-        chevron.setRotate(expanded ? 180.0 : 0.0);
-
-        M3ListItem header = new M3ListItem(title);
-        header.getStyleClass().add("hmcl-settings-sublist-header");
-        header.setSupportingText(subtitle);
-        header.setTrailing(chevron);
-        header.setMaxWidth(Double.MAX_VALUE);
-
-        VBox body = settingBody(items);
-        body.getStyleClass().add("hmcl-settings-sublist-body");
-        body.setVisible(expanded);
-        body.setManaged(expanded);
-
-        header.setOnAction(event -> {
-            boolean next = !body.isVisible();
-            body.setVisible(next);
-            body.setManaged(next);
-            chevron.setRotate(next ? 180.0 : 0.0);
-            if (next) {
-                EXPANDED_SUBLISTS.add(key);
-            } else {
-                EXPANDED_SUBLISTS.remove(key);
-            }
-        });
-
-        VBox block = new VBox(0.0, header, body);
-        block.getStyleClass().add("hmcl-settings-sublist");
-        block.setMinHeight(0.0);
-        block.setMaxWidth(Double.MAX_VALUE);
-        return block;
-    }
-
-    /// Builds the body of a settings section or expanded sublist.
+    /// Builds the body of a settings section as a continuous list group.
     ///
     /// @param items mixed setting rows and free-form nodes
     /// @return the body container
     private static VBox settingBody(Node... items) {
         M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
+        list.setListStyle(M3ListStyle.STANDARD);
         list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
+        list.getStyleClass().addAll("hmcl-settings-list", "hmcl-settings-group");
         list.setMinHeight(0.0);
         List<Node> listItems = new ArrayList<>();
         List<Node> extra = new ArrayList<>();

@@ -56,7 +56,8 @@ final class HMCLAccountsView extends BorderPane {
             controller.showMessageKey("snackbar.account_added");
         });
 
-        accountCards.setPadding(new Insets(16.0, 20.0, 24.0, 20.0));
+        accountCards.getStyleClass().add("hmcl-card-list");
+        accountCards.setPadding(new Insets(12.0, 16.0, 20.0, 16.0));
         accountCards.setFillWidth(true);
         setLeft(sidebar);
         setCenter(HMCLDemoUi.scroll(accountCards));

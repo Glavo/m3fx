@@ -53,11 +53,14 @@ import java.util.Objects;
 /// - page content uses `min size = 0` so list preferred heights cannot steal title-bar space
 @NotNullByDefault
 final class HMCLDemoShell extends StackPane implements HMCLDemoController {
-    /// Title-bar height used by HMCL's `.jfx-tool-bar`.
-    private static final double TITLE_HEIGHT = 40.0;
+    /// Title-bar height for the soft tonal chrome bar.
+    private static final double TITLE_HEIGHT = 48.0;
 
-    /// Corner radius used by HMCL's decorator clip.
-    private static final double WINDOW_RADIUS = 8.0;
+    /// Title-bar control hit target size (slightly smaller than the bar for tonal padding).
+    private static final double TITLE_BUTTON_SIZE = 40.0;
+
+    /// Corner radius used by the clipped window body.
+    private static final double WINDOW_RADIUS = 12.0;
 
     /// Outer transparent inset reserved for the window shadow.
     private static final double WINDOW_PADDING = 8.0;
@@ -563,14 +566,14 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         updateTitleBar();
     }
 
-    /// Applies HMCL decorator-button sizing to one title-bar icon button.
+    /// Applies soft icon-button sizing to one title-bar control.
     ///
     /// @param button the button
     private static void styleWindowButton(M3IconButton button) {
         button.getStyleClass().add("hmcl-window-button");
-        button.setMinSize(TITLE_HEIGHT, TITLE_HEIGHT);
-        button.setPrefSize(TITLE_HEIGHT, TITLE_HEIGHT);
-        button.setMaxSize(TITLE_HEIGHT, TITLE_HEIGHT);
+        button.setMinSize(TITLE_BUTTON_SIZE, TITLE_BUTTON_SIZE);
+        button.setPrefSize(TITLE_BUTTON_SIZE, TITLE_BUTTON_SIZE);
+        button.setMaxSize(TITLE_BUTTON_SIZE, TITLE_BUTTON_SIZE);
         button.setFocusTraversable(false);
         button.setCursor(Cursor.HAND);
     }

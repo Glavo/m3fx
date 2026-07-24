@@ -906,16 +906,18 @@ final class HMCLSettingsView extends BorderPane {
         return HMCLDemoUi.scroll(HMCLDemoUi.contentColumn(root));
     }
 
-    /// Builds a labeled section with a header and a segmented list pane of setting rows.
+    /// Builds a labeled section with a header and a continuous settings group.
     ///
     /// @param title the section header text
     /// @param items the setting rows or a prebuilt list pane
     /// @return the section block
     private VBox sectionBlock(String title, Node... items) {
         M3ListSectionHeader header = new M3ListSectionHeader(title);
-        VBox block = new VBox(8.0);
+        header.getStyleClass().add("hmcl-settings-section-header");
+        VBox block = new VBox(4.0);
         block.setMinHeight(0.0);
         if (items.length == 1 && items[0] instanceof M3ListPane listPane) {
+            listPane.getStyleClass().add("hmcl-settings-group");
             block.getChildren().addAll(header, listPane);
         } else {
             block.getChildren().addAll(header, settingListPane(items));
@@ -923,7 +925,7 @@ final class HMCLSettingsView extends BorderPane {
         return block;
     }
 
-    /// Wraps setting rows in a segmented list pane.
+    /// Wraps setting rows in a continuous list group surface.
     ///
     /// @param items the rows
     /// @return the list pane
@@ -933,14 +935,14 @@ final class HMCLSettingsView extends BorderPane {
         return list;
     }
 
-    /// Creates an empty segmented list pane.
+    /// Creates an empty continuous settings list pane.
     ///
     /// @return the list
     private static M3ListPane newList() {
         M3ListPane list = new M3ListPane();
-        list.setListStyle(M3ListStyle.SEGMENTED);
+        list.setListStyle(M3ListStyle.STANDARD);
         list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().add("hmcl-dense-list");
+        list.getStyleClass().addAll("hmcl-settings-list", "hmcl-settings-group");
         list.setMinHeight(0.0);
         return list;
     }

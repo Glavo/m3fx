@@ -73,7 +73,7 @@ final class HMCLDemoUi {
     /// @param children the sidebar children
     /// @return the configured sidebar
     static VBox sidebar(Node... children) {
-        VBox sidebar = new VBox(0.0, children);
+        VBox sidebar = new VBox(2.0, children);
         sidebar.getStyleClass().add("hmcl-context-sidebar");
         sidebar.setPrefWidth(SIDEBAR_WIDTH);
         sidebar.setMinWidth(SIDEBAR_WIDTH);
@@ -198,14 +198,14 @@ final class HMCLDemoUi {
         });
     }
 
-    /// Creates a dense content column with standard page padding.
+    /// Creates a content column with comfortable page padding and section spacing.
     ///
     /// @param children the column children
     /// @return the content column
     static VBox contentColumn(Node... children) {
-        VBox column = fill(new VBox(12.0, children));
+        VBox column = fill(new VBox(20.0, children));
         column.getStyleClass().add("hmcl-page-body");
-        column.setPadding(new Insets(16.0));
+        column.setPadding(new Insets(20.0, 24.0, 28.0, 24.0));
         column.setFillWidth(true);
         return column;
     }
