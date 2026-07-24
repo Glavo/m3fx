@@ -252,3 +252,11 @@
 .m3-setting-item:disabled .m3-list-item-trailing {
     -fx-opacity: 1;
 }
+
+.m3-expandable-setting-item .m3-expandable-setting-content {
+    -fx-padding: 0 0 8 0;
+}
+
+.m3-expandable-setting-item:expanded .m3-list-item-trailing-supporting {
+    -fx-text-fill: -m3-list-item-supporting-color;
+}

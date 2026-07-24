@@ -195,6 +195,43 @@ final class M3SettingItemTest {
         });
     }
 
+    /// Verifies that an expandable setting row toggles expansion and keeps trailing disclosure presentation.
+    @Test
+    void expandableSettingItemTogglesExpandedStateOnActivation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ExpandableSettingItem item = new M3ExpandableSettingItem("Advanced");
+            javafx.scene.control.Label body = new javafx.scene.control.Label("Nested settings");
+            item.setContent(body);
+            AtomicInteger actionCount = new AtomicInteger();
+            item.setOnAction(event -> actionCount.incrementAndGet());
+
+            assertEquals(AccessibleRole.BUTTON, item.getAccessibleRole());
+            assertFalse(item.isExpanded());
+            assertEquals(false, item.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            assertInstanceOf(org.glavo.m3fx.internal.M3DisclosureIcon.class, item.getTrailing());
+
+            item.fire();
+            assertTrue(item.isExpanded());
+            assertEquals(true, item.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            assertEquals(1, actionCount.get());
+            assertTrue(item.getTrailing() instanceof org.glavo.m3fx.internal.M3DisclosureIcon disclosure
+                    && disclosure.isExpanded());
+
+            item.setExpanded(false);
+            assertFalse(item.isExpanded());
+            assertEquals(1, actionCount.get(), "direct expanded changes must not fire actions");
+
+            item.fire();
+            assertTrue(item.isExpanded());
+            assertEquals(2, actionCount.get());
+
+            item.setDisable(true);
+            item.fire();
+            assertTrue(item.isExpanded());
+            assertEquals(2, actionCount.get());
+        });
+    }
+
     /// Verifies that a select setting row formats values, owns a passive disclosure indicator, and fires on choice.
     @Test
     void selectSettingItemFormatsValueAndFiresOnChoice() {

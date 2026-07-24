@@ -121,6 +121,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.CHECK_BOX, new M3CheckBoxSettingItem().getAccessibleRole());
         assertEquals(AccessibleRole.RADIO_BUTTON, new M3RadioButtonSettingItem().getAccessibleRole());
         assertEquals(AccessibleRole.COMBO_BOX, new M3SelectSettingItem<String>().getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3ExpandableSettingItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3ListSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3AssistChip().getAccessibleRole());
@@ -176,6 +177,7 @@ final class M3ControlAccessibilityTest {
                 new M3CheckBoxSettingItem(),
                 new M3RadioButtonSettingItem(),
                 new M3SelectSettingItem<String>(),
+                new M3ExpandableSettingItem(),
                 new M3ListView<>(),
                 new M3AssistChip(),
                 new M3IconToggleButton(),

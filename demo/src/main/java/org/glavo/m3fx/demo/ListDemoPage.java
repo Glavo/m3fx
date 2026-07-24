@@ -15,6 +15,7 @@ import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
+import org.glavo.m3fx.controls.M3ExpandableSettingItem;
 import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -120,12 +121,28 @@ final class ListDemoPage extends DemoPageSupport {
         language.setValue("English");
         language.setOnAction(event -> context.showSnackbar("Language: " + language.getTrailingSupportingText()));
 
+        M3SwitchSettingItem diagnostics = new M3SwitchSettingItem("Share diagnostics");
+        diagnostics.setSupportingText("Send crash reports to improve reliability");
+        M3SwitchSettingItem beta = new M3SwitchSettingItem("Join beta channel");
+        beta.setSupportingText("Receive pre-release builds");
+        M3ListPane advancedBody = new M3ListPane();
+        advancedBody.setListStyle(M3ListStyle.STANDARD);
+        advancedBody.setSelectionMode(M3SelectionMode.NONE);
+        advancedBody.getItems().addAll(diagnostics, beta);
+
+        M3ExpandableSettingItem advanced = new M3ExpandableSettingItem("Advanced");
+        advanced.setSupportingText("Optional developer preferences");
+        advanced.setContent(advancedBody);
+        advanced.setOnAction(event -> context.showSnackbar(
+                advanced.isExpanded() ? "Advanced expanded" : "Advanced collapsed"
+        ));
+
         M3ListPane settingsList = new M3ListPane();
         settingsList.getStyleClass().add("demo-list");
         configureResponsiveWidth(settingsList, 520.0);
         settingsList.setListStyle(M3ListStyle.SEGMENTED);
         settingsList.setSelectionMode(M3SelectionMode.NONE);
-        settingsList.getItems().addAll(updates, mobileData, language);
+        settingsList.getItems().addAll(updates, mobileData, language, advanced);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Standard", standardList),

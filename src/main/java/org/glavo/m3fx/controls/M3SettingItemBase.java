@@ -15,7 +15,8 @@ import java.util.Objects;
 /// A setting row is one focusable and actionable control. Trailing value controls are owned by the row and mirror its
 /// disabled state. Some rows install a passive indicator that is not pointer-interactive; others, such as
 /// [M3SwitchSettingItem], install a nested control that accepts pointer input while the row remains the keyboard and
-/// accessibility target.
+/// accessibility target. [M3ExpandableSettingItem] uses the same header contract and reveals nested content below the
+/// row while expanded.
 ///
 /// This type is package-private because applications use one of its concrete subclasses.
 @NotNullByDefault
@@ -24,7 +25,8 @@ abstract sealed class M3SettingItemBase extends M3ListItemBase
                 M3SwitchSettingItem,
                 M3CheckBoxSettingItem,
                 M3RadioButtonSettingItem,
-                M3SelectSettingItem {
+                M3SelectSettingItem,
+                M3ExpandableSettingItem {
     /// The common style class assigned to all setting rows.
     private static final String DEFAULT_STYLE_CLASS = "m3-setting-item";
 

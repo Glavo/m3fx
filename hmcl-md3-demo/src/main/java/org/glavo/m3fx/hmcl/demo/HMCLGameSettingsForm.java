@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
+import org.glavo.m3fx.controls.M3ExpandableSettingItem;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
@@ -532,8 +533,10 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        return section(
+        return expandableSection(
                 strings.get("settings.advanced.launch_options"),
+                strings.get("settings.advanced.launch_options.subtitle"),
+                false,
                 // Path picker deferred: M3FX has no directory FileSelector control; text dialog is used instead.
                 textAction(strings.get("settings.game.running_directory"),
                         settings.runningDirectory().isBlank()
@@ -592,8 +595,10 @@ final class HMCLGameSettingsForm {
             HMCLDemoGameSettings settings
     ) {
         HMCLDemoStrings strings = controller.strings();
-        return section(
+        return expandableSection(
                 strings.get("settings.advanced.jvm"),
+                "",
+                false,
                 switchItem(strings.get("settings.advanced.no_jvm_args"),
                         strings.get("settings.advanced.no_jvm_args.support"),
                         settings.noJvmArgs(),
@@ -681,6 +686,33 @@ final class HMCLGameSettingsForm {
         return block;
     }
 
+    /// Creates a settings group whose body is revealed by an expandable setting row.
+    ///
+    /// @param title     the expandable row headline
+    /// @param support   optional supporting text for the row
+    /// @param expanded  whether the group starts expanded
+    /// @param items     nested setting rows and free-form nodes
+    /// @return the group root
+    private static VBox expandableSection(String title, String support, boolean expanded, Node... items) {
+        M3ExpandableSettingItem expandable = new M3ExpandableSettingItem(title);
+        if (!support.isBlank()) {
+            expandable.setSupportingText(support);
+        }
+        expandable.setExpanded(expanded);
+        expandable.setContent(settingBody(items));
+
+        M3ListPane list = new M3ListPane();
+        list.setListStyle(M3ListStyle.STANDARD);
+        list.setSelectionMode(M3SelectionMode.NONE);
+        list.getStyleClass().addAll("hmcl-settings-list", "hmcl-settings-group");
+        list.setMinHeight(0.0);
+        list.getItems().setAll(expandable);
+
+        VBox block = new VBox(list);
+        block.setMinHeight(0.0);
+        return block;
+    }
+
     /// Builds the body of a settings section as a continuous list group.
     ///
     /// @param items mixed setting rows and free-form nodes
@@ -689,7 +721,7 @@ final class HMCLGameSettingsForm {
         M3ListPane list = new M3ListPane();
         list.setListStyle(M3ListStyle.STANDARD);
         list.setSelectionMode(M3SelectionMode.NONE);
-        list.getStyleClass().addAll("hmcl-settings-list", "hmcl-settings-group");
+        list.getStyleClass().add("hmcl-settings-list");
         list.setMinHeight(0.0);
         List<Node> listItems = new ArrayList<>();
         List<Node> extra = new ArrayList<>();
@@ -697,7 +729,8 @@ final class HMCLGameSettingsForm {
             if (item instanceof M3SettingItem
                     || item instanceof M3SwitchSettingItem
                     || item instanceof M3RadioButtonSettingItem
-                    || item instanceof M3SelectSettingItem<?>) {
+                    || item instanceof M3SelectSettingItem<?>
+                    || item instanceof M3ExpandableSettingItem) {
                 listItems.add(item);
             } else {
                 extra.add(item);

@@ -43,8 +43,9 @@ import java.util.Objects;
 /// The common base class for Material Design 3 list-derived rows.
 ///
 /// `M3ListItemBase` supplies the content, selection state, and action contract shared by [M3ListItem],
-/// [M3MenuItem], and the setting-row controls such as [M3SwitchSettingItem] and [M3SelectSettingItem]. Applications
-/// create one of those permitted concrete controls rather than extending this class.
+/// [M3MenuItem], and the setting-row controls such as [M3SwitchSettingItem], [M3SelectSettingItem], and
+/// [M3ExpandableSettingItem]. Applications create one of those permitted concrete controls rather than extending
+/// this class.
 ///
 /// A row has a required headline and optional overline, supporting text, trailing supporting text, leading node,
 /// and trailing node. Its line count starts at one for the headline and increases for populated overline and
