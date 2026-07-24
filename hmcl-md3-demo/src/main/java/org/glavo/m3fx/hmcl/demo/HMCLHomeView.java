@@ -188,6 +188,8 @@ final class HMCLHomeView extends BorderPane {
         announcementCard.getStyleClass().addAll("hmcl-card", "hmcl-announcement");
         announcementCard.setMaxWidth(560.0);
         announcementCard.setMaxHeight(Region.USE_PREF_SIZE);
+        announcementCard.setPadding(new Insets(16.0, 20.0, 16.0, 20.0));
+        announcementCard.setSpacing(8.0);
         announcementBody.setWrapText(true);
 
         M3IconButton close = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
@@ -296,6 +298,7 @@ final class HMCLHomeView extends BorderPane {
     private static M3Text sectionLabel() {
         M3Text label = new M3Text("", M3TextRole.LABEL_SMALL);
         label.getStyleClass().add("hmcl-class-title");
+        label.setPadding(new Insets(16.0, 16.0, 8.0, 16.0));
         label.setMaxWidth(Double.MAX_VALUE);
         return label;
     }

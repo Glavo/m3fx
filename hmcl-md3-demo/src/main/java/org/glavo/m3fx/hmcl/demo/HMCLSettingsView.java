@@ -914,6 +914,7 @@ final class HMCLSettingsView extends BorderPane {
     private VBox sectionBlock(String title, Node... items) {
         M3ListSectionHeader header = new M3ListSectionHeader(title);
         header.getStyleClass().add("hmcl-settings-section-header");
+        header.setPadding(new javafx.geometry.Insets(8.0, 16.0, 4.0, 16.0));
         VBox block = new VBox(4.0);
         block.setMinHeight(0.0);
         if (items.length == 1 && items[0] instanceof M3ListPane listPane) {
@@ -964,7 +965,7 @@ final class HMCLSettingsView extends BorderPane {
             Consumer<T> onChange
     ) {
         M3SelectSettingItem<T> item = new M3SelectSettingItem<>(strings.get(headlineKey));
-        item.setItems(choices);
+        item.getItems().setAll(choices);
         item.setConverter(converter);
         item.setValue(value);
         item.valueProperty().addListener((observable, oldValue, newValue) -> {

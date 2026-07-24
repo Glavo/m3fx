@@ -75,6 +75,7 @@ final class HMCLDemoUi {
     static VBox sidebar(Node... children) {
         VBox sidebar = new VBox(2.0, children);
         sidebar.getStyleClass().add("hmcl-context-sidebar");
+        sidebar.setPadding(new Insets(8.0, 8.0, 12.0, 8.0));
         sidebar.setPrefWidth(SIDEBAR_WIDTH);
         sidebar.setMinWidth(SIDEBAR_WIDTH);
         sidebar.setMaxWidth(SIDEBAR_WIDTH);
@@ -90,6 +91,7 @@ final class HMCLDemoUi {
     static M3Text sectionLabel(String text) {
         M3Text label = new M3Text(text, M3TextRole.LABEL_SMALL);
         label.getStyleClass().add("hmcl-sidebar-section-label");
+        label.setPadding(new Insets(12.0, 12.0, 6.0, 12.0));
         label.setMaxWidth(Double.MAX_VALUE);
         return label;
     }
@@ -227,6 +229,7 @@ final class HMCLDemoUi {
         label.getStyleClass().add("hmcl-empty-state");
         label.setWrapText(true);
         label.setMaxWidth(Double.MAX_VALUE);
+        label.setPadding(new Insets(24.0, 16.0, 24.0, 16.0));
         return label;
     }
 
@@ -238,10 +241,12 @@ final class HMCLDemoUi {
         HBox bar = new HBox(8.0, children);
         bar.getStyleClass().add("hmcl-page-toolbar");
         bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setPadding(new Insets(8.0, 12.0, 8.0, 12.0));
         bar.setMinHeight(Region.USE_PREF_SIZE);
         bar.setMaxHeight(Region.USE_PREF_SIZE);
         return bar;
     }
+
 
     /// Wraps a non-virtualized list so its full preferred height cannot resize the window.
     ///

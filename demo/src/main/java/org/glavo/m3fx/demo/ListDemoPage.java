@@ -105,7 +105,7 @@ final class ListDemoPage extends DemoPageSupport {
         M3SelectSettingItem<String> language = new M3SelectSettingItem<>("Language");
         language.setSupportingText("Displayed language for system text");
         language.setLeading(createSurfaceVariantIcon("translate"));
-        language.setItems("English", "中文", "日本語");
+        language.getItems().setAll("English", "中文", "日本語");
         language.setConverter(value -> switch (value) {
             case "English" -> "English";
             case "中文" -> "Chinese";

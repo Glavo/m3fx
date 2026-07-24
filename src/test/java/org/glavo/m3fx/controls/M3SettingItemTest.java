@@ -237,7 +237,7 @@ final class M3SettingItemTest {
     void selectSettingItemFormatsValueAndFiresOnChoice() {
         FxTestUtils.runOnFxThread(() -> {
             M3SelectSettingItem<String> item = new M3SelectSettingItem<>("Language");
-            item.setItems("English", "中文", "日本語");
+            item.getItems().setAll("English", "中文", "日本語");
             item.setConverter(value -> switch (value) {
                 case "English" -> "English";
                 case "中文" -> "Chinese";

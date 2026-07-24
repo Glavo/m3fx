@@ -20,8 +20,8 @@
     -fx-pref-height: 48px;
     -fx-padding: 0px 16px 0px 16px;
     -fx-text-fill: -m3-color-on-surface-variant;
-    -fx-font-size: 14px;
-    -fx-font-weight: 700;
+    -fx-font-size: -m3-typescale-title-small-font-size;
+    -fx-font-weight: -m3-typescale-title-small-font-weight;
 }
 
 .m3-list-item {
@@ -88,18 +88,20 @@
 }
 
 .m3-list-item-overline {
-    -fx-font-size: 11px;
-    -fx-font-weight: 500;
+    -fx-font-size: -m3-typescale-label-small-font-size;
+    -fx-font-weight: -m3-typescale-label-small-font-weight;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 
 .m3-list-item-headline {
-    -fx-font-size: 16px;
+    -fx-font-size: -m3-typescale-body-large-font-size;
+    -fx-font-weight: -m3-typescale-body-large-font-weight;
     -fx-text-fill: -m3-list-item-headline-color;
 }
 
 .m3-list-item-supporting {
-    -fx-font-size: 14px;
+    -fx-font-size: -m3-typescale-body-medium-font-size;
+    -fx-font-weight: -m3-typescale-body-medium-font-weight;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 
@@ -136,8 +138,8 @@
 }
 
 .m3-list-item:navigation-drawer .m3-list-item-headline {
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
+    -fx-font-size: -m3-typescale-label-large-font-size;
+    -fx-font-weight: -m3-typescale-label-large-font-weight;
 }
 
 .m3-list-item:navigation-drawer .m3-ripple,
@@ -177,7 +179,8 @@
 }
 
 .m3-list-item-trailing-supporting {
-    -fx-font-size: 12px;
+    -fx-font-size: -m3-typescale-body-small-font-size;
+    -fx-font-weight: -m3-typescale-body-small-font-weight;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 

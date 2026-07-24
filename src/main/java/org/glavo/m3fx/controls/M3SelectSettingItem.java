@@ -42,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -175,8 +174,8 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// The ordered selectable values presented by the popup menu.
     ///
-    /// The list rejects `null` list instances when assigned through [#setItems(ObservableList)]. Individual elements
-    /// may be `null` when `T` permits them. Mutations rebuild the popup menu content.
+    /// Mutate the live list through [#getItems()] (for example `getItems().setAll(...)`). Individual elements may be
+    /// `null` when `T` permits them. Mutations rebuild the popup menu content.
     ///
     /// @defaultValue an empty observable list
     private final ListProperty<T> items =
@@ -184,43 +183,12 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Returns the live selectable-value list.
     ///
+    /// Callers should mutate this list in place. Replacing the backing list instance is supported through
+    /// [#itemsProperty()].
+    ///
     /// @return the selectable values
     public ObservableList<T> getItems() {
         return items.get();
-    }
-
-    /// Sets the live selectable-value list.
-    ///
-    /// @param items the selectable values
-    /// @throws NullPointerException if `items` is `null`
-    public void setItems(ObservableList<T> items) {
-        this.items.set(Objects.requireNonNull(items, "items"));
-    }
-
-    /// Replaces the selectable values with a copy of the supplied collection.
-    ///
-    /// When `items` is already an [ObservableList], it is used directly through [#setItems(ObservableList)].
-    ///
-    /// @param items the selectable values
-    /// @throws NullPointerException if `items` is `null`
-    public void setItems(Collection<? extends T> items) {
-        Objects.requireNonNull(items, "items");
-        if (items instanceof ObservableList<?> observableList) {
-            @SuppressWarnings("unchecked")
-            ObservableList<T> castItems = (ObservableList<T>) observableList;
-            setItems(castItems);
-            return;
-        }
-        setItems(FXCollections.observableArrayList(items));
-    }
-
-    /// Replaces the selectable values with the supplied array.
-    ///
-    /// @param values the selectable values
-    /// @throws NullPointerException if `values` is `null`
-    @SafeVarargs
-    public final void setItems(T... values) {
-        setItems(FXCollections.observableArrayList(Objects.requireNonNull(values, "values")));
     }
 
     /// Returns the bindable selectable-value list property.

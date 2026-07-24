@@ -11,9 +11,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3OverlayPane;
-import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
-import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -109,12 +107,14 @@ public final class HMCLM3DemoApp extends Application {
             return;
         }
         HMCLDemoState state = shell.state();
-        M3ThemeManager.install(activeScene, M3Theme.fromSeed(
-                state.getThemeColor(),
-                state.getProfile(),
-                resolveBrightness(state.getBrightness()),
-                M3Density.standard()
-        ));
+        M3ThemeManager.install(
+                activeScene,
+                HMCLDemoTheme.create(
+                        state.getThemeColor(),
+                        state.getProfile(),
+                        resolveBrightness(state.getBrightness())
+                )
+        );
     }
 
     /// Maps demo brightness settings onto MonetFX brightness values.

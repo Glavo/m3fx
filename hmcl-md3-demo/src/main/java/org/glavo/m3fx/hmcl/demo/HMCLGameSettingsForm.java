@@ -122,7 +122,7 @@ final class HMCLGameSettingsForm {
         JavaChoice current = resolveJavaChoice(choices, settings);
 
         M3SelectSettingItem<JavaChoice> select = new M3SelectSettingItem<>(strings.get("settings.game.java_directory"));
-        select.setItems(choices);
+        select.getItems().setAll(choices);
         select.setConverter(JavaChoice::title);
         select.setDescriptionConverter(JavaChoice::description);
         select.setValue(current);
@@ -243,7 +243,7 @@ final class HMCLGameSettingsForm {
     ) {
         List<JavaChoice> choices = buildJavaChoices(controller.strings(), controller.state(), settings);
         JavaChoice current = resolveJavaChoice(choices, settings);
-        select.setItems(choices);
+        select.getItems().setAll(choices);
         select.setValue(current);
     }
 
@@ -680,6 +680,7 @@ final class HMCLGameSettingsForm {
     private static VBox section(String title, Node... items) {
         M3ListSectionHeader header = new M3ListSectionHeader(title);
         header.getStyleClass().add("hmcl-settings-section-header");
+        header.setPadding(new Insets(8.0, 16.0, 4.0, 16.0));
         VBox body = settingBody(items);
         VBox block = new VBox(4.0, header, body);
         block.setMinHeight(0.0);
@@ -798,7 +799,7 @@ final class HMCLGameSettingsForm {
             Consumer<T> onChange
     ) {
         M3SelectSettingItem<T> item = new M3SelectSettingItem<>(title);
-        item.setItems(choices);
+        item.getItems().setAll(choices);
         item.setConverter(converter);
         item.setValue(value);
         item.valueProperty().addListener((observable, oldValue, newValue) -> {
