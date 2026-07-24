@@ -12,6 +12,7 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
@@ -153,8 +154,14 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Drag origin for title-bar window movement.
     private double dragOffsetY;
 
-    /// Whether the title bar is currently dragging the undecorated stage.
+        /// Whether the title bar is currently dragging the undecorated stage.
     private boolean windowDragging;
+
+    /// Scene-level drag filter installed for the active window-drag gesture.
+    private final javafx.event.EventHandler<MouseEvent> windowDragFilter = this::handleWindowDragged;
+
+    /// Scene-level release filter installed for the active window-drag gesture.
+    private final javafx.event.EventHandler<MouseEvent> windowDragReleaseFilter = this::handleWindowDragReleased;
 
     /// Whether an edge-resize gesture is active.
     private boolean resizing;
@@ -230,13 +237,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         configureTitleBar();
         configureAdaptiveScaffold();
 
-        // Title is a non-growing sibling; the adaptive scaffold absorbs remaining height.
-        VBox frame = new VBox(titleContainer, scaffold);
-        frame.getStyleClass().add("hmcl-window-frame");
-        HMCLDemoUi.fill(frame);
-        VBox.setVgrow(scaffold, Priority.ALWAYS);
-
-        parent.getChildren().setAll(wallpaper, frame);
+        // Title is scaffold topBar so the rail is laid out strictly below it (never overlapping).
+        scaffold.getStyleClass().add("hmcl-window-frame");
+        parent.getChildren().setAll(wallpaper, scaffold);
 
         StackPane body = HMCLDemoUi.fill(new StackPane(parent));
         body.getStyleClass().add("hmcl-window-body");
@@ -265,6 +268,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         // Page-level section sidebars live inside each route; the scaffold only hosts primary navigation.
         scaffold.setPaneLayout(M3PaneLayout.SINGLE);
         scaffold.setContentMargin(0.0);
+        // Full-width title above the rail body — Material scaffold geometry, not a sibling VBox race.
+        scaffold.setTopBar(titleContainer);
         scaffold.setNavigationBar(primaryNav.navigationBar());
         scaffold.setNavigationRail(primaryNav.navigationRail());
         scaffold.setMainPane(pageHost);
@@ -866,26 +871,29 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param event the press event
     private void handleWindowDragPressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY || resizing) {
+        if (event.getButton() != MouseButton.PRIMARY || resizing || windowDragging) {
             return;
         }
         if (isInteractiveTitleControl(event)) {
-            windowDragging = false;
             return;
         }
         // Only the outer shadow padding is a resize grip; the title bar itself always drags.
         Point2D local = localPointer(event);
         if (isResizeCursor(resizeCursorAt(local.getX(), local.getY()))) {
-            windowDragging = false;
             return;
         }
-        @Nullable Window window = getScene() == null ? null : getScene().getWindow();
-        if (window == null) {
+        @Nullable Scene activeScene = getScene();
+        @Nullable Window window = activeScene == null ? null : activeScene.getWindow();
+        if (window == null || activeScene == null) {
             return;
         }
         windowDragging = true;
-        dragOffsetX = event.getScreenX() - window.getX();
-        dragOffsetY = event.getScreenY() - window.getY();
+        // Scene coordinates stay stable relative to the stage content origin for undecorated windows.
+        dragOffsetX = event.getSceneX();
+        dragOffsetY = event.getSceneY();
+        activeScene.addEventFilter(MouseEvent.MOUSE_DRAGGED, windowDragFilter);
+        activeScene.addEventFilter(MouseEvent.MOUSE_RELEASED, windowDragReleaseFilter);
+        // Do not consume press so double-click maximize and title controls still receive the event sequence.
     }
 
     /// Moves the undecorated window while the title bar is dragged.
@@ -904,14 +912,20 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         event.consume();
     }
 
-    /// Ends a title-bar window drag.
+    /// Ends a title-bar window drag and removes scene-level filters.
     ///
     /// @param event the release event
     private void handleWindowDragReleased(MouseEvent event) {
-        if (windowDragging) {
-            windowDragging = false;
-            event.consume();
+        if (!windowDragging) {
+            return;
         }
+        windowDragging = false;
+        @Nullable Scene activeScene = getScene();
+        if (activeScene != null) {
+            activeScene.removeEventFilter(MouseEvent.MOUSE_DRAGGED, windowDragFilter);
+            activeScene.removeEventFilter(MouseEvent.MOUSE_RELEASED, windowDragReleaseFilter);
+        }
+        event.consume();
     }
 
     /// Returns whether the event targets a clickable title-bar control that must not start a window drag.

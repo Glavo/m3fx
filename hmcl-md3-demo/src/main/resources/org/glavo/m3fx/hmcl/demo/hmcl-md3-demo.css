@@ -27,11 +27,18 @@
     -fx-background-color: -m3-color-surface;
 }
 
-/* Title bar chrome */
+/* Title bar chrome — full width above the rail (scaffold topBar). */
 .hmcl-window-title-bar {
     -fx-background-color: -m3-color-surface-container;
     -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
     -fx-border-width: 0 0 1 0;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-max-height: 48px;
+}
+
+.m3-scaffold-top-bar {
+    -fx-background-color: -m3-color-surface-container;
 }
 
 .hmcl-window-title-label,
@@ -84,11 +91,15 @@
 }
 
 .hmcl-primary-nav-rail {
-    -fx-background-color: rgba(255, 255, 255, 0.86);
+    -fx-background-color: -m3-color-surface-container-low;
 }
 
 .m3-dark .hmcl-primary-nav-rail {
-    -fx-background-color: rgba(20, 18, 24, 0.88);
+    -fx-background-color: -m3-color-surface-container-low;
+}
+
+.hmcl-primary-nav-bar {
+    -fx-background-color: -m3-color-surface-container;
 }
 
 .hmcl-home-shortcuts {
