@@ -60,8 +60,11 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Title-bar control hit target size (slightly smaller than the bar for tonal padding).
     private static final double TITLE_BUTTON_SIZE = 40.0;
 
-    /// Corner radius used by the clipped window body.
-    private static final double WINDOW_RADIUS = 12.0;
+    /// Material 3 large corner radius for the clipped window body, in logical pixels.
+    ///
+    /// Matches the MD3 shape scale "large" token (`16`). JavaFX [Rectangle] arc properties use the corner
+    /// ellipse *diameter*, so the clip is configured with `2 * WINDOW_CORNER_RADIUS`.
+    private static final double WINDOW_CORNER_RADIUS = 16.0;
 
     /// Outer transparent inset reserved for the window shadow.
     private static final double WINDOW_PADDING = 8.0;
@@ -198,8 +201,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(parent.widthProperty());
         clip.heightProperty().bind(parent.heightProperty());
-        clip.setArcWidth(WINDOW_RADIUS);
-        clip.setArcHeight(WINDOW_RADIUS);
+        // Rectangle arcWidth/arcHeight are diameters; convert the MD3 radius to that API.
+        clip.setArcWidth(WINDOW_CORNER_RADIUS * 2.0);
+        clip.setArcHeight(WINDOW_CORNER_RADIUS * 2.0);
         parent.setClip(clip);
 
         configureTitleBar();
