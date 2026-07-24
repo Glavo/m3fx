@@ -12,6 +12,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
+import org.glavo.m3fx.animation.M3EnterTransition;
+import org.glavo.m3fx.animation.M3ExitTransition;
+import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
@@ -114,6 +118,8 @@ final class HMCLGameSettingsForm {
         blocks.add(quickPlaySection(controller, settingsSupplier, settingsConsumer, settings, scope));
         blocks.add(advancedLaunchSection(controller, settingsSupplier, settingsConsumer, settings, scope));
         blocks.add(jvmSection(controller, settingsSupplier, settingsConsumer, settings, scope));
+        // Matches HMCL: min heap / metaspace live under JVM, not the main memory allocation sublist.
+        blocks.add(jvmMemorySection(controller, settingsSupplier, settingsConsumer, settings, scope));
 
         VBox root = new VBox(16.0);
         root.setMinHeight(0.0);
@@ -351,29 +357,7 @@ final class HMCLGameSettingsForm {
             status.setText(strings.format("settings.memory.status", "16384", String.valueOf(mb)));
         });
 
-        M3SelectSettingItem<Integer> minMemory = selectItem(
-                strings.get("settings.memory.min"),
-                List.of(256, 512, 1024, 2048),
-                settings.minMemoryMb(),
-                value -> value + " MiB",
-                value -> {
-                    HMCLDemoGameSettings current = settingsSupplier.get();
-                    settingsConsumer.accept(current.withMemory(
-                            current.autoMemory(), current.maxMemoryMb(), value, current.metaspaceMb()));
-                }
-        );
-        M3SelectSettingItem<Integer> metaspace = selectItem(
-                strings.get("settings.memory.metaspace"),
-                List.of(128, 256, 512, 1024),
-                settings.metaspaceMb(),
-                value -> value + " MiB",
-                value -> {
-                    HMCLDemoGameSettings current = settingsSupplier.get();
-                    settingsConsumer.accept(current.withMemory(
-                            current.autoMemory(), current.maxMemoryMb(), current.minMemoryMb(), value));
-                }
-        );
-
+        // HMCL memory sublist: auto/manual allocation + status only (not min heap / metaspace).
         return expandableSection(
                 scope + ".memory",
                 strings.get("settings.memory"),
@@ -382,9 +366,7 @@ final class HMCLGameSettingsForm {
                 auto,
                 manual,
                 manualRow,
-                status,
-                minMemory,
-                metaspace
+                status
         );
     }
 
@@ -704,6 +686,43 @@ final class HMCLGameSettingsForm {
         );
     }
 
+    /// Min heap / metaspace options (HMCL places these under JVM, not the main memory sublist).
+    private static Node jvmMemorySection(
+            HMCLDemoController controller,
+            Supplier<HMCLDemoGameSettings> settingsSupplier,
+            Consumer<HMCLDemoGameSettings> settingsConsumer,
+            HMCLDemoGameSettings settings,
+            String scope
+    ) {
+        HMCLDemoStrings strings = controller.strings();
+        return expandableSection(
+                scope + ".jvmMemory",
+                strings.get("settings.advanced.jvm_memory"),
+                strings.get("settings.advanced.jvm_memory.support"),
+                false,
+                selectItem(
+                        strings.get("settings.memory.min"),
+                        List.of(256, 512, 1024, 2048),
+                        settings.minMemoryMb(),
+                        value -> value + " MiB",
+                        value -> {
+                            HMCLDemoGameSettings current = settingsSupplier.get();
+                            settingsConsumer.accept(current.withMemory(
+                                    current.autoMemory(), current.maxMemoryMb(), value, current.metaspaceMb()));
+                        }),
+                selectItem(
+                        strings.get("settings.memory.metaspace"),
+                        List.of(128, 256, 512, 1024),
+                        settings.metaspaceMb(),
+                        value -> value + " MiB",
+                        value -> {
+                            HMCLDemoGameSettings current = settingsSupplier.get();
+                            settingsConsumer.accept(current.withMemory(
+                                    current.autoMemory(), current.maxMemoryMb(), current.minMemoryMb(), value));
+                        })
+        );
+    }
+
     private static VBox section(String title, Node... items) {
         M3ListSectionHeader header = new M3ListSectionHeader(title);
         header.getStyleClass().add("hmcl-settings-section-header");
@@ -716,8 +735,8 @@ final class HMCLGameSettingsForm {
 
     /// Creates a settings group whose body is revealed by an expandable setting row.
     ///
-    /// Nested content is a sibling of the header row (not [#M3ExpandableSettingItem#setContent(Node)]). Sibling layout
-    /// participates in normal VBox sizing, which keeps following groups from being overpainted when a section opens.
+    /// Nested content is a sibling of the header row wrapped in [M3AnimatedVisibility] so open/close runs a height
+    /// clip plus fade. Form rebuilds snap the body (no re-entry animation) because setting edits recreate the page.
     ///
     /// @param stateKey         key used to remember expansion across form rebuilds
     /// @param title            the expandable row headline
@@ -738,8 +757,6 @@ final class HMCLGameSettingsForm {
             expandable.setSupportingText(support);
         }
         expandable.setExpanded(expanded);
-        expandable.expandedProperty().addListener((observable, wasExpanded, isExpanded) ->
-                EXPANDED_SECTIONS.put(stateKey, Boolean.TRUE.equals(isExpanded)));
 
         M3ListPane headerList = new M3ListPane();
         headerList.setListStyle(M3ListStyle.STANDARD);
@@ -749,11 +766,24 @@ final class HMCLGameSettingsForm {
         headerList.getItems().setAll(expandable);
 
         VBox body = settingBody(items);
-        // Keep the nested body in the layout tree only while expanded so group height stays correct.
-        body.managedProperty().bind(expandable.expandedProperty());
-        body.visibleProperty().bind(expandable.expandedProperty());
+        M3AnimatedVisibility visibility = new M3AnimatedVisibility(body);
+        visibility.setFitToWidth(true);
+        visibility.setAlignment(Pos.TOP_LEFT);
+        // Expand/collapse should feel like a disclosure, not a dialog pop.
+        visibility.setEnterTransition(M3EnterTransition.fade(0.0));
+        visibility.setExitTransition(M3ExitTransition.fade(0.0));
+        visibility.setSizeTransform(new M3SizeTransform(true, null));
+        visibility.setShowing(expanded);
+        // Rebuilt forms restore expansion without replaying enter motion.
+        visibility.snapToCurrentState();
 
-        VBox block = new VBox(headerList, body);
+        expandable.expandedProperty().addListener((observable, wasExpanded, isExpanded) -> {
+            boolean open = Boolean.TRUE.equals(isExpanded);
+            EXPANDED_SECTIONS.put(stateKey, open);
+            visibility.setShowing(open);
+        });
+
+        VBox block = new VBox(headerList, visibility);
         block.getStyleClass().add("hmcl-settings-group");
         block.setMinHeight(0.0);
         block.setFillWidth(true);
