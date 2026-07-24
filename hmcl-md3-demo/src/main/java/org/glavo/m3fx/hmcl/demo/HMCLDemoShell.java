@@ -12,6 +12,7 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
@@ -151,6 +152,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     /// Drag origin for title-bar window movement.
     private double dragOffsetY;
+
+    /// Whether the title bar is currently dragging the undecorated stage.
+    private boolean windowDragging;
 
     /// Whether an edge-resize gesture is active.
     private boolean resizing;
@@ -650,11 +654,18 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         titleContainer.setMaxHeight(TITLE_HEIGHT);
         titleContainer.setMinWidth(0.0);
         titleContainer.setMaxWidth(Double.MAX_VALUE);
+        titleContainer.setPickOnBounds(true);
         VBox.setVgrow(titleContainer, Priority.NEVER);
-        titleContainer.setOnMousePressed(this::handleWindowDragPressed);
-        titleContainer.setOnMouseDragged(this::handleWindowDragged);
-        titleContainer.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+        // Filters so drags starting on title labels/icons still move the window (bubble handlers miss those targets).
+        titleContainer.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleWindowDragPressed);
+        titleContainer.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleWindowDragged);
+        titleContainer.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleWindowDragReleased);
+        titleContainer.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (windowDragging || resizing) {
+                return;
+            }
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2
+                    && !isInteractiveTitleControl(event)) {
                 @Nullable Stage stage = currentStage();
                 if (stage != null) {
                     stage.setMaximized(!stage.isMaximized());
@@ -698,6 +709,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         windowButtons.setMaxWidth(Region.USE_PREF_SIZE);
 
         BorderPane titleBar = new BorderPane();
+        titleBar.setPickOnBounds(true);
         titleBar.setCenter(titleNavHost);
         titleBar.setRight(windowButtons);
         BorderPane.setAlignment(windowButtons, Pos.CENTER_RIGHT);
@@ -854,13 +866,24 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param event the press event
     private void handleWindowDragPressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY || isResizeCursor(resizeCursor)) {
+        if (event.getButton() != MouseButton.PRIMARY || resizing) {
+            return;
+        }
+        if (isInteractiveTitleControl(event)) {
+            windowDragging = false;
+            return;
+        }
+        // Only the outer shadow padding is a resize grip; the title bar itself always drags.
+        Point2D local = localPointer(event);
+        if (isResizeCursor(resizeCursorAt(local.getX(), local.getY()))) {
+            windowDragging = false;
             return;
         }
         @Nullable Window window = getScene() == null ? null : getScene().getWindow();
         if (window == null) {
             return;
         }
+        windowDragging = true;
         dragOffsetX = event.getScreenX() - window.getX();
         dragOffsetY = event.getScreenY() - window.getY();
     }
@@ -869,7 +892,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param event the drag event
     private void handleWindowDragged(MouseEvent event) {
-        if (!event.isPrimaryButtonDown() || resizing || isResizeCursor(resizeCursor)) {
+        if (!windowDragging || !event.isPrimaryButtonDown() || resizing) {
             return;
         }
         @Nullable Window window = getScene() == null ? null : getScene().getWindow();
@@ -878,6 +901,38 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         }
         window.setX(event.getScreenX() - dragOffsetX);
         window.setY(event.getScreenY() - dragOffsetY);
+        event.consume();
+    }
+
+    /// Ends a title-bar window drag.
+    ///
+    /// @param event the release event
+    private void handleWindowDragReleased(MouseEvent event) {
+        if (windowDragging) {
+            windowDragging = false;
+            event.consume();
+        }
+    }
+
+    /// Returns whether the event targets a clickable title-bar control that must not start a window drag.
+    ///
+    /// @param event the mouse event
+    /// @return `true` for window buttons and other button-like title controls
+    private boolean isInteractiveTitleControl(MouseEvent event) {
+        Object target = event.getTarget();
+        if (!(target instanceof Node node)) {
+            return false;
+        }
+        for (Node current = node; current != null && current != titleContainer; current = current.getParent()) {
+            if (current instanceof ButtonBase) {
+                return true;
+            }
+            if (current.getStyleClass().contains("hmcl-window-button")
+                    || current.getStyleClass().contains("hmcl-window-buttons")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Installs edge and corner resize for the transparent undecorated stage.
