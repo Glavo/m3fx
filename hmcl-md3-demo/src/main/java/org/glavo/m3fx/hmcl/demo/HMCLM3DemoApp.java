@@ -84,6 +84,7 @@ public final class HMCLM3DemoApp extends Application {
         stage.setScene(activeScene);
         stage.setTitle(strings.get("app.title"));
         stage.getIcons().add(HMCLDemoAssets.image("img/icon.png"));
+        stage.setResizable(true);
         stage.setMinWidth(WINDOW_WIDTH);
         stage.setMinHeight(WINDOW_HEIGHT);
         stage.setWidth(WINDOW_WIDTH);

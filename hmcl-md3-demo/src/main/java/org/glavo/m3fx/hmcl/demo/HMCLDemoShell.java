@@ -4,6 +4,7 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
@@ -133,6 +134,30 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// Drag origin for title-bar window movement.
     private double dragOffsetY;
 
+    /// Whether an edge-resize gesture is active.
+    private boolean resizing;
+
+    /// Cursor that owns the active resize gesture, or the last edge under the pointer.
+    private Cursor resizeCursor = Cursor.DEFAULT;
+
+    /// Screen X at the start of a resize gesture.
+    private double resizeStartScreenX;
+
+    /// Screen Y at the start of a resize gesture.
+    private double resizeStartScreenY;
+
+    /// Stage X at the start of a resize gesture.
+    private double resizeStartStageX;
+
+    /// Stage Y at the start of a resize gesture.
+    private double resizeStartStageY;
+
+    /// Stage width at the start of a resize gesture.
+    private double resizeStartWidth;
+
+    /// Stage height at the start of a resize gesture.
+    private double resizeStartHeight;
+
     /// Creates the HMCL-style application shell.
     ///
     /// @param overlay the overlay host
@@ -160,6 +185,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
         getStyleClass().add("hmcl-demo-shell");
         setPadding(new Insets(WINDOW_PADDING));
+        setPickOnBounds(true);
         setMinSize(MIN_CONTENT_WIDTH + WINDOW_PADDING * 2.0, MIN_CONTENT_HEIGHT + WINDOW_PADDING * 2.0);
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
@@ -203,6 +229,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             refreshLocale();
             updateTitleBar();
         });
+        installWindowResizeSupport();
         updateWallpaper();
         showRoute(currentRoute, TransitionKind.IMMEDIATE);
     }
@@ -658,7 +685,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param event the press event
     private void handleWindowDragPressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) {
+        if (event.getButton() != MouseButton.PRIMARY || isResizeCursor(resizeCursor)) {
             return;
         }
         @Nullable Window window = getScene() == null ? null : getScene().getWindow();
@@ -673,7 +700,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param event the drag event
     private void handleWindowDragged(MouseEvent event) {
-        if (!event.isPrimaryButtonDown()) {
+        if (!event.isPrimaryButtonDown() || resizing || isResizeCursor(resizeCursor)) {
             return;
         }
         @Nullable Window window = getScene() == null ? null : getScene().getWindow();
@@ -682,6 +709,189 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         }
         window.setX(event.getScreenX() - dragOffsetX);
         window.setY(event.getScreenY() - dragOffsetY);
+    }
+
+    /// Installs edge and corner resize for the transparent undecorated stage.
+    ///
+    /// Transparent stages have no system chrome, so the outer padding acts as the resize grip, matching HMCL's
+    /// decorator inset behavior.
+    private void installWindowResizeSupport() {
+        addEventFilter(MouseEvent.MOUSE_MOVED, this::handleResizeMouseMoved);
+        addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleResizeMousePressed);
+        addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleResizeMouseDragged);
+        addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleResizeMouseReleased);
+        addEventFilter(MouseEvent.MOUSE_EXITED, event -> {
+            if (!resizing) {
+                resizeCursor = Cursor.DEFAULT;
+                setCursor(Cursor.DEFAULT);
+            }
+        });
+    }
+
+    /// Updates the resize cursor when the pointer is over a stage edge or corner.
+    private void handleResizeMouseMoved(MouseEvent event) {
+        @Nullable Stage stage = currentStage();
+        if (stage == null || !stage.isResizable() || stage.isMaximized() || stage.isFullScreen()) {
+            resizeCursor = Cursor.DEFAULT;
+            setCursor(Cursor.DEFAULT);
+            return;
+        }
+        Point2D local = localPointer(event);
+        resizeCursor = resizeCursorAt(local.getX(), local.getY());
+        setCursor(resizeCursor);
+    }
+
+    /// Begins an edge-resize gesture when pressing on a resize grip.
+    private void handleResizeMousePressed(MouseEvent event) {
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+        @Nullable Stage stage = currentStage();
+        if (stage == null || !stage.isResizable() || stage.isMaximized() || stage.isFullScreen()) {
+            return;
+        }
+        Point2D local = localPointer(event);
+        Cursor cursor = resizeCursorAt(local.getX(), local.getY());
+        if (!isResizeCursor(cursor)) {
+            return;
+        }
+        resizing = true;
+        resizeCursor = cursor;
+        setCursor(cursor);
+        resizeStartScreenX = event.getScreenX();
+        resizeStartScreenY = event.getScreenY();
+        resizeStartStageX = stage.getX();
+        resizeStartStageY = stage.getY();
+        resizeStartWidth = stage.getWidth();
+        resizeStartHeight = stage.getHeight();
+        event.consume();
+    }
+
+    /// Applies the active edge-resize gesture to the owning stage.
+    private void handleResizeMouseDragged(MouseEvent event) {
+        if (!resizing || !event.isPrimaryButtonDown()) {
+            return;
+        }
+        @Nullable Stage stage = currentStage();
+        if (stage == null || !stage.isResizable() || stage.isMaximized() || stage.isFullScreen()) {
+            resizing = false;
+            return;
+        }
+
+        double dx = event.getScreenX() - resizeStartScreenX;
+        double dy = event.getScreenY() - resizeStartScreenY;
+        double minWidth = Math.max(stage.getMinWidth(), computeMinWidth(-1.0));
+        double minHeight = Math.max(stage.getMinHeight(), computeMinHeight(-1.0));
+
+        double newWidth = resizeStartWidth;
+        double newHeight = resizeStartHeight;
+        double newX = resizeStartStageX;
+        double newY = resizeStartStageY;
+
+        if (resizeCursor == Cursor.E_RESIZE || resizeCursor == Cursor.NE_RESIZE || resizeCursor == Cursor.SE_RESIZE) {
+            newWidth = Math.max(minWidth, resizeStartWidth + dx);
+        }
+        if (resizeCursor == Cursor.S_RESIZE || resizeCursor == Cursor.SE_RESIZE || resizeCursor == Cursor.SW_RESIZE) {
+            newHeight = Math.max(minHeight, resizeStartHeight + dy);
+        }
+        if (resizeCursor == Cursor.W_RESIZE || resizeCursor == Cursor.NW_RESIZE || resizeCursor == Cursor.SW_RESIZE) {
+            newWidth = Math.max(minWidth, resizeStartWidth - dx);
+            newX = resizeStartStageX + (resizeStartWidth - newWidth);
+        }
+        if (resizeCursor == Cursor.N_RESIZE || resizeCursor == Cursor.NW_RESIZE || resizeCursor == Cursor.NE_RESIZE) {
+            newHeight = Math.max(minHeight, resizeStartHeight - dy);
+            newY = resizeStartStageY + (resizeStartHeight - newHeight);
+        }
+
+        // Width and height must be assigned together to avoid JDK-8344372 layout glitches.
+        stage.setX(newX);
+        stage.setY(newY);
+        stage.setWidth(newWidth);
+        stage.setHeight(newHeight);
+        event.consume();
+    }
+
+    /// Ends an edge-resize gesture.
+    private void handleResizeMouseReleased(MouseEvent event) {
+        if (!resizing) {
+            return;
+        }
+        resizing = false;
+        Point2D local = localPointer(event);
+        resizeCursor = resizeCursorAt(local.getX(), local.getY());
+        setCursor(resizeCursor);
+        event.consume();
+    }
+
+    /// Converts a mouse event to shell-local coordinates.
+    private Point2D localPointer(MouseEvent event) {
+        return sceneToLocal(event.getSceneX(), event.getSceneY());
+    }
+
+    /// Returns the resize cursor for a shell-local pointer position.
+    private Cursor resizeCursorAt(double x, double y) {
+        double width = getWidth();
+        double height = getHeight();
+        if (width <= 0.0 || height <= 0.0) {
+            return Cursor.DEFAULT;
+        }
+
+        double edge = WINDOW_PADDING;
+        double corner = WINDOW_PADDING + 10.0;
+        boolean left = x >= 0.0 && x <= edge;
+        boolean right = x < width && x >= width - edge;
+        boolean top = y >= 0.0 && y <= edge;
+        boolean bottom = y < height && y >= height - edge;
+
+        if (right) {
+            if (y < corner) {
+                return Cursor.NE_RESIZE;
+            }
+            if (y > height - corner) {
+                return Cursor.SE_RESIZE;
+            }
+            return Cursor.E_RESIZE;
+        }
+        if (left) {
+            if (y < corner) {
+                return Cursor.NW_RESIZE;
+            }
+            if (y > height - corner) {
+                return Cursor.SW_RESIZE;
+            }
+            return Cursor.W_RESIZE;
+        }
+        if (top) {
+            if (x < corner) {
+                return Cursor.NW_RESIZE;
+            }
+            if (x > width - corner) {
+                return Cursor.NE_RESIZE;
+            }
+            return Cursor.N_RESIZE;
+        }
+        if (bottom) {
+            if (x < corner) {
+                return Cursor.SW_RESIZE;
+            }
+            if (x > width - corner) {
+                return Cursor.SE_RESIZE;
+            }
+            return Cursor.S_RESIZE;
+        }
+        return Cursor.DEFAULT;
+    }
+
+    /// Returns whether `cursor` is one of the eight stage-resize cursors.
+    private static boolean isResizeCursor(Cursor cursor) {
+        return cursor == Cursor.N_RESIZE
+                || cursor == Cursor.S_RESIZE
+                || cursor == Cursor.E_RESIZE
+                || cursor == Cursor.W_RESIZE
+                || cursor == Cursor.NE_RESIZE
+                || cursor == Cursor.NW_RESIZE
+                || cursor == Cursor.SE_RESIZE
+                || cursor == Cursor.SW_RESIZE;
     }
 
     /// Returns the owning stage when available.
