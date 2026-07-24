@@ -33,17 +33,25 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /// Builds an HMCL-aligned game-settings form from offline state using available M3FX controls.
+///
+/// Multi-option groups mirror HMCL `ComponentSublist`: collapsed by default with a one-line summary, expanded on
+/// demand. Expansion is remembered across form rebuilds so toggling a setting does not flatten the page again.
 @NotNullByDefault
 final class HMCLGameSettingsForm {
     /// Common windowed resolutions offered by HMCL.
     private static final String @org.jetbrains.annotations.Unmodifiable [] RESOLUTIONS = {
             "854x480", "1280x720", "1600x900", "1920x1080", "2560x1440"
     };
+
+    /// Remembers which expandable groups are open across state-driven form rebuilds.
+    private static final Map<String, Boolean> EXPANDED_SECTIONS = new HashMap<>();
 
     /// Creates a form host.
     private HMCLGameSettingsForm() {
@@ -65,6 +73,8 @@ final class HMCLGameSettingsForm {
         HMCLDemoStrings strings = controller.strings();
         HMCLDemoState state = controller.state();
         HMCLDemoGameSettings settings = settingsSupplier.get();
+        // Separate expand memory for global vs instance forms so each page keeps its own open groups.
+        String scope = instanceMode ? "instance" : "global";
 
         List<Node> blocks = new ArrayList<>();
 
@@ -96,13 +106,14 @@ final class HMCLGameSettingsForm {
             blocks.add(section(strings.get("settings.game.section.basic"), isolation));
         }
 
+        // Java is a single select row (already compact). Multi-choice groups use expandable sublists like HMCL.
         blocks.add(javaSection(controller, settingsSupplier, settingsConsumer, settings));
-        blocks.add(memorySection(controller, settingsSupplier, settingsConsumer, settings));
-        blocks.add(windowSection(controller, settingsSupplier, settingsConsumer, settings));
+        blocks.add(memorySection(controller, settingsSupplier, settingsConsumer, settings, scope));
+        blocks.add(windowSection(controller, settingsSupplier, settingsConsumer, settings, scope));
         blocks.add(launcherSection(controller, settingsSupplier, settingsConsumer, settings));
-        blocks.add(quickPlaySection(controller, settingsSupplier, settingsConsumer, settings));
-        blocks.add(advancedLaunchSection(controller, settingsSupplier, settingsConsumer, settings));
-        blocks.add(jvmSection(controller, settingsSupplier, settingsConsumer, settings));
+        blocks.add(quickPlaySection(controller, settingsSupplier, settingsConsumer, settings, scope));
+        blocks.add(advancedLaunchSection(controller, settingsSupplier, settingsConsumer, settings, scope));
+        blocks.add(jvmSection(controller, settingsSupplier, settingsConsumer, settings, scope));
 
         VBox root = new VBox(16.0);
         root.setMinHeight(0.0);
@@ -267,7 +278,8 @@ final class HMCLGameSettingsForm {
             HMCLDemoController controller,
             Supplier<HMCLDemoGameSettings> settingsSupplier,
             Consumer<HMCLDemoGameSettings> settingsConsumer,
-            HMCLDemoGameSettings settings
+            HMCLDemoGameSettings settings,
+            String scope
     ) {
         HMCLDemoStrings strings = controller.strings();
         ToggleGroup memoryGroup = new ToggleGroup();
@@ -362,8 +374,11 @@ final class HMCLGameSettingsForm {
                 }
         );
 
-        return section(
+        return expandableSection(
+                scope + ".memory",
                 strings.get("settings.memory"),
+                memorySummary(strings, settings),
+                false,
                 auto,
                 manual,
                 manualRow,
@@ -377,12 +392,16 @@ final class HMCLGameSettingsForm {
             HMCLDemoController controller,
             Supplier<HMCLDemoGameSettings> settingsSupplier,
             Consumer<HMCLDemoGameSettings> settingsConsumer,
-            HMCLDemoGameSettings settings
+            HMCLDemoGameSettings settings,
+            String scope
     ) {
         HMCLDemoStrings strings = controller.strings();
         ToggleGroup windowGroup = new ToggleGroup();
-        return section(
+        return expandableSection(
+                scope + ".window",
                 strings.get("settings.game.window_type"),
+                windowSummary(strings, settings),
+                false,
                 radioItem(strings.get("settings.game.window.windowed"), settings.resolution(),
                         "windowed".equals(settings.windowType()),
                         windowGroup,
@@ -478,12 +497,16 @@ final class HMCLGameSettingsForm {
             HMCLDemoController controller,
             Supplier<HMCLDemoGameSettings> settingsSupplier,
             Consumer<HMCLDemoGameSettings> settingsConsumer,
-            HMCLDemoGameSettings settings
+            HMCLDemoGameSettings settings,
+            String scope
     ) {
         HMCLDemoStrings strings = controller.strings();
         ToggleGroup quickPlayGroup = new ToggleGroup();
-        return section(
+        return expandableSection(
+                scope + ".quickPlay",
                 strings.get("settings.game.quick_play"),
+                quickPlaySummary(strings, settings),
+                false,
                 radioItem(strings.get("settings.game.quick_play.none"), "",
                         "none".equals(settings.quickPlayType()),
                         quickPlayGroup,
@@ -530,10 +553,12 @@ final class HMCLGameSettingsForm {
             HMCLDemoController controller,
             Supplier<HMCLDemoGameSettings> settingsSupplier,
             Consumer<HMCLDemoGameSettings> settingsConsumer,
-            HMCLDemoGameSettings settings
+            HMCLDemoGameSettings settings,
+            String scope
     ) {
         HMCLDemoStrings strings = controller.strings();
         return expandableSection(
+                scope + ".advancedLaunch",
                 strings.get("settings.advanced.launch_options"),
                 strings.get("settings.advanced.launch_options.subtitle"),
                 false,
@@ -592,10 +617,12 @@ final class HMCLGameSettingsForm {
             HMCLDemoController controller,
             Supplier<HMCLDemoGameSettings> settingsSupplier,
             Consumer<HMCLDemoGameSettings> settingsConsumer,
-            HMCLDemoGameSettings settings
+            HMCLDemoGameSettings settings,
+            String scope
     ) {
         HMCLDemoStrings strings = controller.strings();
         return expandableSection(
+                scope + ".jvm",
                 strings.get("settings.advanced.jvm"),
                 "",
                 false,
@@ -689,17 +716,27 @@ final class HMCLGameSettingsForm {
 
     /// Creates a settings group whose body is revealed by an expandable setting row.
     ///
-    /// @param title     the expandable row headline
-    /// @param support   optional supporting text for the row
-    /// @param expanded  whether the group starts expanded
-    /// @param items     nested setting rows and free-form nodes
+    /// @param stateKey         key used to remember expansion across form rebuilds
+    /// @param title            the expandable row headline
+    /// @param support          optional supporting text (typically the current value summary)
+    /// @param defaultExpanded  whether the group starts expanded when no remembered state exists
+    /// @param items            nested setting rows and free-form nodes
     /// @return the group root
-    private static VBox expandableSection(String title, String support, boolean expanded, Node... items) {
+    private static VBox expandableSection(
+            String stateKey,
+            String title,
+            String support,
+            boolean defaultExpanded,
+            Node... items
+    ) {
+        boolean expanded = EXPANDED_SECTIONS.getOrDefault(stateKey, defaultExpanded);
         M3ExpandableSettingItem expandable = new M3ExpandableSettingItem(title);
         if (!support.isBlank()) {
             expandable.setSupportingText(support);
         }
         expandable.setExpanded(expanded);
+        expandable.expandedProperty().addListener((observable, wasExpanded, isExpanded) ->
+                EXPANDED_SECTIONS.put(stateKey, Boolean.TRUE.equals(isExpanded)));
         expandable.setContent(settingBody(items));
 
         M3ListPane list = new M3ListPane();
@@ -857,5 +894,39 @@ final class HMCLGameSettingsForm {
             case "low" -> "settings.priority.low";
             default -> "settings.priority.normal";
         });
+    }
+
+    /// Summarizes the memory allocation choice for a collapsed sublist row.
+    private static String memorySummary(HMCLDemoStrings strings, HMCLDemoGameSettings settings) {
+        if (settings.autoMemory()) {
+            return strings.get("settings.memory.auto");
+        }
+        return settings.maxMemoryMb() + " MiB";
+    }
+
+    /// Summarizes the game window mode for a collapsed sublist row.
+    private static String windowSummary(HMCLDemoStrings strings, HMCLDemoGameSettings settings) {
+        return switch (settings.windowType()) {
+            case "fullscreen" -> strings.get("settings.game.window.fullscreen");
+            case "borderless" -> strings.get("settings.game.window.borderless");
+            case "maximized" -> strings.get("settings.game.window.maximized");
+            default -> strings.get("settings.game.window.windowed") + " · " + settings.resolution();
+        };
+    }
+
+    /// Summarizes the quick-play target for a collapsed sublist row.
+    private static String quickPlaySummary(HMCLDemoStrings strings, HMCLDemoGameSettings settings) {
+        return switch (settings.quickPlayType()) {
+            case "multiplayer" -> settings.quickPlayMultiplayer().isBlank()
+                    ? strings.get("settings.game.quick_play.multiplayer")
+                    : settings.quickPlayMultiplayer();
+            case "singleplayer" -> settings.quickPlaySingleplayer().isBlank()
+                    ? strings.get("settings.game.quick_play.singleplayer")
+                    : settings.quickPlaySingleplayer();
+            case "realms" -> settings.quickPlayRealms().isBlank()
+                    ? strings.get("settings.game.quick_play.realms")
+                    : settings.quickPlayRealms();
+            default -> strings.get("settings.game.quick_play.none");
+        };
     }
 }
