@@ -75,27 +75,34 @@ final class HMCLDemoTransitions {
 
     /// Returns the ordinary shell navigation transform (home ↔ primary destinations).
     ///
+    /// Host-level motion is fade only. HMCL `ContainerAnimations.NAVIGATION` does **not** pan the whole page; it
+    /// fades while optionally offsetting a `DecoratorAnimatedPage` left/center pair by ±30px. The shell applies that
+    /// split on [BorderPane] pages separately so the content area never slides as one solid block.
+    ///
     /// @return the transform
     static M3ContentTransform navigation() {
-        // Mild dual-offset fade: outgoing drifts toward start, incoming arrives from end.
-        M3EnterTransition enter = M3EnterTransition.fade(0.0)
-                .withDelay(Duration.millis(40.0))
-                .and(M3EnterTransition.slideFrom(M3TransitionEdge.END, NAVIGATION_DISTANCE));
-        M3ExitTransition exit = M3ExitTransition.fade(0.0)
-                .and(M3ExitTransition.slideTo(M3TransitionEdge.START, NAVIGATION_DISTANCE));
-        return new M3ContentTransform(enter, exit, null, 0.0);
+        return new M3ContentTransform(
+                M3EnterTransition.fade(0.0).withDelay(Duration.millis(40.0)),
+                M3ExitTransition.fade(0.0),
+                null,
+                0.0
+        );
     }
 
     /// Returns the reverse of [#navigation] used when returning toward home.
     ///
+    /// Same host fade as [#navigation]; directionality for the left/center split is applied by the shell.
+    ///
     /// @return the transform
     static M3ContentTransform navigationBack() {
-        M3EnterTransition enter = M3EnterTransition.fade(0.0)
-                .withDelay(Duration.millis(40.0))
-                .and(M3EnterTransition.slideFrom(M3TransitionEdge.START, NAVIGATION_DISTANCE));
-        M3ExitTransition exit = M3ExitTransition.fade(0.0)
-                .and(M3ExitTransition.slideTo(M3TransitionEdge.END, NAVIGATION_DISTANCE));
-        return new M3ContentTransform(enter, exit, null, 0.0);
+        return navigation();
+    }
+
+    /// Horizontal offset applied to left/center panes during shell navigation (HMCL `NAVIGATION`).
+    ///
+    /// @return distance in logical pixels
+    static double navigationSplitDistance() {
+        return NAVIGATION_DISTANCE;
     }
 
     /// Returns a hierarchical forward navigation transform.

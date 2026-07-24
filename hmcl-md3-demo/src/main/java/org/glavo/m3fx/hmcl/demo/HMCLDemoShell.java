@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -29,6 +33,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.controls.M3IconButton;
@@ -40,6 +45,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -200,7 +206,8 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         pageHost.getStyleClass().add("hmcl-route-host");
         pageHost.setFitToWidth(true);
         pageHost.setFitToHeight(true);
-        pageHost.setContentTransform(HMCLDemoTransitions.forward());
+        // Default to soft home navigation; hierarchical push still sets FORWARD per route.
+        pageHost.setContentTransform(HMCLDemoTransitions.navigation());
         VBox.setVgrow(pageHost, Priority.ALWAYS);
 
         // Title is a non-growing sibling; content alone absorbs remaining height.
@@ -431,10 +438,16 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
             state.selectInstance(instanceRoute.instanceId());
         }
+        Node page = pageFor(route);
+        // Clear residual split offsets from a previous navigation animation on this retained page.
+        clearNavigationSplit(page);
         pageHost.setContentTransform(transformFor(kind));
-        pageHost.setContent(pageFor(route));
+        pageHost.setContent(page);
         if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
             pageHost.snapToCurrentState();
+        } else if (kind == TransitionKind.NAVIGATION || kind == TransitionKind.NAVIGATION_BACK) {
+            // Host fades; left/center reassemble with ±30px like HMCL DecoratorAnimatedPage NAVIGATION.
+            playNavigationSplitEnter(page);
         }
         updateTitleBar(kind);
         if (route instanceof HMCLDemoRoute.Home
@@ -442,6 +455,58 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
                 && kind != TransitionKind.NAVIGATION) {
             backStack.clear();
         }
+    }
+
+    /// Resets left/center translation installed by [#playNavigationSplitEnter(Node)].
+    ///
+    /// @param page the page root
+    private static void clearNavigationSplit(Node page) {
+        if (!(page instanceof BorderPane borderPane)) {
+            return;
+        }
+        @Nullable Node left = borderPane.getLeft();
+        @Nullable Node center = borderPane.getCenter();
+        if (left != null) {
+            left.setTranslateX(0.0);
+        }
+        if (center != null) {
+            center.setTranslateX(0.0);
+        }
+    }
+
+    /// Plays the HMCL-style left/center reassemble for a two-pane page after a soft navigation fade.
+    ///
+    /// @param page the incoming page root
+    private void playNavigationSplitEnter(Node page) {
+        if (!(page instanceof BorderPane borderPane) || state.isAnimationDisabled()) {
+            return;
+        }
+        @Nullable Node left = borderPane.getLeft();
+        @Nullable Node center = borderPane.getCenter();
+        if (left == null && center == null) {
+            return;
+        }
+
+        double distance = HMCLDemoTransitions.navigationSplitDistance();
+        List<KeyValue> startValues = new ArrayList<>(2);
+        List<KeyValue> endValues = new ArrayList<>(2);
+        if (left != null) {
+            left.setTranslateX(-distance);
+            startValues.add(new KeyValue(left.translateXProperty(), -distance, Interpolator.EASE_BOTH));
+            endValues.add(new KeyValue(left.translateXProperty(), 0.0, Interpolator.EASE_BOTH));
+        }
+        if (center != null) {
+            center.setTranslateX(distance);
+            startValues.add(new KeyValue(center.translateXProperty(), distance, Interpolator.EASE_BOTH));
+            endValues.add(new KeyValue(center.translateXProperty(), 0.0, Interpolator.EASE_BOTH));
+        }
+
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.ZERO, startValues.toArray(KeyValue[]::new)),
+                // Second half of a short navigation beat (matches HMCL half-duration reassemble).
+                new KeyFrame(Duration.millis(160.0), endValues.toArray(KeyValue[]::new))
+        );
+        timeline.play();
     }
 
     /// Returns the transform for a transition kind.
