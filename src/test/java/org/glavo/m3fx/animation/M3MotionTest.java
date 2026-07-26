@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -74,6 +75,8 @@ final class M3MotionTest {
         M3MotionScheme standard = M3MotionScheme.standard();
         M3MotionScheme expressive = M3MotionScheme.expressive();
 
+        assertSame(standard, M3MotionScheme.standard());
+        assertSame(expressive, M3MotionScheme.expressive());
         assertEquals(M3Motion.SHORT3, standard.fastEffects().duration());
         assertEquals(M3Motion.MEDIUM3, standard.fastSpatial().duration());
         assertEquals(M3Motion.SHORT4, standard.defaultEffects().duration());
@@ -112,13 +115,17 @@ final class M3MotionTest {
         M3MotionBehavior standard = M3MotionBehavior.standard();
         M3MotionBehavior expressive = M3MotionBehavior.expressive();
 
+        assertSame(standard, M3MotionBehavior.standard());
+        assertSame(expressive, M3MotionBehavior.expressive());
         assertEquals(Duration.millis(500.0), standard.tooltipShowDelay());
+        assertEquals(Duration.millis(1500.0), standard.tooltipHideDelay());
         assertEquals(Duration.seconds(5.0), standard.tooltipShowDuration());
         assertEquals(Duration.seconds(10.0), standard.richTooltipShowDuration());
         assertEquals(Duration.millis(200.0), standard.subMenuHoverOpenDelay());
         assertEquals(Duration.millis(1750.0), standard.linearProgressIndeterminateCycleDuration());
         assertEquals(Duration.millis(6000.0), standard.circularProgressIndeterminateCycleDuration());
 
+        assertEquals(Duration.millis(1500.0), expressive.tooltipHideDelay());
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverOpenDelay());
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverCloseDelay());
     }
@@ -134,6 +141,8 @@ final class M3MotionTest {
                 .snackbarDisplayDuration(Duration.seconds(7.0))
                 .build();
 
+        assertNotSame(M3MotionScheme.standard(), scheme);
+        assertNotSame(M3MotionBehavior.expressive(), behavior);
         assertSame(customSpec, scheme.defaultSpatial());
         assertEquals(M3MotionScheme.standard().fastEffects(), scheme.fastEffects());
         assertEquals(Duration.seconds(7.0), behavior.snackbarDisplayDuration());

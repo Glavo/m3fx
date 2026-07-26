@@ -17,8 +17,10 @@ import java.util.Objects;
 /// validates the constraints documented by its canonical constructor.
 ///
 /// [builder(M3Profile,M3ShapeTokens,M3Density)] creates a complete snapshot derived from a profile, shape scale,
-/// and density. [builder(M3ComponentTokens)] copies an existing snapshot for selective replacement. Derived token
-/// groups do not retain a live relationship with the profile, shape scale, or density supplied to the builder.
+/// and density. Density affects only the generated component metrics for which density is defined, primarily
+/// component heights and vertical spacing. It does not rescale all component geometry. [builder(M3ComponentTokens)]
+/// copies an existing snapshot for selective replacement. Derived token groups do not retain a live relationship
+/// with the profile, shape scale, or density supplied to the builder.
 ///
 /// See [Material Design components](https://m3.material.io/components) and
 /// [Material Design](https://m3.material.io/).
@@ -258,7 +260,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param profile the Material token profile
     /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density the density adjustment applied to component geometry
+    /// @param density the density adjustment applied to density-sensitive component metrics
     /// @return a mutable component-token builder
     /// @throws NullPointerException if `profile`, `shapeTokens`, or `density` is `null`
     static M3ComponentTokensBuilder builder(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
@@ -274,158 +276,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         return new M3ComponentTokensBuilder(tokens);
     }
 
-    /// Creates component tokens from explicit component token values.
-    ///
-    /// @param filledButton         the filled button component tokens
-    /// @param tonalButton          the filled tonal button component tokens
-    /// @param outlinedButton       the outlined button component tokens
-    /// @param textButton           the text button component tokens
-    /// @param elevatedButton       the elevated button component tokens
-    /// @param buttonSizing         the five-step button size token scale
-    /// @param iconButton           the icon button component tokens
-    /// @param floatingActionButton the floating action button component tokens
-    /// @param icon                 the icon component tokens
-    /// @param buttonGroup          the button group component tokens
-    /// @param splitButton          the split button component tokens
-    /// @param segmentedButton      the segmented button component tokens
-    /// @param tab                  the tab component tokens
-    /// @param field                the text input component tokens
-    /// @param textArea             the text area component tokens
-    /// @param form                 the form component tokens
-    /// @param validationSummary    the validation summary component tokens
-    /// @param menu                 the menu component tokens
-    /// @param search               the search component tokens
-    /// @param pickerField          the picker field component tokens
-    /// @param datePicker           the date picker component tokens
-    /// @param timePicker           the time picker component tokens
-    /// @param sheet                the sheet component tokens
-    /// @param scrim                the scrim component tokens
-    /// @param selection            the selection control component tokens
-    /// @param slider               the slider component tokens
-    /// @param chip                 the chip component tokens
-    /// @param progress             the progress component tokens
-    /// @param loadingIndicator     the loading indicator component tokens
-    /// @param surface              the surface component tokens
-    /// @param carousel             the carousel component tokens
-    /// @param card                 the card component tokens
-    /// @param dialog               the dialog component tokens
-    /// @param snackbar             the snackbar component tokens
-    /// @param banner               the banner component tokens
-    /// @param tooltip              the tooltip component tokens
-    /// @param divider              the divider component tokens
-    /// @param badge                the badge component tokens
-    /// @param avatar               the avatar component tokens
-    /// @param topAppBar            the top app bar component tokens
-    /// @param bottomAppBar         the bottom app bar component tokens
-    /// @param toolbar              the toolbar component tokens
-    /// @param navigationBar        the navigation bar component tokens
-    /// @param navigationRail       the navigation rail component tokens
-    /// @param navigationDrawer     the navigation drawer component tokens
-    /// @param listItem             the list item component tokens
-    /// @return a component token set containing the supplied values
-    private static M3ComponentTokens create(
-            ButtonTokens filledButton,
-            ButtonTokens tonalButton,
-            ButtonTokens outlinedButton,
-            ButtonTokens textButton,
-            ButtonTokens elevatedButton,
-            ButtonSizingTokens buttonSizing,
-            IconButtonTokens iconButton,
-            FabTokens floatingActionButton,
-            IconTokens icon,
-            ButtonGroupTokens buttonGroup,
-            SplitButtonTokens splitButton,
-            ButtonTokens segmentedButton,
-            TabTokens tab,
-            FieldTokens field,
-            TextAreaTokens textArea,
-            FormTokens form,
-            ValidationSummaryTokens validationSummary,
-            MenuTokens menu,
-            SearchTokens search,
-            PickerFieldTokens pickerField,
-            DatePickerTokens datePicker,
-            TimePickerTokens timePicker,
-            SheetTokens sheet,
-            ScrimTokens scrim,
-            SelectionTokens selection,
-            SliderTokens slider,
-            ChipTokens chip,
-            ProgressTokens progress,
-            LoadingIndicatorTokens loadingIndicator,
-            SurfaceTokens surface,
-            CarouselTokens carousel,
-            CardTokens card,
-            DialogTokens dialog,
-            SnackbarTokens snackbar,
-            BannerTokens banner,
-            TooltipTokens tooltip,
-            DividerTokens divider,
-            BadgeTokens badge,
-            AvatarTokens avatar,
-            TopAppBarTokens topAppBar,
-            BottomAppBarTokens bottomAppBar,
-            ToolbarTokens toolbar,
-            NavigationBarTokens navigationBar,
-            NavigationRailTokens navigationRail,
-            NavigationDrawerTokens navigationDrawer,
-            ListItemTokens listItem
-    ) {
-        return new M3ComponentTokensImpl(
-                filledButton,
-                tonalButton,
-                outlinedButton,
-                textButton,
-                elevatedButton,
-                buttonSizing,
-                iconButton,
-                floatingActionButton,
-                icon,
-                buttonGroup,
-                splitButton,
-                segmentedButton,
-                tab,
-                field,
-                textArea,
-                form,
-                validationSummary,
-                menu,
-                search,
-                pickerField,
-                datePicker,
-                timePicker,
-                sheet,
-                scrim,
-                selection,
-                slider,
-                chip,
-                progress,
-                loadingIndicator,
-                surface,
-                carousel,
-                card,
-                dialog,
-                snackbar,
-                banner,
-                tooltip,
-                divider,
-                badge,
-                avatar,
-                topAppBar,
-                bottomAppBar,
-                toolbar,
-                navigationBar,
-                navigationRail,
-                navigationDrawer,
-                listItem
-        );
-    }
-
     /// Creates component tokens for a profile.
     ///
     /// @param profile     the Material profile whose component defaults should be generated
     /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density     the density adjustment applied to generated component geometry
+    /// @param density     the density adjustment applied to selected generated component metrics
     /// @return a component token set generated from the supplied profile, shape scale, and density
     private static M3ComponentTokens defaultsForProfile(
             M3Profile profile,
@@ -436,119 +291,123 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         Objects.requireNonNull(shapeTokens, "shapeTokens");
         Objects.requireNonNull(density, "density");
 
-        double buttonHeight = density.apply(40.0);
-        double iconSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0);
-        double iconMediumSize = density.apply(24.0);
-        double iconLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
-        double iconExtraLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double segmentedButtonHeight = density.apply(40.0);
-        double tabHeight = density.apply(48.0);
-        double tabMinWidth = density.apply(90.0);
-        double fieldHeight = density.apply(56.0);
-        double textAreaHeight = density.apply(112.0);
-        double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
-        double searchBarHeight = density.apply(56.0);
-        double pickerNavigationButtonSize = density.apply(40.0);
-        double sideSheetWidth = density.apply(256.0);
-        double sideSheetMaxWidth = density.apply(400.0);
-        double bottomSheetMaxWidth = density.apply(640.0);
-        double chipHeight = density.apply(32.0);
-        double badgeSmallSize = density.apply(6.0);
-        double badgeLargeHeight = density.apply(16.0);
-        double badgeLargeMinWidth = density.apply(16.0);
-        double avatarSize = density.apply(40.0);
-        double topAppBarHeight = density.apply(64.0);
-        double topAppBarMediumHeight = density.apply(112.0);
-        double topAppBarLargeHeight = density.apply(152.0);
-        double topAppBarMediumFlexibleHeight = density.apply(112.0);
-        double topAppBarMediumFlexibleSubtitleHeight = density.apply(136.0);
-        double topAppBarLargeFlexibleHeight = density.apply(120.0);
-        double topAppBarLargeFlexibleSubtitleHeight = density.apply(152.0);
-        double bottomAppBarHeight = density.apply(80.0);
-        double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 80.0);
-        double navigationItemWidth = density.apply(80.0);
-        double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 64.0);
-        double navigationIndicatorHeight = density.apply(32.0);
-        double navigationRailWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
-        double navigationRailItemWidth = density.apply(80.0);
-        double navigationRailIndicatorWidth = density.apply(56.0);
-        double navigationDrawerWidth = density.apply(360.0);
-        double navigationDrawerOneLineItemHeight = density.apply(56.0);
-        double navigationDrawerTwoLineItemHeight = density.apply(72.0);
-        double navigationDrawerThreeLineItemHeight = density.apply(88.0);
-        double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
-        double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
-        double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
-        double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
-        double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
-        double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 1.6 : 0.0);
-        double loadingIndicatorContainerSize = density.apply(48.0);
-        double loadingIndicatorIndicatorSize = density.apply(38.0);
-        double progressCircularIndicatorSize = density.apply(40.0);
-        double progressCircularWaveIndicatorSize = density.apply(48.0);
+        double buttonHeight = density.compact(40.0);
+        double iconSmallSize = profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0;
+        double iconMediumSize = 24.0;
+        double iconLargeSize = profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0;
+        double iconExtraLargeSize = profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0;
+        double segmentedButtonHeight = density.compact(40.0);
+        double tabHeight = density.compact(48.0);
+        double tabMinWidth = 90.0;
+        double fieldHeight = density.compact(56.0);
+        double textAreaHeight = density.compact(112.0);
+        double menuItemHeight = density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
+        double searchBarHeight = density.compact(56.0);
+        double pickerNavigationButtonSize = 40.0;
+        double sideSheetWidth = 256.0;
+        double sideSheetMaxWidth = 400.0;
+        double bottomSheetMaxWidth = 640.0;
+        double chipHeight = 32.0;
+        double badgeSmallSize = 6.0;
+        double badgeLargeHeight = 16.0;
+        double badgeLargeMinWidth = 16.0;
+        double avatarSize = 40.0;
+        double topAppBarHeight = density.compact(64.0);
+        double topAppBarMediumHeight = density.compact(112.0);
+        double topAppBarLargeHeight = density.compact(152.0);
+        double topAppBarMediumFlexibleHeight = density.compact(112.0);
+        double topAppBarMediumFlexibleSubtitleHeight = density.compact(136.0);
+        double topAppBarLargeFlexibleHeight = density.compact(120.0);
+        double topAppBarLargeFlexibleSubtitleHeight = density.compact(152.0);
+        double bottomAppBarHeight = density.compact(80.0);
+        double navigationBarHeight = density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 80.0);
+        double navigationItemWidth = 80.0;
+        double navigationIndicatorWidth = profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 64.0;
+        double navigationIndicatorHeight = 32.0;
+        double navigationRailWidth = profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0;
+        double navigationRailItemWidth = 80.0;
+        double navigationRailIndicatorWidth = 56.0;
+        double navigationDrawerWidth = 360.0;
+        double navigationDrawerOneLineItemHeight = Math.max(48.0, density.compact(56.0));
+        double navigationDrawerTwoLineItemHeight = Math.max(48.0, density.compact(72.0));
+        double navigationDrawerThreeLineItemHeight = Math.max(48.0, density.compact(88.0));
+        double listItemOneLineHeight =
+                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0));
+        double listItemTwoLineHeight =
+                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0));
+        double listItemThreeLineHeight =
+                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0));
+        double listSectionHeaderHeight =
+                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0));
+        double progressLinearWaveAmplitude = profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0;
+        double progressCircularWaveAmplitude = profile == M3Profile.EXPRESSIVE_2025 ? 1.6 : 0.0;
+        double loadingIndicatorContainerSize = 48.0;
+        double loadingIndicatorIndicatorSize = 38.0;
+        double progressCircularIndicatorSize = 40.0;
+        double progressCircularWaveIndicatorSize = 48.0;
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
-        double navigationContentSpacing = density.apply(4.0);
-        double navigationHorizontalPadding = density.apply(8.0);
-        double navigationBarItemSpacing = density.apply(expressive ? 6.0 : 0.0);
-        double navigationRailCollapsedTopPadding = density.apply(expressive ? 44.0 : 16.0);
-        double navigationRailCollapsedBottomPadding = density.apply(expressive ? 0.0 : 16.0);
-        double navigationRailHorizontalPadding = density.apply(0.0);
-        double navigationRailItemSpacing = density.apply(expressive ? 4.0 : 8.0);
-        double navigationRailHeaderSpacing = density.apply(40.0);
-        double navigationDrawerContainerPadding = density.apply(12.0);
-        double navigationDrawerItemHorizontalPadding = density.apply(16.0);
-        double navigationDrawerItemContentSpacing = density.apply(12.0);
-        double navigationDrawerItemSpacing = density.apply(0.0);
-        double navigationDrawerGroupChildPadding = density.apply(32.0);
-        double listItemHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double listItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
-        double listItemContentSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double listSectionHeaderHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double navigationContentSpacing = 4.0;
+        double navigationHorizontalPadding = 8.0;
+        double navigationBarItemSpacing = expressive ? 6.0 : 0.0;
+        double navigationRailCollapsedTopPadding = expressive ? 44.0 : 16.0;
+        double navigationRailCollapsedBottomPadding = expressive ? 0.0 : 16.0;
+        double navigationRailHorizontalPadding = 0.0;
+        double navigationRailItemSpacing = expressive ? 4.0 : 8.0;
+        double navigationRailHeaderSpacing = 40.0;
+        double navigationDrawerContainerPadding = 12.0;
+        double navigationDrawerItemHorizontalPadding = 16.0;
+        double navigationDrawerItemContentSpacing = 12.0;
+        double navigationDrawerItemSpacing = 0.0;
+        double navigationDrawerGroupChildPadding = 32.0;
+        double listItemHorizontalPadding = expressive ? 20.0 : 16.0;
+        double listItemVerticalPadding = density.compact(expressive ? 10.0 : 8.0);
+        double listItemContentSpacing = expressive ? 20.0 : 16.0;
+        double listSectionHeaderHorizontalPadding = expressive ? 20.0 : 16.0;
         double menuContainerShape = expressive ? shapeTokens.large() : shapeTokens.extraSmall();
-        double menuContainerPadding = density.apply(expressive ? 2.0 : 8.0);
+        double menuContainerPadding = expressive ? 2.0 : 8.0;
         double menuItemContainerShape = shapeTokens.extraSmall();
         double menuSelectedItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuActiveItemContainerShape = expressive ? shapeTokens.large() : menuItemContainerShape;
         double menuFirstItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuLastItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
-        double menuItemHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double menuItemContentSpacing = density.apply(12.0);
-        double menuItemSpacing = density.apply(expressive ? 2.0 : 0.0);
-        double searchBarHorizontalPadding = density.apply(16.0);
-        double searchBarContentSpacing = density.apply(16.0);
-        double searchContainedBarHorizontalPadding = density.apply(4.0);
-        double searchContainedBarContentSpacing = density.apply(4.0);
-        double searchDividedBarHorizontalPadding = density.apply(16.0);
-        double searchDividedBarContentSpacing = density.apply(16.0);
-        double searchBarTrailingActionsGap = density.apply(0.0);
+        double menuItemHorizontalPadding = expressive ? 16.0 : 12.0;
+        double menuItemContentSpacing = 12.0;
+        double menuItemSpacing = expressive ? 2.0 : 0.0;
+        double searchBarHorizontalPadding = 16.0;
+        double searchBarContentSpacing = 16.0;
+        double searchContainedBarHorizontalPadding = 4.0;
+        double searchContainedBarContentSpacing = 4.0;
+        double searchDividedBarHorizontalPadding = 16.0;
+        double searchDividedBarContentSpacing = 16.0;
+        double searchBarTrailingActionsGap = 0.0;
         double searchViewContainerShape = shapeTokens.extraLarge();
-        double searchViewHorizontalPadding = density.apply(12.0);
-        double searchViewBarResultsGap = density.apply(2.0);
+        double searchViewHorizontalPadding = 12.0;
+        double searchViewBarResultsGap = 2.0;
         double searchViewResultsShape = shapeTokens.medium();
-        double searchViewDockedBottomPadding = density.apply(4.0);
-        double searchViewFullScreenBottomPadding = density.apply(16.0);
-        double searchViewMinWidth = density.apply(360.0);
-        double searchViewMaxWidth = density.apply(720.0);
-        double searchViewDockedMinHeight = density.apply(240.0);
-        double searchViewFullScreenDividedHeaderHeight = density.apply(72.0);
+        double searchViewDockedBottomPadding = 4.0;
+        double searchViewFullScreenBottomPadding = 16.0;
+        double searchViewMinWidth = 360.0;
+        double searchViewMaxWidth = 720.0;
+        double searchViewDockedMinHeight = 240.0;
+        double searchViewFullScreenDividedHeaderHeight = 72.0;
         double pickerFieldPopupShape = shapeTokens.extraLarge();
-        double pickerFieldPopupPadding = density.apply(16.0);
-        double pickerFieldPopupSpacing = density.apply(16.0);
-        double pickerFieldPresetListWidth = density.apply(132.0);
-        double pickerFieldPresetListSpacing = density.apply(6.0);
-        double pickerFieldPresetButtonHorizontalPadding = density.apply(12.0);
-        double datePickerContainerWidth = density.apply(360.0);
+        double pickerFieldPopupPadding = 16.0;
+        double pickerFieldPopupSpacing = 16.0;
+        double pickerFieldPresetListWidth = 132.0;
+        double pickerFieldPresetListSpacing = 6.0;
+        double pickerFieldPresetButtonHorizontalPadding = 12.0;
+        double datePickerContainerWidth = 360.0;
         double datePickerDockedContainerShape = shapeTokens.large();
         double datePickerModalContainerShape = shapeTokens.extraLarge();
-        double datePickerHorizontalPadding = density.apply(12.0);
-        double datePickerContainerSpacing = density.apply(0.0);
-        double datePickerHeaderHeight = density.apply(64.0);
-        double datePickerHeaderSpacing = density.apply(0.0);
-        double datePickerNavigationButtonSize = density.apply(40.0);
-        double datePickerMenuButtonHeight = density.apply(40.0);
-        double datePickerDayCellSize = density.apply(48.0);
-        double datePickerDayStateLayerSize = density.apply(40.0);
-        double datePickerGridGap = density.apply(0.0);
+        double datePickerHorizontalPadding = 12.0;
+        double datePickerContainerSpacing = 0.0;
+        double datePickerHeaderHeight = density.compact(64.0);
+        double datePickerHeaderSpacing = 0.0;
+        double datePickerNavigationButtonSize = 40.0;
+        double datePickerMenuButtonHeight = density.compact(40.0);
+        double datePickerDayCellSize = 48.0;
+        double datePickerDayStateLayerSize = 40.0;
+        double datePickerGridGap = 0.0;
         double timePickerContainerShape = shapeTokens.extraLarge();
         double timePickerContainerPadding = 24.0;
         double timePickerContainerSpacing = 24.0;
@@ -567,168 +426,168 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double timePickerDialTrackWidth = 2.0;
         double timePickerInputFieldWidth = 96.0;
         double timePickerInputFieldHeight = 72.0;
-        double sheetContentPadding = density.apply(24.0);
-        double sheetHeaderPadding = density.apply(24.0);
-        double sheetHeaderContentSpacing = density.apply(12.0);
-        double sheetDragHandleVerticalPadding = density.apply(22.0);
-        double sheetDragHandleWidth = density.apply(32.0);
-        double sheetDragHandleHeight = density.apply(4.0);
+        double sheetContentPadding = 24.0;
+        double sheetHeaderPadding = 24.0;
+        double sheetHeaderContentSpacing = 12.0;
+        double sheetDragHandleVerticalPadding = 22.0;
+        double sheetDragHandleWidth = 32.0;
+        double sheetDragHandleHeight = 4.0;
         double cardContainerShape = shapeTokens.medium();
-        double cardContentPadding = density.apply(16.0);
-        double dialogContentPadding = density.apply(24.0);
-        double dialogContainerMinWidth = density.apply(280.0);
-        double dialogContainerMaxWidth = density.apply(560.0);
-        double dialogActionSpacing = density.apply(8.0);
-        double dialogIconSize = density.apply(24.0);
+        double cardContentPadding = 16.0;
+        double dialogContentPadding = 24.0;
+        double dialogContainerMinWidth = 280.0;
+        double dialogContainerMaxWidth = 560.0;
+        double dialogActionSpacing = 8.0;
+        double dialogIconSize = 24.0;
         double snackbarContainerShape = shapeTokens.extraSmall();
-        double snackbarContentPadding = density.apply(16.0);
-        double snackbarContainerMinWidth = density.apply(344.0);
-        double snackbarContainerMaxWidth = density.apply(672.0);
-        double snackbarSingleLineContainerHeight = density.apply(48.0);
-        double snackbarTwoLineContainerHeight = density.apply(68.0);
-        double snackbarActionContainerHeight = density.apply(32.0);
-        double bannerMinHeight = density.apply(80.0);
-        double bannerVerticalPadding = density.apply(16.0);
-        double bannerHorizontalPadding = density.apply(24.0);
-        double bannerContentSpacing = density.apply(16.0);
-        double bannerActionSpacing = density.apply(8.0);
+        double snackbarContentPadding = 16.0;
+        double snackbarContainerMinWidth = 344.0;
+        double snackbarContainerMaxWidth = 672.0;
+        double snackbarSingleLineContainerHeight = density.compact(48.0);
+        double snackbarTwoLineContainerHeight = density.compact(68.0);
+        double snackbarActionContainerHeight = 32.0;
+        double bannerMinHeight = 80.0;
+        double bannerVerticalPadding = 16.0;
+        double bannerHorizontalPadding = 24.0;
+        double bannerContentSpacing = 16.0;
+        double bannerActionSpacing = 8.0;
         double tooltipPlainContainerShape = shapeTokens.extraSmall();
-        double tooltipPlainVerticalPadding = density.apply(4.0);
-        double tooltipPlainHorizontalPadding = density.apply(8.0);
+        double tooltipPlainVerticalPadding = 4.0;
+        double tooltipPlainHorizontalPadding = 8.0;
         double tooltipRichContainerShape = shapeTokens.medium();
-        double tooltipRichTopPadding = density.apply(12.0);
-        double tooltipRichHorizontalPadding = density.apply(16.0);
-        double tooltipRichBottomPadding = density.apply(8.0);
-        double tooltipRichContentSpacing = density.apply(8.0);
-        double tooltipRichPreferredWidth = density.apply(320.0);
-        double tooltipRichActionSpacing = density.apply(8.0);
-        double tooltipRichActionButtonHeight = density.apply(32.0);
-        double tooltipRichActionButtonHorizontalPadding = density.apply(12.0);
-        double appBarHorizontalPadding = density.apply(16.0);
-        double topAppBarEdgePadding = density.apply(4.0);
+        double tooltipRichTopPadding = 12.0;
+        double tooltipRichHorizontalPadding = 16.0;
+        double tooltipRichBottomPadding = 8.0;
+        double tooltipRichContentSpacing = 8.0;
+        double tooltipRichPreferredWidth = 320.0;
+        double tooltipRichActionSpacing = 8.0;
+        double tooltipRichActionButtonHeight = 32.0;
+        double tooltipRichActionButtonHorizontalPadding = 12.0;
+        double appBarHorizontalPadding = 16.0;
+        double topAppBarEdgePadding = 4.0;
         double topAppBarContentSpacing = 0.0;
         double topAppBarActionSpacing = 0.0;
-        double bottomAppBarContentSpacing = density.apply(16.0);
+        double bottomAppBarContentSpacing = 16.0;
         double bottomAppBarActionSpacing = 0.0;
-        double topAppBarMediumBottomPadding = density.apply(20.0);
-        double topAppBarLargeBottomPadding = density.apply(28.0);
-        double topAppBarFlexibleBottomPadding = density.apply(12.0);
-        double toolbarContainerHeight = density.apply(64.0);
-        double toolbarContainerWidth = density.apply(64.0);
+        double topAppBarMediumBottomPadding = 20.0;
+        double topAppBarLargeBottomPadding = 28.0;
+        double topAppBarFlexibleBottomPadding = 12.0;
+        double toolbarContainerHeight = density.compact(64.0);
+        double toolbarContainerWidth = 64.0;
         double toolbarContainerShape = expressive ? shapeTokens.full() : shapeTokens.large();
-        double toolbarItemSlotSize = density.apply(48.0);
-        double toolbarContentPadding = density.apply(8.0);
-        double toolbarDockedContentPadding = density.apply(16.0);
-        double toolbarItemSpacing = density.apply(4.0);
-        double toolbarDockedMaxItemSpacing = density.apply(32.0);
-        double buttonHorizontalPadding = density.apply(expressive ? 16.0 : 24.0);
-        double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double segmentedButtonHorizontalPadding = density.apply(12.0);
-        double tabHorizontalPadding = density.apply(16.0);
-        double tabActiveIndicatorHeight = density.apply(3.0);
-        double tabSecondaryActiveIndicatorHeight = density.apply(2.0);
-        double tabActiveIndicatorShape = density.apply(3.0);
-        double tabActiveIndicatorMinWidth = density.apply(24.0);
-        double tabActiveIndicatorHorizontalInset = density.apply(2.0);
-        double chipHorizontalPadding = density.apply(16.0);
-        double chipIconHorizontalPadding = density.apply(8.0);
-        double chipElementSpacing = density.apply(8.0);
-        double chipIconSize = density.apply(18.0);
-        double chipAvatarSize = density.apply(24.0);
+        double toolbarItemSlotSize = 48.0;
+        double toolbarContentPadding = 8.0;
+        double toolbarDockedContentPadding = 16.0;
+        double toolbarItemSpacing = 4.0;
+        double toolbarDockedMaxItemSpacing = 32.0;
+        double buttonHorizontalPadding = expressive ? 16.0 : 24.0;
+        double textButtonHorizontalPadding = expressive ? 16.0 : 12.0;
+        double segmentedButtonHorizontalPadding = 12.0;
+        double tabHorizontalPadding = 16.0;
+        double tabActiveIndicatorHeight = 3.0;
+        double tabSecondaryActiveIndicatorHeight = 2.0;
+        double tabActiveIndicatorShape = 3.0;
+        double tabActiveIndicatorMinWidth = 24.0;
+        double tabActiveIndicatorHorizontalInset = 2.0;
+        double chipHorizontalPadding = 16.0;
+        double chipIconHorizontalPadding = 8.0;
+        double chipElementSpacing = 8.0;
+        double chipIconSize = 18.0;
+        double chipAvatarSize = 24.0;
         double chipAvatarShape = chipAvatarSize / 2.0;
-        double chipOutlineWidth = density.apply(1.0);
-        double chipGroupHorizontalGap = density.apply(8.0);
-        double chipGroupVerticalGap = density.apply(8.0);
-        double fieldHorizontalPadding = density.apply(16.0);
-        double textAreaHorizontalPadding = density.apply(16.0);
-        double textAreaVerticalPadding = density.apply(16.0);
-        double formRowSpacing = density.apply(16.0);
-        double formSectionContentSpacing = density.apply(12.0);
-        double formSectionHeaderSpacing = density.apply(4.0);
-        double formSectionHeaderBottomPadding = density.apply(4.0);
-        double formRowLabelWidth = density.apply(180.0);
-        double formRowColumnSpacing = density.apply(24.0);
-        double formRowMinHeight = density.apply(64.0);
-        double formRowTextSpacing = density.apply(2.0);
+        double chipOutlineWidth = 1.0;
+        double chipGroupHorizontalGap = 8.0;
+        double chipGroupVerticalGap = 8.0;
+        double fieldHorizontalPadding = 16.0;
+        double textAreaHorizontalPadding = 16.0;
+        double textAreaVerticalPadding = density.compact(16.0);
+        double formRowSpacing = 16.0;
+        double formSectionContentSpacing = 12.0;
+        double formSectionHeaderSpacing = 4.0;
+        double formSectionHeaderBottomPadding = 4.0;
+        double formRowLabelWidth = 180.0;
+        double formRowColumnSpacing = 24.0;
+        double formRowMinHeight = density.compact(64.0);
+        double formRowTextSpacing = 2.0;
         double validationSummaryContainerShape = shapeTokens.small();
-        double validationSummaryContentPadding = density.apply(16.0);
-        double validationSummaryItemsSpacing = density.apply(4.0);
+        double validationSummaryContentPadding = 16.0;
+        double validationSummaryItemsSpacing = 4.0;
         double validationSummaryItemShape = shapeTokens.extraSmall();
-        double validationSummaryItemVerticalPadding = density.apply(8.0);
-        double validationSummaryItemHorizontalPadding = density.apply(10.0);
-        double selectionTouchTargetSize = density.apply(48.0);
-        double selectionStateLayerSize = density.apply(40.0);
-        double checkboxContainerSize = density.apply(18.0);
-        double checkboxSelectedMarkWidth = density.apply(12.0);
-        double checkboxSelectedMarkHeight = density.apply(10.0);
-        double checkboxIndeterminateMarkWidth = density.apply(12.0);
-        double checkboxIndeterminateMarkHeight = density.apply(2.0);
-        double radioContainerSize = density.apply(20.0);
-        double radioSelectedDotSize = density.apply(10.0);
-        double switchTouchTargetSize = density.apply(48.0);
-        double switchTrackWidth = density.apply(52.0);
-        double switchTrackHeight = density.apply(32.0);
-        double switchStateLayerSize = density.apply(40.0);
-        double switchUnselectedHandleSize = density.apply(16.0);
-        double switchWithIconHandleSize = density.apply(24.0);
-        double switchSelectedHandleSize = density.apply(24.0);
-        double switchPressedHandleSize = density.apply(28.0);
-        double switchIconSize = density.apply(16.0);
-        double sliderStopIndicatorSize = density.apply(4.0);
-        double sliderStopIndicatorTrailingSpace = density.apply(4.0);
-        double sliderThumbWidth = density.apply(4.0);
-        double sliderFocusedThumbWidth = density.apply(2.0);
-        double sliderPressedThumbWidth = density.apply(2.0);
-        double sliderThumbTrackGap = density.apply(6.0);
-        double sliderTouchTargetSize = density.apply(48.0);
+        double validationSummaryItemVerticalPadding = 8.0;
+        double validationSummaryItemHorizontalPadding = 10.0;
+        double selectionTouchTargetSize = 48.0;
+        double selectionStateLayerSize = 40.0;
+        double checkboxContainerSize = 18.0;
+        double checkboxSelectedMarkWidth = 12.0;
+        double checkboxSelectedMarkHeight = 10.0;
+        double checkboxIndeterminateMarkWidth = 12.0;
+        double checkboxIndeterminateMarkHeight = 2.0;
+        double radioContainerSize = 20.0;
+        double radioSelectedDotSize = 10.0;
+        double switchTouchTargetSize = 48.0;
+        double switchTrackWidth = 52.0;
+        double switchTrackHeight = 32.0;
+        double switchStateLayerSize = 40.0;
+        double switchUnselectedHandleSize = 16.0;
+        double switchWithIconHandleSize = 24.0;
+        double switchSelectedHandleSize = 24.0;
+        double switchPressedHandleSize = 28.0;
+        double switchIconSize = 16.0;
+        double sliderStopIndicatorSize = 4.0;
+        double sliderStopIndicatorTrailingSpace = 4.0;
+        double sliderThumbWidth = 4.0;
+        double sliderFocusedThumbWidth = 2.0;
+        double sliderPressedThumbWidth = 2.0;
+        double sliderThumbTrackGap = 6.0;
+        double sliderTouchTargetSize = 48.0;
         SliderSizingTokens sliderSizing = new SliderSizingTokens(
                 new SliderSizeTokens(
-                        density.apply(16.0),
-                        density.apply(8.0),
-                        density.apply(44.0),
+                        16.0,
+                        8.0,
+                        44.0,
                         0.0,
                         0.0
                 ),
                 new SliderSizeTokens(
-                        density.apply(24.0),
-                        density.apply(8.0),
-                        density.apply(44.0),
+                        24.0,
+                        8.0,
+                        44.0,
                         0.0,
                         0.0
                 ),
                 new SliderSizeTokens(
-                        density.apply(40.0),
-                        density.apply(12.0),
-                        density.apply(52.0),
-                        density.apply(24.0),
-                        density.apply(6.0)
+                        40.0,
+                        12.0,
+                        52.0,
+                        24.0,
+                        6.0
                 ),
                 new SliderSizeTokens(
-                        density.apply(56.0),
-                        density.apply(16.0),
-                        density.apply(68.0),
-                        density.apply(24.0),
-                        density.apply(6.0)
+                        56.0,
+                        16.0,
+                        68.0,
+                        24.0,
+                        6.0
                 ),
                 new SliderSizeTokens(
-                        density.apply(96.0),
-                        density.apply(28.0),
-                        density.apply(108.0),
-                        density.apply(32.0),
-                        density.apply(8.0)
+                        96.0,
+                        28.0,
+                        108.0,
+                        32.0,
+                        8.0
                 )
         );
         double surfaceContainerShape = shapeTokens.medium();
-        double surfaceContentPadding = density.apply(16.0);
-        double carouselTrackHorizontalPadding = density.apply(16.0);
-        double carouselTrackVerticalPadding = density.apply(8.0);
-        double carouselItemSpacing = density.apply(8.0);
+        double surfaceContentPadding = 16.0;
+        double carouselTrackHorizontalPadding = 16.0;
+        double carouselTrackVerticalPadding = 8.0;
+        double carouselItemSpacing = 8.0;
         double carouselItemShape = shapeTokens.extraLarge();
-        double carouselSmallItemMinWidth = density.apply(40.0);
-        double carouselSmallItemMaxWidth = density.apply(56.0);
-        double carouselLargeItemMaxWidth = density.apply(320.0);
+        double carouselSmallItemMinWidth = 40.0;
+        double carouselSmallItemMaxWidth = 56.0;
+        double carouselLargeItemMaxWidth = 320.0;
 
-        return create(
+        return new M3ComponentTokensImpl(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
@@ -736,196 +595,196 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonSizingTokens(
                         new ButtonSizeTokens(
-                                density.apply(32.0),
-                                density.apply(20.0),
+                                density.compact(32.0),
+                                20.0,
                                 shapeTokens.full(),
                                 shapeTokens.medium(),
                                 expressive ? shapeTokens.small() : shapeTokens.full(),
                                 expressive ? shapeTokens.small() : shapeTokens.medium(),
-                                density.apply(12.0),
-                                density.apply(12.0),
-                                density.apply(8.0),
-                                density.apply(1.0)
+                                12.0,
+                                12.0,
+                                8.0,
+                                1.0
                         ),
                         new ButtonSizeTokens(
-                                density.apply(40.0),
-                                density.apply(20.0),
+                                density.compact(40.0),
+                                20.0,
                                 shapeTokens.full(),
                                 shapeTokens.medium(),
                                 expressive ? shapeTokens.small() : shapeTokens.full(),
                                 expressive ? shapeTokens.small() : shapeTokens.medium(),
                                 buttonHorizontalPadding,
                                 textButtonHorizontalPadding,
-                                density.apply(8.0),
-                                density.apply(1.0)
+                                8.0,
+                                1.0
                         ),
                         new ButtonSizeTokens(
-                                density.apply(56.0),
-                                density.apply(24.0),
+                                density.compact(56.0),
+                                24.0,
                                 shapeTokens.full(),
                                 shapeTokens.large(),
                                 expressive ? shapeTokens.medium() : shapeTokens.full(),
                                 expressive ? shapeTokens.medium() : shapeTokens.large(),
-                                density.apply(24.0),
-                                density.apply(24.0),
-                                density.apply(8.0),
-                                density.apply(1.0)
+                                24.0,
+                                24.0,
+                                8.0,
+                                1.0
                         ),
                         new ButtonSizeTokens(
-                                density.apply(96.0),
-                                density.apply(32.0),
+                                density.compact(96.0),
+                                32.0,
                                 shapeTokens.full(),
                                 shapeTokens.extraLarge(),
                                 expressive ? shapeTokens.large() : shapeTokens.full(),
                                 expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
-                                density.apply(48.0),
-                                density.apply(48.0),
-                                density.apply(12.0),
-                                density.apply(2.0)
+                                48.0,
+                                48.0,
+                                12.0,
+                                2.0
                         ),
                         new ButtonSizeTokens(
-                                density.apply(136.0),
-                                density.apply(40.0),
+                                density.compact(136.0),
+                                40.0,
                                 shapeTokens.full(),
                                 shapeTokens.extraLarge(),
                                 expressive ? shapeTokens.large() : shapeTokens.full(),
                                 expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
-                                density.apply(64.0),
-                                density.apply(64.0),
-                                density.apply(16.0),
-                                density.apply(3.0)
+                                64.0,
+                                64.0,
+                                16.0,
+                                3.0
                         )
                 ),
                 new IconButtonTokens(
                         new IconButtonSizeTokens(
-                                density.apply(32.0),
-                                density.apply(20.0),
-                                density.apply(28.0),
-                                density.apply(32.0),
-                                density.apply(40.0),
+                                32.0,
+                                20.0,
+                                28.0,
+                                32.0,
+                                40.0,
                                 shapeTokens.full(),
-                                density.apply(12.0),
-                                expressive ? density.apply(8.0) : shapeTokens.full(),
-                                expressive ? density.apply(8.0) : density.apply(12.0),
-                                expressive ? density.apply(12.0) : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : density.apply(12.0),
-                                density.apply(1.0)
+                                12.0,
+                                expressive ? 8.0 : shapeTokens.full(),
+                                expressive ? 8.0 : 12.0,
+                                expressive ? 12.0 : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : 12.0,
+                                1.0
                         ),
                         new IconButtonSizeTokens(
-                                density.apply(40.0),
-                                density.apply(24.0),
-                                density.apply(32.0),
-                                density.apply(40.0),
-                                density.apply(52.0),
+                                40.0,
+                                24.0,
+                                32.0,
+                                40.0,
+                                52.0,
                                 shapeTokens.full(),
-                                density.apply(12.0),
-                                expressive ? density.apply(8.0) : shapeTokens.full(),
-                                expressive ? density.apply(8.0) : density.apply(12.0),
-                                expressive ? density.apply(12.0) : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : density.apply(12.0),
-                                density.apply(1.0)
+                                12.0,
+                                expressive ? 8.0 : shapeTokens.full(),
+                                expressive ? 8.0 : 12.0,
+                                expressive ? 12.0 : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : 12.0,
+                                1.0
                         ),
                         new IconButtonSizeTokens(
-                                density.apply(56.0),
-                                density.apply(24.0),
-                                density.apply(48.0),
-                                density.apply(56.0),
-                                density.apply(72.0),
+                                56.0,
+                                24.0,
+                                48.0,
+                                56.0,
+                                72.0,
                                 shapeTokens.full(),
-                                density.apply(16.0),
-                                expressive ? density.apply(12.0) : shapeTokens.full(),
-                                expressive ? density.apply(12.0) : density.apply(16.0),
-                                expressive ? density.apply(16.0) : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : density.apply(16.0),
-                                density.apply(1.0)
+                                16.0,
+                                expressive ? 12.0 : shapeTokens.full(),
+                                expressive ? 12.0 : 16.0,
+                                expressive ? 16.0 : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : 16.0,
+                                1.0
                         ),
                         new IconButtonSizeTokens(
-                                density.apply(96.0),
-                                density.apply(32.0),
-                                density.apply(64.0),
-                                density.apply(96.0),
-                                density.apply(128.0),
+                                96.0,
+                                32.0,
+                                64.0,
+                                96.0,
+                                128.0,
                                 shapeTokens.full(),
-                                density.apply(28.0),
-                                expressive ? density.apply(16.0) : shapeTokens.full(),
-                                expressive ? density.apply(16.0) : density.apply(28.0),
-                                expressive ? density.apply(28.0) : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : density.apply(28.0),
-                                density.apply(2.0)
+                                28.0,
+                                expressive ? 16.0 : shapeTokens.full(),
+                                expressive ? 16.0 : 28.0,
+                                expressive ? 28.0 : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : 28.0,
+                                2.0
                         ),
                         new IconButtonSizeTokens(
-                                density.apply(136.0),
-                                density.apply(40.0),
-                                density.apply(104.0),
-                                density.apply(136.0),
-                                density.apply(184.0),
+                                136.0,
+                                40.0,
+                                104.0,
+                                136.0,
+                                184.0,
                                 shapeTokens.full(),
-                                density.apply(28.0),
-                                expressive ? density.apply(16.0) : shapeTokens.full(),
-                                expressive ? density.apply(16.0) : density.apply(28.0),
-                                expressive ? density.apply(28.0) : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : density.apply(28.0),
-                                density.apply(3.0)
+                                28.0,
+                                expressive ? 16.0 : shapeTokens.full(),
+                                expressive ? 16.0 : 28.0,
+                                expressive ? 28.0 : shapeTokens.full(),
+                                expressive ? shapeTokens.full() : 28.0,
+                                3.0
                         )
                 ),
                 new FabTokens(
                         new FabSizeTokens(
-                                density.apply(40.0),
+                                40.0,
                                 shapeTokens.medium(),
-                                density.apply(24.0),
-                                density.apply(12.0),
-                                density.apply(8.0),
-                                density.apply(12.0)
+                                24.0,
+                                12.0,
+                                8.0,
+                                12.0
                         ),
                         new FabSizeTokens(
-                                density.apply(56.0),
+                                56.0,
                                 shapeTokens.large(),
-                                density.apply(24.0),
-                                density.apply(16.0),
-                                density.apply(expressive ? 8.0 : 12.0),
-                                density.apply(expressive ? 16.0 : 20.0)
+                                24.0,
+                                16.0,
+                                expressive ? 8.0 : 12.0,
+                                expressive ? 16.0 : 20.0
                         ),
                         new FabSizeTokens(
-                                density.apply(80.0),
+                                80.0,
                                 shapeTokens.largeIncreased(),
-                                density.apply(28.0),
-                                density.apply(26.0),
-                                density.apply(12.0),
-                                density.apply(26.0)
+                                28.0,
+                                26.0,
+                                12.0,
+                                26.0
                         ),
                         new FabSizeTokens(
-                                density.apply(96.0),
+                                96.0,
                                 shapeTokens.extraLarge(),
-                                density.apply(36.0),
-                                density.apply(28.0),
-                                density.apply(16.0),
-                                density.apply(28.0)
+                                36.0,
+                                28.0,
+                                16.0,
+                                28.0
                         ),
                         new FabSizeTokens(
-                                density.apply(56.0),
+                                56.0,
                                 shapeTokens.full(),
-                                density.apply(24.0),
-                                density.apply(24.0),
-                                density.apply(8.0),
-                                density.apply(24.0)
+                                24.0,
+                                24.0,
+                                8.0,
+                                24.0
                         ),
                         new FabSizeTokens(
-                                density.apply(56.0),
+                                56.0,
                                 shapeTokens.full(),
-                                density.apply(20.0),
-                                density.apply(18.0),
+                                20.0,
+                                18.0,
                                 0.0,
-                                density.apply(18.0)
+                                18.0
                         ),
-                        density.apply(4.0),
-                        density.apply(8.0),
-                        density.apply(expressive ? 16.0 : 14.0)
+                        4.0,
+                        8.0,
+                        expressive ? 16.0 : 14.0
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
                 createButtonGroupTokens(
                         density,
                         shapeTokens,
-                        density.apply(expressive ? 10.0 : 8.0),
+                        expressive ? 10.0 : 8.0,
                         expressive
                 ),
                 createSplitButtonTokens(density),
@@ -989,9 +848,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                                 ColorRole.ON_TERTIARY,
                                 expressive ? ColorRole.TERTIARY : ColorRole.ON_TERTIARY_CONTAINER
                         ),
-                        density.apply(expressive ? 20.0 : 24.0),
+                        expressive ? 20.0 : 24.0,
                         menuItemHorizontalPadding,
-                        density.apply(expressive ? 16.0 : 12.0),
+                        expressive ? 16.0 : 12.0,
                         menuItemContentSpacing,
                         menuItemSpacing
                 ),
@@ -1121,18 +980,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         chipGroupVerticalGap
                 ),
                 new ProgressTokens(
-                        density.apply(4.0),
+                        4.0,
                         shapeTokens.full(),
                         progressCircularIndicatorSize,
                         progressCircularWaveIndicatorSize,
                         progressLinearWaveAmplitude,
-                        density.apply(40.0),
-                        density.apply(20.0),
-                        density.apply(4.0),
-                        density.apply(4.0),
+                        40.0,
+                        20.0,
+                        4.0,
+                        4.0,
                         progressCircularWaveAmplitude,
-                        density.apply(15.0),
-                        density.apply(4.0)
+                        15.0,
+                        4.0
                 ),
                 new LoadingIndicatorTokens(
                         loadingIndicatorContainerSize,
@@ -1239,10 +1098,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
-                        density.apply(80.0),
-                        density.apply(220.0),
-                        density.apply(280.0),
-                        density.apply(360.0),
+                        80.0,
+                        220.0,
+                        280.0,
+                        360.0,
                         navigationBarHeight,
                         navigationRailItemWidth,
                         navigationRailIndicatorWidth,
@@ -1253,8 +1112,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationRailCollapsedBottomPadding,
                         navigationRailHorizontalPadding,
                         navigationRailItemSpacing,
-                        density.apply(44.0),
-                        density.apply(20.0),
+                        44.0,
+                        20.0,
                         navigationRailHeaderSpacing,
                         shapeTokens.large()
                 ),
@@ -1281,7 +1140,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         listItemHorizontalPadding,
                         listItemVerticalPadding,
                         listItemContentSpacing,
-                        density.apply(2.0),
+                        2.0,
                         expressive ? shapeTokens.extraSmall() : 0.0,
                         expressive ? shapeTokens.medium() : 0.0,
                         expressive ? shapeTokens.large() : 0.0,
@@ -1297,7 +1156,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Button groups own spacing and connected inner-corner behavior. Their child buttons retain the shared
     /// [ButtonSizingTokens] metrics for height, content padding, typography, icon size, and outline width.
     ///
-    /// @param density                the density transform applied to layout lengths
+    /// @param density                the density used for group container heights
     /// @param shapeTokens            the shape system used by connected inner-corner aliases
     /// @param iconToggleGroupSpacing the resolved spacing between icon toggle group children
     /// @param expressive              whether Expressive connected-button state shapes should be generated
@@ -1308,7 +1167,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double iconToggleGroupSpacing,
             boolean expressive
     ) {
-        double connectedSpacing = density.apply(2.0);
+        double connectedSpacing = 2.0;
         return new ButtonGroupTokens(
                 createButtonGroupSizeTokens(
                         density,
@@ -1362,7 +1221,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Creates tokens for one button-group size.
     ///
-    /// @param density                     the density transform applied to layout lengths
+    /// @param density                     the density used for the container height
     /// @param containerHeight             the baseline container height
     /// @param standardSpacing             the baseline spacing between standard-group items
     /// @param connectedSpacing            the resolved spacing between connected-group items
@@ -1379,10 +1238,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double connectedPressedInnerCorner,
             boolean expressive
     ) {
-        double resolvedContainerHeight = density.apply(containerHeight);
+        double resolvedContainerHeight = density.compact(containerHeight);
         return new ButtonGroupSizeTokens(
                 resolvedContainerHeight,
-                density.apply(standardSpacing),
+                standardSpacing,
                 0.15,
                 connectedSpacing,
                 connectedInnerCorner,
@@ -1396,80 +1255,80 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Split buttons are an Expressive component without a baseline joined variant, so all profiles retain the
     /// current between-space, asymmetric padding, state corners, optical icon offsets, and selected trailing shape.
     ///
-    /// @param density the density transform applied to length tokens
+    /// @param density the density used for split-button container heights
     /// @return the split-button size token scale
     private static SplitButtonTokens createSplitButtonTokens(M3Density density) {
-        double spacing = density.apply(2.0);
+        double spacing = 2.0;
         return new SplitButtonTokens(
                 new SplitButtonSizeTokens(
-                        density.apply(32.0),
+                        density.compact(32.0),
                         spacing,
-                        density.apply(4.0),
-                        density.apply(8.0),
-                        density.apply(8.0),
-                        density.apply(12.0),
-                        density.apply(10.0),
-                        density.apply(22.0),
-                        density.apply(1.0),
-                        density.apply(13.0),
-                        density.apply(13.0),
-                        density.apply(16.0)
+                        4.0,
+                        8.0,
+                        8.0,
+                        12.0,
+                        10.0,
+                        22.0,
+                        1.0,
+                        13.0,
+                        13.0,
+                        16.0
                 ),
                 new SplitButtonSizeTokens(
-                        density.apply(40.0),
+                        density.compact(40.0),
                         spacing,
-                        density.apply(4.0),
-                        density.apply(12.0),
-                        density.apply(12.0),
-                        density.apply(16.0),
-                        density.apply(12.0),
-                        density.apply(22.0),
-                        density.apply(1.0),
-                        density.apply(13.0),
-                        density.apply(13.0),
-                        density.apply(20.0)
+                        4.0,
+                        12.0,
+                        12.0,
+                        16.0,
+                        12.0,
+                        22.0,
+                        1.0,
+                        13.0,
+                        13.0,
+                        20.0
                 ),
                 new SplitButtonSizeTokens(
-                        density.apply(56.0),
+                        density.compact(56.0),
                         spacing,
-                        density.apply(4.0),
-                        density.apply(12.0),
-                        density.apply(12.0),
-                        density.apply(24.0),
-                        density.apply(24.0),
-                        density.apply(26.0),
-                        density.apply(2.0),
-                        density.apply(15.0),
-                        density.apply(15.0),
-                        density.apply(28.0)
+                        4.0,
+                        12.0,
+                        12.0,
+                        24.0,
+                        24.0,
+                        26.0,
+                        2.0,
+                        15.0,
+                        15.0,
+                        28.0
                 ),
                 new SplitButtonSizeTokens(
-                        density.apply(96.0),
+                        density.compact(96.0),
                         spacing,
-                        density.apply(8.0),
-                        density.apply(20.0),
-                        density.apply(20.0),
-                        density.apply(48.0),
-                        density.apply(48.0),
-                        density.apply(38.0),
-                        density.apply(3.0),
-                        density.apply(29.0),
-                        density.apply(29.0),
-                        density.apply(48.0)
+                        8.0,
+                        20.0,
+                        20.0,
+                        48.0,
+                        48.0,
+                        38.0,
+                        3.0,
+                        29.0,
+                        29.0,
+                        48.0
                 ),
                 new SplitButtonSizeTokens(
-                        density.apply(136.0),
+                        density.compact(136.0),
                         spacing,
-                        density.apply(12.0),
-                        density.apply(20.0),
-                        density.apply(20.0),
-                        density.apply(64.0),
-                        density.apply(64.0),
-                        density.apply(50.0),
-                        density.apply(6.0),
-                        density.apply(43.0),
-                        density.apply(43.0),
-                        density.apply(68.0)
+                        12.0,
+                        20.0,
+                        20.0,
+                        64.0,
+                        64.0,
+                        50.0,
+                        6.0,
+                        43.0,
+                        43.0,
+                        68.0
                 )
         );
     }
@@ -1654,7 +1513,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by floating action button sizes.
     ///
-    /// @param small             the deprecated baseline small FAB tokens
+    /// @param small             the small FAB tokens
     /// @param regular           the regular FAB and small extended FAB tokens
     /// @param medium            the medium FAB tokens
     /// @param large             the large FAB tokens

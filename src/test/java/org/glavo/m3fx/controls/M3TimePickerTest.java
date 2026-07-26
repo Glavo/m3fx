@@ -123,14 +123,14 @@ final class M3TimePickerTest {
             assertEquals(12, visibleDialLabels(picker).size());
             assertDialMetrics(picker);
 
-            buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "11").fire();
+            buttonByText(picker, "m3-time-picker-dial-label", "11").fire();
             assertEquals(LocalTime.of(11, 15), picker.getValue());
             assertEquals(12, visibleDialLabels(picker).size());
 
-            buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "30").fire();
+            buttonByText(picker, "m3-time-picker-dial-label", "30").fire();
             assertEquals(LocalTime.of(11, 30), picker.getValue());
 
-            buttonByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "PM").fire();
+            buttonByText(picker, "m3-time-picker-period-cell", "PM").fire();
             assertEquals(LocalTime.of(23, 30), picker.getValue());
         });
     }
@@ -141,7 +141,7 @@ final class M3TimePickerTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
             Pane root = layoutPicker(picker, 328.0, 472.0);
-            Set<Node> originalLabels = identitySet(picker.lookupAll("." + M3TimePicker.DIAL_LABEL_STYLE_CLASS));
+            Set<Node> originalLabels = identitySet(picker.lookupAll("." + "m3-time-picker-dial-label"));
 
             assertEquals(24, originalLabels.size());
 
@@ -154,7 +154,7 @@ final class M3TimePickerTest {
             picker.layout();
 
             assertEquals(originalLabels, identitySet(
-                    picker.lookupAll("." + M3TimePicker.DIAL_LABEL_STYLE_CLASS)
+                    picker.lookupAll("." + "m3-time-picker-dial-label")
             ));
         });
     }
@@ -171,15 +171,15 @@ final class M3TimePickerTest {
 
             List<Node> labels = visibleDialLabels(picker);
             assertEquals(24, labels.size());
-            ButtonBase outerEight = buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "08");
-            ButtonBase innerTwenty = buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "20");
-            ButtonBase firstEnabled = buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "09");
+            ButtonBase outerEight = buttonByText(picker, "m3-time-picker-dial-label", "08");
+            ButtonBase innerTwenty = buttonByText(picker, "m3-time-picker-dial-label", "20");
+            ButtonBase firstEnabled = buttonByText(picker, "m3-time-picker-dial-label", "09");
             ButtonBase firstDisabledAfterRange = buttonByText(
                     picker,
-                    M3TimePicker.DIAL_LABEL_STYLE_CLASS,
+                    "m3-time-picker-dial-label",
                     "22"
             );
-            Node dial = requireNode(picker, M3TimePicker.DIAL_STYLE_CLASS);
+            Node dial = requireNode(picker, "m3-time-picker-dial");
             double centerX = dial.getBoundsInLocal().getWidth() / 2.0;
             double centerY = dial.getBoundsInLocal().getHeight() / 2.0;
 
@@ -189,7 +189,7 @@ final class M3TimePickerTest {
             assertTrue(innerTwenty.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS));
             assertTrue(distanceFromDialCenter(outerEight, centerX, centerY)
                     > distanceFromDialCenter(innerTwenty, centerX, centerY) + 30.0);
-            assertEquals(0, visibleNodes(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS).size());
+            assertEquals(0, visibleNodes(picker, "m3-time-picker-period-cell").size());
         });
     }
 
@@ -199,7 +199,7 @@ final class M3TimePickerTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
             layoutPicker(picker, 328.0, 472.0);
-            Node dial = requireNode(picker, M3TimePicker.DIAL_STYLE_CLASS);
+            Node dial = requireNode(picker, "m3-time-picker-dial");
 
             dial.fireEvent(primaryMouseEvent(dial, MouseEvent.MOUSE_PRESSED, 232.0, 128.0, true));
             dial.fireEvent(primaryMouseEvent(dial, MouseEvent.MOUSE_RELEASED, 232.0, 128.0, false));
@@ -231,7 +231,7 @@ final class M3TimePickerTest {
             minute.fireEvent(new ActionEvent(minute, minute));
             assertEquals(LocalTime.of(7, 45), picker.getValue());
 
-            buttonByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "PM").fire();
+            buttonByText(picker, "m3-time-picker-period-cell", "PM").fire();
             assertEquals(LocalTime.of(19, 45), picker.getValue());
 
             hour.setText("25");
@@ -239,10 +239,10 @@ final class M3TimePickerTest {
             assertEquals(LocalTime.of(19, 45), picker.getValue());
             assertTrue(hour.getPseudoClassStates().contains(PseudoClass.getPseudoClass("invalid")));
 
-            ButtonBase modeButton = buttonByStyle(picker, M3TimePicker.MODE_BUTTON_STYLE_CLASS);
+            ButtonBase modeButton = buttonByStyle(picker, "m3-time-picker-mode-button");
             modeButton.fire();
             assertFalse(picker.isInputMode());
-            assertTrue(requireNode(picker, M3TimePicker.DIAL_STYLE_CLASS).isVisible());
+            assertTrue(requireNode(picker, "m3-time-picker-dial").isVisible());
         });
     }
 
@@ -257,14 +257,14 @@ final class M3TimePickerTest {
             picker.fireEvent(keyEvent(KeyCode.RIGHT));
             assertEquals(LocalTime.of(11, 30), picker.getValue());
 
-            buttonByStyle(picker, M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).fire();
+            buttonByStyle(picker, "m3-time-picker-minute-display").fire();
             picker.fireEvent(keyEvent(KeyCode.UP));
             assertEquals(LocalTime.of(11, 45), picker.getValue());
 
             picker.fireEvent(modifiedKeyEvent(KeyCode.RIGHT, false, true));
             assertEquals(LocalTime.of(11, 45), picker.getValue());
 
-            buttonByStyle(picker, M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).fire();
+            buttonByStyle(picker, "m3-time-picker-hour-display").fire();
             picker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             picker.fireEvent(keyEvent(KeyCode.RIGHT));
             assertEquals(LocalTime.of(10, 45), picker.getValue());
@@ -291,7 +291,7 @@ final class M3TimePickerTest {
                 root.layout();
                 picker.layout();
 
-                ButtonBase label = buttonByText(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS, "11");
+                ButtonBase label = buttonByText(picker, "m3-time-picker-dial-label", "11");
                 label.requestFocus();
                 assertTrue(label.isFocused());
                 assertSame(label, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -324,10 +324,10 @@ final class M3TimePickerTest {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(7, 0));
             Pane root = layoutPicker(picker, 328.0, 472.0);
-            Node dial = requireNode(picker, M3TimePicker.DIAL_STYLE_CLASS);
-            Node hour = requireNode(picker, M3TimePicker.HOUR_DISPLAY_STYLE_CLASS);
-            Node minute = requireNode(picker, M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS);
-            Node period = requireNode(picker, M3TimePicker.PERIOD_ROW_STYLE_CLASS);
+            Node dial = requireNode(picker, "m3-time-picker-dial");
+            Node hour = requireNode(picker, "m3-time-picker-hour-display");
+            Node minute = requireNode(picker, "m3-time-picker-minute-display");
+            Node period = requireNode(picker, "m3-time-picker-period-row");
 
             assertEquals(256.0, dial.getBoundsInParent().getWidth(), 0.5);
             assertEquals(256.0, dial.getBoundsInParent().getHeight(), 0.5);
@@ -342,11 +342,11 @@ final class M3TimePickerTest {
             double defaultMinHeight = picker.minHeight(328.0);
             Circle handle = assertInstanceOf(
                     Circle.class,
-                    requireNode(picker, M3TimePicker.DIAL_HANDLE_STYLE_CLASS)
+                    requireNode(picker, "m3-time-picker-dial-handle")
             );
             Circle center = assertInstanceOf(
                     Circle.class,
-                    requireNode(picker, M3TimePicker.DIAL_CENTER_STYLE_CLASS)
+                    requireNode(picker, "m3-time-picker-dial-center")
             );
             picker.setContainerSpacing(12.0);
             picker.setDialHandleSize(40.0);
@@ -392,17 +392,17 @@ final class M3TimePickerTest {
             layoutPicker(picker, 328.0, 472.0);
             ButtonBase retiredSelected = buttonByText(
                     picker,
-                    M3TimePicker.DIAL_LABEL_STYLE_CLASS,
+                    "m3-time-picker-dial-label",
                     "10"
             );
             ButtonBase retiredTarget = buttonByText(
                     picker,
-                    M3TimePicker.DIAL_LABEL_STYLE_CLASS,
+                    "m3-time-picker-dial-label",
                     "11"
             );
             ButtonBase retiredPeriod = buttonByText(
                     picker,
-                    M3TimePicker.PERIOD_CELL_STYLE_CLASS,
+                    "m3-time-picker-period-cell",
                     "PM"
             );
             assertTrue(retiredSelected.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS));
@@ -430,7 +430,7 @@ final class M3TimePickerTest {
             Pane root = layoutPicker(picker, 328.0, 472.0);
             Circle handle = assertInstanceOf(
                     Circle.class,
-                    requireNode(picker, M3TimePicker.DIAL_HANDLE_STYLE_CLASS)
+                    requireNode(picker, "m3-time-picker-dial-handle")
             );
             double startX = handle.getCenterX();
             double startY = handle.getCenterY();
@@ -471,7 +471,7 @@ final class M3TimePickerTest {
             assertSnapshotNodeContainsContrast(image, inputPicker, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(
                     image,
-                    requireNode(dialPicker, M3TimePicker.DIAL_HANDLE_STYLE_CLASS),
+                    requireNode(dialPicker, "m3-time-picker-dial-handle"),
                     Color.WHITE,
                     0.10
             );
@@ -493,7 +493,7 @@ final class M3TimePickerTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
             Pane root = layoutPicker(picker, 328.0, 472.0);
-            ButtonBase selector = buttonByStyle(picker, M3TimePicker.HOUR_DISPLAY_STYLE_CLASS);
+            ButtonBase selector = buttonByStyle(picker, "m3-time-picker-hour-display");
             WritableImage normal = snapshotImageOnFxThread(root);
 
             double centerX = selector.getWidth() / 2.0;
@@ -542,18 +542,18 @@ final class M3TimePickerTest {
 
     /// Verifies official dial diameter, handle diameter, center diameter, and track width.
     private static void assertDialMetrics(M3TimePicker picker) {
-        Node dial = requireNode(picker, M3TimePicker.DIAL_STYLE_CLASS);
+        Node dial = requireNode(picker, "m3-time-picker-dial");
         Circle handle = assertInstanceOf(
                 Circle.class,
-                requireNode(picker, M3TimePicker.DIAL_HANDLE_STYLE_CLASS)
+                requireNode(picker, "m3-time-picker-dial-handle")
         );
         Circle center = assertInstanceOf(
                 Circle.class,
-                requireNode(picker, M3TimePicker.DIAL_CENTER_STYLE_CLASS)
+                requireNode(picker, "m3-time-picker-dial-center")
         );
         Line track = assertInstanceOf(
                 Line.class,
-                requireNode(picker, M3TimePicker.DIAL_TRACK_STYLE_CLASS)
+                requireNode(picker, "m3-time-picker-dial-track")
         );
 
         assertEquals(256.0, dial.getBoundsInParent().getWidth(), 0.5);
@@ -565,7 +565,7 @@ final class M3TimePickerTest {
 
     /// Returns visible managed dial-label nodes.
     private static List<Node> visibleDialLabels(M3TimePicker picker) {
-        return visibleNodes(picker, M3TimePicker.DIAL_LABEL_STYLE_CLASS);
+        return visibleNodes(picker, "m3-time-picker-dial-label");
     }
 
     /// Returns visible managed nodes with one style class.
@@ -605,7 +605,7 @@ final class M3TimePickerTest {
 
     /// Returns one numeric input by accessible text.
     private static TextField inputByAccessibleText(Node root, String accessibleText) {
-        for (Node node : visibleNodes(root, M3TimePicker.INPUT_FIELD_STYLE_CLASS)) {
+        for (Node node : visibleNodes(root, "m3-time-picker-input-field")) {
             if (node instanceof TextField field && accessibleText.equals(field.getAccessibleText())) {
                 return field;
             }

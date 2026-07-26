@@ -44,8 +44,8 @@ import java.util.Objects;
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public final class M3FloatingActionButton extends ButtonBase {
-    /// The base style class for M3FX floating action buttons.
-    public static final String STYLE_CLASS = "m3-fab";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-fab";
 
     /// The default floating action button container size.
     private static final double DEFAULT_CONTAINER_SIZE = 56.0;
@@ -371,7 +371,7 @@ public final class M3FloatingActionButton extends ButtonBase {
 
     /// Adds base style classes and applies token-driven metrics.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

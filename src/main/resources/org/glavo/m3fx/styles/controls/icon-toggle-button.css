@@ -166,6 +166,7 @@
     -m3-container-width: 32px;
     -m3-icon-button-icon-size: 20px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 8px;
 }
 
 .m3-icon-toggle-button.m3-icon-button-small {
@@ -173,6 +174,7 @@
     -m3-container-width: 40px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 4px;
 }
 
 .m3-icon-toggle-button.m3-icon-button-medium {
@@ -180,6 +182,7 @@
     -m3-container-width: 56px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-toggle-button.m3-icon-button-large {
@@ -187,6 +190,7 @@
     -m3-container-width: 96px;
     -m3-icon-button-icon-size: 32px;
     -m3-icon-button-outline-width: 2px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-toggle-button.m3-icon-button-extra-large {
@@ -194,6 +198,7 @@
     -m3-container-width: 136px;
     -m3-icon-button-icon-size: 40px;
     -m3-icon-button-outline-width: 3px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-toggle-button.m3-icon-button-large.m3-outlined-icon-toggle-button {
@@ -206,18 +211,22 @@
 
 .m3-icon-button-extra-small.m3-icon-button-narrow-width {
     -m3-container-width: 28px;
+    -fx-border-insets: 8px 10px;
 }
 
 .m3-icon-button-extra-small.m3-icon-button-wide-width {
     -m3-container-width: 40px;
+    -fx-border-insets: 8px 4px;
 }
 
 .m3-icon-button-small.m3-icon-button-narrow-width {
     -m3-container-width: 32px;
+    -fx-border-insets: 4px 8px;
 }
 
 .m3-icon-button-small.m3-icon-button-wide-width {
     -m3-container-width: 52px;
+    -fx-border-insets: 4px 0;
 }
 
 .m3-icon-button-medium.m3-icon-button-narrow-width {

@@ -278,7 +278,7 @@ final class M3SegmentedButtonSkinTest {
     private static Region selectionIndicator(M3SegmentedButton button) {
         return assertInstanceOf(
                 Region.class,
-                button.lookup("." + M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS)
+                button.lookup("." + "m3-segmented-button-selection-indicator")
         );
     }
 

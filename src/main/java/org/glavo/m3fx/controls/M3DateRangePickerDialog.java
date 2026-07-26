@@ -19,14 +19,14 @@ import java.time.LocalDate;
 
 /// A Material Design 3 dialog for selecting an inclusive date range.
 ///
-/// The OK button is disabled until the embedded [picker][#getPicker()] contains both endpoints. Activating OK
-/// requests dialog closure. The complete range remains available from the embedded picker after every dismissal;
+/// The OK button is disabled until the associated [picker][#getPicker()] contains both endpoints. Activating OK
+/// requests dialog closure. The complete range remains available from the picker after every dismissal;
 /// callers must inspect [M3DialogEvent#getAction()] from the hidden event before treating it as confirmed. An
 /// incomplete start-only range remains visible but cannot be accepted. Close requests remain subject to the inherited
 /// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
-/// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
-/// list and appear beside the calendar. Present the configured dialog with
+/// The picker is managed by this dialog and must not be added to another parent. Optional presets are exposed as a
+/// live ordered list and appear beside the calendar. Present the configured dialog with
 /// [M3OverlayPane#showDialog(M3Dialog)] or [M3DialogWindow#showDialog(M3Dialog)].
 ///
 /// ```java
@@ -53,13 +53,13 @@ public final class M3DateRangePickerDialog extends M3Dialog {
     private static final String DEFAULT_TITLE = "Select date range";
 
     /// The style class applied to dialog content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-dialog-preset-content";
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-dialog-preset-content";
 
     /// The style class applied to the preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-dialog-preset-list";
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-dialog-preset-list";
 
     /// The style class applied to each preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-dialog-preset-button";
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-dialog-preset-button";
 
     /// The date range picker displayed as dialog content.
     private final M3DateRangePicker picker = new M3DateRangePicker();
@@ -79,7 +79,7 @@ public final class M3DateRangePickerDialog extends M3Dialog {
     /// The vertical preset action container.
     private final VBox presetList = new VBox(6.0);
 
-    /// The stable wrapper that keeps the preset list and picker parented for the dialog lifetime.
+    /// The container for the preset list and picker.
     private final HBox presetContent = new HBox(16.0, presetList, picker);
 
     /// Incrementally maintains preset actions without rebuilding unaffected buttons.

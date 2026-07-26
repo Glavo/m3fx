@@ -17,9 +17,8 @@ import java.util.Objects;
 /// use different delays and motion specifications before they are combined with [#and(M3ExitTransition)]. Combining
 /// two effects that control the same visual channel is rejected rather than relying on ordering.
 ///
-/// The transition is applied to a private holder owned by [M3AnimatedContent] or [M3AnimatedVisibility]. It does not
-/// change the content node's visual properties, clip, or transform list. A `null` motion specification selects the
-/// semantic effects or spatial role from the active M3FX theme when the transition starts.
+/// The transition does not change the content node's visual properties, clip, or transform list. A `null` motion
+/// specification selects the semantic effects or spatial role from the active M3FX theme when the transition starts.
 ///
 /// See [Compose exit transitions](https://developer.android.com/reference/kotlin/androidx/compose/animation/ExitTransition)
 /// and [Material Design motion](https://m3.material.io/styles/motion/overview).
@@ -27,8 +26,8 @@ import java.util.Objects;
 public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
     /// Returns a transition with no exit effects.
     ///
-    /// Outgoing content remains at its neutral visual state until other enter or size effects finish, then it is
-    /// detached. If the complete content transform has no active effect, detachment is synchronous.
+    /// Outgoing content remains at its neutral visual state until other enter or size effects finish. If the complete
+    /// content transform has no active effect, the exit completes synchronously.
     ///
     /// @return the shared empty transition
     static M3ExitTransition none() {
@@ -49,7 +48,7 @@ public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
     /// Creates a uniform scale effect that finishes at the supplied scale.
     ///
     /// The effect initially has no explicit motion specification and no delay. Scaling is performed around the
-    /// center of the private content holder and does not affect its layout bounds.
+    /// center of the content bounds and does not affect its layout bounds.
     ///
     /// @param targetScale the finite, positive target scale
     /// @return an immutable scale transition
@@ -74,9 +73,8 @@ public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
 
     /// Creates a two-dimensional shrink effect toward the logical bottom-end corner.
     ///
-    /// The private content holder shrinks from its current reveal rectangle to an empty rectangle anchored to
-    /// [M3TransitionEdge#END] and [M3TransitionEdge#BOTTOM]. The reveal clips drawing only; it does not change the
-    /// holder's measured or laid-out size.
+    /// Content shrinks from its current revealed area to an empty area anchored to [M3TransitionEdge#END] and
+    /// [M3TransitionEdge#BOTTOM]. The reveal clips drawing only; it does not change measured or laid-out size.
     ///
     /// @return an immutable two-dimensional shrink transition
     static M3ExitTransition shrinkOut() {
@@ -86,8 +84,8 @@ public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
     /// Creates a two-dimensional shrink effect toward the supplied logical corner.
     ///
     /// [M3TransitionEdge#START] and [M3TransitionEdge#END] follow the effective node orientation when the transition
-    /// runs. The vertical anchor is independent of node orientation. The reveal clips a private holder and does not
-    /// change content layout bounds or mutate the content node.
+    /// runs. The vertical anchor is independent of node orientation. The reveal does not change content layout bounds
+    /// or mutate the content node.
     ///
     /// @param horizontalAnchor the logical horizontal anchor, either `START` or `END`
     /// @param verticalAnchor   the vertical anchor, either `TOP` or `BOTTOM`
@@ -106,7 +104,7 @@ public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
 
     /// Creates a horizontal shrink effect toward the logical end edge.
     ///
-    /// The holder shrinks to zero revealed width while retaining its full revealed height. Its measured and laid-out
+    /// Content shrinks to zero revealed width while retaining its full revealed height. Its measured and laid-out
     /// dimensions remain unchanged.
     ///
     /// @return an immutable horizontal shrink transition
@@ -129,7 +127,7 @@ public sealed interface M3ExitTransition permits M3ExitTransitionImpl {
 
     /// Creates a vertical shrink effect toward the bottom edge.
     ///
-    /// The holder shrinks to zero revealed height while retaining its full revealed width. Its measured and laid-out
+    /// Content shrinks to zero revealed height while retaining its full revealed width. Its measured and laid-out
     /// dimensions remain unchanged.
     ///
     /// @return an immutable vertical shrink transition

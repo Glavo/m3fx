@@ -65,8 +65,8 @@ import java.util.Objects;
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public final class M3IconToggleButtonGroup extends Control {
-    /// The base style class for M3FX toggle icon button groups.
-    public static final String STYLE_CLASS = "m3-icon-toggle-button-group";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-icon-toggle-button-group";
 
     /// The default spacing between toggle icon buttons.
     private static final double DEFAULT_SPACING = 8.0;
@@ -229,7 +229,8 @@ public final class M3IconToggleButtonGroup extends Control {
     /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Adding,
     /// removing, or reordering buttons immediately updates selection and keyboard traversal. A button node may
     /// occur only once because a JavaFX node can occupy only one position in a parent.
-    private final ObservableList<M3IconToggleButton> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3IconToggleButton> items =
+            M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between toggle icon buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -296,8 +297,8 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Returns the live mutable list of buttons displayed by this group.
     ///
     /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each button is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent.
+    /// rejects `null` elements and repeated occurrences of the same button instance. Bulk mutations are validated
+    /// before the list changes, and each button must satisfy the JavaFX single-parent rule.
     ///
     /// @return the live mutable item list
     public final ObservableList<M3IconToggleButton> getItems() {
@@ -522,7 +523,7 @@ public final class M3IconToggleButtonGroup extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);

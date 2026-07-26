@@ -26,6 +26,9 @@ import java.util.Objects;
 /// lifecycle when the pane is presented.
 @NotNullByDefault
 public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
+    /// The internal dialog-actions style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-dialog-actions";
+
     /// The vertical layout containing all visible dialog sections.
     private final VBox layout = new VBox();
 
@@ -82,7 +85,7 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         contentContainer.setAlignment(Pos.TOP_LEFT);
         contentLabel.getStyleClass().add("content-label");
         contentLabel.setWrapText(true);
-        actionBar.getStyleClass().add(M3DialogPane.ACTIONS_STYLE_CLASS);
+        actionBar.getStyleClass().add(ACTIONS_STYLE_CLASS);
         actionBar.setAlignment(Pos.CENTER_RIGHT);
         actionBar.spacingProperty().bind(control.actionSpacingProperty());
         HBox.setHgrow(actionSpacer, Priority.ALWAYS);

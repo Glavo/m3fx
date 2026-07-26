@@ -11,7 +11,7 @@
 .m3-side-sheet.m3-modal-sheet {
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-radius: 16px 0 0 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 1, 0.18, 0, 1);
 }
 
 .m3-side-sheet.m3-modal-sheet:rtl {
@@ -27,7 +27,7 @@
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-insets: 0;
     -fx-background-radius: 28px 28px 0 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 1, 0.18, 0, 1);
 }
 
 .m3-sheet-header {

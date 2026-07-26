@@ -43,8 +43,8 @@ import java.util.Objects;
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public final class M3ProgressBar extends Control {
-    /// The base style class for M3FX progress bars.
-    public static final String STYLE_CLASS = "m3-progress-bar";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-progress-bar";
 
     /// The progress value that marks the control as indeterminate.
     public static final double INDETERMINATE_PROGRESS = -1.0;
@@ -522,7 +522,7 @@ public final class M3ProgressBar extends Control {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);

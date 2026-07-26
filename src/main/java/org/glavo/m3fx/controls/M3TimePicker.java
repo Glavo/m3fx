@@ -19,17 +19,17 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
-import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,74 +53,8 @@ import java.util.Objects;
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePicker extends Control {
-    /// The base style class for M3FX time pickers.
-    public static final String STYLE_CLASS = "m3-time-picker";
-
-    /// The style class applied to the internal layout container.
-    public static final String CONTAINER_STYLE_CLASS = "m3-time-picker-container";
-
-    /// The style class applied to the selected time display row.
-    public static final String DISPLAY_STYLE_CLASS = "m3-time-picker-display";
-
-    /// The style class applied to the hour display label.
-    public static final String HOUR_DISPLAY_STYLE_CLASS = "m3-time-picker-hour-display";
-
-    /// The style class applied to the display separator label.
-    public static final String DISPLAY_SEPARATOR_STYLE_CLASS = "m3-time-picker-display-separator";
-
-    /// The style class applied to the minute display label.
-    public static final String MINUTE_DISPLAY_STYLE_CLASS = "m3-time-picker-minute-display";
-
-    /// The style class applied to the stable internal content pane.
-    public static final String CONTENT_STYLE_CLASS = "m3-time-picker-content";
-
-    /// The style class applied to the 256 dp clock dial.
-    public static final String DIAL_STYLE_CLASS = "m3-time-picker-dial";
-
-    /// The style class applied to the clock dial background.
-    public static final String DIAL_BACKGROUND_STYLE_CLASS = "m3-time-picker-dial-background";
-
-    /// The style class applied to the dial selector track.
-    public static final String DIAL_TRACK_STYLE_CLASS = "m3-time-picker-dial-track";
-
-    /// The style class applied to the 48 dp dial selector handle.
-    public static final String DIAL_HANDLE_STYLE_CLASS = "m3-time-picker-dial-handle";
-
-    /// The style class applied to the dial selector center.
-    public static final String DIAL_CENTER_STYLE_CLASS = "m3-time-picker-dial-center";
-
-    /// The style class applied to the Dial/Input mode toggle.
-    public static final String MODE_BUTTON_STYLE_CLASS = "m3-time-picker-mode-button";
-
-    /// The style class applied to the keyboard input row.
-    public static final String INPUT_CONTENT_STYLE_CLASS = "m3-time-picker-input-content";
-
-    /// The style class applied to hour and minute keyboard inputs.
-    public static final String INPUT_FIELD_STYLE_CLASS = "m3-time-picker-input-field";
-
-    /// The style class applied to one keyboard input and its supporting label.
-    public static final String INPUT_GROUP_STYLE_CLASS = "m3-time-picker-input-group";
-
-    /// The style class applied to Hour and Minute labels below keyboard inputs.
-    public static final String INPUT_LABEL_STYLE_CLASS = "m3-time-picker-input-label";
-
-    /// The style class applied to every selectable time cell.
-    public static final String CELL_STYLE_CLASS = "m3-time-picker-cell";
-
-    /// The style class applied to lightweight labels around the clock dial.
-    public static final String DIAL_LABEL_STYLE_CLASS = "m3-time-picker-dial-label";
-
-    /// The style class applied to the AM/PM row in 12-hour mode.
-    public static final String PERIOD_ROW_STYLE_CLASS = "m3-time-picker-period-row";
-
-    /// The style class applied to AM and PM cells.
-    public static final String PERIOD_CELL_STYLE_CLASS = "m3-time-picker-period-cell";
-
-    /// The style class applied to a selected cell.
-    public static final String SELECTED_CELL_STYLE_CLASS = "m3-time-picker-selected-cell";
-
-    /// The style class used when a dialog supplies the outer Material container.
-    static final String DIALOG_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-content";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-time-picker";
 
     /// The pseudo-class applied while the keyboard input variant is active.
     private static final PseudoClass INPUT_MODE_PSEUDO_CLASS = PseudoClass.getPseudoClass("input-mode");
@@ -618,7 +552,11 @@ public final class M3TimePicker extends Control {
         return M3Stylesheets.controlStylesheet("time-picker.css");
     }
 
-    /// Returns accessibility text for the selected time.
+    /// Returns accessibility state for the selected time and the selectable cells that are currently presented.
+    ///
+    /// `ITEM_COUNT` and `ITEM_AT_INDEX` describe the presented time-cell nodes. If no indexed cell presentation is
+    /// available, the item count is zero and indexed item queries return `null`. An indexed item query never returns
+    /// a [LocalTime] model value in place of a node.
     ///
     /// @throws NullPointerException if `attribute` is `null`
     @Override
@@ -665,12 +603,13 @@ public final class M3TimePicker extends Control {
 
     /// Adds base style classes, accessibility role, and keyboard navigation.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleTime,
                 this::handlesAccessibleShowTarget);
         updateInputModePseudoClasses();
         setFocusTraversable(true);
+        skinProperty().addListener(observable -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
 
@@ -776,24 +715,20 @@ public final class M3TimePicker extends Control {
 
     /// Returns the number of visible selectable cells.
     private int accessibleCellCount() {
-        List<Node> cells = accessibleTimeCells();
-        return getSkin() instanceof M3TimePickerSkin ? cells.size() : logicalCellCount();
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        return presentation == null ? 0 : presentation.accessibleItemCount();
     }
 
     /// Returns the visible selectable cell at an accessibility index.
     private @Nullable Node accessibleCellAt(Object... parameters) {
         int index = M3Accessible.indexParameter(parameters);
-        if (index < 0 || !(getSkin() instanceof M3TimePickerSkin)) {
-            return null;
-        }
-
-        List<Node> cells = accessibleTimeCells();
-        return index < cells.size() ? cells.get(index) : null;
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        return presentation == null ? null : presentation.accessibleItemAt(index);
     }
 
     /// Returns the preferred focus node for the currently displayed time cells.
     private Node accessibleFocusNode() {
-        if (!(getSkin() instanceof M3TimePickerSkin)) {
+        if (accessibilityPresentation() == null) {
             return this;
         }
 
@@ -821,7 +756,16 @@ public final class M3TimePicker extends Control {
             return null;
         }
 
-        for (Node cell : accessibleTimeCells()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
+            if (cell == null) {
+                continue;
+            }
             if (!cell.isDisabled() && M3Accessible.containsNode(cell, focusOwner)) {
                 return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
             }
@@ -875,12 +819,11 @@ public final class M3TimePicker extends Control {
         return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
     }
 
-    /// Focuses the rendered time cell for a time when it is visible.
-    private boolean focusAccessibleTime(LocalTime time) {
-        if (isTimeDisabled(time)) {
-            return false;
+    /// Focuses the rendered time cell for a selectable time when it is visible.
+    private void focusAccessibleTime(LocalTime time) {
+        if (!isTimeDisabled(time)) {
+            focusAccessibleNode(timeCellForTime(normalizeTime(time)));
         }
-        return focusAccessibleNode(timeCellForTime(normalizeTime(time)));
     }
 
     /// Returns the time item requested by accessibility parameters.
@@ -937,17 +880,21 @@ public final class M3TimePicker extends Control {
         return item instanceof Node node && node.getUserData() instanceof LocalTime time ? time : null;
     }
 
-    /// Returns visible rendered time cells in layout traversal order.
-    private List<Node> accessibleTimeCells() {
-        ArrayList<Node> cells = new ArrayList<>();
-        collectAccessibleTimeCells(this, cells);
-        return cells;
+    /// Returns the indexed accessibility presentation supplied by the active presentation.
+    private @Nullable M3PickerAccessibilityPresentation accessibilityPresentation() {
+        return getSkin() instanceof M3PickerAccessibilityPresentation presentation ? presentation : null;
     }
 
     /// Returns the rendered visible time cell for the supplied time.
     private @Nullable Node timeCellForTime(LocalTime time) {
         LocalTime normalizedTime = normalizeTime(time);
-        for (Node cell : accessibleTimeCells()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
             if (normalizedTime.equals(timeFromNode(cell))) {
                 return cell;
             }
@@ -957,52 +904,18 @@ public final class M3TimePicker extends Control {
 
     /// Returns the first rendered visible enabled time cell.
     private @Nullable Node firstEnabledTimeCell() {
-        for (Node cell : accessibleTimeCells()) {
-            if (!cell.isDisabled()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
+            if (cell != null && !cell.isDisabled()) {
                 return cell;
             }
         }
         return null;
-    }
-
-    /// Collects visible rendered time cells from a scene-graph subtree.
-    private static void collectAccessibleTimeCells(Node node, List<Node> cells) {
-        if (isAccessibleTimeCell(node)) {
-            cells.add(node);
-        }
-        if (node instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                collectAccessibleTimeCells(child, cells);
-            }
-        }
-    }
-
-    /// Returns whether a node is a visible rendered time cell.
-    private static boolean isAccessibleTimeCell(Node node) {
-        return node.getStyleClass().contains(CELL_STYLE_CLASS)
-                && timeFromNode(node) != null
-                && isEffectivelyVisible(node)
-                && !node.isMouseTransparent();
-    }
-
-    /// Returns whether a rendered cell and its ancestor chain are visible.
-    private static boolean isEffectivelyVisible(Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (!current.isVisible()) {
-                return false;
-            }
-            current = current.getParent();
-        }
-        return true;
-    }
-
-    /// Returns the current logical selectable cell count before the skin is installed.
-    private int logicalCellCount() {
-        int hourCellCount = isUse24HourClock() ? 24 : 12;
-        int minuteCellCount = 60 / getMinuteStep();
-        int periodCellCount = isUse24HourClock() ? 0 : 2;
-        return hourCellCount + minuteCellCount + periodCellCount;
     }
 
     /// Notifies accessibility clients that visible time cells changed.
@@ -1051,7 +964,7 @@ public final class M3TimePicker extends Control {
         }
     }
 
-    /// CSS metadata for Time Picker metrics consumed by the custom skin.
+    /// CSS metadata for metrics consumed by the time-picker presentation.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for spacing between major picker regions.

@@ -91,7 +91,8 @@ Runtime images are written under:
 demo/build/jlink/
 ```
 
-Each jlink task verifies the generated runtime image before it succeeds. The verification requires the `release` metadata file, `lib/modules`, JavaFX runtime metadata, JavaFX legal metadata, the M3FX demo module entry in `release`, and the expected platform launcher. Windows images must contain both `bin/m3fx-demo` and `bin/m3fx-demo.bat`; Linux and macOS images must contain `bin/m3fx-demo`.
+Each jlink task validates the generated runtime image before it succeeds. The image contains the expected demo
+launcher and the JavaFX runtime required by that platform.
 
 ## Demo Native Image
 
@@ -99,43 +100,8 @@ The demo uses the
 [GraalVM Native Build Tools Gradle plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin) to
 compile the application ahead of time. Install the JavaFX-enabled Full distribution of
 [Liberica Native Image Kit](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/)
-and point `GRAALVM_HOME` at it before starting Gradle, or run Gradle with that installation. The build verifies the
-`native-image` executable, the JavaFX controls module, and the Liberica NIK runtime identity before compilation.
-
-Reusable Native Image operations live as task types under `buildSrc`. A demo keeps its own GraalVM binary
-configuration and registers the shared toolchain verification and executable staging tasks:
-
-```kotlin
-import org.glavo.m3fx.build.nativeimage.StageNativeExecutableTask
-import org.glavo.m3fx.build.nativeimage.VerifyNativeImageToolchainTask
-import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
-
-val windowsHost = System.getProperty("os.name").lowercase().contains("win")
-
-val verifyNativeImageToolchain = tasks.register<VerifyNativeImageToolchainTask>(
-    "verifyNativeImageToolchain"
-) {
-    requiredJmods.add("javafx.controls")
-}
-
-val nativeCompile = tasks.named<BuildNativeImageTask>("nativeCompile") {
-    dependsOn(verifyNativeImageToolchain, shadowJar)
-}
-
-tasks.register<StageNativeExecutableTask>("stageNativeExecutable") {
-    sourceExecutable.set(nativeCompile.flatMap { it.outputFile })
-    targetExecutable.set(layout.buildDirectory.file(
-        if (windowsHost) "distributions/native/example-demo.exe" else "distributions/native/example-demo"
-    ))
-    windowsHost.set(windowsHost)
-    windowsGuiApplication.set(true)
-}
-```
-
-`VerifyNativeImageToolchainTask` validates Liberica NIK Full and required JMOD modules.
-`StageNativeExecutableTask` validates the compiled file, optionally enforces the Windows GUI PE subsystem, copies it
-to the configured distribution path, and restores the executable bit on non-Windows hosts. Additional demos retain
-full control over their Native Image arguments, entry point, input JAR, platform naming, and output path.
+and point `GRAALVM_HOME` at it before starting Gradle, or run Gradle with that installation. The build requires a
+working `native-image` executable and the JavaFX controls module.
 
 Build and run the executable with:
 
@@ -144,26 +110,21 @@ Build and run the executable with:
 ./gradlew nativeRunDemo
 ```
 
-`nativeBuildDemo` builds the verified demo shadow jar, compiles it with `--no-fallback`, verifies the generated
-executable, and stages one distributable file under:
+`nativeBuildDemo` builds the demo shadow jar, compiles it with `--no-fallback`, and stages one distributable file
+under:
 
 ```text
 demo/build/distributions/native/<os>-<arch>/m3fx-demo[.exe]
 ```
 
-Native Image intermediate files remain under `demo/build/native/nativeCompile/` and are not distribution
-artifacts. On Windows the staged result is a single `m3fx-demo.exe` linked as a Windows GUI application, so launching
-it does not allocate a console window. The build reads the staged PE metadata and fails unless the executable uses the
-Windows GUI subsystem. The executable is not an installer and may still depend on operating-system libraries. The
-metadata under `META-INF/native-image/org.glavo/m3fx-demo` retains M3FX and demo CSS and the post-JavaFX-17
-focus-visible method reached by the guarded runtime path. The shadow jar itself continues to exclude OpenJFX
-artifacts and fonts because JavaFX and text rendering resources come from the target environment.
+On Windows the staged result is a single `m3fx-demo.exe` linked as a Windows GUI application, so launching it does
+not allocate a console window. The executable is not an installer and may still depend on operating-system libraries.
+The shadow jar continues to exclude OpenJFX artifacts and fonts because JavaFX and text-rendering resources come
+from the target environment.
 
 Native Image does not cross-compile desktop executables. Run the task on each target operating system and
-architecture. The manually dispatched `Build Demo Native Image` workflow accepts the Liberica NIK Java feature
-version, builds and uploads the staged Linux x64, Windows x64, and macOS AArch64 executables, and performs a Windows
-startup smoke check before publishing artifacts. Platform C toolchains are still required locally; Linux additionally
-needs the JavaFX GTK, graphics, audio, and X11 development packages installed by that workflow.
+architecture. Platform C toolchains are required locally; Linux also requires the JavaFX GTK, graphics, audio, and
+X11 development packages.
 
 ## Jlink Configuration
 
@@ -206,15 +167,12 @@ m3fx.jlink.macosX64.downloadUrl
 
 ## Cross-Platform Notes
 
-Cross-platform and cross-architecture jlink use target-platform `jmods` from the downloaded target LibericaJDK. The `jlink` executable must run on the host and match the target Java feature version.
-
-When the current Gradle JVM already matches the target Java feature version, the task uses the Gradle JVM's `jlink`. If it does not match, the task automatically downloads a host-platform BellSoft LibericaJDK Full archive and uses its `jlink` executable. You can still pass an explicit executable to override this behavior:
+Cross-platform and cross-architecture jlink use target-platform `jmods` from the selected LibericaJDK. The `jlink`
+executable must run on the host and match the target Java feature version. An explicit executable may be provided:
 
 ```shell
 ./gradlew jlinkDemoLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
 ```
-
-For same-platform and same-architecture builds, the task uses the downloaded target JDK's `jlink` executable directly.
 
 ## Validation
 
@@ -232,19 +190,13 @@ Use these tasks before distributing artifacts:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`releaseCheck` runs `check`, `fullTest`, both sample-application shadow jar verifications, and `jlinkDemoRuntime`. It is the local release gate for the library publication, all test tiers, sample-application behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
-
-The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo and catalog shadow jars with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
-
-The separate Native Image workflow is manual because AOT compilation is intentionally outside the fast Tier 1
-gate. It provisions Liberica NIK Full and the platform compiler, runs `nativeBuildDemo`, and uploads the staged
-executable with `archive: false`.
+`releaseCheck` runs `check`, `fullTest`, both sample-application shadow-jar verifications, and
+`jlinkDemoRuntime`. It is the local release gate for library publication and the host-platform demo distribution.
 
 ## Nightly Demo Release
 
-The Publish Nightly Demo workflow runs every day at 02:17 UTC and may also be started with
-`workflow_dispatch`. It first runs the Tier 1 test suite and verifies the Demo Shadow JAR. After that gate passes,
-it builds Windows x64, Linux x64, and macOS AArch64 Demo executables with Liberica Native Image Kit Full.
+The Publish Nightly Demo workflow runs daily and can also be started manually. It publishes the verified Demo Shadow
+JAR and available native demo distributions.
 
 The workflow maintains one prerelease at the `nightly` tag. Each successful run moves the tag to the tested commit,
 updates the release notes, and replaces the stable asset names:
@@ -256,22 +208,5 @@ updates the release notes, and replaces the stable asset names:
 - `m3fx-demo-nightly-build.txt`
 - `SHA256SUMS`
 
-The native assets are self-contained platform builds. The Shadow JAR remains an integration artifact and does not
-bundle JavaFX. Manual runs may select a Liberica NIK Java feature version; scheduled runs use Java 25. The workflow
-uses fixed asset names and `gh release upload --clobber`, so it updates the existing Nightly Release rather than
-creating one release per day.
-
-`check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
-
-`check` also verifies the generated main jar, sources jar, and Javadoc jar. The artifact verification fails if required module or API entries are missing, if any bundled M3FX stylesheet resource is absent from the main jar, if any main Java source is absent from the sources jar, if the Javadoc jar is not a generated documentation artifact, or if the main jar bundles JavaFX implementation classes.
-
-`check` cleans and then publishes the Maven publication to `build/verification-maven-repository` and verifies that the Maven repository layout contains exactly one main jar, sources jar, Javadoc jar, and POM, including timestamped SNAPSHOT artifacts when applicable, without Gradle module metadata or JavaFX artifacts. This verifies the real `maven-publish` wiring without writing to the user's local Maven cache.
-
-`check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources and Javadoc classifier availability is covered by the publication layout verification above.
-
-`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX content or font resources are bundled into the shadow jar, or if the executable manifest, required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent.
-
-`shadowCatalogJar` runs the corresponding Catalog verification. It rejects bundled JavaFX content and requires the
-Catalog launcher, application, stylesheet, M3FX controls, and MonetFX classes.
-
-For smaller cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release instead of the aggregate task.
+The native assets are platform-specific builds. The Shadow JAR remains an integration artifact and does not bundle
+JavaFX.

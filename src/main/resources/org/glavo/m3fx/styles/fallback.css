@@ -66,6 +66,8 @@
     -m3-color-outline-variant: rgb(202,196,207);
     -monet-shadow: rgb(0,0,0);
     -m3-color-shadow: rgb(0,0,0);
+    -m3-elevation-shadow-color: rgba(0,0,0,0.18);
+    -m3-elevation-strong-shadow-color: rgba(0,0,0,0.20);
     -monet-scrim: rgb(0,0,0);
     -m3-color-scrim: rgb(0,0,0);
     -monet-inverse-surface: rgb(50,47,53);

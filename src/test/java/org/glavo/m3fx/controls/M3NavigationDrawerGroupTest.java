@@ -228,14 +228,14 @@ final class M3NavigationDrawerGroupTest {
                 double expandedHeight = group.prefHeight(GROUP_WIDTH);
                 assertTrue(expandedHeight > collapsedHeight, () -> "collapsed=" + collapsedHeight
                         + ", expanded=" + expandedHeight);
-                assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
 
                 FxTestUtils.replaceSkin(group, M3NavigationDrawerGroupSkin::new);
                 root.applyCss();
                 root.layout();
 
                 assertSame(scene, group.getHeaderItem().getScene());
-                assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
             } finally {
                 M3MotionSettings.setReducedMotionRequested(group, false);
             }

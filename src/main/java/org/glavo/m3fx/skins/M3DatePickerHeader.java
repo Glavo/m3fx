@@ -41,6 +41,24 @@ import java.util.Objects;
 /// controls to traverse the complete configured date range.
 @NotNullByDefault
 final class M3DatePickerHeader extends HBox {
+    /// The internal date-picker header style class.
+    private static final String HEADER_STYLE_CLASS = "m3-date-picker-header";
+
+    /// The internal header-section style class.
+    private static final String HEADER_SECTION_STYLE_CLASS = "m3-date-picker-header-section";
+
+    /// The internal menu-button style class.
+    private static final String MENU_BUTTON_STYLE_CLASS = "m3-date-picker-menu-button";
+
+    /// The internal month-menu-button style class.
+    private static final String MONTH_MENU_BUTTON_STYLE_CLASS = "m3-date-picker-month-menu-button";
+
+    /// The internal year-menu-button style class.
+    private static final String YEAR_MENU_BUTTON_STYLE_CLASS = "m3-date-picker-year-menu-button";
+
+    /// The internal navigation-button style class.
+    private static final String NAVIGATION_BUTTON_STYLE_CLASS = "m3-date-picker-navigation-button";
+
     /// The number of years exposed around the displayed year in the reusable year menu.
     private static final int YEAR_MENU_ITEM_COUNT = 11;
 
@@ -103,24 +121,24 @@ final class M3DatePickerHeader extends HBox {
         this.minDate = Objects.requireNonNull(minDate, "minDate");
         this.maxDate = Objects.requireNonNull(maxDate, "maxDate");
 
-        getStyleClass().add(M3DatePicker.HEADER_STYLE_CLASS);
+        getStyleClass().add(HEADER_STYLE_CLASS);
         nodeOrientationProperty().bind(owner.effectiveNodeOrientationProperty());
         setAlignment(Pos.CENTER_LEFT);
 
         HBox monthSection = new HBox(previousMonthButton, monthButton, nextMonthButton);
-        monthSection.getStyleClass().add(M3DatePicker.HEADER_SECTION_STYLE_CLASS);
+        monthSection.getStyleClass().add(HEADER_SECTION_STYLE_CLASS);
         monthSection.setAlignment(Pos.CENTER);
 
         HBox yearSection = new HBox(previousYearButton, yearButton, nextYearButton);
-        yearSection.getStyleClass().add(M3DatePicker.HEADER_SECTION_STYLE_CLASS);
+        yearSection.getStyleClass().add(HEADER_SECTION_STYLE_CLASS);
         yearSection.setAlignment(Pos.CENTER);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         getChildren().addAll(monthSection, spacer, yearSection);
 
-        monthButton.getStyleClass().add(M3DatePicker.MONTH_MENU_BUTTON_STYLE_CLASS);
-        yearButton.getStyleClass().add(M3DatePicker.YEAR_MENU_BUTTON_STYLE_CLASS);
+        monthButton.getStyleClass().add(MONTH_MENU_BUTTON_STYLE_CLASS);
+        yearButton.getStyleClass().add(YEAR_MENU_BUTTON_STYLE_CLASS);
         initializeMenus();
 
         previousMonthButton.setOnAction(event -> displayedMonth.set(displayedMonth.get().minusMonths(1)));
@@ -288,7 +306,7 @@ final class M3DatePickerHeader extends HBox {
     /// Creates a text-style menu button with the standard trailing disclosure icon.
     private static M3MenuButton createMenuButton() {
         M3MenuButton button = new M3MenuButton();
-        button.getStyleClass().add(M3DatePicker.MENU_BUTTON_STYLE_CLASS);
+        button.getStyleClass().add(MENU_BUTTON_STYLE_CLASS);
         button.setVariant(M3ButtonVariant.TEXT);
         button.setGraphic(new M3InternalIcon(
                 M3InternalIcon.Glyph.EXPAND_MORE,
@@ -306,7 +324,7 @@ final class M3DatePickerHeader extends HBox {
                 M3InternalIcon.Glyph.CHEVRON_LEFT,
                 M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
         ));
-        button.getStyleClass().add(M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS);
+        button.getStyleClass().add(NAVIGATION_BUTTON_STYLE_CLASS);
         return button;
     }
 

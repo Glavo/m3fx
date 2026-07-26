@@ -37,8 +37,8 @@
 /// replacing the scene root, while [M3DialogWindow] can present a dialog in an independent native window when no
 /// overlay scene exists.
 ///
-/// The implementation follows the public Material Design 3 component guidance where it maps cleanly to
-/// JavaFX. See [Material Design](https://m3.material.io/) and the
+/// These controls follow the public Material Design 3 component guidance where it maps cleanly to JavaFX.
+/// See [Material Design](https://m3.material.io/) and the
 /// [Material Design component catalog](https://m3.material.io/components) for the design language that
 /// this package targets.
 @NotNullByDefault

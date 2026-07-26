@@ -29,8 +29,8 @@ import java.util.Objects;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3PasswordField extends PasswordField implements M3TextInput {
-    /// The base style class for M3FX password fields.
-    public static final String STYLE_CLASS = "m3-password-field";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-password-field";
 
     /// Shared Material text input state and token plumbing.
     private final M3TextInputSupport<M3PasswordField> support = new M3TextInputSupport<>(
@@ -248,7 +248,7 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        support.initialize(STYLE_CLASS);
+        support.initialize(DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PASSWORD_FIELD);
     }
 

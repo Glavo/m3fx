@@ -19,6 +19,15 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3BottomAppBar].
 @NotNullByDefault
 public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
+    /// The internal action-container style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-bottom-app-bar-actions";
+
+    /// The internal regular-action-slot style class.
+    private static final String ACTION_SLOT_STYLE_CLASS = "m3-bottom-app-bar-action-slot";
+
+    /// The internal floating-action-slot style class.
+    private static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
+
     /// The minimum Material hit slot used by bottom app bar regular action icons.
     private static final double MINIMUM_ACTION_SLOT_SIZE = 48.0;
 
@@ -47,8 +56,8 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         floatingActionSlot.setManaged(false);
         actions.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         actions.spacingProperty().bind(control.actionSpacingProperty());
-        actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
-        floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
+        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
+        floatingActionSlot.getStyleClass().add(FLOATING_ACTION_STYLE_CLASS);
 
         control.floatingActionProperty().addListener(floatingActionListener);
         control.floatingActionAlignmentProperty().addListener(floatingActionAlignmentInvalidation);
@@ -211,7 +220,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     /// Creates a fixed Material action slot for a public regular action node.
     private static SlotPane createActionSlot(Node action) {
         SlotPane slot = new SlotPane();
-        slot.getStyleClass().add(M3BottomAppBar.ACTION_SLOT_STYLE_CLASS);
+        slot.getStyleClass().add(ACTION_SLOT_STYLE_CLASS);
         slot.getChildren().add(action);
         return slot;
     }

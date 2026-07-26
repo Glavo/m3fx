@@ -19,6 +19,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// inherited from the skinned control.
 @NotNullByDefault
 public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
+    /// The internal content column style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-search-view-content";
+
+    /// The divider style class.
+    private static final String DIVIDER_STYLE_CLASS = "m3-search-view-divider";
+
     /// The internal vertical container.
     private final VBox container = new VBox();
 
@@ -41,9 +47,9 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     public M3SearchViewSkin(M3SearchView control, M3SearchBar searchBar, VBox resultsContainer) {
         super(control);
         container.setManaged(false);
-        container.getStyleClass().add(M3SearchView.CONTENT_STYLE_CLASS);
+        container.getStyleClass().add(CONTENT_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        divider.getStyleClass().add(M3SearchView.DIVIDER_STYLE_CLASS);
+        divider.getStyleClass().add(DIVIDER_STYLE_CLASS);
         divider.setMouseTransparent(true);
         control.activeProperty().addListener(activeListener);
         control.viewStyleProperty().addListener(styleListener);

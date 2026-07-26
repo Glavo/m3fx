@@ -37,7 +37,7 @@
 .m3-navigation-rail:expanded:modal {
     -fx-background-color: -m3-color-surface-container;
     -fx-background-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2);
 }
 
 .m3-navigation-rail:expanded .m3-navigation-item-horizontal.m3-navigation-item {

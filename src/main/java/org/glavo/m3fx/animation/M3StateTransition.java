@@ -34,24 +34,20 @@ import java.util.function.ToDoubleFunction;
 ///
 /// A state transition retains a [current state][#currentStateProperty()] and a writable
 /// [target state][#targetStateProperty()]. Each registered property derives its target value from that state.
-/// [#addDouble(DoubleProperty, ToDoubleFunction, double)] provides an allocation-free scalar channel, while
-/// [#addValue(Property, Function, M3VectorConverter)] coordinates immutable multi-component values such as
-/// colors, points, dimensions, and insets. Changing the target starts one shared finite animation that advances all
-/// registered channels from the same play time. A channel may use the shared motion specification or select one
-/// from the active source and target states.
+/// [#addDouble(DoubleProperty, ToDoubleFunction, double)] registers a scalar channel, while
+/// [#addValue(Property, Function, M3VectorConverter)] coordinates immutable multi-component values such as colors,
+/// points, dimensions, and insets. Changing the target starts one animation that advances all registered channels
+/// from the same play time. A channel may use the shared motion specification or select one from the active source
+/// and target states.
 ///
 /// The transition may also be driven directly with [#seekTo(Object, double)]. A seek fraction represents normalized
 /// play time across the complete transition; each channel still evaluates its own easing or physical spring at that
-/// time. Repeated seeks toward the same target reuse captured start values and preallocated scalar channels.
-/// [#animateToTarget()] continues from the sought position without an initial-value jump. Automatic playback and
-/// seeking expose their normalized position through [#progressProperty()].
+/// time. [#animateToTarget()] continues from the sought position. Automatic playback and seeking expose their
+/// normalized position through [#progressProperty()].
 ///
-/// Registering related visual values on one object keeps their start and completion boundaries synchronized and
-/// uses one JavaFX pulse receiver regardless of channel count. Scalar channels and component arrays are retained
-/// across runs. Reconstructing an immutable multi-component value may allocate that value on a pulse; no key frames,
-/// transitions, collections, or component arrays are allocated per pulse. Physical spring channels preserve their
-/// velocity when an automatic run is interrupted or retargeted. Duration-based channels restart from their currently
-/// rendered values.
+/// Registering related visual values on one object keeps their start and completion boundaries synchronized.
+/// Physical spring channels preserve their velocity when an automatic run is interrupted or retargeted.
+/// Duration-based channels restart from their currently rendered values.
 ///
 /// The owner supplies the effective [motion setting][M3MotionSettings] and default spatial motion role. Reduced
 /// motion settles automatic playback synchronously. Explicit seeking remains available because it represents direct
@@ -64,8 +60,8 @@ import java.util.function.ToDoubleFunction;
 /// contracts. They are evaluated when a target is requested, not on every animation pulse. Once the owner is attached
 /// to a showing scene, all state-changing methods must be invoked on the JavaFX Application Thread.
 ///
-/// This API is the retained JavaFX counterpart of a Compose `Transition` and `SeekableTransitionState`: callers own
-/// the writable JavaFX properties and scene-graph nodes rather than supplying a recomposition callback.
+/// This API serves the same state-driven role as a Compose `Transition` and `SeekableTransitionState`, while callers
+/// supply writable JavaFX properties and scene-graph nodes.
 ///
 /// See [Compose value-based animations](https://developer.android.com/develop/ui/compose/animation/value-based)
 /// and [Material Design motion](https://m3.material.io/styles/motion/overview).

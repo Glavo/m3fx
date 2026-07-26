@@ -14,8 +14,8 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design suggestion chips](https://m3.material.io/components/chips/specs#suggestion-chip).
 @NotNullByDefault
 public final class M3SuggestionChip extends M3Chip {
-    /// The style class identifying suggestion chips.
-    public static final String STYLE_CLASS = "m3-suggestion-chip";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-suggestion-chip";
 
     /// Creates an empty suggestion chip.
     public M3SuggestionChip() {
@@ -36,6 +36,6 @@ public final class M3SuggestionChip extends M3Chip {
     /// @param graphic the optional graphic displayed with the text
     /// @throws NullPointerException if `text` is `null`
     public M3SuggestionChip(String text, @Nullable Node graphic) {
-        super(text, graphic, STYLE_CLASS);
+        super(text, graphic, DEFAULT_STYLE_CLASS);
     }
 }

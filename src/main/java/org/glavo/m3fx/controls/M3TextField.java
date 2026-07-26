@@ -18,8 +18,8 @@ import java.util.List;
 
 /// A Material Design 3 single-line text field.
 ///
-/// This control keeps JavaFX's [TextField] editing implementation for caret movement, selection, clipboard,
-/// undo, redo, and IME behavior while exposing Material state and token APIs through [M3TextInput].
+/// Caret movement, selection, clipboard operations, undo, redo, and input-method handling retain the inherited
+/// [TextField] contracts. Material state and token APIs are exposed through [M3TextInput].
 /// Use it directly when a plain single-line field is enough, or place it inside [M3TextInputLayout] when the
 /// field needs a floating label, supporting text, character counter, clear button, or adornment slots.
 ///
@@ -29,8 +29,8 @@ import java.util.List;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextField extends TextField implements M3TextInput {
-    /// The base style class for M3FX text fields.
-    public static final String STYLE_CLASS = "m3-text-field";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-text-field";
 
     /// Shared Material text input state and token plumbing.
     private final M3TextInputSupport<M3TextField> support = new M3TextInputSupport<>(
@@ -199,7 +199,7 @@ public final class M3TextField extends TextField implements M3TextInput {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        support.initialize(STYLE_CLASS);
+        support.initialize(DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT_FIELD);
     }
 

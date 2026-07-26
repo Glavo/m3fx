@@ -1,0 +1,38 @@
+.m3-color-wheel {
+    -m3-color-wheel-size: 192px;
+    -m3-color-wheel-thumb-size: 28px;
+    -fx-background-color: transparent;
+    -fx-cursor: default;
+    -fx-min-width: 96px;
+    -fx-min-height: 96px;
+    -fx-pref-width: -m3-color-wheel-size;
+    -fx-pref-height: -m3-color-wheel-size;
+}
+
+.m3-color-wheel .color-wheel-track {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+}
+
+.m3-color-wheel .color-wheel-thumb {
+    -fx-min-width: -m3-color-wheel-thumb-size;
+    -fx-min-height: -m3-color-wheel-thumb-size;
+    -fx-pref-width: -m3-color-wheel-thumb-size;
+    -fx-pref-height: -m3-color-wheel-thumb-size;
+    -fx-max-width: -m3-color-wheel-thumb-size;
+    -fx-max-height: -m3-color-wheel-thumb-size;
+}
+
+.m3-color-wheel .color-wheel-thumb .m3-color-thumb-outline {
+    -fx-fill: -m3-color-outline;
+}
+
+.m3-color-wheel .color-wheel-thumb .m3-color-thumb-surface-ring {
+    -fx-fill: -m3-color-surface;
+}
+
+.m3-color-wheel:disabled .color-wheel-track,
+.m3-color-wheel:disabled .color-wheel-thumb {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}

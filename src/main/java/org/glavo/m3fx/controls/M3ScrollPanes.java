@@ -60,11 +60,11 @@ public final class M3ScrollPanes {
     /// The minimum meaningful scroll value difference.
     private static final double EPSILON = 0.000001;
 
-    /// The style class that enables Material styling for a JavaFX [ScrollPane].
-    public static final String STYLE_CLASS = "m3-scroll-pane";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-scroll-pane";
 
     /// The style class that enables Material styling for a standalone JavaFX [ScrollBar].
-    public static final String SCROLL_BAR_STYLE_CLASS = "m3-scroll-bar";
+    private static final String SCROLL_BAR_STYLE_CLASS = "m3-scroll-bar";
 
     /// Prevents utility class instantiation.
     private M3ScrollPanes() {
@@ -79,7 +79,7 @@ public final class M3ScrollPanes {
     /// @throws NullPointerException if `scrollPane` is `null`
     public static void style(ScrollPane scrollPane) {
         ScrollPane target = Objects.requireNonNull(scrollPane, "scrollPane");
-        M3ControlStyles.initializeOnce(target, STYLE_CLASS);
+        M3ControlStyles.initializeOnce(target, DEFAULT_STYLE_CLASS);
         installScrollStylesheet(target);
     }
 

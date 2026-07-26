@@ -52,11 +52,8 @@ import java.util.Objects;
 /// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
 @NotNullByDefault
 public final class M3Toolbar extends Control {
-    /// The base style class for M3FX toolbars.
-    public static final String STYLE_CLASS = "m3-toolbar";
-
-    /// The toolbar item slot style class.
-    public static final String ITEM_SLOT_STYLE_CLASS = "m3-toolbar-item-slot";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-toolbar";
 
     /// The pseudo-class used for the Vibrant toolbar color mapping.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
@@ -95,7 +92,7 @@ public final class M3Toolbar extends Control {
     private static final double DEFAULT_DOCKED_MAX_ITEM_SPACING = 32.0;
 
     /// The mutable toolbar item list.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between toolbar actions.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -466,7 +463,7 @@ public final class M3Toolbar extends Control {
 
     /// Returns the preferred maximum spacing token used between docked toolbar items.
     ///
-    /// The skin reduces this value toward [#getItemSpacing()] when the docked toolbar does not have enough room.
+    /// When available width is insufficient, the effective spacing may be reduced toward [#getItemSpacing()].
     ///
     /// @return the preferred docked toolbar item spacing in pixels
     public final double getDockedMaxItemSpacing() {
@@ -501,8 +498,9 @@ public final class M3Toolbar extends Control {
     /// Returns the mutable toolbar item list.
     ///
     /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
-    /// traversal, and accessibility immediately. Nodes become children of the toolbar and must satisfy normal
-    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    /// traversal, and accessibility immediately. The list rejects repeated occurrences of the same node instance
+    /// and validates bulk mutations before changing. Nodes become children of the toolbar and must satisfy the
+    /// JavaFX single-parent rule.
     ///
     /// @return the live mutable toolbar item list
     public final ObservableList<Node> getItems() {
@@ -601,7 +599,7 @@ public final class M3Toolbar extends Control {
 
     /// Initializes style classes, accessibility metadata, and item listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);

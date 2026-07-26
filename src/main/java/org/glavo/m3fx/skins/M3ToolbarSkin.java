@@ -24,6 +24,9 @@ import java.util.List;
 /// without changing the public item list.
 @NotNullByDefault
 public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
+    /// The toolbar item slot style class.
+    private static final String ITEM_SLOT_STYLE_CLASS = "m3-toolbar-item-slot";
+
     /// The item slot container.
     private final ToolbarPane container = new ToolbarPane();
 
@@ -176,7 +179,7 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
     private StackPane createItemSlot(Node item) {
         StackPane slot = new StackPane(item);
         slot.setAlignment(Pos.CENTER);
-        slot.getStyleClass().add(M3Toolbar.ITEM_SLOT_STYLE_CLASS);
+        slot.getStyleClass().add(ITEM_SLOT_STYLE_CLASS);
         return slot;
     }
 

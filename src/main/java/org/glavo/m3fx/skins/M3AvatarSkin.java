@@ -15,6 +15,9 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3Avatar].
 @NotNullByDefault
 public final class M3AvatarSkin extends SkinBase<M3Avatar> {
+    /// The internal text-label style class.
+    private static final String LABEL_STYLE_CLASS = "m3-avatar-label";
+
     /// The internal content container.
     private final StackPane container = new StackPane();
 
@@ -30,7 +33,7 @@ public final class M3AvatarSkin extends SkinBase<M3Avatar> {
     public M3AvatarSkin(M3Avatar control) {
         super(control);
         container.setManaged(false);
-        textLabel.getStyleClass().add(M3Avatar.LABEL_STYLE_CLASS);
+        textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
         textLabel.textProperty().bind(control.textProperty());
         getChildren().setAll(container);
         control.graphicProperty().addListener(graphicInvalidation);

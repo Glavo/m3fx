@@ -134,7 +134,7 @@ final class M3SheetKeyboardTest {
             root.layout();
 
             Node dragHandle = Objects.requireNonNull(
-                    sheet.lookup("." + M3BottomSheet.DRAG_HANDLE_CONTAINER_STYLE_CLASS),
+                    sheet.lookup("." + "m3-bottom-sheet-drag-handle-container"),
                     "drag handle"
             );
             previousFocus.fireEvent(keyEvent(KeyCode.TAB));

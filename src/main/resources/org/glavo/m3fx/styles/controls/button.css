@@ -262,18 +262,12 @@
     -fx-background-color: -m3-color-primary;
 }
 
-.m3-button-base.m3-elevated-button {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
-}
-
-.m3-button-base.m3-elevated-button:hover {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);
-}
-
+.m3-button-base.m3-elevated-button,
+.m3-button-base.m3-elevated-button:hover,
 .m3-button-base.m3-elevated-button:focus-visible,
 .m3-button-base.m3-elevated-button:armed,
 .m3-button-base.m3-elevated-button:pressed {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 6, 0.18, 0, 1);
 }
 
 .m3-button-base.m3-button-extra-small {
@@ -285,6 +279,8 @@
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-graphic-text-gap: 8px;
+    -fx-background-insets: 8px 0;
+    -fx-border-insets: 8px 0;
 }
 
 .m3-button-base.m3-button-small {
@@ -296,6 +292,8 @@
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-graphic-text-gap: 8px;
+    -fx-background-insets: 4px 0;
+    -fx-border-insets: 4px 0;
 }
 
 .m3-button-base.m3-button-medium {
@@ -307,6 +305,8 @@
     -fx-font-size: 16px;
     -fx-font-weight: 500;
     -fx-graphic-text-gap: 8px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .m3-button-base.m3-button-large {
@@ -318,6 +318,8 @@
     -fx-font-size: 24px;
     -fx-font-weight: 400;
     -fx-graphic-text-gap: 12px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .m3-button-base.m3-button-extra-large {
@@ -329,6 +331,8 @@
     -fx-font-size: 32px;
     -fx-font-weight: 400;
     -fx-graphic-text-gap: 16px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .m3-button-base.m3-text-button.m3-button-extra-small {
@@ -457,6 +461,7 @@
     -m3-button-icon-size: 20px;
     -m3-icon-button-icon-size: 20px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 8px;
 }
 
 .m3-icon-button.m3-icon-button-small {
@@ -465,6 +470,7 @@
     -m3-button-icon-size: 24px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 4px;
 }
 
 .m3-icon-button.m3-icon-button-medium {
@@ -473,6 +479,7 @@
     -m3-button-icon-size: 24px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-button.m3-icon-button-large {
@@ -481,6 +488,7 @@
     -m3-button-icon-size: 32px;
     -m3-icon-button-icon-size: 32px;
     -m3-icon-button-outline-width: 2px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-button.m3-icon-button-extra-large {
@@ -489,6 +497,7 @@
     -m3-button-icon-size: 40px;
     -m3-icon-button-icon-size: 40px;
     -m3-icon-button-outline-width: 3px;
+    -fx-border-insets: 0;
 }
 
 .m3-icon-button-large.m3-outlined-button {
@@ -501,18 +510,22 @@
 
 .m3-icon-button-extra-small.m3-icon-button-narrow-width {
     -m3-container-width: 28px;
+    -fx-border-insets: 8px 10px;
 }
 
 .m3-icon-button-extra-small.m3-icon-button-wide-width {
     -m3-container-width: 40px;
+    -fx-border-insets: 8px 4px;
 }
 
 .m3-icon-button-small.m3-icon-button-narrow-width {
     -m3-container-width: 32px;
+    -fx-border-insets: 4px 8px;
 }
 
 .m3-icon-button-small.m3-icon-button-wide-width {
     -m3-container-width: 52px;
+    -fx-border-insets: 4px 0;
 }
 
 .m3-icon-button-medium.m3-icon-button-narrow-width {

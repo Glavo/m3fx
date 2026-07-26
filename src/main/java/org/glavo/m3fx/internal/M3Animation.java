@@ -83,15 +83,6 @@ public final class M3Animation {
         return motionScheme(owner).defaultEffects();
     }
 
-    /// Returns the slow effects motion spec for an owner node.
-    ///
-    /// @param owner the node whose motion scheme should be resolved
-    /// @return the resolved slow effects motion spec
-    /// @throws NullPointerException if `owner` is `null`
-    public static M3MotionSpec slowEffects(Node owner) {
-        return motionScheme(owner).slowEffects();
-    }
-
     /// Returns the fast spatial motion spec for an owner node.
     ///
     /// @param owner the node whose motion scheme should be resolved
@@ -108,15 +99,6 @@ public final class M3Animation {
     /// @throws NullPointerException if `owner` is `null`
     public static M3MotionSpec defaultSpatial(Node owner) {
         return motionScheme(owner).defaultSpatial();
-    }
-
-    /// Returns the slow spatial motion spec for an owner node.
-    ///
-    /// @param owner the node whose motion scheme should be resolved
-    /// @return the resolved slow spatial motion spec
-    /// @throws NullPointerException if `owner` is `null`
-    public static M3MotionSpec slowSpatial(Node owner) {
-        return motionScheme(owner).slowSpatial();
     }
 
     /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled or the

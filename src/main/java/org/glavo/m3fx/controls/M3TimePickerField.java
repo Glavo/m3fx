@@ -24,31 +24,30 @@ import java.util.Objects;
 
 /// A Material Design 3 time picker field that combines an editable text field with a popup time picker.
 ///
-/// `M3TimePickerField` lets users type a time or choose one from an embedded [M3TimePicker]. It exposes
-/// nullable selected-time state, parsing and formatting behavior, popup visibility, and optional preset actions
-/// for inline form use.
+/// `M3TimePickerField` lets users type a time or choose one with an [M3TimePicker]. It exposes nullable selected-time
+/// state, parsing and formatting behavior, popup visibility, and optional preset actions for inline form use.
 ///
 /// The inherited editor text is not committed to [#valueProperty()] until parsing succeeds. The popup is non-modal,
-/// is owned by the window containing this field, and closes after a picker or preset selection. The default formatter
-/// uses `HH:mm`, the selected value is `null`, and the embedded picker has no selectable-time bounds.
+/// is shown in the window containing this field and closes after a picker or preset selection. The default formatter
+/// uses `HH:mm`, the selected value is `null`, and no selectable-time bounds are configured initially.
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePicker> {
-    /// The style class applied to time picker field controls.
-    public static final String STYLE_CLASS = "m3-time-picker-field";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-time-picker-field";
 
     /// The style class applied to time picker field popup surfaces.
-    public static final String POPUP_STYLE_CLASS = "m3-time-picker-field-popup";
+    private static final String POPUP_STYLE_CLASS = "m3-time-picker-field-popup";
 
     /// The style class applied to popup content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-field-preset-content";
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-field-preset-content";
 
     /// The style class applied to the popup preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-field-preset-list";
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-field-preset-list";
 
     /// The style class applied to each popup preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-field-preset-button";
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-field-preset-button";
 
     /// The mutable preset list rendered before the popup picker.
     private final ObservableList<M3TimePreset> presets = M3ObservableLists.nonNullElementList("preset");
@@ -83,7 +82,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
                 picker,
                 picker.valueProperty(),
                 DateTimeFormatter.ofPattern("HH:mm"),
-                STYLE_CLASS,
+                DEFAULT_STYLE_CLASS,
                 POPUP_STYLE_CLASS,
                 new M3InternalIcon(
                         M3InternalIcon.Glyph.SCHEDULE,
@@ -105,7 +104,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     /// Returns the mutable time preset list rendered in the popup.
     ///
     /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update the preset column
-    /// immediately. Duplicate presets are retained as separate actions. Presets outside the embedded picker's bounds
+    /// immediately. Duplicate presets are retained as separate actions. Presets outside the selectable-time bounds
     /// remain in the list but are disabled.
     ///
     /// @return the live mutable time preset list rendered in the popup

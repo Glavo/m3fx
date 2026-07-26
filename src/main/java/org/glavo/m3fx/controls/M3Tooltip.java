@@ -81,8 +81,8 @@ import java.util.Objects;
 /// [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
 public class M3Tooltip extends PopupControl {
-    /// The base style class for M3FX tooltips.
-    public static final String STYLE_CLASS = "m3-tooltip";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-tooltip";
 
     /// The style class that keeps the popup scene root transparent behind rounded tooltip content.
     private static final String POPUP_ROOT_STYLE_CLASS = "m3-tooltip-popup-root";
@@ -177,8 +177,8 @@ public class M3Tooltip extends PopupControl {
 
     /// The graphic displayed by the tooltip.
     ///
-    /// The default is `null`. A non-null graphic is owned by the popup content while it is displayed and therefore
-    /// must satisfy normal JavaFX scene-graph ownership rules.
+    /// The default is `null`. A non-null graphic must satisfy the JavaFX scene-graph single-parent rule while the
+    /// tooltip is visible.
     private final ObjectProperty<@Nullable Node> graphic =
             new SimpleObjectProperty<>(this, "graphic");
 
@@ -191,8 +191,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the displayed graphic.
     ///
-    /// The graphic must be available for the tooltip popup to own when shown. JavaFX rejects incompatible parent
-    /// ownership.
+    /// The graphic must satisfy the JavaFX scene-graph single-parent rule while the tooltip is visible.
     ///
     /// @param graphic the displayed graphic, or `null`
     public final void setGraphic(@Nullable Node graphic) {
@@ -335,22 +334,25 @@ public class M3Tooltip extends PopupControl {
         return showDelay;
     }
 
-    /// The delay before the tooltip closes after pointer exit.
+    /// The delay before a transient tooltip closes after leaving its target region.
     private final ObjectProperty<Duration> hideDelay =
             new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
 
-    /// Returns the delay before the tooltip closes after pointer exit.
+    /// Returns the delay before a transient tooltip closes after leaving its target region.
     ///
-    /// @return the delay before the tooltip closes after pointer exit
+    /// Persistent rich tooltips do not use this delay. The Standard and Expressive defaults are 1.5 seconds.
+    ///
+    /// @return the delay before a transient tooltip closes after leaving its target region
     public final Duration getHideDelay() {
         return hideDelay.get();
     }
 
-    /// Sets the delay before the tooltip closes after pointer exit.
+    /// Sets the delay before a transient tooltip closes after leaving its target region.
     ///
     /// Calling this method marks the value as an application override for installed tooltip activation.
+    /// Persistent rich tooltips do not use this delay.
     ///
-    /// @param hideDelay the delay before the tooltip closes after pointer exit
+    /// @param hideDelay the delay before a transient tooltip closes after leaving its target region
     /// @throws NullPointerException if `hideDelay` is `null`
     public final void setHideDelay(Duration hideDelay) {
         hideDelayExplicit = true;
@@ -359,8 +361,8 @@ public class M3Tooltip extends PopupControl {
 
     /// Returns the `hideDelay` property.
     ///
-    /// The returned property is observable and bindable. Its initial value is the hide delay from the standard motion
-    /// profile. Direct property changes do not mark the value as an application override; until
+    /// The returned property is observable and bindable. Its initial value is 1.5 seconds, the hide delay from the
+    /// Standard motion profile. Direct property changes do not mark the value as an application override; until
     /// [#setHideDelay(Duration)]
     /// is called, installed activation continues to resolve its effective delay from the owner node's motion profile.
     /// An unbound direct `null` assignment is normalized to [Duration#ZERO]; bound sources must not produce `null`.
@@ -537,8 +539,8 @@ public class M3Tooltip extends PopupControl {
 
     /// Hides this tooltip after playing its Material exit transition.
     ///
-    /// Repeated calls while the exit transition is running are ignored. If animation is disabled, the tooltip has
-    /// no usable skin node, or its owner context is no longer available, the popup is hidden synchronously.
+    /// Repeated calls while the exit transition is running are ignored. If animation is disabled, an animated popup
+    /// presentation is unavailable, or the owner context is no longer available, the popup is hidden synchronously.
     @Override
     public void hide() {
         if (!isShowing()) {
@@ -572,7 +574,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Adds base style classes and Material timing defaults.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setWrapText(true);
         setAutoFix(true);
         setAutoHide(true);
@@ -654,7 +656,7 @@ public class M3Tooltip extends PopupControl {
         playShowAnimation(owner);
     }
 
-    /// Returns the current popup skin node, creating the default skin before first show when necessary.
+    /// Returns the node used to animate tooltip visibility.
     private @Nullable Node animatedSkinNode() {
         @Nullable Skin<?> skin = getSkin();
         if (skin == null) {

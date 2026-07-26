@@ -21,13 +21,13 @@ public enum M3Breakpoint {
     /// Widths below 600 logical pixels, with one visible pane and 16-pixel margins.
     COMPACT(0.0, 600.0, 16.0, 0.0, 1, 1, 1),
 
-    /// Widths from 600 through 839 logical pixels, normally with one pane and 24-pixel margins.
+    /// Widths in `[600, 840)` logical pixels, normally with one pane and 24-pixel margins.
     MEDIUM(600.0, 840.0, 24.0, 24.0, 1, 1, 2),
 
-    /// Widths from 840 through 1199 logical pixels, normally with two panes.
+    /// Widths in `[840, 1200)` logical pixels, normally with two panes.
     EXPANDED(840.0, 1_200.0, 24.0, 24.0, 2, 1, 2),
 
-    /// Widths from 1200 through 1599 logical pixels, normally with two panes.
+    /// Widths in `[1200, 1600)` logical pixels, normally with two panes.
     LARGE(1_200.0, 1_600.0, 24.0, 24.0, 2, 1, 2),
 
     /// Widths of at least 1600 logical pixels, normally with two panes and optionally with a third pane.

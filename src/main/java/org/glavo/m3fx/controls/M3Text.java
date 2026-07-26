@@ -43,8 +43,8 @@ import java.util.Objects;
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public class M3Text extends Labeled {
-    /// The base style class for M3FX text labels.
-    public static final String STYLE_CLASS = "m3-text";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-text";
 
     /// The default typography font family.
     private static final String DEFAULT_TYPOGRAPHY_FONT_FAMILY = "System";
@@ -326,7 +326,7 @@ public class M3Text extends Labeled {
 
     /// Initializes style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         updateRoleStyle();

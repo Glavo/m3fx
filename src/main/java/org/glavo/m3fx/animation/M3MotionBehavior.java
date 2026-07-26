@@ -26,9 +26,13 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @return the finite, non-negative delay before a tooltip opens
     Duration tooltipShowDelay();
 
-    /// Returns the delay before a tooltip closes after pointer exit or keyboard focus loss.
+    /// Returns the delay before a transient tooltip closes after the pointer or keyboard focus leaves its target
+    /// region.
     ///
-    /// @return the finite, non-negative delay before a tooltip closes
+    /// Persistent rich tooltips do not use this delay because their lifetime is controlled by explicit activation
+    /// and dismissal.
+    ///
+    /// @return the finite, non-negative delay before a transient tooltip closes
     Duration tooltipHideDelay();
 
     /// Returns the default visible duration for plain tooltips.
@@ -99,41 +103,59 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
 
     /// Returns a complete set of Standard interaction timings.
     ///
-    /// @return the baseline behavior timings
+    /// The returned object is immutable and may be shared by callers.
+    ///
+    /// @return the canonical Standard behavior timings
     static M3MotionBehavior standard() {
-        return new M3MotionBehaviorImpl(
-                Duration.millis(500.0),
-                Duration.ZERO,
-                Duration.seconds(5.0),
-                Duration.seconds(10.0),
-                Duration.seconds(4.0),
-                M3Motion.SHORT4,
-                Duration.millis(1000.0),
-                M3Motion.SHORT4,
-                Duration.millis(1750.0),
-                Duration.millis(6000.0),
-                Duration.millis(650.0),
-                Duration.millis(4666.0)
-        );
+        return M3MotionBehaviorDefaults.STANDARD;
     }
 
     /// Returns a complete set of Expressive interaction timings.
     ///
-    /// @return the expressive behavior timings
+    /// The returned object is immutable and may be shared by callers.
+    ///
+    /// @return the canonical Expressive behavior timings
     static M3MotionBehavior expressive() {
-        return new M3MotionBehaviorImpl(
-                Duration.millis(500.0),
-                Duration.ZERO,
-                Duration.seconds(5.0),
-                Duration.seconds(10.0),
-                Duration.seconds(4.0),
-                M3Motion.SHORT3,
-                Duration.millis(900.0),
-                M3Motion.SHORT3,
-                Duration.millis(1750.0),
-                Duration.millis(6000.0),
-                Duration.millis(650.0),
-                Duration.millis(4666.0)
-        );
+        return M3MotionBehaviorDefaults.EXPRESSIVE;
+    }
+}
+
+/// Holds the canonical built-in interaction timing profiles.
+@NotNullByDefault
+final class M3MotionBehaviorDefaults {
+    /// The canonical Standard interaction timing profile.
+    static final M3MotionBehavior STANDARD = new M3MotionBehaviorImpl(
+            Duration.millis(500.0),
+            Duration.millis(1500.0),
+            Duration.seconds(5.0),
+            Duration.seconds(10.0),
+            Duration.seconds(4.0),
+            M3Motion.SHORT4,
+            Duration.millis(1000.0),
+            M3Motion.SHORT4,
+            Duration.millis(1750.0),
+            Duration.millis(6000.0),
+            Duration.millis(650.0),
+            Duration.millis(4666.0)
+    );
+
+    /// The canonical Expressive interaction timing profile.
+    static final M3MotionBehavior EXPRESSIVE = new M3MotionBehaviorImpl(
+            Duration.millis(500.0),
+            Duration.millis(1500.0),
+            Duration.seconds(5.0),
+            Duration.seconds(10.0),
+            Duration.seconds(4.0),
+            M3Motion.SHORT3,
+            Duration.millis(900.0),
+            M3Motion.SHORT3,
+            Duration.millis(1750.0),
+            Duration.millis(6000.0),
+            Duration.millis(650.0),
+            Duration.millis(4666.0)
+    );
+
+    /// Prevents instantiation.
+    private M3MotionBehaviorDefaults() {
     }
 }

@@ -41,14 +41,8 @@ import java.util.Objects;
 @NotNullByDefault
 public abstract sealed class M3Chip extends ButtonBase
         permits M3AssistChip, M3SelectableChip, M3SuggestionChip {
-    /// The base style class for M3FX chips.
-    public static final String STYLE_CLASS = "m3-chip";
-
-    /// The style class applied to the logical leading graphic.
-    public static final String LEADING_GRAPHIC_STYLE_CLASS = "m3-chip-leading-graphic";
-
-    /// The style class applied to the logical trailing graphic.
-    public static final String TRAILING_GRAPHIC_STYLE_CLASS = "m3-chip-trailing-graphic";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-chip";
 
     /// The default chip container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 32.0;
@@ -404,7 +398,7 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Adds base and concrete-kind style classes.
     private void initialize(String variantStyleClass) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         getStyleClass().add(variantStyleClass);
         setFocusTraversable(true);
         setPickOnBounds(true);

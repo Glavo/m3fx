@@ -432,6 +432,6 @@ final class M3CarouselLayoutTest {
 
     /// Returns the internal carousel viewport.
     private static ScrollPane viewport(M3Carousel carousel) {
-        return (ScrollPane) carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS);
+        return (ScrollPane) carousel.lookup("." + "m3-carousel-viewport");
     }
 }

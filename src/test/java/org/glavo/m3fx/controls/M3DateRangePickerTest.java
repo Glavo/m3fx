@@ -118,7 +118,7 @@ final class M3DateRangePickerTest {
             picker.layout();
 
             assertInstanceOf(M3DateRangePickerSkin.class, picker.getSkin());
-            assertEquals(42, picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS).size());
+            assertEquals(42, picker.lookupAll("." + "m3-date-picker-day-cell").size());
 
             ButtonBase startCell = dayCellForDate(picker, LocalDate.of(2026, 5, 18));
             ButtonBase middleCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
@@ -128,9 +128,9 @@ final class M3DateRangePickerTest {
 
             assertEquals(LocalDate.of(2026, 5, 18), picker.getStartDate());
             assertEquals(LocalDate.of(2026, 5, 22), picker.getEndDate());
-            assertTrue(startCell.getStyleClass().contains(M3DateRangePicker.RANGE_START_DAY_STYLE_CLASS));
-            assertTrue(middleCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
-            assertTrue(endCell.getStyleClass().contains(M3DateRangePicker.RANGE_END_DAY_STYLE_CLASS));
+            assertTrue(startCell.getStyleClass().contains("m3-date-range-picker-range-start-day"));
+            assertTrue(middleCell.getStyleClass().contains("m3-date-range-picker-range-middle-day"));
+            assertTrue(endCell.getStyleClass().contains("m3-date-range-picker-range-end-day"));
         });
     }
 
@@ -148,7 +148,7 @@ final class M3DateRangePickerTest {
             picker.resize(360.0, 340.0);
             picker.layout();
 
-            List<ButtonBase> cells = picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)
+            List<ButtonBase> cells = picker.lookupAll("." + "m3-date-picker-day-cell")
                     .stream()
                     .map(node -> assertInstanceOf(ButtonBase.class, node))
                     .toList();
@@ -164,7 +164,7 @@ final class M3DateRangePickerTest {
                 assertTrue(cells.get(index).getPseudoClassStates().contains(PseudoClass.getPseudoClass("rtl")));
             }
             assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 20))
-                    .getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
+                    .getStyleClass().contains("m3-date-range-picker-range-middle-day"));
             assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 4)).isDisabled());
 
             Object previousFirstDate = cells.get(0).getUserData();
@@ -199,8 +199,8 @@ final class M3DateRangePickerTest {
             root.applyCss();
             picker.layout();
 
-            assertTrue(retiredMiddleCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
-            assertFalse(retiredFutureCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
+            assertTrue(retiredMiddleCell.getStyleClass().contains("m3-date-range-picker-range-middle-day"));
+            assertFalse(retiredFutureCell.getStyleClass().contains("m3-date-range-picker-range-middle-day"));
         });
     }
 
@@ -481,7 +481,7 @@ final class M3DateRangePickerTest {
 
     /// Returns a day cell by date.
     private static ButtonBase dayCellForDate(M3DateRangePicker picker, LocalDate date) {
-        for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+        for (Node node : picker.lookupAll("." + "m3-date-picker-day-cell")) {
             if (node instanceof ButtonBase button && date.equals(button.getUserData())) {
                 return button;
             }

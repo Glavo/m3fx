@@ -33,31 +33,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 form section with a heading, supporting text, and stacked content.
+/// An M3FX form section styled with Material tokens.
+///
+/// Material Design 3 does not define a form-section component. This extension groups a heading, supporting text,
+/// and stacked application content.
 ///
 /// A section provides heading and supporting text followed by a live ordered content list. It is not focus
 /// traversable; Up and Down move focus among reachable descendants of its content. Content nodes are parented by
 /// this control while displayed, so each node must occur at most once and must not simultaneously belong to another
 /// parent.
 ///
-/// See [Material Design](https://m3.material.io/) for the layout and hierarchy principles reflected by this
-/// helper control.
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
+/// [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3FormSection extends Control {
-    /// The base style class for M3FX form sections.
-    public static final String STYLE_CLASS = "m3-form-section";
-
-    /// The style class applied to the section header container.
-    public static final String HEADER_STYLE_CLASS = "m3-form-section-header";
-
-    /// The style class applied to the section title label.
-    public static final String TITLE_STYLE_CLASS = "m3-form-section-title";
-
-    /// The style class applied to the section supporting text label.
-    public static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-form-section-supporting-text";
-
-    /// The style class applied to the section content container.
-    public static final String CONTENT_STYLE_CLASS = "m3-form-section-content";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-form-section";
 
     /// The default vertical spacing between section content nodes.
     private static final double DEFAULT_CONTENT_SPACING = 12.0;
@@ -219,7 +210,7 @@ public final class M3FormSection extends Control {
     /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
     /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
     /// parent do not satisfy the scene-graph ownership contract.
-    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
+    private final ObservableList<Node> content = M3ObservableLists.identityDistinctElementList("content");
 
     /// The listener used to refresh accessibility state when section content changes.
     private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
@@ -229,6 +220,9 @@ public final class M3FormSection extends Control {
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
     /// Returns the live, mutable section content list in layout order.
+    ///
+    /// The list rejects `null` elements and repeated occurrences of the same node instance. Bulk mutations are
+    /// validated before the list changes. Each node must satisfy the JavaFX single-parent rule while displayed.
     ///
     /// @return the live, mutable section content list
     public final ObservableList<Node> getContent() {
@@ -270,7 +264,7 @@ public final class M3FormSection extends Control {
         focusNotifier.refresh();
     }
 
-    /// Creates the default Material Design 3 form section skin.
+    /// Creates the default skin for this control.
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3FormSectionSkin(this);
@@ -324,7 +318,7 @@ public final class M3FormSection extends Control {
 
     /// Initializes style classes and accessibility metadata.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);

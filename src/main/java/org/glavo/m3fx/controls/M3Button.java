@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
 @NotNullByDefault
 public final class M3Button extends M3ButtonBase {
-    /// The default style class for this control.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-button";
 
     /// Creates a filled button with empty text and no graphic.

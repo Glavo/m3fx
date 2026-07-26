@@ -63,17 +63,8 @@ public final class M3BottomAppBar extends Control {
     /// The default spacing between generated regular action slots in logical pixels.
     private static final double DEFAULT_ACTION_SPACING = 0.0;
 
-    /// The base style class for M3FX bottom app bars.
-    public static final String STYLE_CLASS = "m3-bottom-app-bar";
-
-    /// The actions container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-bottom-app-bar-actions";
-
-    /// The generated regular action slot style class.
-    public static final String ACTION_SLOT_STYLE_CLASS = "m3-bottom-app-bar-action-slot";
-
-    /// The floating action slot style class.
-    public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-bottom-app-bar";
 
     /// Creates an empty bottom app bar with no floating action and end alignment.
     public M3BottomAppBar() {
@@ -315,7 +306,7 @@ public final class M3BottomAppBar extends Control {
     ///
     /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
     /// list cannot simultaneously be children of another parent.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -328,7 +319,8 @@ public final class M3BottomAppBar extends Control {
     /// Returns the live list of regular action nodes.
     ///
     /// Changes to the returned list are reflected immediately by this bar. The list preserves insertion order and
-    /// rejects `null` elements.
+    /// rejects `null` elements or repeated occurrences of the same node instance. Bulk mutations are validated
+    /// before the list changes.
     ///
     /// @return the live, mutable regular action list
     public final ObservableList<Node> getActions() {
@@ -356,7 +348,7 @@ public final class M3BottomAppBar extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
@@ -520,7 +512,7 @@ public final class M3BottomAppBar extends Control {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Prevents CSS metadata holder instantiation.
+        /// Prevents instantiation.
         private StyleableProperties() {
         }
 

@@ -84,8 +84,8 @@ public final class M3MotionSettings {
 
     /// Returns whether a node should use reduced motion after resolving global and inherited requests.
     ///
-    /// Resolution includes `node` itself, then follows its current parent chain. Reparenting a node can therefore
-    /// change the result of a subsequent call.
+/// Resolution includes `node` itself and then its current parent chain. Moving a node to a different parent can
+/// therefore change the result of a subsequent call.
     ///
     /// @param node the node used to resolve inherited motion settings
     /// @return `true` when finite motion should settle immediately for the node

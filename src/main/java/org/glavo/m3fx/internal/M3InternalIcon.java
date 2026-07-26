@@ -19,8 +19,8 @@ import java.util.Objects;
 /// child for its complete lifetime.
 @NotNullByDefault
 public final class M3InternalIcon extends StackPane {
-    /// The base style class applied to internal icon viewports.
-    public static final String STYLE_CLASS = "m3-internal-icon";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-internal-icon";
 
     /// The style class applied to the SVG path inside the viewport.
     public static final String PATH_STYLE_CLASS = "m3-internal-icon-path";
@@ -129,7 +129,7 @@ public final class M3InternalIcon extends StackPane {
 
     /// Configures the fixed viewport and child SVG path.
     private void initialize(double size) {
-        getStyleClass().add(STYLE_CLASS);
+        getStyleClass().add(DEFAULT_STYLE_CLASS);
         getChildren().add(path);
         setAlignment(Pos.CENTER);
         setMinSize(size, size);

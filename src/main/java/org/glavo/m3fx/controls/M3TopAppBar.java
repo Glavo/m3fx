@@ -115,35 +115,11 @@ public final class M3TopAppBar extends Control {
     /// The default spacing between trailing action slots in pixels.
     private static final double DEFAULT_ACTION_SPACING = 0.0;
 
-    /// The base style class for M3FX top app bars.
-    public static final String STYLE_CLASS = "m3-top-app-bar";
-
-    /// The navigation slot style class.
-    public static final String NAVIGATION_STYLE_CLASS = "m3-top-app-bar-navigation";
-
-    /// The title label style class.
-    public static final String TITLE_STYLE_CLASS = "m3-top-app-bar-title";
-
-    /// The subtitle label style class.
-    public static final String SUBTITLE_STYLE_CLASS = "m3-top-app-bar-subtitle";
-
-    /// The style class applied to optional custom title content.
-    public static final String TITLE_CONTENT_STYLE_CLASS = "m3-top-app-bar-title-content";
-
-    /// The compact title label style class used while a flexible app bar transforms into the small arrangement.
-    public static final String COMPACT_TITLE_STYLE_CLASS = "m3-top-app-bar-compact-title";
-
-    /// The compact subtitle label style class used while a flexible app bar transforms into the small arrangement.
-    public static final String COMPACT_SUBTITLE_STYLE_CLASS = "m3-top-app-bar-compact-subtitle";
-
-    /// The actions container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-top-app-bar-actions";
-
-    /// The style class applied to each 48 dp trailing action slot.
-    public static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-top-app-bar";
 
     /// The mutable trailing action node list.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// Notifies accessibility clients when focus moves between navigation and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -391,8 +367,8 @@ public final class M3TopAppBar extends Control {
     ///
     /// Zero represents the fully expanded flexible arrangement and one represents the small arrangement. Values
     /// between those endpoints are used during Material spatial motion. Applications may bind this property to a
-    /// continuous scroll offset; while it is unbound, the default skin animates it in response to
-    /// [#scrolledUnderProperty()]. Baseline variants ignore this value.
+    /// continuous scroll offset. While the property is unbound, changes to [#scrolledUnderProperty()] transition it
+    /// between the two endpoints. Baseline variants ignore this value.
     ///
     /// @return the collapse progress in the closed interval from zero to one
     public final double getCollapseProgress() {
@@ -436,8 +412,8 @@ public final class M3TopAppBar extends Control {
 
     /// Sets the optional leading navigation node.
     ///
-    /// A non-null node must not be used simultaneously by another parent. The app bar does not take ownership of
-    /// the node until its skin places the node in the scene graph.
+    /// A non-null value is presented in the leading navigation slot. To be displayed, the node must not
+    /// simultaneously belong to another parent.
     ///
     /// @param navigation the leading navigation node, or `null` to clear the slot
     public final void setNavigation(@Nullable Node navigation) {
@@ -985,8 +961,9 @@ public final class M3TopAppBar extends Control {
 
     /// Returns the mutable trailing action node list.
     ///
-    /// Changes to the returned list are observed immediately. The list rejects `null` elements. Each node must be
-    /// eligible for attachment to the app bar and therefore must not simultaneously belong to another parent.
+    /// Changes to the returned list are observed immediately. The list rejects `null` elements and repeated
+    /// occurrences of the same node instance, and validates bulk mutations before changing. Each node must satisfy
+    /// the JavaFX single-parent rule while displayed.
     ///
     /// @return the live, mutable list of trailing action nodes
     public final ObservableList<Node> getActions() {
@@ -994,6 +971,8 @@ public final class M3TopAppBar extends Control {
     }
 
     /// Returns the user-agent stylesheet for M3FX top app bars.
+    ///
+    /// @return the top app bar user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("top-app-bar.css");
@@ -1007,6 +986,8 @@ public final class M3TopAppBar extends Control {
     }
 
     /// Returns the CSS metadata for this control.
+    ///
+    /// @return the immutable CSS metadata list for this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
@@ -1014,7 +995,7 @@ public final class M3TopAppBar extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
@@ -1038,6 +1019,11 @@ public final class M3TopAppBar extends Control {
     }
 
     /// Returns accessibility attributes for the title, subtitle, and action collection.
+    ///
+    /// @param attribute  the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
@@ -1051,6 +1037,8 @@ public final class M3TopAppBar extends Control {
 
     /// Executes accessibility actions for indexed navigation and action children.
     ///
+    /// @param action     the requested accessibility action
+    /// @param parameters the optional action parameters
     /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -1096,7 +1084,9 @@ public final class M3TopAppBar extends Control {
         focusNotifier.refresh();
     }
 
-    /// Creates the default Material Design 3 top app bar skin.
+    /// Returns the default visual representation of this control.
+    ///
+    /// @return the default visual representation
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3TopAppBarSkin(this);

@@ -27,15 +27,15 @@ import java.util.List;
 /// multi-line editor, or place it inside [M3TextInputLayout] to add a label, supporting text, error text,
 /// character counter, and adornment slots.
 ///
-/// A new text area uses the filled variant, is not in error state, wraps text, and styles the scroll bars owned by
-/// its JavaFX text-area viewport. Text, selection, editing, preferred row count, and scroll position retain the
-/// inherited [TextArea] contracts.
+/// A new text area uses the filled variant, is not in error state, wraps text, and applies M3FX styling to its scroll
+/// bars. Text, selection, editing, preferred row count, and scroll position retain the inherited [TextArea]
+/// contracts.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextArea extends TextArea implements M3TextInput {
-    /// The base style class for M3FX text areas.
-    public static final String STYLE_CLASS = "m3-text-area";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-text-area";
 
     /// Styles the native text-area viewport after JavaFX installs or replaces its skin.
     private final InvalidationListener skinInvalidation = observable -> styleInternalScrollPane();
@@ -207,7 +207,7 @@ public final class M3TextArea extends TextArea implements M3TextInput {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        support.initialize(STYLE_CLASS);
+        support.initialize(DEFAULT_STYLE_CLASS);
         skinProperty().addListener(skinInvalidation);
         setAccessibleRole(AccessibleRole.TEXT_AREA);
         setWrapText(true);

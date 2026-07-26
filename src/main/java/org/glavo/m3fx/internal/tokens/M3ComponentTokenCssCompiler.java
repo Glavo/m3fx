@@ -3023,7 +3023,7 @@ public final class M3ComponentTokenCssCompiler {
                 builder,
                 "-fx-effect",
                 tokens.elevated()
-                        ? "dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2)"
+                        ? "dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2)"
                         : "null"
         );
         endRule(builder);

@@ -10,9 +10,8 @@ import java.util.function.IntToDoubleFunction;
 /// Converts values to and from a fixed-size vector of scalar animation components.
 ///
 /// A converter defines a stable component count and ordering for one value type. [M3StateTransition] reads the
-/// components of start and target values when a run is configured, animates those components through reusable
-/// scalar channels, and calls [#createValue(IntToDoubleFunction)] to reconstruct each rendered value.
-/// Implementations should make component access inexpensive and should avoid temporary collections or arrays.
+/// components of start and target values when a run is configured, animates those components, and calls
+/// [#createValue(IntToDoubleFunction)] to reconstruct each rendered value.
 ///
 /// Values returned from [#getComponent(Object, int)] and visibility thresholds must be finite. A converter must
 /// return a non-null value from [#createValue(IntToDoubleFunction)]. If the represented type has a restricted domain,

@@ -27,6 +27,21 @@ import org.jetbrains.annotations.Nullable;
 /// node orientation.
 @NotNullByDefault
 public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
+    /// The header style class.
+    private static final String HEADER_STYLE_CLASS = "m3-sheet-header";
+
+    /// The headline style class.
+    private static final String TITLE_STYLE_CLASS = "m3-sheet-title";
+
+    /// The header action container style class.
+    private static final String HEADER_ACTIONS_STYLE_CLASS = "m3-side-sheet-header-actions";
+
+    /// The bottom action container style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-side-sheet-actions";
+
+    /// The content slot style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
+
     /// The internal sheet layout root.
     private final BorderPane container = new BorderPane();
 
@@ -64,11 +79,11 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     public M3SideSheetSkin(M3SideSheet control) {
         super(control);
         container.setManaged(false);
-        header.getStyleClass().add(M3SideSheet.HEADER_STYLE_CLASS);
-        headlineLabel.getStyleClass().add(M3SideSheet.TITLE_STYLE_CLASS);
-        headerActions.getStyleClass().add(M3SideSheet.HEADER_ACTIONS_STYLE_CLASS);
-        actions.getStyleClass().add(M3SideSheet.ACTIONS_STYLE_CLASS);
-        contentSlot.getStyleClass().add(M3SideSheet.CONTENT_STYLE_CLASS);
+        header.getStyleClass().add(HEADER_STYLE_CLASS);
+        headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
+        headerActions.getStyleClass().add(HEADER_ACTIONS_STYLE_CLASS);
+        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
+        contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
         contentSlot.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         header.setAlignment(Pos.CENTER_LEFT);
         headerActions.setAlignment(Pos.CENTER_RIGHT);

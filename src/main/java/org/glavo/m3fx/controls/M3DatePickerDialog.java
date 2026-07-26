@@ -21,16 +21,16 @@ import java.time.LocalDate;
 
 /// A Material Design 3 dialog for selecting one date.
 ///
-/// While the dialog [value][#valueProperty()] is unbound, it stays synchronized with the embedded
+/// While the dialog [value][#valueProperty()] is unbound, it stays synchronized with its associated
 /// [picker][#getPicker()]. The OK button is disabled until a date is selected. Activating OK requests dialog closure,
 /// and the current date remains available through [#valueProperty()]. Cancel and other dismissal paths retain that
 /// state, so callers must inspect
 /// [M3DialogEvent#getAction()] from the hidden event before treating it as confirmed. Close requests remain
 /// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
-/// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
-/// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
-/// embedded picker. Present the configured dialog in an existing scene with
+/// The picker is managed by this dialog and must not be added to another parent. Optional presets are exposed as a
+/// live ordered list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured
+/// through the picker. Present the configured dialog in an existing scene with
 /// [M3OverlayPane#showDialog(M3Dialog)] or in a dedicated native window with
 /// [M3DialogWindow#showDialog(M3Dialog)].
 ///
@@ -57,13 +57,13 @@ public final class M3DatePickerDialog extends M3Dialog {
     private static final String DEFAULT_TITLE = "Select date";
 
     /// The style class applied to dialog content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-dialog-preset-content";
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-dialog-preset-content";
 
     /// The style class applied to the preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-picker-dialog-preset-list";
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-date-picker-dialog-preset-list";
 
     /// The style class applied to each preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-dialog-preset-button";
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-dialog-preset-button";
 
     /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
     ///
@@ -82,9 +82,9 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// The selected date, or `null` when no date is selected.
     ///
-    /// The default value is `null`. While unbound, this property is bidirectionally synchronized with the embedded
+    /// The default value is `null`. While unbound, this property is bidirectionally synchronized with the associated
     /// picker. A non-null assignment is validated against the picker's current inclusive bounds and displays its
-    /// month. Assigning `null` clears selection and disables the OK action. Changes made through the embedded picker
+    /// month. Assigning `null` clears selection and disables the OK action. Changes made through the associated picker
     /// update an unbound property as well.
     ///
     /// @defaultValue `null`
@@ -114,7 +114,7 @@ public final class M3DatePickerDialog extends M3Dialog {
         return value.get();
     }
 
-    /// Sets the selected date in both this dialog and its embedded picker, or clears selection for `null`.
+    /// Sets the selected date in both this dialog and its associated picker, or clears selection for `null`.
     ///
     /// @param value the selected date, or `null` to clear selection
     /// @throws IllegalArgumentException if `value` is outside the picker's current inclusive bounds
@@ -125,7 +125,7 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// Returns the observable property that stores the selected date.
     ///
     /// The property can be observed and bound, and its default value is `null`. While unbound, direct assignments
-    /// are validated through and synchronized with the embedded picker; picker changes update this property.
+    /// are validated through and synchronized with the associated picker; picker changes update this property.
     ///
     /// @return the selected-date property
     public ObjectProperty<@Nullable LocalDate> valueProperty() {
@@ -141,7 +141,7 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// The retained confirmation action shown in the dialog action row.
     private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
-    /// Whether the dialog and embedded picker are currently synchronizing selected values.
+    /// Whether the dialog and picker are currently synchronizing selected values.
     private boolean synchronizingValue;
 
     /// The live, mutable, ordered list of date presets rendered before the picker.
@@ -153,7 +153,7 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// The vertical preset action container.
     private final VBox presetList = new VBox(6.0);
 
-    /// The stable wrapper that keeps the preset list and picker parented for the dialog lifetime.
+    /// The container for the preset list and picker.
     private final HBox presetContent = new HBox(16.0, presetList, picker);
 
     /// Incrementally maintains preset actions without rebuilding unaffected buttons.

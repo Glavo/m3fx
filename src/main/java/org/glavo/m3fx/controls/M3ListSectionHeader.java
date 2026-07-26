@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3ListSectionHeader extends M3Text {
-    /// The base style class for M3FX list section headers.
-    public static final String STYLE_CLASS = "m3-list-section-header";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-list-section-header";
 
     /// Creates an empty list section header.
     public M3ListSectionHeader() {
@@ -29,7 +29,7 @@ public final class M3ListSectionHeader extends M3Text {
     /// @param text the header text
     public M3ListSectionHeader(String text) {
         super(text, M3TextRole.LABEL_LARGE);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setFocusTraversable(false);
     }
 

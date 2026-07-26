@@ -30,8 +30,8 @@ import java.util.List;
 /// [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
 public final class M3DisclosureIcon extends Control {
-    /// The base style class for M3FX disclosure icons.
-    public static final String STYLE_CLASS = "m3-disclosure-icon";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-disclosure-icon";
 
     /// The expanded pseudo-class used by disclosure icons.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
@@ -48,7 +48,7 @@ public final class M3DisclosureIcon extends Control {
     ///
     /// @param expanded whether the disclosure target starts expanded
     public M3DisclosureIcon(boolean expanded) {
-        getStyleClass().add(STYLE_CLASS);
+        getStyleClass().add(DEFAULT_STYLE_CLASS);
         setFocusTraversable(false);
         setExpanded(expanded);
     }

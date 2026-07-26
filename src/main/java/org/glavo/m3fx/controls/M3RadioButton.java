@@ -51,7 +51,7 @@ import java.util.function.Function;
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
 public final class M3RadioButton extends ButtonBase implements Toggle {
-    /// The default style class assigned to M3FX radio buttons.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-radio-button";
 
     /// The selected pseudo-class used by radio buttons.

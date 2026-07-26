@@ -53,8 +53,8 @@ import java.util.Objects;
 /// See [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
 public final class M3RangeSlider extends Control {
-    /// The range-slider-specific style class.
-    public static final String STYLE_CLASS = "m3-range-slider";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-range-slider";
 
     /// The default Material slider size.
     private static final M3SliderSize DEFAULT_SIZE = M3SliderSize.EXTRA_SMALL;
@@ -1207,8 +1207,8 @@ public final class M3RangeSlider extends Control {
 
     /// Initializes style, accessibility, and sizing state.
     private void initialize() {
-        M3ControlStyles.initialize(this, M3Slider.STYLE_CLASS);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, "m3-slider");
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);

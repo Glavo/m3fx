@@ -53,6 +53,12 @@ final class M3TooltipMotionTest {
     /// The minimum distance from either endpoint required for an intermediate value.
     private static final double INTERMEDIATE_MARGIN = 0.02;
 
+    /// The lower timing bound used to distinguish the Material exit delay from an immediate close.
+    private static final long MATERIAL_EXIT_DELAY_LOWER_BOUND_NANOS = 1_200_000_000L;
+
+    /// The observation interval used to verify that a transient tooltip remains visible before its exit delay.
+    private static final long EARLY_EXIT_OBSERVATION_NANOS = 400_000_000L;
+
     /// Starts the JavaFX toolkit before a real stage or popup is created.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -292,6 +298,75 @@ final class M3TooltipMotionTest {
                     () -> assertFalse(
                             Objects.requireNonNull(fixtureReference.get(), "fixture").tooltip().isShowing()
                     )
+            );
+        } finally {
+            @Nullable TooltipFixture fixture = fixtureReference.get();
+            if (fixture != null) {
+                M3Tooltip.uninstall(fixture.owner(), fixture.tooltip());
+            }
+            disposeFixture(fixture);
+        }
+    }
+
+    /// Verifies that a transient tooltip remains visible during the Material exit delay and then closes.
+    @Test
+    void transientTooltipUsesMaterialExitDelay() throws InterruptedException {
+        AtomicReference<@Nullable TooltipFixture> fixtureReference = new AtomicReference<>();
+        AtomicLong exitStartNanos = new AtomicLong();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null && fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                        TooltipFixture fixture = createFixture(false);
+                        fixture.tooltip().setShowDelay(Duration.ZERO);
+                        M3Tooltip.install(fixture.owner(), fixture.tooltip());
+                        fixtureReference.set(fixture);
+                        M3MotionSettings.setReducedMotionRequested(fixture.root(), true);
+                        fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_ENTERED));
+                    },
+                    () -> {
+                        TooltipFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
+                        fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_EXITED));
+                        exitStartNanos.set(System.nanoTime());
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        long exitStart = exitStartNanos.get();
+                        return fixture != null
+                                && exitStart != 0L
+                                && System.nanoTime() - exitStart >= EARLY_EXIT_OBSERVATION_NANOS
+                                && fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                    },
+                    () -> assertTrue(
+                            Objects.requireNonNull(fixtureReference.get(), "fixture").tooltip().isShowing()
+                    )
+            );
+
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable TooltipFixture fixture = fixtureReference.get();
+                        return fixture != null && !fixture.tooltip().isShowing();
+                    },
+                    2,
+                    () -> {
+                    },
+                    () -> {
+                        long elapsedNanos = System.nanoTime() - exitStartNanos.get();
+                        assertTrue(
+                                elapsedNanos >= MATERIAL_EXIT_DELAY_LOWER_BOUND_NANOS,
+                                () -> "tooltip closed after " + elapsedNanos + " ns"
+                        );
+                    }
             );
         } finally {
             @Nullable TooltipFixture fixture = fixtureReference.get();

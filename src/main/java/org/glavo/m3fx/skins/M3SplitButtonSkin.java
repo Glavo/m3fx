@@ -27,6 +27,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// transitions preserve the visual relationship between both parts.
 @NotNullByDefault
 public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
+    /// The primary action part style class.
+    private static final String ACTION_BUTTON_STYLE_CLASS = "m3-split-button-action";
+
+    /// The trailing menu part style class.
+    private static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
+
     /// The armed interaction pseudo-class used by both button parts.
     private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
 
@@ -225,10 +231,12 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             M3SplitButton splitButton,
             ButtonBase button,
             M3StateLayer stateLayer,
+            double x,
+            double y,
             double width,
             double height
     ) {
-        boolean menuPart = button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
+        boolean menuPart = button.getStyleClass().contains(MENU_BUTTON_STYLE_CLASS);
         double innerCorner = resolvedInnerCorner(splitButton, button, menuPart);
         if (splitButton.getSkin() instanceof M3SplitButtonSkin skin) {
             innerCorner = skin.currentInnerCorner(button, innerCorner);
@@ -242,8 +250,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         double outerCorner = splitButton.getOuterCorner();
         if (menuPart) {
             stateLayer.layoutLayer(
-                    0.0,
-                    0.0,
+                    x,
+                    y,
                     width,
                     height,
                     innerCorner,
@@ -253,8 +261,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             );
         } else {
             stateLayer.layoutLayer(
-                    0.0,
-                    0.0,
+                    x,
+                    y,
                     width,
                     height,
                     outerCorner,

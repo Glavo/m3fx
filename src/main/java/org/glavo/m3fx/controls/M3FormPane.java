@@ -33,7 +33,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 form container that stacks form rows, sections, and other content nodes.
+/// An M3FX form container styled with Material tokens.
+///
+/// Material Design 3 does not define a form-container component. This extension arranges form rows, sections, text
+/// fields, and other application content without changing the contracts of the contained controls.
 ///
 /// Top-level nodes are stored in a live ordered [items][#getItems()] list and laid out vertically. Typical items are
 /// [M3FormRow], [M3FormSection], and [M3TextInputLayout], although any JavaFX node may be used. The pane is not
@@ -58,14 +61,11 @@ import java.util.Objects;
 /// ```
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
-/// [Material Design](https://m3.material.io/) for the form controls commonly used inside this pane.
+/// [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3FormPane extends Control {
-    /// The base style class for M3FX form panes.
-    public static final String STYLE_CLASS = "m3-form-pane";
-
-    /// The style class applied to the form content container.
-    public static final String CONTENT_STYLE_CLASS = "m3-form-pane-content";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-form-pane";
 
     /// The default uniform content padding.
     private static final double DEFAULT_CONTENT_PADDING = 0.0;
@@ -165,7 +165,7 @@ public final class M3FormPane extends Control {
     /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
     /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
     /// parent do not satisfy the scene-graph ownership contract.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// The listener used to refresh accessibility state when form items change.
     private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
@@ -175,6 +175,9 @@ public final class M3FormPane extends Control {
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
     /// Returns the live, mutable list of top-level form items in layout order.
+    ///
+    /// The list rejects `null` elements and repeated occurrences of the same node instance. Bulk mutations are
+    /// validated before the list changes. Each node must satisfy the JavaFX single-parent rule while displayed.
     ///
     /// @return the live, mutable top-level form item list
     public final ObservableList<Node> getItems() {
@@ -216,7 +219,7 @@ public final class M3FormPane extends Control {
         focusNotifier.refresh();
     }
 
-    /// Creates the default Material Design 3 form pane skin.
+    /// Creates the default skin for this control.
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3FormPaneSkin(this);
@@ -269,7 +272,7 @@ public final class M3FormPane extends Control {
 
     /// Initializes style classes and accessibility metadata.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);

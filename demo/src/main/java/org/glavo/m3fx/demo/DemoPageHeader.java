@@ -33,18 +33,20 @@ final class DemoPageHeader extends Region {
     /// The title and supporting text column.
     private final VBox heading;
 
-    /// The action that opens the matching Material documentation page.
+    /// The action that opens the matching reference documentation page.
     private final M3Button documentationButton;
 
     /// Creates a responsive header for one demo page.
     ///
     /// @param title               the page title
     /// @param subtitle            the page supporting text
+    /// @param documentationLabel  the label shown by the documentation action
     /// @param documentationAction the action run when the documentation button is activated
     /// @throws NullPointerException if any argument is `null`
-    DemoPageHeader(String title, String subtitle, Runnable documentationAction) {
+    DemoPageHeader(String title, String subtitle, String documentationLabel, Runnable documentationAction) {
         Objects.requireNonNull(title, "title");
         Objects.requireNonNull(subtitle, "subtitle");
+        Objects.requireNonNull(documentationLabel, "documentationLabel");
         Objects.requireNonNull(documentationAction, "documentationAction");
 
         Label titleLabel = new Label(title);
@@ -65,7 +67,7 @@ final class DemoPageHeader extends Region {
         heading.setMinWidth(0.0);
         heading.setMaxWidth(Double.MAX_VALUE);
 
-        documentationButton = new M3Button("Material docs");
+        documentationButton = new M3Button(documentationLabel);
         documentationButton.setVariant(M3ButtonVariant.OUTLINED);
         documentationButton.getStyleClass().add("demo-page-doc-link");
         documentationButton.setOnAction(event -> documentationAction.run());

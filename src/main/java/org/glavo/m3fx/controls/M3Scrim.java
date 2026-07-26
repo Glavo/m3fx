@@ -42,8 +42,8 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) for modal surface and overlay behavior.
 @NotNullByDefault
 public final class M3Scrim extends Region {
-    /// The base style class for M3FX scrims.
-    public static final String STYLE_CLASS = "m3-scrim";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-scrim";
 
     /// The default visible scrim opacity.
     private static final double DEFAULT_VISIBLE_OPACITY = 0.32;
@@ -53,7 +53,7 @@ public final class M3Scrim extends Region {
 
     /// Creates a shown, focus-traversable scrim with `0.32` visible opacity and click activation enabled.
     public M3Scrim() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, parameters -> parameters.length == 0 && showAccessibleItem());
         setAccessibleText("Dismiss");

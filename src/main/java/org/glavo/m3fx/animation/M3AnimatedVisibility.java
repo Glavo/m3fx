@@ -19,26 +19,24 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Presents or removes one retained content node with an interruptible Material visibility transition.
+/// Presents or hides one content node with an interruptible Material visibility transition.
 ///
 /// The [showing property][#showingProperty()] is the requested target. The read-only [state property][#stateProperty()]
-/// reports whether content is hidden, entering, visible, or exiting. Content remains attached while an exit is in
-/// progress and is detached after all visual and size channels complete. The [content property][#contentProperty()]
-/// retains the node reference while hidden, so the same node may be shown again without reconstruction.
+/// reports whether content is hidden, entering, visible, or exiting. The [content property][#contentProperty()]
+/// continues to identify the configured node while it is hidden, so the same node may be shown again.
 ///
-/// Enter and exit effects are applied to private holders. This region does not modify the content node's own opacity,
-/// scale, translation, or transform list. By default, preferred and minimum size animate between the content's
-/// measured size and zero, and drawing is clipped to the current region bounds. The enter, exit, and size transforms
-/// are independently configurable.
+/// This region does not modify the content node's own opacity, scale, translation, or transform list. By default,
+/// preferred and minimum size animate between the content's measured size and zero, and drawing is clipped to the
+/// current region bounds. The enter, exit, and size transforms are independently configurable.
 /// Set [#fitToWidthProperty()] when a width-constraining parent must reflow retained content instead of preserving
 /// its independent preferred width.
 /// Replacing [#getContent()] is immediate and is not treated as an animated content transformation; use
 /// [M3AnimatedContent] when old and new content should coexist during replacement.
 ///
-/// Reversing [#showingProperty()] during playback continues from the current visual values and reuses the attached
-/// content node. Reduced motion, presentation detachment, and window hiding during a run settle synchronously at the
-/// newest target. Changing the inherited [Node#visibleProperty()] or [Node#managedProperty()] is independent of this
-/// lifecycle and may prevent the region from being rendered or laid out.
+/// Reversing [#showingProperty()] during playback continues from the current visual values. Reduced motion and a
+/// change in the node's presentation context settle at the newest target. Changing [Node#visibleProperty()] or
+/// [Node#managedProperty()] is independent of this lifecycle and may prevent the region from being rendered or laid
+/// out.
 ///
 /// This class is a layout container rather than a Material component and does not install a user-agent stylesheet.
 /// Its public properties and animation-control methods must be accessed on the JavaFX Application Thread once the
@@ -47,7 +45,7 @@ import java.util.Objects;
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3AnimatedVisibility extends Region {
-    /// The default style class assigned to animated-visibility regions.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-animated-visibility";
 
     /// The default alignment of visible and exiting content.
@@ -64,7 +62,7 @@ public final class M3AnimatedVisibility extends Region {
     /// The default animated and clipped size behavior.
     private static final M3SizeTransform DEFAULT_SIZE_TRANSFORM = new M3SizeTransform(true, null);
 
-    /// The retained-content engine that owns visual effects, clipping, and animated size.
+    /// The child region that applies visual effects, clipping, and animated size.
     private final M3AnimatedContent animatedContent = new M3AnimatedContent();
 
     /// Whether the current retained-content run represents a visibility lifecycle transition.
@@ -80,20 +78,18 @@ public final class M3AnimatedVisibility extends Region {
                 }
             };
 
-    /// Returns the content retained by this region.
-    ///
-    /// Hidden content is retained by this property but is detached from this region's private scene graph.
+    /// Returns the content configured for this region.
     ///
     /// @return the current content, or `null` if this region is empty
     public @Nullable Node getContent() {
         return content.get();
     }
 
-    /// Replaces the content retained by this region.
-    ///
-    /// Replacement is immediate. If the region is showing, the new node becomes fully visible without an enter
-    /// transition; if it is hidden, the node remains detached until [#setShowing(boolean)] requests entry. The node
-    /// must not be this region, one of its ancestors, or a node that cannot legally be reparented into this region.
+    /// Replaces the content configured for this region.
+///
+/// Replacement is immediate. If the region is showing, the new node becomes fully visible without an enter
+    /// transition; if it is hidden, the node remains hidden until [#setShowing(boolean)] requests entry. The node
+    /// must not be this region or one of its ancestors, and it must satisfy the JavaFX single-parent rule.
     ///
     /// @param content the new content, or `null` to make this region empty
     /// @throws IllegalArgumentException if adding the node would create a scene-graph cycle or otherwise violate
@@ -102,7 +98,7 @@ public final class M3AnimatedVisibility extends Region {
         this.content.set(content);
     }
 
-    /// Returns the observable retained-content property.
+    /// Returns the observable content property.
     ///
     /// A value assigned through a binding has the same scene-graph constraints as [#setContent(Node)].
     ///
@@ -149,7 +145,7 @@ public final class M3AnimatedVisibility extends Region {
         return showing;
     }
 
-    /// The effects used while retained content enters.
+    /// The effects used while content enters.
     private final ObjectProperty<@Nullable M3EnterTransition> enterTransition =
             new SimpleObjectProperty<>(this, "enterTransition", DEFAULT_ENTER_TRANSITION) {
                 /// Restores the default after a direct null assignment and updates active motion otherwise.
@@ -163,7 +159,7 @@ public final class M3AnimatedVisibility extends Region {
                 }
             };
 
-    /// Returns the effects used while retained content enters.
+    /// Returns the effects used while content enters.
     ///
     /// @return the non-null immutable enter transition
     public M3EnterTransition getEnterTransition() {
@@ -187,7 +183,7 @@ public final class M3AnimatedVisibility extends Region {
         return enterTransition;
     }
 
-    /// The effects used while retained content exits.
+    /// The effects used while content exits.
     private final ObjectProperty<@Nullable M3ExitTransition> exitTransition =
             new SimpleObjectProperty<>(this, "exitTransition", DEFAULT_EXIT_TRANSITION) {
                 /// Restores the default after a direct null assignment and updates active motion otherwise.
@@ -201,7 +197,7 @@ public final class M3AnimatedVisibility extends Region {
                 }
             };
 
-    /// Returns the effects used while retained content exits.
+    /// Returns the effects used while content exits.
     ///
     /// @return the non-null immutable exit transition
     public M3ExitTransition getExitTransition() {
@@ -225,7 +221,7 @@ public final class M3AnimatedVisibility extends Region {
         return exitTransition;
     }
 
-    /// The alignment of attached content within this region.
+    /// The alignment of content within this region.
     private final ObjectProperty<@Nullable Pos> alignment =
             new SimpleObjectProperty<>(this, "alignment", DEFAULT_ALIGNMENT) {
                 /// Restores the default after a direct null assignment and updates the retained-content engine.
@@ -240,14 +236,14 @@ public final class M3AnimatedVisibility extends Region {
                 }
             };
 
-    /// Returns the alignment of attached content within this region.
+    /// Returns the alignment of content within this region.
     ///
     /// @return the non-null content alignment
     public Pos getAlignment() {
         return Objects.requireNonNull(alignment.get(), "alignment");
     }
 
-    /// Sets the alignment of attached content within this region.
+    /// Sets the alignment of content within this region.
     ///
     /// @param alignment the content alignment
     /// @throws NullPointerException if `alignment` is `null`
@@ -265,10 +261,10 @@ public final class M3AnimatedVisibility extends Region {
         return alignment;
     }
 
-    /// Whether a positive assigned width constrains retained content measurement.
+    /// Whether a positive assigned width constrains content measurement.
     ///
     /// When `false`, the default, this region measures visible content at its independent preferred width. When
-    /// `true`, a positive assigned width constrains the retained-content engine and allows ordinary resizable content
+    /// `true`, a positive assigned width constrains content measurement and allows ordinary resizable content
     /// to reflow. This is useful inside a width-constraining parent such as [javafx.scene.control.ScrollPane].
     private final BooleanProperty fitToWidth = new SimpleBooleanProperty(this, "fitToWidth", false) {
         /// Synchronizes the retained-content engine after the outer measurement contract changes.
@@ -279,14 +275,14 @@ public final class M3AnimatedVisibility extends Region {
         }
     };
 
-    /// Returns whether retained content is fitted to this region's assigned width.
+    /// Returns whether content is fitted to this region's assigned width.
     ///
     /// @return `true` when a positive assigned width constrains visible content
     public boolean isFitToWidth() {
         return fitToWidth.get();
     }
 
-    /// Sets whether retained content is fitted to this region's assigned width.
+    /// Sets whether content is fitted to this region's assigned width.
     ///
     /// Changing this value requests a target remeasurement. It does not alter the configured enter or exit effects
     /// and may retarget an active size transition when the measured content height changes.
@@ -324,8 +320,7 @@ public final class M3AnimatedVisibility extends Region {
 
     /// Sets the size behavior used by subsequent and active visibility transitions.
     ///
-    /// Passing `null` applies the target size synchronously and removes the animated-content clip without stopping
-    /// active enter or exit effects.
+    /// Passing `null` applies the target size synchronously without stopping active enter or exit effects.
     ///
     /// @param sizeTransform the immutable size behavior, or `null` to disable it
     public void setSizeTransform(@Nullable M3SizeTransform sizeTransform) {
@@ -402,7 +397,8 @@ public final class M3AnimatedVisibility extends Region {
     ///
     /// @param content the initial content
     /// @throws NullPointerException     if `content` is `null`
-    /// @throws IllegalArgumentException if the node cannot legally be added to this region
+    /// @throws IllegalArgumentException if the node would create a scene-graph cycle or violate the JavaFX
+    ///                                  single-parent rule
     public M3AnimatedVisibility(Node content) {
         this();
         setContent(Objects.requireNonNull(content, "content"));
@@ -410,8 +406,8 @@ public final class M3AnimatedVisibility extends Region {
 
     /// Completes an active visibility or size transition at its current target.
     ///
-    /// This method has no effect when no transition is active. Completion is synchronous; after an exit, the content
-    /// node is detached and [#getState()] returns [M3VisibilityState#HIDDEN] before this method returns.
+    /// This method has no effect when no transition is active. Completion is synchronous; after an exit,
+    /// [#getState()] returns [M3VisibilityState#HIDDEN] before this method returns.
     public void finish() {
         if (animatedContent.isTransitioning()) {
             animatedContent.finish();
@@ -422,9 +418,8 @@ public final class M3AnimatedVisibility extends Region {
 
     /// Immediately applies the current showing target without running a transition.
     ///
-    /// An active transition is stopped. Hidden content is detached and the region reports zero content size before
-    /// this method returns. Shown content is attached at neutral opacity, scale, and translation. Repeated calls are
-    /// idempotent.
+    /// An active transition is stopped. Hidden content contributes zero content size before this method returns.
+    /// Shown content uses neutral opacity, scale, and translation. Repeated calls are idempotent.
     public void snapToCurrentState() {
         lifecycleTransitionActive = false;
         @Nullable Node target = isShowing() ? getContent() : null;
@@ -435,7 +430,7 @@ public final class M3AnimatedVisibility extends Region {
         requestLayout();
     }
 
-    /// Returns the baseline offset of attached content at its current alignment.
+    /// Returns the baseline offset of content at its current alignment.
     ///
     /// @return the content baseline relative to this region, or [Node#BASELINE_OFFSET_SAME_AS_HEIGHT] when none is
     ///         available
@@ -483,7 +478,7 @@ public final class M3AnimatedVisibility extends Region {
         return Double.MAX_VALUE;
     }
 
-    /// Lays out the retained-content engine inside this region's snapped insets.
+    /// Lays out content inside this region's snapped insets.
     @Override
     protected void layoutChildren() {
         double left = snappedLeftInset();

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
@@ -16,6 +17,8 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -101,7 +104,7 @@ final class M3FormControlsTest {
             assertSame(first, form.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
             assertSame(second, form.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
 
-            Node content = form.lookup("." + M3FormPane.CONTENT_STYLE_CLASS);
+            Node content = form.lookup("." + "m3-form-pane-content");
             VBox contentBox = assertInstanceOf(VBox.class, content);
             assertEquals(2, contentBox.getChildren().size());
             assertEquals(10.0, contentBox.getSpacing());
@@ -124,10 +127,10 @@ final class M3FormControlsTest {
             assertEquals(1, section.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
             assertSame(row, section.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
 
-            Label title = assertInstanceOf(Label.class, section.lookup("." + M3FormSection.TITLE_STYLE_CLASS));
+            Label title = assertInstanceOf(Label.class, section.lookup("." + "m3-form-section-title"));
             Label supporting =
-                    assertInstanceOf(Label.class, section.lookup("." + M3FormSection.SUPPORTING_TEXT_STYLE_CLASS));
-            VBox content = assertInstanceOf(VBox.class, section.lookup("." + M3FormSection.CONTENT_STYLE_CLASS));
+                    assertInstanceOf(Label.class, section.lookup("." + "m3-form-section-supporting-text"));
+            VBox content = assertInstanceOf(VBox.class, section.lookup("." + "m3-form-section-content"));
 
             assertEquals("Account", title.getText());
             assertEquals("Profile fields", supporting.getText());
@@ -158,9 +161,9 @@ final class M3FormControlsTest {
             assertSame(content, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
             assertSame(trailing, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
 
-            Label label = assertInstanceOf(Label.class, row.lookup("." + M3FormRow.LABEL_STYLE_CLASS));
-            Label supporting = assertInstanceOf(Label.class, row.lookup("." + M3FormRow.SUPPORTING_TEXT_STYLE_CLASS));
-            VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + M3FormRow.TEXT_COLUMN_STYLE_CLASS));
+            Label label = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-label"));
+            Label supporting = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-supporting-text"));
+            VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + "m3-form-row-text-column"));
 
             assertEquals("Display name", label.getText());
             assertEquals("Visible to collaborators", supporting.getText());
@@ -178,6 +181,70 @@ final class M3FormControlsTest {
         row.setContent(content);
 
         assertThrows(IllegalArgumentException.class, () -> row.setTrailing(content));
+    }
+
+    /// Verifies that bound form-row slots validate every value before publishing structural changes.
+    @Test
+    void formRowValidatesBoundSlotValues() {
+        FxTestUtils.runOnFxThread(() -> {
+            Label first = new Label("First");
+            Label trailing = new Label("Trailing");
+            Label replacement = new Label("Replacement");
+            SimpleObjectProperty<Node> source = new SimpleObjectProperty<>(first);
+            M3FormRow row = new M3FormRow();
+            row.contentProperty().bind(source);
+            row.setTrailing(trailing);
+
+            assertInstanceOf(
+                    IllegalArgumentException.class,
+                    captureUncaughtListenerException(() -> source.set(trailing))
+            );
+
+            source.set(replacement);
+            assertSame(replacement, row.getContent());
+            assertSame(trailing, row.getTrailing());
+        });
+    }
+
+    /// Verifies that text-input bindings reject incompatible controls before detaching the installed input.
+    @Test
+    void textInputLayoutValidatesBoundInputBeforeStateMigration() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField first = new M3TextField("First");
+            M3TextField replacement = new M3TextField("Replacement");
+            SimpleObjectProperty<TextInputControl> source = new SimpleObjectProperty<>(first);
+            M3TextInputLayout layout = new M3TextInputLayout();
+            layout.inputProperty().bind(source);
+
+            assertInstanceOf(
+                    IllegalArgumentException.class,
+                    captureUncaughtListenerException(() -> source.set(new TextField("Unsupported")))
+            );
+
+            first.setText("Still installed");
+            assertEquals("Still installed".length(), layout.getCharacterCount());
+
+            source.set(replacement);
+            assertSame(replacement, layout.getInput());
+            assertEquals("Replacement".length(), layout.getCharacterCount());
+
+            first.setText("Detached");
+            assertEquals("Replacement".length(), layout.getCharacterCount());
+        });
+    }
+
+    /// Verifies that text-input layout slots reject duplicate nodes and scene-graph cycles.
+    @Test
+    void textInputLayoutRejectsDuplicateAndCyclicSlotNodes() {
+        M3TextInputLayout layout = new M3TextInputLayout(new M3TextField());
+        Label adornment = new Label("Adornment");
+        layout.setLeading(adornment);
+
+        assertThrows(IllegalArgumentException.class, () -> layout.setTrailing(adornment));
+        assertThrows(IllegalArgumentException.class, () -> layout.setTrailing(layout));
+
+        VBox ancestor = new VBox(layout);
+        assertThrows(IllegalArgumentException.class, () -> layout.setTrailing(ancestor));
     }
 
     /// Verifies that form helpers expose their split user-agent stylesheet.
@@ -535,7 +602,7 @@ final class M3FormControlsTest {
             assertSame(emailLayout, summary.getInvalidInput(1));
             assertEquals(2, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
             assertSame(nameLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(2, summary.lookupAll("." + "m3-validation-summary-item").size());
             assertTrue(summary.focusInput(nameLayout));
         });
     }
@@ -577,10 +644,10 @@ final class M3FormControlsTest {
             assertEquals("Validation status All visible fields are valid",
                     summary.queryAccessibleAttribute(AccessibleAttribute.TEXT));
             assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-            assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+            assertTrue(summary.lookupAll("." + "m3-validation-summary-item").isEmpty());
             Label emptyLabel = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.EMPTY_TEXT_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-empty-text")
             );
             assertEquals("All visible fields are valid", emptyLabel.getText());
 
@@ -592,7 +659,7 @@ final class M3FormControlsTest {
             assertEquals("Validation status", summary.queryAccessibleAttribute(AccessibleAttribute.TEXT));
             assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
             assertSame(hiddenLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(1, summary.lookupAll("." + "m3-validation-summary-item").size());
         });
     }
 
@@ -623,7 +690,7 @@ final class M3FormControlsTest {
             assertTrue(summary.isShowingSummary());
             assertFalse(summary.getPseudoClassStates().contains(empty));
             assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(1, summary.lookupAll("." + "m3-validation-summary-item").size());
 
             summaryOwner.setVisible(false);
             root.applyCss();
@@ -633,7 +700,7 @@ final class M3FormControlsTest {
             assertFalse(summary.isShowingSummary());
             assertTrue(summary.getPseudoClassStates().contains(empty));
             assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-            assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+            assertTrue(summary.lookupAll("." + "m3-validation-summary-item").isEmpty());
 
             summaryOwner.setVisible(true);
             root.applyCss();
@@ -641,7 +708,7 @@ final class M3FormControlsTest {
 
             assertEquals(1, summary.getVisibleInvalidInputCount());
             assertTrue(summary.isShowingSummary());
-            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(1, summary.lookupAll("." + "m3-validation-summary-item").size());
 
             summaryOwner.setDisable(true);
             root.applyCss();
@@ -685,11 +752,11 @@ final class M3FormControlsTest {
             Node row = firstValidationSummaryItem(summary);
             Label itemLabel = assertInstanceOf(
                     Label.class,
-                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + "m3-validation-summary-item-label")
             );
             Label itemError = assertInstanceOf(
                     Label.class,
-                    row.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    row.lookup("." + "m3-validation-summary-item-error")
             );
             assertEquals("Email", itemLabel.getText());
             assertEquals("Email is required", itemError.getText());
@@ -701,7 +768,7 @@ final class M3FormControlsTest {
             assertSame(row, firstValidationSummaryItem(summary));
             itemLabel = assertInstanceOf(
                     Label.class,
-                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + "m3-validation-summary-item-label")
             );
             assertEquals("Work email", itemLabel.getText());
 
@@ -712,7 +779,7 @@ final class M3FormControlsTest {
             assertSame(row, firstValidationSummaryItem(summary));
             itemLabel = assertInstanceOf(
                     Label.class,
-                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + "m3-validation-summary-item-label")
             );
             assertEquals("Account email", itemLabel.getText());
 
@@ -723,7 +790,7 @@ final class M3FormControlsTest {
             assertSame(row, firstValidationSummaryItem(summary));
             itemError = assertInstanceOf(
                     Label.class,
-                    row.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    row.lookup("." + "m3-validation-summary-item-error")
             );
             assertEquals("Account email is required", itemError.getText());
         });
@@ -746,7 +813,7 @@ final class M3FormControlsTest {
             Node retiredRow = firstValidationSummaryItem(summary);
             Label retiredError = assertInstanceOf(
                     Label.class,
-                    retiredRow.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    retiredRow.lookup("." + "m3-validation-summary-item-error")
             );
             assertEquals("Account is required", retiredError.getText());
 
@@ -760,7 +827,7 @@ final class M3FormControlsTest {
             assertNotSame(retiredRow, currentRow);
             Label currentError = assertInstanceOf(
                     Label.class,
-                    currentRow.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    currentRow.lookup("." + "m3-validation-summary-item-error")
             );
             assertEquals("Enter an account", currentError.getText());
         });
@@ -786,7 +853,7 @@ final class M3FormControlsTest {
             assertInstanceOf(M3TextInputLayoutSkin.class, layout.getSkin());
             Text retiredLabel = assertInstanceOf(
                     Text.class,
-                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-label")
             );
 
             FxTestUtils.replaceSkin(layout, M3TextInputLayoutSkin::new);
@@ -796,7 +863,7 @@ final class M3FormControlsTest {
 
             Text currentLabel = assertInstanceOf(
                     Text.class,
-                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-label")
             );
             assertNotSame(retiredLabel, currentLabel);
             assertEquals("Original label", retiredLabel.getText());
@@ -810,10 +877,10 @@ final class M3FormControlsTest {
             assertNull(originalInput.getParent());
             assertEquals(originalPadding, originalInput.getPadding());
             assertEquals(6.0, originalInput.getTranslateY(), 0.0);
-            assertFalse(originalInput.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+            assertFalse(originalInput.getStyleClass().contains("m3-text-input-layout-input"));
             assertSame(replacementInput, layout.getInput());
             assertNotNull(replacementInput.getParent());
-            assertTrue(replacementInput.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+            assertTrue(replacementInput.getStyleClass().contains("m3-text-input-layout-input"));
             assertFalse(layout.isLabelFloating());
 
             originalInput.setText("Detached input update");
@@ -862,7 +929,7 @@ final class M3FormControlsTest {
 
             assertEquals(1, summary.getInvalidInputCount());
             assertSame(firstLayout, summary.getInvalidInput(0));
-            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(1, summary.lookupAll("." + "m3-validation-summary-item").size());
 
             summary.setValidator(secondValidator);
             assertFalse(secondValidator.validate());
@@ -889,7 +956,7 @@ final class M3FormControlsTest {
             assertEquals(2, summary.getInvalidInputCount());
             assertSame(secondLayout, summary.getInvalidInput(0));
             assertSame(thirdLayout, summary.getInvalidInput(1));
-            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(2, summary.lookupAll("." + "m3-validation-summary-item").size());
 
             assertTrue(secondValidator.getInputs().remove(secondLayout));
             root.applyCss();
@@ -897,7 +964,7 @@ final class M3FormControlsTest {
 
             assertEquals(1, summary.getInvalidInputCount());
             assertSame(thirdLayout, summary.getInvalidInput(0));
-            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(1, summary.lookupAll("." + "m3-validation-summary-item").size());
 
             secondValidator.getInputs().clear();
             root.applyCss();
@@ -1077,7 +1144,7 @@ final class M3FormControlsTest {
             content.layout();
             summary.layout();
 
-            ArrayList<Node> rows = new ArrayList<>(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS));
+            ArrayList<Node> rows = new ArrayList<>(summary.lookupAll("." + "m3-validation-summary-item"));
             rows.sort(Comparator.comparingDouble(row -> row.getBoundsInParent().getMinY()));
             assertEquals(8, rows.size());
             Node firstRow = rows.get(0);
@@ -1100,9 +1167,29 @@ final class M3FormControlsTest {
         return layout;
     }
 
+    /// Runs a property mutation and returns an exception reported through JavaFX listener dispatch.
+    ///
+    /// JavaFX reports exceptions raised by invalidation listeners to the current thread's uncaught-exception
+    /// handler instead of propagating them through the source-property setter.
+    ///
+    /// @param mutation the property mutation to run
+    /// @return the exception reported by JavaFX
+    private static Throwable captureUncaughtListenerException(Runnable mutation) {
+        Thread thread = Thread.currentThread();
+        Thread.UncaughtExceptionHandler previousHandler = thread.getUncaughtExceptionHandler();
+        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+        thread.setUncaughtExceptionHandler((ignoredThread, exception) -> failure.set(exception));
+        try {
+            mutation.run();
+        } finally {
+            thread.setUncaughtExceptionHandler(previousHandler);
+        }
+        return Objects.requireNonNull(failure.get(), "listener exception");
+    }
+
     /// Returns the first rendered validation-summary item row.
     private static Node firstValidationSummaryItem(M3ValidationSummary summary) {
-        return summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS)
+        return summary.lookupAll("." + "m3-validation-summary-item")
                 .stream()
                 .min(Comparator.comparingDouble(row -> row.getBoundsInParent().getMinY()))
                 .orElseThrow(() -> new AssertionError("validation summary item"));

@@ -70,17 +70,14 @@ public final class M3Menu extends Control {
     /// The pseudo-class applied when the menu uses the vibrant color style.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
 
-    /// The base style class for M3FX menus.
-    public static final String STYLE_CLASS = "m3-menu";
-
-    /// The style class for the internal item container used by menu skins.
-    public static final String CONTAINER_STYLE_CLASS = "m3-menu-container";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-menu";
 
     /// The live, mutable, ordered content displayed by this menu.
     ///
     /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Removing a
     /// selected item clears its selected state; removing a submenu owner also hides its open submenu.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// The selected menu items in child order.
     private final ObservableList<M3MenuItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
@@ -320,9 +317,9 @@ public final class M3Menu extends Control {
     /// Returns the live mutable list of nodes displayed by this menu.
     ///
     /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent. Structural nodes are displayed but do
-    /// not participate in managed selection.
+    /// rejects `null` elements and repeated occurrences of the same node instance. Bulk mutations are validated
+    /// before the list changes, and each node must satisfy the JavaFX single-parent rule. Structural nodes are
+    /// displayed but do not participate in managed selection.
     ///
     /// @return the live mutable menu content list
     public final ObservableList<Node> getItems() {
@@ -528,7 +525,7 @@ public final class M3Menu extends Control {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleItem);

@@ -23,7 +23,10 @@ final class M3ColorTokensTest {
         M3ColorTokens tokens = M3ColorTokens.fromColorScheme(colorScheme);
 
         assertEquals(colorScheme.getColor(ColorRole.PRIMARY), tokens.get(ColorRole.PRIMARY));
-        assertTrue(M3TokenCssCompiler.styleDeclarations(tokens).contains("-monet-primary"));
-        assertTrue(M3TokenCssCompiler.styleDeclarations(tokens).contains("-m3-color-primary"));
+        String declarations = M3TokenCssCompiler.styleDeclarations(tokens);
+        assertTrue(declarations.contains("-monet-primary"));
+        assertTrue(declarations.contains("-m3-color-primary"));
+        assertTrue(declarations.contains("-m3-elevation-shadow-color: rgba(0,0,0,0.18)"));
+        assertTrue(declarations.contains("-m3-elevation-strong-shadow-color: rgba(0,0,0,0.2)"));
     }
 }

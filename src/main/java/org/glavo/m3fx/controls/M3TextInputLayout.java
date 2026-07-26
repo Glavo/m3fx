@@ -16,6 +16,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -66,38 +67,11 @@ import java.util.Objects;
 /// ```
 @NotNullByDefault
 public final class M3TextInputLayout extends Control {
-    /// The base style class for M3FX text input layouts.
-    public static final String STYLE_CLASS = "m3-text-input-layout";
-
-    /// The style class applied to the wrapped text input control.
-    public static final String INPUT_STYLE_CLASS = "m3-text-input-layout-input";
-
-    /// The style class applied to the input and adornment container.
-    public static final String INPUT_CONTAINER_STYLE_CLASS = "m3-text-input-container";
-
-    /// The style class applied to the outlined input border path.
-    public static final String OUTLINE_STYLE_CLASS = "m3-text-input-outline";
-
-    /// The style class applied to the floating or resting label.
-    public static final String LABEL_STYLE_CLASS = "m3-text-input-label";
-
-    /// The style class applied to the leading adornment slot.
-    public static final String LEADING_STYLE_CLASS = "m3-text-input-leading";
-
-    /// The style class applied to the trailing adornment slot.
-    public static final String TRAILING_STYLE_CLASS = "m3-text-input-trailing";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-text-input-layout";
 
     /// The style class applied to the built-in clear button.
-    public static final String CLEAR_BUTTON_STYLE_CLASS = "m3-text-input-clear-button";
-
-    /// The style class applied to the supporting text and counter row.
-    public static final String SUPPORTING_ROW_STYLE_CLASS = "m3-text-input-supporting-row";
-
-    /// The style class applied to the supporting or error text label.
-    public static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-text-input-supporting-text";
-
-    /// The style class applied to the character counter label.
-    public static final String COUNTER_STYLE_CLASS = "m3-text-input-counter";
+    private static final String CLEAR_BUTTON_STYLE_CLASS = "m3-text-input-clear-button";
 
     /// The pseudo-class used while the wrapped input is effectively disabled.
     private static final PseudoClass INPUT_DISABLED_PSEUDO_CLASS =
@@ -142,6 +116,22 @@ public final class M3TextInputLayout extends Control {
     private final ChangeListener<M3TextInputVariant> variantListener =
             (observable, oldValue, newValue) -> updateInputVariantStyle();
 
+    /// Weak wrapper used when observing the externally owned input text.
+    private final WeakChangeListener<String> weakTextListener = new WeakChangeListener<>(textListener);
+
+    /// Weak wrapper used when observing the externally owned input focus state.
+    private final WeakChangeListener<Boolean> weakFocusListener = new WeakChangeListener<>(focusListener);
+
+    /// Weak wrapper used when observing the externally owned input disabled state.
+    private final WeakChangeListener<Boolean> weakDisabledListener = new WeakChangeListener<>(disabledListener);
+
+    /// Weak wrapper used when observing the externally owned input editability.
+    private final WeakChangeListener<Boolean> weakEditableListener = new WeakChangeListener<>(editableListener);
+
+    /// Weak wrapper used when observing the externally owned input variant.
+    private final WeakChangeListener<M3TextInputVariant> weakVariantListener =
+            new WeakChangeListener<>(variantListener);
+
     /// Refreshes validation when the additional validator list changes.
     private final ListChangeListener<M3TextInputValidator> validatorsListener = change -> {
         validateValidatorChanges(change);
@@ -183,10 +173,10 @@ public final class M3TextInputLayout extends Control {
 
     /// The wrapped text input control.
     ///
-    /// The default is `null`. A non-null value must implement [M3TextInput]. While a skin is installed, the input is
-    /// presented as a descendant of this control and must therefore be available for the skin to attach. Replacing
-    /// or clearing the value detaches semantic listeners, clears active validation, and restores an error state
-    /// written to the previous input by this layout.
+    /// The default is `null`. A non-null value must implement [M3TextInput], must differ from the leading and
+    /// trailing nodes, and must satisfy the JavaFX single-parent rule while displayed. Replacing or clearing the
+    /// value detaches semantic listeners, clears active validation, and restores an error state written to the
+    /// previous input by this layout.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable TextInputControl> input =
@@ -194,14 +184,16 @@ public final class M3TextInputLayout extends Control {
                 /// Validates text input ownership before setting the value.
                 @Override
                 public void set(@Nullable TextInputControl newValue) {
-                    validateInput(newValue);
+                    validateInputAssignment(newValue);
                     super.set(newValue);
                 }
 
                 /// Replaces the input observed by this control.
                 @Override
                 protected void invalidated() {
-                    updateInput();
+                    TextInputControl newValue = get();
+                    validateInputAssignment(newValue);
+                    updateInput(newValue);
                 }
             };
 
@@ -214,9 +206,9 @@ public final class M3TextInputLayout extends Control {
 
     /// Sets the wrapped text input control.
     ///
-    /// While a skin is installed, a non-null input is presented as a descendant of this control and must satisfy
-    /// normal JavaFX parent ownership rules. Passing `null` removes the current input from the presentation, clears
-    /// active validation, and restores an error state written to the previous input by this layout.
+    /// A non-null input must implement [M3TextInput], must not occupy either adornment slot, and must satisfy normal
+    /// JavaFX parent ownership rules while displayed. Passing `null` removes the current input, clears active
+    /// validation, and restores an error state written to the previous input by this layout.
     ///
     /// @param input the Material text input to own, or `null` to remove the current input
     /// @throws IllegalArgumentException if `input` does not implement [M3TextInput]
@@ -226,7 +218,9 @@ public final class M3TextInputLayout extends Control {
 
     /// Returns the `input` property.
     ///
-    /// The returned property is observable and bindable. Its default value is `null`.
+    /// The returned property is observable and bindable. Its default value is `null`. Every value supplied through
+    /// a binding is subject to the same constraints as [#setInput(TextInputControl)]. An invalid bound value is not
+    /// installed and leaves the last successfully installed input active.
     ///
     /// @return the `input` property
     public final ObjectProperty<@Nullable TextInputControl> inputProperty() {
@@ -279,14 +273,22 @@ public final class M3TextInputLayout extends Control {
 
     /// The leading adornment node.
     ///
-    /// The default is `null`. While a skin is installed, a non-null node is presented in the logical leading slot
-    /// and must be available for the skin to attach.
+    /// The default is `null`. A non-null value occupies the logical leading slot, must differ from the input and
+    /// trailing nodes, and must satisfy the JavaFX single-parent rule while displayed.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
+        /// Validates the leading slot before setting the node.
+        @Override
+        public void set(@Nullable Node newValue) {
+            validateLeadingAssignment(newValue);
+            super.set(newValue);
+        }
+
         /// Updates the leading slot when the node changes.
         @Override
         protected void invalidated() {
+            validateLeadingAssignment(get());
             notifyAccessibleItemsChanged();
         }
     };
@@ -300,17 +302,17 @@ public final class M3TextInputLayout extends Control {
 
     /// Sets the leading adornment node.
     ///
-    /// While a skin is installed, a non-null node is presented as a descendant of this control and must satisfy
-    /// normal JavaFX parent ownership rules.
-    ///
     /// @param leading the node to place before the editable text in logical reading order, or `null` to clear it
+    /// @throws IllegalArgumentException if `leading` is this control, an ancestor of this control, or already
+    ///                                  occupies another input-layout slot
     public final void setLeading(@Nullable Node leading) {
         this.leading.set(leading);
     }
 
     /// Returns the `leading` property.
     ///
-    /// The returned property is observable and bindable. Its default value is `null`.
+    /// The returned property is observable and bindable. Its default value is `null`. Every value supplied through
+    /// a binding is subject to the same constraints as [#setLeading(Node)].
     ///
     /// @return the `leading` property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
@@ -319,14 +321,23 @@ public final class M3TextInputLayout extends Control {
 
     /// The trailing adornment node.
     ///
-    /// The default is `null`. While a skin is installed, a non-null node is presented in the logical trailing slot,
-    /// takes precedence over the built-in clear button, and must be available for the skin to attach.
+    /// The default is `null`. A non-null value occupies the logical trailing slot, takes precedence over the
+    /// built-in clear button, must differ from the input and leading nodes, and must satisfy the JavaFX
+    /// single-parent rule while displayed.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
+        /// Validates the trailing slot before setting the node.
+        @Override
+        public void set(@Nullable Node newValue) {
+            validateTrailingAssignment(newValue);
+            super.set(newValue);
+        }
+
         /// Updates the trailing slot when the node changes.
         @Override
         protected void invalidated() {
+            validateTrailingAssignment(get());
             refreshClearButtonActive();
             notifyAccessibleItemsChanged();
         }
@@ -342,17 +353,18 @@ public final class M3TextInputLayout extends Control {
     /// Sets the trailing adornment node.
     ///
     /// A custom trailing node takes precedence over the built-in clear button.
-    /// While a skin is installed, a non-null node is presented as a descendant of this control and must satisfy
-    /// normal JavaFX parent ownership rules.
     ///
     /// @param trailing the node to place after the editable text in logical reading order, or `null` to clear it
+    /// @throws IllegalArgumentException if `trailing` is this control, an ancestor of this control, or already
+    ///                                  occupies another input-layout slot
     public final void setTrailing(@Nullable Node trailing) {
         this.trailing.set(trailing);
     }
 
     /// Returns the `trailing` property.
     ///
-    /// The returned property is observable and bindable. Its default value is `null`.
+    /// The returned property is observable and bindable. Its default value is `null`. Every value supplied through
+    /// a binding is subject to the same constraints as [#setTrailing(Node)].
     ///
     /// @return the `trailing` property
     public final ObjectProperty<@Nullable Node> trailingProperty() {
@@ -845,7 +857,7 @@ public final class M3TextInputLayout extends Control {
 
     /// Clears the wrapped input text when one is installed and writable.
     public final void clearText() {
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         if (input != null && canMutateInputText(input)) {
             boolean restoreInputFocus = isFocusInside(effectiveTrailing());
             input.clear();
@@ -862,7 +874,7 @@ public final class M3TextInputLayout extends Control {
     ///
     /// @return the current count, or zero when no input is installed
     public final int getCharacterCount() {
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         return input == null ? 0 : textLength(input);
     }
 
@@ -915,7 +927,7 @@ public final class M3TextInputLayout extends Control {
 
     /// Initializes semantic state, validation, keyboard traversal, and accessibility routing.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
@@ -935,15 +947,15 @@ public final class M3TextInputLayout extends Control {
     }
 
     /// Replaces the input observed by the control and restores state written to the previous input.
-    private void updateInput() {
+    private void updateInput(@Nullable TextInputControl newInput) {
         TextInputControl oldInput = installedInput;
         if (oldInput != null) {
-            oldInput.textProperty().removeListener(textListener);
-            oldInput.focusedProperty().removeListener(focusListener);
-            oldInput.disabledProperty().removeListener(disabledListener);
-            oldInput.editableProperty().removeListener(editableListener);
+            oldInput.textProperty().removeListener(weakTextListener);
+            oldInput.focusedProperty().removeListener(weakFocusListener);
+            oldInput.disabledProperty().removeListener(weakDisabledListener);
+            oldInput.editableProperty().removeListener(weakEditableListener);
             if (oldInput instanceof M3TextInput textInput) {
-                textInput.variantProperty().removeListener(variantListener);
+                textInput.variantProperty().removeListener(weakVariantListener);
                 if (inputErrorWasApplied) {
                     setInputError(textInput, false);
                 }
@@ -955,15 +967,14 @@ public final class M3TextInputLayout extends Control {
         validationActive.set(false);
         setValidationErrorText("");
 
-        TextInputControl newInput = getInput();
         if (newInput != null) {
             installedInput = newInput;
             enforceCharacterLimit();
-            newInput.textProperty().addListener(textListener);
-            newInput.focusedProperty().addListener(focusListener);
-            newInput.disabledProperty().addListener(disabledListener);
-            newInput.editableProperty().addListener(editableListener);
-            ((M3TextInput) newInput).variantProperty().addListener(variantListener);
+            newInput.textProperty().addListener(weakTextListener);
+            newInput.focusedProperty().addListener(weakFocusListener);
+            newInput.disabledProperty().addListener(weakDisabledListener);
+            newInput.editableProperty().addListener(weakEditableListener);
+            ((M3TextInput) newInput).variantProperty().addListener(weakVariantListener);
         }
 
         updateInputDisabledState(newInput != null && newInput.isDisabled());
@@ -998,7 +1009,7 @@ public final class M3TextInputLayout extends Control {
 
     /// Mirrors the wrapped input variant onto this layout for component-level styling.
     private void updateInputVariantStyle() {
-        M3TextInput textInput = getTextInput();
+        M3TextInput textInput = installedTextInput();
         M3TextInputVariant variant = textInput == null ? M3TextInputVariant.FILLED : textInput.getVariant();
         M3ControlStyles.replaceVariant(
                 this,
@@ -1060,7 +1071,7 @@ public final class M3TextInputLayout extends Control {
 
     /// Applies the layout-owned error state to the wrapped input.
     private void updateInputErrorState() {
-        M3TextInput textInput = getTextInput();
+        M3TextInput textInput = installedTextInput();
         if (textInput == null) {
             inputErrorWasApplied = false;
             return;
@@ -1087,12 +1098,6 @@ public final class M3TextInputLayout extends Control {
         return true;
     }
 
-    /// Returns the supporting row text that should be visible.
-    private String displayedSupportingText() {
-        String errorText = displayedErrorText();
-        return errorText.isEmpty() ? getSupportingText() : errorText;
-    }
-
     /// Returns the error text currently displayed by the supporting row.
     private String displayedErrorText() {
         String explicitErrorText = getErrorText();
@@ -1113,7 +1118,7 @@ public final class M3TextInputLayout extends Control {
 
     /// Runs validation and updates validator-owned error state.
     private boolean updateValidation() {
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         if (input == null) {
             setValidationErrorText("");
             updateInputErrorState();
@@ -1159,7 +1164,7 @@ public final class M3TextInputLayout extends Control {
             return;
         }
 
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         if (input == null) {
             return;
         }
@@ -1187,11 +1192,15 @@ public final class M3TextInputLayout extends Control {
     /// Returns text exposed to assistive technologies.
     private String accessibleText() {
         String label = getLabelText();
-        String message = displayedSupportingText();
+        String supporting = getSupportingText();
+        String error = displayedErrorText();
         String counter = isCharacterCounterVisible() ? characterCounterText() : "";
         StringBuilder builder = new StringBuilder();
         appendAccessibleText(builder, label);
-        appendAccessibleText(builder, message);
+        appendAccessibleText(builder, supporting);
+        if (!error.equals(supporting)) {
+            appendAccessibleText(builder, error);
+        }
         appendAccessibleText(builder, counter);
         return builder.toString();
     }
@@ -1213,7 +1222,7 @@ public final class M3TextInputLayout extends Control {
         if (getLeading() != null) {
             count++;
         }
-        if (getInput() != null) {
+        if (installedInput != null) {
             count++;
         }
         if (effectiveTrailing() != null) {
@@ -1237,7 +1246,7 @@ public final class M3TextInputLayout extends Control {
             index--;
         }
 
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         if (input != null) {
             if (index == 0) {
                 return input;
@@ -1262,17 +1271,17 @@ public final class M3TextInputLayout extends Control {
         if (isFocused()) {
             return this;
         }
-        return M3Accessible.currentFocusTarget(this, getLeading(), getInput(), effectiveTrailing());
+        return M3Accessible.currentFocusTarget(this, getLeading(), installedInput, effectiveTrailing());
     }
 
     /// Returns the current reachable focus targets in logical input layout slot order.
     private @Unmodifiable List<Node> slotFocusTargets() {
-        return M3FocusTraversal.focusTargets(getLeading(), getInput(), effectiveTrailing());
+        return M3FocusTraversal.focusTargets(getLeading(), installedInput, effectiveTrailing());
     }
 
     /// Returns the preferred focus item for this layout.
     private @Nullable Node defaultFocusItem() {
-        TextInputControl input = getInput();
+        TextInputControl input = installedInput;
         if (input != null) {
             return input;
         }
@@ -1311,7 +1320,7 @@ public final class M3TextInputLayout extends Control {
         if (!M3Accessible.canReach(this)) {
             return false;
         }
-        if (M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters)) {
+        if (M3Accessible.showCurrentOrItem(this, getLeading(), installedInput, effectiveTrailing(), parameters)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -1341,10 +1350,57 @@ public final class M3TextInputLayout extends Control {
         focusNotifier.refresh();
     }
 
-    /// Validates that a wrapped input can render Material text input error state.
-    private static void validateInput(@Nullable TextInputControl input) {
+    /// Returns the successfully installed input through the shared Material text input API.
+    private @Nullable M3TextInput installedTextInput() {
+        return installedInput instanceof M3TextInput textInput ? textInput : null;
+    }
+
+    /// Validates that a wrapped input can render Material text input state and occupies a distinct slot.
+    private void validateInputAssignment(@Nullable TextInputControl input) {
         if (input != null && !(input instanceof M3TextInput)) {
             throw new IllegalArgumentException("input must implement M3TextInput");
+        }
+        validateDistinctSlot(input, getLeading(), "input");
+        validateDistinctSlot(input, getTrailing(), "input");
+    }
+
+    /// Validates the leading adornment assignment.
+    private void validateLeadingAssignment(@Nullable Node leading) {
+        validateStructuralSlot(leading, "leading");
+        validateDistinctSlot(leading, getInput(), "leading");
+        validateDistinctSlot(leading, getTrailing(), "leading");
+    }
+
+    /// Validates the trailing adornment assignment.
+    private void validateTrailingAssignment(@Nullable Node trailing) {
+        validateStructuralSlot(trailing, "trailing");
+        validateDistinctSlot(trailing, getInput(), "trailing");
+        validateDistinctSlot(trailing, getLeading(), "trailing");
+    }
+
+    /// Rejects one node reused across two logical slots.
+    private static void validateDistinctSlot(
+            @Nullable Node candidate,
+            @Nullable Node other,
+            String propertyName
+    ) {
+        if (candidate != null && candidate == other) {
+            throw new IllegalArgumentException(propertyName + " must not already be used by another slot");
+        }
+    }
+
+    /// Rejects a slot node that would create a scene-graph cycle.
+    private void validateStructuralSlot(@Nullable Node candidate, String propertyName) {
+        if (candidate == null) {
+            return;
+        }
+        if (candidate == this) {
+            throw new IllegalArgumentException(propertyName + " must not reference this control");
+        }
+        for (@Nullable Node ancestor = getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+            if (candidate == ancestor) {
+                throw new IllegalArgumentException(propertyName + " must not reference an ancestor of this control");
+            }
         }
     }
 

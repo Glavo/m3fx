@@ -14,13 +14,13 @@ import java.util.Objects;
 ///
 /// An enter transition is an immutable composition of at most one fade, scale, slide, and expand effect. Each effect
 /// starts at its configured value and finishes at the content's neutral state: opacity and scale `1.0`, zero
-/// translation, and a fully revealed holder. Effects created independently may use different delays and motion
+/// translation, and fully revealed content. Effects created independently may use different delays and motion
 /// specifications before they are combined with [#and(M3EnterTransition)]. Combining two effects that control the
 /// same visual channel is rejected rather than relying on ordering.
 ///
-/// The transition is applied to a private holder owned by [M3AnimatedContent] or [M3AnimatedVisibility]. It does not
-/// change the content node's opacity, scale, translation, clip, or transform list. A `null` motion specification
-/// selects the semantic effects or spatial role from the active M3FX theme when the transition starts.
+/// [M3AnimatedContent] and [M3AnimatedVisibility] apply the transition without changing the content node's opacity,
+/// scale, translation, clip, or transform list. A `null` motion specification selects the semantic effects or
+/// spatial role from the active M3FX theme when the transition starts.
 ///
 /// See [Compose enter transitions](https://developer.android.com/reference/kotlin/androidx/compose/animation/EnterTransition)
 /// and [Material Design motion](https://m3.material.io/styles/motion/overview).
@@ -50,7 +50,7 @@ public sealed interface M3EnterTransition permits M3EnterTransitionImpl {
     /// Creates a uniform scale effect that starts at the supplied scale.
     ///
     /// The effect initially has no explicit motion specification and no delay. Scaling is performed around the
-    /// center of the private content holder and does not affect its layout bounds.
+    /// center of the content bounds and does not affect its layout bounds.
     ///
     /// @param initialScale the finite, positive starting scale
     /// @return an immutable scale transition
@@ -76,9 +76,8 @@ public sealed interface M3EnterTransition permits M3EnterTransitionImpl {
 
     /// Creates a two-dimensional expand effect from the logical bottom-end corner.
     ///
-    /// The private content holder starts with an empty reveal rectangle anchored to [M3TransitionEdge#END] and
-    /// [M3TransitionEdge#BOTTOM], then reveals its complete layout bounds. The reveal clips drawing only; it does not
-    /// change the holder's measured or laid-out size.
+    /// Content starts fully clipped from [M3TransitionEdge#END] and [M3TransitionEdge#BOTTOM], then becomes fully
+    /// revealed. The effect clips drawing only; it does not change the content's measured or laid-out size.
     ///
     /// @return an immutable two-dimensional expand transition
     static M3EnterTransition expandIn() {
@@ -88,8 +87,8 @@ public sealed interface M3EnterTransition permits M3EnterTransitionImpl {
     /// Creates a two-dimensional expand effect from the supplied logical corner.
     ///
     /// [M3TransitionEdge#START] and [M3TransitionEdge#END] follow the effective node orientation when the transition
-    /// runs. The vertical anchor is independent of node orientation. The reveal clips a private holder and does not
-    /// change content layout bounds or mutate the content node.
+    /// runs. The vertical anchor is independent of node orientation. The reveal does not change content layout
+    /// bounds or mutate the content node.
     ///
     /// @param horizontalAnchor the logical horizontal anchor, either `START` or `END`
     /// @param verticalAnchor   the vertical anchor, either `TOP` or `BOTTOM`
@@ -108,7 +107,7 @@ public sealed interface M3EnterTransition permits M3EnterTransitionImpl {
 
     /// Creates a horizontal expand effect from the logical end edge.
     ///
-    /// The holder starts at zero revealed width and full revealed height. Its measured and laid-out dimensions remain
+    /// Content starts at zero revealed width and full revealed height. Its measured and laid-out dimensions remain
     /// unchanged while the reveal width grows.
     ///
     /// @return an immutable horizontal expand transition
@@ -131,7 +130,7 @@ public sealed interface M3EnterTransition permits M3EnterTransitionImpl {
 
     /// Creates a vertical expand effect from the bottom edge.
     ///
-    /// The holder starts at full revealed width and zero revealed height. Its measured and laid-out dimensions remain
+    /// Content starts at full revealed width and zero revealed height. Its measured and laid-out dimensions remain
     /// unchanged while the reveal height grows.
     ///
     /// @return an immutable vertical expand transition

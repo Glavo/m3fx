@@ -49,17 +49,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Objects;
 
-import static org.glavo.m3fx.controls.M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.COUNTER_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.INPUT_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.LABEL_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.LEADING_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.OUTLINE_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS;
-import static org.glavo.m3fx.controls.M3TextInputLayout.TRAILING_STYLE_CLASS;
-
 /// Provides the default visual presentation for [M3TextInputLayout].
 ///
 /// The skin attaches the configured input and adornments while installed. Replacing or disposing the skin detaches
@@ -74,6 +63,36 @@ import static org.glavo.m3fx.controls.M3TextInputLayout.TRAILING_STYLE_CLASS;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
+    /// The wrapped input style class.
+    private static final String INPUT_STYLE_CLASS = "m3-text-input-layout-input";
+
+    /// The input and adornment container style class.
+    private static final String INPUT_CONTAINER_STYLE_CLASS = "m3-text-input-container";
+
+    /// The outlined border style class.
+    private static final String OUTLINE_STYLE_CLASS = "m3-text-input-outline";
+
+    /// The floating label style class.
+    private static final String LABEL_STYLE_CLASS = "m3-text-input-label";
+
+    /// The leading adornment slot style class.
+    private static final String LEADING_STYLE_CLASS = "m3-text-input-leading";
+
+    /// The trailing adornment slot style class.
+    private static final String TRAILING_STYLE_CLASS = "m3-text-input-trailing";
+
+    /// The clear button style class.
+    private static final String CLEAR_BUTTON_STYLE_CLASS = "m3-text-input-clear-button";
+
+    /// The supporting row style class.
+    private static final String SUPPORTING_ROW_STYLE_CLASS = "m3-text-input-supporting-row";
+
+    /// The supporting text style class.
+    private static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-text-input-supporting-text";
+
+    /// The character counter style class.
+    private static final String COUNTER_STYLE_CLASS = "m3-text-input-counter";
+
     /// The pseudo-class used while the wrapped input has keyboard focus.
     private static final javafx.css.PseudoClass FOCUSED_PSEUDO_CLASS =
             javafx.css.PseudoClass.getPseudoClass("focused");
@@ -316,9 +335,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// Whether cached stable outline geometry is valid.
     private boolean outlineGeometryValid;
 
-    /// The cached top-border y coordinate.
-    private double outlineTop;
-
     /// The cached leading end of the drawable top-border segment.
     private double outlineTopStart;
 
@@ -339,9 +355,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
 
     /// The stable untransformed label width.
     private double laidOutLabelWidth;
-
-    /// The stable untransformed label height.
-    private double laidOutLabelHeight;
 
     /// The expanded label scale derived from the current input and label fonts.
     private double expandedLabelScale = DEFAULT_EXPANDED_LABEL_SCALE;
@@ -1159,7 +1172,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
                 ? -labelHeight / 2.0
                 : FILLED_FLOATING_LABEL_TOP_MARGIN;
         laidOutLabelWidth = labelWidth;
-        laidOutLabelHeight = labelHeight;
         label.relocate(0.0, 0.0);
         labelGeometryValid = true;
         label.setVisible(true);
@@ -1222,7 +1234,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         labelGeometryValid = false;
         label.setVisible(false);
         laidOutLabelWidth = 0.0;
-        laidOutLabelHeight = 0.0;
         expandedLabelScale = DEFAULT_EXPANDED_LABEL_SCALE;
         label.relocate(0.0, 0.0);
         labelTransform.setToIdentity();
@@ -1259,7 +1270,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         }
 
         ensureOutlineElements();
-        outlineTop = top;
         outlineTopStart = topStart;
         outlineTopEnd = topEnd;
         outlineGeometryValid = true;
@@ -1351,7 +1361,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// Clears path elements and all cached outline geometry.
     private void clearOutlinePath() {
         outlineGeometryValid = false;
-        outlineTop = 0.0;
         outlineTopStart = 0.0;
         outlineTopEnd = 0.0;
         if (outlineElementsAttached) {

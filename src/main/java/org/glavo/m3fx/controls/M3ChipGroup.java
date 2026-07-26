@@ -62,8 +62,8 @@ import java.util.Objects;
 /// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
 public final class M3ChipGroup extends Control {
-    /// The base style class for M3FX chip groups.
-    public static final String STYLE_CLASS = "m3-chip-group";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-chip-group";
 
     /// The default horizontal gap between chips.
     private static final double DEFAULT_HORIZONTAL_GAP = 8.0;
@@ -305,7 +305,7 @@ public final class M3ChipGroup extends Control {
     ///
     /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. Removing a
     /// selected chip clears its selected state. A chip cannot simultaneously be a child of another parent.
-    private final ObservableList<M3Chip> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3Chip> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between chips.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -372,7 +372,8 @@ public final class M3ChipGroup extends Control {
     /// Returns the live list of chips displayed by this group.
     ///
     /// Changes to the returned list are reflected immediately. The list preserves insertion order and rejects
-    /// `null` elements.
+    /// `null` elements or repeated occurrences of the same chip instance. Bulk mutations are validated before the
+    /// list changes.
     ///
     /// @return the live, mutable chip list
     public final ObservableList<M3Chip> getItems() {
@@ -591,7 +592,7 @@ public final class M3ChipGroup extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);

@@ -38,14 +38,16 @@ import java.util.Objects;
 /// set. Changing the window width therefore updates pane count, margins, spacing, and adaptive navigation without
 /// requiring an application listener.
 ///
-/// Pane and navigation nodes remain attached to stable internal containers while their region is not effective.
-/// Changes in pane topology or navigation presentation animate the affected container bounds and opacity using
+/// Pane and navigation nodes retain their control state while their region is not effective. Changes in pane
+/// topology or navigation presentation animate the affected region bounds and opacity using
 /// [#getLayoutMotionSpec()] or the resolved default spatial motion role. A region that is leaving remains rendered
 /// until its transition settles but stops receiving input as soon as it ceases to be effective. Continuous resizing
 /// that does not change the resolved topology updates geometry directly rather than lagging behind the window.
-/// Hidden regions are unmanaged and do not receive input; retaining their scene-graph state preserves controls,
-/// selection, and scrolling across breakpoint changes. Each non-null slot node must be unique and must not belong
-/// to another parent when the scaffold's skin installs it.
+/// Hidden regions are unmanaged and do not receive input; their controls, selection, and scrolling state remain
+/// available across breakpoint changes. A non-null node may occupy at most one scaffold slot, must not already have
+/// a parent, and must not be this scaffold or one of its ancestors. Assigning an ineligible node directly fails
+/// without changing the property. An observable bound to a slot property must supply values that satisfy the same
+/// constraints.
 ///
 /// The [#getPaneLayout()] value controls pane adaptation. Its default, [M3PaneLayout#ADAPTIVE], shows one pane at
 /// compact and medium widths and two panes at wider breakpoints. [#getActivePane()] selects the content shown by a
@@ -64,7 +66,7 @@ import java.util.Objects;
 /// See [Material Design scaffold](https://m3.material.io/foundations/layout/scaffold/overview).
 @NotNullByDefault
 public final class M3AdaptiveScaffold extends Control {
-    /// The style class installed by the default constructor.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-adaptive-scaffold";
 
     /// The compact breakpoint pseudo-class.
@@ -121,11 +123,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the top bar.
     ///
     /// @param topBar the top bar, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `topBar` already has a parent or occupies another slot
     public void setTopBar(@Nullable Node topBar) {
         this.topBar.set(topBar);
     }
 
     /// Returns the observable, bindable top-bar property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the top-bar property
     public ObjectProperty<@Nullable Node> topBarProperty() {
@@ -147,11 +152,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the contextual bottom bar.
     ///
     /// @param bottomBar the bottom bar, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `bottomBar` already has a parent or occupies another slot
     public void setBottomBar(@Nullable Node bottomBar) {
         this.bottomBar.set(bottomBar);
     }
 
     /// Returns the observable, bindable bottom-bar property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the bottom-bar property
     public ObjectProperty<@Nullable Node> bottomBarProperty() {
@@ -173,11 +181,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the bottom navigation control.
     ///
     /// @param navigationBar the navigation bar, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `navigationBar` already has a parent or occupies another slot
     public void setNavigationBar(@Nullable Node navigationBar) {
         this.navigationBar.set(navigationBar);
     }
 
     /// Returns the observable, bindable navigation-bar property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the navigation-bar property
     public ObjectProperty<@Nullable Node> navigationBarProperty() {
@@ -199,11 +210,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the logical leading navigation rail.
     ///
     /// @param navigationRail the navigation rail, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `navigationRail` already has a parent or occupies another slot
     public void setNavigationRail(@Nullable Node navigationRail) {
         this.navigationRail.set(navigationRail);
     }
 
     /// Returns the observable, bindable navigation-rail property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the navigation-rail property
     public ObjectProperty<@Nullable Node> navigationRailProperty() {
@@ -225,11 +239,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the logical trailing rail.
     ///
     /// @param trailingRail the trailing rail, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `trailingRail` already has a parent or occupies another slot
     public void setTrailingRail(@Nullable Node trailingRail) {
         this.trailingRail.set(trailingRail);
     }
 
     /// Returns the observable, bindable trailing-rail property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the trailing-rail property
     public ObjectProperty<@Nullable Node> trailingRailProperty() {
@@ -251,11 +268,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the logical leading content pane.
     ///
     /// @param leadingPane the leading pane, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `leadingPane` already has a parent or occupies another slot
     public void setLeadingPane(@Nullable Node leadingPane) {
         this.leadingPane.set(leadingPane);
     }
 
     /// Returns the observable, bindable leading-pane property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the leading-pane property
     public ObjectProperty<@Nullable Node> leadingPaneProperty() {
@@ -277,11 +297,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the principal content pane.
     ///
     /// @param mainPane the main pane, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `mainPane` already has a parent or occupies another slot
     public void setMainPane(@Nullable Node mainPane) {
         this.mainPane.set(mainPane);
     }
 
     /// Returns the observable, bindable main-pane property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the main-pane property
     public ObjectProperty<@Nullable Node> mainPaneProperty() {
@@ -303,11 +326,14 @@ public final class M3AdaptiveScaffold extends Control {
     /// Sets the logical trailing content pane.
     ///
     /// @param trailingPane the trailing pane, or `null` to clear the slot
+    /// @throws IllegalArgumentException if `trailingPane` already has a parent or occupies another slot
     public void setTrailingPane(@Nullable Node trailingPane) {
         this.trailingPane.set(trailingPane);
     }
 
     /// Returns the observable, bindable trailing-pane property.
+    ///
+    /// A non-null value must not have a parent or occupy another scaffold slot.
     ///
     /// @return the trailing-pane property
     public ObjectProperty<@Nullable Node> trailingPaneProperty() {
@@ -803,7 +829,7 @@ public final class M3AdaptiveScaffold extends Control {
     /// Returns the effective fixed leading-pane width.
     ///
     /// The Material default is 360 logical pixels through expanded widths and 412 logical pixels at large and
-    /// extra-large widths. The skin reduces this width when the available pane region is smaller.
+    /// extra-large widths. The effective width is reduced when the available pane region is smaller.
     ///
     /// @return the effective fixed leading-pane width
     /// @throws IllegalArgumentException if a binding supplied an invalid configured value
@@ -866,14 +892,70 @@ public final class M3AdaptiveScaffold extends Control {
     /// Creates one slot property that invalidates adaptive and accessibility state.
     private ObjectProperty<@Nullable Node> createSlotProperty(String name) {
         return new SimpleObjectProperty<>(this, name) {
-            /// Recomputes effective state when the slot node changes.
+            /// Validates a direct slot assignment before changing the property.
+            @Override
+            public void set(@Nullable Node value) {
+                if (get() != value) {
+                    validateSlotAssignment(this, value);
+                }
+                super.set(value);
+            }
+
+            /// Validates binding updates before recomputing effective state.
             @Override
             protected void invalidated() {
+                validateSlotAssignment(this, get());
                 updateAdaptiveState();
                 notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             }
         };
+    }
+
+    /// Validates that a node may occupy the requested scaffold slot.
+    private void validateSlotAssignment(
+            ObjectProperty<@Nullable Node> slot,
+            @Nullable Node node
+    ) {
+        if (node == null) {
+            return;
+        }
+        if (node == this || isAncestorOfThisScaffold(node)) {
+            throw new IllegalArgumentException("slot node would create a scene-graph cycle");
+        }
+        if (node.getParent() != null) {
+            throw new IllegalArgumentException("slot node already has a parent");
+        }
+        if (isAssignedToAnotherSlot(slot, node)) {
+            throw new IllegalArgumentException("slot node is already assigned to this scaffold");
+        }
+    }
+
+    /// Returns whether the candidate is an ancestor of this scaffold.
+    private boolean isAncestorOfThisScaffold(Node candidate) {
+        Node ancestor = getParent();
+        while (ancestor != null) {
+            if (ancestor == candidate) {
+                return true;
+            }
+            ancestor = ancestor.getParent();
+        }
+        return false;
+    }
+
+    /// Returns whether a node occupies a scaffold slot other than the requested property.
+    private boolean isAssignedToAnotherSlot(
+            ObjectProperty<@Nullable Node> slot,
+            Node node
+    ) {
+        return topBar != slot && topBar.get() == node
+                || bottomBar != slot && bottomBar.get() == node
+                || navigationBar != slot && navigationBar.get() == node
+                || navigationRail != slot && navigationRail.get() == node
+                || trailingRail != slot && trailingRail.get() == node
+                || leadingPane != slot && leadingPane.get() == node
+                || mainPane != slot && mainPane.get() == node
+                || trailingPane != slot && trailingPane.get() == node;
     }
 
     /// Creates a layout metric accepting automatic or finite non-negative values.

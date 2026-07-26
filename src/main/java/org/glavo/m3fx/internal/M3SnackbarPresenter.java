@@ -50,8 +50,8 @@ import java.util.Objects;
 /// accessibility therefore remain stable while the current model or its properties change.
 @NotNullByDefault
 public final class M3SnackbarPresenter extends Control {
-    /// The base style class for the internal snackbar presenter.
-    public static final String STYLE_CLASS = "m3-snackbar-presenter";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-snackbar-presenter";
 
     /// The initial vertical offset used by entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
@@ -180,7 +180,7 @@ public final class M3SnackbarPresenter extends Control {
         motionSettingsObserver = new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
         focusNotifier = new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         setPickOnBounds(false);

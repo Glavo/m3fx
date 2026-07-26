@@ -80,26 +80,23 @@ import java.util.Objects;
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DateRangePickerField extends javafx.scene.control.Control {
-    /// The base style class for M3FX date range picker fields.
-    public static final String STYLE_CLASS = "m3-date-range-picker-field";
-
-    /// The style class applied to the two-field container.
-    public static final String CONTAINER_STYLE_CLASS = "m3-date-range-picker-field-container";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker-field";
 
     /// The style class applied to date range picker field popup surfaces.
-    public static final String POPUP_STYLE_CLASS = "m3-date-range-picker-field-popup";
+    private static final String POPUP_STYLE_CLASS = "m3-date-range-picker-field-popup";
 
     /// The style class applied to popup content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-field-preset-content";
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-field-preset-content";
 
     /// The style class applied to the popup preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-field-preset-list";
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-field-preset-list";
 
     /// The style class applied to each popup preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-field-preset-button";
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-field-preset-button";
 
     /// The style class applied to the trailing picker open buttons.
-    public static final String OPEN_BUTTON_STYLE_CLASS = M3PickerField.OPEN_BUTTON_STYLE_CLASS;
+    private static final String OPEN_BUTTON_STYLE_CLASS = M3PickerField.OPEN_BUTTON_STYLE_CLASS;
 
     /// The vertical gap between the field and popup picker.
     private static final double POPUP_OFFSET_Y = 8.0;
@@ -1093,7 +1090,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return M3Stylesheets.controlStylesheet("picker-field.css");
     }
 
-    /// Returns accessibility attributes for the embedded editors and popup picker.
+    /// Returns accessibility attributes for the editable values and picker popup.
     ///
     /// @throws NullPointerException if `attribute` is `null`
     @Override
@@ -1140,7 +1137,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Adds base style classes and installs event handling.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         startEditor.textProperty().bindBidirectional(startText);
         endEditor.textProperty().bindBidirectional(endText);
         startEditor.variantProperty().bindBidirectional(startVariant);

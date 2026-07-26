@@ -15,7 +15,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 settings row with a trailing radio-button value.
+/// An M3FX settings row with a trailing radio-button value.
+///
+/// Material Design 3 does not define a radio-button settings-row component. This extension combines list-item
+/// presentation with radio-button selection and is styled with Material tokens.
 ///
 /// An ungrouped row toggles its inherited [#selectedProperty()] with each activation. When it belongs to a
 /// [ToggleGroup], activating an unselected row selects it and clears the group's previous selection. Activating the
@@ -26,10 +29,11 @@ import java.util.Objects;
 /// child. The row itself implements [Toggle], so it can share a [ToggleGroup] with standard JavaFX toggles and
 /// [M3RadioButton] controls.
 ///
-/// See [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
+/// See [Material Design lists](https://m3.material.io/components/lists/overview) and
+/// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
 public final class M3RadioButtonSettingItem extends M3SettingItemBase implements Toggle {
-    /// The concrete style class assigned to radio-button setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-radio-button-setting-item";
 
     /// The trailing radio-button presentation owned by this row.

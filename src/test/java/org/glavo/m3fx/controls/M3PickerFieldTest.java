@@ -87,8 +87,8 @@ final class M3PickerFieldTest {
 
             assertEquals(5, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-            assertTrue(presetContent.getStyleClass().contains(M3DatePickerField.PRESET_CONTENT_STYLE_CLASS));
-            assertEquals(5, presetContent.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS).size());
+            assertTrue(presetContent.getStyleClass().contains("m3-date-picker-field-preset-content"));
+            assertEquals(5, presetContent.lookupAll("." + "m3-date-picker-field-preset-button").size());
 
             findPresetButton(presetContent, "In 7 days").fire();
 
@@ -100,7 +100,7 @@ final class M3PickerFieldTest {
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
-                    .contains(M3DatePickerField.PRESET_CONTENT_STYLE_CLASS));
+                    .contains("m3-date-picker-field-preset-content"));
         });
     }
 
@@ -201,8 +201,8 @@ final class M3PickerFieldTest {
 
             assertEquals(5, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-            assertTrue(presetContent.getStyleClass().contains(M3TimePickerField.PRESET_CONTENT_STYLE_CLASS));
-            assertEquals(5, presetContent.lookupAll("." + M3TimePickerField.PRESET_BUTTON_STYLE_CLASS).size());
+            assertTrue(presetContent.getStyleClass().contains("m3-time-picker-field-preset-content"));
+            assertEquals(5, presetContent.lookupAll("." + "m3-time-picker-field-preset-button").size());
 
             findTimePresetButton(presetContent, "In 15 min").fire();
 
@@ -213,7 +213,7 @@ final class M3PickerFieldTest {
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
-                    .contains(M3TimePickerField.PRESET_CONTENT_STYLE_CLASS));
+                    .contains("m3-time-picker-field-preset-content"));
         });
     }
 
@@ -363,8 +363,8 @@ final class M3PickerFieldTest {
 
             assertInstanceOf(M3PickerFieldSkin.class, dateField.getSkin());
             assertInstanceOf(M3PickerFieldSkin.class, timeField.getSkin());
-            assertTrue(dateField.getInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
-            assertTrue(timeField.getInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
+            assertTrue(dateField.getInputLayout().getStyleClass().contains("m3-text-input-layout"));
+            assertTrue(timeField.getInputLayout().getStyleClass().contains("m3-text-input-layout"));
 
             FxTestUtils.replaceSkin(dateField, M3PickerFieldSkin::new);
             FxTestUtils.replaceSkin(timeField, M3PickerFieldSkin::new);
@@ -686,7 +686,7 @@ final class M3PickerFieldTest {
 
     /// Returns a date preset button with the supplied text.
     private static M3Button findPresetButton(Node root, String text) {
-        for (Node node : root.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS)) {
+        for (Node node : root.lookupAll("." + "m3-date-picker-field-preset-button")) {
             if (node instanceof M3Button button && button.getText().equals(text)) {
                 return button;
             }
@@ -696,7 +696,7 @@ final class M3PickerFieldTest {
 
     /// Returns a time preset button with the supplied text.
     private static M3Button findTimePresetButton(Node root, String text) {
-        for (Node node : root.lookupAll("." + M3TimePickerField.PRESET_BUTTON_STYLE_CLASS)) {
+        for (Node node : root.lookupAll("." + "m3-time-picker-field-preset-button")) {
             if (node instanceof M3Button button && button.getText().equals(text)) {
                 return button;
             }

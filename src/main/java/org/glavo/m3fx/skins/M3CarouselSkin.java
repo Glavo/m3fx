@@ -23,6 +23,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollToEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -30,6 +31,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Carousel].
 @NotNullByDefault
 public final class M3CarouselSkin extends SkinBase<M3Carousel> {
+    /// The internal carousel viewport style class.
+    private static final String VIEWPORT_STYLE_CLASS = "m3-carousel-viewport";
+
+    /// The internal carousel track style class.
+    private static final String TRACK_STYLE_CLASS = "m3-carousel-track";
+
     /// The default maximum preferred viewport width.
     private static final double DEFAULT_MAX_PREF_WIDTH = M3CarouselTrack.DEFAULT_MAX_PREF_WIDTH;
 
@@ -102,6 +109,12 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
     };
 
+    /// Handles semantic item-reveal requests from the skinnable control.
+    private final EventHandler<M3ScrollToEvent> scrollToRequestHandler = event -> {
+        scrollItemIntoView(event.getIndex(), event.isAnimated());
+        event.consume();
+    };
+
     /// Cancels direct viewport ownership when the carousel cannot continue receiving gesture events.
     private final InvalidationListener interactionEligibilityInvalidation = observable -> {
         M3Carousel carousel = getSkinnable();
@@ -166,10 +179,13 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             };
 
     /// Whether scrolling should be retried after the next layout pass.
-    private boolean pendingSelectedScroll;
+    private boolean pendingItemScroll;
+
+    /// The item index retained for the pending scroll request.
+    private int pendingScrollIndex = -1;
 
     /// Whether the pending scroll request should be animated.
-    private boolean pendingSelectedScrollAnimated;
+    private boolean pendingItemScrollAnimated;
 
     /// Creates a carousel skin.
     ///
@@ -185,6 +201,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         control.effectiveNodeOrientationProperty().addListener(orientationListener);
         control.disabledProperty().addListener(interactionEligibilityInvalidation);
         control.sceneProperty().addListener(interactionEligibilityInvalidation);
+        control.addEventHandler(M3ScrollToEvent.SCROLL_TO_INDEX, scrollToRequestHandler);
         viewport.viewportBoundsProperty().addListener(viewportBoundsListener);
         viewport.hvalueProperty().addListener(viewportValueListener);
         viewport.vvalueProperty().addListener(viewportValueListener);
@@ -208,6 +225,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
         getSkinnable().disabledProperty().removeListener(interactionEligibilityInvalidation);
         getSkinnable().sceneProperty().removeListener(interactionEligibilityInvalidation);
+        getSkinnable().removeEventHandler(M3ScrollToEvent.SCROLL_TO_INDEX, scrollToRequestHandler);
         viewport.viewportBoundsProperty().removeListener(viewportBoundsListener);
         viewport.hvalueProperty().removeListener(viewportValueListener);
         viewport.vvalueProperty().removeListener(viewportValueListener);
@@ -217,19 +235,6 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         viewport.setContent(null);
         getChildren().remove(viewport);
         super.dispose();
-    }
-
-    /// Aligns the selected carousel item with the layout's focal position.
-    ///
-    /// If the viewport has not been laid out, the request is retained and applied during a later layout pass. An
-    /// invalid or empty selection has no effect. When animation is requested, the effective motion settings still
-    /// determine whether the value changes through a transition or settles immediately.
-    ///
-    /// @param animated whether to request an animated viewport transition
-    public void scrollSelectedItemIntoView(boolean animated) {
-        if (deferSelectedItemScrollIfNeeded(animated)) {
-            requestSelectedScroll(animated);
-        }
     }
 
     /// Computes the minimum width from the viewport.
@@ -296,25 +301,27 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     protected void layoutChildren(double x, double y, double width, double height) {
         track.setViewportSize(width, height);
         viewport.resizeRelocate(x, y, width, height);
-        if (pendingSelectedScroll) {
-            boolean animated = pendingSelectedScrollAnimated;
-            pendingSelectedScroll = false;
-            pendingSelectedScrollAnimated = false;
-            if (deferSelectedItemScrollIfNeeded(animated)) {
-                requestSelectedScroll(animated);
+        if (pendingItemScroll) {
+            int index = pendingScrollIndex;
+            boolean animated = pendingItemScrollAnimated;
+            pendingItemScroll = false;
+            pendingScrollIndex = -1;
+            pendingItemScrollAnimated = false;
+            if (deferItemScrollIfNeeded(index, animated)) {
+                requestItemScroll(index, animated);
             }
         }
     }
 
     /// Initializes viewport style classes and scrolling policies.
     private void installViewport() {
-        viewport.getStyleClass().add(M3Carousel.VIEWPORT_STYLE_CLASS);
+        viewport.getStyleClass().add(VIEWPORT_STYLE_CLASS);
         M3ScrollPanes.style(viewport);
         viewport.addEventFilter(ScrollEvent.SCROLL, viewportScrollInteractionHandler);
         viewport.addEventFilter(MouseEvent.MOUSE_DRAGGED, viewportDragInteractionHandler);
         viewport.addEventFilter(MouseEvent.MOUSE_RELEASED, viewportReleaseInteractionHandler);
         M3ScrollPanes.enableSmoothScrolling(viewport);
-        track.getStyleClass().add(M3Carousel.TRACK_STYLE_CLASS);
+        track.getStyleClass().add(TRACK_STYLE_CLASS);
         viewport.setManaged(false);
         viewport.setPannable(true);
         viewport.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -352,27 +359,44 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         cancelViewportInteraction();
         stopScrollAnimation();
         track.refreshLayoutStrategy();
-        pendingSelectedScroll = false;
-        pendingSelectedScrollAnimated = false;
-        if (deferSelectedItemScrollIfNeeded(false)) {
+        pendingItemScroll = false;
+        pendingScrollIndex = -1;
+        pendingItemScrollAnimated = false;
+        if (deferItemScrollIfNeeded(getSkinnable().getSelectedIndex(), false)) {
             requestSelectedScroll(false);
         }
     }
 
     /// Schedules selected item scrolling for the next layout pass.
     private void requestSelectedScroll(boolean animated) {
+        requestItemScroll(getSkinnable().getSelectedIndex(), animated);
+    }
+
+    /// Schedules one item index for scrolling during the next layout pass.
+    private void requestItemScroll(int index, boolean animated) {
+        if (index < 0 || index >= getSkinnable().getItems().size()) {
+            return;
+        }
         if (viewportInteractionActive) {
             return;
         }
-        pendingSelectedScroll = true;
-        pendingSelectedScrollAnimated = pendingSelectedScrollAnimated || animated;
+        boolean sameRequest = pendingItemScroll && pendingScrollIndex == index;
+        pendingItemScroll = true;
+        pendingScrollIndex = index;
+        pendingItemScrollAnimated = sameRequest ? pendingItemScrollAnimated || animated : animated;
         getSkinnable().requestLayout();
     }
 
-    /// Scrolls the selected item immediately and returns whether geometry requires deferring.
-    private boolean deferSelectedItemScrollIfNeeded(boolean animated) {
-        int selectedIndex = getSkinnable().getSelectedIndex();
-        if (selectedIndex < 0 || selectedIndex >= getSkinnable().getItems().size()) {
+    /// Applies one indexed scroll request immediately or retains it until viewport geometry becomes available.
+    private void scrollItemIntoView(int index, boolean animated) {
+        if (deferItemScrollIfNeeded(index, animated)) {
+            requestItemScroll(index, animated);
+        }
+    }
+
+    /// Scrolls one item immediately and returns whether geometry requires deferring.
+    private boolean deferItemScrollIfNeeded(int index, boolean animated) {
+        if (index < 0 || index >= getSkinnable().getItems().size()) {
             return false;
         }
 
@@ -384,7 +408,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return true;
         }
 
-        animateOrSetScrollValue(track.targetScrollValue(selectedIndex, viewportExtent), animated);
+        animateOrSetScrollValue(track.targetScrollValue(index, viewportExtent), animated);
         return false;
     }
 
@@ -424,8 +448,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
         stopScrollAnimation();
         scrollSettleDelay.stop();
-        pendingSelectedScroll = false;
-        pendingSelectedScrollAnimated = false;
+        pendingItemScroll = false;
+        pendingScrollIndex = -1;
+        pendingItemScrollAnimated = false;
         if (!viewportInteractionActive) {
             viewportInteractionActive = true;
             pendingViewportValue = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN

@@ -21,11 +21,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
 
-/// A Material Design 3 dialog preset for selecting one time.
+/// An M3FX dialog preset for selecting one time with Material Design 3 tokens.
 ///
-/// The dialog installs an [M3TimePicker] as its content, wires OK and cancel actions, and exposes the selected
-/// [LocalTime] through [#valueProperty()]. Its Dial/Input mode switch shares the specification's bottom action row
-/// with the dialog actions.
+/// The dialog provides an [M3TimePicker], OK and cancel actions, and the selected [LocalTime] through
+/// [#valueProperty()]. Its Dial/Input mode switch is presented with the dialog actions.
 ///
 /// [M3OverlayPane#showDialog(M3Dialog)] and [M3DialogWindow#showDialog(M3Dialog)] present the dialog without
 /// blocking. OK is disabled until a value is selected. Callers can inspect [M3DialogEvent#getAction()] from the
@@ -44,17 +43,23 @@ import java.time.LocalTime;
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerDialog extends M3Dialog {
+    /// The dialog preset content style class.
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-preset-content";
+
+    /// The dialog preset list style class.
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-dialog-preset-list";
+
+    /// The dialog preset button style class.
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-dialog-preset-button";
+
+    /// The time-picker dialog content style class.
+    private static final String TIME_PICKER_DIALOG_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-content";
+
+    /// The time-picker mode button style class.
+    private static final String TIME_PICKER_MODE_BUTTON_STYLE_CLASS = "m3-time-picker-mode-button";
+
     /// The default headline text for time picker dialogs.
     private static final String DEFAULT_TITLE = "Select time";
-
-    /// The style class applied to dialog content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-preset-content";
-
-    /// The style class applied to the preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-dialog-preset-list";
-
-    /// The style class applied to each preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-dialog-preset-button";
 
     /// The pseudo-class that delegates mode-switch placement to the dialog action row.
     private static final PseudoClass DIALOG_EMBEDDED_PSEUDO_CLASS =
@@ -69,7 +74,7 @@ public final class M3TimePickerDialog extends M3Dialog {
     /// The retained confirmation action shown at the logical end of the action row.
     private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
-    /// Whether the dialog and embedded picker are currently synchronizing selected values.
+    /// Whether dialog state and time selection are currently synchronizing.
     private boolean synchronizingValue;
 
     /// The mutable time preset list rendered before the picker.
@@ -89,8 +94,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Creates a time picker dialog with no selected time.
     ///
-    /// The dialog headline is `Select time`, the OK action is disabled, and the dialog is initially detached. The
-    /// embedded picker uses its standard defaults.
+    /// The dialog headline is `Select time`, the OK action is disabled, and no time is selected initially.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);
     }
@@ -132,12 +136,12 @@ public final class M3TimePickerDialog extends M3Dialog {
         setValue(value);
     }
 
-    /// The selected time synchronized with the embedded picker.
+    /// The selected time for this dialog.
     ///
     /// Direct non-null assignments discard seconds and nanoseconds, then validate the normalized time against the
     /// picker's inclusive bounds. Assigning `null` clears selection and disables the OK action. A binding source
-    /// must provide minute-precision values within those bounds. Changes made through the embedded picker update
-    /// this property as well while it is not bound.
+    /// must provide minute-precision values within those bounds. User selection updates this property while it is
+    /// not bound.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalTime> value;
@@ -151,29 +155,29 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Sets the selected time, or clears selection when `null` is supplied.
     ///
-    /// The embedded picker normalizes seconds and nanoseconds and rejects values outside its current bounds. A
-    /// successful change updates the OK action immediately.
+    /// Seconds and nanoseconds are discarded. Values outside the current selectable range are rejected. A successful
+    /// change updates the confirmation action immediately.
     ///
     /// @param value the selected time, or `null` to clear selection
-    /// @throws IllegalArgumentException if `value` is outside the embedded picker's selectable range
+    /// @throws IllegalArgumentException if `value` is outside the current selectable range
     public void setValue(@Nullable LocalTime value) {
         this.value.set(value);
     }
 
-    /// Returns the property synchronized with the selected minute-precision time of the embedded picker.
+    /// Returns the selected minute-precision time property.
     ///
     /// The returned property is observable and bindable. Its default value is `null`. A binding source must provide
-    /// either `null` or a value whose seconds and nanoseconds are zero and which lies within the embedded picker's
-    /// current bounds. While the property is bound, picker interaction cannot replace the bound value.
+    /// either `null` or a value whose seconds and nanoseconds are zero and which lies within the current selectable
+    /// bounds. While the property is bound, user selection cannot replace the bound value.
     ///
     /// @return the selected-time property
     public ObjectProperty<@Nullable LocalTime> valueProperty() {
         return value;
     }
 
-    /// Returns the time picker displayed by this dialog.
+    /// Returns the time picker used by this dialog.
     ///
-    /// @return the time picker displayed by this dialog
+    /// @return the time picker used by this dialog
     public M3TimePicker getPicker() {
         return picker;
     }
@@ -182,7 +186,7 @@ public final class M3TimePickerDialog extends M3Dialog {
     ///
     /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update the dialog action
     /// column immediately. Duplicate presets are retained as separate actions in list order. Presets outside the
-    /// picker's current bounds remain in the list but are disabled.
+    /// current selectable range remain in the list but are disabled.
     ///
     /// @return the live mutable time preset list
     public ObservableList<M3TimePreset> getPresets() {
@@ -240,7 +244,7 @@ public final class M3TimePickerDialog extends M3Dialog {
                 }
             }
 
-            /// Synchronizes valid values supplied by a binding source with the embedded picker.
+            /// Synchronizes valid values supplied by a binding source with the time selection.
             @Override
             protected void invalidated() {
                 if (!isBound() || synchronizingValue) {
@@ -287,9 +291,9 @@ public final class M3TimePickerDialog extends M3Dialog {
 
         /// Creates the specialized pane and its retained mode switch.
         private TimePickerDialogPane() {
-            picker.getStyleClass().add(M3TimePicker.DIALOG_CONTENT_STYLE_CLASS);
+            picker.getStyleClass().add(TIME_PICKER_DIALOG_CONTENT_STYLE_CLASS);
             picker.pseudoClassStateChanged(DIALOG_EMBEDDED_PSEUDO_CLASS, true);
-            modeButton.getStyleClass().add(M3TimePicker.MODE_BUTTON_STYLE_CLASS);
+            modeButton.getStyleClass().add(TIME_PICKER_MODE_BUTTON_STYLE_CLASS);
             modeButton.setOnAction(event -> {
                 picker.setInputMode(!picker.isInputMode());
                 event.consume();

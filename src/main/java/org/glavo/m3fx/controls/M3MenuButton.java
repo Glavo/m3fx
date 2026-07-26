@@ -53,7 +53,7 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3MenuButton extends M3ButtonBase {
-    /// The default style class for this control.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-menu-button";
 
     /// The showing pseudo-class used while the owned menu popup is visible.

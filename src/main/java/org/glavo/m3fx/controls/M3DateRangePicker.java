@@ -11,17 +11,17 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
-import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,32 +59,8 @@ import java.util.Objects;
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DateRangePicker extends Control {
-    /// The base style class for M3FX date range pickers.
-    public static final String STYLE_CLASS = "m3-date-range-picker";
-
-    /// The style class applied to a selected range start day cell.
-    public static final String RANGE_START_DAY_STYLE_CLASS = "m3-date-range-picker-range-start-day";
-
-    /// The style class applied to a selected range end day cell.
-    public static final String RANGE_END_DAY_STYLE_CLASS = "m3-date-range-picker-range-end-day";
-
-    /// The style class applied to a selected single-day range cell.
-    public static final String RANGE_SINGLE_DAY_STYLE_CLASS = "m3-date-range-picker-range-single-day";
-
-    /// The style class applied to days between selected range endpoints.
-    public static final String RANGE_MIDDLE_DAY_STYLE_CLASS = "m3-date-range-picker-range-middle-day";
-
-    /// The style class applied to the first day of one visible range row segment.
-    public static final String RANGE_ROW_START_DAY_STYLE_CLASS = "m3-date-range-picker-range-row-start-day";
-
-    /// The style class applied to the last day of one visible range row segment.
-    public static final String RANGE_ROW_END_DAY_STYLE_CLASS = "m3-date-range-picker-range-row-end-day";
-
-    /// The style class applied to the range picker's weekday label row.
-    public static final String WEEKDAY_ROW_STYLE_CLASS = "m3-date-range-picker-weekday-row";
-
-    /// The style class applied to the range picker's day grid.
-    public static final String DAY_GRID_STYLE_CLASS = "m3-date-range-picker-day-grid";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker";
 
     /// Creates a picker showing the current month with no selected range and no date bounds.
     public M3DateRangePicker() {
@@ -592,7 +568,11 @@ public final class M3DateRangePicker extends Control {
         return M3Stylesheets.controlStylesheet("date-picker.css");
     }
 
-    /// Returns accessibility attributes for the selected range and visible dates.
+    /// Returns accessibility state for the selected range and the currently rendered day cells.
+    ///
+    /// `ITEM_COUNT` and `ITEM_AT_INDEX` describe currently available day-cell nodes. When no indexed day-cell
+    /// presentation is available, the item count is zero and indexed item queries return `null`. An indexed item
+    /// query never returns a [LocalDate] model value in place of a node.
     ///
     /// @throws NullPointerException if `attribute` is `null`
     @Override
@@ -639,12 +619,13 @@ public final class M3DateRangePicker extends Control {
 
     /// Adds base style classes, accessibility role, and keyboard navigation.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleDay,
                 this::handlesAccessibleShowTarget);
         setFocusTraversable(true);
+        skinProperty().addListener(observable -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
 
@@ -777,27 +758,20 @@ public final class M3DateRangePicker extends Control {
 
     /// Returns the number of visible day cells.
     private int accessibleDayCellCount() {
-        List<Node> cells = accessibleDayCells();
-        return getSkin() instanceof M3DateRangePickerSkin ? cells.size() : visibleDateCount();
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        return presentation == null ? 0 : presentation.accessibleItemCount();
     }
 
-    /// Returns the visible day cell or logical date at an accessibility index.
-    private @Nullable Object accessibleDayCellAt(Object... parameters) {
+    /// Returns the visible day cell at an accessibility index.
+    private @Nullable Node accessibleDayCellAt(Object... parameters) {
         int index = M3Accessible.indexParameter(parameters);
-        if (index < 0) {
-            return null;
-        }
-
-        if (getSkin() instanceof M3DateRangePickerSkin) {
-            List<Node> cells = accessibleDayCells();
-            return index < cells.size() ? cells.get(index) : null;
-        }
-        return visibleDateAt(index);
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        return presentation == null ? null : presentation.accessibleItemAt(index);
     }
 
     /// Returns the preferred focus node for the currently displayed dates.
     private Node accessibleFocusNode() {
-        if (!(getSkin() instanceof M3DateRangePickerSkin)) {
+        if (accessibilityPresentation() == null) {
             return this;
         }
 
@@ -833,7 +807,16 @@ public final class M3DateRangePicker extends Control {
             return null;
         }
 
-        for (Node cell : accessibleDayCells()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
+            if (cell == null) {
+                continue;
+            }
             if (!cell.isDisabled() && M3Accessible.containsNode(cell, focusOwner)) {
                 return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
             }
@@ -1040,16 +1023,20 @@ public final class M3DateRangePicker extends Control {
         return item instanceof Node node && node.getUserData() instanceof LocalDate date ? date : null;
     }
 
-    /// Returns visible rendered day cells in layout traversal order.
-    private List<Node> accessibleDayCells() {
-        ArrayList<Node> cells = new ArrayList<>();
-        collectAccessibleDayCells(this, cells);
-        return cells;
+    /// Returns the current indexed day-cell accessibility presentation.
+    private @Nullable M3PickerAccessibilityPresentation accessibilityPresentation() {
+        return getSkin() instanceof M3PickerAccessibilityPresentation presentation ? presentation : null;
     }
 
     /// Returns the rendered visible day cell for the supplied date.
     private @Nullable Node dayCellForDate(LocalDate date) {
-        for (Node cell : accessibleDayCells()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
             if (date.equals(dateFromNode(cell))) {
                 return cell;
             }
@@ -1059,58 +1046,18 @@ public final class M3DateRangePicker extends Control {
 
     /// Returns the first rendered visible enabled day cell.
     private @Nullable Node firstEnabledDayCell() {
-        for (Node cell : accessibleDayCells()) {
-            if (!cell.isDisabled()) {
+        @Nullable M3PickerAccessibilityPresentation presentation = accessibilityPresentation();
+        if (presentation == null) {
+            return null;
+        }
+        int itemCount = presentation.accessibleItemCount();
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node cell = presentation.accessibleItemAt(index);
+            if (cell != null && !cell.isDisabled()) {
                 return cell;
             }
         }
         return null;
-    }
-
-    /// Collects visible rendered day cells from a scene-graph subtree.
-    private static void collectAccessibleDayCells(Node node, List<Node> cells) {
-        if (isAccessibleDayCell(node)) {
-            cells.add(node);
-        }
-        if (node instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                collectAccessibleDayCells(child, cells);
-            }
-        }
-    }
-
-    /// Returns whether a node is a visible rendered day cell.
-    private static boolean isAccessibleDayCell(Node node) {
-        return node.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
-                && dateFromNode(node) != null
-                && M3Accessible.isEffectivelyReachable(node)
-                && !node.isMouseTransparent();
-    }
-
-    /// Returns the date at a visible logical index.
-    private @Nullable LocalDate visibleDateAt(int index) {
-        if (index < 0 || index >= visibleDateCount()) {
-            return null;
-        }
-        if (!isShowAdjacentMonthDays()) {
-            return getDisplayedMonth().atDay(index + 1);
-        }
-        return gridStartDate().plusDays(index);
-    }
-
-    /// Returns the number of visible logical dates.
-    private int visibleDateCount() {
-        return isShowAdjacentMonthDays() ? 42 : getDisplayedMonth().lengthOfMonth();
-    }
-
-    /// Returns the first logical date in the displayed calendar grid.
-    private LocalDate gridStartDate() {
-        LocalDate firstOfMonth = getDisplayedMonth().atDay(1);
-        int leadingDays = Math.floorMod(
-                firstOfMonth.getDayOfWeek().getValue() - getFirstDayOfWeek().getValue(),
-                7
-        );
-        return firstOfMonth.minusDays(leadingDays);
     }
 
     /// Notifies accessibility clients that selected range values changed.

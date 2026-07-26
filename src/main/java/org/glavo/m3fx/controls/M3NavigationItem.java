@@ -46,8 +46,8 @@ import java.util.Objects;
 /// See [Material Design navigation](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
 public final class M3NavigationItem extends ButtonBase {
-    /// The base style class for M3FX navigation items.
-    public static final String STYLE_CLASS = "m3-navigation-item";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-navigation-item";
 
     /// The selected pseudo-class used by navigation items.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -522,7 +522,7 @@ public final class M3NavigationItem extends ButtonBase {
 
     /// Adds base style classes and applies size-related defaults.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setFocusTraversable(true);
         setPickOnBounds(true);

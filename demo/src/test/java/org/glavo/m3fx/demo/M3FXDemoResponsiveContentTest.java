@@ -288,7 +288,7 @@ final class M3FXDemoResponsiveContentTest {
             return;
         }
 
-        List<M3NavigationBar> bars = page.lookupAll("." + M3NavigationBar.STYLE_CLASS).stream()
+        List<M3NavigationBar> bars = page.lookupAll("." + "m3-navigation-bar").stream()
                 .filter(M3NavigationBar.class::isInstance)
                 .map(M3NavigationBar.class::cast)
                 .toList();

@@ -84,8 +84,8 @@ import java.util.Objects;
 /// [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3NavigationDrawer extends Control {
-    /// The base style class for M3FX navigation drawers.
-    public static final String STYLE_CLASS = "m3-navigation-drawer";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-navigation-drawer";
 
     /// The standard drawer pseudo-class.
     private static final PseudoClass STANDARD_PSEUDO_CLASS = PseudoClass.getPseudoClass("standard");
@@ -108,7 +108,7 @@ public final class M3NavigationDrawer extends Control {
     /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Direct
     /// list items and drawer groups participate in navigation; other nodes are structural content. Nodes are owned
     /// by the drawer while displayed and must not belong to another parent.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between visible drawer rows.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -335,8 +335,8 @@ public final class M3NavigationDrawer extends Control {
     /// Returns the live mutable top-level drawer content.
     ///
     /// Mutations are observed immediately and insertion order determines top-level layout and traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent. Child destinations of a
+    /// rejects `null` elements and repeated occurrences of the same node instance. Bulk mutations are validated
+    /// before the list changes, and each node must satisfy the JavaFX single-parent rule. Child destinations of a
     /// [M3NavigationDrawerGroup] are ordered at the position of their group.
     ///
     /// @return the live mutable top-level content list
@@ -512,7 +512,7 @@ public final class M3NavigationDrawer extends Control {
 
     /// Adds base style classes and installs content listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         updateVariantPseudoClasses();
         updateOrientationPseudoClass();
         setAccessibleRole(AccessibleRole.LIST_VIEW);

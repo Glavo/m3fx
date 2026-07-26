@@ -58,11 +58,11 @@ import java.util.Objects;
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3SVGIcon extends Control implements M3IconGraphic {
-    /// The base style class for SVG icons.
-    public static final String STYLE_CLASS = "m3-svg-icon";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-svg-icon";
 
-    /// The style class assigned to the rendered path node.
-    public static final String PATH_STYLE_CLASS = "m3-svg-icon-path";
+    /// The style class applied when this icon participates in a component graphic slot.
+    private static final String GRAPHIC_STYLE_CLASS = "m3-icon-graphic";
 
     /// The default icon size token.
     private static final double DEFAULT_ICON_SIZE = M3IconSize.MEDIUM.defaultSize();
@@ -115,7 +115,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Sets the SVG path data rendered by this icon.
     ///
-    /// JavaFX validates the path syntax when the skin applies the value to its SVG path node.
+    /// The value uses the path-data syntax accepted by [javafx.scene.shape.SVGPath].
     ///
     /// @param content the SVG path data, or an empty string to render no path
     /// @throws NullPointerException if `content` is `null`
@@ -450,9 +450,9 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
     /// Initializes style classes, accessibility, and token roles.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3IconPaints.initializeSemanticPaint(this, StyleableProperties.ICON_COLOR);
-        getStyleClass().add(M3IconGraphic.STYLE_CLASS);
+        getStyleClass().add(GRAPHIC_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.NODE);
         setFocusTraversable(false);
         updateSizeStyle();

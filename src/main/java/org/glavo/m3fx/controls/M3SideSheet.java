@@ -59,29 +59,15 @@ public final class M3SideSheet extends Control {
     /// The pseudo-class applied while the effective node orientation is right-to-left.
     private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
 
-    /// The base style class for M3FX side sheets.
-    public static final String STYLE_CLASS = "m3-side-sheet";
-
-    /// The shared sheet header style class.
-    public static final String HEADER_STYLE_CLASS = "m3-sheet-header";
-
-    /// The shared sheet title style class.
-    public static final String TITLE_STYLE_CLASS = "m3-sheet-title";
-
-    /// The header icon action container style class.
-    public static final String HEADER_ACTIONS_STYLE_CLASS = "m3-side-sheet-header-actions";
-
-    /// The bottom action button container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-side-sheet-actions";
-
-    /// The shared sheet content slot style class.
-    public static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-side-sheet";
 
     /// The mutable header icon action list, in logical start-to-end order.
-    private final ObservableList<Node> headerActions = M3ObservableLists.nonNullElementList("header action");
+    private final ObservableList<Node> headerActions =
+            M3ObservableLists.identityDistinctElementList("header action");
 
     /// The mutable bottom action button list, in logical start-to-end order.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// The ordered sheet items used by accessibility and modal focus traversal.
     private final ObservableList<Node> accessibleItems = M3ObservableLists.nonNullElementList("accessible item");
@@ -357,8 +343,9 @@ public final class M3SideSheet extends Control {
     /// from the Material side-sheet anatomy. Bottom action buttons belong in [#getActions()].
     ///
     /// The returned list is live, mutable, and ordered in logical start-to-end order. It rejects `null` elements.
-    /// Mutations update layout, focus traversal, and accessibility immediately. Nodes must be available for this
-    /// sheet to own, and duplicate node references are not permitted by JavaFX parent ownership.
+    /// Mutations update layout, focus traversal, and accessibility immediately. The list rejects repeated
+    /// occurrences of the same node instance, validates bulk mutations before changing, and requires every node to
+    /// satisfy the JavaFX single-parent rule.
     ///
     /// @return the live mutable header icon action list
     public final ObservableList<Node> getHeaderActions() {
@@ -368,8 +355,9 @@ public final class M3SideSheet extends Control {
     /// Returns the mutable bottom action button list.
     ///
     /// The returned list is live, mutable, and ordered in logical start-to-end order. It rejects `null` elements.
-    /// Mutations update layout, focus traversal, and accessibility immediately. Nodes must be available for this
-    /// sheet to own, and duplicate node references are not permitted by JavaFX parent ownership.
+    /// Mutations update layout, focus traversal, and accessibility immediately. The list rejects repeated
+    /// occurrences of the same node instance, validates bulk mutations before changing, and requires every node to
+    /// satisfy the JavaFX single-parent rule.
     ///
     /// @return the live mutable bottom action button list
     public final ObservableList<Node> getActions() {
@@ -456,7 +444,7 @@ public final class M3SideSheet extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         // JavaFX 17 has no DIALOG role; the helper returns PARENT there.
         setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);

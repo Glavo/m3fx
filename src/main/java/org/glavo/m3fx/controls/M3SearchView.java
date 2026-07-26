@@ -40,30 +40,24 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 search view with a search bar and result content.
+/// A Material Design 3 search view for entering a query and presenting results.
 ///
-/// `M3SearchView` combines an embedded [M3SearchBar] with a result container that can animate into and out of
-/// view as search becomes active. The search text, prompt, leading node, trailing actions, active state, and action
-/// event are exposed directly by this control; applications do not need access to the embedded bar.
+/// A search view provides editable search text, prompt and leading-content properties, an ordered list of result
+/// nodes, and an ordered list of trailing actions. The [#activeProperty()] controls whether the results are
+/// presented. Submitting the search fires an [ActionEvent] without changing the query or result list.
 ///
 /// A newly created search view is active and shows an empty ordered result list. Deactivation hides the results and
-/// returns focus from a focused result to the search bar. It does not clear the query. Keyboard traversal moves from
-/// the search field through reachable result nodes, and Escape deactivates the view.
+/// returns focus from a focused result to the search input. It does not clear the query. Keyboard traversal moves
+/// from the search input through reachable result nodes, and Escape deactivates the view.
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
 public final class M3SearchView extends Control {
-    /// The base style class for M3FX search views.
-    public static final String STYLE_CLASS = "m3-search-view";
-
-    /// The style class applied to the internal content column.
-    public static final String CONTENT_STYLE_CLASS = "m3-search-view-content";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-search-view";
 
     /// The style class applied to the result container.
-    public static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
-
-    /// The style class applied to the divider used by divided search views.
-    public static final String DIVIDER_STYLE_CLASS = "m3-search-view-divider";
+    private static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
 
     /// The default visual treatment.
     private static final M3SearchViewStyle DEFAULT_VIEW_STYLE = M3SearchViewStyle.CONTAINED;
@@ -95,7 +89,7 @@ public final class M3SearchView extends Control {
     /// The fallback result page step used before the search view has a measured result viewport.
     private static final int DEFAULT_RESULT_PAGE_STEP = 5;
 
-    /// The embedded search bar.
+    /// The search control used to edit this view's query.
     private final M3SearchBar searchBar = new M3SearchBar();
 
     /// The search result container.
@@ -115,7 +109,7 @@ public final class M3SearchView extends Control {
 
     /// Creates an active, contained, docked search view with the specified prompt and no results.
     ///
-    /// @param promptText the prompt text displayed by the embedded search bar
+    /// @param promptText the prompt displayed while the search text is empty
     /// @throws NullPointerException if `promptText` is `null`
     public M3SearchView(String promptText) {
         initialize();
@@ -239,7 +233,7 @@ public final class M3SearchView extends Control {
     /// Returns the observable, bidirectionally bindable leading-content property.
     ///
     /// A new search view contains a back action that deactivates the view. The property accepts `null` to leave the
-    /// leading slot empty and is synchronized with the embedded search bar.
+    /// leading slot empty.
     ///
     /// @return the leading-content property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
@@ -261,14 +255,14 @@ public final class M3SearchView extends Control {
 
     /// Returns the entered search text.
     ///
-    /// @return the text entered in the embedded search bar
+    /// @return the entered search text, never `null`
     public final String getText() {
         return text.get();
     }
 
     /// Sets the entered search text.
     ///
-    /// @param text the text entered in the embedded search bar
+    /// @param text the new search text
     /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(text);
@@ -276,8 +270,7 @@ public final class M3SearchView extends Control {
 
     /// Returns the observable, bidirectionally bindable search-text property.
     ///
-    /// The property has an initial value of `""`, is synchronized with the embedded search bar, and rejects `null`
-    /// values, including values supplied by a binding.
+    /// The property has an initial value of `""` and rejects `null` values, including values supplied by a binding.
     ///
     /// @return the search-text property
     public final StringProperty textProperty() {
@@ -297,16 +290,16 @@ public final class M3SearchView extends Control {
         }
     };
 
-    /// Returns the prompt text displayed by the embedded search bar.
+    /// Returns the prompt displayed while the search text is empty.
     ///
-    /// @return the prompt text displayed by the embedded search bar
+    /// @return the prompt text, never `null`
     public final String getPromptText() {
         return promptText.get();
     }
 
-    /// Sets the prompt text displayed by the embedded search bar.
+    /// Sets the prompt displayed while the search text is empty.
     ///
-    /// @param promptText the prompt text displayed by the embedded search bar
+    /// @param promptText the new prompt text
     /// @throws NullPointerException if `promptText` is `null`
     public final void setPromptText(String promptText) {
         this.promptText.set(promptText);
@@ -314,8 +307,7 @@ public final class M3SearchView extends Control {
 
     /// Returns the observable, bidirectionally bindable prompt-text property.
     ///
-    /// The property has an initial value of `""`, is synchronized with the embedded search bar, and rejects `null`
-    /// values, including values supplied by a binding.
+    /// The property has an initial value of `""` and rejects `null` values, including values supplied by a binding.
     ///
     /// @return the prompt-text property
     public final StringProperty promptTextProperty() {
@@ -378,8 +370,8 @@ public final class M3SearchView extends Control {
 
     /// Returns the observable, bidirectionally bindable active-state property.
     ///
-    /// The property is `true` after construction and is synchronized with the embedded search bar. Changes update
-    /// result visibility, accessibility state, and focus restoration when a focused result is hidden.
+    /// The property is `true` after construction. Changes update result visibility and accessibility state. When
+    /// deactivation hides a focused result, focus returns to the search input.
     ///
     /// @return the active-state property
     public final BooleanProperty activeProperty() {
@@ -389,15 +381,15 @@ public final class M3SearchView extends Control {
     /// Returns the mutable result node list.
     ///
     /// The returned list is live, mutable, and ordered. Changes are immediately reflected in layout, accessibility,
-    /// and keyboard traversal. `null` and duplicate node instances are rejected by the JavaFX children list, and a
-    /// node must not already belong to another parent.
+    /// and keyboard traversal. The list rejects `null` elements and repeated occurrences of the same node instance.
+    /// A node cannot be added while it belongs to another parent.
     ///
-    /// @return the live result node list displayed below the search bar
+    /// @return the live result node list displayed after the search input
     public final ObservableList<Node> getResults() {
         return resultsBox.getChildren();
     }
 
-    /// Returns the mutable trailing action list from the embedded search bar.
+    /// Returns the mutable trailing-action node list.
     ///
     /// The returned list is live, mutable, ordered, and rejects `null` elements. Each node is subject to the normal
     /// JavaFX single-parent rule when displayed.
@@ -433,7 +425,7 @@ public final class M3SearchView extends Control {
         setText("");
     }
 
-    /// Clears the embedded search text and moves this search view out of its active result state.
+    /// Clears the search text and moves this search view out of its active result state.
     public final void clearAndDeactivate() {
         clear();
         deactivate();
@@ -494,9 +486,9 @@ public final class M3SearchView extends Control {
         }
     }
 
-    /// Creates the default Material Design 3 search view skin.
+    /// Returns the default visual representation of this control.
     ///
-    /// @return the default Material Design 3 search view skin
+    /// @return the default visual representation
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SearchViewSkin(this, searchBar, resultsBox);
@@ -504,7 +496,7 @@ public final class M3SearchView extends Control {
 
     /// Adds base style classes and configures search result behavior.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         searchBar.leadingProperty().bindBidirectional(leading);
         searchBar.textProperty().bindBidirectional(text);
         searchBar.promptTextProperty().bindBidirectional(promptText);
@@ -824,7 +816,7 @@ public final class M3SearchView extends Control {
         return Math.max(1, (int) Math.floor(viewportHeight / rowHeight));
     }
 
-    /// Returns the best available measured or preferred height for the embedded search bar.
+    /// Returns the best available measured or preferred height for the search input.
     private double measuredSearchBarHeight() {
         double height = searchBar.getHeight();
         if (height <= 0.0) {
@@ -894,7 +886,7 @@ public final class M3SearchView extends Control {
         return false;
     }
 
-    /// Returns the embedded search bar's first accessible focus target.
+    /// Returns the search input's first accessible focus target.
     private Node defaultSearchBarFocusNode() {
         @Nullable Object focusNode = searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         return focusNode instanceof Node node ? node : searchBar.editor();
@@ -931,7 +923,7 @@ public final class M3SearchView extends Control {
         return searchBarFocusNode;
     }
 
-    /// Returns the embedded search bar's current focus target when focus is inside it or one of its popups.
+    /// Returns the search input's current focus target when focus is within the search view.
     private @Nullable Node currentSearchBarFocusNode() {
         @Nullable Object focusNode = searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         if (focusNode instanceof Node node && M3Accessible.canReach(node) && containsSceneFocus(node)) {
@@ -971,7 +963,7 @@ public final class M3SearchView extends Control {
         return -1;
     }
 
-    /// Moves focus to the embedded search editor and reveals it through this search view.
+    /// Moves focus to editable search text and reveals it through this search view.
     ///
     /// @return `true` when the editor accepted focus
     private boolean focusEditor() {

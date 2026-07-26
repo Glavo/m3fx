@@ -87,7 +87,7 @@ final class DemoPageCatalog {
                 new DemoPage("Tabs", "Tabs", "Tabs", "Primary and secondary fixed and scrollable tabs", DemoMaterialDocs.TABS, (new TabsDemoPage(context))::createContent),
                 new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", DemoMaterialDocs.TEXT_FIELDS, (new TextFieldsDemoPage(context))::createContent),
                 new DemoPage("Toolbars", "Toolbars", TOOLBARS_GROUP, "Floating and docked toolbars with Standard and Vibrant colors", DemoMaterialDocs.TOOLBARS, (new ToolbarsDemoPage(context))::createContent),
-                new DemoPage("Bottom App Bars", "Bottom app bars", TOOLBARS_GROUP, "Legacy bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, (new BottomAppBarsDemoPage(context))::createContent),
+                new DemoPage("Bottom App Bars", "Bottom app bars", TOOLBARS_GROUP, "Baseline bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, (new BottomAppBarsDemoPage(context))::createContent),
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, (new TooltipsDemoPage(context))::createContent),
                 new DemoPage("Settings", "Settings", ADDITIONAL_DEMOS_GROUP, "Action, switch, checkbox, and radio setting rows", DemoMaterialDocs.SETTINGS, (new SettingsDemoPage(context))::createContent),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, (new BannersDemoPage(context))::createContent),
@@ -95,6 +95,7 @@ final class DemoPageCatalog {
                 new DemoPage("Motion", "Motion", ADDITIONAL_DEMOS_GROUP, "Typed state, retained content, and interruptible layout motion", DemoMaterialDocs.MOTION, (new MotionDemoPage(context))::createContent),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", DemoMaterialDocs.TYPOGRAPHY, (new TypographyDemoPage(context))::createContent),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, (new IconsDemoPage(context))::createContent),
+                new DemoPage("Color Pickers", "Color pickers", ADDITIONAL_DEMOS_GROUP, "Composable color areas, sliders, wheels, fields, and palettes", DemoMaterialDocs.COLOR_PICKERS, "Spectrum docs", (new ColorPickersDemoPage(context))::createContent),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", DemoMaterialDocs.AVATARS, (new AvatarsDemoPage(context))::createContent),
                 new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", DemoMaterialDocs.SURFACES, (new SurfacesDemoPage(context))::createContent),
                 new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", DemoMaterialDocs.SCRIMS, (new ScrimsDemoPage(context))::createContent)

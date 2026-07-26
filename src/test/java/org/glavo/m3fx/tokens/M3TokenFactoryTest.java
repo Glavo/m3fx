@@ -128,11 +128,15 @@ final class M3TokenFactoryTest {
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-title-small-font-size: 16px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-tracking: -0.2px"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains(".m3-display-large-text"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains(".m3-label-small-text"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-font-size: 60px"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-line-height: 68px"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-tracking: -0.2px"));
+        String typographyRules = M3TokenCssCompiler.controlStyleRules(typography);
+        assertTrue(typographyRules.contains(".m3-display-large-text"));
+        assertTrue(typographyRules.contains(".m3-label-small-text"));
+        assertTrue(typographyRules.contains("-m3-typography-font-size: 60px"));
+        assertTrue(typographyRules.contains("-m3-typography-line-height: 68px"));
+        assertTrue(typographyRules.contains("-m3-typography-tracking: -0.2px"));
+        assertTrue(typographyRules.contains(".m3-list-item-headline"));
+        assertTrue(typographyRules.contains(".m3-list-item:navigation-drawer .m3-list-item-headline"));
+        assertTrue(typographyRules.contains("-fx-font-size: 15px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-hover-opacity: 0.05"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-opacity: 0.11"));
@@ -152,7 +156,7 @@ final class M3TokenFactoryTest {
     @Test
     void rejectsNonFiniteTokenValues() {
         assertThrows(IllegalArgumentException.class, () -> M3Density.of(Double.NaN));
-        assertThrows(IllegalArgumentException.class, () -> M3Density.standard().apply(Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class, () -> M3Density.standard().compact(Double.POSITIVE_INFINITY));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> M3ElevationTokens.builder().level1(Double.POSITIVE_INFINITY)

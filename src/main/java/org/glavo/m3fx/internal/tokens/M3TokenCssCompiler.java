@@ -50,6 +50,18 @@ public final class M3TokenCssCompiler {
             appendColor(builder, role.getVariableName(MONET_COLOR_PREFIX), color);
             appendColor(builder, role.getVariableName(MATERIAL_COLOR_PREFIX), color);
         }
+        appendColor(
+                builder,
+                "-m3-elevation-shadow-color",
+                tokens.get(ColorRole.SHADOW),
+                0.18
+        );
+        appendColor(
+                builder,
+                "-m3-elevation-strong-shadow-color",
+                tokens.get(ColorRole.SHADOW),
+                0.20
+        );
     }
 
     /// Appends one color declaration as a JavaFX CSS `rgb(r,g,b)` value.
@@ -64,6 +76,23 @@ public final class M3TokenCssCompiler {
                 .append(green)
                 .append(',')
                 .append(blue)
+                .append("); ");
+    }
+
+    /// Appends one color declaration with an explicit opacity as a JavaFX CSS `rgba(r,g,b,a)` value.
+    private static void appendColor(StringBuilder builder, String name, Color color, double opacity) {
+        int red = (int) Math.round(color.getRed() * 255.0);
+        int green = (int) Math.round(color.getGreen() * 255.0);
+        int blue = (int) Math.round(color.getBlue() * 255.0);
+        builder.append(name)
+                .append(": rgba(")
+                .append(red)
+                .append(',')
+                .append(green)
+                .append(',')
+                .append(blue)
+                .append(',')
+                .append(format(color.getOpacity() * opacity))
                 .append("); ");
     }
 
@@ -103,10 +132,10 @@ public final class M3TokenCssCompiler {
         append(builder, "body-small", tokens.bodySmall());
     }
 
-    /// Converts typography tokens into JavaFX CSS rules for M3FX text controls.
+    /// Converts typography tokens into JavaFX CSS rules for M3FX text and control presentation nodes.
     ///
     /// @param tokens the typography token set to compile
-    /// @return JavaFX CSS rules for the M3FX type-scale style classes
+    /// @return JavaFX CSS rules for M3FX type-scale roles
     /// @throws NullPointerException if `tokens` is `null`
     public static String controlStyleRules(M3TypographyTokens tokens) {
         StringBuilder builder = new StringBuilder();
@@ -137,6 +166,19 @@ public final class M3TokenCssCompiler {
         appendRule(builder, ".m3-body-large-text", tokens.bodyLarge());
         appendRule(builder, ".m3-body-medium-text", tokens.bodyMedium());
         appendRule(builder, ".m3-body-small-text", tokens.bodySmall());
+        appendRule(builder, ".m3-list-section-header", tokens.titleSmall());
+        appendRule(builder, ".m3-list-item-overline", tokens.labelSmall());
+        appendRule(builder, ".m3-list-item-headline", tokens.bodyLarge());
+        appendRule(builder, ".m3-list-item-supporting", tokens.bodyMedium());
+        appendRule(builder, ".m3-list-item-trailing-supporting", tokens.bodySmall());
+        appendRule(
+                builder,
+                ".m3-list-item:navigation-drawer .m3-list-item-headline",
+                tokens.labelLarge()
+        );
+        builder.append(".m3-list-item:navigation-drawer .m3-list-item-headline:selected {\n");
+        appendDeclaration(builder, "-fx-font-weight", "700");
+        builder.append("}\n\n");
     }
 
     /// Appends declarations for a typography token.
@@ -222,9 +264,14 @@ public final class M3TokenCssCompiler {
     public static void appendControlStyleRules(StringBuilder builder, M3ElevationTokens tokens) {
         Objects.requireNonNull(builder, "builder");
         Objects.requireNonNull(tokens, "tokens");
-        appendShadowRule(builder, ".m3-elevated-button", tokens.level3(), tokens.level1());
-        appendShadowRule(builder, ".m3-elevated-button:hover", tokens.level4(), tokens.level2());
-        appendShadowRule(builder, ".m3-elevated-button:focus-visible, .m3-elevated-button:armed, .m3-elevated-button:pressed", tokens.level3(), tokens.level1());
+        appendShadowRule(
+                builder,
+                ".m3-elevated-button, .m3-elevated-button:hover, "
+                        + ".m3-elevated-button:focus-visible, .m3-elevated-button:armed, "
+                        + ".m3-elevated-button:pressed",
+                tokens.level3(),
+                tokens.level1()
+        );
         appendShadowRule(builder, ".m3-elevated-chip", tokens.level2(), tokens.level1());
         appendShadowRule(builder, ".m3-elevated-chip:hover", tokens.level3(), tokens.level2());
         appendShadowRule(builder, ".m3-elevated-chip:focus-visible, .m3-elevated-chip:armed, .m3-elevated-chip:pressed", tokens.level2(), tokens.level1());
@@ -271,7 +318,7 @@ public final class M3TokenCssCompiler {
     /// Appends a dropshadow CSS rule.
     private static void appendShadowRule(StringBuilder builder, String selector, double radius, double offsetY) {
         builder.append(selector)
-                .append(" {\n    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), ")
+                .append(" {\n    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, ")
                 .append(format(radius))
                 .append(", 0.18, 0, ")
                 .append(format(offsetY))

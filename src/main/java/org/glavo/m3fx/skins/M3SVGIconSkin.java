@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
 /// the effective node orientation is right to left. Invalid or empty source geometry is not rendered.
 @NotNullByDefault
 public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
+    /// The SVG path style class.
+    private static final String PATH_STYLE_CLASS = "m3-svg-icon-path";
+
     /// The rendered SVG path node.
     private final SVGPath path = new SVGPath();
 
@@ -210,7 +213,7 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     ///
     /// @param control the SVG icon supplying path state
     private void initializePath(M3SVGIcon control) {
-        path.getStyleClass().add(M3SVGIcon.PATH_STYLE_CLASS);
+        path.getStyleClass().add(PATH_STYLE_CLASS);
         path.setManaged(false);
         path.setMouseTransparent(true);
         path.contentProperty().bind(control.contentProperty());

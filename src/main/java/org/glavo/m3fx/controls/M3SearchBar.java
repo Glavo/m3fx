@@ -56,23 +56,14 @@ import java.util.Objects;
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
 public final class M3SearchBar extends Control {
-    /// The base style class for M3FX search bars.
-    public static final String STYLE_CLASS = "m3-search-bar";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-search-bar";
 
     /// The active pseudo-class used when the search bar owns active search input.
     private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
 
     /// The style class applied to the search editor.
-    public static final String INPUT_STYLE_CLASS = "m3-search-bar-input";
-
-    /// The style class applied to the internal content row.
-    public static final String CONTENT_STYLE_CLASS = "m3-search-bar-content";
-
-    /// The style class applied to the leading slot.
-    public static final String LEADING_STYLE_CLASS = "m3-search-bar-leading";
-
-    /// The style class applied to the trailing action container.
-    public static final String TRAILING_STYLE_CLASS = "m3-search-bar-trailing";
+    private static final String INPUT_STYLE_CLASS = "m3-search-bar-input";
 
     /// The default search bar height.
     private static final double DEFAULT_HEIGHT = 56.0;
@@ -84,9 +75,10 @@ public final class M3SearchBar extends Control {
     private final TextField editor = new TextField();
 
     /// The mutable trailing action list.
-    private final ObservableList<Node> trailingActions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> trailingActions =
+            M3ObservableLists.identityDistinctElementList("action");
 
-    /// Whether the next active-state change should avoid moving focus into the embedded editor.
+    /// Whether the next active-state change should preserve the current slot focus.
     private boolean suppressActiveEditorFocus;
 
     /// Notifies accessibility clients when focus moves between search bar slots.
@@ -109,8 +101,7 @@ public final class M3SearchBar extends Control {
 
     /// The non-null search text edited by the user.
     ///
-    /// The property is bidirectionally synchronized with the embedded editor. Assigning or binding a `null` value
-    /// throws [NullPointerException].
+    /// Assigning or binding a `null` value throws [NullPointerException].
     ///
     /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
@@ -138,8 +129,7 @@ public final class M3SearchBar extends Control {
 
     /// Returns the observable, bidirectionally bindable search-text property.
     ///
-    /// The property has an initial value of `""`, is synchronized with the embedded editor, and rejects `null`
-    /// values, including values supplied by a binding.
+    /// The property has an initial value of `""` and rejects `null` values, including values supplied by a binding.
     ///
     /// @return the search-text property
     public final StringProperty textProperty() {
@@ -176,8 +166,7 @@ public final class M3SearchBar extends Control {
 
     /// Returns the observable, bidirectionally bindable prompt-text property.
     ///
-    /// The property has an initial value of `""`, is synchronized with the embedded editor, and rejects `null`
-    /// values, including values supplied by a binding.
+    /// The property has an initial value of `""` and rejects `null` values, including values supplied by a binding.
     ///
     /// @return the prompt-text property
     public final StringProperty promptTextProperty() {
@@ -220,7 +209,7 @@ public final class M3SearchBar extends Control {
 
     /// Returns the observable, bindable active-state property.
     ///
-    /// The property is `false` by default. Setting it to `true` requests focus for the embedded editor when the
+    /// The property is `false` by default. Setting it to `true` requests focus for editable search text when the
     /// control is reachable; setting it to `false` does not clear text or forcibly move focus.
     ///
     /// @return the active-state property
@@ -300,7 +289,7 @@ public final class M3SearchBar extends Control {
 
     /// Returns the editable search input used by this search bar.
     ///
-    /// @return the embedded editable search input
+    /// @return the editable search input
     final TextField editor() {
         return editor;
     }
@@ -333,7 +322,7 @@ public final class M3SearchBar extends Control {
         }
     }
 
-    /// Moves the search bar into its active input state and requests focus for its editor when reachable.
+    /// Moves the search bar into its active input state and requests focus for editable search text when reachable.
     public final void activate() {
         setActive(true);
     }
@@ -354,7 +343,7 @@ public final class M3SearchBar extends Control {
         deactivate();
     }
 
-    /// Returns accessibility attributes for the embedded search editor.
+    /// Returns accessibility attributes for this search bar.
     ///
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
@@ -416,7 +405,7 @@ public final class M3SearchBar extends Control {
 
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         editor.getStyleClass().add(INPUT_STYLE_CLASS);
         editor.setPromptText("");
         editor.textProperty().bindBidirectional(text);
@@ -447,7 +436,7 @@ public final class M3SearchBar extends Control {
         focusNotifier.start();
     }
 
-    /// Activates the search container unless an embedded action owns the pointer click.
+    /// Activates the search bar unless a slot action owns the pointer click.
     private void handleMouseClicked(MouseEvent event) {
         if (event.getButton() != MouseButton.PRIMARY) {
             return;
@@ -498,7 +487,7 @@ public final class M3SearchBar extends Control {
         return M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
     }
 
-    /// Focuses the embedded editor and enters active input state.
+    /// Focuses editable search text and enters active input state.
     private void focusEditor() {
         if (!M3Accessible.canReach(this)) {
             return;
@@ -575,7 +564,7 @@ public final class M3SearchBar extends Control {
 
     /// Returns the current accessibility focus node.
     ///
-    /// @return the focused indexed item, first interactive leading item, or embedded editor
+    /// @return the focused indexed item, first interactive leading item, or editable search text
     private Node accessibleFocusNode() {
         @Nullable Node focusNode = currentFocusNode();
         if (focusNode != null) {

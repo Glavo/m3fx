@@ -6,12 +6,15 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3DensityImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes an immutable density scale for layout-sensitive component tokens.
+/// Describes an immutable compactness scale for density-sensitive component metrics.
 ///
-/// Density adjusts metrics that are safe to compact or expand, such as heights and padding. A scale of `0.0`
-/// represents the baseline Material Design 3 density. Each scale unit adds four JavaFX logical pixels to a metric;
-/// negative scales subtract the same amount. Supported scales are finite values in the closed interval
-/// `[-4.0, 4.0]`.
+/// A scale of `0.0` represents baseline Material Design 3 density. Component token generation applies a density
+/// only to selected vertical layout metrics, such as component heights, vertical padding, and vertical item gaps.
+/// It does not apply the scale to every geometric token. Icon sizes, outline widths, radii, horizontal widths, and
+/// touch-target sizes retain their component-specific values.
+///
+/// Each scale unit changes an eligible metric by four JavaFX logical pixels. Negative scales compact eligible
+/// metrics; positive scales expand them. Supported scales are finite values in the closed interval `[-4.0, 4.0]`.
 ///
 /// Density is applied when component tokens are derived. Changing the density object used to construct a theme
 /// does not dynamically resize an existing token set.
@@ -41,18 +44,21 @@ public sealed interface M3Density permits M3DensityImpl {
         return new M3DensityImpl(scale);
     }
 
-    /// Applies this density to a baseline metric.
+    /// Returns a compacted or expanded vertical layout metric.
     ///
-    /// The result is `max(0.0, value + scale() * 4.0)`. Negative input values are accepted but may therefore be
-    /// clamped to zero.
+    /// This operation is intended only for a component metric that the component specification permits density to
+    /// change, such as a height, vertical padding, or vertical gap. Callers must not use it for a stroke width,
+    /// icon size, radius, horizontal dimension, or touch target.
     ///
-    /// @param value the baseline size to adjust
+    /// The result is `max(0.0, baseline + scale() * 4.0)`.
+    ///
+    /// @param baseline the baseline vertical layout metric to adjust
     /// @return the density-adjusted metric, never less than zero
-    /// @throws IllegalArgumentException if `value` is not finite
-    default double apply(double value) {
-        if (!Double.isFinite(value)) {
-            throw new IllegalArgumentException("value must be finite");
+    /// @throws IllegalArgumentException if `baseline` is not finite
+    default double compact(double baseline) {
+        if (!Double.isFinite(baseline)) {
+            throw new IllegalArgumentException("baseline must be finite");
         }
-        return Math.max(0.0, value + scale() * 4.0);
+        return Math.max(0.0, baseline + scale() * 4.0);
     }
 }

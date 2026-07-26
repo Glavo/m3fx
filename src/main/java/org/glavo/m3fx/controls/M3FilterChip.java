@@ -17,8 +17,8 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design filter chips](https://m3.material.io/components/chips/specs#filter-chip).
 @NotNullByDefault
 public final class M3FilterChip extends M3SelectableChip {
-    /// The style class identifying filter chips.
-    public static final String STYLE_CLASS = "m3-filter-chip";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-filter-chip";
 
     /// Creates a flat, unselected filter chip with empty text and no graphics.
     public M3FilterChip() {
@@ -39,6 +39,6 @@ public final class M3FilterChip extends M3SelectableChip {
     /// @param graphic the leading graphic, or `null` for no leading graphic
     /// @throws NullPointerException if `text` is `null`
     public M3FilterChip(String text, @Nullable Node graphic) {
-        super(text, graphic, STYLE_CLASS);
+        super(text, graphic, DEFAULT_STYLE_CLASS);
     }
 }

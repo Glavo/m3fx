@@ -73,8 +73,8 @@ import java.util.Objects;
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3ListPane extends Control {
-    /// The base style class for M3FX static list panes.
-    public static final String STYLE_CLASS = "m3-list-pane";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-list-pane";
 
     /// The default list containment style.
     private static final M3ListStyle DEFAULT_LIST_STYLE = M3ListStyle.STANDARD;
@@ -292,7 +292,7 @@ public final class M3ListPane extends Control {
     /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Structural
     /// nodes are displayed but do not participate in selection. Removing a selected list item clears its selected
     /// state.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between list-derived rows.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -357,9 +357,9 @@ public final class M3ListPane extends Control {
     /// Returns the live mutable list of nodes displayed by this pane.
     ///
     /// Mutations are observed immediately and insertion order determines layout, selection order, and keyboard
-    /// traversal. The list rejects `null`. It does not perform an explicit duplicate check, but each entry is a
-    /// JavaFX node and must occur only once and must not simultaneously belong to another parent. Structural nodes
-    /// are displayed but do not participate in managed selection.
+    /// traversal. The list rejects `null` elements and repeated occurrences of the same node instance. Bulk
+    /// mutations are validated before the list changes, and each node must satisfy the JavaFX single-parent rule.
+    /// Structural nodes are displayed but do not participate in managed selection.
     ///
     /// @return the live mutable item list
     public final ObservableList<Node> getItems() {
@@ -577,7 +577,7 @@ public final class M3ListPane extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         updateListStyle();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);

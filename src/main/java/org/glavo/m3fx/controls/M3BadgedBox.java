@@ -39,8 +39,8 @@ import java.util.Objects;
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public final class M3BadgedBox extends Control {
-    /// The base style class for M3FX badged boxes.
-    public static final String STYLE_CLASS = "m3-badged-box";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-badged-box";
 
     /// Creates an empty badged box with top-end alignment and zero offsets.
     public M3BadgedBox() {
@@ -327,7 +327,7 @@ public final class M3BadgedBox extends Control {
 
     /// Initializes style classes and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);

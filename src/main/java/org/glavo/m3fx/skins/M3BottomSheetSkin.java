@@ -30,6 +30,24 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3BottomSheet].
 @NotNullByDefault
 public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
+    /// The internal drag-handle-container style class.
+    private static final String DRAG_HANDLE_CONTAINER_STYLE_CLASS = "m3-bottom-sheet-drag-handle-container";
+
+    /// The internal drag-handle style class.
+    private static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
+
+    /// The internal sheet-header style class.
+    private static final String HEADER_STYLE_CLASS = "m3-sheet-header";
+
+    /// The internal sheet-title style class.
+    private static final String TITLE_STYLE_CLASS = "m3-sheet-title";
+
+    /// The internal actions-container style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-sheet-actions";
+
+    /// The internal sheet-content style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
+
     /// The internal sheet layout root.
     private final BorderPane container = new BorderPane();
 
@@ -86,12 +104,12 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
     public M3BottomSheetSkin(M3BottomSheet control) {
         super(control);
         container.setManaged(false);
-        dragHandleSlot.getStyleClass().add(M3BottomSheet.DRAG_HANDLE_CONTAINER_STYLE_CLASS);
-        dragHandle.getStyleClass().add(M3BottomSheet.DRAG_HANDLE_STYLE_CLASS);
-        header.getStyleClass().add(M3BottomSheet.HEADER_STYLE_CLASS);
-        headlineLabel.getStyleClass().add(M3BottomSheet.TITLE_STYLE_CLASS);
-        actions.getStyleClass().add(M3BottomSheet.ACTIONS_STYLE_CLASS);
-        contentSlot.getStyleClass().add(M3BottomSheet.CONTENT_STYLE_CLASS);
+        dragHandleSlot.getStyleClass().add(DRAG_HANDLE_CONTAINER_STYLE_CLASS);
+        dragHandle.getStyleClass().add(DRAG_HANDLE_STYLE_CLASS);
+        header.getStyleClass().add(HEADER_STYLE_CLASS);
+        headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
+        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
+        contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
         contentSlot.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         header.setAlignment(Pos.CENTER_LEFT);
         actions.setAlignment(Pos.CENTER_RIGHT);

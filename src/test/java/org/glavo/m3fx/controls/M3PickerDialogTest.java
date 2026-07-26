@@ -158,9 +158,9 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(5, dialog.getPresets().size());
-            assertEquals(5, pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(5, pane.lookupAll("." + "m3-date-picker-dialog-preset-button").size());
 
-            presetButton(pane, M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS, "In 7 days").fire();
+            presetButton(pane, "m3-date-picker-dialog-preset-button", "In 7 days").fire();
 
             assertEquals(anchor.plusDays(7), dialog.getValue());
             assertEquals(YearMonth.from(anchor), dialog.getPicker().getDisplayedMonth());
@@ -177,7 +177,7 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertTrue(pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
+            assertTrue(pane.lookupAll("." + "m3-date-picker-dialog-preset-button").isEmpty());
         });
     }
 
@@ -326,9 +326,9 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(6, dialog.getPresets().size());
-            assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(6, pane.lookupAll("." + "m3-date-range-picker-dialog-preset-button").size());
 
-            presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days").fire();
+            presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Next 7 days").fire();
 
             assertEquals(new M3DateRange(anchor, anchor.plusDays(6)), dialog.getPicker().getRange());
             assertEquals(YearMonth.from(anchor), dialog.getPicker().getDisplayedMonth());
@@ -349,7 +349,7 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertTrue(pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
+            assertTrue(pane.lookupAll("." + "m3-date-range-picker-dialog-preset-button").isEmpty());
         });
     }
 
@@ -368,21 +368,21 @@ final class M3PickerDialogTest {
             );
             applyCss(pane);
 
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Today").isDisabled());
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Tomorrow").isDisabled());
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Today").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Tomorrow").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Next 7 days").isDisabled());
 
             dialog.getPicker().setMaxDate(anchor.plusDays(2));
 
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Today").isDisabled());
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Tomorrow").isDisabled());
-            assertTrue(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Today").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Tomorrow").isDisabled());
+            assertTrue(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Next 7 days").isDisabled());
 
             dialog.getPicker().setMinDate(anchor.plusDays(1));
 
-            assertTrue(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Today").isDisabled());
-            assertFalse(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Tomorrow").isDisabled());
-            assertTrue(presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days").isDisabled());
+            assertTrue(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Today").isDisabled());
+            assertFalse(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Tomorrow").isDisabled());
+            assertTrue(presetButton(pane, "m3-date-range-picker-dialog-preset-button", "Next 7 days").isDisabled());
         });
     }
 
@@ -437,12 +437,12 @@ final class M3PickerDialogTest {
                 Node datePickerParent = dateDialog.getPicker().getParent();
                 M3Button dateToday = presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Today"
                 );
                 M3Button dateTomorrow = presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Tomorrow"
                 );
                 Object dateTodaySkin = dateToday.getSkin();
@@ -455,14 +455,14 @@ final class M3PickerDialogTest {
                 assertSame(datePickerParent, dateDialog.getPicker().getParent());
                 assertSame(dateToday, presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Today"
                 ));
                 assertSame(dateTodaySkin, dateToday.getSkin());
                 assertTrue(dateToday.isFocused());
                 assertTrue(presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "In 7 days"
                 ).isDisabled());
 
@@ -471,12 +471,12 @@ final class M3PickerDialogTest {
 
                 assertSame(dateToday, presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Today"
                 ));
                 assertSame(dateTomorrow, presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Tomorrow"
                 ));
                 dateDialog.getPresets().remove(dateTomorrowPreset);
@@ -484,17 +484,17 @@ final class M3PickerDialogTest {
                 assertNull(dateTomorrow.getOnAction());
                 assertSame(dateToday, presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Today"
                 ));
-                presetButton(datePane, M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Release").fire();
+                presetButton(datePane, "m3-date-picker-dialog-preset-button", "Release").fire();
                 assertEquals(releasePreset.date(), dateDialog.getValue());
 
                 Node rangeContent = rangePane.getContent();
                 Node rangePickerParent = rangeDialog.getPicker().getParent();
                 M3Button rangeToday = presetButton(
                         rangePane,
-                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-range-picker-dialog-preset-button",
                         "Today"
                 );
                 Object rangeTodaySkin = rangeToday.getSkin();
@@ -505,13 +505,13 @@ final class M3PickerDialogTest {
                 assertSame(rangePickerParent, rangeDialog.getPicker().getParent());
                 assertSame(rangeToday, presetButton(
                         rangePane,
-                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-range-picker-dialog-preset-button",
                         "Today"
                 ));
                 assertSame(rangeTodaySkin, rangeToday.getSkin());
                 assertTrue(presetButton(
                         rangePane,
-                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-range-picker-dialog-preset-button",
                         "Next 7 days"
                 ).isDisabled());
 
@@ -519,7 +519,7 @@ final class M3PickerDialogTest {
                 Node timePickerParent = timeDialog.getPicker().getParent();
                 M3Button now = presetButton(
                         timePane,
-                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-time-picker-dialog-preset-button",
                         "Now"
                 );
                 Object nowSkin = now.getSkin();
@@ -530,13 +530,13 @@ final class M3PickerDialogTest {
                 assertSame(timePickerParent, timeDialog.getPicker().getParent());
                 assertSame(now, presetButton(
                         timePane,
-                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-time-picker-dialog-preset-button",
                         "Now"
                 ));
                 assertSame(nowSkin, now.getSkin());
                 assertTrue(presetButton(
                         timePane,
-                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-time-picker-dialog-preset-button",
                         "Evening"
                 ).isDisabled());
             } finally {
@@ -560,15 +560,15 @@ final class M3PickerDialogTest {
             assertFalse(content.getChildren().get(0).isManaged());
             Region pickerContainer = assertInstanceOf(
                     Region.class,
-                    dialog.getPicker().lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)
+                    dialog.getPicker().lookup("." + "m3-time-picker-container")
             );
             assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
             assertEquals("Select time", pane.getHeaderText());
             assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
-            assertEquals(1, pane.lookupAll("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS).size());
+            assertEquals(1, pane.lookupAll("." + "m3-time-picker-mode-button").size());
             M3IconButton modeButton = assertInstanceOf(
                     M3IconButton.class,
-                    pane.lookup("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS)
+                    pane.lookup("." + "m3-time-picker-mode-button")
             );
             assertFalse(dialog.getPicker().isInputMode());
             modeButton.fire();
@@ -755,9 +755,9 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(5, dialog.getPresets().size());
-            assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(5, pane.lookupAll("." + "m3-time-picker-dialog-preset-button").size());
 
-            presetButton(pane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "In 15 min").fire();
+            presetButton(pane, "m3-time-picker-dialog-preset-button", "In 15 min").fire();
 
             assertEquals(LocalTime.of(10, 45), dialog.getValue());
             assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
@@ -772,7 +772,7 @@ final class M3PickerDialogTest {
             assertSame(content, pane.getContent());
             assertSame(pickerParent, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertTrue(pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
+            assertTrue(pane.lookupAll("." + "m3-time-picker-dialog-preset-button").isEmpty());
         });
     }
 
@@ -841,15 +841,15 @@ final class M3PickerDialogTest {
                 timePane.resizeRelocate(24.0, 580.0, 680.0, 240.0);
                 root.layout();
 
-                M3Button today = presetButton(datePane, M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Today");
+                M3Button today = presetButton(datePane, "m3-date-picker-dialog-preset-button", "Today");
                 M3Button tomorrow = presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Tomorrow"
                 );
                 M3Button nextMonth = presetButton(
                         datePane,
-                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-picker-dialog-preset-button",
                         "Next month"
                 );
 
@@ -881,12 +881,12 @@ final class M3PickerDialogTest {
 
                 M3Button rangeToday = presetButton(
                         rangePane,
-                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-range-picker-dialog-preset-button",
                         "Today"
                 );
                 M3Button rangeTomorrow = presetButton(
                         rangePane,
-                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-date-range-picker-dialog-preset-button",
                         "Tomorrow"
                 );
 
@@ -903,18 +903,18 @@ final class M3PickerDialogTest {
 
                 assertFocusInsidePicker(scene, rangeDialog.getPicker());
 
-                M3Button now = presetButton(timePane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Now");
+                M3Button now = presetButton(timePane, "m3-time-picker-dialog-preset-button", "Now");
                 M3Button inFifteenMinutes = presetButton(
                         timePane,
-                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-time-picker-dialog-preset-button",
                         "In 15 min"
                 );
                 M3Button morning = presetButton(
                         timePane,
-                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "m3-time-picker-dialog-preset-button",
                         "Morning"
                 );
-                M3Button evening = presetButton(timePane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Evening");
+                M3Button evening = presetButton(timePane, "m3-time-picker-dialog-preset-button", "Evening");
 
                 now.requestFocus();
                 now.fireEvent(keyPressed(KeyCode.DOWN));

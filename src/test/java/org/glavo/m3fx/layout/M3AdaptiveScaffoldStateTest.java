@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.FxTestUtils;
@@ -18,10 +19,13 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.DoubleConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -424,6 +428,65 @@ final class M3AdaptiveScaffoldStateTest {
         });
     }
 
+    /// Verifies that invalid direct slot assignments fail before replacing the accepted value.
+    @Test
+    void rejectsDuplicateParentedAndCyclicSlotNodesAtomically() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+            Pane acceptedMain = new Pane();
+            Pane duplicate = new Pane();
+            Pane parented = new Pane();
+            Pane externalParent = new Pane(parented);
+            Pane ancestor = new Pane(scaffold);
+
+            scaffold.setMainPane(acceptedMain);
+            scaffold.setLeadingPane(duplicate);
+
+            assertThrows(IllegalArgumentException.class, () -> scaffold.trailingPaneProperty().set(duplicate));
+            assertNull(scaffold.getTrailingPane());
+            assertSame(duplicate, scaffold.getLeadingPane());
+
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setMainPane(parented));
+            assertSame(acceptedMain, scaffold.getMainPane());
+            assertSame(externalParent, parented.getParent());
+
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setMainPane(scaffold));
+            assertSame(acceptedMain, scaffold.getMainPane());
+
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setMainPane(ancestor));
+            assertSame(acceptedMain, scaffold.getMainPane());
+            assertSame(ancestor, scaffold.getParent());
+
+            scaffold.setMainPane(acceptedMain);
+            assertSame(acceptedMain, scaffold.getMainPane());
+        });
+    }
+
+    /// Verifies that a bound slot rejects an ineligible source value before publishing adaptive-state changes.
+    @Test
+    void validatesEveryBoundSlotValue() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+            Pane leading = new Pane();
+            Pane initialMain = new Pane();
+            Pane replacementMain = new Pane();
+            SimpleObjectProperty<@Nullable Node> source =
+                    new SimpleObjectProperty<>(initialMain);
+
+            scaffold.setLeadingPane(leading);
+            scaffold.mainPaneProperty().bind(source);
+            assertSame(initialMain, scaffold.getMainPane());
+
+            assertInstanceOf(
+                    IllegalArgumentException.class,
+                    captureUncaughtListenerException(() -> source.set(leading))
+            );
+
+            source.set(replacementMain);
+            assertSame(replacementMain, scaffold.getMainPane());
+        });
+    }
+
     /// Creates a scaffold with all three content slots populated.
     ///
     /// @return a scaffold with leading, main, and trailing panes
@@ -486,6 +549,23 @@ final class M3AdaptiveScaffoldStateTest {
         assertThrows(IllegalArgumentException.class, () -> setter.accept(Double.NaN));
         assertThrows(IllegalArgumentException.class, () -> setter.accept(Double.NEGATIVE_INFINITY));
         assertThrows(IllegalArgumentException.class, () -> setter.accept(Double.POSITIVE_INFINITY));
+    }
+
+    /// Runs a property mutation and returns an exception reported through JavaFX listener dispatch.
+    ///
+    /// @param mutation the property mutation to run
+    /// @return the exception reported by JavaFX
+    private static Throwable captureUncaughtListenerException(Runnable mutation) {
+        Thread thread = Thread.currentThread();
+        Thread.UncaughtExceptionHandler previousHandler = thread.getUncaughtExceptionHandler();
+        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+        thread.setUncaughtExceptionHandler((ignoredThread, exception) -> failure.set(exception));
+        try {
+            mutation.run();
+        } finally {
+            thread.setUncaughtExceptionHandler(previousHandler);
+        }
+        return Objects.requireNonNull(failure.get(), "listener exception");
     }
 
     /// Forces one breakpoint and verifies the mutually exclusive breakpoint pseudo-classes.

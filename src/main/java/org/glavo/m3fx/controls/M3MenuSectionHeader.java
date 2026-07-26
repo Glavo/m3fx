@@ -15,8 +15,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3MenuSectionHeader extends M3Text {
-    /// The base style class for M3FX menu section headers.
-    public static final String STYLE_CLASS = "m3-menu-section-header";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-menu-section-header";
 
     /// Creates an empty menu section header.
     public M3MenuSectionHeader() {
@@ -28,7 +28,7 @@ public final class M3MenuSectionHeader extends M3Text {
     /// @param text the header text
     public M3MenuSectionHeader(String text) {
         super(text, M3TextRole.LABEL_LARGE);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setFocusTraversable(false);
     }
 

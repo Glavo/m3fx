@@ -84,7 +84,7 @@ final class M3DialogWindowPresentationTest {
                 );
                 assertSame(dialog, handle.getDialog());
                 assertTrue(handle.isShowing());
-                assertTrue(root.getStyleClass().contains(M3DialogWindow.STYLE_CLASS));
+                assertTrue(root.getStyleClass().contains("m3-dialog-window-root"));
                 M3Theme installedTheme = Objects.requireNonNull(
                         M3ThemeManager.getTheme(root),
                         "standalone theme"

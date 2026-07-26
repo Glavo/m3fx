@@ -59,8 +59,8 @@ import java.util.Objects;
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
 public final class M3Card extends Control {
-    /// The base style class for M3FX cards.
-    public static final String STYLE_CLASS = "m3-card";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-card";
 
     /// The default card container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 12.0;
@@ -89,7 +89,7 @@ public final class M3Card extends Control {
     ///
     /// @param content the card content node, or `null` for no content
     public M3Card(@Nullable Node content) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(false);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

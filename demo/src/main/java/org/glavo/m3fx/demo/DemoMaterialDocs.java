@@ -74,6 +74,9 @@ final class DemoMaterialDocs {
     /// The chips component documentation URL.
     static final String CHIPS = componentUrl("chips");
 
+    /// The Spectrum composable color-control documentation used for color-picker behavior.
+    static final String COLOR_PICKERS = "https://react-spectrum.adobe.com/ColorArea";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 

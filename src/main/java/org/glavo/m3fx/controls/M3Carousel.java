@@ -61,20 +61,14 @@ public final class M3Carousel extends Control {
     /// The default carousel layout.
     private static final M3CarouselLayout DEFAULT_CAROUSEL_LAYOUT = M3CarouselLayout.UNCONTAINED;
 
-    /// The base style class for M3FX carousels.
-    public static final String STYLE_CLASS = "m3-carousel";
-
-    /// The style class applied to the carousel scroll viewport.
-    public static final String VIEWPORT_STYLE_CLASS = "m3-carousel-viewport";
-
-    /// The style class applied to the carousel item track.
-    public static final String TRACK_STYLE_CLASS = "m3-carousel-track";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-carousel";
 
     /// The style class applied to each carousel item node.
-    public static final String ITEM_STYLE_CLASS = "m3-carousel-item";
+    private static final String ITEM_STYLE_CLASS = "m3-carousel-item";
 
     /// The style class applied to the selected carousel item node.
-    public static final String SELECTED_ITEM_STYLE_CLASS = "m3-carousel-selected-item";
+    private static final String SELECTED_ITEM_STYLE_CLASS = "m3-carousel-selected-item";
 
     /// The pseudo-class applied to the selected carousel item node.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -262,7 +256,7 @@ public final class M3Carousel extends Control {
     ///
     /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. An item is a
     /// scene-graph node and cannot simultaneously be a child of another parent.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<Node> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// The focus-traversable value restored when an application-owned item leaves this carousel.
     private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
@@ -316,7 +310,9 @@ public final class M3Carousel extends Control {
     /// Each installed item becomes focus traversable so Tab and arrow-key navigation operate on items rather than the
     /// carousel container. Removing an item restores the focus-traversable value it had when installed.
     ///
-    /// The list preserves insertion order and rejects `null` elements. Changes update selection immediately.
+    /// The list preserves insertion order and rejects `null` elements or repeated occurrences of the same node
+    /// instance. Bulk mutations are validated before the list changes, and successful changes update selection
+    /// immediately.
     ///
     /// @return the live, mutable item list
     public final ObservableList<Node> getItems() {
@@ -401,18 +397,22 @@ public final class M3Carousel extends Control {
 
     /// Requests that the selected item be scrolled into view using the configured animation policy.
     ///
-    /// This method has no effect when selection is empty or the control is not ready to present a viewport.
+    /// This method has no effect when selection is empty. Otherwise, it fires an [M3ScrollToEvent] for the selected
+    /// index. A presentation that accepts the event reveals the item.
     public final void scrollSelectedItemIntoView() {
         scrollSelectedItemIntoView(isAnimatedScroll());
     }
 
     /// Requests that the selected item be scrolled into view.
     ///
+    /// Passing `true` requests motion but does not override reduced-motion settings or require animation when motion
+    /// is unavailable. An event handler that accepts the request must consume the [M3ScrollToEvent].
+    ///
     /// @param animated whether the viewport scroll should animate
     public final void scrollSelectedItemIntoView(boolean animated) {
-        Skin<?> skin = getSkin();
-        if (skin instanceof M3CarouselSkin carouselSkin) {
-            carouselSkin.scrollSelectedItemIntoView(animated);
+        int index = getSelectedIndex();
+        if (index >= 0 && index < getItems().size()) {
+            fireEvent(new M3ScrollToEvent(this, this, index, animated));
         }
     }
 
@@ -465,7 +465,7 @@ public final class M3Carousel extends Control {
 
     /// Adds base styles, accessibility role, and input behavior.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         updateCarouselLayoutStyle();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);

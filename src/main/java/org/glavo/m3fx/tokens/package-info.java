@@ -8,8 +8,7 @@
 /// Applications normally create tokens indirectly through [org.glavo.m3fx.theme.M3Theme], but the public
 /// token interfaces are available for advanced integrations, diagnostics, and custom theme construction.
 ///
-/// The token model is designed to keep component code independent from any single CSS file. Theme instances
-/// convert tokens into JavaFX CSS custom properties and component rules that can be installed through
+/// Theme instances convert tokens into JavaFX CSS values and component rules that can be installed through
 /// [org.glavo.m3fx.theme.M3ThemeManager].
 ///
 /// Token sets and token groups retain their immutable child groups and may be shared after construction. Builder

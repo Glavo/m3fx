@@ -26,7 +26,9 @@ import java.util.Objects;
 /// An icon button presents one compact action using graphic content, normally an [M3Icon]. It inherits action
 /// dispatch, keyboard activation, focus traversal, and disabled-state behavior from [M3ButtonBase]. The default
 /// button has no graphic, uses the text-button color treatment, the small Material button size, the default width
-/// role, and a `40.0` logical-pixel visual container width.
+/// role, and a `40.0` logical-pixel visual container. The default control occupies a `48.0` by `48.0`
+/// logical-pixel interaction target, with the visual container centered inside it. Larger visual containers expand
+/// the interaction target as needed.
 ///
 /// The graphic is a JavaFX node and therefore may have only one parent. Supplying `null` leaves the button empty.
 /// Applications should provide accessible text or accessible help when the graphic alone does not convey the
@@ -35,7 +37,7 @@ import java.util.Objects;
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public final class M3IconButton extends M3ButtonBase {
-    /// The default style class for this control.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-icon-button";
 
     /// The default icon button width role.
@@ -43,6 +45,9 @@ public final class M3IconButton extends M3ButtonBase {
 
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
+
+    /// The minimum interaction-target dimension recommended by Material accessibility guidance.
+    private static final double MINIMUM_INTERACTION_TARGET_SIZE = 48.0;
 
     /// Creates an icon button with no graphic and the default icon-button metrics.
     public M3IconButton() {
@@ -104,8 +109,9 @@ public final class M3IconButton extends M3ButtonBase {
 
     /// The preferred visual container width in logical pixels.
     ///
-    /// The value must be finite and non-negative. This property updates the unbound minimum, preferred, and
-    /// maximum width; an application binding on those inherited size properties remains authoritative.
+    /// The value must be finite and non-negative. The unbound minimum, preferred, and maximum control widths are
+    /// updated to the greater of this value and `48.0`; an application binding on those inherited size properties
+    /// remains authoritative.
     ///
     /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerWidth;
@@ -169,14 +175,12 @@ public final class M3IconButton extends M3ButtonBase {
         updateIconMetrics();
     }
 
-    /// Applies the current container size tokens to layout metrics.
+    /// Applies visual container tokens while preserving the minimum interaction target.
     private void updateIconMetrics() {
-        double width = getContainerWidth();
-        double height = getContainerHeight();
+        double width = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerWidth());
+        double height = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerHeight());
         M3Css.setMinWidthIfUnbound(this, width);
-        M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefWidthIfUnbound(this, width);
-        M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setMaxWidthIfUnbound(this, width);
         M3Css.setMaxHeightIfUnbound(this, height);
     }

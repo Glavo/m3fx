@@ -379,8 +379,8 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Fixed-target controls whose visible glyph content should stay centered.
     private static final @Unmodifiable Set<String> CENTERED_TARGET_STYLE_CLASSES = Set.of(
-            M3DatePicker.DAY_CELL_STYLE_CLASS,
-            M3TimePicker.CELL_STYLE_CLASS,
+            "m3-date-picker-day-cell",
+            "m3-time-picker-cell",
             ICON_BUTTON_STYLE_CLASS,
             ICON_TOGGLE_BUTTON_STYLE_CLASS
     );
@@ -511,7 +511,7 @@ final class M3FXDemoVisualMatrixTest {
                     "Forms",
                     "validation-summary-item",
                     "validation summary item",
-                    root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
+                    root -> firstVisibleStyledDescendant(root, "m3-validation-summary-item")
             ),
             new InteractionTargetCase(
                     "Chips",
@@ -668,7 +668,7 @@ final class M3FXDemoVisualMatrixTest {
                     "Forms",
                     "validation-summary-item",
                     "validation summary item",
-                    root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
+                    root -> firstVisibleStyledDescendant(root, "m3-validation-summary-item")
             ),
             new InteractionTargetCase(
                     "Chips",
@@ -1246,7 +1246,7 @@ final class M3FXDemoVisualMatrixTest {
                                 assertSidebarSelectionMatchesCurrentPage(app, title);
                                 assertSidebarGroupingMatchesMaterialNavigation(app, scene, title);
                                 assertSelectedSidebarItemInsideViewport(app, scene, title);
-                                assertMaterialDocumentationLink(scene, title);
+                                assertReferenceDocumentationLink(scene, title);
 
                                 WritableImage image = snapshot(scene);
                                 writeVisualSnapshot(
@@ -1326,13 +1326,14 @@ final class M3FXDemoVisualMatrixTest {
     }
 
     /// Verifies one rendered demo page header documentation link.
-    private static void assertMaterialDocumentationLink(Scene scene, String title) {
+    private static void assertReferenceDocumentationLink(Scene scene, String title) {
         Node docsLink = Objects.requireNonNull(
                 scene.lookup(".demo-page-doc-link"),
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        assertEquals("Material docs", docsButton.getText(), title + " docs link text");
+        String expectedLabel = "Color Pickers".equals(title) ? "Spectrum docs" : "Material docs";
+        assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
         assertTrue(docsButton.isVisible(), title + " docs link visible");
         assertTrue(docsButton.isManaged(), title + " docs link managed");
         assertFalse(docsButton.isDisabled(), title + " docs link enabled");
@@ -1738,7 +1739,7 @@ final class M3FXDemoVisualMatrixTest {
             verifyPickerDialogPresetSurface(
                     sceneReference,
                     "Open date dialog",
-                    M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    "m3-date-picker-dialog-preset-button",
                     M3DatePicker.class,
                     5,
                     1,
@@ -1747,7 +1748,7 @@ final class M3FXDemoVisualMatrixTest {
             verifyPickerDialogPresetSurface(
                     sceneReference,
                     "Open preset range dialog",
-                    M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    "m3-date-range-picker-dialog-preset-button",
                     M3DateRangePicker.class,
                     6,
                     1,
@@ -1771,7 +1772,7 @@ final class M3FXDemoVisualMatrixTest {
             verifyPickerDialogPresetSurface(
                     sceneReference,
                     "Open time dialog",
-                    M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    "m3-time-picker-dialog-preset-button",
                     M3TimePicker.class,
                     5,
                     1,
@@ -2282,7 +2283,7 @@ final class M3FXDemoVisualMatrixTest {
                         ScrollPane.class,
                         requireVisibleStyledDescendant(
                                 fullScreen,
-                                M3Carousel.VIEWPORT_STYLE_CLASS,
+                                "m3-carousel-viewport",
                                 "full-screen carousel viewport"
                         )
                 );
@@ -2292,7 +2293,7 @@ final class M3FXDemoVisualMatrixTest {
                 );
                 Node fullScreenTrack = requireVisibleStyledDescendant(
                         fullScreen,
-                        M3Carousel.TRACK_STYLE_CLASS,
+                        "m3-carousel-track",
                         "full-screen carousel track"
                 );
                 Bounds fullScreenViewportBounds =
@@ -2537,7 +2538,7 @@ final class M3FXDemoVisualMatrixTest {
 
                         List<M3Banner> banners = visibleNodesOfType(page, M3Banner.class);
                         assertEquals(5, banners.size(), "Banners page should render five banner states");
-                        assertEquals(3, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
+                        assertEquals(3, visibleNodesWithStyle(page, "m3-banner-icon").size(),
                                 "Banners page should render three visible icon slots");
                         long actionButtonCount = visibleNodesOfType(page, M3Button.class).stream()
                                 .filter(button -> nearestAncestorOfType(button, M3Banner.class) != null)
@@ -2879,7 +2880,7 @@ final class M3FXDemoVisualMatrixTest {
                 TextInputControl displayName = Objects.requireNonNull(displayNameLayout.getInput(), "display name input");
                 Node summaryItem = requireVisibleStyledDescendant(
                         summary,
-                        M3ValidationSummary.ITEM_STYLE_CLASS,
+                        "m3-validation-summary-item",
                         "forms validation summary item"
                 );
                 M3Button clearButton = Objects.requireNonNull(
@@ -3525,7 +3526,7 @@ final class M3FXDemoVisualMatrixTest {
                 && textInput.getVariant() == M3TextInputVariant.OUTLINED) {
             javafx.scene.shape.Path outline = assertInstanceOf(
                     javafx.scene.shape.Path.class,
-                    layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-outline")
             );
             assertTrue(outline.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")),
                     () -> description + " outline should expose the focused pseudo-class");
@@ -3723,7 +3724,7 @@ final class M3FXDemoVisualMatrixTest {
                 if (layout.getTrailing() != null) {
                     assertTextInputTrailingActionGeometry(layout, description);
                 }
-                if (firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) != null) {
+                if (firstVisibleStyledDescendant(layout, "m3-text-input-clear-button") != null) {
                     assertTextInputClearButtonGeometry(layout, description);
                 }
 
@@ -4774,7 +4775,7 @@ final class M3FXDemoVisualMatrixTest {
                         Node page = currentDemoPage(scene, "Loading Indicator");
                         indicatorReference.set(Objects.requireNonNull(firstVisibleNodeWithStyle(
                                 page,
-                                M3LoadingIndicator.STYLE_CLASS
+                                "m3-loading-indicator"
                         ), "loading indicator"));
                         baselineFrameReference.set(snapshot(scene));
                     },
@@ -4854,7 +4855,7 @@ final class M3FXDemoVisualMatrixTest {
                     "Loading Indicator",
                     page -> Objects.requireNonNull(firstVisibleNodeWithStyle(
                             page,
-                            M3LoadingIndicator.STYLE_CLASS
+                            "m3-loading-indicator"
                     ), "loading indicator"),
                     "loading-indicator-reduced-motion"
             );
@@ -5349,7 +5350,7 @@ final class M3FXDemoVisualMatrixTest {
 
             Node page = currentDemoPage(scene, "Date Pickers");
             Node target = Objects.requireNonNull(
-                    firstVisibleNodeWithStyle(page, M3PickerField.OPEN_BUTTON_STYLE_CLASS),
+                    firstVisibleNodeWithStyle(page, "m3-picker-field-open-button"),
                     "picker open button"
             );
             targetReference.set(target);
@@ -5415,7 +5416,7 @@ final class M3FXDemoVisualMatrixTest {
                 "Date Pickers",
                 "picker-open-button-ripple",
                 "picker open button",
-                root -> firstVisibleNodeWithStyle(root, M3PickerField.OPEN_BUTTON_STYLE_CLASS)
+                root -> firstVisibleNodeWithStyle(root, "m3-picker-field-open-button")
         );
         FxTestUtils.runOnFxThread(() -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -5448,7 +5449,7 @@ final class M3FXDemoVisualMatrixTest {
             );
             Node target = requireVisibleStyledDescendant(
                     layout,
-                    M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS,
+                    "m3-text-input-clear-button",
                     "text input clear button"
             );
             layoutReference.set(layout);
@@ -5510,7 +5511,7 @@ final class M3FXDemoVisualMatrixTest {
             @Nullable TextInputControl input = layout.getInput();
             return input != null
                     && input.getText().isEmpty()
-                    && firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) == null;
+                    && firstVisibleStyledDescendant(layout, "m3-text-input-clear-button") == null;
         }, SETTLED_STATE_PULSES, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -5526,7 +5527,7 @@ final class M3FXDemoVisualMatrixTest {
         TextInputControl input = Objects.requireNonNull(layout.getInput(), "text input clear button input");
         assertTrue(input.getText().isEmpty(), "text input clear button should clear the input text");
         assertNull(
-                firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS),
+                firstVisibleStyledDescendant(layout, "m3-text-input-clear-button"),
                 "text input clear button should leave the trailing slot after clearing text"
         );
         assertNodeAreaChanged(
@@ -5699,7 +5700,7 @@ final class M3FXDemoVisualMatrixTest {
             if (layout.isClearButtonEnabled()
                     && input != null
                     && !input.getText().isEmpty()
-                    && firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) != null) {
+                    && firstVisibleStyledDescendant(layout, "m3-text-input-clear-button") != null) {
                 return layout;
             }
         }
@@ -7853,7 +7854,7 @@ final class M3FXDemoVisualMatrixTest {
 
             Node target = Objects.requireNonNull(firstVisibleNodeWithStyle(
                     scene.getRoot(),
-                    M3TextField.STYLE_CLASS
+                    "m3-text-field"
             ), "text field");
             targetReference.set(target);
             if (scene.getWindow() instanceof Stage stage) {
@@ -9104,7 +9105,7 @@ final class M3FXDemoVisualMatrixTest {
                             + leadingBounds + ", editor=" + editorBounds + ", searchBar=" + searchBounds);
         }
 
-        @Nullable Node trailingNode = searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS);
+        @Nullable Node trailingNode = searchBar.lookup("." + "m3-search-bar-trailing");
         HBox trailingBox = assertInstanceOf(HBox.class, trailingNode,
                 "search bar should expose its trailing action box");
         assertEquals(0.0, trailingBox.getSpacing(), CONTROL_EDGE_TOLERANCE,
@@ -9308,8 +9309,8 @@ final class M3FXDemoVisualMatrixTest {
                 () -> pageTitle + " input escapes its container: input="
                         + inputBounds + ", container=" + containerBounds);
 
-        assertTextInputSlotInsideContainer(layout, M3TextInputLayout.LEADING_STYLE_CLASS, pageTitle);
-        assertTextInputSlotInsideContainer(layout, M3TextInputLayout.TRAILING_STYLE_CLASS, pageTitle);
+        assertTextInputSlotInsideContainer(layout, "m3-text-input-leading", pageTitle);
+        assertTextInputSlotInsideContainer(layout, "m3-text-input-trailing", pageTitle);
 
         if (textInputSupportingRow(layout).isVisible() && hasRenderableBounds(textInputSupportingRow(layout))) {
             Bounds rowBounds = textInputSupportingRow(layout).localToScene(textInputSupportingRow(layout).getBoundsInLocal());
@@ -9358,7 +9359,7 @@ final class M3FXDemoVisualMatrixTest {
         assertTextInputVariant(layout, M3TextInputVariant.OUTLINED, description);
         Text label = assertInstanceOf(
                 Text.class,
-                requireVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS, description + " label")
+                requireVisibleStyledDescendant(layout, "m3-text-input-label", description + " label")
         );
         assertNull(label.getClip(), () -> description + " ordinary floating label should use unclipped text geometry");
 
@@ -9374,7 +9375,7 @@ final class M3FXDemoVisualMatrixTest {
 
         javafx.scene.shape.Path outline = assertInstanceOf(
                 javafx.scene.shape.Path.class,
-                requireVisibleStyledDescendant(layout, M3TextInputLayout.OUTLINE_STYLE_CLASS, description + " outline")
+                requireVisibleStyledDescendant(layout, "m3-text-input-outline", description + " outline")
         );
         assertOutlinedPathHasOpenLabelNotch(outline, label, description);
     }
@@ -9389,7 +9390,7 @@ final class M3FXDemoVisualMatrixTest {
         assertTextInputVariant(layout, M3TextInputVariant.OUTLINED, description);
         Text label = assertInstanceOf(
                 Text.class,
-                requireVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS, description + " label")
+                requireVisibleStyledDescendant(layout, "m3-text-input-label", description + " label")
         );
         Text labelText = label;
         @Nullable Rectangle2D renderedLabelInkBounds = renderedTextInkBounds(image, labelText);
@@ -9500,7 +9501,7 @@ final class M3FXDemoVisualMatrixTest {
 
         Node label = requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.LABEL_STYLE_CLASS,
+                "m3-text-input-label",
                 description + " label"
         );
         Text labelText = Objects.requireNonNull(firstVisibleText(label), description + " label text");
@@ -9510,13 +9511,13 @@ final class M3FXDemoVisualMatrixTest {
                 : labelInkBounds;
         assertTextInputInkAvoidsAdornmentSlot(
                 layout,
-                M3TextInputLayout.LEADING_STYLE_CLASS,
+                "m3-text-input-leading",
                 checkedLabelBounds,
                 description + " floating label leading adornment slot"
         );
         assertTextInputInkAvoidsAdornmentSlot(
                 layout,
-                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                "m3-text-input-trailing",
                 checkedLabelBounds,
                 description + " floating label trailing adornment slot"
         );
@@ -9539,7 +9540,7 @@ final class M3FXDemoVisualMatrixTest {
 
         Node label = requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.LABEL_STYLE_CLASS,
+                "m3-text-input-label",
                 description + " label"
         );
         Text labelText = Objects.requireNonNull(firstVisibleText(label), description + " label text");
@@ -10054,7 +10055,7 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertTextInputCounterText(M3TextInputLayout layout, String expectedText, String description) {
         Node counter = requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.COUNTER_STYLE_CLASS,
+                "m3-text-input-counter",
                 description + " counter"
         );
         assertEquals(expectedText, visibleText(counter), () -> description + " counter text");
@@ -10107,7 +10108,7 @@ final class M3FXDemoVisualMatrixTest {
                             + trailingBounds + ", container=" + containerBounds);
         }
 
-        @Nullable Node clearButton = firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS);
+        @Nullable Node clearButton = firstVisibleStyledDescendant(layout, "m3-text-input-clear-button");
         if (clearButton != null) {
             Bounds clearBounds = clearButton.localToScene(clearButton.getBoundsInLocal());
             assertTrue(clearBounds.getCenterX() < containerBounds.getCenterX(),
@@ -10120,7 +10121,7 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertTextInputClearButtonGeometry(M3TextInputLayout layout, String description) {
         Node clearButton = requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS,
+                "m3-text-input-clear-button",
                 description + " clear button"
         );
         Bounds containerBounds = textInputContainer(layout).localToScene(textInputContainer(layout).getBoundsInLocal());
@@ -10142,7 +10143,7 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(textInput.isError(), () -> description + " input should expose error state");
         Node supportingText = requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS,
+                "m3-text-input-supporting-text",
                 description + " supporting error text"
         );
         assertFalse(visibleText(supportingText).isBlank(),
@@ -10179,7 +10180,7 @@ final class M3FXDemoVisualMatrixTest {
         assertFalse(textInput.isError(), "validated email should clear input error state for valid edits");
         assertEquals("Validation runs on focus loss", visibleText(requireVisibleStyledDescendant(
                 layout,
-                M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS,
+                "m3-text-input-supporting-text",
                 "validated email helper text"
         )));
         assertSupportingRowStillSettledAtBounds(
@@ -10381,7 +10382,7 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies that the menu surface resolves the expected profile-specific item spacing.
     private static void assertMenuItemContainerSpacing(M3Menu menu, String description) {
-        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + "m3-menu-container"));
         double expectedSpacing = isExpressiveTheme(menu) ? 2.0 : 0.0;
         assertEquals(expectedSpacing, container.getSpacing(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item spacing should match the active profile token");
@@ -10581,7 +10582,7 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         Node indicator = requireVisibleStyledDescendant(
                 item,
-                M3SubMenuItem.INDICATOR_STYLE_CLASS,
+                "m3-sub-menu-indicator",
                 description + " submenu indicator"
         );
         Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
@@ -10608,7 +10609,7 @@ final class M3FXDemoVisualMatrixTest {
         visitVisibleNodes(root, node -> {
             if (node instanceof M3SVGIcon svgIcon) {
                 iconCount[0]++;
-                Node path = svgIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS);
+                Node path = svgIcon.lookup("." + "m3-svg-icon-path");
                 assertInstanceOf(SVGPath.class, path,
                         () -> pageTitle + " M3SVGIcon does not expose a rendered SVGPath: " + svgIcon);
                 assertTrue(hasRenderableBounds(path),
@@ -10677,7 +10678,7 @@ final class M3FXDemoVisualMatrixTest {
                 return;
             }
 
-            @Nullable Node tabViewport = nearestAncestorWithStyle(text, M3TabBar.CONTAINER_STYLE_CLASS);
+            @Nullable Node tabViewport = nearestAncestorWithStyle(text, "m3-tab-bar-container");
             @Nullable M3TabBar tabBar = nearestAncestorOfType(text, M3TabBar.class);
             if (tabViewport != null
                     && tabBar != null
@@ -10691,7 +10692,7 @@ final class M3FXDemoVisualMatrixTest {
 
             @Nullable Node scrollViewport = nearestScrollViewport(text);
             if (scrollViewport != null) {
-                if (nearestAncestorWithStyle(text, M3Carousel.VIEWPORT_STYLE_CLASS) != null) {
+                if (nearestAncestorWithStyle(text, "m3-carousel-viewport") != null) {
                     return;
                 }
                 Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
@@ -10906,7 +10907,7 @@ final class M3FXDemoVisualMatrixTest {
                 return;
             }
 
-            @Nullable Node tabViewport = nearestAncestorWithStyle(node, M3TabBar.CONTAINER_STYLE_CLASS);
+            @Nullable Node tabViewport = nearestAncestorWithStyle(node, "m3-tab-bar-container");
             @Nullable M3TabBar tabBar = nearestAncestorOfType(node, M3TabBar.class);
             if (tabViewport != null
                     && tabBar != null
@@ -10921,7 +10922,7 @@ final class M3FXDemoVisualMatrixTest {
             @Nullable Node scrollViewport = nearestScrollViewport(node);
             if (scrollViewport != null) {
                 Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
-                if (nearestAncestorWithStyle(node, M3Carousel.VIEWPORT_STYLE_CLASS) != null) {
+                if (nearestAncestorWithStyle(node, "m3-carousel-viewport") != null) {
                     return;
                 }
                 assertTrue(containsHorizontalBoundsWithTolerance(viewportBounds, controlBounds, CONTROL_EDGE_TOLERANCE),
@@ -11016,7 +11017,7 @@ final class M3FXDemoVisualMatrixTest {
         if (labeled instanceof Label) {
             return false;
         }
-        if (labeled.getStyleClass().contains(M3Text.STYLE_CLASS)) {
+        if (labeled.getStyleClass().contains("m3-text")) {
             return false;
         }
         if (!isCenteredLabeledTextTarget(labeled)) {
@@ -11818,13 +11819,13 @@ final class M3FXDemoVisualMatrixTest {
         Bounds textBounds = text.localToScene(text.getBoundsInLocal());
         assertTextInputTextNodeAvoidsAdornmentContent(
                 layout,
-                M3TextInputLayout.LEADING_STYLE_CLASS,
+                "m3-text-input-leading",
                 textBounds,
                 pageTitle + " leading adornment content"
         );
         assertTextInputTextNodeAvoidsAdornmentContent(
                 layout,
-                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                "m3-text-input-trailing",
                 textBounds,
                 pageTitle + " trailing adornment content"
         );
@@ -11865,25 +11866,25 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         assertTextInputInkAvoidsAdornmentSlot(
                 layout,
-                M3TextInputLayout.LEADING_STYLE_CLASS,
+                "m3-text-input-leading",
                 inkBounds,
                 pageTitle + " leading adornment slot"
         );
         assertTextInputInkAvoidsAdornmentSlot(
                 layout,
-                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                "m3-text-input-trailing",
                 inkBounds,
                 pageTitle + " trailing adornment slot"
         );
         assertTextInputInkKeepsGapFromAdornmentSlot(
                 layout,
-                M3TextInputLayout.LEADING_STYLE_CLASS,
+                "m3-text-input-leading",
                 inkBounds,
                 pageTitle + " leading adornment slot"
         );
         assertTextInputInkKeepsGapFromAdornmentSlot(
                 layout,
-                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                "m3-text-input-trailing",
                 inkBounds,
                 pageTitle + " trailing adornment slot"
         );
@@ -11980,7 +11981,7 @@ final class M3FXDemoVisualMatrixTest {
             return;
         }
 
-        @Nullable Node label = firstVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS);
+        @Nullable Node label = firstVisibleStyledDescendant(layout, "m3-text-input-label");
         if (label == null) {
             return;
         }
@@ -12180,7 +12181,7 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(4, buttons.stream()
                         .map(button -> firstVisibleStyledDescendant(
                                 button,
-                                M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS
+                                "m3-segmented-button-selection-indicator"
                         ))
                         .filter(Objects::nonNull)
                         .filter(indicator -> indicator.getOpacity() >= 0.95)
@@ -12270,17 +12271,17 @@ final class M3FXDemoVisualMatrixTest {
             String description
     ) {
         if (physicalOrder.size() == 1) {
-            assertTrue(physicalOrder.get(0).getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS),
+            assertTrue(physicalOrder.get(0).getStyleClass().contains("m3-segmented-button-single"),
                     () -> description + " single segment should use the single segment style class");
             return;
         }
 
         String leftEdgeStyle = rightToLeft
-                ? M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS
-                : M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS;
+                ? "m3-segmented-button-last"
+                : "m3-segmented-button-first";
         String rightEdgeStyle = rightToLeft
-                ? M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS
-                : M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS;
+                ? "m3-segmented-button-first"
+                : "m3-segmented-button-last";
         M3SegmentedButton left = physicalOrder.get(0);
         M3SegmentedButton right = physicalOrder.get(physicalOrder.size() - 1);
         assertTrue(left.getStyleClass().contains(leftEdgeStyle),
@@ -12291,7 +12292,7 @@ final class M3FXDemoVisualMatrixTest {
                         + right.getStyleClass());
         for (int index = 1; index < physicalOrder.size() - 1; index++) {
             M3SegmentedButton middle = physicalOrder.get(index);
-            assertTrue(middle.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS),
+            assertTrue(middle.getStyleClass().contains("m3-segmented-button-middle"),
                     () -> description + " physical middle segment should use the middle-segment style class: "
                             + middle.getStyleClass());
         }
@@ -12447,7 +12448,7 @@ final class M3FXDemoVisualMatrixTest {
         @Nullable Node icon = button.getGraphic();
         @Nullable Node indicator = firstVisibleStyledDescendant(
                 button,
-                M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS
+                "m3-segmented-button-selection-indicator"
         );
         if (button.isSelected()) {
             assertNotNull(indicator, description + " selected check indicator");
@@ -12623,7 +12624,7 @@ final class M3FXDemoVisualMatrixTest {
             if (chip.getTrailingGraphic() instanceof M3IconButton trailingAction) {
                 assertEquals(24.0, trailingAction.getContainerWidth(), 0.0001);
                 assertEquals(24.0, trailingAction.getContainerHeight(), 0.0001);
-                assertTrue(trailingAction.getStyleClass().contains(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS));
+                assertTrue(trailingAction.getStyleClass().contains("m3-chip-trailing-graphic"));
             }
         }
         for (M3Chip chip : chips) {
@@ -12771,7 +12772,7 @@ final class M3FXDemoVisualMatrixTest {
         );
         assertTrue(
                 listFlow.lookupAll(".scroll-bar").stream()
-                        .allMatch(scrollBar -> scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS)),
+                        .allMatch(scrollBar -> scrollBar.getStyleClass().contains("m3-scroll-bar")),
                 "M3ListView VirtualFlow scrollbars should use Material styling"
         );
         assertTrue(visibleNodesOfType(page, M3ListItem.class).stream()
@@ -13206,7 +13207,7 @@ final class M3FXDemoVisualMatrixTest {
                             + itemBounds + ", token=" + item.getOneLineHeight());
             assertEquals(56.0, itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                     "navigation drawer rows should use the baseline 56px height");
-            boolean groupedChild = item.getStyleClass().contains(M3NavigationDrawerGroup.CHILD_STYLE_CLASS);
+            boolean groupedChild = item.getStyleClass().contains("m3-navigation-drawer-group-child");
             if (groupedChild) {
                 assertTrue(itemBounds.getWidth() < 336.0,
                         "grouped navigation drawer children should be indented from the logical start edge");
@@ -14042,7 +14043,7 @@ final class M3FXDemoVisualMatrixTest {
                     () -> description + " demo scrollable tab set should overflow its viewport");
             Node container = requireVisibleStyledDescendant(
                     tabBar,
-                    M3TabBar.CONTAINER_STYLE_CLASS,
+                    "m3-tab-bar-container",
                     description + " scrollable container"
             );
             assertInstanceOf(Rectangle.class, container.getClip(),
@@ -14051,7 +14052,7 @@ final class M3FXDemoVisualMatrixTest {
 
         Node divider = requireVisibleStyledDescendant(
                 tabBar,
-                M3TabBar.DIVIDER_STYLE_CLASS,
+                "m3-tab-bar-divider",
                 description + " divider"
         );
         Bounds dividerBounds = divider.localToScene(divider.getBoundsInLocal());
@@ -14293,7 +14294,7 @@ final class M3FXDemoVisualMatrixTest {
 
         List<M3Banner> banners = visibleNodesOfType(page, M3Banner.class);
         assertEquals(5, banners.size(), "Banners page should render five banner states");
-        assertEquals(3, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
+        assertEquals(3, visibleNodesWithStyle(page, "m3-banner-icon").size(),
                 "Banners page should render three icon slots");
         long actionButtonCount = visibleNodesOfType(page, M3Button.class).stream()
                 .filter(button -> nearestAncestorOfType(button, M3Banner.class) != null)
@@ -14648,7 +14649,7 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "All Buttons page should render one disabled regular button state");
         assertTrue(visibleNodesOfType(page, M3MenuButton.class).stream()
-                        .anyMatch(button -> button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)),
+                        .anyMatch(button -> button.getStyleClass().contains("m3-split-button-menu")),
                 "All Buttons page should render the split-button menu action");
 
         List<M3IconButton> iconButtons = visibleNodesOfType(page, M3IconButton.class);
@@ -14806,7 +14807,7 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(4, toggleButtons.stream().filter(M3IconToggleButton::isSelected).count(),
                 "Button groups should expose standard, connected single-select, and connected multi-select choices");
         assertTrue(toggleButtons.stream().allMatch(button ->
-                        button.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS)),
+                        button.getStyleClass().contains("m3-grouped-button")),
                 "Toggle buttons should receive grouped shape classes");
 
         M3ButtonGroup standardToggleGroup = groups.stream()
@@ -15243,7 +15244,7 @@ final class M3FXDemoVisualMatrixTest {
             M3FloatingActionButton toggleButton = fabMenuToggleButton(menu);
             M3FloatingActionButton closeButton = assertInstanceOf(
                     M3FloatingActionButton.class,
-                    menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS),
+                    menu.lookup("." + "m3-fab-menu-close"),
                     "FAB menu close button"
             );
             assertEquals(M3FloatingActionButtonSize.REGULAR, toggleButton.getSize(),
@@ -15568,7 +15569,7 @@ final class M3FXDemoVisualMatrixTest {
 
         HBox headerActions = assertInstanceOf(
                 HBox.class,
-                sheet.lookup("." + M3SideSheet.HEADER_ACTIONS_STYLE_CLASS),
+                sheet.lookup("." + "m3-side-sheet-header-actions"),
                 description + " header actions"
         );
         assertEquals(8.0, headerActions.getSpacing(), CONTROL_EDGE_TOLERANCE,
@@ -15576,7 +15577,7 @@ final class M3FXDemoVisualMatrixTest {
 
         HBox bottomActions = assertInstanceOf(
                 HBox.class,
-                sheet.lookup("." + M3SideSheet.ACTIONS_STYLE_CLASS),
+                sheet.lookup("." + "m3-side-sheet-actions"),
                 description + " bottom actions"
         );
         if (sheet.getActions().isEmpty()) {
@@ -16084,7 +16085,7 @@ final class M3FXDemoVisualMatrixTest {
 
         assertVisiblePickerCellTextInkCentered(
                 scene,
-                M3DatePicker.DAY_CELL_STYLE_CLASS,
+                "m3-date-picker-day-cell",
                 "Date Pickers visible day cells",
                 10
         );
@@ -16122,7 +16123,7 @@ final class M3FXDemoVisualMatrixTest {
 
         assertVisiblePickerCellTextInkCentered(
                 scene,
-                M3TimePicker.CELL_STYLE_CLASS,
+                "m3-time-picker-cell",
                 "Time Pickers visible cells",
                 10
         );
@@ -16712,7 +16713,7 @@ final class M3FXDemoVisualMatrixTest {
         assertFalse(summary.isShowWhenValid(), "Forms page should start with invalid-state summary content");
         Node item = requireVisibleStyledDescendant(
                 summary,
-                M3ValidationSummary.ITEM_STYLE_CLASS,
+                "m3-validation-summary-item",
                 "forms validation summary item"
         );
         requireVisibleStyledDescendant(item, "m3-state-layer-container", "forms validation item state layer");
@@ -16743,7 +16744,7 @@ final class M3FXDemoVisualMatrixTest {
         assertFalse(section.getContent().isEmpty(), "form section should expose content rows");
         Node header = requireVisibleStyledDescendant(
                 section,
-                M3FormSection.HEADER_STYLE_CLASS,
+                "m3-form-section-header",
                 "form section header"
         );
         Bounds headerBounds = header.localToScene(header.getBoundsInLocal());
@@ -17027,7 +17028,7 @@ final class M3FXDemoVisualMatrixTest {
                     () -> "vertical toolbar is too short for its action slots: " + toolbarBounds);
         }
 
-        List<Node> itemSlots = visibleNodesWithStyle(toolbar, M3Toolbar.ITEM_SLOT_STYLE_CLASS);
+        List<Node> itemSlots = visibleNodesWithStyle(toolbar, "m3-toolbar-item-slot");
         assertEquals(toolbar.getItems().size(), itemSlots.size(), "toolbar item slot count");
         for (Node itemSlot : itemSlots) {
             Bounds slotBounds = itemSlot.localToScene(itemSlot.getLayoutBounds());
@@ -17217,18 +17218,18 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertBottomAppBarSlotGeometry(M3BottomAppBar appBar) {
         Node actions = requireVisibleStyledDescendant(
                 appBar,
-                M3BottomAppBar.ACTIONS_STYLE_CLASS,
+                "m3-bottom-app-bar-actions",
                 "bottom app bar actions slot"
         );
         Node floatingAction = requireVisibleStyledDescendant(
                 appBar,
-                M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS,
+                "m3-bottom-app-bar-floating-action",
                 "bottom app bar floating action slot"
         );
         Bounds appBarBounds = appBar.localToScene(appBar.getLayoutBounds());
         Bounds actionsBounds = actions.localToScene(actions.getLayoutBounds());
         Bounds floatingActionBounds = floatingAction.localToScene(floatingAction.getLayoutBounds());
-        List<Node> actionSlots = visibleNodesWithStyle(appBar, M3BottomAppBar.ACTION_SLOT_STYLE_CLASS);
+        List<Node> actionSlots = visibleNodesWithStyle(appBar, "m3-bottom-app-bar-action-slot");
         double contentMinX = appBarBounds.getMinX() + appBar.getHorizontalPadding();
         double contentMaxX = appBarBounds.getMaxX() - appBar.getHorizontalPadding();
         double contentCenterX = (contentMinX + contentMaxX) / 2.0;
@@ -17325,7 +17326,7 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertTopAppBarSlotGeometry(M3TopAppBar appBar) {
         Node navigation = requireVisibleStyledDescendant(
                 appBar,
-                M3TopAppBar.NAVIGATION_STYLE_CLASS,
+                "m3-top-app-bar-navigation",
                 "top app bar navigation slot"
         );
         boolean compactFlexibleTitle = (appBar.getVariant() == M3TopAppBarVariant.MEDIUM_FLEXIBLE
@@ -17333,12 +17334,12 @@ final class M3FXDemoVisualMatrixTest {
                 && appBar.getCollapseProgress() >= 0.999;
         Node title = requireVisibleStyledDescendant(
                 appBar,
-                compactFlexibleTitle ? M3TopAppBar.COMPACT_TITLE_STYLE_CLASS : M3TopAppBar.TITLE_STYLE_CLASS,
+                compactFlexibleTitle ? "m3-top-app-bar-compact-title" : "m3-top-app-bar-title",
                 "top app bar title slot"
         );
         Node actions = requireVisibleStyledDescendant(
                 appBar,
-                M3TopAppBar.ACTIONS_STYLE_CLASS,
+                "m3-top-app-bar-actions",
                 "top app bar actions slot"
         );
 
@@ -17348,7 +17349,7 @@ final class M3FXDemoVisualMatrixTest {
         Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
         Node titleText = Objects.requireNonNull(firstVisibleText(title), "top app bar rendered title text");
         Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
-        List<Node> actionSlots = visibleNodesWithStyle(appBar, M3TopAppBar.ACTION_SLOT_STYLE_CLASS);
+        List<Node> actionSlots = visibleNodesWithStyle(appBar, "m3-top-app-bar-action-slot");
         double horizontalPadding = appBar.getHorizontalPadding();
         double edgePadding = appBar.getEdgePadding();
         double rowCenterY = appBarBounds.getMinY() + appBar.getContainerHeight() / 2.0;
@@ -17430,7 +17431,7 @@ final class M3FXDemoVisualMatrixTest {
                             ? title
                             : requireVisibleStyledDescendant(
                             appBar,
-                            M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS,
+                            "m3-top-app-bar-compact-subtitle",
                             "collapsed flexible app bar subtitle"
                     );
                     Bounds compactSubtitleBounds = compactSubtitle.localToScene(compactSubtitle.getBoundsInLocal());
@@ -17463,7 +17464,7 @@ final class M3FXDemoVisualMatrixTest {
                             ? title
                             : requireVisibleStyledDescendant(
                             appBar,
-                            M3TopAppBar.SUBTITLE_STYLE_CLASS,
+                            "m3-top-app-bar-subtitle",
                             "flexible app bar subtitle"
                     );
                     Bounds bottomContentBounds = bottomContent.localToScene(bottomContent.getBoundsInLocal());
@@ -17803,8 +17804,8 @@ final class M3FXDemoVisualMatrixTest {
         @Nullable Parent parent = node.getParent();
         while (parent != null) {
             if (parent instanceof Region region
-                    && (region.getStyleClass().contains(M3TopAppBar.STYLE_CLASS)
-                    || region.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS))) {
+                    && (region.getStyleClass().contains("m3-top-app-bar")
+                    || region.getStyleClass().contains("m3-bottom-app-bar"))) {
                 return region;
             }
             parent = parent.getParent();
@@ -18669,11 +18670,11 @@ final class M3FXDemoVisualMatrixTest {
                 ScrollPane.class,
                 requireVisibleStyledDescendant(
                         carousel,
-                        M3Carousel.VIEWPORT_STYLE_CLASS,
+                        "m3-carousel-viewport",
                         description + " viewport"
                 )
         );
-        Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
+        Node track = requireVisibleStyledDescendant(carousel, "m3-carousel-track", description + " track");
         List<Node> itemMasks = carousel.getItems().stream()
                 .map(item -> carouselItemMask(item, description))
                 .toList();
@@ -18692,11 +18693,11 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(hasRenderableBounds(viewportNode), () -> description + " viewport has no renderable bounds");
         assertTrue(hasRenderableBounds(track), () -> description + " track has no renderable bounds");
         assertTrue(hasRenderableBounds(selectedItem), () -> description + " selected item has no renderable bounds");
-        assertTrue(selectedItem.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS),
+        assertTrue(selectedItem.getStyleClass().contains("m3-carousel-selected-item"),
                 () -> description + " selected item missing selected style class");
         assertEquals(1, carousel.getItems()
                         .stream()
-                        .filter(item -> item.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS))
+                        .filter(item -> item.getStyleClass().contains("m3-carousel-selected-item"))
                         .count(),
                 () -> description + " should expose exactly one selected carousel item style class");
 
@@ -18773,11 +18774,11 @@ final class M3FXDemoVisualMatrixTest {
                 ScrollPane.class,
                 requireVisibleStyledDescendant(
                         carousel,
-                        M3Carousel.VIEWPORT_STYLE_CLASS,
+                        "m3-carousel-viewport",
                         description + " viewport"
                 )
         );
-        Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
+        Node track = requireVisibleStyledDescendant(carousel, "m3-carousel-track", description + " track");
         Node viewportNode = Objects.requireNonNull(viewport.lookup(".viewport"), description + " viewport node");
         Bounds viewportBounds = viewportNode.localToScene(viewportNode.getLayoutBounds());
         Bounds trackBounds = track.localToScene(track.getLayoutBounds());
@@ -18865,7 +18866,7 @@ final class M3FXDemoVisualMatrixTest {
         Bounds paneBounds = pane.localToScene(pane.getBoundsInLocal());
         Node actionRow = requireVisibleStyledDescendant(
                 pane,
-                M3DialogPane.ACTIONS_STYLE_CLASS,
+                "m3-dialog-actions",
                 "dialog action row"
         );
         Bounds actionRowBounds = actionRow.localToScene(actionRow.getBoundsInLocal());
@@ -18901,7 +18902,7 @@ final class M3FXDemoVisualMatrixTest {
 
         Node container = requireVisibleStyledDescendant(
                 banner,
-                M3Banner.CONTAINER_STYLE_CLASS,
+                "m3-banner-container",
                 "banner container"
         );
         Bounds containerBounds = container.localToScene(container.getBoundsInLocal());
@@ -18909,13 +18910,13 @@ final class M3FXDemoVisualMatrixTest {
                 () -> "banner container should stay inside the control bounds: banner="
                         + bannerBounds + ", container=" + containerBounds);
 
-        Node text = requireVisibleStyledDescendant(banner, M3Banner.TEXT_STYLE_CLASS, "banner text");
+        Node text = requireVisibleStyledDescendant(banner, "m3-banner-text", "banner text");
         Bounds textBounds = text.localToScene(text.getBoundsInLocal());
         assertTrue(containsBoundsWithTolerance(bannerBounds, textBounds, CONTROL_EDGE_TOLERANCE),
                 () -> "banner text should stay inside the control bounds: banner="
                         + bannerBounds + ", text=" + textBounds);
 
-        @Nullable Node actions = firstVisibleStyledDescendant(banner, M3Banner.ACTIONS_STYLE_CLASS);
+        @Nullable Node actions = firstVisibleStyledDescendant(banner, "m3-banner-actions");
         if (!banner.getActions().isEmpty()) {
             assertNotNull(actions, "banner actions should be visible when action nodes are present");
             Bounds actionBounds = actions.localToScene(actions.getBoundsInLocal());
@@ -18930,7 +18931,7 @@ final class M3FXDemoVisualMatrixTest {
             }
         }
 
-        @Nullable Node icon = firstVisibleStyledDescendant(banner, M3Banner.ICON_STYLE_CLASS);
+        @Nullable Node icon = firstVisibleStyledDescendant(banner, "m3-banner-icon");
         if (banner.getIcon() != null) {
             assertNotNull(icon, "banner icon slot should be visible when an icon is present");
             Bounds iconBounds = icon.localToScene(icon.getBoundsInLocal());
@@ -19264,7 +19265,7 @@ final class M3FXDemoVisualMatrixTest {
     private static VBox searchResultsContainer(M3SearchView searchView) {
         return assertInstanceOf(VBox.class, requireStyledDescendant(
                 searchView,
-                M3SearchView.RESULTS_STYLE_CLASS,
+                "m3-search-view-results",
                 "search view results container"
         ));
     }
@@ -19273,7 +19274,7 @@ final class M3FXDemoVisualMatrixTest {
     private static StackPane textInputContainer(M3TextInputLayout layout) {
         return assertInstanceOf(StackPane.class, requireStyledDescendant(
                 layout,
-                M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS,
+                "m3-text-input-container",
                 "text input container"
         ));
     }
@@ -19282,7 +19283,7 @@ final class M3FXDemoVisualMatrixTest {
     private static HBox textInputSupportingRow(M3TextInputLayout layout) {
         return assertInstanceOf(HBox.class, requireStyledDescendant(
                 layout,
-                M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS,
+                "m3-text-input-supporting-row",
                 "text input supporting row"
         ));
     }
@@ -19873,7 +19874,7 @@ final class M3FXDemoVisualMatrixTest {
     private static @Nullable Node pickerPopupRoot(M3DatePickerField field) {
         @Nullable Parent parent = field.getPicker().getParent();
         while (parent != null) {
-            if (parent.getStyleClass().contains(M3PickerField.POPUP_STYLE_CLASS)) {
+            if (parent.getStyleClass().contains("m3-picker-field-popup")) {
                 return parent;
             }
             parent = parent.getParent();
@@ -19981,8 +19982,8 @@ final class M3FXDemoVisualMatrixTest {
                 return false;
             }
         }
-        Node toggle = menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS);
-        Node close = menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS);
+        Node toggle = menu.lookup("." + "m3-fab-menu-toggle");
+        Node close = menu.lookup("." + "m3-fab-menu-close");
         return toggle != null
                 && close != null
                 && !toggle.isVisible()
@@ -20001,8 +20002,8 @@ final class M3FXDemoVisualMatrixTest {
                 return false;
             }
         }
-        Node toggle = menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS);
-        Node close = menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS);
+        Node toggle = menu.lookup("." + "m3-fab-menu-toggle");
+        Node close = menu.lookup("." + "m3-fab-menu-close");
         return toggle != null
                 && close != null
                 && toggle.isVisible()
@@ -20185,22 +20186,22 @@ final class M3FXDemoVisualMatrixTest {
         Bounds popupBounds = popupRoot.localToScene(popupRoot.getBoundsInLocal());
         Node container = requireVisibleStyledDescendant(
                 popupRoot,
-                M3RichTooltip.CONTAINER_STYLE_CLASS,
+                "m3-rich-tooltip-container",
                 description + " container"
         );
         Node title = requireVisibleStyledDescendant(
                 popupRoot,
-                M3RichTooltip.TITLE_STYLE_CLASS,
+                "m3-rich-tooltip-title",
                 description + " title"
         );
         Node supportingText = requireVisibleStyledDescendant(
                 popupRoot,
-                M3RichTooltip.SUPPORTING_TEXT_STYLE_CLASS,
+                "m3-rich-tooltip-supporting-text",
                 description + " supporting text"
         );
         Node actions = requireVisibleStyledDescendant(
                 popupRoot,
-                M3RichTooltip.ACTIONS_STYLE_CLASS,
+                "m3-rich-tooltip-actions",
                 description + " actions"
         );
 
@@ -20240,7 +20241,7 @@ final class M3FXDemoVisualMatrixTest {
         M3Button action = Objects.requireNonNull(firstVisibleButtonWithText(popupRoot, "Open"), "rich tooltip action");
         Node actions = requireVisibleStyledDescendant(
                 popupRoot,
-                M3RichTooltip.ACTIONS_STYLE_CLASS,
+                "m3-rich-tooltip-actions",
                 "rich tooltip actions row"
         );
         Bounds popupBounds = popupRoot.localToScene(popupRoot.getBoundsInLocal());
@@ -20415,7 +20416,7 @@ final class M3FXDemoVisualMatrixTest {
     private static M3FloatingActionButton fabMenuToggleButton(M3FabMenu menu) {
         return assertInstanceOf(
                 M3FloatingActionButton.class,
-                menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS),
+                menu.lookup("." + "m3-fab-menu-toggle"),
                 "FAB menu toggle button"
         );
     }
@@ -20428,7 +20429,7 @@ final class M3FXDemoVisualMatrixTest {
         );
         Bounds showcaseBounds = showcase.localToScene(showcase.getBoundsInLocal());
         Node closeButton = Objects.requireNonNull(
-                menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS),
+                menu.lookup("." + "m3-fab-menu-close"),
                 "FAB menu close button"
         );
         Bounds closeBounds = closeButton.localToScene(closeButton.getBoundsInLocal());
@@ -21327,7 +21328,7 @@ final class M3FXDemoVisualMatrixTest {
         if (demoIcon != null) {
             return demoIcon;
         }
-        @Nullable Node svgIcon = firstVisibleVectorIconWithStyle(node, M3SVGIcon.PATH_STYLE_CLASS);
+        @Nullable Node svgIcon = firstVisibleVectorIconWithStyle(node, "m3-svg-icon-path");
         return svgIcon == null ? firstVisibleVectorIconWithStyle(node, "m3-internal-icon-path") : svgIcon;
     }
 

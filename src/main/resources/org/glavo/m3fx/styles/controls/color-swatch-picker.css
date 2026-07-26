@@ -1,0 +1,38 @@
+.m3-color-swatch-picker {
+    -fx-background-color: transparent;
+    -fx-cursor: default;
+    -fx-padding: 0;
+}
+
+.m3-color-swatch-picker .color-swatch-cell {
+    -fx-alignment: center;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-radius: 4px;
+    -fx-border-width: 2px;
+    -fx-padding: 4px;
+}
+
+.m3-color-swatch-picker.m3-color-swatch-picker-rounding-default .color-swatch-cell {
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+}
+
+.m3-color-swatch-picker.m3-color-swatch-picker-rounding-full .color-swatch-cell {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+}
+
+.m3-color-swatch-picker .color-swatch-cell:selected {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-border-color: -m3-color-primary;
+}
+
+.m3-color-swatch-picker .color-swatch-cell:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}

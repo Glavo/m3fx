@@ -110,13 +110,13 @@ final class M3PointerCursorTest {
 
             materialTargets.forEach(M3PointerCursorTest::assertDefaultCursor);
             assertDefaultCursor(root, "m3-carousel-item-container");
-            assertDefaultCursor(root, M3DatePicker.DAY_CELL_STYLE_CLASS);
-            assertDefaultCursor(root, M3TimePicker.HOUR_DISPLAY_STYLE_CLASS);
-            assertDefaultCursor(root, M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS);
-            assertDefaultCursor(root, M3TimePicker.DIAL_STYLE_CLASS);
-            assertDefaultCursor(root, M3TimePicker.CELL_STYLE_CLASS);
-            assertDefaultCursor(root, M3TimePicker.PERIOD_CELL_STYLE_CLASS);
-            assertDefaultCursor(root, M3ValidationSummary.ITEM_STYLE_CLASS);
+            assertDefaultCursor(root, "m3-date-picker-day-cell");
+            assertDefaultCursor(root, "m3-time-picker-hour-display");
+            assertDefaultCursor(root, "m3-time-picker-minute-display");
+            assertDefaultCursor(root, "m3-time-picker-dial");
+            assertDefaultCursor(root, "m3-time-picker-cell");
+            assertDefaultCursor(root, "m3-time-picker-period-cell");
+            assertDefaultCursor(root, "m3-validation-summary-item");
             assertEquals(Cursor.HAND, effectiveCursor(linkedAction));
             assertEquals(Cursor.HAND, effectiveCursor(inheritedCursor));
 

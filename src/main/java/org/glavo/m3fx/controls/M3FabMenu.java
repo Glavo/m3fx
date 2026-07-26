@@ -74,19 +74,19 @@ import java.util.Objects;
 /// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
 public final class M3FabMenu extends Control {
-    /// The base style class for M3FX floating action button menus.
-    public static final String STYLE_CLASS = "m3-fab-menu";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-fab-menu";
 
     /// The style class applied to the action item container.
-    public static final String ACTIONS_STYLE_CLASS = "m3-fab-menu-actions";
+    private static final String ACTIONS_STYLE_CLASS = "m3-fab-menu-actions";
 
     /// The style class applied to each action item node.
-    public static final String ACTION_STYLE_CLASS = "m3-fab-menu-action";
+    private static final String ACTION_STYLE_CLASS = "m3-fab-menu-action";
 
     /// The style class applied to the menu toggle floating action button.
-    public static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
+    private static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
     /// The style class applied to the menu close floating action button.
-    public static final String CLOSE_STYLE_CLASS = "m3-fab-menu-close";
+    private static final String CLOSE_STYLE_CLASS = "m3-fab-menu-close";
 
     /// The expanded pseudo-class.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
@@ -288,7 +288,7 @@ public final class M3FabMenu extends Control {
         return toggleButton;
     }
 
-    /// Returns the internal close floating action button.
+    /// Returns the close floating action button.
     ///
     /// @return the close floating action button
     final M3FloatingActionButton getCloseButton() {
@@ -390,7 +390,7 @@ public final class M3FabMenu extends Control {
 
     /// Adds style classes, child structure, and default action behavior.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
         M3ControlStyles.add(closeButton, CLOSE_STYLE_CLASS);
@@ -649,7 +649,7 @@ public final class M3FabMenu extends Control {
         notifyFocusNodeChanged();
     }
 
-    /// Notifies and refreshes cached accessibility focus state.
+    /// Notifies accessibility clients that the focus target changed.
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();

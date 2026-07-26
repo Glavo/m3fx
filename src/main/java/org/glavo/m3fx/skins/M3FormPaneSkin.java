@@ -14,6 +14,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3FormPane].
 @NotNullByDefault
 public final class M3FormPaneSkin extends SkinBase<M3FormPane> {
+    /// The internal form-content style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-form-pane-content";
+
     /// The internal vertical content container.
     private final VBox content = new VBox();
 
@@ -29,7 +32,7 @@ public final class M3FormPaneSkin extends SkinBase<M3FormPane> {
     public M3FormPaneSkin(M3FormPane control) {
         super(control);
         content.setManaged(false);
-        content.getStyleClass().add(M3FormPane.CONTENT_STYLE_CLASS);
+        content.getStyleClass().add(CONTENT_STYLE_CLASS);
         getChildren().setAll(content);
 
         control.getItems().addListener(itemsListener);

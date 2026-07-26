@@ -49,20 +49,20 @@ import java.util.Objects;
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePicker> {
-    /// The style class applied to date picker field controls.
-    public static final String STYLE_CLASS = "m3-date-picker-field";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-date-picker-field";
 
     /// The style class applied to date picker field popup surfaces.
-    public static final String POPUP_STYLE_CLASS = "m3-date-picker-field-popup";
+    private static final String POPUP_STYLE_CLASS = "m3-date-picker-field-popup";
 
     /// The style class applied to popup content when preset actions are visible.
-    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-field-preset-content";
+    private static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-field-preset-content";
 
     /// The style class applied to the popup preset action column.
-    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-picker-field-preset-list";
+    private static final String PRESET_LIST_STYLE_CLASS = "m3-date-picker-field-preset-list";
 
     /// The style class applied to each popup preset action button.
-    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-field-preset-button";
+    private static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-field-preset-button";
 
     /// The live, mutable, ordered list of presets rendered before the popup picker.
     ///
@@ -98,7 +98,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
                 picker,
                 picker.valueProperty(),
                 DateTimeFormatter.ISO_LOCAL_DATE,
-                STYLE_CLASS,
+                DEFAULT_STYLE_CLASS,
                 POPUP_STYLE_CLASS,
                 new M3InternalIcon(
                         M3InternalIcon.Glyph.CALENDAR,

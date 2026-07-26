@@ -243,7 +243,7 @@ final class M3TextInputMotionTest {
         });
         javafx.scene.shape.Path outline = FxTestUtils.callOnFxThread(() -> assertInstanceOf(
                 javafx.scene.shape.Path.class,
-                scene.layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                scene.layout.lookup("." + "m3-text-input-outline")
         ));
 
         try {
@@ -758,7 +758,7 @@ final class M3TextInputMotionTest {
 
             Text label = assertInstanceOf(
                     Text.class,
-                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-label")
             );
             assertTrue(initialFocus.isFocused());
             assertEquals(MINIMIZED_FONT_SIZE, label.getFont().getSize(), SCALE_EPSILON);

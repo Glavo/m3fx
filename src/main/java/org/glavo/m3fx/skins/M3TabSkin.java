@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 @NotNullByDefault
 public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     /// The active indicator style class.
-    public static final String ACTIVE_INDICATOR_STYLE_CLASS = "m3-tab-active-indicator";
+    private static final String ACTIVE_INDICATOR_STYLE_CLASS = "m3-tab-active-indicator";
 
     /// The selected indicator hidden scale.
     private static final double HIDDEN_INDICATOR_SCALE = 0.72;

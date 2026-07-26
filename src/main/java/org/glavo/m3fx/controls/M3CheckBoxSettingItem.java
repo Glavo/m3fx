@@ -15,7 +15,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 settings row with a trailing checkbox value.
+/// An M3FX settings row with a trailing checkbox value.
+///
+/// Material Design 3 does not define a checkbox settings-row component. This extension combines list-item
+/// presentation with checkbox state and is styled with Material tokens.
 ///
 /// The inherited [#selectedProperty()] and [#indeterminateProperty()] represent the checkbox state. When
 /// [#allowIndeterminateProperty()] is `false`, activation toggles selected and clears indeterminate. When it is
@@ -26,10 +29,11 @@ import java.util.Objects;
 /// error state changes presentation only; it neither validates application data nor changes the selected or
 /// indeterminate values. Applications may bind the properties to their own persisted state.
 ///
-/// See [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
+/// See [Material Design lists](https://m3.material.io/components/lists/overview) and
+/// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
 public final class M3CheckBoxSettingItem extends M3SettingItemBase {
-    /// The concrete style class assigned to checkbox setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-checkbox-setting-item";
 
     /// The pseudo-class used while the checkbox is indeterminate.

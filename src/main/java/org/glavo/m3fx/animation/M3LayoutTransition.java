@@ -28,9 +28,8 @@ import java.util.Objects;
 /// Animates direct-child position changes produced by an existing JavaFX layout container.
 ///
 /// This class applies a FLIP-style placement transition to any [Parent]. The parent continues to perform its normal
-/// layout and each child reaches its target `layoutX` and `layoutY` immediately. A private [Translate] transform then
-/// preserves the child's previous rendered position and animates to the new position without requesting layout on
-/// every pulse. Existing transforms are retained and are never replaced.
+/// layout and each child reaches its target `layoutX` and `layoutY` immediately while its rendered position animates
+/// to the new placement. Existing transforms are retained and are never replaced.
 ///
 /// A layout transition is inactive after construction. Call [#start()] after adding it to the desired lifecycle;
 /// if the parent still needs its initial layout, that initial placement is captured without animation. Subsequent
@@ -38,10 +37,8 @@ import java.util.Objects;
 /// removals, and size changes are observed for bookkeeping, but this class animates only position changes of nodes
 /// that remain direct children. It does not animate entering, exiting, resizing, clipping, or moves between parents.
 ///
-/// At most one active `M3LayoutTransition` may be installed on a parent. [#stop()] settles all children and detaches
-/// listeners but permits a later [#start()]. [#dispose()] performs the same cleanup permanently. The transition
-/// stores one state object per direct child and uses one shared JavaFX transition for every active child, avoiding a
-/// separate pulse receiver per node and avoiding per-pulse allocation.
+/// At most one active `M3LayoutTransition` may be installed on a parent. [#stop()] settles all children and stops
+/// observation but permits a later [#start()]. [#dispose()] performs the same cleanup permanently.
 ///
 /// All lifecycle and property methods must be invoked on the JavaFX Application Thread once the parent is attached
 /// to a showing scene. Effective reduced-motion settings are resolved from the parent for each run and are observed
@@ -215,8 +212,7 @@ public final class M3LayoutTransition {
 
     /// Stops observing layout changes and settles every child at its current layout position.
     ///
-    /// All listeners and private transforms installed by this object are removed before this method returns. The
-    /// transition remains reusable and may be started again. Repeated calls while inactive have no effect.
+    /// The transition remains reusable and may be started again. Repeated calls while inactive have no effect.
     public void stop() {
         if (!active) {
             return;

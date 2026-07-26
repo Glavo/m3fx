@@ -98,21 +98,21 @@
 }
 
 .m3-surface-elevation-level1 .m3-surface-container {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 1, 0.18, 0, 1);
 }
 
 .m3-surface-elevation-level2 .m3-surface-container {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2);
 }
 
 .m3-surface-elevation-level3 .m3-surface-container {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 6, 0.18, 0, 3);
 }
 
 .m3-surface-elevation-level4 .m3-surface-container {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 8, 0.18, 0, 2);
 }
 
 .m3-surface-elevation-level5 .m3-surface-container {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 12, 0.18, 0, 4);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 12, 0.18, 0, 4);
 }

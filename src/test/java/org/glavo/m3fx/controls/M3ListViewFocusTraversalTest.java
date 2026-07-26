@@ -245,7 +245,7 @@ final class M3ListViewFocusTraversalTest {
     /// Returns attached non-empty cells ordered by virtualized data index.
     private static List<M3ListCell<?>> visibleCells(M3ListView<?> listView) {
         ArrayList<M3ListCell<?>> cells = new ArrayList<>();
-        for (Node node : listView.lookupAll("." + M3ListCell.STYLE_CLASS)) {
+        for (Node node : listView.lookupAll("." + "m3-list-view-cell")) {
             if (node instanceof M3ListCell<?> cell && !cell.isEmpty()) {
                 cells.add(cell);
             }

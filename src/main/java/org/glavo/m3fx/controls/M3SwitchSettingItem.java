@@ -12,7 +12,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 settings row with a trailing switch value.
+/// An M3FX settings row with a trailing switch value.
+///
+/// Material Design 3 does not define a switch settings-row component. This extension combines list-item
+/// presentation with an interactive switch and is styled with Material tokens.
 ///
 /// Activating the row toggles the inherited [#selectedProperty()] before it delivers an action event. Direct changes
 /// to that property update the switch presentation without firing an action event. The trailing [M3Switch] mirrors
@@ -23,10 +26,11 @@ import java.util.Objects;
 /// should also be clickable or draggable. It does not save or restore a preference value; applications own
 /// persistence and may bind [#selectedProperty()] to their state.
 ///
-/// See [Material Design switches](https://m3.material.io/components/switch/overview).
+/// See [Material Design lists](https://m3.material.io/components/lists/overview) and
+/// [Material Design switches](https://m3.material.io/components/switch/overview).
 @NotNullByDefault
 public final class M3SwitchSettingItem extends M3SettingItemBase {
-    /// The concrete style class assigned to switch setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-switch-setting-item";
 
     /// The trailing switch owned by this row.
@@ -55,12 +59,12 @@ public final class M3SwitchSettingItem extends M3SettingItemBase {
         switchControl.addEventHandler(ActionEvent.ACTION, this::handleSwitchAction);
     }
 
-    /// Returns the trailing switch owned by this row.
-    ///
-    /// The switch is not focus traversable. Applications may customize icons and geometry, but must not reparent the
-    /// node or replace the bidirectional binding of [#selectedProperty()].
-    ///
-    /// @return the trailing switch
+/// Returns the switch used to select this row.
+///
+/// The switch is not focus traversable. Its [M3Switch#selectedProperty()] remains synchronized with this row's
+/// [#selectedProperty()].
+///
+/// @return the switch used to select this row
     public M3Switch getSwitch() {
         return switchControl;
     }

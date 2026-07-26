@@ -19,6 +19,18 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3FormSection].
 @NotNullByDefault
 public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
+    /// The internal section-header style class.
+    private static final String HEADER_STYLE_CLASS = "m3-form-section-header";
+
+    /// The internal section-title style class.
+    private static final String TITLE_STYLE_CLASS = "m3-form-section-title";
+
+    /// The internal supporting-text style class.
+    private static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-form-section-supporting-text";
+
+    /// The internal content-container style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-form-section-content";
+
     /// The root vertical container.
     private final VBox root = new VBox();
 
@@ -49,12 +61,12 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
     public M3FormSectionSkin(M3FormSection control) {
         super(control);
         root.setManaged(false);
-        header.getStyleClass().add(M3FormSection.HEADER_STYLE_CLASS);
-        titleLabel.getStyleClass().add(M3FormSection.TITLE_STYLE_CLASS);
+        header.getStyleClass().add(HEADER_STYLE_CLASS);
+        titleLabel.getStyleClass().add(TITLE_STYLE_CLASS);
         titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        supportingLabel.getStyleClass().add(M3FormSection.SUPPORTING_TEXT_STYLE_CLASS);
+        supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
         supportingLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        content.getStyleClass().add(M3FormSection.CONTENT_STYLE_CLASS);
+        content.getStyleClass().add(CONTENT_STYLE_CLASS);
         root.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         content.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());

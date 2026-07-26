@@ -49,20 +49,20 @@ import java.util.Objects;
 /// See [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
 public final class M3RichTooltip extends M3Tooltip {
-    /// The base style class for M3FX rich tooltips.
-    public static final String STYLE_CLASS = "m3-rich-tooltip";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-rich-tooltip";
 
     /// The rich tooltip content container style class.
-    public static final String CONTAINER_STYLE_CLASS = "m3-rich-tooltip-container";
+    private static final String CONTAINER_STYLE_CLASS = "m3-rich-tooltip-container";
 
     /// The title label style class.
-    public static final String TITLE_STYLE_CLASS = "m3-rich-tooltip-title";
+    private static final String TITLE_STYLE_CLASS = "m3-rich-tooltip-title";
 
     /// The supporting text label style class.
-    public static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-rich-tooltip-supporting-text";
+    private static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-rich-tooltip-supporting-text";
 
     /// The action row style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
+    private static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
     /// The title label.
     private final Label titleLabel = new Label();
@@ -196,9 +196,9 @@ public final class M3RichTooltip extends M3Tooltip {
     /// Returns the mutable action node list.
     ///
     /// The returned list is live, mutable, and ordered. Changes are reflected immediately while the tooltip is
-    /// showing. `null` elements and duplicate node instances are not permitted. Each action node must be available
-    /// for this tooltip to own; JavaFX rejects incompatible parent ownership. Material rich tooltips support at most
-    /// two brief text-button actions, but this list does not enforce that content recommendation.
+    /// showing. `null` elements and duplicate node instances are not permitted. Each action node must satisfy the
+    /// JavaFX scene-graph single-parent rule while the tooltip is visible. Material guidance recommends at most two
+    /// brief text-button actions; this list does not impose that content recommendation.
     ///
     /// @return the mutable action node list displayed in the tooltip action row
     public final ObservableList<Node> getActions() {
@@ -207,7 +207,7 @@ public final class M3RichTooltip extends M3Tooltip {
 
     /// Initializes rich tooltip content nodes, style classes, and property bindings.
     private void initializeRichTooltip() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setDefaultShowDuration(M3MotionBehavior.standard().richTooltipShowDuration());
 

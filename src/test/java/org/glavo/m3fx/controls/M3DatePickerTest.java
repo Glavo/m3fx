@@ -105,15 +105,15 @@ final class M3DatePickerTest {
             picker.layout();
 
             assertInstanceOf(M3DatePickerSkin.class, picker.getSkin());
-            assertEquals(42, picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS).size());
+            assertEquals(42, picker.lookupAll("." + "m3-date-picker-day-cell").size());
             M3MenuButton yearButton = assertInstanceOf(
                     M3MenuButton.class,
-                    picker.lookup("." + M3DatePicker.YEAR_MENU_BUTTON_STYLE_CLASS)
+                    picker.lookup("." + "m3-date-picker-year-menu-button")
             );
             assertEquals("2026", yearButton.getText());
             M3MenuButton monthButton = assertInstanceOf(
                     M3MenuButton.class,
-                    picker.lookup("." + M3DatePicker.MONTH_MENU_BUTTON_STYLE_CLASS)
+                    picker.lookup("." + "m3-date-picker-month-menu-button")
             );
             assertEquals(12, monthButton.getItems().size());
             assertFalse(monthButton.getText().contains("..."));
@@ -126,7 +126,7 @@ final class M3DatePickerTest {
             targetCell.fire();
 
             assertEquals(LocalDate.of(2026, 5, 20), picker.getValue());
-            assertTrue(targetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+            assertTrue(targetCell.getStyleClass().contains("m3-date-picker-selected-day"));
             assertEquals(48.0, targetCell.getWidth(), 0.5);
             targetCell.arm();
             targetCell.applyCss();
@@ -155,7 +155,7 @@ final class M3DatePickerTest {
             picker.resize(360.0, 340.0);
             picker.layout();
 
-            List<ButtonBase> cells = picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)
+            List<ButtonBase> cells = picker.lookupAll("." + "m3-date-picker-day-cell")
                     .stream()
                     .map(node -> assertInstanceOf(ButtonBase.class, node))
                     .toList();
@@ -169,7 +169,7 @@ final class M3DatePickerTest {
                 assertSame(dateReferences.get(index), cells.get(index).getUserData());
             }
             assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 20))
-                    .getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+                    .getStyleClass().contains("m3-date-picker-selected-day"));
             assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 4)).isDisabled());
 
             Object previousFirstDate = cells.get(0).getUserData();
@@ -203,8 +203,8 @@ final class M3DatePickerTest {
 
             assertNull(retiredSelectedCell.getScene());
             assertNull(retiredTargetCell.getScene());
-            assertTrue(retiredSelectedCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
-            assertFalse(retiredTargetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+            assertTrue(retiredSelectedCell.getStyleClass().contains("m3-date-picker-selected-day"));
+            assertFalse(retiredTargetCell.getStyleClass().contains("m3-date-picker-selected-day"));
         });
     }
 
@@ -223,7 +223,7 @@ final class M3DatePickerTest {
             picker.resize(360.0, 340.0);
             picker.layout();
 
-            long hiddenOutsideCells = picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)
+            long hiddenOutsideCells = picker.lookupAll("." + "m3-date-picker-day-cell")
                     .stream()
                     .filter(node -> node.getUserData() instanceof LocalDate date
                             && !YearMonth.from(date).equals(YearMonth.of(2026, 2))
@@ -459,7 +459,7 @@ final class M3DatePickerTest {
 
     /// Returns a day cell by date.
     private static ButtonBase dayCellForDate(M3DatePicker picker, LocalDate date) {
-        for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+        for (Node node : picker.lookupAll("." + "m3-date-picker-day-cell")) {
             if (node instanceof ButtonBase button && date.equals(button.getUserData())) {
                 return button;
             }

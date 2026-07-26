@@ -18,6 +18,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +33,31 @@ import java.util.Locale;
 
 /// The default calendar skin for [M3DatePicker].
 @NotNullByDefault
-public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
+public class M3DatePickerSkin extends SkinBase<M3DatePicker> implements M3PickerAccessibilityPresentation {
+    /// The internal calendar-container style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-date-picker-container";
+
+    /// The internal weekday-row style class.
+    private static final String WEEKDAY_ROW_STYLE_CLASS = "m3-date-picker-weekday-row";
+
+    /// The internal weekday-label style class.
+    private static final String WEEKDAY_LABEL_STYLE_CLASS = "m3-date-picker-weekday-label";
+
+    /// The internal day-grid style class.
+    private static final String DAY_GRID_STYLE_CLASS = "m3-date-picker-day-grid";
+
+    /// The internal day-cell style class.
+    private static final String DAY_CELL_STYLE_CLASS = "m3-date-picker-day-cell";
+
+    /// The internal outside-month-day style class.
+    private static final String OUTSIDE_MONTH_DAY_STYLE_CLASS = "m3-date-picker-outside-month-day";
+
+    /// The internal today-day style class.
+    private static final String TODAY_DAY_STYLE_CLASS = "m3-date-picker-today-day";
+
+    /// The internal selected-day style class.
+    private static final String SELECTED_DAY_STYLE_CLASS = "m3-date-picker-selected-day";
+
     /// The number of columns in a weekly calendar grid.
     private static final int COLUMN_COUNT = 7;
 
@@ -98,6 +124,39 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         installListeners(control);
         getChildren().setAll(container);
         refreshCalendar();
+    }
+
+    /// Returns the number of day-cell nodes currently presented by the calendar grid.
+    @Override
+    public int accessibleItemCount() {
+        int count = 0;
+        for (DateCellButton dayCell : dayCells) {
+            if (isPresentedDayCell(dayCell)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /// Returns a presented day-cell node without constructing a scene-graph snapshot.
+    @Override
+    public @Nullable Node accessibleItemAt(int index) {
+        if (index < 0) {
+            return null;
+        }
+        for (DateCellButton dayCell : dayCells) {
+            if (isPresentedDayCell(dayCell) && index-- == 0) {
+                return dayCell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a reusable day cell belongs to the current indexed presentation.
+    private static boolean isPresentedDayCell(DateCellButton dayCell) {
+        return M3Accessible.isEffectivelyReachable(dayCell)
+                && !dayCell.isMouseTransparent()
+                && dayCell.getUserData() instanceof LocalDate;
     }
 
     /// Removes listeners before the skin is disposed.
@@ -175,9 +234,9 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
     /// Creates and styles the reusable skin nodes.
     private void initializeNodes() {
-        container.getStyleClass().add(M3DatePicker.CONTAINER_STYLE_CLASS);
-        weekdayRow.getStyleClass().add(M3DatePicker.WEEKDAY_ROW_STYLE_CLASS);
-        dayGrid.getStyleClass().add(M3DatePicker.DAY_GRID_STYLE_CLASS);
+        container.getStyleClass().add(CONTAINER_STYLE_CLASS);
+        weekdayRow.getStyleClass().add(WEEKDAY_ROW_STYLE_CLASS);
+        dayGrid.getStyleClass().add(DAY_GRID_STYLE_CLASS);
         dayGrid.addEventFilter(ActionEvent.ACTION, dayCellActionHandler);
         container.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
@@ -275,8 +334,8 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             dayCell.setAccessibleText(date.toString());
             dayCell.setVisible(visible);
             dayCell.setMouseTransparent(!visible);
-            setStyleClass(dayCell, M3DatePicker.OUTSIDE_MONTH_DAY_STYLE_CLASS, outsideMonth && visible);
-            setStyleClass(dayCell, M3DatePicker.TODAY_DAY_STYLE_CLASS, todayDate && visible);
+            setStyleClass(dayCell, OUTSIDE_MONTH_DAY_STYLE_CLASS, outsideMonth && visible);
+            setStyleClass(dayCell, TODAY_DAY_STYLE_CLASS, todayDate && visible);
         }
     }
 
@@ -294,7 +353,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         @Nullable LocalDate selectedDate = getSkinnable().getValue();
         for (DateCellButton dayCell : dayCells) {
             boolean selected = dayCell.isVisible() && selectedDate != null && selectedDate.equals(dayCell.getUserData());
-            setStyleClass(dayCell, M3DatePicker.SELECTED_DAY_STYLE_CLASS, selected);
+            setStyleClass(dayCell, SELECTED_DAY_STYLE_CLASS, selected);
         }
     }
 
@@ -311,7 +370,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     /// Creates a weekday label.
     private static Label createWeekdayLabel() {
         Label label = new Label();
-        label.getStyleClass().add(M3DatePicker.WEEKDAY_LABEL_STYLE_CLASS);
+        label.getStyleClass().add(WEEKDAY_LABEL_STYLE_CLASS);
         label.setAlignment(Pos.CENTER);
         return label;
     }
@@ -339,7 +398,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         /// Creates a reusable date cell button.
         private DateCellButton() {
             super("");
-            getStyleClass().add(M3DatePicker.DAY_CELL_STYLE_CLASS);
+            getStyleClass().add(DAY_CELL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
             setAlignment(Pos.CENTER);
             setFocusTraversable(true);

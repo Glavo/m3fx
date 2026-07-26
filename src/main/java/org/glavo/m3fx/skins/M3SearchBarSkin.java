@@ -35,6 +35,15 @@ import org.jetbrains.annotations.Nullable;
 /// search bar without allowing its decorative layers to intercept input.
 @NotNullByDefault
 public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
+    /// The internal content row style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-search-bar-content";
+
+    /// The leading slot style class.
+    private static final String LEADING_STYLE_CLASS = "m3-search-bar-leading";
+
+    /// The trailing action container style class.
+    private static final String TRAILING_STYLE_CLASS = "m3-search-bar-trailing";
+
     /// The spacing between search bar content slots.
     private static final double CONTENT_SPACING = 12.0;
 
@@ -113,11 +122,11 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     public M3SearchBarSkin(M3SearchBar control) {
         super(control);
         container.setManaged(false);
-        container.getStyleClass().add(M3SearchBar.CONTENT_STYLE_CLASS);
+        container.getStyleClass().add(CONTENT_STYLE_CLASS);
         container.setAlignment(Pos.CENTER_LEFT);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        leadingSlot.getStyleClass().add(M3SearchBar.LEADING_STYLE_CLASS);
-        trailingBox.getStyleClass().add(M3SearchBar.TRAILING_STYLE_CLASS);
+        leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
+        trailingBox.getStyleClass().add(TRAILING_STYLE_CLASS);
         trailingBox.setAlignment(Pos.CENTER);
         TextField editor = editor(control);
         editorFocusVisibleTracker = new M3FocusVisibleTracker(editor, this::updateEditorFocusVisible);

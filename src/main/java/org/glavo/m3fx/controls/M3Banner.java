@@ -40,6 +40,9 @@ import java.util.Objects;
 
 /// A persistent, in-layout message with optional actions.
 ///
+/// `M3Banner` is an M3FX extension styled with Material tokens; Material Design 3 does not define a banner
+/// component. It combines a list-like message layout with optional action controls.
+///
 /// A banner displays [text][#textProperty()], an optional leading [icon][#iconProperty()], and an ordered list of
 /// trailing [actions][#getActions()]. Unlike a popup notification, a banner remains part of its parent's layout;
 /// the application controls when it is added, removed, shown, or hidden.
@@ -47,23 +50,12 @@ import java.util.Objects;
 /// The banner itself is not focus traversable. Keyboard focus and action handling remain with focusable nodes in
 /// the icon and action slots. The no-argument constructor creates an empty banner with no icon or actions.
 ///
-/// See [Material Design](https://m3.material.io/) for the component and interaction principles used by M3FX.
+/// See [Material Design lists](https://m3.material.io/components/lists/overview) and
+/// [Material Design buttons](https://m3.material.io/components/buttons/overview).
 @NotNullByDefault
 public final class M3Banner extends Control {
-    /// The base style class for M3FX banners.
-    public static final String STYLE_CLASS = "m3-banner";
-
-    /// The style class applied to the banner content container.
-    public static final String CONTAINER_STYLE_CLASS = "m3-banner-container";
-
-    /// The leading icon slot style class.
-    public static final String ICON_STYLE_CLASS = "m3-banner-icon";
-
-    /// The text label style class.
-    public static final String TEXT_STYLE_CLASS = "m3-banner-text";
-
-    /// The actions container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-banner-actions";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-banner";
 
     /// The default minimum banner container height.
     private static final double DEFAULT_CONTAINER_MIN_HEIGHT = 80.0;
@@ -364,7 +356,7 @@ public final class M3Banner extends Control {
     ///
     /// The list preserves insertion order, permits neither `null` elements nor duplicate parent ownership, and
     /// is observed for subsequent changes. Nodes in this list cannot simultaneously be children of another parent.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -373,7 +365,8 @@ public final class M3Banner extends Control {
     /// Returns the live list of trailing action nodes.
     ///
     /// Changes to the returned list are reflected immediately by this banner. The list preserves insertion order
-    /// and rejects `null` elements.
+    /// and rejects `null` elements or repeated occurrences of the same node instance. Bulk mutations are validated
+    /// before the list changes.
     ///
     /// @return the live, mutable action list
     public final ObservableList<Node> getActions() {
@@ -460,7 +453,7 @@ public final class M3Banner extends Control {
         focusNotifier.refresh();
     }
 
-    /// Creates the default Material Design 3 banner skin.
+    /// Creates the default skin for this control.
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3BannerSkin(this);
@@ -468,7 +461,7 @@ public final class M3Banner extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
@@ -615,7 +608,7 @@ public final class M3Banner extends Control {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Prevents metadata holder instantiation.
+        /// Prevents instantiation.
         private StyleableProperties() {
         }
     }

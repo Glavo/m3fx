@@ -13,6 +13,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3DateRangePickerField].
 @NotNullByDefault
 public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePickerField> {
+    /// The internal two-field container style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-date-range-picker-field-container";
+
     /// The spacing between the start and end input layouts.
     private static final double FIELD_SPACING = 12.0;
 
@@ -40,7 +43,7 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
         startInputLayout = startLayout;
         endInputLayout = endLayout;
         container.setManaged(false);
-        container.getStyleClass().add(M3DateRangePickerField.CONTAINER_STYLE_CLASS);
+        container.getStyleClass().add(CONTAINER_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(startInputLayout, endInputLayout);
         getChildren().setAll(container);

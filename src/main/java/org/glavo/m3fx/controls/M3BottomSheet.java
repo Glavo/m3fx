@@ -54,26 +54,11 @@ import java.util.Objects;
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
 public final class M3BottomSheet extends Control {
-    /// The base style class for M3FX bottom sheets.
-    public static final String STYLE_CLASS = "m3-bottom-sheet";
-
-    /// The shared sheet header style class.
-    public static final String HEADER_STYLE_CLASS = M3SideSheet.HEADER_STYLE_CLASS;
-
-    /// The shared sheet title style class.
-    public static final String TITLE_STYLE_CLASS = M3SideSheet.TITLE_STYLE_CLASS;
-
-    /// The bottom-sheet action container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-sheet-actions";
-
-    /// The shared sheet content slot style class.
-    public static final String CONTENT_STYLE_CLASS = M3SideSheet.CONTENT_STYLE_CLASS;
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-bottom-sheet";
 
     /// The drag handle container style class.
-    public static final String DRAG_HANDLE_CONTAINER_STYLE_CLASS = "m3-bottom-sheet-drag-handle-container";
-
-    /// The drag handle style class.
-    public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
+    private static final String DRAG_HANDLE_CONTAINER_STYLE_CLASS = "m3-bottom-sheet-drag-handle-container";
 
     /// Creates a shown standard sheet with empty headline text and no content or actions.
     public M3BottomSheet() {
@@ -364,7 +349,7 @@ public final class M3BottomSheet extends Control {
     ///
     /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
     /// list cannot simultaneously be children of another parent.
-    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+    private final ObservableList<Node> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -407,7 +392,8 @@ public final class M3BottomSheet extends Control {
     /// Returns the live list of trailing action nodes.
     ///
     /// Changes to the returned list are reflected immediately by this sheet. The list preserves insertion order
-    /// and rejects `null` elements.
+    /// and rejects `null` elements or repeated occurrences of the same node instance. Bulk mutations are validated
+    /// before the list changes.
     ///
     /// @return the live, mutable action list
     public final ObservableList<Node> getActions() {
@@ -496,7 +482,7 @@ public final class M3BottomSheet extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
@@ -631,13 +617,13 @@ public final class M3BottomSheet extends Control {
         return false;
     }
 
-    /// Notifies and refreshes cached accessibility focus state.
+    /// Notifies accessibility clients that the focus target changed.
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     }
 
-    /// Returns the actionable drag-handle node created by the current skin, if available.
+    /// Returns the actionable drag-handle focus target, if available.
     private @Nullable Node dragHandleFocusTarget() {
         @Nullable Node target = lookup("." + DRAG_HANDLE_CONTAINER_STYLE_CLASS);
         return target != null && target.isFocusTraversable() && !target.isDisabled() && target.isVisible()

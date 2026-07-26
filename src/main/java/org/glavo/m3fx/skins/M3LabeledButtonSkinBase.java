@@ -28,16 +28,13 @@ import javafx.scene.paint.Paint;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBoundsType;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.controls.M3Button;
-import org.glavo.m3fx.controls.M3ButtonGroup;
+import org.glavo.m3fx.controls.M3ButtonBase;
 import org.glavo.m3fx.controls.M3Chip;
-import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
-import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
-import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeTransition;
@@ -51,6 +48,42 @@ import org.jetbrains.annotations.Nullable;
 /// scale motion without replacing the common interaction lifecycle.
 @NotNullByDefault
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
+    /// The internal single-segment style class.
+    private static final String SINGLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-single";
+
+    /// The internal first-segment style class.
+    private static final String FIRST_SEGMENT_STYLE_CLASS = "m3-segmented-button-first";
+
+    /// The internal middle-segment style class.
+    private static final String MIDDLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-middle";
+
+    /// The internal last-segment style class.
+    private static final String LAST_SEGMENT_STYLE_CLASS = "m3-segmented-button-last";
+
+    /// The split-button action part style class.
+    private static final String SPLIT_ACTION_BUTTON_STYLE_CLASS = "m3-split-button-action";
+
+    /// The split-button menu part style class.
+    private static final String SPLIT_MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
+
+    /// The time-picker cell style class.
+    private static final String TIME_CELL_STYLE_CLASS = "m3-time-picker-cell";
+
+    /// The internal date-cell style class used for picker-specific optical centering.
+    private static final String DATE_PICKER_DAY_CELL_STYLE_CLASS = "m3-date-picker-day-cell";
+
+    /// The internal single-button group style class.
+    private static final String SINGLE_BUTTON_STYLE_CLASS = "m3-button-group-single";
+
+    /// The internal first-button group style class.
+    private static final String FIRST_BUTTON_STYLE_CLASS = "m3-button-group-first";
+
+    /// The internal middle-button group style class.
+    private static final String MIDDLE_BUTTON_STYLE_CLASS = "m3-button-group-middle";
+
+    /// The internal last-button group style class.
+    private static final String LAST_BUTTON_STYLE_CLASS = "m3-button-group-last";
+
     /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
 
@@ -371,9 +404,13 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         mousePressed = true;
         M3FocusRequests.requestFocusIfTraversable(button);
         layoutStateLayer();
+        double rippleX = Math.max(0.0, Math.min(stateLayer.getWidth(),
+                event.getX() - stateLayer.getLayoutX()));
+        double rippleY = Math.max(0.0, Math.min(stateLayer.getHeight(),
+                event.getY() - stateLayer.getLayoutY()));
         stateLayer.playRipple(
-                event.getX() - stateLayer.getLayoutX(),
-                event.getY() - stateLayer.getLayoutY()
+                rippleX,
+                rippleY
         );
         button.arm();
         event.consume();
@@ -539,8 +576,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
     /// Returns whether a button is a picker cell whose numeric text needs optical centering.
     private static boolean isFixedPickerCell(ButtonBase button) {
-        return button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
-                || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS);
+        return button.getStyleClass().contains(DATE_PICKER_DAY_CELL_STYLE_CLASS)
+                || button.getStyleClass().contains(TIME_CELL_STYLE_CLASS);
     }
 
     /// Centers fixed picker-cell text by visual glyph bounds so rendered digits stay optically centered.
@@ -665,7 +702,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         M3Animation.playFromStart(button, transition);
     }
 
-    /// Lays out the state layer to cover the full control surface.
+    /// Lays out the state layer over the visible component container.
     private void layoutStateLayer() {
         C control = getSkinnable();
         double width = control.getWidth();
@@ -676,12 +713,30 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (height <= 0.0) {
             height = control.getLayoutBounds().getHeight();
         }
+        if (control instanceof M3IconButton iconButton) {
+            layoutCenteredIconStateLayer(
+                    width,
+                    height,
+                    iconButton.getContainerWidth(),
+                    iconButton.getContainerHeight()
+            );
+            return;
+        }
+        if (control instanceof M3IconToggleButton iconToggleButton) {
+            layoutCenteredIconStateLayer(
+                    width,
+                    height,
+                    iconToggleButton.getContainerWidth(),
+                    iconToggleButton.getContainerHeight()
+            );
+            return;
+        }
         if (control instanceof M3SegmentedButton segmentedButton) {
             layoutSegmentedButtonStateLayer(segmentedButton, width, height);
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
-        if (control.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+        if (control.getStyleClass().contains(DATE_PICKER_DAY_CELL_STYLE_CLASS)) {
             Background background = control.getBackground();
             double inset = 0.0;
             if (background != null && !background.getFills().isEmpty()) {
@@ -708,20 +763,60 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
+        if (control instanceof M3ButtonBase button) {
+            layoutCenteredButtonStateLayer(width, height, button.getContainerHeight());
+            return;
+        }
         stateLayer.layoutLayer(0.0, 0.0, width, height, stateLayerShapeRadius());
+        stateLayer.animateOverlayOpacityFromOwnerState();
+    }
+
+    /// Centers ordinary button feedback inside the minimum interaction target.
+    private void layoutCenteredButtonStateLayer(
+            double availableWidth,
+            double availableHeight,
+            double containerHeight
+    ) {
+        double height = Math.min(availableHeight, containerHeight);
+        stateLayer.layoutLayer(
+                0.0,
+                (availableHeight - height) / 2.0,
+                availableWidth,
+                height,
+                stateLayerShapeRadius()
+        );
+        stateLayer.animateOverlayOpacityFromOwnerState();
+    }
+
+    /// Centers icon-button feedback inside its independent interaction target.
+    private void layoutCenteredIconStateLayer(
+            double availableWidth,
+            double availableHeight,
+            double containerWidth,
+            double containerHeight
+    ) {
+        double width = Math.min(availableWidth, containerWidth);
+        double height = Math.min(availableHeight, containerHeight);
+        stateLayer.layoutLayer(
+                (availableWidth - width) / 2.0,
+                (availableHeight - height) / 2.0,
+                width,
+                height,
+                stateLayerShapeRadius()
+        );
         stateLayer.animateOverlayOpacityFromOwnerState();
     }
 
     /// Lays out segmented button feedback with position-specific corner radii.
     private void layoutSegmentedButtonStateLayer(M3SegmentedButton button, double width, double height) {
         double radius = button.getContainerShape();
-        if (button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)) {
+        if (button.getStyleClass().contains(SINGLE_SEGMENT_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
-        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)) {
+        } else if (button.getStyleClass().contains(FIRST_SEGMENT_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
-        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS)) {
+        } else if (button.getStyleClass().contains(MIDDLE_SEGMENT_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
-        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS)) {
+        } else if (button.getStyleClass().contains(LAST_SEGMENT_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
         } else {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
@@ -730,19 +825,32 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
     /// Lays out button feedback with button-group or split-button corner radii.
     private boolean layoutGroupedButtonStateLayer(ButtonBase button, double width, double height) {
-        boolean groupedShape = button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
+        boolean groupedShape = button.getStyleClass().contains(SINGLE_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(FIRST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(MIDDLE_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(LAST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(SPLIT_ACTION_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(SPLIT_MENU_BUTTON_STYLE_CLASS);
         if (!groupedShape) {
             return false;
         }
 
+        double layerHeight = button instanceof M3ButtonBase m3Button
+                ? Math.min(height, m3Button.getContainerHeight())
+                : height;
+        double layerY = (height - layerHeight) / 2.0;
+
         @Nullable M3SplitButton splitButton = splitButtonOwner(button);
         if (splitButton != null) {
-            M3SplitButtonSkin.layoutPartStateLayer(splitButton, button, stateLayer, width, height);
+            M3SplitButtonSkin.layoutPartStateLayer(
+                    splitButton,
+                    button,
+                    stateLayer,
+                    0.0,
+                    layerY,
+                    width,
+                    layerHeight
+            );
             return true;
         }
 
@@ -751,9 +859,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (activeShapeTransition != null) {
             stateLayer.layoutLayer(
                     0.0,
-                    0.0,
+                    layerY,
                     width,
-                    height,
+                    layerHeight,
                     activeShapeTransition.currentTopLeftRadius(),
                     activeShapeTransition.currentTopRightRadius(),
                     activeShapeTransition.currentBottomRightRadius(),
@@ -764,9 +872,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (resolvedRadii != null) {
             stateLayer.layoutLayer(
                     0.0,
-                    0.0,
+                    layerY,
                     width,
-                    height,
+                    layerHeight,
                     resolvedRadii.getTopLeftHorizontalRadius(),
                     resolvedRadii.getTopRightHorizontalRadius(),
                     resolvedRadii.getBottomRightHorizontalRadius(),
@@ -776,15 +884,15 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         double radius = stateLayerShapeRadius();
-        if (button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)) {
-            stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
-        } else if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
-            stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
-        } else if (button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)) {
-            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
+        if (button.getStyleClass().contains(SINGLE_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, layerY, width, layerHeight, radius);
+        } else if (button.getStyleClass().contains(FIRST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(SPLIT_ACTION_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, layerY, width, layerHeight, radius, 0.0, 0.0, radius);
+        } else if (button.getStyleClass().contains(MIDDLE_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, layerY, width, layerHeight, 0.0);
         } else {
-            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
+            stateLayer.layoutLayer(0.0, layerY, width, layerHeight, 0.0, radius, radius, 0.0);
         }
         return true;
     }
@@ -830,7 +938,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (button instanceof M3FloatingActionButton floatingActionButton) {
             return floatingActionButton.getContainerShape();
         }
-        if (button instanceof M3Button m3Button) {
+        if (button instanceof M3ButtonBase m3Button) {
             return m3Button.getContainerShape();
         }
         if (button instanceof M3IconToggleButton iconToggleButton) {

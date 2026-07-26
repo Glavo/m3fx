@@ -3,7 +3,7 @@
     -fx-background-insets: 0;
     -fx-min-width: 112px;
     -fx-max-width: 280px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2);
 }
 
 .m3-menu:vibrant {

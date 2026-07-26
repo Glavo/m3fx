@@ -128,7 +128,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3FilterChip().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3IconToggleButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3IconToggleButton().getAccessibleRole());
-        assertEquals(AccessibleRole.TOOL_BAR, new M3SegmentedButtonGroup().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3SegmentedButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3SegmentedButton().getAccessibleRole());
         assertEquals(AccessibleRole.TAB_PANE, new M3TabBar().getAccessibleRole());
         assertEquals(AccessibleRole.TAB_ITEM, new M3Tab().getAccessibleRole());
@@ -139,6 +139,32 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.LIST_VIEW, new M3NavigationDrawer().getAccessibleRole());
         assertEquals(AccessibleRole.NODE, new M3NavigationDrawerGroup().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3NavigationItem().getAccessibleRole());
+    }
+
+    /// Verifies that segmented buttons expose roles matching the active selection model.
+    @Test
+    void segmentedButtonsAdaptAccessibilityRolesToSelectionMode() {
+        M3SegmentedButton button = new M3SegmentedButton("Option");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup();
+        group.getItems().add(button);
+
+        assertEquals(AccessibleRole.PARENT, group.getAccessibleRole());
+        assertEquals(AccessibleRole.RADIO_BUTTON, button.getAccessibleRole());
+
+        group.setSelectionMode(M3SelectionMode.MULTIPLE);
+
+        assertEquals(AccessibleRole.PARENT, group.getAccessibleRole());
+        assertEquals(AccessibleRole.CHECK_BOX, button.getAccessibleRole());
+
+        group.setSelectionMode(M3SelectionMode.NONE);
+
+        assertEquals(AccessibleRole.TOOL_BAR, group.getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, button.getAccessibleRole());
+        assertNull(button.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+
+        group.getItems().remove(button);
+
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, button.getAccessibleRole());
     }
 
     /// Verifies that custom controls expose stable keyboard traversal defaults.

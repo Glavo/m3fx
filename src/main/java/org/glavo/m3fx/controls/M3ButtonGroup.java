@@ -55,23 +55,23 @@ import java.util.Objects;
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
 public final class M3ButtonGroup extends Control {
-    /// The base style class for M3FX button groups.
-    public static final String STYLE_CLASS = "m3-button-group";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-button-group";
 
     /// The style class applied to each button managed by the group.
-    public static final String GROUPED_BUTTON_STYLE_CLASS = "m3-grouped-button";
+    private static final String GROUPED_BUTTON_STYLE_CLASS = "m3-grouped-button";
 
     /// The style class applied when a button is the only grouped button.
-    public static final String SINGLE_BUTTON_STYLE_CLASS = "m3-button-group-single";
+    private static final String SINGLE_BUTTON_STYLE_CLASS = "m3-button-group-single";
 
     /// The style class applied to the first grouped button.
-    public static final String FIRST_BUTTON_STYLE_CLASS = "m3-button-group-first";
+    private static final String FIRST_BUTTON_STYLE_CLASS = "m3-button-group-first";
 
     /// The style class applied to middle grouped buttons.
-    public static final String MIDDLE_BUTTON_STYLE_CLASS = "m3-button-group-middle";
+    private static final String MIDDLE_BUTTON_STYLE_CLASS = "m3-button-group-middle";
 
     /// The style class applied to the last grouped button.
-    public static final String LAST_BUTTON_STYLE_CLASS = "m3-button-group-last";
+    private static final String LAST_BUTTON_STYLE_CLASS = "m3-button-group-last";
 
     /// The default button group variant.
     private static final M3ButtonGroupVariant DEFAULT_VARIANT = M3ButtonGroupVariant.CONNECTED;
@@ -79,8 +79,8 @@ public final class M3ButtonGroup extends Control {
     /// The default button group size.
     private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
 
-    /// The default spacing that lets adjacent grouped button borders overlap.
-    private static final double DEFAULT_SPACING = -1.0;
+    /// The default spacing between connected button targets.
+    private static final double DEFAULT_SPACING = 2.0;
 
     /// The default proportional width increase for an activated standard-group button.
     private static final double DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER = 0.15;
@@ -188,10 +188,10 @@ public final class M3ButtonGroup extends Control {
 
     /// The spacing between adjacent button bounds, in logical pixels.
     ///
-    /// The default value is `-1.0`, allowing adjacent borders to overlap. Any finite value is accepted, including
-    /// negative values.
+    /// The default value is `2.0`. Values must be finite and non-negative so adjacent interaction targets do not
+    /// overlap.
     ///
-    /// @defaultValue `-1.0`
+    /// @defaultValue `2.0`
     private @Nullable StyleableDoubleProperty spacing;
 
     /// Returns the spacing between grouped buttons.
@@ -203,21 +203,21 @@ public final class M3ButtonGroup extends Control {
 
     /// Sets the spacing between grouped buttons.
     ///
-    /// @param spacing the child spacing in logical pixels
-    /// @throws IllegalArgumentException if `spacing` is not finite
+    /// @param spacing the non-negative child spacing in logical pixels
+    /// @throws IllegalArgumentException if `spacing` is negative or not finite
     public final void setSpacing(double spacing) {
-        spacingProperty().set(M3Css.finite(spacing, "spacing"));
+        spacingProperty().set(M3Css.nonNegative(spacing, "spacing"));
     }
 
     /// Returns the styleable property that stores the spacing between button bounds.
     ///
-    /// The property can be observed and bound, is exposed to CSS as `-m3-button-group-spacing`, and accepts any
-    /// finite value. Its default value is `-1.0` logical pixels.
+    /// The property can be observed and bound, is exposed to CSS as `-m3-button-group-spacing`, and accepts finite,
+    /// non-negative values. Its default value is `2.0` logical pixels.
     ///
     /// @return the button spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
-            spacing = M3Css.finiteStyleableDoubleProperty(
+            spacing = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_SPACING,
                     this,
                     "spacing",
@@ -280,7 +280,7 @@ public final class M3ButtonGroup extends Control {
     ///
     /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. Removing a
     /// button also removes grouping-specific state from that button.
-    private final ObservableList<ButtonBase> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<ButtonBase> items = M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between grouped buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -309,7 +309,8 @@ public final class M3ButtonGroup extends Control {
     /// Returns the live list of buttons displayed by this group.
     ///
     /// Changes to the returned list are reflected immediately. The list preserves insertion order and rejects
-    /// `null` elements.
+    /// `null` elements or repeated occurrences of the same button instance. Bulk mutations are validated before
+    /// the list changes.
     ///
     /// @return the live, mutable button list
     public final ObservableList<ButtonBase> getItems() {
@@ -409,7 +410,7 @@ public final class M3ButtonGroup extends Control {
 
     /// Adds base style classes and child list listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         updateVariantStyle();
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);

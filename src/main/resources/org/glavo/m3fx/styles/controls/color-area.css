@@ -1,0 +1,41 @@
+.m3-color-area {
+    -m3-color-area-thumb-size: 28px;
+    -fx-background-color: transparent;
+    -fx-cursor: default;
+    -fx-min-width: 120px;
+    -fx-min-height: 96px;
+    -fx-pref-width: 240px;
+    -fx-pref-height: 160px;
+}
+
+.m3-color-area .color-area-track {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 12px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-insets: 0;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+}
+
+.m3-color-area .color-area-thumb {
+    -fx-min-width: -m3-color-area-thumb-size;
+    -fx-min-height: -m3-color-area-thumb-size;
+    -fx-pref-width: -m3-color-area-thumb-size;
+    -fx-pref-height: -m3-color-area-thumb-size;
+    -fx-max-width: -m3-color-area-thumb-size;
+    -fx-max-height: -m3-color-area-thumb-size;
+}
+
+.m3-color-area .color-area-thumb .m3-color-thumb-outline {
+    -fx-fill: -m3-color-outline;
+}
+
+.m3-color-area .color-area-thumb .m3-color-thumb-surface-ring {
+    -fx-fill: -m3-color-surface;
+}
+
+.m3-color-area:disabled .color-area-track,
+.m3-color-area:disabled .color-area-thumb {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}

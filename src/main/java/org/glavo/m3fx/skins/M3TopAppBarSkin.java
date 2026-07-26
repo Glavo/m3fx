@@ -30,6 +30,30 @@ import org.jetbrains.annotations.Nullable;
 /// fixed variants omit the expanded title area.
 @NotNullByDefault
 public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
+    /// The navigation slot style class.
+    private static final String NAVIGATION_STYLE_CLASS = "m3-top-app-bar-navigation";
+
+    /// The expanded title style class.
+    private static final String TITLE_STYLE_CLASS = "m3-top-app-bar-title";
+
+    /// The expanded subtitle style class.
+    private static final String SUBTITLE_STYLE_CLASS = "m3-top-app-bar-subtitle";
+
+    /// The custom title-content style class.
+    private static final String TITLE_CONTENT_STYLE_CLASS = "m3-top-app-bar-title-content";
+
+    /// The compact title style class.
+    private static final String COMPACT_TITLE_STYLE_CLASS = "m3-top-app-bar-compact-title";
+
+    /// The compact subtitle style class.
+    private static final String COMPACT_SUBTITLE_STYLE_CLASS = "m3-top-app-bar-compact-subtitle";
+
+    /// The action container style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-top-app-bar-actions";
+
+    /// The action slot style class.
+    private static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
+
     /// The minimum Material hit slot used by top app bar navigation and trailing action icons.
     private static final double MINIMUM_ACTION_SLOT_SIZE = 48.0;
 
@@ -112,12 +136,12 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         actions.setManaged(false);
 
         actions.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        navigationSlot.getStyleClass().add(M3TopAppBar.NAVIGATION_STYLE_CLASS);
-        titleLabel.getStyleClass().add(M3TopAppBar.TITLE_STYLE_CLASS);
-        subtitleLabel.getStyleClass().add(M3TopAppBar.SUBTITLE_STYLE_CLASS);
-        compactTitleLabel.getStyleClass().add(M3TopAppBar.COMPACT_TITLE_STYLE_CLASS);
-        compactSubtitleLabel.getStyleClass().add(M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS);
-        actions.getStyleClass().add(M3TopAppBar.ACTIONS_STYLE_CLASS);
+        navigationSlot.getStyleClass().add(NAVIGATION_STYLE_CLASS);
+        titleLabel.getStyleClass().add(TITLE_STYLE_CLASS);
+        subtitleLabel.getStyleClass().add(SUBTITLE_STYLE_CLASS);
+        compactTitleLabel.getStyleClass().add(COMPACT_TITLE_STYLE_CLASS);
+        compactSubtitleLabel.getStyleClass().add(COMPACT_SUBTITLE_STYLE_CLASS);
+        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
 
         actions.spacingProperty().bind(control.actionSpacingProperty());
         titleLabel.textProperty().bind(control.titleProperty());
@@ -173,7 +197,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         navigationSlot.getChildren().clear();
         Node currentTitleContent = titleContent;
         if (currentTitleContent != null) {
-            currentTitleContent.getStyleClass().remove(M3TopAppBar.TITLE_CONTENT_STYLE_CLASS);
+            currentTitleContent.getStyleClass().remove(TITLE_CONTENT_STYLE_CLASS);
         }
         titleContent = null;
         getChildren().clear();
@@ -338,7 +362,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// Creates a fixed Material action slot for a public trailing action node.
     private static SlotPane createActionSlot(Node action) {
         SlotPane slot = new SlotPane();
-        slot.getStyleClass().add(M3TopAppBar.ACTION_SLOT_STYLE_CLASS);
+        slot.getStyleClass().add(ACTION_SLOT_STYLE_CLASS);
         slot.getChildren().add(action);
         return slot;
     }
@@ -347,12 +371,12 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     private void updateTitleContent(@Nullable Node oldValue, @Nullable Node newValue) {
         if (oldValue != null) {
             getChildren().remove(oldValue);
-            oldValue.getStyleClass().remove(M3TopAppBar.TITLE_CONTENT_STYLE_CLASS);
+            oldValue.getStyleClass().remove(TITLE_CONTENT_STYLE_CLASS);
         }
         titleContent = newValue;
         if (newValue != null) {
-            if (!newValue.getStyleClass().contains(M3TopAppBar.TITLE_CONTENT_STYLE_CLASS)) {
-                newValue.getStyleClass().add(M3TopAppBar.TITLE_CONTENT_STYLE_CLASS);
+            if (!newValue.getStyleClass().contains(TITLE_CONTENT_STYLE_CLASS)) {
+                newValue.getStyleClass().add(TITLE_CONTENT_STYLE_CLASS);
             }
             newValue.setManaged(false);
             if (!getChildren().contains(newValue)) {

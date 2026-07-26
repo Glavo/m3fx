@@ -55,14 +55,8 @@ import java.util.Objects;
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
 public final class M3TabBar extends Control {
-    /// The base style class for M3FX tab bars.
-    public static final String STYLE_CLASS = "m3-tab-bar";
-
-    /// The style class applied to the internal tab row container.
-    public static final String CONTAINER_STYLE_CLASS = "m3-tab-bar-container";
-
-    /// The style class applied to the bottom divider rendered behind tab indicators.
-    public static final String DIVIDER_STYLE_CLASS = "m3-tab-bar-divider";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-tab-bar";
 
     /// The pseudo-class applied to secondary tab bars and their tabs.
     private static final PseudoClass SECONDARY_PSEUDO_CLASS = PseudoClass.getPseudoClass("secondary");
@@ -74,7 +68,7 @@ public final class M3TabBar extends Control {
     ///
     /// The list rejects `null`. Each tab must occur at most once and must satisfy the JavaFX single-parent rule when
     /// displayed. Changes immediately update selection, keyboard traversal, and accessibility.
-    private final ObservableList<M3Tab> tabs = M3ObservableLists.nonNullElementList("tab");
+    private final ObservableList<M3Tab> tabs = M3ObservableLists.identityDistinctElementList("tab");
 
     /// Notifies accessibility clients when focus moves between tabs.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -288,8 +282,9 @@ public final class M3TabBar extends Control {
 
     /// Returns the mutable child list used as tabs.
     ///
-    /// The list rejects `null` elements. Adding or removing tabs updates selection listeners immediately. A tab
-    /// can belong to only one scene-graph parent at a time.
+    /// The list rejects `null` elements and repeated occurrences of the same tab instance. Bulk mutations are
+    /// validated before the list changes. Adding or removing tabs updates selection listeners immediately, and a
+    /// tab must satisfy the JavaFX single-parent rule.
     ///
     /// @return the live mutable tab list
     public final ObservableList<M3Tab> getTabs() {
@@ -487,7 +482,7 @@ public final class M3TabBar extends Control {
 
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_PANE);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);

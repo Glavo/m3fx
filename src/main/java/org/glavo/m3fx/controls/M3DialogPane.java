@@ -45,8 +45,8 @@ import java.util.function.Consumer;
 /// A Material Design 3 dialog pane.
 ///
 /// The pane owns a headline, optional graphic, text or node content, and an ordered set of Material action buttons.
-/// It is designed as the retained surface of an [M3Dialog] and does not itself create a native window or depend on
-/// JavaFX dialog skins. [M3OverlayPane] and [M3DialogWindow] provide in-scene and native-window presentation.
+/// It is the content surface of an [M3Dialog] and does not itself create a native window. [M3OverlayPane] and
+/// [M3DialogWindow] provide in-scene and native-window presentation.
 ///
 /// The [actions][#getActions()] list is live, ordered, and rejects `null` elements before mutation. Each action is
 /// the actual [M3Button] rendered by the pane, so its text, graphic, disabled state, role, and event handlers remain
@@ -61,11 +61,8 @@ import java.util.function.Consumer;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public class M3DialogPane extends Control {
-    /// The base style class for M3FX dialog panes.
-    public static final String STYLE_CLASS = "m3-dialog-pane";
-
-    /// The style class applied to the dialog action row.
-    public static final String ACTIONS_STYLE_CLASS = "m3-dialog-actions";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-dialog-pane";
 
     /// The default dialog container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 28.0;
@@ -95,7 +92,7 @@ public class M3DialogPane extends Control {
     ///
     /// Header and content text default to empty strings; graphic and content nodes default to `null`.
     public M3DialogPane() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         // JavaFX 17 has no DIALOG role; the helper returns PARENT there.
         setAccessibleRole(M3Accessible.dialogRole());
         setFocusTraversable(false);
@@ -199,7 +196,7 @@ public class M3DialogPane extends Control {
 
     /// The optional graphic displayed before the dialog headline.
     ///
-    /// A non-null node must not already belong to another scene-graph parent when the skin installs it. Material
+    /// A non-null node must not already belong to another scene-graph parent when this pane is presented. Material
     /// icon sizing is applied only when the value is an [M3Icon].
     ///
     /// @defaultValue `null`
@@ -221,8 +218,8 @@ public class M3DialogPane extends Control {
 
     /// Returns the observable property that stores the optional dialog graphic.
     ///
-    /// The property can be observed and bound, and its default value is `null`. A non-null node must be available
-    /// for parenting by the dialog skin.
+    /// The property can be observed and bound, and its default value is `null`. A non-null node must not already
+    /// belong to another scene-graph parent when this pane is presented.
     ///
     /// @return the dialog graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
@@ -232,7 +229,7 @@ public class M3DialogPane extends Control {
     /// The optional node displayed in the dialog content area.
     ///
     /// A non-null node replaces [contentText][#contentTextProperty()] visually and must not already belong to
-    /// another scene-graph parent when the skin installs it.
+    /// another scene-graph parent when this pane is presented.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
@@ -254,7 +251,8 @@ public class M3DialogPane extends Control {
     /// Returns the observable property that stores the optional dialog content node.
     ///
     /// The property can be observed and bound, and its default value is `null`. A non-null node replaces the
-    /// fallback body text visually and must be available for parenting by the dialog skin.
+    /// fallback body text visually and must not already belong to another scene-graph parent when this pane is
+    /// presented.
     ///
     /// @return the dialog content-node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
@@ -511,8 +509,8 @@ public class M3DialogPane extends Control {
         return iconSize;
     }
 
-    /// The live ordered list of retained Material dialog actions.
-    private final ObservableList<M3Button> actions = M3ObservableLists.nonNullElementList("action");
+    /// The live ordered list of Material dialog actions.
+    private final ObservableList<M3Button> actions = M3ObservableLists.identityDistinctElementList("action");
 
     /// An optional action shown at the logical start of the action row.
     ///
@@ -549,15 +547,15 @@ public class M3DialogPane extends Control {
 
     /// Returns the live ordered list of Material dialog actions.
     ///
-    /// The list rejects `null` elements atomically. Each button is retained directly and therefore exposes its
-    /// ordinary JavaFX properties and event lifecycle without a parallel descriptor object. Buttons normally use
+    /// The list rejects `null` elements atomically. Each button exposes its ordinary JavaFX properties and event
+    /// lifecycle. Buttons normally use
     /// [M3ButtonVariant#TEXT] to conform to the Material dialog specification. A button marked with
     /// [M3ButtonBase#setDefaultButton(boolean)] receives preferred initial focus after dialog content; a button
     /// marked with [M3ButtonBase#setCancelButton(boolean)] is fired by the dialog's cancel-key behavior.
     ///
     /// Mutations are observed immediately and insertion order determines layout, keyboard traversal, and action-role
-    /// resolution. The list does not perform an explicit duplicate check, but each button is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent.
+    /// resolution. The list rejects `null` elements and repeated occurrences of the same button instance. Bulk
+    /// mutations are validated before the list changes, and each button must satisfy the JavaFX single-parent rule.
     ///
     /// @return the mutable action-button list
     public final ObservableList<M3Button> getActions() {
@@ -651,7 +649,7 @@ public class M3DialogPane extends Control {
         }
     }
 
-    /// Creates the skin for this dialog pane and its retained action buttons.
+    /// Creates the default visual representation of this dialog pane.
     ///
     /// @return a new default dialog-pane skin
     @Override

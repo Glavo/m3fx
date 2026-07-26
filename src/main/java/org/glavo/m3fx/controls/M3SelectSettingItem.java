@@ -46,12 +46,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-/// A Material Design 3 settings row that selects one value from a popup menu.
+/// An M3FX settings row that selects one value from a popup menu.
 ///
-/// `M3SelectSettingItem` is the M3FX counterpart of a settings-line dropdown (as used by HMCL
-/// `LineSelectButton` and MIUIX spinner/dropdown preferences). The row shows an optional trailing label for the
-/// current value and a disclosure indicator. Activating the row toggles an [M3Menu] popup; choosing a menu item
-/// updates [#valueProperty()] and delivers one [ActionEvent].
+/// Material Design 3 does not define a select settings-row component. This extension combines list-item
+/// presentation with a Material menu and is styled with Material tokens. The row shows an optional trailing label
+/// for the current value and a disclosure indicator. Activating the row toggles an [M3Menu] popup; choosing a menu
+/// item updates [#valueProperty()] and delivers one [ActionEvent].
 ///
 /// The control does not persist preference values. Applications own storage and may bind [#valueProperty()] or
 /// listen for action events. Menu item labels come from [#converterProperty()]; optional supporting text on each
@@ -61,7 +61,7 @@ import java.util.function.Function;
 /// [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3SelectSettingItem<T> extends M3SettingItemBase {
-    /// The concrete style class assigned to select setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-select-setting-item";
 
     /// The showing pseudo-class used while the owned menu popup is visible.

@@ -792,8 +792,8 @@ final class M3ControlContractMatrixTest {
                 plainTooltip.show(plainOwner, stage.getX() + 40.0, stage.getY() + 72.0);
                 richTooltip.show(richOwner, stage.getX() + 40.0, stage.getY() + 124.0);
             }, () -> {
-                assertStandaloneTooltipPopupReady(plainTooltipReference.get(), M3Tooltip.STYLE_CLASS);
-                assertStandaloneTooltipPopupReady(richTooltipReference.get(), M3RichTooltip.CONTAINER_STYLE_CLASS);
+                assertStandaloneTooltipPopupReady(plainTooltipReference.get(), "m3-tooltip");
+                assertStandaloneTooltipPopupReady(richTooltipReference.get(), "m3-rich-tooltip-container");
             });
         } finally {
             closeStandaloneTooltipScene(stageReference, plainTooltipReference, richTooltipReference);
@@ -1478,6 +1478,7 @@ final class M3ControlContractMatrixTest {
         Scene scene = new Scene(root, 1200.0, 240.0);
         M3ThemeManager.install(scene, theme);
         root.applyCss();
+        root.resize(root.prefWidth(-1.0), root.prefHeight(-1.0));
         root.layout();
 
         for (int index = 0; index < buttons.size(); index++) {
@@ -1662,7 +1663,8 @@ final class M3ControlContractMatrixTest {
         M3Chip assist = new M3AssistChip("Assist");
         M3Chip suggestion = new M3SuggestionChip("Suggestion");
         M3Chip filter = new M3FilterChip("Filter");
-        M3Chip input = new M3InputChip("Input");
+        M3Icon inputLeading = new M3Icon("person");
+        M3InputChip input = new M3InputChip("Input", inputLeading);
         M3FilterChip selectedFilter = new M3FilterChip("Selected");
         selectedFilter.setSelected(true);
 
@@ -1670,6 +1672,8 @@ final class M3ControlContractMatrixTest {
         Scene scene = new Scene(root, 720.0, 120.0);
         M3ThemeManager.install(scene, theme);
         root.applyCss();
+        assertEquals(onSurfaceVariant, iconFill(inputLeading));
+
         for (M3Chip chip : List.of(assist, suggestion, filter, input, selectedFilter)) {
             chip.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         }
@@ -1680,6 +1684,18 @@ final class M3ControlContractMatrixTest {
         assertBorderColor(filter, onSurfaceVariant);
         assertBorderColor(input, onSurfaceVariant);
         assertBorderColor(selectedFilter, Color.TRANSPARENT);
+
+        input.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+
+        assertEquals(theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY), iconFill(inputLeading));
+
+        input.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+
+        input.setSelected(true);
+        root.applyCss();
+
+        assertEquals(theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY), iconFill(inputLeading));
     }
 
     /// Verifies that only the elevated button variant owns button elevation.
@@ -1719,9 +1735,9 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that elevated Material surfaces rise only on hover and retain enabled elevation for focus and press.
+    /// Verifies the state-specific elevation of elevated Material surfaces.
     @Test
-    void elevatedSurfacesUseStateSpecificMaterialElevation() {
+    void materialSurfacesUseStateSpecificElevation() {
         FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Elevated", M3ButtonVariant.ELEVATED);
             M3Chip chip = new M3AssistChip("Elevated chip");
@@ -1775,8 +1791,13 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             for (int index = 0; index < effectTargets.size(); index++) {
                 DropShadow hovered = assertDropShadow(effectTargets.get(index));
-                assertTrue(hovered.getRadius() > enabledShadows.get(index).getRadius());
-                assertTrue(hovered.getOffsetY() > enabledShadows.get(index).getOffsetY());
+                if (index == 0) {
+                    assertEquals(enabledShadows.get(index).getRadius(), hovered.getRadius(), 0.0001);
+                    assertEquals(enabledShadows.get(index).getOffsetY(), hovered.getOffsetY(), 0.0001);
+                } else {
+                    assertTrue(hovered.getRadius() > enabledShadows.get(index).getRadius());
+                    assertTrue(hovered.getOffsetY() > enabledShadows.get(index).getOffsetY());
+                }
             }
         });
     }
@@ -3113,25 +3134,25 @@ final class M3ControlContractMatrixTest {
         M3Button third = new M3Button("Third");
         M3ButtonGroup group = buttonGroup(first, second, third);
 
-        assertTrue(group.getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(group.getStyleClass().contains("m3-button-group"));
+        assertTrue(first.getStyleClass().contains("m3-grouped-button"));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(second.getStyleClass().contains("m3-button-group-middle"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
         assertEquals(3, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(second, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
 
         group.getItems().remove(second);
 
-        assertFalse(second.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
-        assertFalse(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains("m3-grouped-button"));
+        assertFalse(second.getStyleClass().contains("m3-button-group-middle"));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
 
         group.getItems().remove(first);
 
-        assertFalse(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
+        assertFalse(first.getStyleClass().contains("m3-grouped-button"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-single"));
     }
 
     /// Verifies that connected button groups support selectable icon-toggle children and clean reused nodes.
@@ -3146,17 +3167,17 @@ final class M3ControlContractMatrixTest {
         group.getItems().addAll(first, second, third);
 
         assertEquals(M3ButtonSize.MEDIUM, first.getSize());
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-grouped-button"));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(second.getStyleClass().contains("m3-button-group-middle"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
 
         group.getItems().remove(second);
 
-        assertFalse(second.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
-        assertFalse(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains("m3-grouped-button"));
+        assertFalse(second.getStyleClass().contains("m3-button-group-middle"));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
     }
 
     /// Verifies that button groups keep logical edge style classes for right-to-left painting.
@@ -3169,25 +3190,28 @@ final class M3ControlContractMatrixTest {
 
         group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(second.getStyleClass().contains("m3-button-group-middle"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
 
         group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
 
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-button-group-first"));
+        assertTrue(third.getStyleClass().contains("m3-button-group-last"));
     }
 
-    /// Verifies that button group spacing is styleable from CSS.
+    /// Verifies that button group spacing is styleable and rejects invalid application values.
     @Test
     void buttonGroupSpacingTokenIsStyleable() {
         M3ButtonGroup group = buttonGroup(new M3Button("A"), new M3Button("B"));
-        group.setStyle("-m3-button-group-spacing: -2px;");
+        group.setStyle("-m3-button-group-spacing: 6px;");
 
         applyCss(group);
 
-        assertEquals(-2.0, group.getSpacing(), 0.0001);
+        assertEquals(6.0, group.getSpacing(), 0.0001);
+        assertThrows(IllegalArgumentException.class, () -> group.setSpacing(-0.01));
+        assertThrows(IllegalArgumentException.class, () -> group.setSpacing(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> group.setSpacing(Double.POSITIVE_INFINITY));
     }
 
     /// Verifies that the standard-group activated width multiplier is styleable and rejects invalid values.
@@ -3342,8 +3366,6 @@ final class M3ControlContractMatrixTest {
             double selectionRestingWidth = selectedMiddle.getWidth();
             double selectionChildrenWidth =
                     selectedFirst.getWidth() + selectionRestingWidth + selectedLast.getWidth();
-            double selectionGrowth =
-                    selectionRestingWidth * selectionGroup.getStandardPressedWidthMultiplier();
 
             selectedMiddle.setSelected(true);
             selectionGroup.layout();
@@ -3353,9 +3375,12 @@ final class M3ControlContractMatrixTest {
                     selectedFirst.getWidth() + selectedMiddle.getWidth() + selectedLast.getWidth(),
                     0.0001
             );
-            assertEquals(selectionRestingWidth + selectionGrowth, selectedMiddle.getWidth(), 0.0001);
-            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedFirst.getWidth(), 0.0001);
-            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedLast.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedLast.getWidth(), 0.0001);
+            assertTrue(selectedFirst.getWidth() >= 48.0);
+            assertTrue(selectedMiddle.getWidth() >= 48.0);
+            assertTrue(selectedLast.getWidth() >= 48.0);
 
             selectedMiddle.setSelected(false);
             selectionGroup.layout();
@@ -3371,9 +3396,9 @@ final class M3ControlContractMatrixTest {
                     selectedFirst.getWidth() + selectedMiddle.getWidth() + selectedLast.getWidth(),
                     0.0001
             );
-            assertEquals(selectionRestingWidth + selectionGrowth / 2.0, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedFirst.getWidth(), 0.0001);
             assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
-            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedLast.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedLast.getWidth(), 0.0001);
 
             selectionGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
             selectionRoot.applyCss();
@@ -3675,7 +3700,7 @@ final class M3ControlContractMatrixTest {
         M3ComponentTokens.ButtonGroupSizeTokens mediumTokens = groupTokens.get(M3ButtonSize.MEDIUM.ordinal());
         pressed.arm();
         root.applyCss();
-        root.layout();
+        resizeButtonGroupToPreferredSize(mediumGroup);
         pressed.layout();
 
         assertRegionRadii(
@@ -4321,7 +4346,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(sceneCenter(second).getX() > sceneCenter(third).getX());
                 double slotCenterY = Double.NaN;
                 int slotCount = 0;
-                for (Node slot : toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS)) {
+                for (Node slot : toolbar.lookupAll("." + "m3-toolbar-item-slot")) {
                     assertTrue(slot.getLayoutBounds().getWidth() >= 56.0);
                     assertEquals(56.0, slot.getLayoutBounds().getHeight(), 0.0001);
                     double currentCenterY = sceneCenter(slot).getY();
@@ -4359,7 +4384,7 @@ final class M3ControlContractMatrixTest {
                 root.layout();
                 toolbar.layout();
 
-                assertEquals(2, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertEquals(2, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
                 assertTrue(first.getParent() != null);
                 assertTrue(second.getParent() != null);
 
@@ -4368,7 +4393,7 @@ final class M3ControlContractMatrixTest {
                 root.layout();
                 toolbar.layout();
 
-                assertEquals(3, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertEquals(3, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
                 assertTrue(third.getParent() != null);
 
                 assertTrue(toolbar.getItems().remove(second));
@@ -4376,7 +4401,7 @@ final class M3ControlContractMatrixTest {
                 root.layout();
                 toolbar.layout();
 
-                assertEquals(2, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertEquals(2, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
                 assertNull(second.getParent());
                 assertTrue(first.getParent() != null);
                 assertTrue(third.getParent() != null);
@@ -4386,7 +4411,7 @@ final class M3ControlContractMatrixTest {
                 root.layout();
                 toolbar.layout();
 
-                assertEquals(0, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertEquals(0, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
                 assertNull(first.getParent());
                 assertNull(third.getParent());
             } finally {
@@ -4672,7 +4697,7 @@ final class M3ControlContractMatrixTest {
         assertInstanceOf(M3ChipGroupSkin.class, chipGroup.getSkin());
         assertInstanceOf(M3SegmentedButtonGroupSkin.class, segmentedGroup.getSkin());
         assertInstanceOf(M3TabBarSkin.class, tabBar.getSkin());
-        assertTrue(tabBar.lookup("." + M3TabBar.CONTAINER_STYLE_CLASS) instanceof HBox);
+        assertTrue(tabBar.lookup("." + "m3-tab-bar-container") instanceof HBox);
         assertEquals(240.0, chipGroup.getPrefWrapLength(), 0.0001);
     }
 
@@ -4787,9 +4812,9 @@ final class M3ControlContractMatrixTest {
         PseudoClass leftEdge = PseudoClass.getPseudoClass("left-edge");
         PseudoClass rightEdge = PseudoClass.getPseudoClass("right-edge");
 
-        assertTrue(splitButton.getStyleClass().contains(M3SplitButton.STYLE_CLASS));
-        assertTrue(splitButtonActionButton(splitButton).getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS));
-        assertTrue(splitButtonMenuButton(splitButton).getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS));
+        assertTrue(splitButton.getStyleClass().contains("m3-split-button"));
+        assertTrue(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-action"));
+        assertTrue(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-menu"));
         assertTrue(splitButtonActionButton(splitButton).getPseudoClassStates().contains(leftEdge));
         assertTrue(splitButtonMenuButton(splitButton).getPseudoClassStates().contains(rightEdge));
         assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-left"));
@@ -5273,7 +5298,7 @@ final class M3ControlContractMatrixTest {
                 M3FloatingActionButtonSize.REGULAR
         );
 
-        assertTrue(button.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains("m3-fab"));
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
 
@@ -5292,9 +5317,9 @@ final class M3ControlContractMatrixTest {
         M3FabMenu menu = new M3FabMenu();
         menu.getItems().addAll(first, second);
 
-        assertTrue(menu.getStyleClass().contains(M3FabMenu.STYLE_CLASS));
-        assertTrue(menu.getToggleButton().getStyleClass().contains(M3FabMenu.TOGGLE_STYLE_CLASS));
-        assertTrue(menu.getCloseButton().getStyleClass().contains(M3FabMenu.CLOSE_STYLE_CLASS));
+        assertTrue(menu.getStyleClass().contains("m3-fab-menu"));
+        assertTrue(menu.getToggleButton().getStyleClass().contains("m3-fab-menu-toggle"));
+        assertTrue(menu.getCloseButton().getStyleClass().contains("m3-fab-menu-close"));
         M3InternalIcon closeIcon = assertInstanceOf(
                 M3InternalIcon.class,
                 menu.getCloseButton().getGraphic(),
@@ -5316,7 +5341,7 @@ final class M3ControlContractMatrixTest {
         menu.getToggleButton().setVariant(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
         assertTrue(menu.getToggleButton().isVisible());
         assertFalse(menu.getCloseButton().isVisible());
-        assertTrue(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-fab-menu-action"));
         assertFalse(menu.isExpanded());
         assertFalse(first.isVisible());
         assertFalse(first.isManaged());
@@ -5348,7 +5373,7 @@ final class M3ControlContractMatrixTest {
 
         menu.getItems().remove(first);
 
-        assertFalse(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
+        assertFalse(first.getStyleClass().contains("m3-fab-menu-action"));
         assertTrue(first.isVisible());
         assertTrue(first.isManaged());
     }
@@ -6166,7 +6191,7 @@ final class M3ControlContractMatrixTest {
 
         assertFalse(carousel.isFocusTraversable());
         assertTrue(first.isFocusTraversable());
-        assertTrue(first.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-carousel-item"));
         assertEquals(-1, carousel.getSelectedIndex());
         assertNull(carousel.getSelectedItem());
 
@@ -6176,13 +6201,13 @@ final class M3ControlContractMatrixTest {
         assertSame(second, carousel.getSelectedItem());
         assertEquals(1, carousel.getSelectedIndex());
         assertEquals(carousel.getSelectedItems(), carousel.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
-        assertTrue(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains("m3-carousel-selected-item"));
 
         carousel.selectNext();
 
         assertSame(first, carousel.getSelectedItem());
-        assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains("m3-carousel-selected-item"));
+        assertTrue(first.getStyleClass().contains("m3-carousel-selected-item"));
 
         second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 4.0, 4.0, false));
 
@@ -6192,8 +6217,8 @@ final class M3ControlContractMatrixTest {
         carousel.getItems().remove(second);
 
         assertFalse(second.isFocusTraversable());
-        assertFalse(second.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
-        assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains("m3-carousel-item"));
+        assertFalse(second.getStyleClass().contains("m3-carousel-selected-item"));
         assertSame(first, carousel.getSelectedItem());
 
         carousel.getItems().clear();
@@ -6232,7 +6257,7 @@ final class M3ControlContractMatrixTest {
 
         assertSame(first, carousel.getSelectedItem());
         assertEquals(0, carousel.getSelectedIndex());
-        assertFalse(last.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertFalse(last.getStyleClass().contains("m3-carousel-selected-item"));
 
         first.setDisable(true);
 
@@ -6614,9 +6639,9 @@ final class M3ControlContractMatrixTest {
 
                 ScrollPane viewport = assertInstanceOf(
                         ScrollPane.class,
-                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                        carousel.lookup("." + "m3-carousel-viewport")
                 );
-                assertTrue(viewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(viewport.getStyleClass().contains("m3-scroll-pane"));
                 assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
 
@@ -6680,9 +6705,9 @@ final class M3ControlContractMatrixTest {
                 assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
                 viewport = assertInstanceOf(
                         ScrollPane.class,
-                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                        carousel.lookup("." + "m3-carousel-viewport")
                 );
-                assertTrue(viewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(viewport.getStyleClass().contains("m3-scroll-pane"));
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport));
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport.getContent()));
@@ -6757,7 +6782,7 @@ final class M3ControlContractMatrixTest {
                         assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
                         ScrollPane viewport = assertInstanceOf(
                                 ScrollPane.class,
-                                carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                                carousel.lookup("." + "m3-carousel-viewport")
                         );
                         viewportReference.set(viewport);
 
@@ -6822,7 +6847,7 @@ final class M3ControlContractMatrixTest {
                 iconFill(graphic));
         HBox actionRow = assertInstanceOf(
                 HBox.class,
-                dialogPane.lookup("." + M3DialogPane.ACTIONS_STYLE_CLASS)
+                dialogPane.lookup("." + "m3-dialog-actions")
         );
         assertEquals(12.0, actionRow.getSpacing(), 0.0001);
         assertRegionRadii(dialogPane, 20.0, 20.0, 20.0, 20.0);
@@ -6863,7 +6888,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(okButton.disableProperty().isBound());
         HBox actionRow = assertInstanceOf(
                 HBox.class,
-                dialogPane.lookup("." + M3DialogPane.ACTIONS_STYLE_CLASS)
+                dialogPane.lookup("." + "m3-dialog-actions")
         );
         assertSame(actionRow, cancelButton.getParent());
         assertSame(actionRow, okButton.getParent());
@@ -7245,7 +7270,7 @@ final class M3ControlContractMatrixTest {
             assertEquals("Body", pane.getContentText());
             assertEquals(List.of(cancelAction, okAction), pane.getActions());
             assertTrue(dialog.isDismissOnScrimClick());
-            assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
+            assertTrue(pane.getStyleClass().contains("m3-dialog-pane"));
             assertTrue(Objects.requireNonNull(pane.getUserAgentStylesheet(), "dialog stylesheet")
                     .endsWith("/styles/controls/dialog.css"));
 
@@ -7460,13 +7485,13 @@ final class M3ControlContractMatrixTest {
         assertEquals(3, layout.getCharacterCount());
         assertFalse(layout.isCharacterLimitExceeded());
         assertFalse(textField.isError());
-        assertTrue(textField.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+        assertTrue(textField.getStyleClass().contains("m3-text-input-layout-input"));
 
         Label supportingText = assertInstanceOf(
                 Label.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-text")
         );
-        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
         assertEquals("Helper text", supportingText.getText());
         assertEquals("3 / 5", counter.getText());
         assertTrue(supportingText.isManaged());
@@ -7476,7 +7501,7 @@ final class M3ControlContractMatrixTest {
 
         assertTrue(assertInstanceOf(
                 Node.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-row")
         ).isDisable());
     }
 
@@ -7493,7 +7518,7 @@ final class M3ControlContractMatrixTest {
 
         applyCss(layout);
 
-        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
         assertEquals("Email", layout.getLabelText());
         assertEquals("Email", label.getText());
         assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
@@ -7548,10 +7573,10 @@ final class M3ControlContractMatrixTest {
                 root.resize(420.0, 130.0);
                 root.layout();
 
-                Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+                Region inputContainer = lookupRegion(layout, "." + "m3-text-input-container");
                 Text label = assertInstanceOf(
                         Text.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-label")
                 );
                 Text inputText = renderedTextNode(textField, "support@example.com");
 
@@ -7621,13 +7646,13 @@ final class M3ControlContractMatrixTest {
                 root.layout();
                 layout.layout();
 
-                Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+                Region inputContainer = lookupRegion(layout, "." + "m3-text-input-container");
                 Text label = assertInstanceOf(
                         Text.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-label")
                 );
                 Text inputText = renderedTextNode(textField, "M3FX");
-                Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+                Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
 
                 Bounds fieldBounds = textField.localToScene(textField.getBoundsInLocal());
                 Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
@@ -7859,16 +7884,16 @@ final class M3ControlContractMatrixTest {
 
                 Text label = assertInstanceOf(
                         Text.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-label")
                 );
                 Text inputText = renderedTextNode(textField, "M3FX RTL");
                 StackPane leadingSlot = assertInstanceOf(
                         StackPane.class,
-                        layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-leading")
                 );
                 StackPane trailingSlot = assertInstanceOf(
                         StackPane.class,
-                        layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-trailing")
                 );
                 Node leadingContent = leadingSlot.getChildren().get(0);
                 Node trailingContent = trailingSlot.getChildren().get(0);
@@ -7952,12 +7977,12 @@ final class M3ControlContractMatrixTest {
 
                 Text label = assertInstanceOf(
                         Text.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-label")
                 );
                 Text inputText = renderedTextNode(textField, "M3FX RTL");
                 StackPane leadingSlot = assertInstanceOf(
                         StackPane.class,
-                        layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-leading")
                 );
                 Node leadingContent = leadingSlot.getChildren().get(0);
                 Node leadingGraphic = assertInstanceOf(Parent.class, leadingContent).getChildrenUnmodifiable().get(0);
@@ -8182,7 +8207,7 @@ final class M3ControlContractMatrixTest {
                 Text inputText = renderedTextNode(textField, "M3FX RTL");
                 StackPane leadingSlot = assertInstanceOf(
                         StackPane.class,
-                        layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-leading")
                 );
                 Node leadingContent = leadingSlot.getChildren().get(0);
                 Node leadingGraphic = assertInstanceOf(Parent.class, leadingContent).getChildrenUnmodifiable().get(0);
@@ -8375,7 +8400,7 @@ final class M3ControlContractMatrixTest {
 
                 Text label = assertInstanceOf(
                         Text.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        layout.lookup("." + "m3-text-input-label")
                 );
                 Text inputText = renderedTextNode(editor, "2026-06-27");
                 Node openButton = assertInstanceOf(
@@ -8427,7 +8452,7 @@ final class M3ControlContractMatrixTest {
                         assertTextInputLayoutFloatingPresentationIntermediate(layout);
                         Path outline = assertInstanceOf(
                                 Path.class,
-                                layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                                layout.lookup("." + "m3-text-input-outline")
                         );
                         double notchGap = outlineNotchGap(outline);
                         TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
@@ -8525,11 +8550,11 @@ final class M3ControlContractMatrixTest {
         assertEquals(trailing, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
         assertEquals(leading, assertInstanceOf(
                 StackPane.class,
-                layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-leading")
         ).getChildren().get(0));
         assertEquals(trailing, assertInstanceOf(
                 StackPane.class,
-                layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-trailing")
         ).getChildren().get(0));
         assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
         assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
@@ -8928,7 +8953,7 @@ final class M3ControlContractMatrixTest {
             root.layout();
             layout.layout();
 
-            Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
             assertTextInputLayoutUsesLogicalGeometry(layout, true);
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -9087,9 +9112,9 @@ final class M3ControlContractMatrixTest {
 
         Label supportingText = assertInstanceOf(
                 Label.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-text")
         );
-        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
         assertTrue(layout.isCharacterLimitExceeded());
         assertTrue(textField.isError());
         assertTrue(counter.getPseudoClassStates().contains(error));
@@ -9101,6 +9126,8 @@ final class M3ControlContractMatrixTest {
         assertTrue(textField.isError());
         assertTrue(supportingText.getPseudoClassStates().contains(error));
         assertEquals("Too long", supportingText.getText());
+        assertEquals("Helper text Too long 6 / 4",
+                layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
 
         layout.setCharacterLimit(10);
         layout.setErrorText("");
@@ -9129,7 +9156,7 @@ final class M3ControlContractMatrixTest {
 
         Label supportingText = assertInstanceOf(
                 Label.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-text")
         );
         assertTrue(layout.isValidateOnFocusLost());
         assertTrue(layout.isValidateOnTextChange());
@@ -9146,7 +9173,8 @@ final class M3ControlContractMatrixTest {
         assertTrue(layout.isValidationError());
         assertEquals("Email is required", layout.getValidationErrorText());
         assertEquals("Email is required", layout.validationErrorTextProperty().get());
-        assertEquals("Email Email is required", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals("Email Helper text Email is required",
+                layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals("Email is required", supportingText.getText());
         assertTrue(supportingText.getPseudoClassStates().contains(error));
         assertTrue(textField.isError());
@@ -9194,7 +9222,7 @@ final class M3ControlContractMatrixTest {
 
             HBox supportingRow = assertInstanceOf(
                     HBox.class,
-                    layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-supporting-row")
             );
 
             assertFalse(layout.validate());
@@ -9244,7 +9272,7 @@ final class M3ControlContractMatrixTest {
 
             Text label = assertInstanceOf(
                     Text.class,
-                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    layout.lookup("." + "m3-text-input-label")
             );
             Insets inputPadding = textField.getPadding();
             var labelFont = label.getFont();
@@ -9317,7 +9345,7 @@ final class M3ControlContractMatrixTest {
 
         Label supportingText = assertInstanceOf(
                 Label.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-text")
         );
         assertEquals(java.util.List.of(emailValidator, maxLengthValidator), layout.getValidators());
 
@@ -9427,10 +9455,10 @@ final class M3ControlContractMatrixTest {
 
         applyCss(layout);
 
-        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
         StackPane trailingSlot = assertInstanceOf(
                 StackPane.class,
-                layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-trailing")
         );
         M3IconButton clearButton = textInputClearButton(layout);
 
@@ -9441,7 +9469,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(layout.isCharacterLimitExceeded());
         assertFalse(textField.isError());
         assertEquals("4 / 4", counter.getText());
-        assertTrue(clearButton.getStyleClass().contains(M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS));
+        assertTrue(clearButton.getStyleClass().contains("m3-text-input-clear-button"));
         assertEquals("Clear text", clearButton.getAccessibleText());
         assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
@@ -9488,10 +9516,10 @@ final class M3ControlContractMatrixTest {
 
         applyCss(layout);
 
-        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
         StackPane trailingSlot = assertInstanceOf(
                 StackPane.class,
-                layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-trailing")
         );
         assertEquals("abcdef", textField.getText());
         assertEquals("abcdef", applicationText.get());
@@ -9546,7 +9574,7 @@ final class M3ControlContractMatrixTest {
 
         applyCss(layout);
 
-        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
 
         assertEquals(6, layout.getCharacterCount());
         assertTrue(layout.isCharacterLimitExceeded());
@@ -9645,10 +9673,10 @@ final class M3ControlContractMatrixTest {
     void tooltipUsesMaterialDefaults() {
         M3Tooltip tooltip = new M3Tooltip("Details");
 
-        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains("m3-tooltip"));
         assertTrue(tooltip.isWrapText());
         assertEquals(Duration.millis(500.0), tooltip.getShowDelay());
-        assertEquals(Duration.millis(0.0), tooltip.getHideDelay());
+        assertEquals(Duration.millis(1500.0), tooltip.getHideDelay());
         assertEquals(Duration.seconds(5.0), tooltip.getShowDuration());
     }
 
@@ -9659,7 +9687,7 @@ final class M3ControlContractMatrixTest {
         M3Tooltip tooltip = installTooltip(target, "Installed");
 
         assertEquals("Installed", tooltip.getText());
-        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains("m3-tooltip"));
         assertEquals("Installed", target.getAccessibleHelp());
 
         tooltip.setText("Updated");
@@ -10055,9 +10083,10 @@ final class M3ControlContractMatrixTest {
         Label action = new Label("Action");
         M3RichTooltip tooltip = richTooltip("Title", "Supporting text", action);
 
-        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
-        assertTrue(tooltip.getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains("m3-tooltip"));
+        assertTrue(tooltip.getStyleClass().contains("m3-rich-tooltip"));
         assertEquals(ContentDisplay.GRAPHIC_ONLY, tooltip.getContentDisplay());
+        assertEquals(Duration.millis(1500.0), tooltip.getHideDelay());
         assertEquals("Title", tooltip.getTitle());
         assertEquals("Supporting text", tooltip.getSupportingText());
         assertEquals("Title Supporting text", tooltip.getText());
@@ -10154,7 +10183,7 @@ final class M3ControlContractMatrixTest {
                 Parent plainSkinRoot = assertInstanceOf(Parent.class, plainTooltip.getSkin().getNode());
                 Region plainRoot = assertInstanceOf(
                         Region.class,
-                        plainSkinRoot.lookup("." + M3Tooltip.STYLE_CLASS)
+                        plainSkinRoot.lookup("." + "m3-tooltip")
                 );
                 assertEquals(4.0, plainRoot.getPadding().getTop(), 0.0001);
                 assertEquals(8.0, plainRoot.getPadding().getLeft(), 0.0001);
@@ -10171,7 +10200,7 @@ final class M3ControlContractMatrixTest {
                 Parent richRoot = assertInstanceOf(Parent.class, richTooltip.getSkin().getNode());
                 VBox richContainer = assertInstanceOf(
                         VBox.class,
-                        richRoot.lookup("." + M3RichTooltip.CONTAINER_STYLE_CLASS)
+                        richRoot.lookup("." + "m3-rich-tooltip-container")
                 );
                 assertEquals(12.0, richContainer.getPadding().getTop(), 0.0001);
                 assertEquals(16.0, richContainer.getPadding().getLeft(), 0.0001);
@@ -10182,7 +10211,7 @@ final class M3ControlContractMatrixTest {
                         richContainer.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
                         0.0001
                 );
-                HBox actions = assertInstanceOf(HBox.class, richContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS));
+                HBox actions = assertInstanceOf(HBox.class, richContainer.lookup("." + "m3-rich-tooltip-actions"));
                 M3Button actionButton = assertInstanceOf(M3Button.class, richTooltip.getActions().get(0));
                 assertEquals(8.0, actions.getSpacing(), 0.0001);
                 assertEquals(32.0, actionButton.getContainerHeight(), 0.0001);
@@ -10214,6 +10243,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies explicit persistent activation, pointer-exit retention, and the one-tooltip-at-a-time rule.
+    @Tier2Test
     @Test
     void persistentRichTooltipUsesExplicitExclusiveActivation() {
         FxTestUtils.runOnFxThread(() -> {
@@ -11016,7 +11046,7 @@ final class M3ControlContractMatrixTest {
         assertEquals("AB", avatar.getText());
         assertEquals("AB", avatar.getAccessibleText());
         assertInstanceOf(M3AvatarSkin.class, avatar.getSkin());
-        assertInstanceOf(Label.class, avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
+        assertInstanceOf(Label.class, avatar.lookup("." + "m3-avatar-label"));
 
         avatar.setText("CD");
         assertEquals("CD", avatar.getAccessibleText());
@@ -11025,14 +11055,14 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(graphic, avatar.getGraphic());
         assertInstanceOf(StackPane.class, graphic.getParent());
-        assertNull(avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
+        assertNull(avatar.lookup("." + "m3-avatar-label"));
         assertEquals("Graphic avatar", avatar.getAccessibleText());
 
         avatar.setGraphic(null);
 
         assertNull(avatar.getGraphic());
         assertNull(graphic.getParent());
-        assertInstanceOf(Label.class, avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
+        assertInstanceOf(Label.class, avatar.lookup("." + "m3-avatar-label"));
         assertEquals("CD", avatar.getAccessibleText());
     }
 
@@ -11084,7 +11114,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(M3IconSize.MEDIUM, icon.getSize());
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
         assertFalse(icon.isFocusTraversable());
-        assertTrue(icon.getStyleClass().contains(M3Icon.STYLE_CLASS));
+        assertTrue(icon.getStyleClass().contains("m3-icon"));
         assertTrue(icon.getStyleClass().contains(M3IconSize.MEDIUM.styleClass()));
         assertTrue(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.styleClass()));
 
@@ -11177,7 +11207,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
         assertFalse(icon.isAutoMirrored());
         assertFalse(icon.isFocusTraversable());
-        assertTrue(icon.getStyleClass().contains(M3SVGIcon.STYLE_CLASS));
+        assertTrue(icon.getStyleClass().contains("m3-svg-icon"));
         assertTrue(icon.getStyleClass().contains("m3-icon-graphic"));
 
         icon.setSize(M3IconSize.LARGE);
@@ -11232,15 +11262,15 @@ final class M3ControlContractMatrixTest {
 
             SVGPath explicitPath = assertInstanceOf(
                     SVGPath.class,
-                    explicit.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+                    explicit.lookup("." + "m3-svg-icon-path")
             );
             SVGPath automaticPath = assertInstanceOf(
                     SVGPath.class,
-                    automatic.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+                    automatic.lookup("." + "m3-svg-icon-path")
             );
             SVGPath mirroredPath = assertInstanceOf(
                     SVGPath.class,
-                    mirrored.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+                    mirrored.lookup("." + "m3-svg-icon-path")
             );
             Bounds explicitBounds = explicitPath.getBoundsInParent();
             Bounds automaticBounds = automaticPath.getBoundsInParent();
@@ -11282,7 +11312,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(buttonIcon.getPseudoClassStates().contains(PseudoClass.getPseudoClass("button-graphic")));
         assertEquals(
                 Color.rgb(4, 5, 6),
-                assertInstanceOf(SVGPath.class, buttonIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+                assertInstanceOf(SVGPath.class, buttonIcon.lookup("." + "m3-svg-icon-path")).getFill()
         );
 
         M3SVGIcon toggleIcon = svgTestIcon();
@@ -11297,7 +11327,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(toggleIcon.getPseudoClassStates().contains(PseudoClass.getPseudoClass("button-graphic")));
         assertEquals(
                 Color.rgb(49, 50, 51),
-                assertInstanceOf(SVGPath.class, toggleIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+                assertInstanceOf(SVGPath.class, toggleIcon.lookup("." + "m3-svg-icon-path")).getFill()
         );
 
         M3SVGIcon chipIcon = svgTestIcon();
@@ -11309,7 +11339,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(22.0, chipIcon.getIconSize(), 0.0001);
         assertEquals(
                 Color.rgb(1, 2, 3),
-                assertInstanceOf(SVGPath.class, chipIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+                assertInstanceOf(SVGPath.class, chipIcon.lookup("." + "m3-svg-icon-path")).getFill()
         );
 
         M3SVGIcon dialogIcon = svgTestIcon();
@@ -11323,7 +11353,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(dialogIcon.getStyleClass().contains("m3-dialog-graphic-icon"));
         assertEquals(
                 Color.rgb(46, 47, 48),
-                assertInstanceOf(SVGPath.class, dialogIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+                assertInstanceOf(SVGPath.class, dialogIcon.lookup("." + "m3-svg-icon-path")).getFill()
         );
     }
 
@@ -11349,7 +11379,7 @@ final class M3ControlContractMatrixTest {
                     icon.layout();
 
                     assertFalse(icon.isExpanded());
-                    assertTrue(icon.getStyleClass().contains(M3DisclosureIcon.STYLE_CLASS));
+                    assertTrue(icon.getStyleClass().contains("m3-disclosure-icon"));
                     assertInstanceOf(M3DisclosureIconSkin.class, icon.getSkin());
                     assertEquals(24.0, icon.prefWidth(-1), 0.0001);
                     assertEquals(24.0, icon.prefHeight(-1), 0.0001);
@@ -11776,7 +11806,7 @@ final class M3ControlContractMatrixTest {
         applyCss(text);
 
         assertEquals(M3TextRole.BODY_LARGE, text.getRole());
-        assertTrue(text.getStyleClass().contains(M3Text.STYLE_CLASS));
+        assertTrue(text.getStyleClass().contains("m3-text"));
         assertInstanceOf(M3TextSkin.class, text.getSkin());
         assertTrue(text.getStyleClass().contains(M3TextRole.BODY_LARGE.styleClass()));
 
@@ -11871,8 +11901,8 @@ final class M3ControlContractMatrixTest {
         root.applyCss();
 
         assertInstanceOf(M3MenuSkin.class, menu.getSkin());
-        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
-        assertTrue(container.getStyleClass().contains(M3Menu.CONTAINER_STYLE_CLASS));
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + "m3-menu-container"));
+        assertTrue(container.getStyleClass().contains("m3-menu-container"));
         assertTrue(open.getPseudoClassStates().contains(firstItem));
         assertFalse(open.getPseudoClassStates().contains(lastItem));
         assertFalse(save.getPseudoClassStates().contains(firstItem));
@@ -11965,7 +11995,7 @@ final class M3ControlContractMatrixTest {
         menu.resize(280.0, menu.prefHeight(280.0));
         menu.layout();
 
-        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + "m3-menu-container"));
         assertEquals(container.getWidth(), defaultItem.getWidth(), 0.0001);
         assertEquals(container.getWidth(), defaultDivider.getWidth(), 0.0001);
         assertEquals(Region.USE_COMPUTED_SIZE, defaultItem.getMinWidth(), 0.0001);
@@ -12204,7 +12234,7 @@ final class M3ControlContractMatrixTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertTrue(header.getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
+        assertTrue(header.getStyleClass().contains("m3-menu-section-header"));
         assertEquals(32.0, header.getPrefHeight(), 0.0001);
         assertEquals(12.0, header.getPadding().getTop(), 0.0001);
         assertEquals(4.0, header.getPadding().getBottom(), 0.0001);
@@ -12385,7 +12415,7 @@ final class M3ControlContractMatrixTest {
         M3MenuItem exportHtml = new M3MenuItem("HTML");
         M3SubMenuItem export = new M3SubMenuItem("Export", exportPdf, exportHtml);
 
-        assertTrue(export.getStyleClass().contains(M3SubMenuItem.STYLE_CLASS));
+        assertTrue(export.getStyleClass().contains("m3-sub-menu-item"));
         assertEquals(2, export.getItems().size());
         assertEquals(exportPdf, export.getItems().get(0));
         assertEquals(export.getSubMenu(), export.queryAccessibleAttribute(AccessibleAttribute.SUBMENU));
@@ -16062,14 +16092,14 @@ final class M3ControlContractMatrixTest {
         assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
         assertInstanceOf(M3SearchBarSkin.class, searchBar.getSkin());
         assertInstanceOf(M3SearchViewSkin.class, searchView.getSkin());
-        assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
-        assertEquals(2.0, ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(), 0.0001);
+        assertEquals(2.0, ((VBox) lookupRegion(searchView, "." + "m3-search-view-content")).getSpacing(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
         assertEquals(4.0, searchView.getPadding().getBottom(), 0.0001);
         M3SearchBar embeddedSearchBar = searchViewSearchBar(searchView);
         assertEquals(4.0, embeddedSearchBar.getPadding().getLeft(), 0.0001);
         assertEquals(4.0,
-                ((HBox) lookupRegion(embeddedSearchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(),
+                ((HBox) lookupRegion(embeddedSearchBar, "." + "m3-search-bar-content")).getSpacing(),
                 0.0001);
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
 
@@ -16083,10 +16113,10 @@ final class M3ControlContractMatrixTest {
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
-        assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getRight(), 0.0001);
-        assertEquals(2.0, ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(2.0, ((VBox) lookupRegion(searchView, "." + "m3-search-view-content")).getSpacing(), 0.0001);
         assertEquals(16.0, searchViewResultsContainer(searchView).getBackground()
                 .getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
         assertEquals(64.0, result.getOneLineHeight(), 0.0001);
@@ -16111,7 +16141,7 @@ final class M3ControlContractMatrixTest {
         root.applyCss();
 
         M3SearchBar searchBar = searchViewSearchBar(searchView);
-        Region divider = lookupRegion(searchView, "." + M3SearchView.DIVIDER_STYLE_CLASS);
+        Region divider = lookupRegion(searchView, "." + "m3-search-view-divider");
         assertEquals(M3SearchViewStyle.CONTAINED, searchView.getViewStyle());
         assertEquals(M3SearchViewLayout.DOCKED, searchView.getViewLayout());
         assertTrue(searchView.getPseudoClassStates().contains(PseudoClass.getPseudoClass("contained")));
@@ -16123,7 +16153,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(4.0, searchView.getPadding().getBottom(), 0.0001);
         assertEquals(4.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(4.0,
-                ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(),
+                ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(),
                 0.0001);
         assertFalse(divider.isManaged());
 
@@ -16133,10 +16163,10 @@ final class M3ControlContractMatrixTest {
         assertTrue(searchView.getPseudoClassStates().contains(PseudoClass.getPseudoClass("divided")));
         assertFalse(searchView.getPseudoClassStates().contains(PseudoClass.getPseudoClass("contained")));
         assertEquals(0.0, searchView.getPadding().getLeft(), 0.0001);
-        assertEquals(0.0, ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.0, ((VBox) lookupRegion(searchView, "." + "m3-search-view-content")).getSpacing(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(16.0,
-                ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(),
+                ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(),
                 0.0001);
         assertTrue(divider.isVisible());
         assertTrue(divider.isManaged());
@@ -16176,7 +16206,7 @@ final class M3ControlContractMatrixTest {
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
             assertEquals(16.0,
-                    ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(),
+                    ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(),
                     0.0001);
 
             M3ThemeManager.install(scene, M3Theme.fromSeed(
@@ -16186,7 +16216,7 @@ final class M3ControlContractMatrixTest {
             ));
             root.applyCss();
         }, () -> assertEquals(16.0,
-                ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(),
+                ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(),
                 0.0001));
     }
 
@@ -16202,7 +16232,7 @@ final class M3ControlContractMatrixTest {
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
             assertEquals(2.0,
-                    ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(),
+                    ((VBox) lookupRegion(searchView, "." + "m3-search-view-content")).getSpacing(),
                     0.0001);
 
             M3ThemeManager.install(scene, M3Theme.fromSeed(
@@ -16213,7 +16243,7 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
         }, () -> {
             assertEquals(2.0,
-                    ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(),
+                    ((VBox) lookupRegion(searchView, "." + "m3-search-view-content")).getSpacing(),
                     0.0001);
             assertEquals(16.0, searchViewResultsContainer(searchView).getBackground()
                     .getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
@@ -16314,7 +16344,7 @@ final class M3ControlContractMatrixTest {
 
         searchView.deactivate();
 
-        Node results = searchView.lookup("." + M3SearchView.RESULTS_STYLE_CLASS);
+        Node results = searchView.lookup("." + "m3-search-view-results");
         assertFalse(searchView.isActive());
         assertTrue(results.isVisible());
         assertTrue(results.isManaged());
@@ -16364,7 +16394,7 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            Region results = lookupRegion(searchView, "." + M3SearchView.RESULTS_STYLE_CLASS);
+            Region results = lookupRegion(searchView, "." + "m3-search-view-results");
             assertTrue(searchView.isActive());
             assertTrue(results.isVisible());
             assertTrue(results.isManaged());
@@ -17298,22 +17328,22 @@ final class M3ControlContractMatrixTest {
         assertRegionRadii(bottomSheet, 28.0, 28.0, 0.0, 0.0);
         assertEquals(
                 24.0,
-                lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                lookupRegion(sideSheet, "." + "m3-sheet-content").getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                lookupRegion(bottomSheet, "." + M3BottomSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                lookupRegion(bottomSheet, "." + "m3-sheet-content").getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 32.0,
-                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                lookupRegion(bottomSheet, "." + "m3-bottom-sheet-drag-handle").getPrefWidth(),
                 0.0001
         );
         Region dragHandleContainer = lookupRegion(
                 bottomSheet,
-                "." + M3BottomSheet.DRAG_HANDLE_CONTAINER_STYLE_CLASS
+                "." + "m3-bottom-sheet-drag-handle-container"
         );
         assertEquals(22.0, dragHandleContainer.getPadding().getTop(), 0.0001);
         assertEquals(22.0, dragHandleContainer.getPadding().getBottom(), 0.0001);
@@ -17325,7 +17355,7 @@ final class M3ControlContractMatrixTest {
         dragHandleContainer.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         root.applyCss();
         assertFalse(
-                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)
+                lookupRegion(bottomSheet, "." + "m3-bottom-sheet-drag-handle")
                         .getBorder()
                         .getStrokes()
                         .isEmpty(),
@@ -17352,22 +17382,22 @@ final class M3ControlContractMatrixTest {
         assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
         assertEquals(
                 24.0,
-                lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                lookupRegion(sideSheet, "." + "m3-sheet-content").getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                lookupRegion(bottomSheet, "." + M3BottomSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                lookupRegion(bottomSheet, "." + "m3-sheet-content").getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 32.0,
-                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                lookupRegion(bottomSheet, "." + "m3-bottom-sheet-drag-handle").getPrefWidth(),
                 0.0001
         );
         assertEquals(
                 4.0,
-                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefHeight(),
+                lookupRegion(bottomSheet, "." + "m3-bottom-sheet-drag-handle").getPrefHeight(),
                 0.0001
         );
         assertRegionRadii(detachedSideSheet, 16.0, 16.0, 16.0, 16.0);
@@ -17593,7 +17623,7 @@ final class M3ControlContractMatrixTest {
             assertTrue(filledLayout.getPseudoClassStates().contains(inputDisabled));
             assertTrue(outlinedLayout.getPseudoClassStates().contains(inputDisabled));
             assertRegionFill(
-                    lookupRegion(filledLayout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS),
+                    lookupRegion(filledLayout, "." + "m3-text-input-container"),
                     Color.TRANSPARENT
             );
             assertRegionFill(wrappedFilled, disabledFilledContainer);
@@ -17601,27 +17631,27 @@ final class M3ControlContractMatrixTest {
 
             Path outline = assertInstanceOf(
                     Path.class,
-                    outlinedLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                    outlinedLayout.lookup("." + "m3-text-input-outline")
             );
             assertEquals(onSurface, outline.getStroke());
             assertEquals(0.12, outline.getOpacity(), 0.0001);
 
             Text outlinedLabel = assertInstanceOf(
                     Text.class,
-                    outlinedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    outlinedLayout.lookup("." + "m3-text-input-label")
             );
             assertEquals(disabledContent, outlinedLabel.getFill());
             assertEquals(1.0, outlinedLabel.getOpacity(), 0.0001);
 
             Region leadingSlot = lookupRegion(
                     filledLayout,
-                    "." + M3TextInputLayout.LEADING_STYLE_CLASS
+                    "." + "m3-text-input-leading"
             );
             assertEquals(0.38, leadingSlot.getOpacity(), 0.0001);
             assertEquals(1.0, leading.getOpacity(), 0.0001);
             Region trailingSlot = lookupRegion(
                     outlinedLayout,
-                    "." + M3TextInputLayout.TRAILING_STYLE_CLASS
+                    "." + "m3-text-input-trailing"
             );
             assertEquals(0.38, trailingSlot.getOpacity(), 0.0001);
             assertEquals(1.0, trailingButton.getOpacity(), 0.0001);
@@ -17704,34 +17734,34 @@ final class M3ControlContractMatrixTest {
                 assertBorderBottomColor(directFilled, onSurface);
                 assertEquals(onSurface, firstBorderTopPaint(directOutlined));
                 assertRegionFill(
-                        lookupRegion(filledLayout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS),
+                        lookupRegion(filledLayout, "." + "m3-text-input-container"),
                         hoverContainer
                 );
 
                 Path hoveredOutline = assertInstanceOf(
                         Path.class,
-                        focusedLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                        focusedLayout.lookup("." + "m3-text-input-outline")
                 );
                 Text hoveredLabel = assertInstanceOf(
                         Text.class,
-                        focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        focusedLayout.lookup("." + "m3-text-input-label")
                 );
                 assertEquals(onSurface, hoveredOutline.getStroke());
                 assertEquals(onSurface, hoveredLabel.getFill());
 
                 Path hoveredErrorOutline = assertInstanceOf(
                         Path.class,
-                        errorLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                        errorLayout.lookup("." + "m3-text-input-outline")
                 );
                 Text errorLabel = assertInstanceOf(
                         Text.class,
-                        errorLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        errorLayout.lookup("." + "m3-text-input-label")
                 );
                 assertEquals(onErrorContainer, hoveredErrorOutline.getStroke());
                 assertEquals(onErrorContainer, errorLabel.getFill());
                 Region errorTrailingSlot = lookupRegion(
                         errorLayout,
-                        "." + M3TextInputLayout.TRAILING_STYLE_CLASS
+                        "." + "m3-text-input-trailing"
                 );
                 assertTrue(errorTrailingSlot.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
                 assertEquals(onErrorContainer, iconFill(errorTrailing));
@@ -17752,7 +17782,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(focusedField.isFocused(), "focused text field should own focus");
                 Text focusedLabel = assertInstanceOf(
                         Text.class,
-                        focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                        focusedLayout.lookup("." + "m3-text-input-label")
                 );
                 assertTrue(focusedLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
                 assertEquals(primary, focusedLabel.getFill());
@@ -17852,8 +17882,8 @@ final class M3ControlContractMatrixTest {
         root.layout();
 
         assertSame(trailing, input.getTrailingGraphic());
-        assertTrue(leading.getStyleClass().contains(M3Chip.LEADING_GRAPHIC_STYLE_CLASS));
-        assertTrue(trailing.getStyleClass().contains(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS));
+        assertTrue(leading.getStyleClass().contains("m3-chip-leading-graphic"));
+        assertTrue(trailing.getStyleClass().contains("m3-chip-trailing-graphic"));
         assertEquals(input.getIconHorizontalPadding(), input.getPadding().getLeft(), 0.0001);
         assertEquals(input.getIconHorizontalPadding(), input.getPadding().getRight(), 0.0001);
         Bounds leadingBounds = leading.localToScene(leading.getBoundsInLocal());
@@ -18416,21 +18446,21 @@ final class M3ControlContractMatrixTest {
         M3SegmentedButton third = new M3SegmentedButton("Month");
         M3SegmentedButtonGroup group = segmentedButtonGroup(first, second, third);
 
-        assertTrue(group.getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
-        assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertTrue(group.getStyleClass().contains("m3-segmented-button-group"));
+        assertTrue(first.getStyleClass().contains("m3-segmented-button-first"));
+        assertTrue(second.getStyleClass().contains("m3-segmented-button-middle"));
+        assertTrue(third.getStyleClass().contains("m3-segmented-button-last"));
 
         group.getItems().remove(second);
 
-        assertFalse(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
-        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains("m3-segmented-button-middle"));
+        assertTrue(first.getStyleClass().contains("m3-segmented-button-first"));
+        assertTrue(third.getStyleClass().contains("m3-segmented-button-last"));
 
         group.getItems().remove(first);
 
-        assertFalse(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
+        assertFalse(first.getStyleClass().contains("m3-segmented-button-first"));
+        assertTrue(third.getStyleClass().contains("m3-segmented-button-single"));
     }
 
     /// Verifies that segmented button groups keep logical edge style classes for right-to-left painting.
@@ -18443,14 +18473,14 @@ final class M3ControlContractMatrixTest {
 
         group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
-        assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-segmented-button-first"));
+        assertTrue(second.getStyleClass().contains("m3-segmented-button-middle"));
+        assertTrue(third.getStyleClass().contains("m3-segmented-button-last"));
 
         group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
 
-        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains("m3-segmented-button-first"));
+        assertTrue(third.getStyleClass().contains("m3-segmented-button-last"));
     }
 
     /// Verifies that segmented button surfaces and state layers follow segment position shapes.
@@ -18792,8 +18822,8 @@ final class M3ControlContractMatrixTest {
                 secondaryTab.getTextFill()
         );
 
-        Region primaryDivider = lookupRegion(primaryBar, "." + M3TabBar.DIVIDER_STYLE_CLASS);
-        Region secondaryDivider = lookupRegion(secondaryBar, "." + M3TabBar.DIVIDER_STYLE_CLASS);
+        Region primaryDivider = lookupRegion(primaryBar, "." + "m3-tab-bar-divider");
+        Region secondaryDivider = lookupRegion(secondaryBar, "." + "m3-tab-bar-divider");
         assertEquals(1.0, primaryDivider.getHeight(), 0.0001);
         assertEquals(1.0, secondaryDivider.getHeight(), 0.0001);
         assertEquals(primaryBar.getWidth(), primaryDivider.getWidth(), 0.0001);
@@ -20906,8 +20936,8 @@ final class M3ControlContractMatrixTest {
                 assertInstanceOf(M3RangeSliderSkin.class, range.getSkin());
                 assertEquals(AccessibleRole.PARENT, range.getAccessibleRole());
                 assertFalse(range.isFocusTraversable());
-                assertTrue(range.getStyleClass().contains(M3Slider.STYLE_CLASS));
-                assertTrue(range.getStyleClass().contains(M3RangeSlider.STYLE_CLASS));
+                assertTrue(range.getStyleClass().contains("m3-slider"));
+                assertTrue(range.getStyleClass().contains("m3-range-slider"));
                 assertTrue(range.getStyleClass().contains(M3Slider.sizeStyleClass(M3SliderSize.MEDIUM)));
                 assertEquals(40.0, range.getTrackThickness(), 0.0001);
                 assertEquals(12.0, range.getTrackShape(), 0.0001);
@@ -23178,11 +23208,11 @@ final class M3ControlContractMatrixTest {
                 root.applyCss();
                 root.layout();
 
-                assertTrue(styled.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(styled.getStyleClass().contains("m3-scroll-pane"));
                 assertEquals(1, styled.getStylesheets().stream()
                         .filter(stylesheet -> stylesheet.endsWith("/scroll.css"))
                         .count());
-                assertFalse(plain.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertFalse(plain.getStyleClass().contains("m3-scroll-pane"));
                 assertTrue(plain.getStylesheets().stream()
                         .noneMatch(stylesheet -> stylesheet.endsWith("/scroll.css")));
 
@@ -23219,7 +23249,7 @@ final class M3ControlContractMatrixTest {
                         textArea.lookup(".scroll-pane"),
                         "text area viewport"
                 );
-                assertTrue(textAreaViewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(textAreaViewport.getStyleClass().contains("m3-scroll-pane"));
                 assertEquals(1, textAreaViewport.getStylesheets().stream()
                         .filter(stylesheet -> stylesheet.endsWith("/scroll.css"))
                         .count());
@@ -23235,7 +23265,7 @@ final class M3ControlContractMatrixTest {
                         .toList();
                 assertFalse(listScrollBars.isEmpty(), "list view should materialize internal scrollbars");
                 assertTrue(listScrollBars.stream().allMatch(scrollBar ->
-                        scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS)));
+                        scrollBar.getStyleClass().contains("m3-scroll-bar")));
                 assertTrue(listScrollBars.stream().allMatch(scrollBar ->
                         scrollBar.getStylesheets().stream().filter(stylesheet ->
                                 stylesheet.endsWith("/scroll.css")).count() == 1));
@@ -23338,7 +23368,7 @@ final class M3ControlContractMatrixTest {
                 );
                 assertEquals(0.0, flow.getFixedCellSize(), 0.0001);
 
-                List<? extends M3ListCell<?>> cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                List<? extends M3ListCell<?>> cells = listView.lookupAll("." + "m3-list-view-cell").stream()
                         .filter(M3ListCell.class::isInstance)
                         .map(node -> (M3ListCell<?>) node)
                         .filter(cell -> !cell.isEmpty())
@@ -23361,7 +23391,7 @@ final class M3ControlContractMatrixTest {
                 listView.setItemSpacing(6.0);
                 root.applyCss();
                 root.layout();
-                cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                cells = listView.lookupAll("." + "m3-list-view-cell").stream()
                         .filter(M3ListCell.class::isInstance)
                         .map(node -> (M3ListCell<?>) node)
                         .filter(cell -> !cell.isEmpty())
@@ -23375,7 +23405,7 @@ final class M3ControlContractMatrixTest {
                 listView.setFixedCellSize(64.0);
                 root.applyCss();
                 root.layout();
-                cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                cells = listView.lookupAll("." + "m3-list-view-cell").stream()
                         .filter(M3ListCell.class::isInstance)
                         .map(node -> (M3ListCell<?>) node)
                         .filter(cell -> !cell.isEmpty())
@@ -23598,7 +23628,7 @@ final class M3ControlContractMatrixTest {
         applyCss(header);
 
         assertEquals("Pinned", header.getText());
-        assertTrue(header.getStyleClass().contains(M3ListSectionHeader.STYLE_CLASS));
+        assertTrue(header.getStyleClass().contains("m3-list-section-header"));
         assertEquals(AccessibleRole.TEXT, header.getAccessibleRole());
         assertInstanceOf(M3TextSkin.class, header.getSkin());
         assertEquals(48.0, header.prefHeight(320.0), 0.0001);
@@ -23822,7 +23852,7 @@ final class M3ControlContractMatrixTest {
                 root.applyCss();
                 root.layout();
 
-                List<? extends M3ListCell<?>> cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                List<? extends M3ListCell<?>> cells = listView.lookupAll("." + "m3-list-view-cell").stream()
                         .map(node -> (M3ListCell<?>) node)
                         .toList();
                 long renderedCellCount = cells.stream().filter(cell -> !cell.isEmpty()).count();
@@ -23862,7 +23892,7 @@ final class M3ControlContractMatrixTest {
                 root.applyCss();
                 root.layout();
 
-                List<? extends M3ListCell<?>> renderedCells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                List<? extends M3ListCell<?>> renderedCells = listView.lookupAll("." + "m3-list-view-cell").stream()
                         .map(node -> (M3ListCell<?>) node)
                         .filter(cell -> !cell.isEmpty())
                         .toList();
@@ -23964,7 +23994,7 @@ final class M3ControlContractMatrixTest {
                         listView.lookup(".m3-list-view-flow")
                 );
                 List<? extends M3ListCell<?>> measuredCells = listView
-                        .lookupAll("." + M3ListCell.STYLE_CLASS)
+                        .lookupAll("." + "m3-list-view-cell")
                         .stream()
                         .map(node -> (M3ListCell<?>) node)
                         .filter(cell -> !cell.isEmpty() && cell.getHeight() > 0.0)
@@ -27089,8 +27119,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
-        assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
-        HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
+        assertInstanceOf(Label.class, topAppBar.lookup("." + "m3-top-app-bar-title"));
+        HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + "m3-top-app-bar-actions"));
         assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
@@ -27213,7 +27243,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
         assertEquals(11.0, assertInstanceOf(
                 HBox.class,
-                topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS)
+                topAppBar.lookup("." + "m3-top-app-bar-actions")
         ).getSpacing(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
@@ -27244,7 +27274,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(20.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(9.0, assertInstanceOf(
                 HBox.class,
-                bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS)
+                bottomAppBar.lookup("." + "m3-bottom-app-bar-actions")
         ).getSpacing(), 0.0001);
     }
 
@@ -27575,11 +27605,11 @@ final class M3ControlContractMatrixTest {
                         double expectedHeight = 152.0 + (64.0 - 152.0) * progress;
                         Label expandedTitle = assertInstanceOf(
                                 Label.class,
-                                appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)
+                                appBar.lookup("." + "m3-top-app-bar-title")
                         );
                         Label compactTitle = assertInstanceOf(
                                 Label.class,
-                                appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                                appBar.lookup("." + "m3-top-app-bar-compact-title")
                         );
 
                         assertEquals(expectedHeight, appBar.getPrefHeight(), geometryTolerance);
@@ -27767,19 +27797,19 @@ final class M3ControlContractMatrixTest {
         assertTopAppBarTitleFontSize(large, 28.0);
         assertTopAppBarTitleFontSize(mediumFlexible, 28.0);
         assertTopAppBarTitleFontSize(largeFlexible, 36.0);
-        assertFalse(assertInstanceOf(Label.class, small.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
-        assertFalse(assertInstanceOf(Label.class, centerAligned.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
-        assertFalse(assertInstanceOf(Label.class, medium.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
-        assertFalse(assertInstanceOf(Label.class, large.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
-        assertTrue(assertInstanceOf(Label.class, mediumFlexible.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
-        assertTrue(assertInstanceOf(Label.class, largeFlexible.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, small.lookup("." + "m3-top-app-bar-title")).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, centerAligned.lookup("." + "m3-top-app-bar-title")).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, medium.lookup("." + "m3-top-app-bar-title")).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, large.lookup("." + "m3-top-app-bar-title")).isWrapText());
+        assertTrue(assertInstanceOf(Label.class, mediumFlexible.lookup("." + "m3-top-app-bar-title")).isWrapText());
+        assertTrue(assertInstanceOf(Label.class, largeFlexible.lookup("." + "m3-top-app-bar-title")).isWrapText());
         assertEquals(14.0, assertInstanceOf(
                 Label.class,
-                mediumFlexible.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS)
+                mediumFlexible.lookup("." + "m3-top-app-bar-subtitle")
         ).getFont().getSize(), 0.0001);
         assertEquals(16.0, assertInstanceOf(
                 Label.class,
-                largeFlexible.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS)
+                largeFlexible.lookup("." + "m3-top-app-bar-subtitle")
         ).getFont().getSize(), 0.0001);
     }
 
@@ -27907,13 +27937,13 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(2, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(2, topAppBar.lookupAll("." + "m3-top-app-bar-action-slot").size());
 
             topAppBar.getActions().setAll(more, account);
             root.applyCss();
             root.layout();
 
-            assertEquals(2, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(2, topAppBar.lookupAll("." + "m3-top-app-bar-action-slot").size());
             assertNull(search.getParent(), "removed app bar action should not keep an old slot parent");
             assertTrue(more.getParent() instanceof StackPane, "reused app bar action should be reparented into a slot");
             assertTrue(account.getParent() instanceof StackPane, "new app bar action should be parented into a slot");
@@ -27922,7 +27952,7 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(0, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(0, topAppBar.lookupAll("." + "m3-top-app-bar-action-slot").size());
             assertNull(more.getParent(), "cleared app bar action should not keep a slot parent");
             assertNull(account.getParent(), "cleared app bar action should not keep a slot parent");
         });
@@ -27930,7 +27960,7 @@ final class M3ControlContractMatrixTest {
 
     /// Asserts the rendered font size used by a top app bar title label.
     private static void assertTopAppBarTitleFontSize(M3TopAppBar appBar, double expectedSize) {
-        Label title = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+        Label title = assertInstanceOf(Label.class, appBar.lookup("." + "m3-top-app-bar-title"));
 
         assertEquals(expectedSize, title.getFont().getSize(), 0.0001,
                 () -> "top app bar title font size mismatch: variant=" + appBar.getVariant());
@@ -27958,11 +27988,11 @@ final class M3ControlContractMatrixTest {
     private static void assertTopAppBarMaterialSlotGeometry(M3TopAppBar appBar) {
         StackPane navigation = assertInstanceOf(
                 StackPane.class,
-                appBar.lookup("." + M3TopAppBar.NAVIGATION_STYLE_CLASS)
+                appBar.lookup("." + "m3-top-app-bar-navigation")
         );
-        Label title = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
-        Label subtitle = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS));
-        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
+        Label title = assertInstanceOf(Label.class, appBar.lookup("." + "m3-top-app-bar-title"));
+        Label subtitle = assertInstanceOf(Label.class, appBar.lookup("." + "m3-top-app-bar-subtitle"));
+        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + "m3-top-app-bar-actions"));
         Text titleText = assertInstanceOf(Text.class, title.lookup(".text"));
 
         Bounds appBarBounds = appBar.localToScene(appBar.getLayoutBounds());
@@ -27971,7 +28001,7 @@ final class M3ControlContractMatrixTest {
         Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
         Bounds subtitleBounds = subtitle.localToScene(subtitle.getBoundsInLocal());
         Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
-        List<Node> actionSlots = appBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).stream()
+        List<Node> actionSlots = appBar.lookupAll("." + "m3-top-app-bar-action-slot").stream()
                 .sorted(java.util.Comparator.comparingDouble(node ->
                         node.localToScene(node.getBoundsInLocal()).getMinX()))
                 .toList();
@@ -28050,11 +28080,11 @@ final class M3ControlContractMatrixTest {
                 if (collapseProgress >= 0.999) {
                     Label compactTitle = assertInstanceOf(
                             Label.class,
-                            appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                            appBar.lookup("." + "m3-top-app-bar-compact-title")
                     );
                     Label compactSubtitle = assertInstanceOf(
                             Label.class,
-                            appBar.lookup("." + M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS)
+                            appBar.lookup("." + "m3-top-app-bar-compact-subtitle")
                     );
                     Text compactTitleText = assertInstanceOf(Text.class, compactTitle.lookup(".text"));
                     Bounds compactTitleBounds = compactTitle.localToScene(compactTitle.getBoundsInLocal());
@@ -28084,11 +28114,11 @@ final class M3ControlContractMatrixTest {
                 if (collapseProgress > 0.001) {
                     Label compactTitle = assertInstanceOf(
                             Label.class,
-                            appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                            appBar.lookup("." + "m3-top-app-bar-compact-title")
                     );
                     Label compactSubtitle = assertInstanceOf(
                             Label.class,
-                            appBar.lookup("." + M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS)
+                            appBar.lookup("." + "m3-top-app-bar-compact-subtitle")
                     );
                     Bounds compactTitleBounds = compactTitle.localToScene(compactTitle.getBoundsInLocal());
                     Bounds compactSubtitleBounds = compactSubtitle.localToScene(compactSubtitle.getBoundsInLocal());
@@ -28256,9 +28286,9 @@ final class M3ControlContractMatrixTest {
     private static void assertTopAppBarIconButtonTarget(Node action) {
         M3IconButton iconButton = assertInstanceOf(M3IconButton.class, action);
         Bounds bounds = iconButton.localToScene(iconButton.getBoundsInLocal());
-        assertEquals(40.0, bounds.getWidth(), 1.0,
+        assertEquals(48.0, bounds.getWidth(), 1.0,
                 () -> "top app bar icon button target width drifted: " + bounds);
-        assertEquals(40.0, bounds.getHeight(), 1.0,
+        assertEquals(48.0, bounds.getHeight(), 1.0,
                 () -> "top app bar icon button target height drifted: " + bounds);
         assertTopAppBarIconGraphicIsVector(iconButton);
     }
@@ -28321,9 +28351,9 @@ final class M3ControlContractMatrixTest {
         Bounds buttonBounds = iconButton.localToScene(iconButton.getLayoutBounds());
         Bounds graphicBounds = graphic.localToScene(graphic.getBoundsInLocal());
 
-        assertEquals(40.0, buttonBounds.getWidth(), 1.0,
+        assertEquals(48.0, buttonBounds.getWidth(), 1.0,
                 () -> "top app bar fallback icon button width drifted: " + buttonBounds);
-        assertEquals(40.0, buttonBounds.getHeight(), 1.0,
+        assertEquals(48.0, buttonBounds.getHeight(), 1.0,
                 () -> "top app bar fallback icon button height drifted: " + buttonBounds);
         assertTrue(graphicBounds.getMinX() >= buttonBounds.getMinX() - 1.0
                         && graphicBounds.getMaxX() <= buttonBounds.getMaxX() + 1.0
@@ -28424,7 +28454,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
-        HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + "m3-bottom-app-bar-actions"));
         assertEquals(0.0, actions.getSpacing(), 0.0001);
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
@@ -28462,13 +28492,13 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(2, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(2, bottomAppBar.lookupAll("." + "m3-bottom-app-bar-action-slot").size());
 
             bottomAppBar.getActions().setAll(more, account);
             root.applyCss();
             root.layout();
 
-            assertEquals(2, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(2, bottomAppBar.lookupAll("." + "m3-bottom-app-bar-action-slot").size());
             assertNull(search.getParent(), "removed bottom app bar action should not keep an old slot parent");
             assertTrue(more.getParent() instanceof StackPane,
                     "reused bottom app bar action should be reparented into a slot");
@@ -28479,7 +28509,7 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(0, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertEquals(0, bottomAppBar.lookupAll("." + "m3-bottom-app-bar-action-slot").size());
             assertNull(more.getParent(), "cleared bottom app bar action should not keep a slot parent");
             assertNull(account.getParent(), "cleared bottom app bar action should not keep a slot parent");
         });
@@ -28622,15 +28652,15 @@ final class M3ControlContractMatrixTest {
 
     /// Asserts Material slot geometry for one rendered bottom app bar.
     private static void assertBottomAppBarMaterialSlotGeometry(M3BottomAppBar appBar, boolean rightToLeft) {
-        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + "m3-bottom-app-bar-actions"));
         StackPane floatingActionSlot = assertInstanceOf(
                 StackPane.class,
-                appBar.lookup("." + M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS)
+                appBar.lookup("." + "m3-bottom-app-bar-floating-action")
         );
         Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
         Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
         Bounds floatingActionBounds = floatingActionSlot.localToScene(floatingActionSlot.getBoundsInLocal());
-        List<Node> actionSlots = appBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).stream()
+        List<Node> actionSlots = appBar.lookupAll("." + "m3-bottom-app-bar-action-slot").stream()
                 .sorted(java.util.Comparator.comparingDouble(node ->
                         node.localToScene(node.getBoundsInLocal()).getMinX()))
                 .toList();
@@ -28827,7 +28857,7 @@ final class M3ControlContractMatrixTest {
             Bounds topNavigationBounds = topNavigation.localToScene(topNavigation.getBoundsInLocal());
             Bounds topActionBounds = topAction.localToScene(topAction.getBoundsInLocal());
             Bounds topAppBarBounds = topAppBar.localToScene(topAppBar.getBoundsInLocal());
-            Label topTitle = assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+            Label topTitle = assertInstanceOf(Label.class, topAppBar.lookup("." + "m3-top-app-bar-title"));
             Text topTitleText = assertInstanceOf(Text.class, topTitle.lookup(".text"));
             Bounds topTitleTextBounds = topTitleText.localToScene(topTitleText.getBoundsInLocal());
             Parent topNavigationParent = Objects.requireNonNull(topNavigation.getParent(), "topNavigationParent");
@@ -29235,13 +29265,13 @@ final class M3ControlContractMatrixTest {
         root.applyCss();
 
         assertInstanceOf(M3NavigationDrawerGroupSkin.class, group.getSkin());
-        assertEquals(0, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+        assertEquals(0, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
 
         group.setExpanded(true);
         root.applyCss();
         group.layout();
 
-        assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+        assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
         assertEquals(56.0, group.getHeaderItem().getOneLineHeight(), 0.0001);
         assertEquals(56.0, buttons.getOneLineHeight(), 0.0001);
         assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
@@ -29420,7 +29450,7 @@ final class M3ControlContractMatrixTest {
 
                     assertTrue(height > collapsedHeightReference.get());
                     assertTrue(height < expandedHeightReference.get());
-                    assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                    assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
                 }
         );
 
@@ -29451,7 +29481,7 @@ final class M3ControlContractMatrixTest {
 
                     assertTrue(height > collapsedHeightReference.get());
                     assertTrue(height < expandedHeightReference.get());
-                    assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                    assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
                 }
         );
 
@@ -29464,7 +29494,7 @@ final class M3ControlContractMatrixTest {
                     M3NavigationDrawerGroup group = Objects.requireNonNull(groupReference.get());
 
                     assertEquals(collapsedHeightReference.get(), group.prefHeight(240.0), 0.5);
-                    assertEquals(0, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                    assertEquals(0, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
                 }
         );
     }
@@ -30835,7 +30865,7 @@ final class M3ControlContractMatrixTest {
         formRow.resize(480.0, 72.0);
         formRow.layout();
 
-        Node labelColumn = Objects.requireNonNull(formRow.lookup("." + M3FormRow.TEXT_COLUMN_STYLE_CLASS));
+        Node labelColumn = Objects.requireNonNull(formRow.lookup("." + "m3-form-row-text-column"));
         assertFormRowTextAlignment(formRow, Pos.CENTER_LEFT, Pos.CENTER_RIGHT, TextAlignment.RIGHT);
         Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
         Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
@@ -31328,19 +31358,19 @@ final class M3ControlContractMatrixTest {
 
             HBox dateHeader = assertInstanceOf(
                     HBox.class,
-                    datePicker.lookup("." + M3DatePicker.HEADER_STYLE_CLASS)
+                    datePicker.lookup("." + "m3-date-picker-header")
             );
             HBox dateWeekdays = assertInstanceOf(
                     HBox.class,
-                    datePicker.lookup("." + M3DatePicker.WEEKDAY_ROW_STYLE_CLASS)
+                    datePicker.lookup("." + "m3-date-picker-weekday-row")
             );
             HBox rangeHeader = assertInstanceOf(
                     HBox.class,
-                    dateRangePicker.lookup("." + M3DatePicker.HEADER_STYLE_CLASS)
+                    dateRangePicker.lookup("." + "m3-date-picker-header")
             );
             HBox timeDisplay = assertInstanceOf(
                     HBox.class,
-                    timePicker.lookup("." + M3TimePicker.DISPLAY_STYLE_CLASS)
+                    timePicker.lookup("." + "m3-time-picker-display")
             );
 
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateHeader.getEffectiveNodeOrientation());
@@ -31373,15 +31403,15 @@ final class M3ControlContractMatrixTest {
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeField.getPicker().getEffectiveNodeOrientation());
             assertPickerFieldPresetContentUsesLogicalStart(
                     assertInstanceOf(Node.class, dateField.getPicker().getParent()),
-                    M3DatePickerField.PRESET_LIST_STYLE_CLASS
+                    "m3-date-picker-field-preset-list"
             );
             assertPickerFieldPresetContentUsesLogicalStart(
                     assertInstanceOf(Node.class, rangeField.getPicker().getParent()),
-                    M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
+                    "m3-date-range-picker-field-preset-list"
             );
             assertPickerFieldPresetContentUsesLogicalStart(
                     assertInstanceOf(Node.class, timeField.getPicker().getParent()),
-                    M3TimePickerField.PRESET_LIST_STYLE_CLASS
+                    "m3-time-picker-field-preset-list"
             );
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -31452,63 +31482,63 @@ final class M3ControlContractMatrixTest {
 
             HBox sideHeader = assertInstanceOf(
                     HBox.class,
-                    sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)
+                    sideSheet.lookup("." + "m3-sheet-header")
             );
             StackPane sideContentSlot = assertInstanceOf(
                     StackPane.class,
-                    sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)
+                    sideSheet.lookup("." + "m3-sheet-content")
             );
             HBox sideActions = assertInstanceOf(
                     HBox.class,
-                    sideSheet.lookup("." + M3SideSheet.ACTIONS_STYLE_CLASS)
+                    sideSheet.lookup("." + "m3-side-sheet-actions")
             );
             HBox sideHeaderActions = assertInstanceOf(
                     HBox.class,
-                    sideSheet.lookup("." + M3SideSheet.HEADER_ACTIONS_STYLE_CLASS)
+                    sideSheet.lookup("." + "m3-side-sheet-header-actions")
             );
             HBox bottomHeader = assertInstanceOf(
                     HBox.class,
-                    bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)
+                    bottomSheet.lookup("." + "m3-sheet-header")
             );
             StackPane bottomContentSlot = assertInstanceOf(
                     StackPane.class,
-                    bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)
+                    bottomSheet.lookup("." + "m3-sheet-content")
             );
             HBox bottomActions = assertInstanceOf(
                     HBox.class,
-                    bottomSheet.lookup("." + M3BottomSheet.ACTIONS_STYLE_CLASS)
+                    bottomSheet.lookup("." + "m3-sheet-actions")
             );
             VBox formHeader = assertInstanceOf(
                     VBox.class,
-                    formSection.lookup("." + M3FormSection.HEADER_STYLE_CLASS)
+                    formSection.lookup("." + "m3-form-section-header")
             );
             Label sectionTitle = assertInstanceOf(
                     Label.class,
-                    formSection.lookup("." + M3FormSection.TITLE_STYLE_CLASS)
+                    formSection.lookup("." + "m3-form-section-title")
             );
             Label sectionSupporting = assertInstanceOf(
                     Label.class,
-                    formSection.lookup("." + M3FormSection.SUPPORTING_TEXT_STYLE_CLASS)
+                    formSection.lookup("." + "m3-form-section-supporting-text")
             );
             VBox formContent = assertInstanceOf(
                     VBox.class,
-                    formSection.lookup("." + M3FormSection.CONTENT_STYLE_CLASS)
+                    formSection.lookup("." + "m3-form-section-content")
             );
             VBox summaryItems = assertInstanceOf(
                     VBox.class,
-                    summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-items")
             );
             Label summaryTitle = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.TITLE_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-title")
             );
             Label summaryItemLabel = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-item-label")
             );
             Label summaryItemError = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-item-error")
             );
 
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, sideHeader.getEffectiveNodeOrientation());
@@ -31757,65 +31787,70 @@ final class M3ControlContractMatrixTest {
 
         M3ThemeManager.install(scene, theme);
         M3MotionSettings.setReducedMotionRequested(drawer, true);
-        root.applyCss();
-        drawer.resize(360.0, 160.0);
-        drawer.layout();
+        try {
+            root.applyCss();
+            drawer.resize(360.0, 160.0);
+            drawer.layout();
+            root.applyCss();
+            drawer.layout();
 
-        Label archiveLabel = listItemHeadlineLabel(archive);
-        Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
-        assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
-        assertEquals(
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
-                archiveLabel.getTextFill()
-        );
+            Label archiveLabel = listItemHeadlineLabel(archive);
+            Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
+            assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
+                    archiveLabel.getTextFill()
+            );
 
-        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-        root.applyCss();
-        assertEquals(
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
-                archiveLabel.getTextFill()
-        );
-        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
-        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
-        root.applyCss();
-        archive.fireEvent(primaryMouseEvent(
-                archive,
-                MouseEvent.MOUSE_PRESSED,
-                archive.getWidth() / 2.0,
-                archive.getHeight() / 2.0,
-                true
-        ));
-        Region archiveRipple = lookupRegion(archive, ".m3-ripple");
-        assertEquals(
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
-                archiveLabel.getTextFill()
-        );
-        assertRegionFill(
-                archiveStateLayer,
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
-        );
-        assertRegionFill(
-                archiveRipple,
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
-        );
-        archive.fireEvent(primaryMouseEvent(
-                archive,
-                MouseEvent.MOUSE_RELEASED,
-                archive.getWidth() / 2.0,
-                archive.getHeight() / 2.0,
-                false
-        ));
+            archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            root.applyCss();
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                    archiveLabel.getTextFill()
+            );
+            archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+            archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+            root.applyCss();
+            archive.fireEvent(primaryMouseEvent(
+                    archive,
+                    MouseEvent.MOUSE_PRESSED,
+                    archive.getWidth() / 2.0,
+                    archive.getHeight() / 2.0,
+                    true
+            ));
+            Region archiveRipple = lookupRegion(archive, ".m3-ripple");
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                    archiveLabel.getTextFill()
+            );
+            assertRegionFill(
+                    archiveStateLayer,
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
+            );
+            assertRegionFill(
+                    archiveRipple,
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
+            );
+            archive.fireEvent(primaryMouseEvent(
+                    archive,
+                    MouseEvent.MOUSE_RELEASED,
+                    archive.getWidth() / 2.0,
+                    archive.getHeight() / 2.0,
+                    false
+            ));
 
-        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), false);
-        drawer.select(archive);
-        root.applyCss();
-        assertEquals(
-                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
-                archiveLabel.getTextFill()
-        );
-        assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
-                () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
-        M3MotionSettings.setReducedMotionRequested(drawer, false);
+            archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), false);
+            drawer.select(archive);
+            root.applyCss();
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
+                    archiveLabel.getTextFill()
+            );
+            assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
+                    () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
+        } finally {
+            M3MotionSettings.setReducedMotionRequested(drawer, false);
+        }
     }
 
     /// Verifies that navigation drawer skins preserve application-owned child width constraints.
@@ -33100,7 +33135,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(textInputClearButton(counterLayout), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
             Text floatingCounterLabel = assertInstanceOf(
                     Text.class,
-                    counterLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                    counterLayout.lookup("." + "m3-text-input-label")
             );
             var counterFieldBounds = counterField.localToScene(counterField.getBoundsInLocal());
             var floatingCounterLabelBounds = floatingCounterLabel.localToScene(floatingCounterLabel.getBoundsInLocal());
@@ -33121,11 +33156,11 @@ final class M3ControlContractMatrixTest {
             );
             assertEquals("Too long", assertInstanceOf(
                     Label.class,
-                    errorLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                    errorLayout.lookup("." + "m3-text-input-supporting-text")
             ).getText());
             assertEquals("Use an email address", assertInstanceOf(
                     Label.class,
-                    validatedLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                    validatedLayout.lookup("." + "m3-text-input-supporting-text")
             ).getText());
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
@@ -33356,8 +33391,8 @@ final class M3ControlContractMatrixTest {
             assertVisualIconSlotsUseVectorGraphics(root);
 
             WritableImage image = snapshotImageOnFxThread(root);
-            Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
-            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+            Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
+            Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
             Text inputText = renderedTextNode(textField, "M3FX");
             var labelBounds = label.localToScene(label.getBoundsInLocal());
             var fieldBounds = textField.localToScene(textField.getBoundsInLocal());
@@ -33435,15 +33470,15 @@ final class M3ControlContractMatrixTest {
 
             Label title = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.TITLE_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-title")
             );
             Label itemLabel = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-item-label")
             );
             Label itemError = assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-item-error")
             );
             assertEquals(Pos.CENTER_LEFT, title.getAlignment());
             assertEquals(Pos.CENTER_LEFT, itemLabel.getAlignment());
@@ -33459,9 +33494,9 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             summary.layout();
 
-            title = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.TITLE_STYLE_CLASS));
-            itemLabel = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS));
-            itemError = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS));
+            title = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-title"));
+            itemLabel = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-item-label"));
+            itemError = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-item-error"));
             assertEquals(Pos.CENTER_RIGHT, title.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, itemLabel.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, itemError.getAlignment());
@@ -33476,9 +33511,9 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             summary.layout();
 
-            title = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.TITLE_STYLE_CLASS));
-            itemLabel = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS));
-            itemError = assertInstanceOf(Label.class, summary.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS));
+            title = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-title"));
+            itemLabel = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-item-label"));
+            itemError = assertInstanceOf(Label.class, summary.lookup("." + "m3-validation-summary-item-error"));
             assertEquals(Pos.CENTER_LEFT, title.getAlignment());
             assertEquals(Pos.CENTER_LEFT, itemLabel.getAlignment());
             assertEquals(Pos.CENTER_LEFT, itemError.getAlignment());
@@ -33527,10 +33562,10 @@ final class M3ControlContractMatrixTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, summary, Color.WHITE, 0.04);
-            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals(2, summary.lookupAll("." + "m3-validation-summary-item").size());
             assertEquals("Display name", assertInstanceOf(
                     Label.class,
-                    summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    summary.lookup("." + "m3-validation-summary-item-label")
             ).getText());
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
@@ -33578,7 +33613,7 @@ final class M3ControlContractMatrixTest {
                 assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 VBox items = assertInstanceOf(
                         VBox.class,
-                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                        summary.lookup("." + "m3-validation-summary-items")
                 );
                 Node nameSummaryItem = items.getChildren().get(0);
                 Node emailSummaryItem = items.getChildren().get(1);
@@ -33752,12 +33787,12 @@ final class M3ControlContractMatrixTest {
                 assertSame(visibleField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 VBox items = assertInstanceOf(
                         VBox.class,
-                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                        summary.lookup("." + "m3-validation-summary-items")
                 );
                 assertEquals(1, items.getChildren().size());
                 Label itemLabel = assertInstanceOf(
                         Label.class,
-                        items.getChildren().get(0).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                        items.getChildren().get(0).lookup("." + "m3-validation-summary-item-label")
                 );
                 assertEquals("Visible", itemLabel.getText());
 
@@ -33785,7 +33820,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(summary.isInvalidInputReachable(hiddenLayout));
                 assertEquals(2, summary.getVisibleInvalidInputCount());
                 assertEquals(2, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-                assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+                assertEquals(2, summary.lookupAll("." + "m3-validation-summary-item").size());
 
                 visibleLayout.setDisable(true);
                 root.applyCss();
@@ -33797,12 +33832,12 @@ final class M3ControlContractMatrixTest {
                 assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 items = assertInstanceOf(
                         VBox.class,
-                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                        summary.lookup("." + "m3-validation-summary-items")
                 );
                 assertEquals(1, items.getChildren().size());
                 itemLabel = assertInstanceOf(
                         Label.class,
-                        items.getChildren().get(0).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                        items.getChildren().get(0).lookup("." + "m3-validation-summary-item-label")
                 );
                 assertEquals("Hidden", itemLabel.getText());
 
@@ -33813,7 +33848,7 @@ final class M3ControlContractMatrixTest {
                 assertFalse(summary.isShowingSummary());
                 assertEquals(0, summary.getVisibleInvalidInputCount());
                 assertTrue(summary.getPseudoClassStates().contains(empty));
-                assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+                assertTrue(summary.lookupAll("." + "m3-validation-summary-item").isEmpty());
                 assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
 
                 hiddenAncestor.setVisible(true);
@@ -33824,7 +33859,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(summary.isShowingSummary());
                 assertEquals(2, summary.getVisibleInvalidInputCount());
                 assertFalse(summary.getPseudoClassStates().contains(empty));
-                assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+                assertEquals(2, summary.lookupAll("." + "m3-validation-summary-item").size());
 
                 outside.requestFocus();
                 summary.setVisible(false);
@@ -34080,7 +34115,7 @@ final class M3ControlContractMatrixTest {
             root.layout();
 
             WritableImage image = snapshotImageOnFxThread(root);
-            assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+            assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
             assertEquals(56.0, buttons.getOneLineHeight(), 0.0001);
             assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
             assertTrue(assertInstanceOf(M3DisclosureIcon.class, group.getHeaderItem().getTrailing()).isExpanded());
@@ -34137,7 +34172,7 @@ final class M3ControlContractMatrixTest {
             WritableImage image = snapshotImageOnFxThread(root);
 
             assertSnapshotNodeContainsContrast(image, carousel, Color.WHITE, 0.04);
-            assertTrue(focused.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+            assertTrue(focused.getStyleClass().contains("m3-carousel-selected-item"));
             assertEquals(0.0, carouselItemStateLayer(normal).getOpacity(), 0.0001);
             assertTrue(carouselItemStateLayer(hovered).getOpacity() > 0.0);
             assertTrue(carouselItemStateLayer(pressed).getOpacity()
@@ -34188,10 +34223,10 @@ final class M3ControlContractMatrixTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
-            assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(6, pane.lookupAll("." + "m3-date-range-picker-dialog-preset-button").size());
             assertSnapshotNodeContainsContrast(
                     image,
-                    assertInstanceOf(Node.class, pane.lookup("." + M3DateRangePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    assertInstanceOf(Node.class, pane.lookup("." + "m3-date-range-picker-dialog-preset-list")),
                     Color.WHITE,
                     0.04
             );
@@ -34225,10 +34260,10 @@ final class M3ControlContractMatrixTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
-            assertEquals(5, pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(5, pane.lookupAll("." + "m3-date-picker-dialog-preset-button").size());
             assertSnapshotNodeContainsContrast(
                     image,
-                    assertInstanceOf(Node.class, pane.lookup("." + M3DatePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    assertInstanceOf(Node.class, pane.lookup("." + "m3-date-picker-dialog-preset-list")),
                     Color.WHITE,
                     0.04
             );
@@ -34264,11 +34299,11 @@ final class M3ControlContractMatrixTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
-            assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertEquals(5, pane.lookupAll("." + "m3-time-picker-dialog-preset-button").size());
             assertTimePickerDialogActionRow(pane, NodeOrientation.LEFT_TO_RIGHT);
             assertSnapshotNodeContainsContrast(
                     image,
-                    assertInstanceOf(Node.class, pane.lookup("." + M3TimePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    assertInstanceOf(Node.class, pane.lookup("." + "m3-time-picker-dialog-preset-list")),
                     Color.WHITE,
                     0.04
             );
@@ -34322,23 +34357,23 @@ final class M3ControlContractMatrixTest {
 
             assertPickerPresetMirrorsRightToLeft(
                     datePane,
-                    M3DatePickerDialog.PRESET_CONTENT_STYLE_CLASS,
-                    M3DatePickerDialog.PRESET_LIST_STYLE_CLASS,
+                    "m3-date-picker-dialog-preset-content",
+                    "m3-date-picker-dialog-preset-list",
                     dateDialog.getPicker()
             );
             assertPickerPresetMirrorsRightToLeft(
                     rangePane,
-                    M3DateRangePickerDialog.PRESET_CONTENT_STYLE_CLASS,
-                    M3DateRangePickerDialog.PRESET_LIST_STYLE_CLASS,
+                    "m3-date-range-picker-dialog-preset-content",
+                    "m3-date-range-picker-dialog-preset-list",
                     rangeDialog.getPicker()
             );
             HBox timePresetContent = assertInstanceOf(
                     HBox.class,
-                    timePane.lookup("." + M3TimePickerDialog.PRESET_CONTENT_STYLE_CLASS)
+                    timePane.lookup("." + "m3-time-picker-dialog-preset-content")
             );
             VBox timePresetList = assertInstanceOf(
                     VBox.class,
-                    timePane.lookup("." + M3TimePickerDialog.PRESET_LIST_STYLE_CLASS)
+                    timePane.lookup("." + "m3-time-picker-dialog-preset-list")
             );
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetContent.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetList.getEffectiveNodeOrientation());
@@ -34414,11 +34449,11 @@ final class M3ControlContractMatrixTest {
                         WritableImage image = snapshotImageOnFxThread(popupRoot);
                         assertEquals(
                                 6,
-                                presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size()
+                                presetContent.lookupAll("." + "m3-date-range-picker-field-preset-button").size()
                         );
                         assertNodeSnapshotContainsContrast(
                                 assertInstanceOf(Node.class, presetContent.lookup(
-                                        "." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
+                                        "." + "m3-date-range-picker-field-preset-list"
                                 )),
                                 Color.WHITE,
                                 0.04
@@ -34490,8 +34525,8 @@ final class M3ControlContractMatrixTest {
 
                         assertPickerPresetMirrorsRightToLeft(
                                 popupRoot,
-                                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
-                                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                                "m3-date-range-picker-field-preset-content",
+                                "m3-date-range-picker-field-preset-list",
                                 field.getPicker()
                         );
 
@@ -34579,8 +34614,8 @@ final class M3ControlContractMatrixTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> pickerFieldPresetPopupReady(
                             dateFieldReference.get(),
-                            M3DatePickerField.PRESET_BUTTON_STYLE_CLASS,
-                            M3DatePickerField.PRESET_LIST_STYLE_CLASS
+                            "m3-date-picker-field-preset-button",
+                            "m3-date-picker-field-preset-list"
                     ),
                     () -> {
                         Pane root = Objects.requireNonNull(rootReference.get());
@@ -34592,9 +34627,9 @@ final class M3ControlContractMatrixTest {
                     () -> assertPickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
                             Objects.requireNonNull(rootReference.get()),
                             Objects.requireNonNull(dateFieldReference.get()),
-                            M3DatePickerField.PRESET_CONTENT_STYLE_CLASS,
-                            M3DatePickerField.PRESET_LIST_STYLE_CLASS,
-                            M3DatePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            "m3-date-picker-field-preset-content",
+                            "m3-date-picker-field-preset-list",
+                            "m3-date-picker-field-preset-button",
                             Objects.requireNonNull(dateFieldReference.get()).getEditor()
                     )
             );
@@ -34602,8 +34637,8 @@ final class M3ControlContractMatrixTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> pickerFieldPresetPopupReady(
                             timeFieldReference.get(),
-                            M3TimePickerField.PRESET_BUTTON_STYLE_CLASS,
-                            M3TimePickerField.PRESET_LIST_STYLE_CLASS
+                            "m3-time-picker-field-preset-button",
+                            "m3-time-picker-field-preset-list"
                     ),
                     () -> {
                         Pane root = Objects.requireNonNull(rootReference.get());
@@ -34615,9 +34650,9 @@ final class M3ControlContractMatrixTest {
                     () -> assertPickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
                             Objects.requireNonNull(rootReference.get()),
                             Objects.requireNonNull(timeFieldReference.get()),
-                            M3TimePickerField.PRESET_CONTENT_STYLE_CLASS,
-                            M3TimePickerField.PRESET_LIST_STYLE_CLASS,
-                            M3TimePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            "m3-time-picker-field-preset-content",
+                            "m3-time-picker-field-preset-list",
+                            "m3-time-picker-field-preset-button",
                             Objects.requireNonNull(timeFieldReference.get()).getEditor()
                     )
             );
@@ -34715,7 +34750,7 @@ final class M3ControlContractMatrixTest {
                 }
                 Node presetButton = assertInstanceOf(
                         Node.class,
-                        presetContent.lookup("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)
+                        presetContent.lookup("." + "m3-date-range-picker-field-preset-button")
                 );
 
                 presetButton.requestFocus();
@@ -34877,7 +34912,7 @@ final class M3ControlContractMatrixTest {
 
             assertInstanceOf(
                     ButtonBase.class,
-                    timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS)
+                    timePicker.lookup("." + "m3-time-picker-minute-display")
             ).fire();
             root.layout();
             timePicker.layout();
@@ -35586,12 +35621,12 @@ final class M3ControlContractMatrixTest {
             assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
             assertEquals(
                     24.0,
-                    lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                    lookupRegion(sideSheet, "." + "m3-sheet-content").getPadding().getLeft(),
                     0.0001
             );
             assertEquals(
                     32.0,
-                    lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                    lookupRegion(bottomSheet, "." + "m3-bottom-sheet-drag-handle").getPrefWidth(),
                     0.0001
             );
             assertEquals(64.0, navigationBar.getPrefHeight(), 0.0001);
@@ -35684,7 +35719,7 @@ final class M3ControlContractMatrixTest {
 
             M3ListCell<?> cell = assertInstanceOf(
                     M3ListCell.class,
-                    listView.lookup("." + M3ListCell.STYLE_CLASS),
+                    listView.lookup("." + "m3-list-view-cell"),
                     "virtualized list cell"
             );
             M3ListItem virtualItem = Objects.requireNonNull(cell.getListItem(), "virtualized list item");
@@ -36129,7 +36164,7 @@ final class M3ControlContractMatrixTest {
                 Parent tooltipSkinRoot = assertInstanceOf(Parent.class, tooltip.getSkin().getNode());
                 Label renderedTooltip = assertInstanceOf(
                         Label.class,
-                        tooltipSkinRoot.lookup("." + M3Tooltip.STYLE_CLASS)
+                        tooltipSkinRoot.lookup("." + "m3-tooltip")
                 );
                 Bounds popupBounds = tooltipRoot.getLayoutBounds();
                 Bounds renderedBounds = renderedTooltip.getLayoutBounds();
@@ -36197,11 +36232,11 @@ final class M3ControlContractMatrixTest {
                 assertPopupRootUsesThemeClasses(tooltipRoot, M3Theme.defaultTheme());
                 VBox container = assertInstanceOf(
                         VBox.class,
-                        tooltipRoot.lookup("." + M3RichTooltip.CONTAINER_STYLE_CLASS)
+                        tooltipRoot.lookup("." + "m3-rich-tooltip-container")
                 );
                 HBox actions = assertInstanceOf(
                         HBox.class,
-                        tooltipRoot.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)
+                        tooltipRoot.lookup("." + "m3-rich-tooltip-actions")
                 );
                 assertRegionFill(container, Color.rgb(242, 236, 244));
                 assertRegionRadii(container, 12.0, 12.0, 12.0, 12.0);
@@ -36213,11 +36248,11 @@ final class M3ControlContractMatrixTest {
                 );
                 Label titleLabel = assertInstanceOf(
                         Label.class,
-                        tooltipRoot.lookup("." + M3RichTooltip.TITLE_STYLE_CLASS)
+                        tooltipRoot.lookup("." + "m3-rich-tooltip-title")
                 );
                 Label supportingTextLabel = assertInstanceOf(
                         Label.class,
-                        tooltipRoot.lookup("." + M3RichTooltip.SUPPORTING_TEXT_STYLE_CLASS)
+                        tooltipRoot.lookup("." + "m3-rich-tooltip-supporting-text")
                 );
                 assertEquals(Color.rgb(73, 69, 78), titleLabel.getTextFill());
                 assertEquals(Color.rgb(73, 69, 78), supportingTextLabel.getTextFill());
@@ -36548,7 +36583,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(menuButton.getStyleClass().contains(BUTTON_BASE_STYLE_CLASS));
         assertTrue(menuButton.getStyleClass().contains(MENU_BUTTON_STYLE_CLASS));
         assertFalse(menuButton.getStyleClass().contains(BUTTON_STYLE_CLASS));
-        assertTrue(fab.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
+        assertTrue(fab.getStyleClass().contains("m3-fab"));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
     }
@@ -36579,37 +36614,37 @@ final class M3ControlContractMatrixTest {
         M3ListItem navigationDrawerGroupChild = new M3ListItem("Child");
         navigationDrawerGroup.getItems().add(navigationDrawerGroupChild);
 
-        assertTrue(new M3ButtonGroup().getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
-        assertTrue(new M3SplitButton("Create").getStyleClass().contains(M3SplitButton.STYLE_CLASS));
-        assertTrue(new M3FabMenu().getStyleClass().contains(M3FabMenu.STYLE_CLASS));
-        assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
+        assertTrue(new M3ButtonGroup().getStyleClass().contains("m3-button-group"));
+        assertTrue(new M3SplitButton("Create").getStyleClass().contains("m3-split-button"));
+        assertTrue(new M3FabMenu().getStyleClass().contains("m3-fab-menu"));
+        assertTrue(card.getStyleClass().contains("m3-card"));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.styleClass()));
-        assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
-        assertTrue(overlayPane.getStyleClass().contains(M3OverlayPane.STYLE_CLASS));
-        assertTrue(dialogPane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
+        assertTrue(banner.getStyleClass().contains("m3-banner"));
+        assertTrue(overlayPane.getStyleClass().contains("m3-overlay-pane"));
+        assertTrue(dialogPane.getStyleClass().contains("m3-dialog-pane"));
+        assertTrue(topAppBar.getStyleClass().contains("m3-top-app-bar"));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
-        assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
+        assertTrue(bottomAppBar.getStyleClass().contains("m3-bottom-app-bar"));
         assertTrue(bottomAppBar.getStyleClass().contains(
                 M3BottomAppBarFloatingActionAlignment.END.styleClass()
         ));
-        assertTrue(toolbar.getStyleClass().contains(M3Toolbar.STYLE_CLASS));
-        assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
-        assertTrue(bottomSheet.getStyleClass().contains(M3BottomSheet.STYLE_CLASS));
-        assertTrue(scrim.getStyleClass().contains(M3Scrim.STYLE_CLASS));
-        assertTrue(carousel.getStyleClass().contains(M3Carousel.STYLE_CLASS));
-        assertTrue(formPane.getStyleClass().contains(M3FormPane.STYLE_CLASS));
-        assertTrue(formSection.getStyleClass().contains(M3FormSection.STYLE_CLASS));
-        assertTrue(formRow.getStyleClass().contains(M3FormRow.STYLE_CLASS));
-        assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
-        assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
-        assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
-        assertTrue(navigationDrawerGroup.getStyleClass().contains(M3NavigationDrawerGroup.STYLE_CLASS));
+        assertTrue(toolbar.getStyleClass().contains("m3-toolbar"));
+        assertTrue(sideSheet.getStyleClass().contains("m3-side-sheet"));
+        assertTrue(bottomSheet.getStyleClass().contains("m3-bottom-sheet"));
+        assertTrue(scrim.getStyleClass().contains("m3-scrim"));
+        assertTrue(carousel.getStyleClass().contains("m3-carousel"));
+        assertTrue(formPane.getStyleClass().contains("m3-form-pane"));
+        assertTrue(formSection.getStyleClass().contains("m3-form-section"));
+        assertTrue(formRow.getStyleClass().contains("m3-form-row"));
+        assertTrue(navigationBar.getStyleClass().contains("m3-navigation-bar"));
+        assertTrue(navigationRail.getStyleClass().contains("m3-navigation-rail"));
+        assertTrue(navigationDrawer.getStyleClass().contains("m3-navigation-drawer"));
+        assertTrue(navigationDrawerGroup.getStyleClass().contains("m3-navigation-drawer-group"));
         assertTrue(navigationDrawerGroup.getHeaderItem().getStyleClass().contains(
-                M3NavigationDrawerGroup.HEADER_STYLE_CLASS
+                "m3-navigation-drawer-group-header"
         ));
         assertTrue(navigationDrawerGroupChild.getStyleClass().contains(
-                M3NavigationDrawerGroup.CHILD_STYLE_CLASS
+                "m3-navigation-drawer-group-child"
         ));
     }
 
@@ -36621,58 +36656,58 @@ final class M3ControlContractMatrixTest {
 
         M3FilterChip chip = new M3FilterChip("Chip");
 
-        assertTrue(textField.getStyleClass().contains(M3TextField.STYLE_CLASS));
+        assertTrue(textField.getStyleClass().contains("m3-text-field"));
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.styleClass()));
-        assertTrue(new M3PasswordField().getStyleClass().contains(M3PasswordField.STYLE_CLASS));
-        assertTrue(new M3TextInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
-        assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
-        assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
-        assertTrue(richTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
-        assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
-        assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
+        assertTrue(new M3PasswordField().getStyleClass().contains("m3-password-field"));
+        assertTrue(new M3TextInputLayout().getStyleClass().contains("m3-text-input-layout"));
+        assertTrue(new M3TextArea().getStyleClass().contains("m3-text-area"));
+        assertTrue(new M3Tooltip().getStyleClass().contains("m3-tooltip"));
+        assertTrue(richTooltip().getStyleClass().contains("m3-rich-tooltip"));
+        assertTrue(new M3Avatar("A").getStyleClass().contains("m3-avatar"));
+        assertTrue(new M3Icon("A").getStyleClass().contains("m3-icon"));
         assertTrue(new M3IconButton(new M3Icon("A")).getStyleClass().contains(ICON_BUTTON_STYLE_CLASS));
         assertTrue(new M3IconToggleButton("A").getStyleClass().contains(ICON_TOGGLE_BUTTON_STYLE_CLASS));
-        assertTrue(new M3IconToggleButtonGroup().getStyleClass().contains(M3IconToggleButtonGroup.STYLE_CLASS));
-        assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
-        assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
-        assertTrue(new M3ValidationSummary().getStyleClass().contains(M3ValidationSummary.STYLE_CLASS));
-        assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
-        assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
-        assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
-        assertTrue(new M3SubMenuItem("Export").getStyleClass().contains(M3SubMenuItem.STYLE_CLASS));
-        assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
+        assertTrue(new M3IconToggleButtonGroup().getStyleClass().contains("m3-icon-toggle-button-group"));
+        assertTrue(new M3Text("Text").getStyleClass().contains("m3-text"));
+        assertTrue(new M3Surface().getStyleClass().contains("m3-surface"));
+        assertTrue(new M3ValidationSummary().getStyleClass().contains("m3-validation-summary"));
+        assertTrue(new M3BadgedBox().getStyleClass().contains("m3-badged-box"));
+        assertTrue(new M3Menu().getStyleClass().contains("m3-menu"));
+        assertTrue(new M3MenuItem("Open").getStyleClass().contains("m3-menu-item"));
+        assertTrue(new M3SubMenuItem("Export").getStyleClass().contains("m3-sub-menu-item"));
+        assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains("m3-menu-section-header"));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(MENU_BUTTON_STYLE_CLASS));
-        assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
-        assertTrue(searchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
+        assertTrue(new M3SearchBar().getStyleClass().contains("m3-search-bar"));
+        assertTrue(searchView().getStyleClass().contains("m3-search-view"));
         assertTrue(new M3CheckBox().getStyleClass().contains("m3-checkbox"));
         assertTrue(new M3RadioButton().getStyleClass().contains("m3-radio-button"));
         assertTrue(new M3Switch().getStyleClass().contains("m3-switch"));
-        assertTrue(new M3Slider().getStyleClass().contains(M3Slider.STYLE_CLASS));
-        assertTrue(new M3DatePicker().getStyleClass().contains(M3DatePicker.STYLE_CLASS));
-        assertTrue(new M3DatePickerField().getStyleClass().contains(M3DatePickerField.STYLE_CLASS));
-        assertTrue(new M3DateRangePicker().getStyleClass().contains(M3DateRangePicker.STYLE_CLASS));
-        assertTrue(new M3DateRangePickerField().getStyleClass().contains(M3DateRangePickerField.STYLE_CLASS));
-        assertTrue(new M3TimePicker().getStyleClass().contains(M3TimePicker.STYLE_CLASS));
-        assertTrue(new M3TimePickerField().getStyleClass().contains(M3TimePickerField.STYLE_CLASS));
-        assertTrue(chip.getStyleClass().contains(M3Chip.STYLE_CLASS));
-        assertTrue(chip.getStyleClass().contains(M3FilterChip.STYLE_CLASS));
-        assertTrue(new M3ChipGroup().getStyleClass().contains(M3ChipGroup.STYLE_CLASS));
-        assertTrue(new M3SegmentedButton("Day").getStyleClass().contains(M3SegmentedButton.STYLE_CLASS));
-        assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
-        assertTrue(new M3Tab("Overview").getStyleClass().contains(M3Tab.STYLE_CLASS));
-        assertTrue(new M3TabBar().getStyleClass().contains(M3TabBar.STYLE_CLASS));
-        assertTrue(new M3ProgressBar().getStyleClass().contains(M3ProgressBar.STYLE_CLASS));
-        assertTrue(new M3ProgressIndicator().getStyleClass().contains(M3ProgressIndicator.STYLE_CLASS));
-        assertTrue(new M3LoadingIndicator().getStyleClass().contains(M3LoadingIndicator.STYLE_CLASS));
-        assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
-        assertTrue(new M3DisclosureIcon().getStyleClass().contains(M3DisclosureIcon.STYLE_CLASS));
-        assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
-        assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
-        assertTrue(new M3ListPane().getStyleClass().contains(M3ListPane.STYLE_CLASS));
-        assertTrue(new M3ListView<>().getStyleClass().contains(M3ListView.STYLE_CLASS));
-        assertTrue(new M3ListCell<>(new M3ListView<>()).getStyleClass().contains(M3ListCell.STYLE_CLASS));
-        assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
-        assertTrue(new M3ListSectionHeader("Section").getStyleClass().contains(M3ListSectionHeader.STYLE_CLASS));
+        assertTrue(new M3Slider().getStyleClass().contains("m3-slider"));
+        assertTrue(new M3DatePicker().getStyleClass().contains("m3-date-picker"));
+        assertTrue(new M3DatePickerField().getStyleClass().contains("m3-date-picker-field"));
+        assertTrue(new M3DateRangePicker().getStyleClass().contains("m3-date-range-picker"));
+        assertTrue(new M3DateRangePickerField().getStyleClass().contains("m3-date-range-picker-field"));
+        assertTrue(new M3TimePicker().getStyleClass().contains("m3-time-picker"));
+        assertTrue(new M3TimePickerField().getStyleClass().contains("m3-time-picker-field"));
+        assertTrue(chip.getStyleClass().contains("m3-chip"));
+        assertTrue(chip.getStyleClass().contains("m3-filter-chip"));
+        assertTrue(new M3ChipGroup().getStyleClass().contains("m3-chip-group"));
+        assertTrue(new M3SegmentedButton("Day").getStyleClass().contains("m3-segmented-button"));
+        assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains("m3-segmented-button-group"));
+        assertTrue(new M3Tab("Overview").getStyleClass().contains("m3-tab"));
+        assertTrue(new M3TabBar().getStyleClass().contains("m3-tab-bar"));
+        assertTrue(new M3ProgressBar().getStyleClass().contains("m3-progress-bar"));
+        assertTrue(new M3ProgressIndicator().getStyleClass().contains("m3-progress-indicator"));
+        assertTrue(new M3LoadingIndicator().getStyleClass().contains("m3-loading-indicator"));
+        assertTrue(new M3Divider().getStyleClass().contains("m3-divider"));
+        assertTrue(new M3DisclosureIcon().getStyleClass().contains("m3-disclosure-icon"));
+        assertTrue(new M3Badge("1").getStyleClass().contains("m3-badge"));
+        assertTrue(new M3NavigationItem("Home").getStyleClass().contains("m3-navigation-item"));
+        assertTrue(new M3ListPane().getStyleClass().contains("m3-list-pane"));
+        assertTrue(new M3ListView<>().getStyleClass().contains("m3-list-view"));
+        assertTrue(new M3ListCell<>(new M3ListView<>()).getStyleClass().contains("m3-list-view-cell"));
+        assertTrue(new M3ListItem("Item").getStyleClass().contains("m3-list-item"));
+        assertTrue(new M3ListSectionHeader("Section").getStyleClass().contains("m3-list-section-header"));
     }
 
     /// Verifies that custom skins inherit JavaFX or project base skin classes instead of implementing [Skin] directly.
@@ -37972,7 +38007,7 @@ final class M3ControlContractMatrixTest {
         @Nullable M3NavigationDrawerGroup group = groupReference.get();
         return group == null
                 ? -1
-                : group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size();
+                : group.lookupAll("." + "m3-navigation-drawer-group-child").size();
     }
 
     /// Returns whether a determinate progress bar has reached the expected rendered bar width.
@@ -38615,7 +38650,7 @@ final class M3ControlContractMatrixTest {
     private static M3IconButton textInputClearButton(M3TextInputLayout layout) {
         layout.applyCss();
         layout.layout();
-        Node child = layout.lookup("." + M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS);
+        Node child = layout.lookup("." + "m3-text-input-clear-button");
         assertInstanceOf(M3IconButton.class, child);
         return (M3IconButton) child;
     }
@@ -38639,7 +38674,7 @@ final class M3ControlContractMatrixTest {
     private static VBox searchViewResultsContainer(M3SearchView searchView) {
         searchView.applyCss();
         searchView.layout();
-        Node child = searchView.lookup("." + M3SearchView.RESULTS_STYLE_CLASS);
+        Node child = searchView.lookup("." + "m3-search-view-results");
         assertInstanceOf(VBox.class, child);
         return (VBox) child;
     }
@@ -38813,7 +38848,7 @@ final class M3ControlContractMatrixTest {
         Node radioDot = radioDotAnimationLayer(scene.radioButton);
         Region switchThumb = lookupRegion(scene.switchControl, ".thumb");
         Region segmentSelection = segmentedButtonSelectionContainer(scene.segmentedButton);
-        Region tabIndicator = lookupRegion(scene.tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
+        Region tabIndicator = lookupRegion(scene.tab, "." + "m3-tab-active-indicator");
         Region navigationIndicator = lookupRegion(scene.navigationItem, ".m3-navigation-item-indicator");
         Region listSelection = listItemSelectionContainer(scene.listItem);
         SVGPath disclosureArrow = assertInstanceOf(
@@ -38851,12 +38886,12 @@ final class M3ControlContractMatrixTest {
         assertEquals(24.0, switchThumb.getWidth(), 0.0001);
         Region segmentSelection = lookupRegion(
                 scene.segmentedButton,
-                "." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS
+                "." + "m3-segmented-button-selection-container"
         );
         assertEquals(1.0, segmentSelection.getOpacity(), 0.0001);
         assertEquals(1.0, segmentSelection.getScaleX(), 0.0001);
         assertEquals(0.75, sliderRenderedPosition(scene.slider), 0.0001);
-        Region tabIndicator = lookupRegion(scene.tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
+        Region tabIndicator = lookupRegion(scene.tab, "." + "m3-tab-active-indicator");
         assertEquals(1.0, tabIndicator.getOpacity(), 0.0001);
         assertEquals(1.0, tabIndicator.getScaleX(), 0.0001);
         Region navigationIndicator = lookupRegion(scene.navigationItem, ".m3-navigation-item-indicator");
@@ -40403,7 +40438,7 @@ final class M3ControlContractMatrixTest {
         root.applyCss();
         root.layout();
 
-        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
         assertEquals(0.0, outlineNotchGap(outline), 0.0001);
 
         stageReference.set(stage);
@@ -40426,8 +40461,8 @@ final class M3ControlContractMatrixTest {
 
         layout.applyCss();
         layout.layout();
-        @Nullable Node labelNode = layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS);
-        @Nullable Node outlineNode = layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS);
+        @Nullable Node labelNode = layout.lookup("." + "m3-text-input-label");
+        @Nullable Node outlineNode = layout.lookup("." + "m3-text-input-outline");
         if (!(labelNode instanceof Text label) || !(outlineNode instanceof Path outline)) {
             return false;
         }
@@ -40455,7 +40490,7 @@ final class M3ControlContractMatrixTest {
 
         layout.applyCss();
         layout.layout();
-        @Nullable Node supportingRowNode = layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS);
+        @Nullable Node supportingRowNode = layout.lookup("." + "m3-text-input-supporting-row");
         if (!(supportingRowNode instanceof HBox supportingRow)) {
             return false;
         }
@@ -40474,8 +40509,8 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies a floating-label and clear-button intermediate frame on a text input layout.
     private static void assertTextInputLayoutFloatingPresentationIntermediate(M3TextInputLayout layout) {
-        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
-        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
         M3IconButton clearButton = textInputClearButton(layout);
         double expandedScale = textInputLayoutExpandedLabelScale(layout, label);
 
@@ -40496,7 +40531,7 @@ final class M3ControlContractMatrixTest {
     private static void assertTextInputLayoutSupportingRowPresentationIntermediate(M3TextInputLayout layout) {
         HBox supportingRow = assertInstanceOf(
                 HBox.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-row")
         );
 
         assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity");
@@ -40505,12 +40540,12 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that text input presentation state is settled after motion is disabled.
     private static void assertTextInputLayoutPresentationSettled(M3TextInputLayout layout) {
-        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
-        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
         M3IconButton clearButton = textInputClearButton(layout);
         HBox supportingRow = assertInstanceOf(
                 HBox.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-row")
         );
 
         assertEquals(1.0, label.getOpacity(), 0.0001);
@@ -40576,11 +40611,11 @@ final class M3ControlContractMatrixTest {
             Pos endAlignment,
             TextAlignment textAlignment
     ) {
-        VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + M3FormRow.TEXT_COLUMN_STYLE_CLASS));
-        Label label = assertInstanceOf(Label.class, row.lookup("." + M3FormRow.LABEL_STYLE_CLASS));
-        Label supporting = assertInstanceOf(Label.class, row.lookup("." + M3FormRow.SUPPORTING_TEXT_STYLE_CLASS));
-        StackPane contentSlot = assertInstanceOf(StackPane.class, row.lookup("." + M3FormRow.CONTENT_STYLE_CLASS));
-        StackPane trailingSlot = assertInstanceOf(StackPane.class, row.lookup("." + M3FormRow.TRAILING_STYLE_CLASS));
+        VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + "m3-form-row-text-column"));
+        Label label = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-label"));
+        Label supporting = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-supporting-text"));
+        StackPane contentSlot = assertInstanceOf(StackPane.class, row.lookup("." + "m3-form-row-content"));
+        StackPane trailingSlot = assertInstanceOf(StackPane.class, row.lookup("." + "m3-form-row-trailing"));
 
         assertEquals(startAlignment, textColumn.getAlignment());
         assertEquals(startAlignment, label.getAlignment());
@@ -40599,12 +40634,12 @@ final class M3ControlContractMatrixTest {
             TextAlignment textAlignment,
             NodeOrientation nodeOrientation
     ) {
-        VBox header = assertInstanceOf(VBox.class, section.lookup("." + M3FormSection.HEADER_STYLE_CLASS));
-        VBox content = assertInstanceOf(VBox.class, section.lookup("." + M3FormSection.CONTENT_STYLE_CLASS));
-        Label title = assertInstanceOf(Label.class, section.lookup("." + M3FormSection.TITLE_STYLE_CLASS));
+        VBox header = assertInstanceOf(VBox.class, section.lookup("." + "m3-form-section-header"));
+        VBox content = assertInstanceOf(VBox.class, section.lookup("." + "m3-form-section-content"));
+        Label title = assertInstanceOf(Label.class, section.lookup("." + "m3-form-section-title"));
         Label supporting = assertInstanceOf(
                 Label.class,
-                section.lookup("." + M3FormSection.SUPPORTING_TEXT_STYLE_CLASS)
+                section.lookup("." + "m3-form-section-supporting-text")
         );
 
         assertEquals(topAlignment, header.getAlignment());
@@ -40624,8 +40659,8 @@ final class M3ControlContractMatrixTest {
         searchBar.applyCss();
         searchBar.layout();
 
-        Region leadingSlot = lookupRegion(searchBar, "." + M3SearchBar.LEADING_STYLE_CLASS);
-        Region trailingBox = lookupRegion(searchBar, "." + M3SearchBar.TRAILING_STYLE_CLASS);
+        Region leadingSlot = lookupRegion(searchBar, "." + "m3-search-bar-leading");
+        Region trailingBox = lookupRegion(searchBar, "." + "m3-search-bar-trailing");
         TextInputControl editor = searchBarEditor(searchBar);
         Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
         Bounds editorBounds = editor.localToScene(editor.getBoundsInLocal());
@@ -40698,16 +40733,16 @@ final class M3ControlContractMatrixTest {
         layout.applyCss();
         layout.layout();
 
-        Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
-        Region leadingSlot = lookupRegion(layout, "." + M3TextInputLayout.LEADING_STYLE_CLASS);
-        Region trailingSlot = lookupRegion(layout, "." + M3TextInputLayout.TRAILING_STYLE_CLASS);
-        Text label = assertInstanceOf(Text.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Region inputContainer = lookupRegion(layout, "." + "m3-text-input-container");
+        Region leadingSlot = lookupRegion(layout, "." + "m3-text-input-leading");
+        Region trailingSlot = lookupRegion(layout, "." + "m3-text-input-trailing");
+        Text label = assertInstanceOf(Text.class, layout.lookup("." + "m3-text-input-label"));
         Label supportingLabel = assertInstanceOf(
                 Label.class,
-                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+                layout.lookup("." + "m3-text-input-supporting-text")
         );
-        Label counterLabel = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
-        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        Label counterLabel = assertInstanceOf(Label.class, layout.lookup("." + "m3-text-input-counter"));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + "m3-text-input-outline"));
         TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
 
         Bounds containerBounds = inputContainer.localToScene(inputContainer.getBoundsInLocal());
@@ -41296,14 +41331,14 @@ final class M3ControlContractMatrixTest {
 
     /// Returns the segmented button selected container region.
     private static javafx.scene.layout.Region segmentedButtonSelectionContainer(M3SegmentedButton button) {
-        javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
+        javafx.scene.Node container = button.lookup("." + "m3-segmented-button-selection-container");
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
     }
 
     /// Returns the segmented button built-in selected-state indicator region.
     private static javafx.scene.layout.Region segmentedButtonSelectionIndicator(M3SegmentedButton button) {
-        javafx.scene.Node indicator = button.lookup("." + M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS);
+        javafx.scene.Node indicator = button.lookup("." + "m3-segmented-button-selection-indicator");
         assertInstanceOf(javafx.scene.layout.Region.class, indicator);
         return (javafx.scene.layout.Region) indicator;
     }
@@ -41341,7 +41376,7 @@ final class M3ControlContractMatrixTest {
     private static void assertTimePickerDialogActionRow(M3DialogPane pane, NodeOrientation orientation) {
         Node modeButton = assertInstanceOf(
                 Node.class,
-                pane.lookup("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS)
+                pane.lookup("." + "m3-time-picker-mode-button")
         );
         Node cancelButton = Objects.requireNonNull(pane.getCancelAction(), "cancel action");
         Node okButton = Objects.requireNonNull(pane.getDefaultAction(), "default action");
@@ -41463,15 +41498,15 @@ final class M3ControlContractMatrixTest {
         Parent popupRoot = Objects.requireNonNull(presetContent.getParent(), "date range picker field preset popup root");
         Node presetButton = assertInstanceOf(
                 Node.class,
-                popupRoot.lookup("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)
+                popupRoot.lookup("." + "m3-date-range-picker-field-preset-button")
         );
 
         ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         applyOwnerAndPopupLayout(ownerRoot, popupRoot);
         assertPickerPresetUsesOrientation(
                 popupRoot,
-                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
-                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                "m3-date-range-picker-field-preset-content",
+                "m3-date-range-picker-field-preset-list",
                 field.getPicker(),
                 NodeOrientation.LEFT_TO_RIGHT
         );
@@ -41485,8 +41520,8 @@ final class M3ControlContractMatrixTest {
         assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
         assertPickerPresetUsesOrientation(
                 popupRoot,
-                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
-                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                "m3-date-range-picker-field-preset-content",
+                "m3-date-range-picker-field-preset-list",
                 field.getPicker(),
                 NodeOrientation.RIGHT_TO_LEFT
         );
@@ -41496,8 +41531,8 @@ final class M3ControlContractMatrixTest {
         assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
         assertPickerPresetUsesOrientation(
                 popupRoot,
-                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
-                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                "m3-date-range-picker-field-preset-content",
+                "m3-date-range-picker-field-preset-list",
                 field.getPicker(),
                 NodeOrientation.LEFT_TO_RIGHT
         );
@@ -41571,8 +41606,8 @@ final class M3ControlContractMatrixTest {
             region.layout();
         }
 
-        return presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size() == 6
-                && presetContent.lookup("." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS) != null;
+        return presetContent.lookupAll("." + "m3-date-range-picker-field-preset-button").size() == 6
+                && presetContent.lookup("." + "m3-date-range-picker-field-preset-list") != null;
     }
 
     /// Verifies that hidden picker field preset content uses the orientation-aware logical start alignment.
@@ -41952,7 +41987,7 @@ final class M3ControlContractMatrixTest {
         ).getAlignment());
         assertEquals(alignment, assertInstanceOf(
                 HBox.class,
-                searchBar.lookup("." + M3SearchBar.CONTENT_STYLE_CLASS)
+                searchBar.lookup("." + "m3-search-bar-content")
         ).getAlignment());
         M3Button actionButton = splitButtonActionButton(splitButton);
         M3MenuButton menuButton = splitButtonMenuButton(splitButton);
@@ -42095,8 +42130,8 @@ final class M3ControlContractMatrixTest {
                     assertFixedTargetContentVerticallyCentered(image, button, textNode, 1.0, 2.0);
                 }
             } else if (node instanceof ButtonBase button
-                    && (button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
-                    || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS))) {
+                    && (button.getStyleClass().contains("m3-date-picker-day-cell")
+                    || button.getStyleClass().contains("m3-time-picker-cell"))) {
                 @Nullable Node textNode = button.lookup(".text");
                 if (textNode != null && hasRenderableBounds(textNode)) {
                     assertFixedTargetContentCentered(image, button, textNode, 1.0, 1.5);
@@ -42219,13 +42254,13 @@ final class M3ControlContractMatrixTest {
             if (layout != null) {
                 assertTextInputInkAvoidsAdornmentSlot(
                         layout,
-                        M3TextInputLayout.LEADING_STYLE_CLASS,
+                        "m3-text-input-leading",
                         inkBounds,
                         "single-line text input leading adornment slot"
                 );
                 assertTextInputInkAvoidsAdornmentSlot(
                         layout,
-                        M3TextInputLayout.TRAILING_STYLE_CLASS,
+                        "m3-text-input-trailing",
                         inkBounds,
                         "single-line text input trailing adornment slot"
                 );
@@ -42408,7 +42443,7 @@ final class M3ControlContractMatrixTest {
 
     /// Returns a date picker day cell for the supplied date.
     private static ButtonBase dateCellForDate(M3DatePicker picker, LocalDate date) {
-        for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+        for (Node node : picker.lookupAll("." + "m3-date-picker-day-cell")) {
             if (node instanceof ButtonBase button && date.equals(button.getUserData())) {
                 return button;
             }
@@ -42418,7 +42453,7 @@ final class M3ControlContractMatrixTest {
 
     /// Returns a time picker cell for the supplied time.
     private static ButtonBase timeCellForTime(M3TimePicker picker, LocalTime time) {
-        for (Node node : picker.lookupAll("." + M3TimePicker.CELL_STYLE_CLASS)) {
+        for (Node node : picker.lookupAll("." + "m3-time-picker-cell")) {
             if (node instanceof ButtonBase button && time.equals(button.getUserData())) {
                 return button;
             }
@@ -42780,7 +42815,12 @@ final class M3ControlContractMatrixTest {
             Color background
     ) {
         Bounds bounds = region.localToScene(region.getLayoutBounds());
-        Color sample = snapshotScenePixel(image, bounds.getMaxX() - 2.0, bounds.getMinY() + 2.0);
+        Insets insets = firstBackgroundInsets(region);
+        Color sample = snapshotScenePixel(
+                image,
+                bounds.getMaxX() - insets.getRight() - 2.0,
+                bounds.getMinY() + insets.getTop() + 2.0
+        );
         double distance = colorDistance(sample, background);
         if (excludesInset) {
             assertTrue(distance < 0.05, () -> "expected rounded-away corner sample: distance=" + distance);
@@ -42797,13 +42837,25 @@ final class M3ControlContractMatrixTest {
             Color background
     ) {
         Bounds bounds = region.localToScene(region.getLayoutBounds());
-        Color sample = snapshotScenePixel(image, bounds.getMinX() + 2.0, bounds.getMinY() + 2.0);
+        Insets insets = firstBackgroundInsets(region);
+        Color sample = snapshotScenePixel(
+                image,
+                bounds.getMinX() + insets.getLeft() + 2.0,
+                bounds.getMinY() + insets.getTop() + 2.0
+        );
         double distance = colorDistance(sample, background);
         if (excludesInset) {
             assertTrue(distance < 0.05, () -> "expected rounded-away corner sample: distance=" + distance);
         } else {
             assertTrue(distance > 0.05, () -> "expected filled corner sample: distance=" + distance);
         }
+    }
+
+    /// Returns the insets of the surface fill used for rendered corner sampling.
+    private static Insets firstBackgroundInsets(Region region) {
+        var background = Objects.requireNonNull(region.getBackground(), "region background");
+        assertFalse(background.getFills().isEmpty(), "region background has no fills");
+        return background.getFills().get(0).getInsets();
     }
 
     /// Returns a rendered pixel from a scene coordinate in a root snapshot.
@@ -43259,7 +43311,7 @@ final class M3ControlContractMatrixTest {
         );
         assertEquals(expectedGlyph, icon.getGlyph(), description);
         assertFalse(icon.getPath().getContent().isBlank(), description);
-        assertTrue(icon.getStyleClass().contains(M3InternalIcon.STYLE_CLASS), description);
+        assertTrue(icon.getStyleClass().contains("m3-internal-icon"), description);
         assertTrue(icon.getStyleClass().contains(internalIconColorRoleStyleClass(icon.getColorRole())), description);
         assertTrue(icon.getPath().getStyleClass().contains(M3InternalIcon.PATH_STYLE_CLASS), description);
         assertTrue(icon.getPath().getStyle().isBlank(), description);
@@ -43312,7 +43364,7 @@ final class M3ControlContractMatrixTest {
     /// Verifies that a picker exposes both logical navigation chevrons.
     private static void assertNavigationGlyphs(Control picker) {
         Set<M3InternalIcon.Glyph> glyphs = new HashSet<>();
-        for (Node node : picker.lookupAll("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS)) {
+        for (Node node : picker.lookupAll("." + "m3-date-picker-navigation-button")) {
             M3IconButton button = assertInstanceOf(M3IconButton.class, node);
             M3InternalIcon icon = assertInstanceOf(M3InternalIcon.class, button.getGraphic());
             glyphs.add(icon.getGlyph());
@@ -43493,8 +43545,8 @@ final class M3ControlContractMatrixTest {
         return stage != null
                 && stage.isShowing()
                 && stage.getScene() != null
-                && tooltipPopupReady(plainTooltip, M3Tooltip.STYLE_CLASS)
-                && tooltipPopupReady(richTooltip, M3RichTooltip.CONTAINER_STYLE_CLASS);
+                && tooltipPopupReady(plainTooltip, "m3-tooltip")
+                && tooltipPopupReady(richTooltip, "m3-rich-tooltip-container");
     }
 
     /// Returns whether a tooltip popup has visible styled content.
@@ -43852,7 +43904,7 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that a banner icon and its rendered message share one vertical center.
     private static void assertBannerIconCenteredWithText(M3Banner banner, Node icon) {
-        Label text = assertInstanceOf(Label.class, banner.lookup("." + M3Banner.TEXT_STYLE_CLASS));
+        Label text = assertInstanceOf(Label.class, banner.lookup("." + "m3-banner-text"));
         Bounds iconBounds = icon.localToScene(icon.getBoundsInLocal());
         Bounds textBounds = text.localToScene(text.getBoundsInLocal());
         assertEquals(textBounds.getCenterY(), iconBounds.getCenterY(), 0.5,
@@ -43942,8 +43994,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
         assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
         assertEquals(expectedShape, button.getContainerShape(), 0.0001);
-        assertEquals(expectedWidth, button.getPrefWidth(), 0.0001);
-        assertEquals(expectedHeight, button.getPrefHeight(), 0.0001);
+        assertEquals(Math.max(48.0, expectedWidth), button.getPrefWidth(), 0.0001);
+        assertEquals(Math.max(48.0, expectedHeight), button.getPrefHeight(), 0.0001);
     }
 
     /// Creates a fixed-size SVG icon viewport for visual snapshot fixtures.
@@ -44061,8 +44113,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
         assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
         assertEquals(expectedShape, button.getContainerShape(), 0.0001);
-        assertEquals(expectedWidth, button.getPrefWidth(), 0.0001);
-        assertEquals(expectedHeight, button.getPrefHeight(), 0.0001);
+        assertEquals(Math.max(48.0, expectedWidth), button.getPrefWidth(), 0.0001);
+        assertEquals(Math.max(48.0, expectedHeight), button.getPrefHeight(), 0.0001);
     }
 
     /// Creates a filter chip with the requested selected state.

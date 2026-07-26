@@ -35,8 +35,8 @@ import java.util.Objects;
 ///
 /// The group owns one header row and exposes a live list of child [M3ListItem] destinations. Activating the header
 /// toggles [#expandedProperty()]; collapsed children are removed from layout, focus traversal, and accessibility
-/// indexing. The header is managed by the group and is available through [#getHeaderItem()] for presentation
-/// customization, but it must not be reparented.
+/// indexing. The header is available through [#getHeaderItem()] for presentation customization; changes to its title
+/// and leading content are reflected by the group.
 ///
 /// A new group has an empty title, no child destinations, and is collapsed. Collapsing a group while one of its
 /// children owns focus transfers focus to the header. The child model remains unchanged while collapsed.
@@ -50,14 +50,14 @@ import java.util.Objects;
 /// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3NavigationDrawerGroup extends Control {
-    /// The base style class for M3FX navigation drawer groups.
-    public static final String STYLE_CLASS = "m3-navigation-drawer-group";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-navigation-drawer-group";
 
     /// The style class applied to the group header list item.
-    public static final String HEADER_STYLE_CLASS = "m3-navigation-drawer-group-header";
+    private static final String HEADER_STYLE_CLASS = "m3-navigation-drawer-group-header";
 
     /// The style class applied to child destination list items.
-    public static final String CHILD_STYLE_CLASS = "m3-navigation-drawer-group-child";
+    private static final String CHILD_STYLE_CLASS = "m3-navigation-drawer-group-child";
 
     /// The expanded pseudo-class used by navigation drawer groups.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
@@ -66,7 +66,8 @@ public final class M3NavigationDrawerGroup extends Control {
     ///
     /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Child nodes
     /// are owned by this group while displayed and may occur only once.
-    private final ObservableList<M3ListItem> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3ListItem> items =
+            M3ObservableLists.identityDistinctElementList("item");
 
     /// The header list item that toggles the group.
     private final M3ListItem headerItem = new M3ListItem();
@@ -188,21 +189,20 @@ public final class M3NavigationDrawerGroup extends Control {
     /// Returns the live mutable child destination list.
     ///
     /// Changes are observed immediately and insertion order determines layout and traversal while the group is
-    /// expanded. The list rejects `null`. It does not perform an explicit duplicate check, but each item is a
-    /// JavaFX node and must occur only once and must not simultaneously belong to another parent.
+    /// expanded. The list rejects `null` elements and repeated occurrences of the same item instance. Bulk
+    /// mutations are validated before the list changes, and each item must satisfy the JavaFX single-parent rule.
     ///
     /// @return the live, mutable child destination list
     public ObservableList<M3ListItem> getItems() {
         return items;
     }
 
-
-    /// Returns the header list item owned by this group.
+    /// Returns the header list item for this group.
     ///
-    /// The returned item remains owned by this group. Applications may customize its supported presentation
-    /// properties but must not add it to another parent or replace its disclosure behavior.
+    /// The returned item represents this group's title and disclosure action. Its supported presentation properties may
+    /// be customized. Activating the item continues to toggle [#expandedProperty()].
     ///
-    /// @return the header list item owned by this group
+    /// @return the header list item for this group
     public M3ListItem getHeaderItem() {
         return headerItem;
     }
@@ -278,7 +278,7 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Adds base style classes and connects the header row with the group state.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(headerItem, HEADER_STYLE_CLASS);
         headerItem.headlineTextProperty().bind(title);
         disclosureIcon.setMouseTransparent(true);

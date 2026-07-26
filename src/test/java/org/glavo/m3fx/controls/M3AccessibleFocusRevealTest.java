@@ -1405,7 +1405,7 @@ final class M3AccessibleFocusRevealTest {
     private static M3IconButton textInputClearButton(M3TextInputLayout layout) {
         layout.applyCss();
         layout.layout();
-        Node child = layout.lookup("." + M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS);
+        Node child = layout.lookup("." + "m3-text-input-clear-button");
         assertTrue(child instanceof M3IconButton, () -> "clear button=" + child);
         return (M3IconButton) child;
     }
@@ -1419,7 +1419,7 @@ final class M3AccessibleFocusRevealTest {
     private static M3SearchBar searchViewSearchBar(M3SearchView searchView) {
         searchView.applyCss();
         searchView.layout();
-        Node node = searchView.lookup("." + M3SearchBar.STYLE_CLASS);
+        Node node = searchView.lookup("." + "m3-search-bar");
         assertTrue(node instanceof M3SearchBar, () -> "search bar=" + node);
         return (M3SearchBar) node;
     }

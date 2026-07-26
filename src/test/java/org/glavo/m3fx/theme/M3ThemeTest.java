@@ -1533,24 +1533,24 @@ final class M3ThemeTest {
         assertEquals(16.0, middleMenuItem.getContainerShape(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
-        assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.0, ((HBox) searchBar.lookup("." + "m3-search-bar-trailing")).getSpacing(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getRight(), 0.0001);
         M3ListItem themedSearchResult = (M3ListItem) searchView.getResults().get(0);
         assertEquals(64.0, themedSearchResult.getOneLineHeight(), 0.0001);
         assertEquals(0.0, themedSearchResult.getContainerShape(), 0.0001);
         assertEquals(20.0, themedSearchResult.getHorizontalPadding(), 0.0001);
-        assertEquals(0.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(52.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(0.0, ((Region) datePicker.lookup("." + "m3-date-picker-container")).getPadding().getTop(), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + "m3-date-picker-navigation-button").prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + "m3-date-picker-day-cell").prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + "m3-date-picker-day-cell").prefHeight(-1.0), 0.0001);
+        assertEquals(24.0, ((Region) timePicker.lookup("." + "m3-time-picker-container")).getPadding().getTop(), 0.0001);
+        assertEquals(96.0, timePicker.lookup("." + "m3-time-picker-hour-display").prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + "m3-time-picker-minute-display").prefHeight(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + "m3-time-picker-dial").prefWidth(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + "m3-time-picker-dial").prefHeight(-1.0), 0.0001);
+        assertEquals(52.0, timePicker.lookup("." + "m3-time-picker-period-row").prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + "m3-time-picker-period-row").prefHeight(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(16.0, formPane.getRowSpacing(), 0.0001);
@@ -1562,18 +1562,18 @@ final class M3ThemeTest {
         assertEquals(
                 4.0,
                 ((javafx.scene.layout.VBox) validationSummary.lookup(
-                        "." + M3ValidationSummary.ITEMS_STYLE_CLASS
+                        "." + "m3-validation-summary-items"
                 )).getSpacing(),
                 0.0001
         );
         assertEquals(
                 8.0,
-                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getTop(),
+                ((Region) validationSummary.lookup("." + "m3-validation-summary-item")).getPadding().getTop(),
                 0.0001
         );
         assertEquals(
                 10.0,
-                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) validationSummary.lookup("." + "m3-validation-summary-item")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
@@ -1584,26 +1584,26 @@ final class M3ThemeTest {
         assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
         assertEquals(
                 24.0,
-                ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) sideSheet.lookup("." + "m3-sheet-header")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) sideSheet.lookup("." + "m3-sheet-content")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) bottomSheet.lookup("." + "m3-sheet-header")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) bottomSheet.lookup("." + "m3-sheet-content")).getPadding().getLeft(),
                 0.0001
         );
-        assertEquals(32.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
-        assertEquals(4.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
+        assertEquals(32.0, ((Region) bottomSheet.lookup("." + "m3-bottom-sheet-drag-handle")).prefWidth(-1.0), 0.0001);
+        assertEquals(4.0, ((Region) bottomSheet.lookup("." + "m3-bottom-sheet-drag-handle")).prefHeight(-1.0), 0.0001);
         assertEquals(16.0, card.getContainerShape(), 0.0001);
         assertEquals(16.0, card.getContentPadding(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
@@ -1640,9 +1640,9 @@ final class M3ThemeTest {
         assertEquals(72.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(16.0, surface.getContainerShape(), 0.0001);
         assertEquals(16.0, surface.getContentPadding(), 0.0001);
-        assertEquals(8.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(16.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getLeft(), 0.0001);
-        assertEquals(8.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, ((Region) carousel.lookup("." + "m3-carousel-track")).getPadding().getTop(), 0.0001);
+        assertEquals(16.0, ((Region) carousel.lookup("." + "m3-carousel-track")).getPadding().getLeft(), 0.0001);
+        assertEquals(8.0, ((javafx.scene.layout.HBox) carousel.lookup("." + "m3-carousel-track")).getSpacing(), 0.0001);
         assertEquals(1.0, carouselFirst.getOpacity(), 0.0001);
         assertEquals(1.0, carouselSecond.getOpacity(), 0.0001);
         assertNull(carouselSecond.getEffect());
@@ -1706,20 +1706,20 @@ final class M3ThemeTest {
         assertEquals(16.0, ((Region) slider.lookup(".track")).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
-        assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.0, ((HBox) searchBar.lookup("." + "m3-search-bar-trailing")).getSpacing(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(0.0, ((M3ListItem) searchView.getResults().get(0)).getContainerShape(), 0.0001);
-        assertEquals(0.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(52.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(0.0, ((Region) datePicker.lookup("." + "m3-date-picker-container")).getPadding().getTop(), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + "m3-date-picker-navigation-button").prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + "m3-date-picker-day-cell").prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + "m3-date-picker-day-cell").prefHeight(-1.0), 0.0001);
+        assertEquals(24.0, ((Region) timePicker.lookup("." + "m3-time-picker-container")).getPadding().getTop(), 0.0001);
+        assertEquals(96.0, timePicker.lookup("." + "m3-time-picker-hour-display").prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + "m3-time-picker-minute-display").prefHeight(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + "m3-time-picker-dial").prefWidth(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + "m3-time-picker-dial").prefHeight(-1.0), 0.0001);
+        assertEquals(52.0, timePicker.lookup("." + "m3-time-picker-period-row").prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + "m3-time-picker-period-row").prefHeight(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(16.0, formPane.getRowSpacing(), 0.0001);
@@ -1731,18 +1731,18 @@ final class M3ThemeTest {
         assertEquals(
                 4.0,
                 ((javafx.scene.layout.VBox) validationSummary.lookup(
-                        "." + M3ValidationSummary.ITEMS_STYLE_CLASS
+                        "." + "m3-validation-summary-items"
                 )).getSpacing(),
                 0.0001
         );
         assertEquals(
                 8.0,
-                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getTop(),
+                ((Region) validationSummary.lookup("." + "m3-validation-summary-item")).getPadding().getTop(),
                 0.0001
         );
         assertEquals(
                 10.0,
-                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) validationSummary.lookup("." + "m3-validation-summary-item")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
@@ -1753,26 +1753,26 @@ final class M3ThemeTest {
         assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
         assertEquals(
                 24.0,
-                ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) sideSheet.lookup("." + "m3-sheet-header")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) sideSheet.lookup("." + "m3-sheet-content")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) bottomSheet.lookup("." + "m3-sheet-header")).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
                 24.0,
-                ((Region) bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                ((Region) bottomSheet.lookup("." + "m3-sheet-content")).getPadding().getLeft(),
                 0.0001
         );
-        assertEquals(32.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
-        assertEquals(4.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
+        assertEquals(32.0, ((Region) bottomSheet.lookup("." + "m3-bottom-sheet-drag-handle")).prefWidth(-1.0), 0.0001);
+        assertEquals(4.0, ((Region) bottomSheet.lookup("." + "m3-bottom-sheet-drag-handle")).prefHeight(-1.0), 0.0001);
         assertEquals(12.0, card.getContainerShape(), 0.0001);
         assertEquals(16.0, card.getContentPadding(), 0.0001);
         assertEquals(28.0, dialogPane.getContainerShape(), 0.0001);
@@ -1806,9 +1806,9 @@ final class M3ThemeTest {
         assertEquals(64.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(12.0, surface.getContainerShape(), 0.0001);
         assertEquals(16.0, surface.getContentPadding(), 0.0001);
-        assertEquals(8.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(16.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getLeft(), 0.0001);
-        assertEquals(8.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, ((Region) carousel.lookup("." + "m3-carousel-track")).getPadding().getTop(), 0.0001);
+        assertEquals(16.0, ((Region) carousel.lookup("." + "m3-carousel-track")).getPadding().getLeft(), 0.0001);
+        assertEquals(8.0, ((javafx.scene.layout.HBox) carousel.lookup("." + "m3-carousel-track")).getSpacing(), 0.0001);
         assertEquals(1.0, carouselFirst.getOpacity(), 0.0001);
         assertNull(carouselSecond.getEffect());
         assertEquals(32.0, icon.getIconSize(), 0.0001);
@@ -1910,14 +1910,14 @@ final class M3ThemeTest {
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
-        assertEquals(16.0, ((HBox) banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
-        assertEquals(8.0, ((HBox) banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, ((HBox) banner.lookup("." + "m3-banner-container")).getSpacing(), 0.0001);
+        assertEquals(8.0, ((HBox) banner.lookup("." + "m3-banner-actions")).getSpacing(), 0.0001);
         assertEquals(12.0, richTooltipContainer.getPadding().getTop(), 0.0001);
         assertEquals(16.0, richTooltipContainer.getPadding().getLeft(), 0.0001);
         assertEquals(8.0, richTooltipContainer.getPadding().getBottom(), 0.0001);
         assertEquals(8.0, richTooltipContainer.getSpacing(), 0.0001);
         assertEquals(320.0, richTooltipContainer.getPrefWidth(), 0.0001);
-        assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + "m3-rich-tooltip-actions")).getSpacing(), 0.0001);
         assertEquals(32.0, tooltipAction.getContainerHeight(), 0.0001);
         assertEquals(12.0, tooltipAction.getHorizontalPadding(), 0.0001);
         assertEquals(64.0, navigationBar.getPrefHeight(), 0.0001);
@@ -1970,14 +1970,14 @@ final class M3ThemeTest {
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
-        assertEquals(16.0, ((HBox) banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
-        assertEquals(8.0, ((HBox) banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, ((HBox) banner.lookup("." + "m3-banner-container")).getSpacing(), 0.0001);
+        assertEquals(8.0, ((HBox) banner.lookup("." + "m3-banner-actions")).getSpacing(), 0.0001);
         assertEquals(12.0, richTooltipContainer.getPadding().getTop(), 0.0001);
         assertEquals(16.0, richTooltipContainer.getPadding().getLeft(), 0.0001);
         assertEquals(8.0, richTooltipContainer.getPadding().getBottom(), 0.0001);
         assertEquals(8.0, richTooltipContainer.getSpacing(), 0.0001);
         assertEquals(320.0, richTooltipContainer.getPrefWidth(), 0.0001);
-        assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + "m3-rich-tooltip-actions")).getSpacing(), 0.0001);
         assertEquals(32.0, tooltipAction.getContainerHeight(), 0.0001);
         assertEquals(12.0, tooltipAction.getHorizontalPadding(), 0.0001);
         assertEquals(80.0, navigationBar.getPrefHeight(), 0.0001);

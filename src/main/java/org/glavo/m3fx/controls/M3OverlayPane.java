@@ -40,10 +40,9 @@ import java.util.Objects;
 
 /// A stable scene root for Material content and in-scene presentation layers.
 ///
-/// `M3OverlayPane` owns one optional content node, an internal snackbar presenter, and ordered regular and modal
-/// overlay layers. The visual order is content, regular overlays, snackbars, and modal overlays. The content node
-/// fills the pane and is the only child considered when minimum and preferred sizes are computed; all presentation
-/// layers fill the same client area without affecting those measurements.
+/// `M3OverlayPane` owns one optional content node and presents regular overlays, snackbars, and modal overlays in
+/// that visual order. The content node fills the pane and is the only child considered when minimum and preferred
+/// sizes are computed; presentation layers fill the same client area without affecting those measurements.
 ///
 /// Applications normally install one `M3OverlayPane` as the stable [javafx.scene.Scene] root and assign their
 /// ordinary application scaffold with [#setContent(Node)]. In-scene Material dialogs are presented directly with
@@ -61,8 +60,8 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) for modal surfaces, scrims, and transient feedback.
 @NotNullByDefault
 public final class M3OverlayPane extends Pane {
-    /// The base style class for Material overlay panes.
-    public static final String STYLE_CLASS = "m3-overlay-pane";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-overlay-pane";
 
     /// The built-in snackbar presentation layer.
     private final M3SnackbarPresenter snackbarPresenter;
@@ -97,7 +96,7 @@ public final class M3OverlayPane extends Pane {
                 snackbarDisplayDurationValue,
                 snackbarSwipeToDismissEnabled
         );
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setPickOnBounds(false);
         snackbarPresenter.setPickOnBounds(false);
@@ -178,7 +177,7 @@ public final class M3OverlayPane extends Pane {
 
     /// Returns the observable, read-only property containing the current snackbar.
     ///
-    /// The property is `null` while the presenter is idle and cannot be written directly. It changes when a
+    /// The property is `null` while no snackbar is current and cannot be written directly. It changes when a
     /// snackbar is shown, dismissed, replaced, or promoted from the queue.
     ///
     /// @return the current-snackbar property
@@ -257,8 +256,8 @@ public final class M3OverlayPane extends Pane {
 
     /// Whether a horizontal pointer swipe may dismiss the current snackbar.
     ///
-    /// When enabled, dragging the non-interactive portion of a snackbar horizontally beyond the presenter's
-    /// dismissal threshold closes that message and advances the queue. A shorter horizontal drag returns the
+    /// When enabled, dragging the non-interactive portion of a snackbar horizontally beyond the dismissal
+    /// threshold closes that message and advances the queue. A shorter horizontal drag returns the
     /// snackbar to its resting position. Pointer gestures that begin on the text action or close button remain
     /// reserved for that affordance.
     ///
@@ -302,7 +301,8 @@ public final class M3OverlayPane extends Pane {
     ///
     /// @param overlay the overlay node to show
     /// @return the unique handle controlling this presentation
-    /// @throws IllegalArgumentException if the node already has a parent or is already owned by this pane
+    /// @throws IllegalArgumentException if the node already has a parent; is this pane, its content, one of its
+    ///                                  ancestors, or an existing presentation layer; or is already shown
     /// @throws NullPointerException     if `overlay` is `null`
     public OverlayHandle showOverlay(Node overlay) {
         return showOverlay(overlay, false);
@@ -318,7 +318,8 @@ public final class M3OverlayPane extends Pane {
     ///
     /// @param overlay the modal overlay node to show
     /// @return the unique handle controlling this presentation
-    /// @throws IllegalArgumentException if the node already has a parent or is already owned by this pane
+    /// @throws IllegalArgumentException if the node already has a parent; is this pane, its content, one of its
+    ///                                  ancestors, or an existing presentation layer; or is already shown
     /// @throws NullPointerException     if `overlay` is `null`
     public OverlayHandle showModalOverlay(Node overlay) {
         return showOverlay(overlay, true);

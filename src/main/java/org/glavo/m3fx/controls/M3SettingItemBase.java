@@ -27,7 +27,7 @@ abstract sealed class M3SettingItemBase extends M3ListItemBase
                 M3RadioButtonSettingItem,
                 M3SelectSettingItem,
                 M3ExpandableSettingItem {
-    /// The common style class assigned to all setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-setting-item";
 
     /// Creates an empty setting row with the specified accessibility role.

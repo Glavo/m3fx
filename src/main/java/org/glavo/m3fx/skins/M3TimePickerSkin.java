@@ -42,6 +42,7 @@ import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +55,70 @@ import java.util.List;
 /// The dial keeps a fixed 24-label node pool and one reusable selector transition. Pointer animation pulses update
 /// primitive geometry only, while structural nodes are retained across values, clock formats, and input modes.
 @NotNullByDefault
-public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
+public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3PickerAccessibilityPresentation {
+    /// The internal layout container style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-time-picker-container";
+
+    /// The selected time display row style class.
+    private static final String DISPLAY_STYLE_CLASS = "m3-time-picker-display";
+
+    /// The hour display style class.
+    private static final String HOUR_DISPLAY_STYLE_CLASS = "m3-time-picker-hour-display";
+
+    /// The display separator style class.
+    private static final String DISPLAY_SEPARATOR_STYLE_CLASS = "m3-time-picker-display-separator";
+
+    /// The minute display style class.
+    private static final String MINUTE_DISPLAY_STYLE_CLASS = "m3-time-picker-minute-display";
+
+    /// The main content style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-time-picker-content";
+
+    /// The clock dial style class.
+    private static final String DIAL_STYLE_CLASS = "m3-time-picker-dial";
+
+    /// The dial background style class.
+    private static final String DIAL_BACKGROUND_STYLE_CLASS = "m3-time-picker-dial-background";
+
+    /// The dial track style class.
+    private static final String DIAL_TRACK_STYLE_CLASS = "m3-time-picker-dial-track";
+
+    /// The dial handle style class.
+    private static final String DIAL_HANDLE_STYLE_CLASS = "m3-time-picker-dial-handle";
+
+    /// The dial center style class.
+    private static final String DIAL_CENTER_STYLE_CLASS = "m3-time-picker-dial-center";
+
+    /// The mode button style class.
+    private static final String MODE_BUTTON_STYLE_CLASS = "m3-time-picker-mode-button";
+
+    /// The input content style class.
+    private static final String INPUT_CONTENT_STYLE_CLASS = "m3-time-picker-input-content";
+
+    /// The input field style class.
+    private static final String INPUT_FIELD_STYLE_CLASS = "m3-time-picker-input-field";
+
+    /// The input group style class.
+    private static final String INPUT_GROUP_STYLE_CLASS = "m3-time-picker-input-group";
+
+    /// The input label style class.
+    private static final String INPUT_LABEL_STYLE_CLASS = "m3-time-picker-input-label";
+
+    /// The selectable time cell style class.
+    private static final String CELL_STYLE_CLASS = "m3-time-picker-cell";
+
+    /// The dial label style class.
+    private static final String DIAL_LABEL_STYLE_CLASS = "m3-time-picker-dial-label";
+
+    /// The period row style class.
+    private static final String PERIOD_ROW_STYLE_CLASS = "m3-time-picker-period-row";
+
+    /// The period cell style class.
+    private static final String PERIOD_CELL_STYLE_CLASS = "m3-time-picker-period-cell";
+
+    /// The selected cell style class.
+    private static final String SELECTED_CELL_STYLE_CLASS = "m3-time-picker-selected-cell";
+
     /// One complete rotation in radians.
     private static final double FULL_ROTATION = Math.PI * 2.0;
 
@@ -222,8 +286,8 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
 
-        hourSelector = createTimeCell("", M3TimePicker.HOUR_DISPLAY_STYLE_CLASS);
-        minuteSelector = createTimeCell("", M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS);
+        hourSelector = createTimeCell("", HOUR_DISPLAY_STYLE_CLASS);
+        minuteSelector = createTimeCell("", MINUTE_DISPLAY_STYLE_CLASS);
         periodSelector = new PeriodSelectorPane();
         dial = new DialPane();
         hourInputGroup = createInputGroup(hourInput, "Hour");
@@ -250,7 +314,55 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         initializeNodes();
         installListeners(control);
         getChildren().setAll(container);
-        refreshAll(false);
+        refreshAll();
+    }
+
+    /// Returns the number of period and dial nodes in the current picker presentation.
+    @Override
+    public int accessibleItemCount() {
+        int count = 0;
+        if (periodSelector.isVisible()) {
+            count += isPresentedTimeCell(periodSelector.amButton) ? 1 : 0;
+            count += isPresentedTimeCell(periodSelector.pmButton) ? 1 : 0;
+        }
+        if (dial.isVisible()) {
+            for (int index = 0; index < dial.activeLabelCount; index++) {
+                count += isPresentedTimeCell(dial.labels[index]) ? 1 : 0;
+            }
+        }
+        return count;
+    }
+
+    /// Returns a period or dial node without traversing or copying the scene graph.
+    @Override
+    public @Nullable Node accessibleItemAt(int index) {
+        if (index < 0) {
+            return null;
+        }
+        if (periodSelector.isVisible()) {
+            if (isPresentedTimeCell(periodSelector.amButton) && index-- == 0) {
+                return periodSelector.amButton;
+            }
+            if (isPresentedTimeCell(periodSelector.pmButton) && index-- == 0) {
+                return periodSelector.pmButton;
+            }
+        }
+        if (dial.isVisible()) {
+            for (int labelIndex = 0; labelIndex < dial.activeLabelCount; labelIndex++) {
+                DialLabelButton label = dial.labels[labelIndex];
+                if (isPresentedTimeCell(label) && index-- == 0) {
+                    return label;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a reusable time cell belongs to the current indexed presentation.
+    private static boolean isPresentedTimeCell(Node node) {
+        return M3Accessible.isEffectivelyReachable(node)
+                && !node.isMouseTransparent()
+                && node.getUserData() instanceof LocalTime;
     }
 
     /// Removes listeners, event filters, and running animation state before disposal.
@@ -345,23 +457,23 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     private void initializeNodes() {
         M3TimePicker control = getSkinnable();
 
-        container.getStyleClass().add(M3TimePicker.CONTAINER_STYLE_CLASS);
-        display.getStyleClass().add(M3TimePicker.DISPLAY_STYLE_CLASS);
+        container.getStyleClass().add(CONTAINER_STYLE_CLASS);
+        display.getStyleClass().add(DISPLAY_STYLE_CLASS);
         display.setAlignment(Pos.CENTER_LEFT);
         display.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        displaySeparator.getStyleClass().add(M3TimePicker.DISPLAY_SEPARATOR_STYLE_CLASS);
+        displaySeparator.getStyleClass().add(DISPLAY_SEPARATOR_STYLE_CLASS);
         displaySeparator.setAlignment(Pos.CENTER);
 
         hourSelector.setAccessibleText("Hour");
         minuteSelector.setAccessibleText("Minute");
-        hourSelector.setOnAction(event -> setActiveUnit(SelectionUnit.HOUR, true));
-        minuteSelector.setOnAction(event -> setActiveUnit(SelectionUnit.MINUTE, true));
+        hourSelector.setOnAction(event -> setActiveUnit(SelectionUnit.HOUR));
+        minuteSelector.setOnAction(event -> setActiveUnit(SelectionUnit.MINUTE));
         display.getChildren().setAll(hourSelector, displaySeparator, minuteSelector);
 
-        inputContent.getStyleClass().add(M3TimePicker.INPUT_CONTENT_STYLE_CLASS);
+        inputContent.getStyleClass().add(INPUT_CONTENT_STYLE_CLASS);
         inputContent.setAlignment(Pos.TOP_LEFT);
         inputContent.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        inputSeparator.getStyleClass().add(M3TimePicker.DISPLAY_SEPARATOR_STYLE_CLASS);
+        inputSeparator.getStyleClass().add(DISPLAY_SEPARATOR_STYLE_CLASS);
         inputSeparator.setAlignment(Pos.TOP_CENTER);
         inputContent.getChildren().setAll(hourInputGroup, inputSeparator, minuteInputGroup);
 
@@ -374,7 +486,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
         M3IconButton standaloneModeButton = modeButton;
         if (standaloneModeButton != null) {
-            standaloneModeButton.getStyleClass().add(M3TimePicker.MODE_BUTTON_STYLE_CLASS);
+            standaloneModeButton.getStyleClass().add(MODE_BUTTON_STYLE_CLASS);
             standaloneModeButton.setAccessibleText("Use keyboard input");
             standaloneModeButton.setOnAction(event -> control.setInputMode(!control.isInputMode()));
         }
@@ -425,7 +537,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
     /// Configures one numeric keyboard input without regular-expression allocation on each edit.
     private static void configureInput(TextField input, String accessibleText) {
-        input.getStyleClass().add(M3TimePicker.INPUT_FIELD_STYLE_CLASS);
+        input.getStyleClass().add(INPUT_FIELD_STYLE_CLASS);
         input.setAccessibleText(accessibleText);
         input.setAlignment(Pos.CENTER);
         input.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -436,9 +548,9 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// Creates one keyboard input group with the specification's supporting label below the field.
     private static VBox createInputGroup(TextField input, String labelText) {
         Label label = new Label(labelText);
-        label.getStyleClass().add(M3TimePicker.INPUT_LABEL_STYLE_CLASS);
+        label.getStyleClass().add(INPUT_LABEL_STYLE_CLASS);
         VBox group = new VBox(input, label);
-        group.getStyleClass().add(M3TimePicker.INPUT_GROUP_STYLE_CLASS);
+        group.getStyleClass().add(INPUT_GROUP_STYLE_CLASS);
         group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         return group;
     }
@@ -459,11 +571,11 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     }
 
     /// Refreshes every structural, selectable, and value-dependent node.
-    private void refreshAll(boolean animateSelector) {
+    private void refreshAll() {
         refreshAvailability();
         refreshClockFormatPseudoClasses();
         refreshMode();
-        refreshValue(animateSelector);
+        refreshValue(false);
         initialized = true;
     }
 
@@ -558,7 +670,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     }
 
     /// Changes the active selector and animates the handle to the corresponding value.
-    private void setActiveUnit(SelectionUnit unit, boolean animateSelector) {
+    private void setActiveUnit(SelectionUnit unit) {
         if (activeUnit == unit) {
             updateActiveUnitPseudoClasses();
             return;
@@ -568,7 +680,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
         @Nullable LocalTime selectedTime = getSkinnable().getValue();
         LocalTime baseTime = selectedTime == null ? fallbackTime() : selectedTime;
-        dial.refresh(baseTime, selectedTime, animateSelector && initialized);
+        dial.refresh(baseTime, selectedTime, initialized);
     }
 
     /// Synchronizes selector pseudo-classes across display and input nodes.
@@ -589,16 +701,16 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             return;
         }
         if (focused) {
-            setActiveUnit(unit, true);
+            setActiveUnit(unit);
             inputFor(unit).selectAll();
         } else {
-            commitInputFields(unit);
+            commitInputFields();
         }
     }
 
     /// Commits an input field and advances from hour to minute on Enter.
     private void handleInputAction(SelectionUnit unit) {
-        if (!commitInputFields(unit)) {
+        if (!commitInputFields()) {
             return;
         }
         if (unit == SelectionUnit.HOUR) {
@@ -608,7 +720,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     }
 
     /// Parses both keyboard fields and commits a valid, selectable time.
-    private boolean commitInputFields(SelectionUnit sourceUnit) {
+    private boolean commitInputFields() {
         if (refreshingInputs) {
             return false;
         }
@@ -792,7 +904,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             selectFromDial(x, y);
             dial.dragging = false;
             if (activeUnit == SelectionUnit.HOUR) {
-                setActiveUnit(SelectionUnit.MINUTE, true);
+                setActiveUnit(SelectionUnit.MINUTE);
             }
             event.consume();
         }
@@ -850,7 +962,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         }
         control.setValue(time);
         if (node instanceof DialLabelButton && activeUnit == SelectionUnit.HOUR) {
-            setActiveUnit(SelectionUnit.MINUTE, true);
+            setActiveUnit(SelectionUnit.MINUTE);
         }
     }
 
@@ -991,11 +1103,11 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     private static void setSelectedStyleClass(Node node, boolean selected) {
         List<String> styleClasses = node.getStyleClass();
         if (selected) {
-            if (!styleClasses.contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS)) {
-                styleClasses.add(M3TimePicker.SELECTED_CELL_STYLE_CLASS);
+            if (!styleClasses.contains(SELECTED_CELL_STYLE_CLASS)) {
+                styleClasses.add(SELECTED_CELL_STYLE_CLASS);
             }
         } else {
-            styleClasses.remove(M3TimePicker.SELECTED_CELL_STYLE_CLASS);
+            styleClasses.remove(SELECTED_CELL_STYLE_CLASS);
         }
     }
 
@@ -1091,7 +1203,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
         /// Creates the stable picker layout parent.
         private PickerLayoutPane() {
-            getStyleClass().add(M3TimePicker.CONTENT_STYLE_CLASS);
+            getStyleClass().add(CONTENT_STYLE_CLASS);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             getChildren().setAll(display, periodSelector, dial, inputContent);
             M3IconButton standaloneModeButton = modeButton;
@@ -1372,7 +1484,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
         /// Creates the fixed dial node tree.
         private DialPane() {
-            getStyleClass().add(M3TimePicker.DIAL_STYLE_CLASS);
+            getStyleClass().add(DIAL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.PARENT);
             setAccessibleText("Clock dial");
             setFocusTraversable(true);
@@ -1389,10 +1501,10 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
                 }
             });
 
-            background.getStyleClass().add(M3TimePicker.DIAL_BACKGROUND_STYLE_CLASS);
-            selectorTrack.getStyleClass().add(M3TimePicker.DIAL_TRACK_STYLE_CLASS);
-            selectorHandle.getStyleClass().add(M3TimePicker.DIAL_HANDLE_STYLE_CLASS);
-            selectorCenter.getStyleClass().add(M3TimePicker.DIAL_CENTER_STYLE_CLASS);
+            background.getStyleClass().add(DIAL_BACKGROUND_STYLE_CLASS);
+            selectorTrack.getStyleClass().add(DIAL_TRACK_STYLE_CLASS);
+            selectorHandle.getStyleClass().add(DIAL_HANDLE_STYLE_CLASS);
+            selectorCenter.getStyleClass().add(DIAL_CENTER_STYLE_CLASS);
             background.setMouseTransparent(true);
             selectorTrack.setMouseTransparent(true);
             selectorHandle.setMouseTransparent(true);
@@ -1630,10 +1742,10 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     @NotNullByDefault
     private final class PeriodSelectorPane extends Pane {
         /// The AM selector button.
-        private final TimeCellButton amButton = createTimeCell("AM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        private final TimeCellButton amButton = createTimeCell("AM", PERIOD_CELL_STYLE_CLASS);
 
         /// The PM selector button.
-        private final TimeCellButton pmButton = createTimeCell("PM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        private final TimeCellButton pmButton = createTimeCell("PM", PERIOD_CELL_STYLE_CLASS);
 
         /// Whether the selector uses horizontal landscape geometry.
         private boolean horizontal;
@@ -1643,7 +1755,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
         /// Creates the persistent period selector.
         private PeriodSelectorPane() {
-            getStyleClass().add(M3TimePicker.PERIOD_ROW_STYLE_CLASS);
+            getStyleClass().add(PERIOD_ROW_STYLE_CLASS);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             amButton.getStyleClass().add("m3-time-picker-period-start");
             pmButton.getStyleClass().add("m3-time-picker-period-end");
@@ -1753,7 +1865,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         /// Creates one animated time selector button.
         private TimeCellButton(String text) {
             super(text);
-            getStyleClass().add(M3TimePicker.CELL_STYLE_CLASS);
+            getStyleClass().add(CELL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
             setAlignment(Pos.CENTER);
             setFocusTraversable(true);
@@ -1816,7 +1928,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         /// Creates a lightweight dial label.
         private DialLabelButton() {
             super("");
-            getStyleClass().addAll(M3TimePicker.CELL_STYLE_CLASS, M3TimePicker.DIAL_LABEL_STYLE_CLASS);
+            getStyleClass().addAll(CELL_STYLE_CLASS, DIAL_LABEL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
             setAlignment(Pos.CENTER);
             setFocusTraversable(true);

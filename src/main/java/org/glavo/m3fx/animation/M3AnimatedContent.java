@@ -36,35 +36,31 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-/// Animates replacement of one retained JavaFX content node with another.
+/// Animates replacement of one JavaFX content node with another.
 ///
-/// The [content property][#contentProperty()] identifies the target content. When it changes, this region keeps the
-/// previous and target nodes in private holders until their exit and enter effects have completed. The target is
-/// ordered according to the active [M3ContentTransform] and is the only interactive node during the transition. The
-/// previous node is detached when the transition completes. At most two content nodes are retained, including when
-/// targets change repeatedly before an earlier transition finishes.
+/// The [content property][#contentProperty()] identifies the target content. When it changes, the previous content
+/// may remain visible while its exit effects run and the target content performs its enter effects. Only the target
+/// content receives input during the transition. Replacing the target while a transition is active retargets the
+/// presentation from its current visual state.
 ///
 /// Fade, scale, logical-edge slide, and reveal effects are composed by [M3EnterTransition] and [M3ExitTransition].
-/// They are applied to private holders, leaving each content node's opacity, scale, translation, clip, and transform
-/// list under caller ownership. Slide offsets follow this region's [Region#snapToPixelProperty()] so text and other
-/// pixel-sensitive content settle without a subpixel spring tail. [M3SizeTransform] independently controls animated
-/// preferred size and viewport clipping. A target that is already the outgoing node reverses naturally from its
-/// current visual state rather than being reparented or reset.
+/// The effects do not modify an assigned content node's opacity, scale, translation, clip, or transform list. Slide
+/// offsets follow this region's [Region#snapToPixelProperty()] so text and other pixel-sensitive content settle on
+/// pixel boundaries. [M3SizeTransform] independently controls the animated preferred size and whether drawing is
+/// clipped to the animated bounds.
 ///
-/// This class follows the retained-mode semantics of JavaFX rather than accepting a state-to-content composition
-/// callback. Callers create and retain their nodes, then assign the desired target through [#setContent(Node)]. A
-/// node assigned as content must be unparented, already hosted by this region, or otherwise legal to add to a JavaFX
-/// scene graph. Assigning `null` performs an animated removal.
+/// Callers create and retain content nodes, then assign the desired target through [#setContent(Node)]. A node must
+/// be available for use as a child of this region when assigned. Assigning `null` performs an animated removal.
 ///
 /// Enter, exit, and size channels are interruptible. Physical spring specifications retain channel velocity when a
 /// target or configuration changes. Reduced motion, presentation detachment or window hiding during a run, and
-/// [#snapToCurrentState()] settle synchronously and release outgoing content. Animation-control and property
-/// mutation methods must be invoked on the JavaFX Application Thread once this node is attached to a showing scene.
+/// [#snapToCurrentState()] settle synchronously at the target presentation. Animation-control and property mutation
+/// methods must be invoked on the JavaFX Application Thread once this node is attached to a showing scene.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3AnimatedContent extends Region {
-    /// The default style class assigned to animated-content regions.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-animated-content";
 
     /// The default style class assigned to private content holders.
@@ -148,7 +144,7 @@ public final class M3AnimatedContent extends Region {
 
     /// Returns the target content node.
     ///
-    /// During a transition the previous node may remain attached internally until its exit effect completes.
+    /// During a transition the previous content may remain visible until its exit effect completes.
     ///
     /// @return the target content, or `null` for an empty target
     public @Nullable Node getContent() {
@@ -161,7 +157,7 @@ public final class M3AnimatedContent extends Region {
     /// animates removal of the current content. Reassigning the same node has no effect.
     ///
     /// @param content the target content, or `null` for no content
-    /// @throws IllegalArgumentException if the node cannot legally be added to this region's private scene graph
+    /// @throws IllegalArgumentException if the node cannot be used as a child of this region
     public void setContent(@Nullable Node content) {
         this.content.set(content);
     }
@@ -177,9 +173,9 @@ public final class M3AnimatedContent extends Region {
 
     /// Whether current and incoming content are measured and laid out at this region's assigned width.
     ///
-    /// When `false`, the default, this region measures content at its independent preferred width and positions the
-    /// retained holder at that size. When `true`, a positive assigned width constrains the holder and its content,
-    /// allowing normal resizable children to reflow. This is useful when the animated content is hosted by a
+    /// When `false`, the default, this region measures content at its independent preferred width. When `true`, a
+    /// positive assigned width constrains current and transitioning content, allowing normal resizable children to
+    /// reflow. This is useful when the animated content is hosted by a
     /// width-constraining parent such as [javafx.scene.control.ScrollPane].
     private final BooleanProperty fitToWidth = new SimpleBooleanProperty(this, "fitToWidth", false) {
         /// Re-measures the current target after the holder's width constraint changes.
@@ -193,7 +189,7 @@ public final class M3AnimatedContent extends Region {
 
     /// Returns whether content is fitted to this region's assigned width.
     ///
-    /// @return `true` when the current and incoming holders use the assigned width while it is positive
+    /// @return `true` when current and transitioning content use the assigned width while it is positive
     public boolean isFitToWidth() {
         return fitToWidth.get();
     }
@@ -219,9 +215,9 @@ public final class M3AnimatedContent extends Region {
 
     /// Whether current and incoming content are measured and laid out at this region's assigned height.
     ///
-    /// When `false`, the default, this region measures content at its independent preferred height and positions the
-    /// retained holder at that size. When `true`, a positive assigned height constrains the holder and its content,
-    /// allowing full-bleed page roots such as sidebars in a [javafx.scene.layout.BorderPane] to stretch with the
+    /// When `false`, the default, this region measures content at its independent preferred height. When `true`, a
+    /// positive assigned height constrains current and transitioning content, allowing full-bleed page roots such as
+    /// sidebars in a [javafx.scene.layout.BorderPane] to stretch with the
     /// host. Pair with [#fitToWidthProperty()] when the animated content is the sole child of a stretched shell slot.
     private final BooleanProperty fitToHeight = new SimpleBooleanProperty(this, "fitToHeight", false) {
         /// Re-measures the current target after the holder's height constraint changes.
@@ -235,7 +231,7 @@ public final class M3AnimatedContent extends Region {
 
     /// Returns whether content is fitted to this region's assigned height.
     ///
-    /// @return `true` when the current and incoming holders use the assigned height while it is positive
+    /// @return `true` when current and transitioning content use the assigned height while it is positive
     public boolean isFitToHeight() {
         return fitToHeight.get();
     }
@@ -355,7 +351,7 @@ public final class M3AnimatedContent extends Region {
 
     /// Returns whether a content or size transition is active.
     ///
-    /// @return `true` until all active channels have reached their targets and outgoing content has been released
+    /// @return `true` until all active effects have reached their target values
     public boolean isTransitioning() {
         return transitioning.get();
     }
@@ -387,7 +383,7 @@ public final class M3AnimatedContent extends Region {
     ///
     /// @param content the initial content
     /// @throws NullPointerException     if `content` is `null`
-    /// @throws IllegalArgumentException if the node cannot legally be added to this region's private scene graph
+    /// @throws IllegalArgumentException if the node cannot be used as a child of this region
     public M3AnimatedContent(Node content) {
         this();
         setContent(Objects.requireNonNull(content, "content"));
@@ -395,8 +391,8 @@ public final class M3AnimatedContent extends Region {
 
     /// Completes the active transition at its target state.
     ///
-    /// This method has no effect when no transition is active. Completion is synchronous and releases outgoing
-    /// content before returning.
+    /// This method has no effect when no transition is active. Completion is synchronous; when the method returns,
+    /// only the target content remains visible.
     public void finish() {
         if (animation.getStatus() == Animation.Status.RUNNING) {
             M3Animation.finish(animation);
@@ -407,8 +403,8 @@ public final class M3AnimatedContent extends Region {
 
     /// Immediately applies the current target content and target size.
     ///
-    /// Any active transition is stopped, outgoing content is detached, and the target holder returns to opacity and
-    /// scale `1.0`, zero translation, and no private reveal clip. Repeated calls are idempotent.
+    /// Any active transition is stopped and the target presentation is applied at its measured size. Previous
+    /// content is no longer visible. Repeated calls are idempotent.
     public void snapToCurrentState() {
         animation.stop();
         clearOutgoingState();
@@ -528,7 +524,10 @@ public final class M3AnimatedContent extends Region {
         @Nullable HolderState previousCurrent = currentState;
         @Nullable HolderState previousOutgoing = outgoingState;
 
-        if (target != null && previousOutgoing != null && previousOutgoing.content() == target) {
+        if (target != null
+                && previousOutgoing != null
+                && !previousOutgoing.holder.getChildren().isEmpty()
+                && previousOutgoing.holder.getChildren().get(0) == target) {
             currentState = previousOutgoing;
             outgoingState = previousCurrent;
         } else if (target == null) {
@@ -855,11 +854,6 @@ public final class M3AnimatedContent extends Region {
             );
             revealClip.setSmooth(false);
             resetVisuals(1.0, 1.0, 0.0, 0.0);
-        }
-
-        /// Returns the holder's content, or `null` when empty.
-        private @Nullable Node content() {
-            return holder.getChildren().isEmpty() ? null : holder.getChildren().get(0);
         }
 
         /// Installs one content node as the holder's only child.

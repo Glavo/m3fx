@@ -21,6 +21,18 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3Banner].
 @NotNullByDefault
 public final class M3BannerSkin extends SkinBase<M3Banner> {
+    /// The internal banner content-container style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-banner-container";
+
+    /// The internal leading-icon-slot style class.
+    private static final String ICON_STYLE_CLASS = "m3-banner-icon";
+
+    /// The internal text-label style class.
+    private static final String TEXT_STYLE_CLASS = "m3-banner-text";
+
+    /// The internal actions-container style class.
+    private static final String ACTIONS_STYLE_CLASS = "m3-banner-actions";
+
     /// The internal horizontal container.
     private final HBox container = new HBox();
 
@@ -50,10 +62,10 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         super(control);
         container.setManaged(false);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getStyleClass().add(M3Banner.CONTAINER_STYLE_CLASS);
-        iconSlot.getStyleClass().add(M3Banner.ICON_STYLE_CLASS);
-        textLabel.getStyleClass().add(M3Banner.TEXT_STYLE_CLASS);
-        actions.getStyleClass().add(M3Banner.ACTIONS_STYLE_CLASS);
+        container.getStyleClass().add(CONTAINER_STYLE_CLASS);
+        iconSlot.getStyleClass().add(ICON_STYLE_CLASS);
+        textLabel.getStyleClass().add(TEXT_STYLE_CLASS);
+        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
         HBox.setHgrow(textLabel, Priority.ALWAYS);
         textLabel.setMinWidth(0.0);
         textLabel.setMaxWidth(Double.MAX_VALUE);

@@ -7,10 +7,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Selects which navigation region an [M3AdaptiveScaffold] presents.
 ///
-/// The scaffold never recreates or reparents a navigation control while switching layouts. Both navigation slots
-/// remain installed in stable containers, and only the effective slot participates in layout and input handling.
+/// Changing the layout selects which assigned navigation region is visible and participates in input handling. It
+/// does not clear either navigation slot, so a later layout change can present the same assigned navigation control.
 ///
-/// See [Material Design navigation](https://m3.material.io/components/navigation-bar/overview).
+/// See [Material Design navigation bars](https://m3.material.io/components/navigation-bar/overview) and
+/// [Material Design navigation rails](https://m3.material.io/components/navigation-rail/overview).
 @NotNullByDefault
 public enum M3NavigationLayout {
     /// Uses a navigation bar for compact layouts and an available rail for larger layouts.

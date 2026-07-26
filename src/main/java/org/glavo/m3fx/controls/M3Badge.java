@@ -40,8 +40,8 @@ import java.util.Objects;
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public final class M3Badge extends Control {
-    /// The base style class for M3FX badges.
-    public static final String STYLE_CLASS = "m3-badge";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-badge";
 
     /// The default small dot badge size.
     private static final double DEFAULT_SMALL_SIZE = 6.0;
@@ -68,7 +68,7 @@ public final class M3Badge extends Control {
     /// @param text the badge text, or an empty string for a dot badge
     /// @throws NullPointerException if `text` is `null`
     public M3Badge(String text) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());

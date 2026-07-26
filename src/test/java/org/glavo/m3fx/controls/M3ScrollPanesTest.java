@@ -75,7 +75,7 @@ final class M3ScrollPanesTest {
         M3ScrollPanes.style(scrollPane);
 
         assertEquals(1, scrollPane.getStyleClass().stream()
-                .filter(M3ScrollPanes.STYLE_CLASS::equals)
+                .filter("m3-scroll-pane"::equals)
                 .count());
 
         StackPane firstRoot = new StackPane(scrollPane);
@@ -106,7 +106,7 @@ final class M3ScrollPanesTest {
         M3ScrollPanes.style(scrollBar);
 
         assertEquals(1, scrollBar.getStyleClass().stream()
-                .filter(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS::equals)
+                .filter("m3-scroll-bar"::equals)
                 .count());
         assertTrue(root.getStyleClass().contains("root"));
         assertEquals(1, scene.getStylesheets().stream()
@@ -135,7 +135,7 @@ final class M3ScrollPanesTest {
         Region thumb = lookupRegion(scrollBar, ".thumb");
         Region track = lookupRegion(scrollBar, ".track");
 
-        assertTrue(scrollPane.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+        assertTrue(scrollPane.getStyleClass().contains("m3-scroll-pane"));
         assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(track, Color.TRANSPARENT);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
@@ -169,7 +169,7 @@ final class M3ScrollPanesTest {
 
         Region thumb = lookupRegion(scrollBar, ".thumb");
 
-        assertTrue(scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS));
+        assertTrue(scrollBar.getStyleClass().contains("m3-scroll-bar"));
         assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
         assertEquals(0.48, thumb.getOpacity(), 0.0001);
@@ -814,7 +814,7 @@ final class M3ScrollPanesTest {
 
                 Node cell = assertInstanceOf(
                         Node.class,
-                        listView.lookup("." + M3ListCell.STYLE_CLASS)
+                        listView.lookup("." + "m3-list-view-cell")
                 );
 
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, listView));

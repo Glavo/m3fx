@@ -22,6 +22,24 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3FormRow].
 @NotNullByDefault
 public final class M3FormRowSkin extends SkinBase<M3FormRow> {
+    /// The internal row-container style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-form-row-container";
+
+    /// The internal label-column style class.
+    private static final String TEXT_COLUMN_STYLE_CLASS = "m3-form-row-text-column";
+
+    /// The internal primary-label style class.
+    private static final String LABEL_STYLE_CLASS = "m3-form-row-label";
+
+    /// The internal supporting-text style class.
+    private static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-form-row-supporting-text";
+
+    /// The internal content-slot style class.
+    private static final String CONTENT_STYLE_CLASS = "m3-form-row-content";
+
+    /// The internal trailing-slot style class.
+    private static final String TRAILING_STYLE_CLASS = "m3-form-row-trailing";
+
     /// The root horizontal row container.
     private final HBox container = new HBox();
 
@@ -53,12 +71,12 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         super(control);
         container.setManaged(false);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getStyleClass().add(M3FormRow.CONTAINER_STYLE_CLASS);
-        textColumn.getStyleClass().add(M3FormRow.TEXT_COLUMN_STYLE_CLASS);
-        label.getStyleClass().add(M3FormRow.LABEL_STYLE_CLASS);
-        supportingLabel.getStyleClass().add(M3FormRow.SUPPORTING_TEXT_STYLE_CLASS);
-        contentSlot.getStyleClass().add(M3FormRow.CONTENT_STYLE_CLASS);
-        trailingSlot.getStyleClass().add(M3FormRow.TRAILING_STYLE_CLASS);
+        container.getStyleClass().add(CONTAINER_STYLE_CLASS);
+        textColumn.getStyleClass().add(TEXT_COLUMN_STYLE_CLASS);
+        label.getStyleClass().add(LABEL_STYLE_CLASS);
+        supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
+        contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
+        trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
 
         label.setWrapText(true);
         supportingLabel.setWrapText(true);

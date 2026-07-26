@@ -35,8 +35,8 @@ import java.util.Objects;
 /// See [Material Design dividers](https://m3.material.io/components/divider/overview).
 @NotNullByDefault
 public final class M3Divider extends Control {
-    /// The base style class for M3FX dividers.
-    public static final String STYLE_CLASS = "m3-divider";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-divider";
 
     /// The default divider thickness.
     private static final double DEFAULT_THICKNESS = 1.0;
@@ -56,7 +56,7 @@ public final class M3Divider extends Control {
     ///
     /// @param orientation the divider orientation
     public M3Divider(Orientation orientation) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.NODE);
         setFocusTraversable(false);
         setOrientation(orientation);

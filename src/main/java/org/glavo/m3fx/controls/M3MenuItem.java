@@ -32,8 +32,8 @@ import java.util.List;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
-    /// The base style class for M3FX menu items.
-    public static final String STYLE_CLASS = "m3-menu-item";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-menu-item";
 
     /// The fallback radius used by inner corners at a grouped-menu boundary.
     private static final double DEFAULT_INNER_CORNER_SHAPE = 4.0;
@@ -49,7 +49,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// @throws NullPointerException if `text` is `null`
     public M3MenuItem(String text) {
         super(text);
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU_ITEM);
     }
 

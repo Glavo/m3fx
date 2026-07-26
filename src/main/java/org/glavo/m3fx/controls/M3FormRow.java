@@ -47,26 +47,8 @@ import java.util.Objects;
 /// [Material Design](https://m3.material.io/) for related form guidance.
 @NotNullByDefault
 public final class M3FormRow extends Control {
-    /// The base style class for M3FX form rows.
-    public static final String STYLE_CLASS = "m3-form-row";
-
-    /// The style class applied to the row container.
-    public static final String CONTAINER_STYLE_CLASS = "m3-form-row-container";
-
-    /// The style class applied to the label text column.
-    public static final String TEXT_COLUMN_STYLE_CLASS = "m3-form-row-text-column";
-
-    /// The style class applied to the primary label.
-    public static final String LABEL_STYLE_CLASS = "m3-form-row-label";
-
-    /// The style class applied to the supporting text label.
-    public static final String SUPPORTING_TEXT_STYLE_CLASS = "m3-form-row-supporting-text";
-
-    /// The style class applied to the content slot.
-    public static final String CONTENT_STYLE_CLASS = "m3-form-row-content";
-
-    /// The style class applied to the trailing slot.
-    public static final String TRAILING_STYLE_CLASS = "m3-form-row-trailing";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-form-row";
 
     /// The default width reserved for the label column.
     private static final double DEFAULT_LABEL_WIDTH = 180.0;
@@ -211,20 +193,22 @@ public final class M3FormRow extends Control {
 
     /// The primary row content node, or `null` for an empty slot.
     ///
-    /// The node must be distinct from [trailing][#trailingProperty()] and is parented by this control while shown.
+    /// The node must be distinct from [trailing][#trailingProperty()], must not create a scene-graph cycle, and is
+    /// parented by this control while shown.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
         /// Validates content ownership before setting the node.
         @Override
         public void set(@Nullable Node newValue) {
-            validateDistinctSlots(newValue, getTrailing(), "content");
+            validateSlotAssignment(newValue, getTrailing(), "content");
             super.set(newValue);
         }
 
         /// Requests layout after content changes.
         @Override
         protected void invalidated() {
+            validateSlotAssignment(get(), getTrailing(), "content");
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
@@ -243,15 +227,17 @@ public final class M3FormRow extends Control {
     /// Sets the primary row content node.
     ///
     /// @param content the primary row content node, or `null`
-    /// @throws IllegalArgumentException if `content` is also the current trailing node
+    /// @throws IllegalArgumentException if `content` is this row, an ancestor of this row, or also the current
+    ///                                  trailing node
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
 
     /// Returns the observable, bindable primary content-node property.
     ///
-    /// The property defaults to `null`. A non-null node is parented by this control while displayed and must differ
-    /// from [#trailingProperty()].
+    /// The property defaults to `null`. A non-null node is parented by this control while displayed, must differ
+    /// from [#trailingProperty()], and must not create a scene-graph cycle. Values supplied through a binding are
+    /// subject to the same constraints as [#setContent(Node)].
     ///
     /// @return the primary content-node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
@@ -260,20 +246,22 @@ public final class M3FormRow extends Control {
 
     /// The trailing row content node, or `null` for no trailing content.
     ///
-    /// The node must be distinct from [content][#contentProperty()] and is parented by this control while shown.
+    /// The node must be distinct from [content][#contentProperty()], must not create a scene-graph cycle, and is
+    /// parented by this control while shown.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Validates trailing ownership before setting the node.
         @Override
         public void set(@Nullable Node newValue) {
-            validateDistinctSlots(getContent(), newValue, "trailing");
+            validateSlotAssignment(newValue, getContent(), "trailing");
             super.set(newValue);
         }
 
         /// Requests layout after trailing content changes.
         @Override
         protected void invalidated() {
+            validateSlotAssignment(get(), getContent(), "trailing");
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
@@ -292,15 +280,17 @@ public final class M3FormRow extends Control {
     /// Sets the optional trailing row content node.
     ///
     /// @param trailing the optional trailing row content node, or `null`
-    /// @throws IllegalArgumentException if `trailing` is also the current content node
+    /// @throws IllegalArgumentException if `trailing` is this row, an ancestor of this row, or also the current
+    ///                                  content node
     public final void setTrailing(@Nullable Node trailing) {
         this.trailing.set(trailing);
     }
 
     /// Returns the observable, bindable trailing content-node property.
     ///
-    /// The property defaults to `null`. A non-null node is parented by this control while displayed and must differ
-    /// from [#contentProperty()].
+    /// The property defaults to `null`. A non-null node is parented by this control while displayed, must differ
+    /// from [#contentProperty()], and must not create a scene-graph cycle. Values supplied through a binding are
+    /// subject to the same constraints as [#setTrailing(Node)].
     ///
     /// @return the trailing content-node property
     public final ObjectProperty<@Nullable Node> trailingProperty() {
@@ -522,7 +512,7 @@ public final class M3FormRow extends Control {
 
     /// Initializes style classes and accessibility metadata.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
@@ -566,9 +556,24 @@ public final class M3FormRow extends Control {
         return index == 0 ? getTrailing() : null;
     }
 
-    /// Validates that content and trailing slots do not reference the same node.
-    private static void validateDistinctSlots(@Nullable Node content, @Nullable Node trailing, String propertyName) {
-        if (content != null && content == trailing) {
+    /// Validates that a slot value is structurally usable and is not already assigned to the other slot.
+    private void validateSlotAssignment(
+            @Nullable Node candidate,
+            @Nullable Node other,
+            String propertyName
+    ) {
+        if (candidate == null) {
+            return;
+        }
+        if (candidate == this) {
+            throw new IllegalArgumentException(propertyName + " must not reference this row");
+        }
+        for (@Nullable Node ancestor = getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+            if (candidate == ancestor) {
+                throw new IllegalArgumentException(propertyName + " must not reference an ancestor of this row");
+            }
+        }
+        if (candidate == other) {
             throw new IllegalArgumentException(propertyName + " must not already be used by another slot");
         }
     }

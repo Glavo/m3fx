@@ -3,7 +3,7 @@
 ## Current Position
 
 M3FX is a broadly implemented preview of a Material Design 3 component library for JavaFX. It has a token-driven
-theme and motion system, broad Standard and Expressive component coverage, an exhaustive verification demo, an
+theme and motion system, broad Standard and Expressive component coverage, a broad verification demo, an
 independent focused Catalog application, rendered state tests, and release packaging for modular applications. The
 Demo additionally has a Liberica NIK Full native executable build and a manual three-platform CI matrix. The
 project is ready for systematic integration testing, but it is not yet a release candidate.
@@ -44,10 +44,10 @@ uses the same channel engine for reversible pane and navigation transitions. Gen
 orchestration, key-frame and repetition specifications, decay animation, and shared-element overlay transitions
 remain future layers rather than responsibilities of specialized layout panes.
 
-The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
+The exported API has undergone structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable
-builders, and composite controls own the properties and events they expose. The API is not frozen until the final
-release review confirms that remaining behavior work requires no contract changes.
+builders, and composite controls own the properties and events they expose. The API remains subject to change until
+the final release review confirms that remaining behavior work requires no contract changes.
 
 ## Remaining Work
 

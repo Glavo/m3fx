@@ -41,16 +41,15 @@ import java.util.Objects;
 /// `M3SegmentedButtonGroup` may immediately adjust that state to satisfy its selection mode and empty-selection
 /// policy. A standalone segmented button is unselected by default and may be toggled independently.
 ///
-/// The inherited [#graphicProperty()] is the optional icon slot described by Material Design. The default skin
-/// displays a check indicator for the selected state. When a graphic is present, the check visually replaces that
-/// graphic while selected and the graphic reappears when unselected. Applications may suppress this behavior through
-/// [#selectionIndicatorEnabledProperty()] when selection is already communicated by custom content.
+/// The inherited [#graphicProperty()] is the optional icon slot described by Material Design. A selected button may
+/// display a check indicator in place of its graphic. [#selectionIndicatorEnabledProperty()] controls that indicator
+/// when selection is already communicated by custom content.
 ///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public final class M3SegmentedButton extends ButtonBase {
-    /// The base style class for M3FX segmented buttons.
-    public static final String STYLE_CLASS = "m3-segmented-button";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-segmented-button";
 
     /// The selected pseudo-class used by segmented buttons.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -126,7 +125,7 @@ public final class M3SegmentedButton extends ButtonBase {
         return selectedValue;
     }
 
-    /// Whether the default skin may display its built-in selected-state check indicator.
+    /// Whether this button may display its selected-state check indicator.
     ///
     /// The indicator is rendered only while this button is selected. With an application-provided graphic, the
     /// indicator visually replaces the graphic without changing [#graphicProperty()]. Setting this property to
@@ -136,24 +135,24 @@ public final class M3SegmentedButton extends ButtonBase {
     private final BooleanProperty selectionIndicatorEnabledValue =
             new SimpleBooleanProperty(this, "selectionIndicatorEnabled", true);
 
-    /// Returns whether the default selected-state check indicator is enabled.
+    /// Returns whether the selected-state check indicator is enabled.
     ///
-    /// @return `true` if the default skin may display its selection indicator
+    /// @return `true` if this button may display its selection indicator
     public final boolean isSelectionIndicatorEnabled() {
         return selectionIndicatorEnabledValue.get();
     }
 
-    /// Enables or disables the default selected-state check indicator.
+    /// Enables or disables the selected-state check indicator.
     ///
     /// The indicator is only eligible for display while this button is selected. If this button has a graphic, the
     /// indicator replaces it visually for the duration of the selected state.
     ///
-    /// @param enabled whether the default selection indicator is enabled
+    /// @param enabled whether the selection indicator is enabled
     public final void setSelectionIndicatorEnabled(boolean enabled) {
         selectionIndicatorEnabledValue.set(enabled);
     }
 
-    /// Returns the property controlling the default selected-state check indicator.
+    /// Returns the property controlling the selected-state check indicator.
     ///
     /// The returned property is observable and bindable. Its default value is `true`.
     ///
@@ -303,12 +302,14 @@ public final class M3SegmentedButton extends ButtonBase {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        // JavaFX 17 has no TOGGLE_STATE enum constant, so test the optional runtime value first.
-        if (M3Accessible.isToggleStateAttribute(attribute)) {
-            return M3Accessible.toggleState(isSelected());
-        }
-        if (attribute == AccessibleAttribute.SELECTED) {
-            return isSelected();
+        if (getAccessibleRole() != AccessibleRole.BUTTON) {
+            // JavaFX 17 has no TOGGLE_STATE enum constant, so test the optional runtime value first.
+            if (M3Accessible.isToggleStateAttribute(attribute)) {
+                return M3Accessible.toggleState(isSelected());
+            }
+            if (attribute == AccessibleAttribute.SELECTED) {
+                return isSelected();
+            }
         }
         return super.queryAccessibleAttribute(attribute, parameters);
     }
@@ -338,10 +339,26 @@ public final class M3SegmentedButton extends ButtonBase {
         return M3Stylesheets.controlStylesheet("segmented-button.css");
     }
 
+    /// Applies the accessibility role corresponding to a containing group's selection mode.
+    ///
+    /// @param selectionMode the containing group's selection mode
+    void applyGroupSelectionMode(M3SelectionMode selectionMode) {
+        setAccessibleRole(switch (selectionMode) {
+            case SINGLE -> AccessibleRole.RADIO_BUTTON;
+            case MULTIPLE -> AccessibleRole.CHECK_BOX;
+            case NONE -> AccessibleRole.BUTTON;
+        });
+    }
+
+    /// Restores the accessibility role used when this button is not owned by a segmented button group.
+    void restoreStandaloneAccessibleRole() {
+        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
+    }
+
     /// Adds base style classes and applies token metrics.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
+        restoreStandaloneAccessibleRole();
         setFocusTraversable(true);
         setPickOnBounds(true);
         updateMetrics();

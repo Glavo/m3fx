@@ -869,7 +869,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.
     private Node createPageHeader(DemoPage page) {
-        return new DemoPageHeader(page.title(), page.subtitle(), () -> getHostServices().showDocument(page.materialUrl()));
+        return new DemoPageHeader(
+                page.title(),
+                page.subtitle(),
+                page.documentationLabel(),
+                () -> getHostServices().showDocument(page.documentationUrl())
+        );
     }
 
     /// Recreates the current page so resolved runtime settings affect active controls immediately.

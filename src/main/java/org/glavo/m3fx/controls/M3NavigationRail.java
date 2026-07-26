@@ -74,8 +74,8 @@ import java.util.Objects;
 /// See [Material Design navigation rails](https://m3.material.io/components/navigation-rail/overview).
 @NotNullByDefault
 public final class M3NavigationRail extends Control {
-    /// The base style class for M3FX navigation rails.
-    public static final String STYLE_CLASS = "m3-navigation-rail";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-navigation-rail";
 
     /// The expanded pseudo-class used by navigation rail styling.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
@@ -123,9 +123,10 @@ public final class M3NavigationRail extends Control {
 
     /// The live navigation destination list.
     ///
-    /// The list is mutable and observable, preserves insertion order, permits duplicate object references, and
-    /// rejects `null`. Each item is a JavaFX node and therefore must not simultaneously belong to another parent.
-    private final ObservableList<M3NavigationItem> items = M3ObservableLists.nonNullElementList("item");
+    /// The list is mutable and observable, preserves insertion order, and rejects `null` or repeated object
+    /// references. Each item is a JavaFX node and therefore must not simultaneously belong to another parent.
+    private final ObservableList<M3NavigationItem> items =
+            M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between navigation items.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -831,9 +832,9 @@ public final class M3NavigationRail extends Control {
     /// Returns the live list of navigation destinations.
     ///
     /// Changes are observed immediately and insertion order determines layout and keyboard traversal. The list
-    /// rejects `null`. It does not perform an explicit duplicate check, but each item is a JavaFX node and must
-    /// occur only once and must not simultaneously belong to another parent. Removing an item clears its selected
-    /// state.
+    /// rejects `null` elements and repeated occurrences of the same destination instance. Bulk mutations are
+    /// validated before the list changes, and each item must satisfy the JavaFX single-parent rule. Removing an
+    /// item clears its selected state.
     ///
     /// @return the mutable observable destination list
     public final ObservableList<M3NavigationItem> getItems() {
@@ -1064,7 +1065,7 @@ public final class M3NavigationRail extends Control {
 
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         pseudoClassStateChanged(FULL_WIDTH_INDICATOR_PSEUDO_CLASS, false);
         pseudoClassStateChanged(NARROW_PSEUDO_CLASS, false);
         pseudoClassStateChanged(HIDE_WHEN_COLLAPSED_PSEUDO_CLASS, false);

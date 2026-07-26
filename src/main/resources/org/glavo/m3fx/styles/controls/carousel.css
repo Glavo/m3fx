@@ -33,7 +33,7 @@
 }
 
 .m3-carousel-item-container:hover {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 8, 0.18, 0, 2);
 }
 
 .m3-carousel-item-container:pressed,

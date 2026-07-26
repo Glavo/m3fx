@@ -142,10 +142,10 @@ final class M3DateRangePickerFieldTest {
 
             assertEquals(6, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-            assertTrue(presetContent.getStyleClass().contains(M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS));
+            assertTrue(presetContent.getStyleClass().contains("m3-date-range-picker-field-preset-content"));
             assertEquals(
                     6,
-                    presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size()
+                    presetContent.lookupAll("." + "m3-date-range-picker-field-preset-button").size()
             );
 
             M3DateRangePreset preset = M3DateRangePresets.nextDays(anchor, 7);
@@ -160,7 +160,7 @@ final class M3DateRangePickerFieldTest {
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
-                    .contains(M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS));
+                    .contains("m3-date-range-picker-field-preset-content"));
         });
     }
 
@@ -273,8 +273,8 @@ final class M3DateRangePickerFieldTest {
             root.layout();
 
             assertInstanceOf(M3DateRangePickerFieldSkin.class, field.getSkin());
-            assertTrue(field.getStartInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
-            assertTrue(field.getEndInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
+            assertTrue(field.getStartInputLayout().getStyleClass().contains("m3-text-input-layout"));
+            assertTrue(field.getEndInputLayout().getStyleClass().contains("m3-text-input-layout"));
         });
     }
 
@@ -495,7 +495,7 @@ final class M3DateRangePickerFieldTest {
 
     /// Returns a preset button with the supplied text.
     private static M3Button findPresetButton(Node root, String text) {
-        for (Node node : root.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)) {
+        for (Node node : root.lookupAll("." + "m3-date-range-picker-field-preset-button")) {
             if (node instanceof M3Button button && button.getText().equals(text)) {
                 return button;
             }

@@ -20,7 +20,7 @@
 
 .m3-top-app-bar:scrolled-under {
     -fx-background-color: -m3-color-surface-container;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+    -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2);
 }
 
 .m3-top-app-bar-navigation {

@@ -20,6 +20,9 @@ import org.jetbrains.annotations.Nullable;
 /// without receiving item structure state.
 @NotNullByDefault
 public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox, Node> {
+    /// The style class for the internal menu item container.
+    private static final String CONTAINER_STYLE_CLASS = "m3-menu-container";
+
     /// The pseudo-class applied to the first direct menu item.
     private static final PseudoClass FIRST_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("first-menu-item");
 
@@ -54,7 +57,7 @@ public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox, Node
     /// @param control the skinned menu
     public M3MenuSkin(M3Menu control) {
         super(control, control.getItems(), new VBox());
-        getContainer().getStyleClass().add(M3Menu.CONTAINER_STYLE_CLASS);
+        getContainer().getStyleClass().add(CONTAINER_STYLE_CLASS);
         control.getItems().addListener(itemStructureListener);
         for (Node child : control.getItems()) {
             if (child instanceof M3MenuItem item) {

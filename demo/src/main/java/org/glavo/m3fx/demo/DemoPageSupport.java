@@ -196,6 +196,8 @@ abstract class DemoPageSupport {
             return "image";
         } else if (normalized.contains("slider")) {
             return "tune";
+        } else if (normalized.contains("color")) {
+            return "palette";
         } else if (normalized.contains("snackbar")
                 || normalized.contains("banner")
                 || normalized.contains("tooltip")) {
@@ -240,7 +242,7 @@ abstract class DemoPageSupport {
     /// @param sample         the sample region to configure
     /// @param preferredWidth the preferred width in logical pixels
     /// @param <T>            the concrete sample type
-    /// @return `sample`
+    /// @return the configured sample
     /// @throws NullPointerException     if `sample` is `null`
     /// @throws IllegalArgumentException if `preferredWidth` is negative or not finite
     protected static <T extends Region> T configureResponsiveWidth(T sample, double preferredWidth) {

@@ -18,7 +18,7 @@ import java.util.Objects;
 ///
 /// A snackbar contains required supporting text, an optional text action, and an optional close button. It is a
 /// presentation model rather than a scene-graph node. [M3OverlayPane] queues messages and renders the current
-/// message through one reusable internal presenter.
+/// message as a Material snackbar surface.
 ///
 /// Every content field is exposed as a JavaFX property and may be bound to application state such as localized
 /// resources. Changes made while this message is current are reflected by the existing snackbar surface without
@@ -32,9 +32,8 @@ import java.util.Objects;
 /// behavior.
 ///
 /// After a message has been submitted to an [M3OverlayPane], its properties must be changed on the JavaFX
-/// Application Thread. Pending messages are not rendered or observed by the presenter; their latest property values
-/// are read when they become current. Enqueuing the same instance more than once shares one observable state between
-/// those queue entries.
+/// Application Thread. Changes to a pending message become visible when that message becomes current. Enqueuing the
+/// same instance more than once shares one observable state between those queue entries.
 ///
 /// Material Design does not define leading graphics or arbitrary trailing content for snackbars. Applications that
 /// need richer transient surfaces should present a custom non-modal overlay through
@@ -182,7 +181,7 @@ public final class M3Snackbar {
 
     /// Returns whether the standard close affordance is visible.
     ///
-    /// @return `true` when the presenter renders a close button
+    /// @return `true` when a close button is shown
     public boolean isCloseButtonVisible() {
         return closeButtonVisible.get();
     }
@@ -191,7 +190,7 @@ public final class M3Snackbar {
     ///
     /// Bound visibility properties cannot be set directly.
     ///
-    /// @param closeButtonVisible whether the presenter renders a close button
+    /// @param closeButtonVisible whether a close button is shown
     /// @throws RuntimeException if this property is bound
     public void setCloseButtonVisible(boolean closeButtonVisible) {
         this.closeButtonVisible.set(closeButtonVisible);

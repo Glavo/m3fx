@@ -1,0 +1,51 @@
+.m3-color-field {
+    -m3-color-field-width: 176px;
+    -fx-background-color: transparent;
+    -fx-min-width: 112px;
+    -fx-pref-width: -m3-color-field-width;
+}
+
+.m3-color-field .m3-color-field-editor {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-insets: 0;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+    -fx-font-size: 16px;
+    -fx-highlight-fill: -m3-color-primary;
+    -fx-highlight-text-fill: -m3-color-on-primary;
+    -fx-prompt-text-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-color-field .m3-color-field-editor:hover {
+    -fx-border-color: -m3-color-on-surface;
+}
+
+.m3-color-field .m3-color-field-editor:focused {
+    -fx-border-color: -m3-color-primary;
+    -fx-border-width: 2px;
+}
+
+.m3-color-field:invalid .m3-color-field-editor,
+.m3-color-field .m3-color-field-editor:invalid {
+    -fx-border-color: -m3-color-error;
+    -fx-border-width: 1px;
+    -fx-prompt-text-fill: -m3-color-error;
+}
+
+.m3-color-field:invalid .m3-color-field-editor:focused,
+.m3-color-field .m3-color-field-editor:invalid:focused {
+    -fx-border-color: -m3-color-error;
+    -fx-border-width: 2px;
+}
+
+.m3-color-field:disabled .m3-color-field-editor {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
+    -fx-prompt-text-fill: -m3-state-disabled-content-color;
+    -fx-text-fill: -m3-state-disabled-content-color;
+}

@@ -62,8 +62,8 @@ import java.util.Objects;
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public abstract sealed class M3ListItemBase extends Control permits M3ListItem, M3MenuItem, M3SettingItemBase {
-    /// The base style class for M3FX list items.
-    public static final String STYLE_CLASS = "m3-list-item";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-list-item";
 
     /// The selected pseudo-class used by list items.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -109,7 +109,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// @throws NullPointerException if `headlineText` is `null`
     protected M3ListItemBase(String headlineText) {
         installLineCountListeners();
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);

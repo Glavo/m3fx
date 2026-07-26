@@ -7,8 +7,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines where an [M3BottomAppBar] places its floating action node.
 ///
-/// Alignment is applied by the bottom app bar skin and affects only the optional floating action slot. Regular
-/// action nodes remain in the action list.
+/// This alignment affects only the optional floating action node. Regular action nodes remain in the action list.
 ///
 /// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault

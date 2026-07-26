@@ -51,8 +51,8 @@ import java.util.Objects;
 /// [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
 public final class M3Slider extends Control {
-    /// The base style class for M3FX sliders.
-    public static final String STYLE_CLASS = "m3-slider";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-slider";
 
     /// The pseudo-class applied while the slider uses a centered active track.
     private static final PseudoClass CENTERED_PSEUDO_CLASS = PseudoClass.getPseudoClass("centered");
@@ -1395,7 +1395,7 @@ public final class M3Slider extends Control {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.SLIDER);
         M3Accessible.installAccessibleActionRoute(this, () -> M3Accessible.showDirectItem(this, this), null);

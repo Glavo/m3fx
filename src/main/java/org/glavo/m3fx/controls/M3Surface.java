@@ -56,8 +56,8 @@ import java.util.Objects;
 /// [Material color roles](https://m3.material.io/styles/color/roles).
 @NotNullByDefault
 public final class M3Surface extends Control {
-    /// The base style class for M3FX surfaces.
-    public static final String STYLE_CLASS = "m3-surface";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-surface";
 
     /// The default surface container shape.
     private static final double DEFAULT_CONTAINER_SHAPE = 12.0;
@@ -69,7 +69,7 @@ public final class M3Surface extends Control {
     private static final Paint DEFAULT_CONTAINER_COLOR = Color.TRANSPARENT;
 
     /// The mutable content nodes displayed inside the surface.
-    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
+    private final ObservableList<Node> content = M3ObservableLists.identityDistinctElementList("content");
 
     /// Notifies accessibility clients when focus moves between content children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -287,8 +287,9 @@ public final class M3Surface extends Control {
     /// Returns the mutable content nodes displayed inside the surface.
     ///
     /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
-    /// traversal, and accessibility immediately. Nodes become children of this surface and must satisfy normal
-    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    /// traversal, and accessibility immediately. The list rejects repeated occurrences of the same node instance
+    /// and validates bulk mutations before changing. Nodes become children of this surface and must satisfy the
+    /// JavaFX single-parent rule.
     ///
     /// @return the live mutable ordered content list
     public final ObservableList<Node> getContent() {
@@ -394,7 +395,7 @@ public final class M3Surface extends Control {
 
     /// Initializes style classes and default metrics.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);

@@ -68,33 +68,57 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
 
     /// Returns a complete Standard Material motion scheme.
     ///
-    /// @return the baseline M3FX motion scheme
+    /// The returned object and its motion specifications are immutable and may be shared by callers.
+    ///
+    /// @return the canonical Standard motion scheme
     static M3MotionScheme standard() {
-        return new M3MotionSchemeImpl(
-                spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
-                spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
-                spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
-                spring(0.9, 1400.0, M3Motion.MEDIUM3, M3MotionEasing.STANDARD_SPATIAL),
-                spring(0.9, 700.0, M3Motion.LONG2, M3MotionEasing.STANDARD_SPATIAL),
-                spring(0.9, 300.0, Duration.millis(750.0), M3MotionEasing.STANDARD_SPATIAL)
-        );
+        return M3MotionSchemeDefaults.STANDARD;
     }
 
     /// Returns a complete Material Design 3 Expressive motion scheme.
     ///
-    /// @return the expressive M3FX motion scheme
+    /// The returned object and its motion specifications are immutable and may be shared by callers.
+    ///
+    /// @return the canonical Expressive motion scheme
     static M3MotionScheme expressive() {
-        return new M3MotionSchemeImpl(
-                spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
-                spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
-                spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
-                spring(0.6, 800.0, M3Motion.MEDIUM3, M3MotionEasing.EXPRESSIVE_FAST_SPATIAL),
-                spring(0.8, 380.0, M3Motion.LONG2, M3MotionEasing.EXPRESSIVE_DEFAULT_SPATIAL),
-                spring(0.8, 200.0, Duration.millis(650.0), M3MotionEasing.EXPRESSIVE_SLOW_SPATIAL)
-        );
+        return M3MotionSchemeDefaults.EXPRESSIVE;
+    }
+}
+
+/// Holds the canonical built-in Material motion schemes.
+@NotNullByDefault
+final class M3MotionSchemeDefaults {
+    /// The canonical Standard motion scheme.
+    static final M3MotionScheme STANDARD = new M3MotionSchemeImpl(
+            spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
+            spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
+            spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
+            spring(0.9, 1400.0, M3Motion.MEDIUM3, M3MotionEasing.STANDARD_SPATIAL),
+            spring(0.9, 700.0, M3Motion.LONG2, M3MotionEasing.STANDARD_SPATIAL),
+            spring(0.9, 300.0, Duration.millis(750.0), M3MotionEasing.STANDARD_SPATIAL)
+    );
+
+    /// The canonical Expressive motion scheme.
+    static final M3MotionScheme EXPRESSIVE = new M3MotionSchemeImpl(
+            spring(1.0, 3800.0, M3Motion.SHORT3, M3MotionEasing.FAST_EFFECTS),
+            spring(1.0, 1600.0, M3Motion.SHORT4, M3MotionEasing.DEFAULT_EFFECTS),
+            spring(1.0, 800.0, M3Motion.MEDIUM2, M3MotionEasing.SLOW_EFFECTS),
+            spring(0.6, 800.0, M3Motion.MEDIUM3, M3MotionEasing.EXPRESSIVE_FAST_SPATIAL),
+            spring(0.8, 380.0, M3Motion.LONG2, M3MotionEasing.EXPRESSIVE_DEFAULT_SPATIAL),
+            spring(0.8, 200.0, Duration.millis(650.0), M3MotionEasing.EXPRESSIVE_SLOW_SPATIAL)
+    );
+
+    /// Prevents instantiation.
+    private M3MotionSchemeDefaults() {
     }
 
-    /// Creates one built-in spring role with its finite cross-platform fallback.
+    /// Creates one built-in spring role with its finite fallback duration and easing.
+    ///
+    /// @param dampingRatio the dimensionless damping ratio
+    /// @param stiffness the spring stiffness
+    /// @param fallbackDuration the duration used when spring motion is unavailable
+    /// @param fallbackEasing the easing used when spring motion is unavailable
+    /// @return the immutable spring motion specification
     private static M3MotionSpec spring(
             double dampingRatio,
             double stiffness,

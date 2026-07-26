@@ -45,7 +45,8 @@ import java.util.Objects;
 /// [#fire()].
 ///
 /// The default button is unselected and has no graphic. It uses the standard color variant, small size, default
-/// width role, round shape, and a `40.0` by `40.0` logical-pixel container. Add buttons to an
+/// width role, round shape, and a `40.0` by `40.0` logical-pixel visual container centered in a `48.0` by `48.0`
+/// interaction target. Larger visual containers expand the interaction target as needed. Add buttons to an
 /// [M3IconToggleButtonGroup] when their selection states must obey a single- or multiple-selection policy.
 /// Graphic nodes may have only one parent; an [M3Icon] supplied directly as the graphic follows the button's
 /// effective icon metrics and colors.
@@ -53,7 +54,7 @@ import java.util.Objects;
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public final class M3IconToggleButton extends ButtonBase {
-    /// The default style class for this control.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-icon-toggle-button";
 
     /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
@@ -82,6 +83,9 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// The default toggle icon button glyph size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
+
+    /// The minimum interaction-target dimension recommended by Material accessibility guidance.
+    private static final double MINIMUM_INTERACTION_TARGET_SIZE = 48.0;
 
     /// The fallback container paint used before CSS resolves a toggle-button variant.
     private static final Paint DEFAULT_CONTAINER_COLOR = Color.TRANSPARENT;
@@ -426,7 +430,8 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// The preferred visual container height in logical pixels.
     ///
-    /// Values must be finite and non-negative.
+    /// Values must be finite and non-negative. The unbound minimum, preferred, and maximum control heights are
+    /// updated to the greater of this value and `48.0`.
     ///
     /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerHeight;
@@ -467,7 +472,8 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// The preferred visual container width in logical pixels.
     ///
-    /// Values must be finite and non-negative.
+    /// Values must be finite and non-negative. The unbound minimum, preferred, and maximum control widths are
+    /// updated to the greater of this value and `48.0`.
     ///
     /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerWidth;
@@ -588,7 +594,7 @@ public final class M3IconToggleButton extends ButtonBase {
         return iconSize;
     }
 
-    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    /// The M3FX icon graphic whose color and size are managed by this button.
     private @Nullable Node managedIconGraphic;
 
     /// Reverses the selected state and fires an action event when this button is enabled.
@@ -724,10 +730,10 @@ public final class M3IconToggleButton extends ButtonBase {
         return "m3-icon-button-" + shape.cssSuffix();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
+    /// Applies visual container tokens while preserving the minimum interaction target.
     private void updateMetrics() {
-        double width = getContainerWidth();
-        double height = getContainerHeight();
+        double width = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerWidth());
+        double height = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerHeight());
         M3Css.setMinWidthIfUnbound(this, width);
         M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefWidthIfUnbound(this, width);

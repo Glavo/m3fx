@@ -17,6 +17,12 @@ import org.jetbrains.annotations.Nullable;
 /// effective node orientation.
 @NotNullByDefault
 public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
+    /// The internal leading-graphic style class.
+    private static final String LEADING_GRAPHIC_STYLE_CLASS = "m3-chip-leading-graphic";
+
+    /// The internal trailing-graphic style class.
+    private static final String TRAILING_GRAPHIC_STYLE_CLASS = "m3-chip-trailing-graphic";
+
     /// Keeps leading and trailing graphics synchronized with the control properties.
     private final InvalidationListener graphicsInvalidation = observable -> updateGraphics();
 
@@ -127,8 +133,8 @@ public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
         if (leadingGraphic != newLeading) {
             uninstallLeadingGraphic();
             leadingGraphic = newLeading;
-            if (newLeading != null && !newLeading.getStyleClass().contains(M3Chip.LEADING_GRAPHIC_STYLE_CLASS)) {
-                newLeading.getStyleClass().add(M3Chip.LEADING_GRAPHIC_STYLE_CLASS);
+            if (newLeading != null && !newLeading.getStyleClass().contains(LEADING_GRAPHIC_STYLE_CLASS)) {
+                newLeading.getStyleClass().add(LEADING_GRAPHIC_STYLE_CLASS);
             }
         }
 
@@ -137,8 +143,8 @@ public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
             uninstallTrailingGraphic();
             trailingGraphic = newTrailing;
             if (newTrailing != null) {
-                if (!newTrailing.getStyleClass().contains(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS)) {
-                    newTrailing.getStyleClass().add(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS);
+                if (!newTrailing.getStyleClass().contains(TRAILING_GRAPHIC_STYLE_CLASS)) {
+                    newTrailing.getStyleClass().add(TRAILING_GRAPHIC_STYLE_CLASS);
                 }
                 newTrailing.layoutBoundsProperty().addListener(trailingMetricsInvalidation);
                 newTrailing.managedProperty().addListener(trailingMetricsInvalidation);
@@ -153,7 +159,7 @@ public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
     private void uninstallLeadingGraphic() {
         Node oldLeading = leadingGraphic;
         if (oldLeading != null) {
-            oldLeading.getStyleClass().remove(M3Chip.LEADING_GRAPHIC_STYLE_CLASS);
+            oldLeading.getStyleClass().remove(LEADING_GRAPHIC_STYLE_CLASS);
             leadingGraphic = null;
         }
     }
@@ -165,7 +171,7 @@ public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
             oldTrailing.layoutBoundsProperty().removeListener(trailingMetricsInvalidation);
             oldTrailing.managedProperty().removeListener(trailingMetricsInvalidation);
             oldTrailing.visibleProperty().removeListener(trailingMetricsInvalidation);
-            oldTrailing.getStyleClass().remove(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS);
+            oldTrailing.getStyleClass().remove(TRAILING_GRAPHIC_STYLE_CLASS);
             getChildren().remove(oldTrailing);
             trailingGraphic = null;
         }

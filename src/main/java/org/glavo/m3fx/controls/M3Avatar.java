@@ -44,11 +44,8 @@ import java.util.Objects;
 /// typography roles used by avatars.
 @NotNullByDefault
 public final class M3Avatar extends Control {
-    /// The base style class for M3FX avatars.
-    public static final String STYLE_CLASS = "m3-avatar";
-
-    /// The default text label style class.
-    public static final String LABEL_STYLE_CLASS = "m3-avatar-label";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-avatar";
 
     /// The default avatar container size.
     private static final double DEFAULT_CONTAINER_SIZE = 40.0;
@@ -248,7 +245,7 @@ public final class M3Avatar extends Control {
 
     /// Initializes style classes, child nodes, and property listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.IMAGE_VIEW);
         setFocusTraversable(false);
         text.addListener((observable, oldValue, newValue) -> updateAccessibleText());

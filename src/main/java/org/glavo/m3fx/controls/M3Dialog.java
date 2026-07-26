@@ -82,7 +82,7 @@ public class M3Dialog implements EventTarget {
 
     /// Creates a Material dialog that presents the specified pane.
     ///
-    /// @param dialogPane the pane retained for the lifetime of this dialog
+    /// @param dialogPane the pane associated with this dialog
     /// @throws NullPointerException if `dialogPane` is `null`
     M3Dialog(M3DialogPane dialogPane) {
         this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
@@ -111,7 +111,7 @@ public class M3Dialog implements EventTarget {
 
     /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
     ///
-    /// The value is retained independently of the current host and has no effect in [M3DialogWindow] mode.
+    /// This value has no effect in [M3DialogWindow] mode.
     ///
     /// @return `true` when pointer activation of the scrim requests dismissal
     public final boolean isDismissOnScrimClick() {
@@ -166,14 +166,14 @@ public class M3Dialog implements EventTarget {
         return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWING, "onShowing");
     }
 
-    /// Returns the singleton handler invoked after this dialog's presentation surface has been installed.
+    /// Returns the singleton handler invoked after this dialog is shown.
     ///
     /// @return the shown handler, or `null` when none is installed
     public final @Nullable EventHandler<M3DialogEvent> getOnShown() {
         return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWN);
     }
 
-    /// Sets the singleton handler invoked after this dialog's presentation surface has been installed.
+    /// Sets the singleton handler invoked after this dialog is shown.
     ///
     /// @param handler the shown handler, or `null` to remove it
     /// @throws RuntimeException if [#onShownProperty()] is bound
@@ -181,7 +181,7 @@ public class M3Dialog implements EventTarget {
         eventHandlerManager.setEventHandler(M3DialogEvent.SHOWN, handler);
     }
 
-    /// Returns the property holding the singleton handler invoked after the presentation surface is installed.
+    /// Returns the property holding the singleton handler invoked after this dialog is shown.
     ///
     /// The property can be observed and bound. Its default value is `null`.
     ///
@@ -214,14 +214,14 @@ public class M3Dialog implements EventTarget {
         return eventHandlerManager.eventHandlerProperty(M3DialogEvent.HIDING, "onHiding");
     }
 
-    /// Returns the singleton handler invoked after this dialog's layer has been removed.
+    /// Returns the singleton handler invoked after this dialog is hidden.
     ///
     /// @return the hidden handler, or `null` when none is installed
     public final @Nullable EventHandler<M3DialogEvent> getOnHidden() {
         return eventHandlerManager.getEventHandler(M3DialogEvent.HIDDEN);
     }
 
-    /// Sets the singleton handler invoked after this dialog's layer has been removed.
+    /// Sets the singleton handler invoked after this dialog is hidden.
     ///
     /// @param handler the hidden handler, or `null` to remove it
     /// @throws RuntimeException if [#onHiddenProperty()] is bound
@@ -229,7 +229,7 @@ public class M3Dialog implements EventTarget {
         eventHandlerManager.setEventHandler(M3DialogEvent.HIDDEN, handler);
     }
 
-    /// Returns the property holding the singleton handler invoked after the presentation surface is removed.
+    /// Returns the property holding the singleton handler invoked after this dialog is hidden.
     ///
     /// The property can be observed and bound. Its default value is `null`.
     ///
@@ -263,7 +263,7 @@ public class M3Dialog implements EventTarget {
         return eventHandlerManager.eventHandlerProperty(M3DialogEvent.CLOSE_REQUEST, "onCloseRequest");
     }
 
-    /// The retained Material pane rendered by this dialog.
+    /// The Material pane associated with this dialog.
     private final M3DialogPane dialogPane;
 
     /// Animates the pane's non-spatial channels during dialog entrance and exit.
@@ -328,7 +328,7 @@ public class M3Dialog implements EventTarget {
     /// Whether the presentation background has completed the active exit transition.
     private boolean backgroundExitFinished;
 
-    /// Returns this dialog's retained Material pane.
+    /// Returns this dialog's Material pane.
     ///
     /// @return the non-null dialog pane
     public final M3DialogPane getDialogPane() {

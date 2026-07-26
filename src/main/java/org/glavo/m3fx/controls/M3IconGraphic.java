@@ -6,15 +6,12 @@ package org.glavo.m3fx.controls;
 import javafx.css.StyleableDoubleProperty;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Internal sizing contract shared by M3FX icon graphic controls.
+/// Defines icon sizing shared by M3FX icon graphic controls.
 ///
-/// Implementations retain their own rendering model while allowing containing controls to apply component icon-size
+/// Implementations may use any rendering model while allowing containing controls to apply component icon-size
 /// tokens without depending on a particular font or vector representation.
 @NotNullByDefault
 interface M3IconGraphic {
-    /// The common style class used when an icon participates in a component graphic slot.
-    String STYLE_CLASS = "m3-icon-graphic";
-
     /// Returns the effective icon size.
     ///
     /// @return the icon size in logical pixels

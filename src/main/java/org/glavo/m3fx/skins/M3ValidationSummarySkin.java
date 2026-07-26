@@ -51,6 +51,24 @@ import org.jetbrains.annotations.Nullable;
 /// labels, prompts, and error text while the summary is attached.
 @NotNullByDefault
 public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary> {
+    /// The title label style class.
+    private static final String TITLE_STYLE_CLASS = "m3-validation-summary-title";
+
+    /// The empty-state label style class.
+    private static final String EMPTY_TEXT_STYLE_CLASS = "m3-validation-summary-empty-text";
+
+    /// The item container style class.
+    private static final String ITEMS_STYLE_CLASS = "m3-validation-summary-items";
+
+    /// The item style class.
+    private static final String ITEM_STYLE_CLASS = "m3-validation-summary-item";
+
+    /// The item label style class.
+    private static final String ITEM_LABEL_STYLE_CLASS = "m3-validation-summary-item-label";
+
+    /// The item error style class.
+    private static final String ITEM_ERROR_STYLE_CLASS = "m3-validation-summary-item-error";
+
     /// The spacing between top-level summary content rows.
     private static final double CONTENT_SPACING = 10.0;
 
@@ -136,9 +154,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         items.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         emptyLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        titleLabel.getStyleClass().add(M3ValidationSummary.TITLE_STYLE_CLASS);
-        emptyLabel.getStyleClass().add(M3ValidationSummary.EMPTY_TEXT_STYLE_CLASS);
-        items.getStyleClass().add(M3ValidationSummary.ITEMS_STYLE_CLASS);
+        titleLabel.getStyleClass().add(TITLE_STYLE_CLASS);
+        emptyLabel.getStyleClass().add(EMPTY_TEXT_STYLE_CLASS);
+        items.getStyleClass().add(ITEMS_STYLE_CLASS);
         titleLabel.setMaxWidth(Double.MAX_VALUE);
         emptyLabel.setMaxWidth(Double.MAX_VALUE);
         items.setMaxWidth(Double.MAX_VALUE);
@@ -631,7 +649,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         /// @param input the invalid input represented by this row
         private ValidationItemRow(M3TextInputLayout input) {
             this.input = input;
-            getStyleClass().add(M3ValidationSummary.ITEM_STYLE_CLASS);
+            getStyleClass().add(ITEM_STYLE_CLASS);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             setMaxWidth(Double.MAX_VALUE);
             setAccessibleRole(AccessibleRole.BUTTON);
@@ -640,10 +658,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             setPickOnBounds(true);
             stateLayer.installStateTransitions(this);
 
-            label.getStyleClass().add(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS);
+            label.getStyleClass().add(ITEM_LABEL_STYLE_CLASS);
             label.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             label.setMaxWidth(Double.MAX_VALUE);
-            error.getStyleClass().add(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS);
+            error.getStyleClass().add(ITEM_ERROR_STYLE_CLASS);
             error.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             error.setWrapText(true);
             error.setMaxWidth(Double.MAX_VALUE);

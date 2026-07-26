@@ -47,24 +47,24 @@ import java.util.Objects;
 ///
 /// `M3SplitButton` combines an [M3Button] for the primary command with an [M3MenuButton] that reveals related
 /// secondary commands. The control keeps both parts visually joined, forwards the configured button variant, and
-/// exposes the menu items through the embedded menu button. Activating the primary part fires this control's
+/// exposes the menu items through its menu action. Activating the primary part fires this control's
 /// [ActionEvent] without opening the menu; activating the trailing part opens the attached non-modal menu without
 /// firing the primary action.
 ///
-/// The default is an empty, small tonal split button with a two-pixel gap. Its attached menu and item list are stable
-/// for the control lifetime. Use [#showMenu()] and [#hideMenu()] for non-blocking popup control.
+/// The default is an empty, small tonal split button with a two-pixel gap. Use [#showMenu()] and [#hideMenu()] for
+/// non-blocking menu visibility control.
 ///
 /// See [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
 public final class M3SplitButton extends Control {
-    /// The base style class for M3FX split buttons.
-    public static final String STYLE_CLASS = "m3-split-button";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-split-button";
 
     /// The style class applied to the primary action button.
-    public static final String ACTION_BUTTON_STYLE_CLASS = "m3-split-button-action";
+    private static final String ACTION_BUTTON_STYLE_CLASS = "m3-split-button-action";
 
     /// The style class applied to the menu button.
-    public static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
+    private static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
 
     /// The pseudo-class applied to the local left edge before JavaFX node-orientation mirroring.
     private static final PseudoClass LEFT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("left-edge");
@@ -700,7 +700,7 @@ public final class M3SplitButton extends Control {
 
     /// Adds base style classes, child buttons, and popup state forwarding.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
         menuIndicator.setMouseTransparent(true);

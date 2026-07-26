@@ -46,7 +46,7 @@ import java.util.function.Function;
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
 public final class M3CheckBox extends ButtonBase {
-    /// The default style class assigned to M3FX checkboxes.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-checkbox";
 
     /// The selected pseudo-class used by checkboxes.

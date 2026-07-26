@@ -54,9 +54,9 @@ import java.util.Objects;
 /// nested popup surface. The submenu popup is non-modal and auto-hides. It also closes when this item becomes
 /// unreachable or its owning menu closes.
 ///
-/// The item owns one stable submenu for its lifetime. [#getItems()] exposes that menu's content directly;
-/// applications configure selection behavior through [#getSubMenu()]. [#showSubMenu()] and [#hideSubMenu()] are
-/// non-blocking and the read-only [#subMenuShowingProperty()] remains true until an animated hide completes.
+/// [#getItems()] exposes the submenu content directly; applications configure selection behavior through
+/// [#getSubMenu()]. [#showSubMenu()] and [#hideSubMenu()] are non-blocking and the read-only
+/// [#subMenuShowingProperty()] remains `true` until an animated hide completes.
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
@@ -64,11 +64,11 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// The pseudo-class applied while the submenu is visible.
     private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
 
-    /// The base style class for M3FX submenu items.
-    public static final String STYLE_CLASS = "m3-sub-menu-item";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-sub-menu-item";
 
     /// The style class applied to the default submenu indicator.
-    public static final String INDICATOR_STYLE_CLASS = "m3-sub-menu-indicator";
+    private static final String INDICATOR_STYLE_CLASS = "m3-sub-menu-indicator";
 
     /// The horizontal overlap used when a submenu opens beside its owner item.
     private static final double SUB_MENU_OFFSET_X = -1.0;
@@ -382,7 +382,7 @@ public final class M3SubMenuItem extends M3MenuItem {
 
     /// Adds base style classes and configures submenu popup behavior.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleSubMenuItem);
         if (getTrailing() == null) {
             setTrailing(defaultIndicator);

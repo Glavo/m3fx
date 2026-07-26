@@ -49,8 +49,8 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
     /// Lays out standard button groups with the Material Expressive activated-item width interaction.
     @NotNullByDefault
     static final class ButtonGroupPane extends Pane {
-        /// The smallest width retained for a neighboring button during width redistribution.
-        private static final double MINIMUM_INTERACTION_WIDTH = 24.0;
+        /// The minimum accessible width retained for every button during width redistribution.
+        private static final double MINIMUM_INTERACTION_WIDTH = 48.0;
 
         /// The minimum accessible item width for extra-small and small connected groups.
         private static final double COMPACT_CONNECTED_ITEM_WIDTH = 48.0;

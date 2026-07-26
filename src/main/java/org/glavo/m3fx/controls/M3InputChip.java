@@ -20,8 +20,8 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design input chips](https://m3.material.io/components/chips/specs#input-chip).
 @NotNullByDefault
 public final class M3InputChip extends M3SelectableChip {
-    /// The style class identifying input chips.
-    public static final String STYLE_CLASS = "m3-input-chip";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-input-chip";
 
     /// Creates an empty input chip.
     public M3InputChip() {
@@ -42,6 +42,6 @@ public final class M3InputChip extends M3SelectableChip {
     /// @param graphic the optional leading graphic displayed with the text, or `null`
     /// @throws NullPointerException if `text` is `null`
     public M3InputChip(String text, @Nullable Node graphic) {
-        super(text, graphic, STYLE_CLASS);
+        super(text, graphic, DEFAULT_STYLE_CLASS);
     }
 }

@@ -31,10 +31,9 @@ import java.util.Objects;
 /// Presents [M3Dialog] instances in a dedicated native JavaFX window.
 ///
 /// A dialog window is an alternative presentation host for applications that do not have an existing
-/// [M3OverlayPane], including applications whose primary interaction is a single dialog. It owns a stable
-/// [Stage] and scene internally, while [#showDialog(M3Dialog)] returns the same exact-presentation
-/// [M3DialogHandle] used by in-scene dialogs. The dialog remains non-blocking; this class intentionally does not
-/// provide a nested-event-loop `showAndWait` operation.
+/// [M3OverlayPane], including applications whose primary interaction is a single dialog.
+/// [#showDialog(M3Dialog)] returns the same exact-presentation [M3DialogHandle] used by in-scene dialogs. The dialog
+/// remains non-blocking; this class does not provide a nested-event-loop `showAndWait` operation.
 ///
 /// The native window has no Material scrim. Native modality is controlled with [#initModality(Modality)], and the
 /// window manager's close request is translated into the dialog's cancellable [M3DialogEvent#CLOSE_REQUEST]. Once
@@ -60,7 +59,7 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3DialogWindow {
     /// The style class installed on the dedicated scene root.
-    public static final String STYLE_CLASS = "m3-dialog-window-root";
+    private static final String DEFAULT_ROOT_STYLE_CLASS = "m3-dialog-window-root";
 
     /// Creates an ownerless, non-modal, transparent dialog window.
     ///
@@ -72,7 +71,7 @@ public final class M3DialogWindow {
             throw new IllegalStateException("dialog windows must be created on the JavaFX application thread");
         }
 
-        root.getStyleClass().add(STYLE_CLASS);
+        root.getStyleClass().add(DEFAULT_ROOT_STYLE_CLASS);
         // Local theme roots normally paint a surface; a transparent native Stage must keep this host clear.
         root.setStyle("-fx-background-color: transparent;");
         scene = new Scene(root);
@@ -272,7 +271,7 @@ public final class M3DialogWindow {
     ///
     /// @param pane         the retained pane to install
     /// @param closeRequest the action invoked for native window-manager close requests
-    /// @return the detached internal presentation
+    /// @return the new presentation
     M3DialogPresentation createPresentation(M3DialogPane pane, Runnable closeRequest) {
         if (activePresentation != null) {
             throw new IllegalStateException("dialog window is already presenting a dialog");

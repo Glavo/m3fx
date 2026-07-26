@@ -40,8 +40,8 @@ import java.util.Objects;
 /// [Material Design loading indicators](https://m3.material.io/components/loading-indicator/overview).
 @NotNullByDefault
 public final class M3LoadingIndicator extends Control {
-    /// The base style class for M3FX loading indicators.
-    public static final String STYLE_CLASS = "m3-loading-indicator";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-loading-indicator";
 
     /// The pseudo class applied while the contained variant is selected.
     private static final PseudoClass CONTAINED_PSEUDO_CLASS =
@@ -232,7 +232,7 @@ public final class M3LoadingIndicator extends Control {
 
     /// Adds base style classes and accessibility metadata.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, false);

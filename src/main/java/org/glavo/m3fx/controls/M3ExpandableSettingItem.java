@@ -20,9 +20,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 settings row that expands or collapses nested content.
+/// An expandable M3FX settings row styled with Material tokens.
 ///
-/// `M3ExpandableSettingItem` belongs to the same setting-row family as [M3SwitchSettingItem] and
+/// Material Design 3 does not define an expandable settings-row component. This extension belongs to the same
+/// list-based setting-row family as [M3SwitchSettingItem] and
 /// [M3SelectSettingItem]. It uses the same list-item metrics, text slots, focus model, and whole-row activation.
 /// The trailing disclosure indicator is a non-interactive presentation of [#expandedProperty()]. Nested content is
 /// shown below the header row while expanded; it is not a second preference value and must not be used as a stale
@@ -35,7 +36,7 @@ import java.util.Objects;
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3ExpandableSettingItem extends M3SettingItemBase {
-    /// The concrete style class assigned to expandable setting rows.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-expandable-setting-item";
 
     /// The expanded pseudo-class applied while nested content is shown.
@@ -199,9 +200,14 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
 
     /// Returns whether a local y coordinate falls in the expanded content region under the current layout.
     private boolean isInContentArea(double localY) {
-        if (!(getSkin() instanceof M3ExpandableSettingItemSkin skin)) {
+        if (!isExpanded() || getContent() == null) {
             return false;
         }
-        return skin.isInContentArea(localY);
+        double headerHeight = switch (getLineCount()) {
+            case ONE_LINE -> getOneLineHeight();
+            case TWO_LINE -> getTwoLineHeight();
+            case THREE_LINE -> getThreeLineHeight();
+        };
+        return localY >= headerHeight;
     }
 }

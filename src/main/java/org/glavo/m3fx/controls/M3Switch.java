@@ -49,7 +49,7 @@ import java.util.function.Function;
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
 @NotNullByDefault
 public final class M3Switch extends ButtonBase {
-    /// The default style class assigned to M3FX switches.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-switch";
 
     /// The selected pseudo-class used by switches.

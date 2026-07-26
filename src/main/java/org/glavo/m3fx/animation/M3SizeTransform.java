@@ -6,7 +6,7 @@ package org.glavo.m3fx.animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// Describes how an animated-content container changes size between retained nodes.
+/// Describes how an animated-content container changes size during a content transition.
 ///
 /// A non-null size transform makes [M3AnimatedContent] animate its minimum and preferred dimensions toward the
 /// target content size. A `null` [#motionSpec()] resolves the default spatial role from the active theme. When

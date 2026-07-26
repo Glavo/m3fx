@@ -53,7 +53,7 @@ import java.util.Objects;
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
-    /// The default style class shared by controls in the M3FX button family.
+    /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-button-base";
 
     /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
@@ -73,6 +73,9 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// The default button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
+
+    /// The minimum accessible interaction target size.
+    private static final double MINIMUM_INTERACTION_TARGET_SIZE = 48.0;
 
     /// The default button container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 999.0;
@@ -437,21 +440,22 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return contentColor;
     }
 
-    /// The preferred button container height, in logical pixels.
+    /// The preferred visual button-container height, in logical pixels.
     ///
+    /// The control retains an interaction target of at least 48 by 48 logical pixels when this value is smaller.
     /// The default value is `40.0`. Values must be finite and non-negative.
     ///
     /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// Returns the preferred container height token.
+    /// Returns the preferred visual container height token.
     ///
     /// @return the preferred button container height in logical pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
-    /// Sets the preferred container height token.
+    /// Sets the preferred visual container height token.
     ///
     /// @param containerHeight the preferred button container height in logical pixels
     /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
@@ -459,7 +463,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the styleable property that stores the button container height.
+    /// Returns the styleable property that stores the visual button-container height.
     ///
     /// The property can be observed and bound, is exposed to CSS as `-m3-container-height`, and accepts finite,
     /// non-negative values. Its default value is `40.0` logical pixels.
@@ -710,7 +714,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return cancelButton;
     }
 
-    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    /// The M3FX icon graphic whose color and size are managed by this button.
     private @Nullable Node managedIconGraphic;
 
     /// Fires an action event unless this button is disabled.
@@ -837,8 +841,9 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double height = getContainerHeight();
+        double height = Math.max(getContainerHeight(), MINIMUM_INTERACTION_TARGET_SIZE);
         double padding = getHorizontalPadding();
+        M3Css.setMinWidthIfUnbound(this, MINIMUM_INTERACTION_TARGET_SIZE);
         M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));

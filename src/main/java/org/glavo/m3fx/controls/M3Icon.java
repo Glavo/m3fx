@@ -56,8 +56,11 @@ import java.util.Objects;
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3Icon extends Control implements M3IconGraphic {
-    /// The base style class for M3FX icons.
-    public static final String STYLE_CLASS = "m3-icon";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-icon";
+
+    /// The style class applied when this icon participates in a component graphic slot.
+    private static final String GRAPHIC_STYLE_CLASS = "m3-icon-graphic";
 
     /// The default icon font family token.
     private static final String DEFAULT_ICON_FONT_FAMILY = "System";
@@ -462,9 +465,9 @@ public final class M3Icon extends Control implements M3IconGraphic {
 
     /// Initializes style classes, accessibility, and resolved token state.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3IconPaints.initializeSemanticPaint(this, StyleableProperties.ICON_COLOR);
-        getStyleClass().add(M3IconGraphic.STYLE_CLASS);
+        getStyleClass().add(GRAPHIC_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         updateSizeStyle();

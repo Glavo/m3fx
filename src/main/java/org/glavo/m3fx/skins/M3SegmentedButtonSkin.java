@@ -29,11 +29,23 @@ import org.jetbrains.annotations.Nullable;
 /// updated without changing the button's requested size during state transitions.
 @NotNullByDefault
 public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedButton> {
+    /// The single-segment style class.
+    private static final String SINGLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-single";
+
+    /// The first-segment style class.
+    private static final String FIRST_SEGMENT_STYLE_CLASS = "m3-segmented-button-first";
+
+    /// The middle-segment style class.
+    private static final String MIDDLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-middle";
+
+    /// The last-segment style class.
+    private static final String LAST_SEGMENT_STYLE_CLASS = "m3-segmented-button-last";
+
     /// The selected container style class.
-    public static final String SELECTION_CONTAINER_STYLE_CLASS = "m3-segmented-button-selection-container";
+    private static final String SELECTION_CONTAINER_STYLE_CLASS = "m3-segmented-button-selection-container";
 
     /// The built-in selected-state check indicator style class.
-    public static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
+    private static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
 
     /// Marks an application graphic that is currently replaced by the built-in selected-state check.
     private static final PseudoClass GRAPHIC_REPLACED_PSEUDO_CLASS =
@@ -485,24 +497,24 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// Returns whether the current segment has a rounded top-left corner.
     private static boolean hasTopLeftCorner(M3SegmentedButton button) {
-        return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)
+        return button.getStyleClass().contains(SINGLE_SEGMENT_STYLE_CLASS)
+                || button.getStyleClass().contains(FIRST_SEGMENT_STYLE_CLASS)
                 || hasNoSegmentPosition(button);
     }
 
     /// Returns whether the current segment has a rounded top-right corner.
     private static boolean hasTopRightCorner(M3SegmentedButton button) {
-        return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS)
+        return button.getStyleClass().contains(SINGLE_SEGMENT_STYLE_CLASS)
+                || button.getStyleClass().contains(LAST_SEGMENT_STYLE_CLASS)
                 || hasNoSegmentPosition(button);
     }
 
     /// Returns whether the current button has no segment position class.
     private static boolean hasNoSegmentPosition(M3SegmentedButton button) {
-        return !button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
-                && !button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)
-                && !button.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS)
-                && !button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS);
+        return !button.getStyleClass().contains(SINGLE_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(FIRST_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(MIDDLE_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(LAST_SEGMENT_STYLE_CLASS);
     }
 
     /// Resolves a rounded inner corner radius after removing the outline stroke.

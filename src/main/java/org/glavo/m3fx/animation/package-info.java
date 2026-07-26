@@ -11,18 +11,16 @@
 /// [M3MotionSettings] can request reduced motion globally or for a node subtree. Effective node settings are
 /// inherited through the JavaFX parent chain; a descendant cannot cancel an ancestor request.
 ///
-/// [M3DoubleAnimatable] provides allocation-stable, interruptible animation of a writable double property, while
-/// [M3StateTransition] coordinates primitive doubles and immutable values through one typed, seekable transition and
-/// one pulse receiver. [M3VectorConverter] defines the component mapping for immutable JavaFX values, and
-/// [M3VectorConverters] provides mappings for common color and geometry types. [M3AnimatedVisibility] owns the
-/// observable enter, visible, exit, and detached lifecycle of one
-/// retained content node while animating its container size. [M3AnimatedContent] retains incoming and outgoing
-/// nodes while animating replacement and preferred size. Its immutable [M3EnterTransition] and [M3ExitTransition]
-/// values compose independent fade, scale, logical-edge slide, and RTL-aware expand or shrink reveal effects, while
-/// [M3ContentTransform] coordinates those effects with size and drawing-order behavior. Effects are applied to
-/// private holders rather than mutating caller-owned content nodes. [M3LayoutTransition] adds transform-based child
-/// placement motion to an existing JavaFX layout container. These runtime APIs resolve reduced-motion policy from
-/// their owner nodes and do not require specialized animated layout subclasses.
+/// [M3DoubleAnimatable] provides interruptible animation of a writable double property, while [M3StateTransition]
+/// coordinates primitive doubles and immutable values through one typed, seekable transition. [M3VectorConverter]
+/// defines the component mapping for immutable JavaFX values, and [M3VectorConverters] provides mappings for common
+/// color and geometry types. [M3AnimatedVisibility] exposes the enter, visible, exit, and hidden lifecycle of one
+/// content node. [M3AnimatedContent] animates content replacement and preferred size. Its immutable
+/// [M3EnterTransition] and [M3ExitTransition] values compose independent fade, scale, logical-edge slide, and
+/// RTL-aware expand or shrink reveal effects, while [M3ContentTransform] coordinates those effects with size and
+/// drawing-order behavior. [M3LayoutTransition] animates direct-child placement in an existing JavaFX layout
+/// container. These runtime APIs resolve reduced-motion policy from their owner nodes and do not require specialized
+/// animated layout subclasses.
 ///
 /// Motion specs and schemes are immutable and can be shared. Their builders are mutable, reusable, and not
 /// thread-safe. Runtime settings that observe or mutate live nodes follow JavaFX scene-graph threading rules.

@@ -58,26 +58,8 @@ import java.util.Set;
 /// supporting-text model that this summary complements.
 @NotNullByDefault
 public final class M3ValidationSummary extends Control {
-    /// The base style class for M3FX validation summaries.
-    public static final String STYLE_CLASS = "m3-validation-summary";
-
-    /// The style class applied to the summary title label.
-    public static final String TITLE_STYLE_CLASS = "m3-validation-summary-title";
-
-    /// The style class applied to the empty-state label.
-    public static final String EMPTY_TEXT_STYLE_CLASS = "m3-validation-summary-empty-text";
-
-    /// The style class applied to the internal invalid item container.
-    public static final String ITEMS_STYLE_CLASS = "m3-validation-summary-items";
-
-    /// The style class applied to each invalid item row.
-    public static final String ITEM_STYLE_CLASS = "m3-validation-summary-item";
-
-    /// The style class applied to the invalid item field label.
-    public static final String ITEM_LABEL_STYLE_CLASS = "m3-validation-summary-item-label";
-
-    /// The style class applied to the invalid item error label.
-    public static final String ITEM_ERROR_STYLE_CLASS = "m3-validation-summary-item-error";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-validation-summary";
 
     /// The pseudo-class used while the summary has no rendered content.
     private static final PseudoClass EMPTY_PSEUDO_CLASS = PseudoClass.getPseudoClass("empty");
@@ -417,7 +399,7 @@ public final class M3ValidationSummary extends Control {
 
     /// Initializes style classes, accessibility metadata, and validator listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleInput);

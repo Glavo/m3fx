@@ -2,7 +2,9 @@
 
 M3FX is a Material Design 3 component library for JavaFX applications.
 
-The library provides JavaFX controls, skins, themes, generated Material token stylesheets, motion utilities, three standalone sample applications, visual tests, and packaging tasks for desktop artifacts. It uses [MonetFX](https://github.com/Glavo/MonetFX) for Material dynamic color generation and follows the Material Design guidance at [m3.material.io](https://m3.material.io/).
+It provides themed controls, motion utilities, adaptive layout primitives, sample applications, and desktop packaging
+tasks. M3FX uses [MonetFX](https://github.com/Glavo/MonetFX) for Material dynamic color generation and follows
+[Material Design](https://m3.material.io/).
 
 ## Status
 
@@ -15,7 +17,6 @@ The demo and catalog applications exercise both profiles in light, dark, left-to
 - Java 17 or later for compiling and running M3FX code.
 - JavaFX 17 or later, with modules supplied by the application.
 - JavaFX 21 is the default local build and demo version.
-- Public implementation remains compatible with JavaFX 17 APIs unless newer APIs are guarded at runtime.
 
 M3FX does not publish OpenJFX artifacts as Maven runtime dependencies. Applications own the JavaFX version, platform classifier, module path, and runtime-image strategy.
 
@@ -84,8 +85,9 @@ public final class DemoApp extends Application {
 
 Snackbar messages are observable non-node models. Their text, action text, callback, and close-button visibility
 are JavaFX properties, so visible or queued messages can follow localization bindings. A non-blank action label
-shows the action button even when its callback is `null`; the presenter dismisses the current message after action
-activation. The overlay pane enables horizontal swipe-to-dismiss by default; applications can bind or set
+shows the action button even when its callback is `null`; activating the action dismisses the current message
+regardless of whether the callback returns normally. The overlay pane enables horizontal swipe-to-dismiss by default;
+applications can bind or set
 `snackbarSwipeToDismissEnabledProperty()` without changing individual message models. Queue any follow-up feedback
 instead of dismissing the active message from the callback:
 
@@ -150,13 +152,38 @@ handle.hide();
 `showModalOverlay(...)` uses the same handle contract while blocking lower-layer input and accessibility and
 suspending snackbar interaction until the modal layer is hidden.
 
-`M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Theme stylesheet compilation is an internal implementation detail, so applications should use the manager instead of constructing generated stylesheet URLs.
+`M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Applications should install themes through this API; generated stylesheet locations are not stable application resources.
+
+## Color Editing
+
+M3FX provides composable color controls based on the interaction and accessibility model of the
+[Spectrum 2 color components](https://react-spectrum.adobe.com/ColorArea), presented with M3FX theme roles and
+state layers. `M3Color` retains RGB, HSL, or HSB editing state, including latent hue for achromatic colors, while
+`toFxColor()` supplies an ordinary JavaFX paint.
+
+```java
+M3ColorPicker picker = new M3ColorPicker(new M3HsbColor(268.0, 0.62, 0.76));
+picker.setShowColorWheel(true);
+picker.getPresets().setAll(
+        new M3HsbColor(0.0, 0.74, 0.83),
+        new M3HsbColor(120.0, 0.59, 0.67),
+        new M3HsbColor(240.0, 0.68, 0.86)
+);
+picker.valueProperty().addListener((observable, oldColor, newColor) ->
+        System.out.println(newColor.toFxColor())
+);
+```
+
+`M3ColorArea`, `M3ColorSlider`, and `M3ColorWheel` expose `valueChangingProperty()` as the pointer-interaction
+commit boundary. `M3ColorField` edits hexadecimal RGB or RGBA values, `M3ColorSwatch` displays transparent and
+absent colors, and `M3ColorSwatchPicker` provides keyboard-navigable single selection. A palette rejects colors
+whose canonical 16-bit RGBA values are equivalent, even when they use different editing color spaces.
 
 ## Adaptive Layout
 
-`M3AdaptiveScaffold` arranges a stable top bar, contextual bottom bar, compact navigation bar, expanded navigation
-rail, optional trailing rail, and one to three logical content panes. Its breakpoint follows the width actually
-assigned by JavaFX, so resizing or moving a window does not require an application-level screen classifier:
+`M3AdaptiveScaffold` arranges a top bar, contextual bottom bar, compact navigation bar, expanded navigation rail,
+optional trailing rail, and one to three logical content panes. Its breakpoint follows the width assigned by JavaFX,
+so resizing or moving a window does not require an application-level screen classifier:
 
 ```java
 M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
@@ -173,16 +200,15 @@ Automatic navigation selects an available bar or rail for the current width and 
 `paneLayoutProperty()` or `navigationLayoutProperty()` when an application needs an explicit policy, and use
 `activePaneProperty()` to select the content shown by a single-pane layout.
 
-Each slot owns a stable internal container. Content that becomes ineffective at a breakpoint is hidden and
-unmanaged rather than detached, preserving selection, scrolling, bindings, and other scene-graph state. Leading
-and trailing pane roles follow `NodeOrientation`; physical safety insets remain physical. `breakpointOverride` is
-intended for previews, tests, or an application policy that intentionally differs from assigned width.
+Each slot retains its assigned content across breakpoint changes. Content that is not active remains unavailable for
+input while its application state is preserved. Leading and trailing pane roles follow `NodeOrientation`; physical
+safety insets remain physical. `breakpointOverride` supports previews and applications with an explicit breakpoint
+policy.
 
-Resolved pane-topology and navigation-presentation changes animate stable slot bounds and opacity without
-reparenting application content. An active transition may be reversed or retargeted from its rendered geometry;
-physical spring velocity is retained across retargets. Continuous resizing within the same topology remains direct
-so the scaffold tracks the window instead of chasing it. Set `layoutMotionSpecProperty()` for a local specification,
-or leave it `null` to use the theme's default spatial motion role.
+Changes between resolved pane and navigation presentations may animate bounds and opacity. An active transition can
+be retargeted, while continuous resizing within the same presentation remains direct. Set
+`layoutMotionSpecProperty()` for a local specification, or leave it `null` to use the theme's default spatial motion
+role.
 
 ## Motion And Layout Transitions
 
@@ -200,8 +226,8 @@ position.animateTo(240.0);
 ```
 
 `M3StateTransition<S>` coordinates primitive doubles and immutable multi-component JavaFX values from one typed
-state while using one shared pulse receiver. The current state changes only after every channel settles; the target
-state can be changed or bound while a run is active:
+state. The current state changes only after every channel settles; the target state can be changed or bound while a
+run is active:
 
 ```java
 M3MotionScheme motion = M3MotionScheme.expressive();
@@ -241,9 +267,9 @@ expansion.animateToTarget();
 `progressProperty()` and `seekingProperty()` expose this lifecycle to JavaFX bindings. Reduced motion settles
 automatic continuation synchronously; explicit seeking remains responsive because the caller directly controls it.
 
-Enter and exit transitions compose independent fade, scale, slide, and reveal channels. Reveal effects clip the
-private retained holder rather than resizing or modifying the application-owned content node, so surrounding layout
-remains stable while an animation is interrupted or reversed:
+Enter and exit transitions compose independent fade, scale, slide, and reveal channels. Reveal effects do not change
+the measured size of the content while they run, so interruption or reversal does not require callers to adjust
+surrounding layout:
 
 ```java
 animatedVisibility.setEnterTransition(
@@ -261,10 +287,9 @@ animatedVisibility.setExitTransition(
 Logical start and end anchors follow effective node orientation. Horizontal-only and vertical-only variants are
 available for content that should retain one full axis during the reveal.
 
-`M3AnimatedVisibility` retains one content node without taking ownership of that node's visual properties. Its
-showing target can be reversed while a transition is running, while `stateProperty()` distinguishes `ENTERING`,
-`VISIBLE`, `EXITING`, and `HIDDEN`. Exit keeps the node mounted until opacity, scale, and animated container size
-finish, then detaches it while retaining the public content reference:
+`M3AnimatedVisibility` displays one content node without changing that node's visual properties. Its showing target
+can be reversed while a transition is running, while `stateProperty()` distinguishes `ENTERING`, `VISIBLE`,
+`EXITING`, and `HIDDEN`:
 
 ```java
 M3AnimatedVisibility details = new M3AnimatedVisibility(detailsPane);
@@ -278,11 +303,10 @@ details.setShowing(expanded);
 details.stateProperty().addListener((observable, oldState, newState) -> updateStatus(newState));
 ```
 
-`M3AnimatedContent` performs retained-node replacement. The outgoing node remains attached until its exit effect
-finishes, the target node enters at its configured drawing order, and the container's preferred size follows the
-target. Assigning an outgoing node again reverses the transition from its current visual state. Enter and exit
-values compose one fade, scale, and logical-edge slide channel each; `START` and `END` automatically follow the
-effective node orientation:
+`M3AnimatedContent` replaces its content with the configured transform. A replacement can be retargeted before the
+previous transition completes, and the container's preferred size follows the target content. Enter and exit values
+compose one fade, scale, and logical-edge slide channel each; `START` and `END` automatically follow the effective
+node orientation:
 
 ```java
 M3AnimatedContent content = new M3AnimatedContent(summaryPane);
@@ -298,14 +322,11 @@ content.setContentTransform(new M3ContentTransform(
 content.setContent(detailsPane);
 ```
 
-The container reuses two private holders and one shared transition, so rapid target changes cannot accumulate an
-unbounded list of stale nodes or pulse receivers. Individual effects may carry independent motion specifications
-and delays. Set the content transform's size transform to `null` when replacement must adopt the target size
-synchronously without clipping.
+Individual effects may carry independent motion specifications and delays. Set the content transform's size
+transform to `null` when replacement must adopt the target size synchronously.
 
-`M3LayoutTransition` observes an existing `Parent` and animates direct-child `layoutX` and `layoutY` changes through
-private transforms. Start it after assigning the container to its lifecycle, and dispose it when that lifecycle is
-permanently released:
+`M3LayoutTransition` observes an existing `Parent` and animates direct-child placement changes. Start it after the
+container is attached to its intended lifecycle, and dispose it when that lifecycle ends:
 
 ```java
 M3LayoutTransition placement = new M3LayoutTransition(buttonRow);
@@ -434,7 +455,8 @@ M3ScrollPanes.style(viewport);
 M3ScrollPanes.enableSmoothScrolling(viewport);
 ```
 
-M3FX-owned scrolling controls, including `M3ListView` and `M3TextArea`, style their internal scrollbars automatically. Ordinary JavaFX scroll panes remain unchanged until passed to `M3ScrollPanes.style(...)`.
+M3FX scrolling controls, including `M3ListView` and `M3TextArea`, apply Material scrollbar styling automatically.
+Ordinary JavaFX scroll panes remain unchanged until passed to `M3ScrollPanes.style(...)`.
 
 ## Component Areas
 
@@ -445,9 +467,9 @@ Implemented component families include:
 - Text fields, password fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
 - Checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
 - Lists, setting rows, virtualized list views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
-- Adaptive breakpoints and scaffolds with stable bars, navigation regions, logical rails, and one- to three-pane layouts.
+- Adaptive breakpoints and scaffolds with bars, navigation regions, logical rails, and one- to three-pane layouts.
 
-Controls use custom skins and avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface. Text input controls intentionally retain JavaFX text-input bases to preserve editing, selection, clipboard, IME, and multiline behavior.
+Text-input controls retain JavaFX text-input behavior for editing, selection, clipboard, IME, and multiline input.
 
 ## Sample Applications
 
@@ -505,11 +527,9 @@ Build the demo as a host-platform native executable with
 ```
 
 Native Image builds require a JavaFX-enabled Liberica NIK Full installation through `GRAALVM_HOME`, or as the JDK
-running Gradle. The build rejects other Native Image distributions and NIK installations without JavaFX, compiles
-with `--no-fallback`, and stages one distributable executable under
+running Gradle. The build compiles with `--no-fallback` and stages one distributable executable under
 `demo/build/distributions/native/<os>-<arch>/`. Native executables are platform-specific and do not replace the
-cross-platform jlink tasks. Reusable Liberica NIK verification and executable staging task types live in `buildSrc`,
-so additional demo modules can adopt the same validation while keeping their own Native Image configuration.
+cross-platform jlink tasks.
 
 Build all supported platform and architecture runtime images:
 
@@ -539,7 +559,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands
 
 - The library publishes JavaFX as compile-only because applications own JavaFX runtime artifacts.
 - The module descriptor uses transitive JavaFX readability because public M3FX APIs expose JavaFX types.
-- The demo shadow jar packages demo classes, demo CSS, M3FX, MonetFX, non-JavaFX dependencies, and the demo default font, and verification rejects bundled JavaFX entries.
+- The demo shadow jar packages demo classes, demo CSS, M3FX, MonetFX, and non-JavaFX dependencies. It excludes JavaFX artifacts and fonts.
 - The catalog shadow jar packages the focused AndroidX-style Catalog, its CSS, M3FX, MonetFX, and non-JavaFX dependencies while excluding JavaFX.
 - The HMCL MD3 demo packages selected generated HMCL artwork and skin assets together with their upstream GPL-3.0 license.
 - Jlink tasks download BellSoft LibericaJDK Full archives and use target `jmods` to create runtime images.

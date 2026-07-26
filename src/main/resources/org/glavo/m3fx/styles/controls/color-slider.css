@@ -1,0 +1,44 @@
+.m3-color-slider {
+    -m3-color-slider-track-thickness: 16px;
+    -m3-color-slider-thumb-size: 28px;
+    -fx-background-color: transparent;
+    -fx-cursor: default;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-width: 240px;
+    -fx-pref-height: 48px;
+}
+
+.m3-color-slider .color-slider-track {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-insets: 0;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+    -fx-pref-width: -m3-color-slider-track-thickness;
+    -fx-pref-height: -m3-color-slider-track-thickness;
+}
+
+.m3-color-slider .color-slider-thumb {
+    -fx-min-width: -m3-color-slider-thumb-size;
+    -fx-min-height: -m3-color-slider-thumb-size;
+    -fx-pref-width: -m3-color-slider-thumb-size;
+    -fx-pref-height: -m3-color-slider-thumb-size;
+    -fx-max-width: -m3-color-slider-thumb-size;
+    -fx-max-height: -m3-color-slider-thumb-size;
+}
+
+.m3-color-slider .color-slider-thumb .m3-color-thumb-outline {
+    -fx-fill: -m3-color-outline;
+}
+
+.m3-color-slider .color-slider-thumb .m3-color-thumb-surface-ring {
+    -fx-fill: -m3-color-surface;
+}
+
+.m3-color-slider:disabled .color-slider-track,
+.m3-color-slider:disabled .color-slider-thumb {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}

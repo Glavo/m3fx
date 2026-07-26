@@ -23,7 +23,6 @@ import javafx.css.converter.SizeConverter;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
-import javafx.scene.Node;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -58,23 +57,27 @@ import java.util.Objects;
 /// otherwise unreachable segments cannot remain selected. Arrow-key navigation follows effective node orientation
 /// and wraps at the group boundary.
 ///
+/// Accessibility semantics follow the selection mode. A single-selection group exposes each segment as a radio
+/// button, a multiple-selection group exposes each segment as a check box, and a non-selectable group exposes its
+/// segments as ordinary buttons.
+///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public final class M3SegmentedButtonGroup extends Control {
-    /// The base style class for M3FX segmented button groups.
-    public static final String STYLE_CLASS = "m3-segmented-button-group";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-segmented-button-group";
 
     /// The style class applied when a segmented button is the only segment.
-    public static final String SINGLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-single";
+    private static final String SINGLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-single";
 
     /// The style class applied to the first segmented button in a group.
-    public static final String FIRST_SEGMENT_STYLE_CLASS = "m3-segmented-button-first";
+    private static final String FIRST_SEGMENT_STYLE_CLASS = "m3-segmented-button-first";
 
     /// The style class applied to middle segmented buttons in a group.
-    public static final String MIDDLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-middle";
+    private static final String MIDDLE_SEGMENT_STYLE_CLASS = "m3-segmented-button-middle";
 
     /// The style class applied to the last segmented button in a group.
-    public static final String LAST_SEGMENT_STYLE_CLASS = "m3-segmented-button-last";
+    private static final String LAST_SEGMENT_STYLE_CLASS = "m3-segmented-button-last";
 
     /// The default spacing that lets adjacent segmented button borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
@@ -84,7 +87,8 @@ public final class M3SegmentedButtonGroup extends Control {
     /// The list rejects `null`. Each segment must occur at most once and must satisfy the JavaFX single-parent rule
     /// when displayed. Adding and removing segments immediately updates selection, accessibility, and positional
     /// styling.
-    private final ObservableList<M3SegmentedButton> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3SegmentedButton> items =
+            M3ObservableLists.identityDistinctElementList("item");
 
     /// Notifies accessibility clients when focus moves between segmented buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -123,19 +127,16 @@ public final class M3SegmentedButtonGroup extends Control {
     };
 
     /// Updates segment position style classes and selection listeners when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
+    private final ListChangeListener<M3SegmentedButton> childrenListener = change -> {
         while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof M3SegmentedButton button) {
-                    uninstallButton(button);
-                    button.setSelected(false);
-                    clearSegmentStyle(button);
-                }
+            for (M3SegmentedButton button : change.getRemoved()) {
+                uninstallButton(button);
+                button.setSelected(false);
+                clearSegmentStyle(button);
+                button.restoreStandaloneAccessibleRole();
             }
-            for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3SegmentedButton button) {
-                    installButton(button);
-                }
+            for (M3SegmentedButton button : change.getAddedSubList()) {
+                installButton(button);
             }
         }
         updateSegmentStyles();
@@ -215,6 +216,7 @@ public final class M3SegmentedButtonGroup extends Control {
                         set(M3SelectionMode.SINGLE);
                         return;
                     }
+                    updateAccessibleRoles();
                     enforceSelectionPolicy();
                 }
             };
@@ -307,6 +309,9 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Returns the mutable child list used as segmented button group content.
     ///
+    /// The list rejects `null` elements and repeated occurrences of the same segment instance. Bulk mutations are
+    /// validated before the list changes, and each segment must satisfy the JavaFX single-parent rule.
+    ///
     /// @return the live, mutable segment list in display order
     public final ObservableList<M3SegmentedButton> getItems() {
         return items;
@@ -359,12 +364,7 @@ public final class M3SegmentedButtonGroup extends Control {
     /// @throws IndexOutOfBoundsException if `index` is outside the segment list
     /// @throws IllegalArgumentException  if the indexed segment is not currently selectable
     public final void selectIndex(int index) {
-        Node child = getItems().get(index);
-        if (child instanceof M3SegmentedButton button) {
-            select(button);
-            return;
-        }
-        throw new IllegalArgumentException("child at index is not an M3SegmentedButton");
+        select(getItems().get(index));
     }
 
     /// Selects the first segmented button when one exists.
@@ -533,8 +533,8 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Adds base style classes and child list listeners.
     private void initialize() {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
+        updateAccessibleRoles();
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
@@ -599,8 +599,8 @@ public final class M3SegmentedButtonGroup extends Control {
 
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3SegmentedButton button && isSelectableButton(button)) {
+            for (M3SegmentedButton button : getItems()) {
+                if (isSelectableButton(button)) {
                     button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
                 }
             }
@@ -615,6 +615,7 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Installs a selected-state listener on a segmented button.
     private void installButton(M3SegmentedButton button) {
+        button.applyGroupSelectionMode(getSelectionMode());
         button.selectedProperty().addListener(selectedInvalidation);
         button.disabledProperty().addListener(reachabilityInvalidation);
         button.visibleProperty().addListener(reachabilityInvalidation);
@@ -716,10 +717,8 @@ public final class M3SegmentedButtonGroup extends Control {
     private void selectOnly(@Nullable M3SegmentedButton button) {
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3SegmentedButton segmentedButton) {
-                    segmentedButton.setSelected(segmentedButton == button);
-                }
+            for (M3SegmentedButton segmentedButton : getItems()) {
+                segmentedButton.setSelected(segmentedButton == button);
             }
         } finally {
             updatingSelection = false;
@@ -730,8 +729,8 @@ public final class M3SegmentedButtonGroup extends Control {
     /// Refreshes selected button state from current child states.
     private void refreshSelectedButtons() {
         selectedButtonsScratch.clear();
-        for (Node child : getItems()) {
-            if (child instanceof M3SegmentedButton button && button.isSelected()) {
+        for (M3SegmentedButton button : getItems()) {
+            if (button.isSelected()) {
                 if (isSelectableButton(button)) {
                     selectedButtonsScratch.add(button);
                 } else {
@@ -761,9 +760,8 @@ public final class M3SegmentedButtonGroup extends Control {
     /// Returns the first selectable button referenced by accessibility parameters.
     private @Nullable M3SegmentedButton firstAccessibleSelectableButton(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getItems()) {
-            if (child instanceof M3SegmentedButton button
-                    && isSelectableButton(button)
+        for (M3SegmentedButton button : getItems()) {
+            if (isSelectableButton(button)
                     && M3Accessible.containsSelectionTarget(button, parameters)) {
                 return button;
             }
@@ -776,28 +774,31 @@ public final class M3SegmentedButtonGroup extends Control {
         return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(button);
     }
 
+    /// Updates group and child accessibility roles to reflect the current selection model.
+    private void updateAccessibleRoles() {
+        M3SelectionMode selectionMode = getSelectionMode();
+        setAccessibleRole(selectionMode == M3SelectionMode.NONE
+                ? AccessibleRole.TOOL_BAR
+                : AccessibleRole.PARENT);
+        for (M3SegmentedButton button : getItems()) {
+            button.applyGroupSelectionMode(selectionMode);
+        }
+    }
+
     /// Applies first, middle, last, or single segment style classes.
     private void updateSegmentStyles() {
-        int segmentCount = 0;
-        for (Node child : getItems()) {
-            if (child instanceof M3SegmentedButton) {
-                segmentCount++;
-            }
-        }
-
+        int segmentCount = getItems().size();
         int segmentIndex = 0;
-        for (Node child : getItems()) {
-            if (child instanceof M3SegmentedButton button) {
-                M3ControlStyles.replaceVariant(
-                        button,
-                        segmentStyleClass(segmentIndex, segmentCount),
-                        SINGLE_SEGMENT_STYLE_CLASS,
-                        FIRST_SEGMENT_STYLE_CLASS,
-                        MIDDLE_SEGMENT_STYLE_CLASS,
-                        LAST_SEGMENT_STYLE_CLASS
-                );
-                segmentIndex++;
-            }
+        for (M3SegmentedButton button : getItems()) {
+            M3ControlStyles.replaceVariant(
+                    button,
+                    segmentStyleClass(segmentIndex, segmentCount),
+                    SINGLE_SEGMENT_STYLE_CLASS,
+                    FIRST_SEGMENT_STYLE_CLASS,
+                    MIDDLE_SEGMENT_STYLE_CLASS,
+                    LAST_SEGMENT_STYLE_CLASS
+            );
+            segmentIndex++;
         }
     }
 

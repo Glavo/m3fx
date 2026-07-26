@@ -36,6 +36,12 @@ import java.util.List;
 /// scrollable layout clips the row and animates offset changes when motion is enabled.
 @NotNullByDefault
 public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, M3Tab> {
+    /// The tab row style class.
+    private static final String CONTAINER_STYLE_CLASS = "m3-tab-bar-container";
+
+    /// The divider style class.
+    private static final String DIVIDER_STYLE_CLASS = "m3-tab-bar-divider";
+
     /// The bottom divider rendered behind active indicators.
     private final Region divider = new Region();
 
@@ -48,10 +54,10 @@ public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, 
     public M3TabBarSkin(M3TabBar control) {
         super(control, control.getTabs(), new TabRow(control));
         tabRow = (TabRow) getContainer();
-        tabRow.getStyleClass().add(M3TabBar.CONTAINER_STYLE_CLASS);
+        tabRow.getStyleClass().add(CONTAINER_STYLE_CLASS);
         tabRow.setAlignment(Pos.CENTER_LEFT);
         tabRow.install();
-        divider.getStyleClass().add(M3TabBar.DIVIDER_STYLE_CLASS);
+        divider.getStyleClass().add(DIVIDER_STYLE_CLASS);
         divider.setManaged(false);
         divider.setMouseTransparent(true);
         getChildren().add(0, divider);

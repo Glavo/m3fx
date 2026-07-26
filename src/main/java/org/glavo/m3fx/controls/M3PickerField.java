@@ -52,10 +52,10 @@ import java.util.Objects;
 /// until [#commitEditorText()] succeeds, while changing the value immediately rewrites the text with the current
 /// [#formatterProperty()]. An empty committed string clears the value.
 ///
-/// The popup has no independent owner property; [#showPicker()] uses the window containing this control and has no
-/// effect until that window can show popups. It is auto-hiding, closes after a picker selection, and is also closed
-/// when this control becomes unreachable. [#showingProperty()] is read-only and remains `true` until a requested hide
-/// has completed. Showing and hiding are non-blocking.
+/// [#showPicker()] displays the picker in the window containing this field when that window can display popups. The
+/// picker is auto-hiding, closes after a selection, and closes when this field is no longer part of a showing scene.
+/// [#showingProperty()] is read-only and remains `true` until a requested hide has completed. Showing and hiding are
+/// non-blocking.
 ///
 /// ```java
 /// M3DatePickerField field = new M3DatePickerField();
@@ -74,14 +74,14 @@ import java.util.Objects;
 @NotNullByDefault
 public abstract sealed class M3PickerField<T, P extends Control> extends Control
         permits M3DatePickerField, M3TimePickerField {
-    /// The base style class for M3FX picker fields.
-    public static final String STYLE_CLASS = "m3-picker-field";
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-picker-field";
 
     /// The base style class applied to picker popup surfaces.
-    public static final String POPUP_STYLE_CLASS = "m3-picker-field-popup";
+    static final String POPUP_STYLE_CLASS = "m3-picker-field-popup";
 
     /// The style class applied to the trailing picker open button.
-    public static final String OPEN_BUTTON_STYLE_CLASS = "m3-picker-field-open-button";
+    static final String OPEN_BUTTON_STYLE_CLASS = "m3-picker-field-open-button";
 
     /// The vertical gap between the field and popup picker.
     private static final double POPUP_OFFSET_Y = 8.0;
@@ -98,7 +98,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The Material text input layout wrapping the editor and open button.
     private final M3TextInputLayout inputLayout = new M3TextInputLayout(editor);
 
-    /// The concrete popup picker control.
+    /// The picker control used to select field values.
     private final P picker;
 
     /// The picker value property used to synchronize popup selections.
@@ -124,7 +124,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Creates a picker field around the supplied popup picker.
     ///
-    /// @param picker                   the concrete popup picker control
+    /// @param picker                   the picker control used to select field values
     /// @param pickerValue              the picker value property synchronized with this field value
     /// @param formatter                the formatter used to convert between editor text and picker values
     /// @param styleClass               the concrete picker field style class
@@ -263,8 +263,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable raw editor-text property.
     ///
-    /// The property is the empty string by default and rejects `null`. Assignments update the embedded editor but do
-    /// not change [#valueProperty()] until the text is committed successfully.
+    /// The property is the empty string by default and rejects `null`. Assignments update the displayed text but do not
+    /// change [#valueProperty()] until the text is committed successfully.
     ///
     /// @return the raw editor-text property
     public final StringProperty textProperty() {
@@ -285,16 +285,16 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// Returns the text input variant used by the embedded editor.
+    /// Returns the visual variant used by this field.
     ///
-    /// @return the text input variant used by the embedded editor
+    /// @return the visual variant used by this field
     public final M3TextInputVariant getVariant() {
         return variant.get();
     }
 
-    /// Sets the text input variant used by the embedded editor.
+    /// Sets the visual variant used by this field.
     ///
-    /// @param variant the text input variant used by the embedded editor
+    /// @param variant the visual variant used by this field
     /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3TextInputVariant variant) {
         this.variant.set(variant);
@@ -302,8 +302,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable text-input variant property.
     ///
-    /// The property is [M3TextInputVariant#FILLED] by default and rejects `null`. It is bidirectionally synchronized
-    /// with the embedded editor's variant property.
+    /// The property is [M3TextInputVariant#FILLED] by default and rejects `null`.
     ///
     /// @return the text-input variant property
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
@@ -689,9 +688,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return inputLayout.isCharacterLimitExceeded();
     }
 
-    /// Returns the embedded editable text field.
+    /// Returns the editable text control used by this field.
     ///
-    /// @return the embedded editable text field
+    /// @return the editable text control used by this field
     final M3TextField getEditor() {
         return editor;
     }
@@ -703,12 +702,12 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return inputLayout;
     }
 
-    /// Returns the popup picker owned by this field.
+    /// Returns this field's picker control.
     ///
-    /// The same control instance is returned on every call. Applications may configure its range and presentation,
-    /// but must not add it to another parent because this field owns its popup presentation.
+    /// The same picker instance is returned on every call. Changes to its supported configuration, such as selectable
+    /// range and presentation properties, affect subsequent picker interactions.
     ///
-    /// @return the concrete popup picker control
+    /// @return this field's picker control
     public final P getPicker() {
         return picker;
     }
@@ -806,7 +805,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     }
 
-    /// Returns accessibility attributes for the embedded editor and popup picker.
+    /// Returns accessibility attributes for this field and its picker.
     ///
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
@@ -899,7 +898,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Adds style classes and installs field-level handlers.
     private void initialize(String styleClass, String openButtonAccessibleText) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(this, styleClass);
         M3ControlStyles.add(openButton, OPEN_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.COMBO_BOX);
@@ -1175,7 +1174,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return focusPicker();
     }
 
-    /// Forwards value-oriented accessibility actions to the concrete popup picker.
+    /// Forwards value-oriented accessibility actions to the picker.
     private void forwardPickerAccessibleAction(AccessibleAction action, Object... parameters) {
         picker.executeAccessibleAction(action, parameters);
     }
