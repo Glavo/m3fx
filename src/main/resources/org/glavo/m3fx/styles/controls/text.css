@@ -7,6 +7,9 @@
     -m3-typography-font-size: 57px;
     -m3-typography-line-height: 64px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 57px;
+    -fx-font-weight: 400;
 }
 
 .m3-display-medium-text {
@@ -14,6 +17,9 @@
     -m3-typography-font-size: 45px;
     -m3-typography-line-height: 52px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 45px;
+    -fx-font-weight: 400;
 }
 
 .m3-display-small-text {
@@ -21,6 +27,9 @@
     -m3-typography-font-size: 36px;
     -m3-typography-line-height: 44px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 36px;
+    -fx-font-weight: 400;
 }
 
 .m3-headline-large-text {
@@ -28,6 +37,9 @@
     -m3-typography-font-size: 32px;
     -m3-typography-line-height: 40px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 32px;
+    -fx-font-weight: 400;
 }
 
 .m3-headline-medium-text {
@@ -35,6 +47,9 @@
     -m3-typography-font-size: 28px;
     -m3-typography-line-height: 36px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 28px;
+    -fx-font-weight: 400;
 }
 
 .m3-headline-small-text {
@@ -42,6 +57,9 @@
     -m3-typography-font-size: 24px;
     -m3-typography-line-height: 32px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 24px;
+    -fx-font-weight: 400;
 }
 
 .m3-title-large-text {
@@ -49,6 +67,9 @@
     -m3-typography-font-size: 22px;
     -m3-typography-line-height: 28px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 22px;
+    -fx-font-weight: 400;
 }
 
 .m3-title-medium-text {
@@ -56,6 +77,9 @@
     -m3-typography-font-size: 16px;
     -m3-typography-line-height: 24px;
     -m3-typography-font-weight: 500;
+    -fx-font-family: "System";
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
 }
 
 .m3-title-small-text {
@@ -63,6 +87,9 @@
     -m3-typography-font-size: 14px;
     -m3-typography-line-height: 20px;
     -m3-typography-font-weight: 500;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
 }
 
 .m3-label-large-text {
@@ -70,6 +97,9 @@
     -m3-typography-font-size: 14px;
     -m3-typography-line-height: 20px;
     -m3-typography-font-weight: 500;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
 }
 
 .m3-label-medium-text {
@@ -77,6 +107,9 @@
     -m3-typography-font-size: 12px;
     -m3-typography-line-height: 16px;
     -m3-typography-font-weight: 500;
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
 }
 
 .m3-label-small-text {
@@ -84,6 +117,9 @@
     -m3-typography-font-size: 11px;
     -m3-typography-line-height: 16px;
     -m3-typography-font-weight: 500;
+    -fx-font-family: "System";
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
 }
 
 .m3-body-large-text {
@@ -91,6 +127,9 @@
     -m3-typography-font-size: 16px;
     -m3-typography-line-height: 24px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
 }
 
 .m3-body-medium-text {
@@ -98,6 +137,9 @@
     -m3-typography-font-size: 14px;
     -m3-typography-line-height: 20px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
 }
 
 .m3-body-small-text {
@@ -105,4 +147,12 @@
     -m3-typography-font-size: 12px;
     -m3-typography-line-height: 16px;
     -m3-typography-font-weight: 400;
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+}
+
+.m3-prominent-text {
+    -m3-typography-font-weight: 700;
+    -fx-font-weight: 700;
 }

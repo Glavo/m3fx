@@ -1,3 +1,5 @@
+@import "text.css";
+
 .m3-list-pane,
 .m3-list-view {
     -m3-list-item-spacing: 0px;
@@ -20,8 +22,6 @@
     -fx-pref-height: 48px;
     -fx-padding: 0px 16px 0px 16px;
     -fx-text-fill: -m3-color-on-surface-variant;
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
 }
 
 .m3-list-item {
@@ -88,20 +88,14 @@
 }
 
 .m3-list-item-overline {
-    -fx-font-size: 11px;
-    -fx-font-weight: 500;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 
 .m3-list-item-headline {
-    -fx-font-size: 16px;
-    -fx-font-weight: 400;
     -fx-text-fill: -m3-list-item-headline-color;
 }
 
 .m3-list-item-supporting {
-    -fx-font-size: 14px;
-    -fx-font-weight: 400;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 
@@ -137,19 +131,10 @@
     -m3-list-item-state-layer-color: -m3-color-on-secondary-container;
 }
 
-.m3-list-item:navigation-drawer .m3-list-item-headline {
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-}
-
 .m3-list-item:navigation-drawer .m3-ripple,
 .m3-list-item:navigation-drawer:pressed .m3-state-layer,
 .m3-list-item:navigation-drawer:armed .m3-state-layer {
     -fx-background-color: -m3-color-on-secondary-container;
-}
-
-.m3-list-item:navigation-drawer .m3-list-item-headline:selected {
-    -fx-font-weight: 700;
 }
 
 .m3-list-item:navigation-drawer .m3-list-item-leading .m3-icon-graphic,
@@ -179,8 +164,6 @@
 }
 
 .m3-list-item-trailing-supporting {
-    -fx-font-size: 12px;
-    -fx-font-weight: 400;
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 

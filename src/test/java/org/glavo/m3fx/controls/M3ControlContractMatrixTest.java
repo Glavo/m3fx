@@ -154,6 +154,9 @@ import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
+import org.glavo.m3fx.tokens.M3TextStyle;
+import org.glavo.m3fx.tokens.M3TokenSet;
+import org.glavo.m3fx.tokens.M3TypographyTokens;
 import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.glavo.m3fx.testing.Tier2Test;
@@ -22898,6 +22901,84 @@ final class M3ControlContractMatrixTest {
         assertTrue(trailingText.isManaged());
     }
 
+    /// Verifies that list and menu presentation labels use shared semantic typography classes.
+    @Test
+    void listAndMenuLabelsUseSemanticTypographyClasses() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setOverlineText("Overline");
+        listItem.setSupportingText("Supporting");
+        listItem.setTrailingSupportingText("Trailing");
+        applyCss(listItem);
+
+        assertTrue(listItem.lookup(".m3-list-item-overline").getStyleClass().contains("m3-label-small-text"));
+        assertTrue(listItem.lookup(".m3-list-item-headline").getStyleClass().contains("m3-body-large-text"));
+        assertTrue(listItem.lookup(".m3-list-item-supporting").getStyleClass().contains("m3-body-medium-text"));
+        assertTrue(listItem.lookup(".m3-list-item-trailing-supporting")
+                .getStyleClass()
+                .contains("m3-label-small-text"));
+
+        M3MenuItem menuItem = new M3MenuItem("Open");
+        menuItem.setSupportingText("Recent document");
+        menuItem.setTrailingSupportingText("Ctrl+O");
+        applyCss(menuItem);
+
+        assertTrue(menuItem.lookup(".m3-list-item-headline").getStyleClass().contains("m3-label-large-text"));
+        assertTrue(menuItem.lookup(".m3-list-item-supporting").getStyleClass().contains("m3-body-small-text"));
+        assertTrue(menuItem.lookup(".m3-list-item-trailing-supporting")
+                .getStyleClass()
+                .contains("m3-label-large-text"));
+    }
+
+    /// Verifies that shared typography classes resolve custom theme roles for list-derived controls.
+    @Test
+    void listDerivedControlsResolveCustomTypographyRoles() {
+        M3Theme baseTheme = M3Theme.defaultTheme();
+        M3TypographyTokens typography = M3TypographyTokens.builder(baseTheme.tokens().typographyTokens())
+                .labelLarge(M3TextStyle.of("System", 18.0, 24.0, 500))
+                .labelSmall(M3TextStyle.of("System", 9.0, 12.0, 500))
+                .bodyLarge(M3TextStyle.of("System", 20.0, 28.0, 400))
+                .bodyMedium(M3TextStyle.of("System", 16.0, 24.0, 400))
+                .bodySmall(M3TextStyle.of("System", 12.0, 16.0, 400))
+                .build();
+        M3Theme theme = M3Theme.fromTokenSet(
+                M3TokenSet.builder(baseTheme.tokens()).typographyTokens(typography).build()
+        );
+
+        M3ListItem listItem = new M3ListItem("List headline");
+        listItem.setOverlineText("List overline");
+        listItem.setSupportingText("List supporting");
+        listItem.setTrailingSupportingText("List trailing");
+
+        M3MenuItem menuItem = new M3MenuItem("Menu headline");
+        menuItem.setSupportingText("Menu supporting");
+        menuItem.setTrailingSupportingText("Menu trailing");
+
+        M3ListItem drawerItem = new M3ListItem("Drawer headline");
+        M3NavigationDrawer drawer = navigationDrawer(drawerItem);
+        VBox root = new VBox(listItem, menuItem, drawer);
+        Scene scene = new Scene(root, 420.0, 280.0);
+
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+
+        assertEquals(9.0, ((Label) listItem.lookup(".m3-list-item-overline")).getFont().getSize(), 0.0001);
+        assertEquals(20.0, ((Label) listItem.lookup(".m3-list-item-headline")).getFont().getSize(), 0.0001);
+        assertEquals(16.0, ((Label) listItem.lookup(".m3-list-item-supporting")).getFont().getSize(), 0.0001);
+        assertEquals(
+                9.0,
+                ((Label) listItem.lookup(".m3-list-item-trailing-supporting")).getFont().getSize(),
+                0.0001
+        );
+        assertEquals(18.0, ((Label) menuItem.lookup(".m3-list-item-headline")).getFont().getSize(), 0.0001);
+        assertEquals(12.0, ((Label) menuItem.lookup(".m3-list-item-supporting")).getFont().getSize(), 0.0001);
+        assertEquals(
+                18.0,
+                ((Label) menuItem.lookup(".m3-list-item-trailing-supporting")).getFont().getSize(),
+                0.0001
+        );
+        assertEquals(18.0, listItemHeadlineLabel(drawerItem).getFont().getSize(), 0.0001);
+    }
+
     /// Verifies that list items mirror logical leading and trailing content in right-to-left layouts.
     @Test
     void listItemMirrorsLogicalSlotsForRightToLeft() {
@@ -23629,6 +23710,7 @@ final class M3ControlContractMatrixTest {
 
         assertEquals("Pinned", header.getText());
         assertTrue(header.getStyleClass().contains("m3-list-section-header"));
+        assertTrue(header.getStyleClass().contains("m3-label-large-text"));
         assertEquals(AccessibleRole.TEXT, header.getAccessibleRole());
         assertInstanceOf(M3TextSkin.class, header.getSkin());
         assertEquals(48.0, header.prefHeight(320.0), 0.0001);
@@ -31796,6 +31878,9 @@ final class M3ControlContractMatrixTest {
 
             Label archiveLabel = listItemHeadlineLabel(archive);
             Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
+            assertTrue(archiveLabel.getStyleClass().contains("m3-label-large-text"));
+            assertFalse(archiveLabel.getStyleClass().contains("m3-body-large-text"));
+            assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
             assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
             assertEquals(
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
@@ -31848,6 +31933,13 @@ final class M3ControlContractMatrixTest {
             );
             assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
                     () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
+            assertTrue(archiveLabel.getStyleClass().contains("m3-prominent-text"));
+
+            drawer.getItems().remove(archive);
+
+            assertTrue(archiveLabel.getStyleClass().contains("m3-body-large-text"));
+            assertFalse(archiveLabel.getStyleClass().contains("m3-label-large-text"));
+            assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
         } finally {
             M3MotionSettings.setReducedMotionRequested(drawer, false);
         }

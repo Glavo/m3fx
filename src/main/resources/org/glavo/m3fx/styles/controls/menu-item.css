@@ -28,21 +28,6 @@
     -m3-list-item-state-layer-color: -m3-menu-vibrant-selected-item-content-color;
 }
 
-.m3-menu-item .m3-list-item-headline {
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-}
-
-.m3-menu-item .m3-list-item-supporting {
-    -fx-font-size: 12px;
-    -fx-font-weight: 400;
-}
-
-.m3-menu-item .m3-list-item-trailing-supporting {
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-}
-
 .m3-menu-item .m3-list-item-leading .m3-icon-graphic,
 .m3-menu-item .m3-list-item-trailing .m3-icon-graphic {
     -m3-icon-size: 24px;

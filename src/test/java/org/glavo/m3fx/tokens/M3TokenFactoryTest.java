@@ -134,9 +134,11 @@ final class M3TokenFactoryTest {
         assertTrue(typographyRules.contains("-m3-typography-font-size: 60px"));
         assertTrue(typographyRules.contains("-m3-typography-line-height: 68px"));
         assertTrue(typographyRules.contains("-m3-typography-tracking: -0.2px"));
-        assertTrue(typographyRules.contains(".m3-list-item-headline"));
-        assertTrue(typographyRules.contains(".m3-list-item:navigation-drawer .m3-list-item-headline"));
+        assertTrue(typographyRules.contains(".m3-prominent-text"));
         assertTrue(typographyRules.contains("-fx-font-size: 15px"));
+        assertFalse(typographyRules.contains(".m3-list-item"));
+        assertFalse(typographyRules.contains(".m3-list-section-header"));
+        assertFalse(typographyRules.contains(":navigation-drawer"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-hover-opacity: 0.05"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-opacity: 0.11"));

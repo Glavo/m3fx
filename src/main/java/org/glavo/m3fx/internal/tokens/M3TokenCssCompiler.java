@@ -166,17 +166,8 @@ public final class M3TokenCssCompiler {
         appendRule(builder, ".m3-body-large-text", tokens.bodyLarge());
         appendRule(builder, ".m3-body-medium-text", tokens.bodyMedium());
         appendRule(builder, ".m3-body-small-text", tokens.bodySmall());
-        appendRule(builder, ".m3-list-section-header", tokens.titleSmall());
-        appendRule(builder, ".m3-list-item-overline", tokens.labelSmall());
-        appendRule(builder, ".m3-list-item-headline", tokens.bodyLarge());
-        appendRule(builder, ".m3-list-item-supporting", tokens.bodyMedium());
-        appendRule(builder, ".m3-list-item-trailing-supporting", tokens.bodySmall());
-        appendRule(
-                builder,
-                ".m3-list-item:navigation-drawer .m3-list-item-headline",
-                tokens.labelLarge()
-        );
-        builder.append(".m3-list-item:navigation-drawer .m3-list-item-headline:selected {\n");
+        builder.append(".m3-prominent-text {\n");
+        appendDeclaration(builder, "-m3-typography-font-weight", "700");
         appendDeclaration(builder, "-fx-font-weight", "700");
         builder.append("}\n\n");
     }
