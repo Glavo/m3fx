@@ -31,6 +31,9 @@ final class CatalogIcons {
     /// The navigation pointer icon path.
     static final String NAVIGATION = "M12 2 4.5 20.3l.7.7 6.8-3 6.8 3 .7-.7z";
 
+    /// The navigation menu icon path.
+    static final String MENU = "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
+
     /// The notification icon path.
     static final String NOTIFICATIONS =
             "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.1-1.6-5.6-4.5-6.3V4c0-.8-.7-1.5-1.5-1.5S10.5 3.2 10.5 4v.7C7.6 5.4 6 7.9 6 11v5l-2 2v1h16v-1z";

@@ -3,12 +3,16 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Produces stable visual reports for the defining Catalog surfaces and expanded component examples.
@@ -157,6 +162,28 @@ final class M3FXCatalogSnapshotTest {
                         () -> {
                             @Nullable Scene scene = sceneReference.get();
                             return scene != null
+                                    && scene.lookup(".catalog-component-page") != null
+                                    && scene.getWidth() >= 1_000.0;
+                        },
+                        2,
+                        () -> {
+                            Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                            M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
+                            CatalogComponent buttons = componentNamed(app, "Buttons");
+                            stage.setWidth(1_080.0);
+                            stage.setHeight(800.0);
+                            app.navigate(new CatalogRoute.Component(buttons));
+                        },
+                        () -> writeSnapshot(
+                                Objects.requireNonNull(sceneReference.get(), "scene"),
+                                "sidebar-component.png"
+                        )
+                );
+
+                FxTestUtils.runOnFxThreadWhenStable(
+                        () -> {
+                            @Nullable Scene scene = sceneReference.get();
+                            return scene != null
                                     && scene.getWidth() <= 460.0
                                     && scene.getHeight() <= 560.0;
                         },
@@ -175,6 +202,32 @@ final class M3FXCatalogSnapshotTest {
                             writeFirstExampleSnapshot(scene, app, "Forms", "compact-form.png");
                         }
                 );
+
+                FxTestUtils.runOnFxThreadWhenStable(
+                        () -> {
+                            @Nullable Scene scene = sceneReference.get();
+                            return scene != null && isSelectedSidebarItemVisible(scene);
+                        },
+                        2,
+                        () -> {
+                            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                            M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
+                            CatalogComponent buttons = componentNamed(app, "Buttons");
+                            app.navigate(new CatalogRoute.Component(buttons));
+                            M3IconButton browseButton = assertInstanceOf(
+                                    M3IconButton.class,
+                                    Objects.requireNonNull(
+                                            scene.lookup(".catalog-sidebar-action"),
+                                            "compact sidebar action"
+                                    )
+                            );
+                            browseButton.fire();
+                        },
+                        () -> writeSnapshot(
+                                Objects.requireNonNull(sceneReference.get(), "scene"),
+                                "compact-sidebar.png"
+                        )
+                );
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -184,6 +237,26 @@ final class M3FXCatalogSnapshotTest {
                 }
             });
         }
+    }
+
+    /// Returns whether the selected compact sidebar item is completely inside its viewport.
+    ///
+    /// @param scene the compact Catalog scene
+    /// @return `true` when the selected item and viewport are present and the item is visible
+    private static boolean isSelectedSidebarItemVisible(Scene scene) {
+        PseudoClass selected = PseudoClass.getPseudoClass("selected");
+        @Nullable Node selectedItem = scene.getRoot().lookupAll(".catalog-sidebar-item").stream()
+                .filter(node -> node.getPseudoClassStates().contains(selected))
+                .findFirst()
+                .orElse(null);
+        @Nullable Node viewport = scene.lookup(".catalog-sidebar-scroll .viewport");
+        if (selectedItem == null || viewport == null) {
+            return false;
+        }
+        Bounds selectedBounds = selectedItem.localToScene(selectedItem.getBoundsInLocal());
+        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+        return selectedBounds.getMinY() >= viewportBounds.getMinY() - 0.5
+                && selectedBounds.getMaxY() <= viewportBounds.getMaxY() + 0.5;
     }
 
     /// Opens and captures the first example for a named component.

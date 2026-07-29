@@ -13,6 +13,62 @@
     -fx-border-width: 0 0 1px 0;
 }
 
+.catalog-sidebar {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.catalog-sidebar-header {
+    -fx-padding: 24px 20px 16px 20px;
+}
+
+.catalog-sidebar-title {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.catalog-sidebar-summary,
+.catalog-sidebar-section-title {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-sidebar-scroll,
+.catalog-sidebar-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.catalog-sidebar-items {
+    -fx-padding: 8px;
+    -fx-spacing: 2px;
+}
+
+.catalog-sidebar-section-title {
+    -fx-padding: 16px 16px 8px 16px;
+}
+
+.m3-button-base.catalog-sidebar-item {
+    -m3-container-height: 44px;
+    -m3-container-shape: 22px;
+    -m3-horizontal-padding: 16px;
+    -fx-alignment: center-left;
+}
+
+.m3-button-base.catalog-sidebar-item:selected {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-button-base.catalog-sidebar-item:selected .catalog-icon {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-button-base.catalog-sidebar-example {
+    -m3-container-height: 40px;
+    -m3-container-shape: 20px;
+    -m3-horizontal-padding: 32px;
+}
+
 .catalog-top-action .catalog-icon,
 .catalog-component-card .catalog-icon,
 .catalog-example-card .catalog-icon {

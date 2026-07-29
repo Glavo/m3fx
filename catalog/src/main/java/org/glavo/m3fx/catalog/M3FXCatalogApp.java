@@ -15,7 +15,12 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3ContentTransform;
+import org.glavo.m3fx.animation.M3EnterTransition;
+import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -33,6 +38,9 @@ import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
+import org.glavo.m3fx.layout.M3Breakpoint;
+import org.glavo.m3fx.layout.M3PaneLayout;
+import org.glavo.m3fx.layout.M3PaneRole;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -66,6 +74,33 @@ public final class M3FXCatalogApp extends Application {
     /// The maximum theme-settings sheet height in logical pixels.
     private static final double SETTINGS_SHEET_MAX_HEIGHT = 680.0;
 
+    /// The fixed width of the persistent Catalog sidebar in expanded layouts.
+    private static final double SIDEBAR_WIDTH = 288.0;
+
+    /// The content transform used when navigating deeper into the route hierarchy.
+    private static final M3ContentTransform FORWARD_ROUTE_TRANSFORM = new M3ContentTransform(
+            M3EnterTransition.fade(0.0).and(M3EnterTransition.slideFrom(M3TransitionEdge.END, 32.0)),
+            M3ExitTransition.fade(0.0).and(M3ExitTransition.slideTo(M3TransitionEdge.START, 16.0)),
+            null,
+            0.0
+    );
+
+    /// The content transform used when returning toward the Catalog home route.
+    private static final M3ContentTransform BACKWARD_ROUTE_TRANSFORM = new M3ContentTransform(
+            M3EnterTransition.fade(0.0).and(M3EnterTransition.slideFrom(M3TransitionEdge.START, 32.0)),
+            M3ExitTransition.fade(0.0).and(M3ExitTransition.slideTo(M3TransitionEdge.END, 16.0)),
+            null,
+            0.0
+    );
+
+    /// The content transform used for route rebuilds that do not represent navigation.
+    private static final M3ContentTransform INSTANT_ROUTE_TRANSFORM = new M3ContentTransform(
+            M3EnterTransition.none(),
+            M3ExitTransition.none(),
+            null,
+            0.0
+    );
+
     /// The default M3 seed color.
     private static final Color DEFAULT_SEED_COLOR = Color.web("#6750A4");
 
@@ -80,6 +115,9 @@ public final class M3FXCatalogApp extends Application {
 
     /// The immutable Catalog component registry.
     private final @Unmodifiable List<CatalogComponent> components = CatalogComponents.all();
+
+    /// The persistent responsive navigation for components and examples.
+    private final CatalogSidebar sidebar = new CatalogSidebar(components, this::navigate, this::navigateHome);
 
     /// Routes retained for top-app-bar back navigation.
     private final Deque<CatalogRoute> backStack = new ArrayDeque<>();
@@ -97,7 +135,7 @@ public final class M3FXCatalogApp extends Application {
     private final M3TopAppBar topAppBar = new M3TopAppBar("M3FX");
 
     /// The host for the active route content.
-    private final StackPane routeHost = new StackPane();
+    private final M3AnimatedContent routeHost = new M3AnimatedContent();
 
     /// The modal theme-settings scrim.
     private final M3Scrim settingsScrim = new M3Scrim();
@@ -195,10 +233,33 @@ public final class M3FXCatalogApp extends Application {
         topAppBar.getStyleClass().add("catalog-top-app-bar");
         scaffold.setTopBar(topAppBar);
 
+        scaffold.setLeadingPane(sidebar);
+        scaffold.setFixedLeadingPaneWidth(SIDEBAR_WIDTH);
+        scaffold.setPaneSpacing(0.0);
+        scaffold.setActivePane(M3PaneRole.MAIN);
+        scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+        scaffold.widthProperty().addListener((observable, oldWidth, newWidth) ->
+                updateCatalogPaneLayout(newWidth.doubleValue()));
+
         routeHost.setAlignment(Pos.TOP_CENTER);
+        routeHost.setFitToWidth(true);
+        routeHost.setFitToHeight(true);
         routeHost.setMinSize(0.0, 0.0);
+        routeHost.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         routeHost.getStyleClass().add("catalog-route-host");
         scaffold.setMainPane(routeHost);
+    }
+
+    /// Selects a single pane below the expanded breakpoint and a compact fixed sidebar at wider sizes.
+    ///
+    /// @param width the scaffold width in logical pixels
+    private void updateCatalogPaneLayout(double width) {
+        M3PaneLayout paneLayout = M3Breakpoint.forWidth(Math.max(0.0, width)).getRecommendedPaneCount() > 1
+                ? M3PaneLayout.FIXED_LEADING
+                : M3PaneLayout.SINGLE;
+        if (scaffold.getPaneLayout() != paneLayout) {
+            scaffold.setPaneLayout(paneLayout);
+        }
     }
 
     /// Configures the modal theme settings sheet and its coordinated scrim.
@@ -219,6 +280,7 @@ public final class M3FXCatalogApp extends Application {
         settingsScroll.setFitToWidth(true);
         settingsScroll.setMinHeight(0.0);
         M3ScrollPanes.style(settingsScroll);
+        M3ScrollPanes.enableSmoothScrolling(settingsScroll);
         settingsSheet.setContent(settingsScroll);
         settingsSheet.setShown(false);
         StackPane.setAlignment(settingsSheet, Pos.BOTTOM_CENTER);
@@ -331,24 +393,35 @@ public final class M3FXCatalogApp extends Application {
         }
         backStack.push(currentRoute);
         currentRoute = route;
-        renderCurrentRoute();
+        scaffold.setActivePane(M3PaneRole.MAIN);
+        renderCurrentRoute(FORWARD_ROUTE_TRANSFORM);
     }
 
     /// Returns to the preceding route, or to Home if no route is retained.
     void navigateBack() {
         currentRoute = backStack.isEmpty() ? new CatalogRoute.Home() : backStack.pop();
-        renderCurrentRoute();
+        scaffold.setActivePane(M3PaneRole.MAIN);
+        renderCurrentRoute(BACKWARD_ROUTE_TRANSFORM);
     }
 
     /// Clears navigation history and displays the Home route.
     void navigateHome() {
+        boolean routeChanged = !(currentRoute instanceof CatalogRoute.Home);
         backStack.clear();
         currentRoute = new CatalogRoute.Home();
-        renderCurrentRoute();
+        scaffold.setActivePane(M3PaneRole.MAIN);
+        renderCurrentRoute(routeChanged ? BACKWARD_ROUTE_TRANSFORM : INSTANT_ROUTE_TRANSFORM);
     }
 
     /// Rebuilds the active route and synchronizes app-bar actions with its context.
     private void renderCurrentRoute() {
+        renderCurrentRoute(INSTANT_ROUTE_TRANSFORM);
+    }
+
+    /// Rebuilds the active route using the supplied content-replacement transform.
+    ///
+    /// @param contentTransform the transform for the route replacement
+    private void renderCurrentRoute(M3ContentTransform contentTransform) {
         configureTopAppBar();
         Node content;
         if (currentRoute instanceof CatalogRoute.Home) {
@@ -359,13 +432,15 @@ public final class M3FXCatalogApp extends Application {
             CatalogRoute.Example exampleRoute = (CatalogRoute.Example) currentRoute;
             content = CatalogViews.createExample(exampleRoute.component(), exampleRoute.example());
         }
-        routeHost.getChildren().setAll(content);
+        sidebar.refresh(currentRoute, expressiveOnly);
+        routeHost.setContentTransform(contentTransform);
+        routeHost.setContent(content);
     }
 
     /// Configures the shared top app bar for the active route.
     private void configureTopAppBar() {
         topAppBar.setTitle(routeTitle());
-        topAppBar.setNavigation(currentRoute instanceof CatalogRoute.Home ? null : createBackButton());
+        topAppBar.setNavigation(createSidebarButton());
         topAppBar.getActions().clear();
 
         @Nullable CatalogComponent component = routeComponent();
@@ -377,6 +452,25 @@ public final class M3FXCatalogApp extends Application {
                 ? exampleRoute.example().sourceUrl()
                 : component == null ? null : component.sourceUrl();
         topAppBar.getActions().add(createOverflowButton(component, sourceUrl));
+    }
+
+    /// Creates the top-app-bar action that toggles the sidebar in single-pane layouts.
+    ///
+    /// @return the configured icon button
+    private M3IconButton createSidebarButton() {
+        M3IconButton button = new M3IconButton(CatalogIcons.create(CatalogIcons.MENU));
+        button.getStyleClass().addAll("catalog-top-action", "catalog-sidebar-action");
+        button.setAccessibleText("Browse components");
+        button.setOnAction(event -> {
+            M3PaneRole targetPane = scaffold.getActivePane() == M3PaneRole.LEADING
+                    ? M3PaneRole.MAIN
+                    : M3PaneRole.LEADING;
+            scaffold.setActivePane(targetPane);
+            if (targetPane == M3PaneRole.LEADING) {
+                sidebar.refresh(currentRoute, expressiveOnly);
+            }
+        });
+        return button;
     }
 
     /// Returns the top-app-bar title for the current route.
@@ -403,17 +497,6 @@ public final class M3FXCatalogApp extends Application {
             return exampleRoute.component();
         }
         return null;
-    }
-
-    /// Creates the top-app-bar back action.
-    ///
-    /// @return the configured icon button
-    private M3IconButton createBackButton() {
-        M3IconButton button = new M3IconButton(CatalogIcons.createDirectional(CatalogIcons.ARROW_BACK));
-        button.getStyleClass().add("catalog-top-action");
-        button.setAccessibleText("Back");
-        button.setOnAction(event -> navigateBack());
-        return button;
     }
 
     /// Creates the favorite action for a component route.

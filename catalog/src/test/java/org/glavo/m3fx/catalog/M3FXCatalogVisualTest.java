@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
@@ -13,16 +14,21 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FormPane;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
@@ -91,6 +97,7 @@ final class M3FXCatalogVisualTest {
                 M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
 
                 assertRegistry(app.components());
+                assertRouteTransitionsAndSmoothScrolling(scene, app);
                 assertHome(scene, app);
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
@@ -98,6 +105,7 @@ final class M3FXCatalogVisualTest {
                 assertRightToLeftLayout(scene, app);
                 assertExpandedComponentCoverage(scene, app);
                 assertCompactExampleLayouts(scene, stage, app);
+                assertCompactSidebarNavigation(scene, app);
                 assertEveryExampleRenders(scene, app);
             });
         } finally {
@@ -108,6 +116,45 @@ final class M3FXCatalogVisualTest {
                 }
             });
         }
+    }
+
+    /// Verifies directional route replacement and smooth scrolling before enabling reduced motion for later checks.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertRouteTransitionsAndSmoothScrolling(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            app.navigateHome();
+            layout(scene);
+
+            M3AnimatedContent routeHost = assertInstanceOf(
+                    M3AnimatedContent.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-route-host"), "route host")
+            );
+            ScrollPane homeScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-scroll"), "home scroll pane")
+            );
+            ScrollPane sidebarScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-sidebar-scroll"), "sidebar scroll pane")
+            );
+            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(homeScroll));
+            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(sidebarScroll));
+
+            CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+            app.navigate(new CatalogRoute.Component(buttons));
+            assertTrue(routeHost.isTransitioning(), "forward navigation should animate route replacement");
+            routeHost.finish();
+
+            app.navigateBack();
+            assertTrue(routeHost.isTransitioning(), "back navigation should animate route replacement");
+            routeHost.finish();
+
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            layout(scene);
+        });
     }
 
     /// Verifies registry size, ordering, uniqueness, and required links.
@@ -233,6 +280,17 @@ final class M3FXCatalogVisualTest {
             assertTrue(scene.getRoot().lookupAll(".catalog-icon").stream()
                     .allMatch(M3SVGIcon.class::isInstance));
             assertNotNull(scene.lookup(".catalog-top-app-bar"));
+            CatalogSidebar sidebar = assertInstanceOf(
+                    CatalogSidebar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "Catalog sidebar")
+            );
+            assertEquals(288.0, sidebar.getWidth(), 0.5);
+            assertEquals(app.components().size(), scene.getRoot().lookupAll(".catalog-sidebar-component").size());
+            M3Button homeButton = assertInstanceOf(
+                    M3Button.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-sidebar-home"), "sidebar Home item")
+            );
+            assertTrue(homeButton.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
             assertNull(scene.lookup(".catalog-navigation-drawer"));
             assertNull(scene.lookup(".catalog-navigation-rail"));
             assertNull(scene.lookup(".catalog-navigation-bar"));
@@ -284,8 +342,27 @@ final class M3FXCatalogVisualTest {
                     scene.lookup(".catalog-component-page"),
                     "component page"
             );
-            assertTrue(componentPage.getLayoutBounds().getWidth() >= scene.getWidth() - 40.0);
+            ScrollPane componentScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-scroll"), "component scroll pane")
+            );
+            assertEquals(
+                    componentScroll.getViewportBounds().getWidth(),
+                    componentPage.getLayoutBounds().getWidth(),
+                    0.5
+            );
+            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(componentScroll));
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-card").size());
+            assertEquals(16, scene.getRoot().lookupAll(".catalog-sidebar-example").size());
+            M3Button selectedComponent = assertInstanceOf(
+                    M3Button.class,
+                    scene.getRoot().lookupAll(".catalog-sidebar-component").stream()
+                            .filter(node -> node.getPseudoClassStates()
+                                    .contains(PseudoClass.getPseudoClass("selected")))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("selected sidebar component"))
+            );
+            assertEquals("Chips", selectedComponent.getText());
 
             CatalogExample example = chips.examples().get(0);
             app.navigate(new CatalogRoute.Example(chips, example));
@@ -293,6 +370,15 @@ final class M3FXCatalogVisualTest {
             assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
             assertNotNull(scene.lookup(".catalog-example-page"));
             assertNull(scene.lookup(".catalog-sample-surface"));
+            M3Button selectedExample = assertInstanceOf(
+                    M3Button.class,
+                    scene.getRoot().lookupAll(".catalog-sidebar-example").stream()
+                            .filter(node -> node.getPseudoClassStates()
+                                    .contains(PseudoClass.getPseudoClass("selected")))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("selected sidebar example"))
+            );
+            assertEquals(example.name(), selectedExample.getText());
 
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
@@ -314,6 +400,7 @@ final class M3FXCatalogVisualTest {
         AtomicBoolean detachedBeforeBothExitsFinished = new AtomicBoolean();
 
         FxTestUtils.runOnFxThread(() -> {
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
             M3OverlayPane overlay = assertInstanceOf(
                     M3OverlayPane.class,
                     scene.getRoot(),
@@ -394,6 +481,14 @@ final class M3FXCatalogVisualTest {
                     assertEquals(overlay.getHeight(), layer.getLayoutBounds().getHeight(), verticalPixel + 0.01);
                     assertTrue(sheet.getHeight() <= 680.5);
                     assertTrue(sheet.localToScene(sheet.getBoundsInLocal()).getMinY() >= 15.0);
+                    ScrollPane settingsScroll = assertInstanceOf(
+                            ScrollPane.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-settings-scroll"),
+                                    "settings scroll pane"
+                            )
+                    );
+                    assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(settingsScroll));
 
                     Node focusOwner = Objects.requireNonNull(scene.getFocusOwner(), "settings focus owner");
                     assertTrue(containsNode(layer, focusOwner), "modal settings should contain keyboard focus");
@@ -457,6 +552,7 @@ final class M3FXCatalogVisualTest {
                     assertNull(scene.lookup(".catalog-settings-scrim"));
                     assertSame(previousFocus, scene.getFocusOwner(),
                             "closing settings should restore the previous Catalog focus owner");
+                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
                 }
         );
     }
@@ -716,6 +812,16 @@ final class M3FXCatalogVisualTest {
                     stage.setHeight(560.0);
                 },
                 () -> {
+                    app.navigateHome();
+                    layout(scene);
+                    Node leadingPane = Objects.requireNonNull(
+                            scene.lookup(".m3-scaffold-leading-pane"),
+                            "adaptive leading pane"
+                    );
+                    assertFalse(leadingPane.isVisible(), "the sidebar should start collapsed at compact width");
+                    Node routeHost = Objects.requireNonNull(scene.lookup(".catalog-route-host"), "route host");
+                    assertTrue(routeHost.getLayoutBounds().getWidth() >= scene.getWidth() - 1.0);
+
                     for (CatalogComponent component : app.components()) {
                         for (CatalogExample example : component.examples()) {
                             app.navigate(new CatalogRoute.Example(component, example));
@@ -766,6 +872,78 @@ final class M3FXCatalogVisualTest {
                     }
                 }
         );
+    }
+
+    /// Verifies that compact navigation reveals the selected route and collapses after choosing an example.
+    ///
+    /// @param scene the compact Catalog scene
+    /// @param app the running Catalog application
+    private static void assertCompactSidebarNavigation(
+            Scene scene,
+            M3FXCatalogApp app
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> {
+                    layout(scene);
+                    @Nullable Node leadingPane = scene.lookup(".m3-scaffold-leading-pane");
+                    @Nullable Node selectedItem = selectedSidebarItem(scene);
+                    @Nullable Node viewport = scene.lookup(".catalog-sidebar-scroll .viewport");
+                    if (leadingPane == null || !leadingPane.isVisible() || selectedItem == null || viewport == null) {
+                        return false;
+                    }
+                    Bounds selectedBounds = selectedItem.localToScene(selectedItem.getBoundsInLocal());
+                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                    return selectedBounds.getMinY() >= viewportBounds.getMinY() - 0.5
+                            && selectedBounds.getMaxY() <= viewportBounds.getMaxY() + 0.5;
+                },
+                STABLE_PULSE_COUNT,
+                () -> {
+                    CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+                    app.navigate(new CatalogRoute.Component(buttons));
+                    layout(scene);
+                    M3IconButton browseButton = assertInstanceOf(
+                            M3IconButton.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-sidebar-action"),
+                                    "compact sidebar action"
+                            )
+                    );
+                    browseButton.fire();
+                },
+                () -> {
+                    M3Button selectedComponent = assertInstanceOf(
+                            M3Button.class,
+                            Objects.requireNonNull(selectedSidebarItem(scene), "selected sidebar component")
+                    );
+                    assertEquals("Buttons", selectedComponent.getText());
+                    M3Button exampleButton = assertInstanceOf(
+                            M3Button.class,
+                            scene.getRoot().lookupAll(".catalog-sidebar-example").stream()
+                                    .findFirst()
+                                    .orElseThrow(() -> new AssertionError("compact sidebar example"))
+                    );
+                    exampleButton.fire();
+                    layout(scene);
+                    assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
+                    Node leadingPane = Objects.requireNonNull(
+                            scene.lookup(".m3-scaffold-leading-pane"),
+                            "adaptive leading pane"
+                    );
+                    assertFalse(leadingPane.isVisible(), "choosing a route should collapse compact navigation");
+                }
+        );
+    }
+
+    /// Returns the selected component or example sidebar item.
+    ///
+    /// @param scene the Catalog scene
+    /// @return the selected sidebar item, or `null` if no item is selected
+    private static @Nullable Node selectedSidebarItem(Scene scene) {
+        PseudoClass selected = PseudoClass.getPseudoClass("selected");
+        return scene.getRoot().lookupAll(".catalog-sidebar-item").stream()
+                .filter(node -> node.getPseudoClassStates().contains(selected))
+                .findFirst()
+                .orElse(null);
     }
 
     /// Creates and lays out every registered example in the running application.

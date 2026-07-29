@@ -110,6 +110,7 @@ final class CatalogViews {
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 
@@ -189,6 +190,7 @@ final class CatalogViews {
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 
@@ -225,6 +227,7 @@ final class CatalogViews {
                 (observable, oldBounds, newBounds) -> page.setMinHeight(newBounds.getHeight())
         );
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 
