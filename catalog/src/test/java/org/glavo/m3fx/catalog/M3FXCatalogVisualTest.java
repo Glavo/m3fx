@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.catalog;
 
-import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
@@ -19,13 +18,15 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
-import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
@@ -101,6 +102,7 @@ final class M3FXCatalogVisualTest {
                 assertHome(scene, app);
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
+                assertSidebarScrollStability(scene, app);
                 assertThemeSettings(scene, app);
                 assertRightToLeftLayout(scene, app);
                 assertExpandedComponentCoverage(scene, app);
@@ -136,12 +138,14 @@ final class M3FXCatalogVisualTest {
                     ScrollPane.class,
                     Objects.requireNonNull(scene.lookup(".catalog-home-scroll"), "home scroll pane")
             );
-            ScrollPane sidebarScroll = assertInstanceOf(
-                    ScrollPane.class,
-                    Objects.requireNonNull(scene.lookup(".catalog-sidebar-scroll"), "sidebar scroll pane")
+            CatalogSidebar sidebar = assertInstanceOf(
+                    CatalogSidebar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "Catalog sidebar")
             );
+            ScrollPane sidebarScroll = drawerViewport(sidebar);
             assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(homeScroll));
             assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(sidebarScroll));
+            assertEquals(ScrollPane.ScrollBarPolicy.NEVER, sidebarScroll.getVbarPolicy());
 
             CatalogComponent buttons = componentNamed(app.components(), "Buttons");
             app.navigate(new CatalogRoute.Component(buttons));
@@ -284,13 +288,16 @@ final class M3FXCatalogVisualTest {
                     CatalogSidebar.class,
                     Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "Catalog sidebar")
             );
-            assertEquals(288.0, sidebar.getWidth(), 0.5);
+            assertEquals(360.0, sidebar.getWidth(), 0.5);
+            assertEquals(M3NavigationDrawerVariant.STANDARD, sidebar.drawer().getVariant());
             assertEquals(app.components().size(), scene.getRoot().lookupAll(".catalog-sidebar-component").size());
-            M3Button homeButton = assertInstanceOf(
-                    M3Button.class,
+            M3ListItem homeItem = assertInstanceOf(
+                    M3ListItem.class,
                     Objects.requireNonNull(scene.lookup(".catalog-sidebar-home"), "sidebar Home item")
             );
-            assertTrue(homeButton.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
+            assertSame(homeItem, sidebar.drawer().getSelectedItem());
+            assertEquals("Home", homeItem.getHeadlineText());
+            assertNull(scene.lookup(".catalog-sidebar-action"));
             assertNull(scene.lookup(".catalog-navigation-drawer"));
             assertNull(scene.lookup(".catalog-navigation-rail"));
             assertNull(scene.lookup(".catalog-navigation-bar"));
@@ -353,16 +360,12 @@ final class M3FXCatalogVisualTest {
             );
             assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(componentScroll));
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-card").size());
-            assertEquals(16, scene.getRoot().lookupAll(".catalog-sidebar-example").size());
-            M3Button selectedComponent = assertInstanceOf(
-                    M3Button.class,
-                    scene.getRoot().lookupAll(".catalog-sidebar-component").stream()
-                            .filter(node -> node.getPseudoClassStates()
-                                    .contains(PseudoClass.getPseudoClass("selected")))
-                            .findFirst()
-                            .orElseThrow(() -> new AssertionError("selected sidebar component"))
+            CatalogSidebar sidebar = visibleSidebar(scene);
+            M3ListItem selectedComponent = Objects.requireNonNull(
+                    sidebar.drawer().getSelectedItem(),
+                    "selected sidebar component"
             );
-            assertEquals("Chips", selectedComponent.getText());
+            assertEquals("Chips", selectedComponent.getHeadlineText());
 
             CatalogExample example = chips.examples().get(0);
             app.navigate(new CatalogRoute.Example(chips, example));
@@ -370,20 +373,66 @@ final class M3FXCatalogVisualTest {
             assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
             assertNotNull(scene.lookup(".catalog-example-page"));
             assertNull(scene.lookup(".catalog-sample-surface"));
-            M3Button selectedExample = assertInstanceOf(
-                    M3Button.class,
-                    scene.getRoot().lookupAll(".catalog-sidebar-example").stream()
-                            .filter(node -> node.getPseudoClassStates()
-                                    .contains(PseudoClass.getPseudoClass("selected")))
-                            .findFirst()
-                            .orElseThrow(() -> new AssertionError("selected sidebar example"))
+            M3ListItem selectedExample = Objects.requireNonNull(
+                    sidebar.drawer().getSelectedItem(),
+                    "selected sidebar example"
             );
-            assertEquals(example.name(), selectedExample.getText());
+            assertEquals(example.name(), selectedExample.getHeadlineText());
 
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Home.class, app.currentRoute());
+        });
+    }
+
+    /// Verifies that destination activation preserves the persistent drawer hierarchy and exact scroll position.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertSidebarScrollStability(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+            app.navigate(new CatalogRoute.Component(buttons));
+            layout(scene);
+
+            CatalogSidebar sidebar = visibleSidebar(scene);
+            M3NavigationDrawer drawer = sidebar.drawer();
+            ScrollPane viewport = drawerViewport(sidebar);
+            M3ListItem componentItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons");
+            M3ListItem firstExample = listItemNamed(
+                    sidebar,
+                    ".catalog-sidebar-example",
+                    buttons.examples().get(0).name()
+            );
+            M3ListItem secondExample = listItemNamed(
+                    sidebar,
+                    ".catalog-sidebar-example",
+                    buttons.examples().get(1).name()
+            );
+
+            viewport.setVvalue(0.42);
+            layout(scene);
+            double initialVvalue = viewport.getVvalue();
+
+            firstExample.fire();
+            layout(scene);
+            assertSame(drawer, sidebar.drawer(), "route changes must retain the drawer");
+            assertSame(firstExample, drawer.getSelectedItem(), "selection must retain the destination node");
+            assertSame(componentItem, listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons"));
+            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "first destination changed scroll position");
+
+            secondExample.fire();
+            layout(scene);
+            assertSame(secondExample, drawer.getSelectedItem(), "selection must retain the destination node");
+            assertSame(firstExample, listItemNamed(
+                    sidebar,
+                    ".catalog-sidebar-example",
+                    buttons.examples().get(0).name()
+            ));
+            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "second destination changed scroll position");
+            app.navigateHome();
+            layout(scene);
         });
     }
 
@@ -874,7 +923,7 @@ final class M3FXCatalogVisualTest {
         );
     }
 
-    /// Verifies that compact navigation reveals the selected route and collapses after choosing an example.
+    /// Verifies modal drawer presentation, persistent selection, and dismissal after choosing a destination.
     ///
     /// @param scene the compact Catalog scene
     /// @param app the running Catalog application
@@ -885,16 +934,13 @@ final class M3FXCatalogVisualTest {
         FxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     layout(scene);
-                    @Nullable Node leadingPane = scene.lookup(".m3-scaffold-leading-pane");
-                    @Nullable Node selectedItem = selectedSidebarItem(scene);
-                    @Nullable Node viewport = scene.lookup(".catalog-sidebar-scroll .viewport");
-                    if (leadingPane == null || !leadingPane.isVisible() || selectedItem == null || viewport == null) {
+                    @Nullable Node drawerNode = scene.lookup(".catalog-sidebar-drawer");
+                    @Nullable Node scrim = scene.lookup(".catalog-sidebar-scrim");
+                    if (!(drawerNode instanceof M3NavigationDrawer drawer) || scrim == null || !scrim.isVisible()) {
                         return false;
                     }
-                    Bounds selectedBounds = selectedItem.localToScene(selectedItem.getBoundsInLocal());
-                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-                    return selectedBounds.getMinY() >= viewportBounds.getMinY() - 0.5
-                            && selectedBounds.getMaxY() <= viewportBounds.getMaxY() + 0.5;
+                    return drawer.getVariant() == M3NavigationDrawerVariant.MODAL
+                            && Math.abs(drawer.getWidth() - 360.0) <= 0.5;
                 },
                 STABLE_PULSE_COUNT,
                 () -> {
@@ -911,39 +957,66 @@ final class M3FXCatalogVisualTest {
                     browseButton.fire();
                 },
                 () -> {
-                    M3Button selectedComponent = assertInstanceOf(
-                            M3Button.class,
-                            Objects.requireNonNull(selectedSidebarItem(scene), "selected sidebar component")
+                    CatalogSidebar sidebar = visibleSidebar(scene);
+                    M3ListItem selectedComponent = Objects.requireNonNull(
+                            sidebar.drawer().getSelectedItem(),
+                            "selected sidebar component"
                     );
-                    assertEquals("Buttons", selectedComponent.getText());
-                    M3Button exampleButton = assertInstanceOf(
-                            M3Button.class,
-                            scene.getRoot().lookupAll(".catalog-sidebar-example").stream()
-                                    .findFirst()
-                                    .orElseThrow(() -> new AssertionError("compact sidebar example"))
+                    assertEquals("Buttons", selectedComponent.getHeadlineText());
+                    M3ListItem exampleItem = listItemNamed(
+                            sidebar,
+                            ".catalog-sidebar-example",
+                            componentNamed(app.components(), "Buttons").examples().get(0).name()
                     );
-                    exampleButton.fire();
+                    exampleItem.fire();
                     layout(scene);
                     assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
-                    Node leadingPane = Objects.requireNonNull(
-                            scene.lookup(".m3-scaffold-leading-pane"),
-                            "adaptive leading pane"
-                    );
-                    assertFalse(leadingPane.isVisible(), "choosing a route should collapse compact navigation");
+                    assertNull(scene.lookup(".catalog-sidebar-drawer"));
+                    assertNull(scene.lookup(".catalog-sidebar-scrim"));
                 }
         );
     }
 
-    /// Returns the selected component or example sidebar item.
+    /// Returns the visible persistent Catalog sidebar.
     ///
     /// @param scene the Catalog scene
-    /// @return the selected sidebar item, or `null` if no item is selected
-    private static @Nullable Node selectedSidebarItem(Scene scene) {
-        PseudoClass selected = PseudoClass.getPseudoClass("selected");
-        return scene.getRoot().lookupAll(".catalog-sidebar-item").stream()
-                .filter(node -> node.getPseudoClassStates().contains(selected))
+    /// @return the attached Catalog sidebar
+    private static CatalogSidebar visibleSidebar(Scene scene) {
+        return assertInstanceOf(
+                CatalogSidebar.class,
+                Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "Catalog sidebar")
+        );
+    }
+
+    /// Returns the native drawer viewport after applying CSS.
+    ///
+    /// @param sidebar the attached Catalog sidebar
+    /// @return the drawer scroll viewport
+    private static ScrollPane drawerViewport(CatalogSidebar sidebar) {
+        sidebar.applyCss();
+        sidebar.layout();
+        return assertInstanceOf(
+                ScrollPane.class,
+                Objects.requireNonNull(
+                        sidebar.lookup(".m3-navigation-drawer-viewport"),
+                        "navigation drawer viewport"
+                )
+        );
+    }
+
+    /// Returns an attached list item with a specific headline.
+    ///
+    /// @param sidebar the attached Catalog sidebar
+    /// @param selector the item style selector
+    /// @param headline the required headline
+    /// @return the matching list item
+    private static M3ListItem listItemNamed(CatalogSidebar sidebar, String selector, String headline) {
+        return sidebar.lookupAll(selector).stream()
+                .filter(M3ListItem.class::isInstance)
+                .map(M3ListItem.class::cast)
+                .filter(item -> item.getHeadlineText().equals(headline))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new AssertionError("Missing sidebar item: " + headline));
     }
 
     /// Creates and lays out every registered example in the running application.

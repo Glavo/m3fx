@@ -28,6 +28,7 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
@@ -61,6 +62,8 @@ import java.util.Set;
 ///
 /// The application uses the Catalog's three-level information architecture: an alphabetical component grid opens
 /// a component description and example list, and each example opens as a focused full-page interactive specimen.
+/// Navigation uses a standard drawer that shares space with content at expanded breakpoints and a modal drawer at
+/// compact and medium breakpoints.
 /// Theme and display settings live in a modal bottom sheet so they remain available without replacing the
 /// Catalog's navigation hierarchy.
 @NotNullByDefault
@@ -75,7 +78,7 @@ public final class M3FXCatalogApp extends Application {
     private static final double SETTINGS_SHEET_MAX_HEIGHT = 680.0;
 
     /// The fixed width of the persistent Catalog sidebar in expanded layouts.
-    private static final double SIDEBAR_WIDTH = 288.0;
+    private static final double SIDEBAR_WIDTH = 360.0;
 
     /// The content transform used when navigating deeper into the route hierarchy.
     private static final M3ContentTransform FORWARD_ROUTE_TRANSFORM = new M3ContentTransform(
@@ -137,6 +140,15 @@ public final class M3FXCatalogApp extends Application {
     /// The host for the active route content.
     private final M3AnimatedContent routeHost = new M3AnimatedContent();
 
+    /// The scrim behind the compact modal navigation drawer.
+    private final M3Scrim sidebarScrim = new M3Scrim();
+
+    /// The coordinated full-size layer containing compact modal navigation.
+    private final StackPane sidebarLayer = new StackPane();
+
+    /// The active compact sidebar presentation, or `null` while the layer is detached.
+    private @Nullable M3OverlayPane.OverlayHandle sidebarOverlayHandle;
+
     /// The modal theme-settings scrim.
     private final M3Scrim settingsScrim = new M3Scrim();
 
@@ -194,6 +206,9 @@ public final class M3FXCatalogApp extends Application {
     /// Whether the home grid is filtered to components that have Expressive examples.
     private boolean expressiveOnly;
 
+    /// Whether the current breakpoint displays the standard persistent drawer.
+    private boolean permanentSidebar;
+
     /// Creates a Catalog application instance for the JavaFX launcher.
     public M3FXCatalogApp() {
     }
@@ -204,6 +219,7 @@ public final class M3FXCatalogApp extends Application {
     @Override
     public void start(Stage stage) {
         configureScaffold();
+        configureSidebarOverlay();
         configureSettingsOverlay();
 
         root.getStyleClass().add("catalog-root");
@@ -238,6 +254,7 @@ public final class M3FXCatalogApp extends Application {
         scaffold.setPaneSpacing(0.0);
         scaffold.setActivePane(M3PaneRole.MAIN);
         scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+        sidebar.setVariant(M3NavigationDrawerVariant.STANDARD);
         scaffold.widthProperty().addListener((observable, oldWidth, newWidth) ->
                 updateCatalogPaneLayout(newWidth.doubleValue()));
 
@@ -250,16 +267,49 @@ public final class M3FXCatalogApp extends Application {
         scaffold.setMainPane(routeHost);
     }
 
-    /// Selects a single pane below the expanded breakpoint and a compact fixed sidebar at wider sizes.
+    /// Selects modal navigation below the expanded breakpoint and standard navigation at wider sizes.
     ///
     /// @param width the scaffold width in logical pixels
     private void updateCatalogPaneLayout(double width) {
-        M3PaneLayout paneLayout = M3Breakpoint.forWidth(Math.max(0.0, width)).getRecommendedPaneCount() > 1
-                ? M3PaneLayout.FIXED_LEADING
-                : M3PaneLayout.SINGLE;
-        if (scaffold.getPaneLayout() != paneLayout) {
-            scaffold.setPaneLayout(paneLayout);
+        boolean permanent = M3Breakpoint.forWidth(Math.max(0.0, width)).getRecommendedPaneCount() > 1;
+        boolean presentationChanged = permanentSidebar != permanent;
+        permanentSidebar = permanent;
+        if (permanent) {
+            hideModalSidebar();
+            sidebar.setVariant(M3NavigationDrawerVariant.STANDARD);
+            boolean attached = scaffold.getLeadingPane() == sidebar;
+            if (!attached) {
+                sidebarLayer.getChildren().remove(sidebar);
+                scaffold.setLeadingPane(sidebar);
+            }
+            scaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
+            if (!attached) {
+                sidebar.refresh(currentRoute, expressiveOnly);
+            }
+        } else {
+            if (scaffold.getLeadingPane() == sidebar) {
+                scaffold.setLeadingPane(null);
+            }
+            scaffold.setActivePane(M3PaneRole.MAIN);
+            scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+            sidebar.setVariant(M3NavigationDrawerVariant.MODAL);
         }
+        if (scene != null && presentationChanged) {
+            configureTopAppBar();
+        }
+    }
+
+    /// Configures the compact modal navigation layer and its dismissal scrim.
+    private void configureSidebarOverlay() {
+        sidebarScrim.getStyleClass().add("catalog-sidebar-scrim");
+        sidebarScrim.setShown(false);
+        sidebarScrim.setOnAction(event -> hideModalSidebar());
+
+        sidebar.setMaxWidth(SIDEBAR_WIDTH);
+        sidebarLayer.getStyleClass().add("catalog-sidebar-layer");
+        sidebarLayer.setPickOnBounds(false);
+        sidebarLayer.getChildren().setAll(sidebarScrim);
+        StackPane.setAlignment(sidebar, Pos.CENTER_LEFT);
     }
 
     /// Configures the modal theme settings sheet and its coordinated scrim.
@@ -389,12 +439,14 @@ public final class M3FXCatalogApp extends Application {
     void navigate(CatalogRoute route) {
         Objects.requireNonNull(route, "route");
         if (route.equals(currentRoute)) {
+            hideModalSidebar();
             return;
         }
         backStack.push(currentRoute);
         currentRoute = route;
         scaffold.setActivePane(M3PaneRole.MAIN);
         renderCurrentRoute(FORWARD_ROUTE_TRANSFORM);
+        hideModalSidebar();
     }
 
     /// Returns to the preceding route, or to Home if no route is retained.
@@ -402,6 +454,7 @@ public final class M3FXCatalogApp extends Application {
         currentRoute = backStack.isEmpty() ? new CatalogRoute.Home() : backStack.pop();
         scaffold.setActivePane(M3PaneRole.MAIN);
         renderCurrentRoute(BACKWARD_ROUTE_TRANSFORM);
+        hideModalSidebar();
     }
 
     /// Clears navigation history and displays the Home route.
@@ -411,6 +464,7 @@ public final class M3FXCatalogApp extends Application {
         currentRoute = new CatalogRoute.Home();
         scaffold.setActivePane(M3PaneRole.MAIN);
         renderCurrentRoute(routeChanged ? BACKWARD_ROUTE_TRANSFORM : INSTANT_ROUTE_TRANSFORM);
+        hideModalSidebar();
     }
 
     /// Rebuilds the active route and synchronizes app-bar actions with its context.
@@ -440,7 +494,7 @@ public final class M3FXCatalogApp extends Application {
     /// Configures the shared top app bar for the active route.
     private void configureTopAppBar() {
         topAppBar.setTitle(routeTitle());
-        topAppBar.setNavigation(createSidebarButton());
+        topAppBar.setNavigation(isPermanentSidebar() ? null : createSidebarButton());
         topAppBar.getActions().clear();
 
         @Nullable CatalogComponent component = routeComponent();
@@ -461,16 +515,57 @@ public final class M3FXCatalogApp extends Application {
         M3IconButton button = new M3IconButton(CatalogIcons.create(CatalogIcons.MENU));
         button.getStyleClass().addAll("catalog-top-action", "catalog-sidebar-action");
         button.setAccessibleText("Browse components");
-        button.setOnAction(event -> {
-            M3PaneRole targetPane = scaffold.getActivePane() == M3PaneRole.LEADING
-                    ? M3PaneRole.MAIN
-                    : M3PaneRole.LEADING;
-            scaffold.setActivePane(targetPane);
-            if (targetPane == M3PaneRole.LEADING) {
-                sidebar.refresh(currentRoute, expressiveOnly);
-            }
-        });
+        button.setOnAction(event -> toggleModalSidebar());
         return button;
+    }
+
+    /// Returns whether the current breakpoint uses persistent standard navigation.
+    ///
+    /// @return `true` when the standard drawer shares space with route content
+    private boolean isPermanentSidebar() {
+        return permanentSidebar;
+    }
+
+    /// Toggles the compact modal navigation drawer.
+    private void toggleModalSidebar() {
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
+        if (currentHandle != null && currentHandle.isShowing()) {
+            hideModalSidebar();
+        } else {
+            showModalSidebar();
+        }
+    }
+
+    /// Presents modal navigation over compact and medium layouts.
+    private void showModalSidebar() {
+        if (isPermanentSidebar()) {
+            return;
+        }
+
+        if (scaffold.getLeadingPane() == sidebar) {
+            scaffold.setLeadingPane(null);
+        }
+        sidebar.setVariant(M3NavigationDrawerVariant.MODAL);
+        if (!sidebarLayer.getChildren().contains(sidebar)) {
+            sidebarLayer.getChildren().add(sidebar);
+        }
+        sidebar.refresh(currentRoute, expressiveOnly);
+        sidebarOverlayHandle = root.showModalOverlay(sidebarLayer);
+        sidebarScrim.show();
+    }
+
+    /// Dismisses compact modal navigation and releases its sidebar node for permanent layouts.
+    private void hideModalSidebar() {
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
+        if (currentHandle == null && !sidebarLayer.getChildren().contains(sidebar)) {
+            return;
+        }
+        sidebarOverlayHandle = null;
+        sidebarScrim.hide();
+        if (currentHandle != null) {
+            currentHandle.hide();
+        }
+        sidebarLayer.getChildren().remove(sidebar);
     }
 
     /// Returns the top-app-bar title for the current route.
@@ -577,6 +672,7 @@ public final class M3FXCatalogApp extends Application {
 
     /// Shows the modal theme settings overlay.
     void showSettings() {
+        hideModalSidebar();
         @Nullable M3OverlayPane.OverlayHandle currentHandle = settingsOverlayHandle;
         if (currentHandle == null || !currentHandle.isShowing()) {
             settingsOverlayHandle = root.showModalOverlay(settingsLayer);

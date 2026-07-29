@@ -3,8 +3,6 @@
 
 package org.glavo.m3fx.catalog;
 
-import javafx.css.PseudoClass;
-import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.image.PixelFormat;
@@ -13,6 +11,8 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -206,7 +206,16 @@ final class M3FXCatalogSnapshotTest {
                 FxTestUtils.runOnFxThreadWhenStable(
                         () -> {
                             @Nullable Scene scene = sceneReference.get();
-                            return scene != null && isSelectedSidebarItemVisible(scene);
+                            if (scene == null) {
+                                return false;
+                            }
+                            @Nullable Node drawerNode = scene.lookup(".catalog-sidebar-drawer");
+                            @Nullable Node scrim = scene.lookup(".catalog-sidebar-scrim");
+                            return drawerNode instanceof M3NavigationDrawer drawer
+                                    && drawer.getVariant() == M3NavigationDrawerVariant.MODAL
+                                    && Math.abs(drawer.getWidth() - 360.0) <= 0.5
+                                    && scrim != null
+                                    && scrim.isVisible();
                         },
                         2,
                         () -> {
@@ -237,26 +246,6 @@ final class M3FXCatalogSnapshotTest {
                 }
             });
         }
-    }
-
-    /// Returns whether the selected compact sidebar item is completely inside its viewport.
-    ///
-    /// @param scene the compact Catalog scene
-    /// @return `true` when the selected item and viewport are present and the item is visible
-    private static boolean isSelectedSidebarItemVisible(Scene scene) {
-        PseudoClass selected = PseudoClass.getPseudoClass("selected");
-        @Nullable Node selectedItem = scene.getRoot().lookupAll(".catalog-sidebar-item").stream()
-                .filter(node -> node.getPseudoClassStates().contains(selected))
-                .findFirst()
-                .orElse(null);
-        @Nullable Node viewport = scene.lookup(".catalog-sidebar-scroll .viewport");
-        if (selectedItem == null || viewport == null) {
-            return false;
-        }
-        Bounds selectedBounds = selectedItem.localToScene(selectedItem.getBoundsInLocal());
-        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-        return selectedBounds.getMinY() >= viewportBounds.getMinY() - 0.5
-                && selectedBounds.getMaxY() <= viewportBounds.getMaxY() + 0.5;
     }
 
     /// Opens and captures the first example for a named component.
