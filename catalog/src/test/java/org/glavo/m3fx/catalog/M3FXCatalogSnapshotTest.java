@@ -46,47 +46,85 @@ final class M3FXCatalogSnapshotTest {
         FxTestUtils.startToolkit();
     }
 
-    /// Captures navigation, theme-settings, search, date-range, and modal side-sheet surfaces.
+    /// Captures navigation, theme settings, expanded control families, and compact-window surfaces.
     @Test
     void writesCatalogNavigationSnapshots() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXCatalogApp> appReference = new AtomicReference<>();
         try {
-            FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
-                Stage stage = new Stage();
-                M3FXCatalogApp app = new M3FXCatalogApp();
-                app.start(stage);
-                stageReference.set(stage);
-                Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
-                M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
+                FxTestUtils.runOnFxThread(() -> {
+                    Stage stage = new Stage();
+                    M3FXCatalogApp app = new M3FXCatalogApp();
+                    app.start(stage);
+                    stageReference.set(stage);
+                    appReference.set(app);
+                    Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
+                    sceneReference.set(scene);
+                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
 
-                writeSnapshot(scene, "home.png");
+                    writeSnapshot(scene, "home.png");
 
-                CatalogComponent buttons = app.components().stream()
-                        .filter(component -> component.name().equals("Buttons"))
-                        .findFirst()
-                        .orElseThrow();
-                app.navigate(new CatalogRoute.Component(buttons));
-                writeSnapshot(scene, "component.png");
+                    CatalogComponent buttons = app.components().stream()
+                            .filter(component -> component.name().equals("Buttons"))
+                            .findFirst()
+                            .orElseThrow();
+                    app.navigate(new CatalogRoute.Component(buttons));
+                    writeSnapshot(scene, "component.png");
 
-                app.navigate(new CatalogRoute.Example(buttons, buttons.examples().get(0)));
-                writeSnapshot(scene, "example.png");
+                    app.navigate(new CatalogRoute.Example(buttons, buttons.examples().get(0)));
+                    writeSnapshot(scene, "example.png");
 
-                app.showSettings();
-                writeSnapshot(scene, "theme-settings.png");
-                app.hideSettings();
+                    app.showSettings();
+                    writeSnapshot(scene, "theme-settings.png");
+                    app.hideSettings();
 
-                CatalogComponent search = componentNamed(app, "Search");
-                app.navigate(new CatalogRoute.Example(search, search.examples().get(1)));
-                writeSnapshot(scene, "search-view.png");
+                    CatalogComponent search = componentNamed(app, "Search");
+                    app.navigate(new CatalogRoute.Example(search, search.examples().get(1)));
+                    writeSnapshot(scene, "search-view.png");
 
-                CatalogComponent datePickers = componentNamed(app, "Date pickers");
-                app.navigate(new CatalogRoute.Example(datePickers, datePickers.examples().get(1)));
-                writeSnapshot(scene, "date-range-picker.png");
+                    CatalogComponent datePickers = componentNamed(app, "Date pickers");
+                    app.navigate(new CatalogRoute.Example(datePickers, datePickers.examples().get(1)));
+                    writeSnapshot(scene, "date-range-picker.png");
 
-                CatalogComponent sideSheets = componentNamed(app, "Side sheets");
-                app.navigate(new CatalogRoute.Example(sideSheets, sideSheets.examples().get(1)));
-                writeSnapshot(scene, "modal-side-sheet.png");
-            }));
+                    CatalogComponent sideSheets = componentNamed(app, "Side sheets");
+                    app.navigate(new CatalogRoute.Example(sideSheets, sideSheets.examples().get(1)));
+                    writeSnapshot(scene, "modal-side-sheet.png");
+
+                    writeFirstExampleSnapshot(scene, app, "Avatars", "avatars.png");
+                    writeFirstExampleSnapshot(scene, app, "Banners", "banners.png");
+                    writeFirstExampleSnapshot(scene, app, "Color pickers", "color-picker.png");
+                    writeFirstExampleSnapshot(scene, app, "Forms", "forms.png");
+                    writeFirstExampleSnapshot(scene, app, "Icons", "icons.png");
+                    writeFirstExampleSnapshot(scene, app, "Scrims", "scrims.png");
+                    writeFirstExampleSnapshot(scene, app, "Settings", "settings.png");
+                    writeFirstExampleSnapshot(scene, app, "Surfaces", "surfaces.png");
+                });
+
+                FxTestUtils.runOnFxThreadWhenStable(
+                        () -> {
+                            @Nullable Scene scene = sceneReference.get();
+                            return scene != null
+                                    && scene.getWidth() <= 460.0
+                                    && scene.getHeight() <= 560.0;
+                        },
+                        2,
+                        () -> {
+                            Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                            M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
+                            app.navigateHome();
+                            stage.setWidth(460.0);
+                            stage.setHeight(560.0);
+                        },
+                        () -> {
+                            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                            M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
+                            writeSnapshot(scene, "compact-home.png");
+                            writeFirstExampleSnapshot(scene, app, "Forms", "compact-form.png");
+                        }
+                );
+            });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable Stage stage = stageReference.get();
@@ -95,6 +133,23 @@ final class M3FXCatalogSnapshotTest {
                 }
             });
         }
+    }
+
+    /// Opens and captures the first example for a named component.
+    ///
+    /// @param scene    the showing Catalog scene
+    /// @param app      the running Catalog application
+    /// @param name     the component display name
+    /// @param fileName the report file name
+    private static void writeFirstExampleSnapshot(
+            Scene scene,
+            M3FXCatalogApp app,
+            String name,
+            String fileName
+    ) {
+        CatalogComponent component = componentNamed(app, name);
+        app.navigate(new CatalogRoute.Example(component, component.examples().get(0)));
+        writeSnapshot(scene, fileName);
     }
 
     /// Finds a registered component by its display name.

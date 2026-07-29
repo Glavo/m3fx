@@ -190,14 +190,15 @@ final class CatalogViews {
         return scrollPane;
     }
 
-    /// Creates an example route that displays one real, interactive example centered in the available area.
+    /// Creates a scrollable example route that centers one real, interactive example in the available area.
     ///
-    /// No card, sample surface, title, or explanatory wrapper is added around the example. The returned stack pane
-    /// exists only to provide centering and a stable route-level style hook.
+    /// No card, sample surface, title, or explanatory wrapper is added around the example. The route fits compact
+    /// examples to the viewport width and preserves vertical scrolling for examples whose intrinsic height exceeds
+    /// the window.
     ///
     /// @param component the component that owns `example`
     /// @param example   the example to instantiate
-    /// @return a new centered example view
+    /// @return a new centered, scrollable example view
     /// @throws NullPointerException     if `component` or `example` is `null`, or if the example factory returns `null`
     /// @throws IllegalArgumentException if `example` does not belong to `component`
     static Node createExample(CatalogComponent component, CatalogExample example) {
@@ -210,7 +211,18 @@ final class CatalogViews {
         StackPane page = new StackPane(target.createContent());
         page.getStyleClass().addAll("catalog-route-page", "catalog-example-page");
         page.setAlignment(Pos.CENTER);
-        return page;
+        page.setMinWidth(0.0);
+
+        ScrollPane scrollPane = new ScrollPane(page);
+        scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-example-scroll");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+        scrollPane.setPannable(true);
+        scrollPane.viewportBoundsProperty().addListener(
+                (observable, oldBounds, newBounds) -> page.setMinHeight(newBounds.getHeight())
+        );
+        M3ScrollPanes.style(scrollPane);
+        return scrollPane;
     }
 
     /// Creates one adaptive-grid cell containing an actionable component card.

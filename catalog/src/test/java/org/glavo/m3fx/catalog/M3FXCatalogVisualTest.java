@@ -3,23 +3,31 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Avatar;
+import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SVGIcon;
+import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -88,6 +96,7 @@ final class M3FXCatalogVisualTest {
                 assertThemeSettings(scene, app);
                 assertRightToLeftLayout(scene, app);
                 assertExpandedComponentCoverage(scene, app);
+                assertCompactExampleLayouts(scene, stage, app);
                 assertEveryExampleRenders(scene, app);
             });
         } finally {
@@ -104,19 +113,69 @@ final class M3FXCatalogVisualTest {
     ///
     /// @param components the Catalog registry
     private static void assertRegistry(List<CatalogComponent> components) {
-        assertEquals(38, components.size());
+        assertEquals(46, components.size());
         Set<String> names = new HashSet<>();
         String previous = "";
         for (CatalogComponent component : components) {
             assertTrue(names.add(component.name()), () -> "duplicate component: " + component.name());
             assertTrue(previous.compareToIgnoreCase(component.name()) <= 0, () -> "registry is not alphabetical");
-            assertTrue(component.guidelinesUrl().startsWith("https://m3.material.io/"));
+            assertTrue(component.guidelinesUrl().startsWith("https://"));
             assertTrue(component.docsUrl().startsWith("https://"));
             assertTrue(component.sourceUrl().startsWith("https://github.com/Glavo/m3fx/"));
             assertFalse(component.examples().isEmpty());
             previous = component.name();
         }
-        assertTrue(names.containsAll(Set.of("Dividers", "Side sheets", "Search", "Date pickers")));
+        assertEquals(
+                Set.of(
+                        "Avatars",
+                        "Badges",
+                        "Banners",
+                        "Bottom app bars",
+                        "Bottom sheets",
+                        "Button groups",
+                        "Buttons",
+                        "Cards",
+                        "Carousel",
+                        "Checkboxes",
+                        "Chips",
+                        "Color pickers",
+                        "Date pickers",
+                        "Dialogs",
+                        "Dividers",
+                        "Extended FABs",
+                        "FAB menu",
+                        "Floating action buttons",
+                        "Floating toolbars",
+                        "Forms",
+                        "Icon buttons",
+                        "Icons",
+                        "Lists",
+                        "Loading indicators",
+                        "Menus",
+                        "Navigation bar",
+                        "Navigation drawer",
+                        "Navigation rail",
+                        "Progress indicators",
+                        "Radio buttons",
+                        "Scrims",
+                        "Search",
+                        "Segmented buttons",
+                        "Settings",
+                        "Side sheets",
+                        "Sliders",
+                        "Snackbars",
+                        "Split buttons",
+                        "Surfaces",
+                        "Switches",
+                        "Tabs",
+                        "Text fields",
+                        "Time pickers",
+                        "Tooltips",
+                        "Top app bars",
+                        "Typography"
+                ),
+                names
+        );
         assertEquals(2, componentNamed(components, "Date pickers").examples().size());
         assertEquals(2, componentNamed(components, "Lists").examples().size());
         assertEquals(2, componentNamed(components, "Search").examples().size());
@@ -526,7 +585,132 @@ final class M3FXCatalogVisualTest {
                     sideSheet.localToScene(sideSheet.getBoundsInLocal()).getMinX(),
                     0.5
             );
+
+            Parent avatarsPage = openFirstExample(scene, app, "Avatars");
+            assertEquals(4, avatarsPage.lookupAll(".m3-avatar").size());
+            assertTrue(avatarsPage.lookupAll(".m3-avatar").stream().allMatch(M3Avatar.class::isInstance));
+
+            Parent bannersPage = openFirstExample(scene, app, "Banners");
+            assertInstanceOf(
+                    M3Banner.class,
+                    Objects.requireNonNull(bannersPage.lookup(".m3-banner"), "banner")
+            );
+
+            Parent colorPickersPage = openFirstExample(scene, app, "Color pickers");
+            assertInstanceOf(
+                    M3ColorPicker.class,
+                    Objects.requireNonNull(colorPickersPage.lookup(".m3-color-picker"), "color picker")
+            );
+
+            Parent formsPage = openFirstExample(scene, app, "Forms");
+            assertInstanceOf(
+                    M3FormPane.class,
+                    Objects.requireNonNull(formsPage.lookup(".m3-form-pane"), "form pane")
+            );
+
+            Parent iconsPage = openFirstExample(scene, app, "Icons");
+            assertEquals(4, iconsPage.lookupAll(".m3-svg-icon").size());
+            assertTrue(iconsPage.lookupAll(".m3-svg-icon").stream().allMatch(M3SVGIcon.class::isInstance));
+
+            Parent scrimsPage = openFirstExample(scene, app, "Scrims");
+            M3Scrim sampleScrim = assertInstanceOf(
+                    M3Scrim.class,
+                    Objects.requireNonNull(scrimsPage.lookup(".m3-scrim"), "scrim")
+            );
+            assertTrue(sampleScrim.isShown());
+
+            Parent settingsPage = openFirstExample(scene, app, "Settings");
+            assertInstanceOf(
+                    M3SettingItem.class,
+                    Objects.requireNonNull(settingsPage.lookup(".m3-action-setting-item"), "action setting")
+            );
+            assertNotNull(settingsPage.lookup(".m3-switch-setting-item"));
+            assertNotNull(settingsPage.lookup(".m3-checkbox-setting-item"));
+
+            Parent surfacesPage = openFirstExample(scene, app, "Surfaces");
+            assertEquals(3, surfacesPage.lookupAll(".m3-surface").size());
+            assertTrue(surfacesPage.lookupAll(".m3-surface").stream().allMatch(M3Surface.class::isInstance));
         });
+    }
+
+    /// Opens the first example for a named component and returns its route page.
+    ///
+    /// @param scene         the Catalog scene
+    /// @param app           the running Catalog application
+    /// @param componentName the component display name
+    /// @return the example route page
+    private static Parent openFirstExample(Scene scene, M3FXCatalogApp app, String componentName) {
+        CatalogComponent component = componentNamed(app.components(), componentName);
+        app.navigate(new CatalogRoute.Example(component, component.examples().get(0)));
+        layout(scene);
+        return assertInstanceOf(
+                Parent.class,
+                Objects.requireNonNull(scene.lookup(".catalog-example-page"), componentName + " example page")
+        );
+    }
+
+    /// Verifies that every example remains within the route viewport at the application's minimum window size.
+    ///
+    /// @param scene the Catalog scene
+    /// @param stage the Catalog stage
+    /// @param app   the running Catalog application
+    private static void assertCompactExampleLayouts(
+            Scene scene,
+            Stage stage,
+            M3FXCatalogApp app
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> scene.lookup(".catalog-route-host") != null
+                        && scene.getWidth() <= 460.0
+                        && scene.getHeight() <= 560.0,
+                STABLE_PULSE_COUNT,
+                () -> {
+                    stage.setWidth(460.0);
+                    stage.setHeight(560.0);
+                },
+                () -> {
+                    for (CatalogComponent component : app.components()) {
+                        for (CatalogExample example : component.examples()) {
+                            app.navigate(new CatalogRoute.Example(component, example));
+                            layout(scene);
+
+                            ScrollPane scrollPane = assertInstanceOf(
+                                    ScrollPane.class,
+                                    Objects.requireNonNull(
+                                            scene.lookup(".catalog-example-scroll"),
+                                            component.name() + " example scroll pane"
+                                    )
+                            );
+                            Parent page = assertInstanceOf(
+                                    Parent.class,
+                                    Objects.requireNonNull(
+                                            scene.lookup(".catalog-example-page"),
+                                            component.name() + " example page"
+                                    )
+                            );
+                            Node sample = page.getChildrenUnmodifiable().get(0);
+                            Bounds pageBounds = page.localToScene(page.getBoundsInLocal());
+                            Bounds sampleBounds = sample.localToScene(sample.getBoundsInLocal());
+                            String description = component.name() + " / " + example.name();
+
+                            assertEquals(
+                                    scrollPane.getViewportBounds().getWidth(),
+                                    page.getLayoutBounds().getWidth(),
+                                    0.5,
+                                    description + " page must fit the compact viewport"
+                            );
+                            assertTrue(
+                                    sampleBounds.getMinX() >= pageBounds.getMinX() - 0.5,
+                                    description + " escapes the compact route at the leading edge"
+                            );
+                            assertTrue(
+                                    sampleBounds.getMaxX() <= pageBounds.getMaxX() + 0.5,
+                                    description + " escapes the compact route at the trailing edge"
+                            );
+                        }
+                    }
+                }
+        );
     }
 
     /// Creates and lays out every registered example in the running application.

@@ -64,6 +64,19 @@ final class CatalogInputComponents {
                                 CatalogSamples::suggestionChips
                         )
                 ),
+                CatalogComponents.extensionComponent(
+                        "Color pickers",
+                        "Color pickers combine a color plane, channels, fields, and optional preset swatches.",
+                        CatalogIcons.PALETTE,
+                        "https://react-spectrum.adobe.com/ColorArea",
+                        "M3ColorPicker",
+                        CatalogComponents.example(
+                                "Complete color picker",
+                                "An editable color with a wheel and preset palette.",
+                                false,
+                                CatalogSamples::colorPicker
+                        )
+                ),
                 CatalogComponents.component(
                         "Date pickers",
                         "Date pickers let users select a date from a calendar-oriented surface.",
@@ -81,6 +94,19 @@ final class CatalogInputComponents {
                                 "An inline picker with an inclusive selected range.",
                                 false,
                                 CatalogSamples::dateRangePicker
+                        )
+                ),
+                CatalogComponents.extensionComponent(
+                        "Forms",
+                        "Forms align related labels, supporting text, inputs, and settings into structured sections.",
+                        CatalogIcons.FORM,
+                        "https://m3.material.io/components/text-fields/overview",
+                        "M3FormPane",
+                        CatalogComponents.example(
+                                "Structured form",
+                                "A responsive form section containing text and boolean inputs.",
+                                false,
+                                CatalogSamples::forms
                         )
                 ),
                 CatalogComponents.component(
@@ -126,6 +152,19 @@ final class CatalogInputComponents {
                                 "A connected single-select segmented group.",
                                 false,
                                 CatalogSamples::segmentedButtons
+                        )
+                ),
+                CatalogComponents.extensionComponent(
+                        "Settings",
+                        "Setting rows combine list semantics with actions, switches, checkboxes, and radio choices.",
+                        CatalogIcons.SETTINGS,
+                        "https://m3.material.io/components/lists/overview",
+                        "M3SettingItem",
+                        CatalogComponents.example(
+                                "Settings list",
+                                "Action and selection settings in a segmented list.",
+                                false,
+                                CatalogSamples::settings
                         )
                 ),
                 CatalogComponents.component(

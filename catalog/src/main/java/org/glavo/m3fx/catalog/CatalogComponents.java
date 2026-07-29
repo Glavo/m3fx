@@ -14,9 +14,9 @@ import java.util.function.Supplier;
 
 /// Defines the immutable component and example registry presented by the M3FX Catalog.
 ///
-/// The registry follows the component names used by the AndroidX Material 3 Catalog and deliberately omits entries
-/// for which M3FX has no direct control. The list is alphabetical and does not add an application-specific category
-/// hierarchy.
+/// The registry follows the component names used by the AndroidX Material 3 Catalog and adds focused entries for
+/// M3FX controls that extend the standard Material component set. The list is alphabetical and does not expose the
+/// internal source-group hierarchy.
 @NotNullByDefault
 final class CatalogComponents {
     /// The GitHub source root for M3FX controls.
@@ -58,11 +58,58 @@ final class CatalogComponents {
             String className,
             CatalogExample... examples
     ) {
-        return new CatalogComponent(
+        return linkedComponent(
                 name,
                 description,
                 iconPath,
                 "https://m3.material.io/components/" + materialSlug + "/overview",
+                className,
+                examples
+        );
+    }
+
+    /// Creates an M3FX extension descriptor with an explicit related-guidelines link.
+    ///
+    /// @param name          the component name
+    /// @param description   the component description
+    /// @param iconPath      the component icon path
+    /// @param guidelinesUrl the closest applicable design or behavior guidelines
+    /// @param className     the primary M3FX class name
+    /// @param examples      the component examples
+    /// @return the component descriptor
+    static CatalogComponent extensionComponent(
+            String name,
+            String description,
+            String iconPath,
+            String guidelinesUrl,
+            String className,
+            CatalogExample... examples
+    ) {
+        return linkedComponent(name, description, iconPath, guidelinesUrl, className, examples);
+    }
+
+    /// Creates a component descriptor with explicit links and derived API locations.
+    ///
+    /// @param name          the component name
+    /// @param description   the component description
+    /// @param iconPath      the component icon path
+    /// @param guidelinesUrl the design or behavior guidelines
+    /// @param className     the primary M3FX class name
+    /// @param examples      the component examples
+    /// @return the component descriptor
+    private static CatalogComponent linkedComponent(
+            String name,
+            String description,
+            String iconPath,
+            String guidelinesUrl,
+            String className,
+            CatalogExample... examples
+    ) {
+        return new CatalogComponent(
+                name,
+                description,
+                iconPath,
+                guidelinesUrl,
                 JAVADOC_ROOT + className + ".html",
                 SOURCE_ROOT + className + ".java",
                 List.of(examples)
@@ -96,7 +143,7 @@ final class CatalogComponents {
     ///
     /// @return the immutable component registry
     private static @Unmodifiable List<CatalogComponent> createComponents() {
-        ArrayList<CatalogComponent> components = new ArrayList<>(38);
+        ArrayList<CatalogComponent> components = new ArrayList<>(46);
         components.addAll(CatalogContainerComponents.create());
         components.addAll(CatalogActionComponents.create());
         components.addAll(CatalogInputComponents.create());

@@ -20,6 +20,19 @@ final class CatalogFeedbackComponents {
     /// @return the immutable descriptor list
     static @Unmodifiable List<CatalogComponent> create() {
         return List.of(
+                CatalogComponents.extensionComponent(
+                        "Icons",
+                        "Icons use scalable SVG paths with semantic Material size and color roles.",
+                        CatalogIcons.ICONS,
+                        "https://m3.material.io/styles/icons/overview",
+                        "M3SVGIcon",
+                        CatalogComponents.example(
+                                "Icon sizes and colors",
+                                "Vector icons across semantic size and color roles.",
+                                false,
+                                CatalogSamples::icons
+                        )
+                ),
                 CatalogComponents.component(
                         "Loading indicators",
                         "Loading indicators communicate an indeterminate wait with expressive shape motion.",

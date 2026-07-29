@@ -8,10 +8,11 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.*;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -32,6 +33,23 @@ final class CatalogSamples {
     private CatalogSamples() {
     }
 
+    /// Creates text and graphic avatars across the semantic color variants.
+    ///
+    /// @return the avatar example
+    static Node avatars() {
+        M3Avatar initials = new M3Avatar("AB");
+
+        M3Avatar secondary = new M3Avatar("M");
+        secondary.setVariant(M3AvatarVariant.SECONDARY);
+
+        M3Avatar graphic = new M3Avatar(icon(CatalogIcons.AVATAR));
+        graphic.setVariant(M3AvatarVariant.TERTIARY);
+
+        M3Avatar surface = new M3Avatar("S");
+        surface.setVariant(M3AvatarVariant.SURFACE);
+        return row(initials, secondary, graphic, surface);
+    }
+
     /// Creates an attached count badge whose icon button increments the displayed count.
     ///
     /// @return the badge example
@@ -40,6 +58,25 @@ final class CatalogSamples {
         M3IconButton notifications = iconButton(CatalogIcons.NOTIFICATIONS, "Increment notification count");
         notifications.setOnAction(event -> badge.setText(Integer.toString(Integer.parseInt(badge.getText()) + 1)));
         return row(new M3BadgedBox(notifications, badge));
+    }
+
+    /// Creates a persistent informational banner with local action feedback.
+    ///
+    /// @return the banner example
+    static Node banners() {
+        M3Text result = new M3Text("Choose a banner action", M3TextRole.BODY_MEDIUM);
+        M3Banner banner = new M3Banner(
+                "A new M3FX preview is available with updated components and theme tokens."
+        );
+        banner.setIcon(icon(CatalogIcons.NOTIFICATIONS));
+
+        M3Button later = new M3Button("Later", M3ButtonVariant.TEXT);
+        later.setOnAction(event -> result.setText("Reminder deferred"));
+        M3Button review = new M3Button("Review", M3ButtonVariant.TEXT);
+        review.setOnAction(event -> result.setText("Release notes opened"));
+        banner.getActions().addAll(later, review);
+        configureResponsiveWidth(banner, 640.0);
+        return column(banner, result);
     }
 
     /// Creates a bottom app bar with regular actions and a floating primary action.
@@ -53,7 +90,7 @@ final class CatalogSamples {
                 iconButton(CatalogIcons.SETTINGS, "Settings")
         );
         bar.setFloatingAction(new M3FloatingActionButton(icon(CatalogIcons.ADD)));
-        bar.setPrefWidth(520.0);
+        configureResponsiveWidth(bar, 520.0);
         return bar;
     }
 
@@ -100,7 +137,7 @@ final class CatalogSamples {
     /// @return the button example
     static Node buttons() {
         M3Text result = new M3Text("Choose an action", M3TextRole.BODY_MEDIUM);
-        HBox buttons = row(
+        FlowPane buttons = row(
                 actionButton("Filled", M3ButtonVariant.FILLED, result),
                 actionButton("Tonal", M3ButtonVariant.TONAL, result),
                 actionButton("Outlined", M3ButtonVariant.OUTLINED, result),
@@ -134,7 +171,9 @@ final class CatalogSamples {
                 sampleCard("Archive", "History", M3CardVariant.FILLED)
         );
         carousel.setWrapAround(true);
+        carousel.setMinWidth(0.0);
         carousel.setPrefSize(620.0, 190.0);
+        carousel.setMaxWidth(620.0);
 
         M3Button previous = new M3Button("Previous", M3ButtonVariant.OUTLINED);
         previous.setOnAction(event -> carousel.selectPrevious());
@@ -204,13 +243,30 @@ final class CatalogSamples {
         return column(row(yes, later), response);
     }
 
+    /// Creates a complete color picker with a wheel and preset palette.
+    ///
+    /// @return the color-picker example
+    static Node colorPicker() {
+        M3ColorPicker picker = new M3ColorPicker(new M3HsbColor(268.0, 0.62, 0.76));
+        picker.setShowColorWheel(true);
+        picker.getPresets().setAll(
+                new M3HsbColor(4.0, 0.72, 0.85),
+                new M3HsbColor(38.0, 0.82, 0.94),
+                new M3HsbColor(126.0, 0.59, 0.67),
+                new M3HsbColor(216.0, 0.68, 0.86),
+                new M3HsbColor(268.0, 0.62, 0.76),
+                new M3HsbColor(326.0, 0.60, 0.82)
+        );
+        configureResponsiveWidth(picker, 520.0);
+        return picker;
+    }
+
     /// Creates an inline date picker initialized to the current date.
     ///
     /// @return the date picker example
     static Node datePicker() {
         M3DatePicker picker = new M3DatePicker(LocalDate.now());
-        picker.setPrefWidth(420.0);
-        picker.setMaxWidth(420.0);
+        configureResponsiveWidth(picker, 420.0);
         picker.setMaxHeight(Region.USE_PREF_SIZE);
         return picker;
     }
@@ -223,8 +279,7 @@ final class CatalogSamples {
         M3DateRangePicker picker = new M3DateRangePicker(today.plusDays(2), today.plusDays(8));
         picker.setMinDate(today.minusWeeks(1));
         picker.setMaxDate(today.plusMonths(2));
-        picker.setPrefWidth(420.0);
-        picker.setMaxWidth(420.0);
+        configureResponsiveWidth(picker, 420.0);
         picker.setMaxHeight(Region.USE_PREF_SIZE);
         return picker;
     }
@@ -261,7 +316,7 @@ final class CatalogSamples {
 
         M3Divider vertical = new M3Divider(Orientation.VERTICAL);
         vertical.setPrefHeight(72.0);
-        HBox verticalExample = row(
+        FlowPane verticalExample = row(
                 new M3Text("Before", M3TextRole.BODY_MEDIUM),
                 vertical,
                 new M3Text("After", M3TextRole.BODY_MEDIUM)
@@ -320,6 +375,36 @@ final class CatalogSamples {
         return toolbar;
     }
 
+    /// Creates a structured form section containing text and boolean inputs.
+    ///
+    /// @return the form example
+    static Node forms() {
+        M3TextField displayName = new M3TextField("Avery");
+        displayName.setVariant(M3TextInputVariant.OUTLINED);
+        M3TextInputLayout displayNameLayout = new M3TextInputLayout(displayName);
+        displayNameLayout.setLabelText("Display name");
+        displayNameLayout.setSupportingText("Public profile");
+        configureResponsiveWidth(displayNameLayout, 360.0);
+
+        M3Switch notifications = new M3Switch("");
+        notifications.setSelected(true);
+
+        M3FormSection profile = new M3FormSection(
+                "Profile",
+                "Aligned labels and controls."
+        );
+        profile.getContent().addAll(
+                new M3FormRow("Name", "Primary profile label", displayNameLayout),
+                new M3FormRow("Notifications", "Receive project updates", notifications)
+        );
+
+        M3FormPane form = new M3FormPane();
+        form.setContentPadding(16.0);
+        form.getItems().add(profile);
+        configureResponsiveWidth(form, 680.0);
+        return form;
+    }
+
     /// Creates regular and toggle icon buttons.
     ///
     /// @return the icon button example
@@ -331,6 +416,18 @@ final class CatalogSamples {
                 iconButton(CatalogIcons.EDIT, "Edit"),
                 iconButton(CatalogIcons.SETTINGS, "Settings"),
                 favorite
+        );
+    }
+
+    /// Creates scalable SVG icons using semantic size and color roles.
+    ///
+    /// @return the icon example
+    static Node icons() {
+        return row(
+                sampleIcon(CatalogIcons.SEARCH, M3IconSize.SMALL, M3IconVariant.PRIMARY),
+                sampleIcon(CatalogIcons.FAVORITE, M3IconSize.MEDIUM, M3IconVariant.SECONDARY),
+                sampleIcon(CatalogIcons.NOTIFICATIONS, M3IconSize.LARGE, M3IconVariant.TERTIARY),
+                sampleIcon(CatalogIcons.SETTINGS, M3IconSize.EXTRA_LARGE, M3IconVariant.ERROR)
         );
     }
 
@@ -412,6 +509,7 @@ final class CatalogSamples {
 
         StackPane preview = new StackPane(background, scrim, sheet);
         preview.getStyleClass().add("catalog-side-sheet-preview");
+        preview.setMinWidth(0.0);
         preview.setPrefSize(640.0, 380.0);
         preview.setMaxSize(640.0, 380.0);
         StackPane.setAlignment(sheet, Pos.CENTER_RIGHT);
@@ -481,7 +579,7 @@ final class CatalogSamples {
                 navigationItem("Favorites", CatalogIcons.FAVORITE),
                 navigationItem("Settings", CatalogIcons.SETTINGS)
         );
-        bar.setPrefWidth(560.0);
+        configureResponsiveWidth(bar, 560.0);
         return bar;
     }
 
@@ -562,7 +660,7 @@ final class CatalogSamples {
         search.setOnAction(event -> result.setText(
                 search.getText().isBlank() ? "No query entered" : "Searching for “" + search.getText() + "”"
         ));
-        search.setPrefWidth(420.0);
+        configureResponsiveWidth(search, 420.0);
         return column(search, result);
     }
 
@@ -571,8 +669,7 @@ final class CatalogSamples {
     /// @return the search-view example
     static Node searchView() {
         M3SearchView search = new M3SearchView("Search components");
-        search.setPrefWidth(520.0);
-        search.setMaxWidth(520.0);
+        configureResponsiveWidth(search, 520.0);
         search.getResults().addAll(
                 searchResult("Buttons", "Filled, tonal, outlined, text, and elevated actions"),
                 searchResult("Menus", "Menu surfaces, submenus, and selection"),
@@ -591,6 +688,46 @@ final class CatalogSamples {
         return column(styles, search);
     }
 
+    /// Creates a local modal preview with a dismissible scrim.
+    ///
+    /// @return the scrim example
+    static Node scrims() {
+        VBox modalContent = new VBox(
+                8.0,
+                new M3Text("Background content", M3TextRole.TITLE_MEDIUM),
+                new M3Text("Activate the scrim to dismiss the modal state.", M3TextRole.BODY_MEDIUM)
+        );
+        modalContent.setAlignment(Pos.CENTER);
+
+        M3Surface background = new M3Surface();
+        background.setVariant(M3SurfaceVariant.CONTAINER);
+        background.setContentPadding(24.0);
+        background.getContent().add(modalContent);
+        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        M3Scrim scrim = new M3Scrim();
+        scrim.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        scrim.setOnAction(event -> scrim.hide());
+
+        StackPane preview = new StackPane(background, scrim);
+        preview.getStyleClass().add("catalog-scrim-preview");
+        preview.setMinWidth(0.0);
+        preview.setPrefSize(520.0, 220.0);
+        preview.setMaxSize(520.0, 220.0);
+
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(preview.widthProperty());
+        clip.heightProperty().bind(preview.heightProperty());
+        clip.setArcWidth(56.0);
+        clip.setArcHeight(56.0);
+        preview.setClip(clip);
+
+        M3Button show = new M3Button("Show scrim", M3ButtonVariant.TONAL);
+        show.disableProperty().bind(scrim.shownProperty());
+        show.setOnAction(event -> scrim.show());
+        return column(show, preview);
+    }
+
     /// Creates a single-select segmented button group.
     ///
     /// @return the segmented button example
@@ -605,14 +742,40 @@ final class CatalogSamples {
         return group;
     }
 
+    /// Creates action and selection settings in a segmented list.
+    ///
+    /// @return the settings-list example
+    static Node settings() {
+        M3SettingItem account = new M3SettingItem("Account");
+        account.setSupportingText("Profile, security, and linked devices");
+        account.setLeading(icon(CatalogIcons.AVATAR));
+        account.setTrailing(icon(CatalogIcons.ARROW_FORWARD));
+
+        M3SwitchSettingItem updates = new M3SwitchSettingItem("Automatic updates");
+        updates.setSupportingText("Install updates while the device is idle");
+        updates.setLeading(icon(CatalogIcons.RESET));
+        updates.setSelected(true);
+
+        M3CheckBoxSettingItem diagnostics = new M3CheckBoxSettingItem("Diagnostic reports");
+        diagnostics.setSupportingText("Share anonymous reliability information");
+        diagnostics.setLeading(icon(CatalogIcons.SETTINGS));
+
+        M3ListPane settings = new M3ListPane();
+        settings.setListStyle(M3ListStyle.SEGMENTED);
+        settings.setSelectionMode(M3SelectionMode.NONE);
+        settings.getItems().addAll(account, updates, diagnostics);
+        configureResponsiveWidth(settings, 620.0);
+        return settings;
+    }
+
     /// Creates single-value and range sliders.
     ///
     /// @return the slider example
     static Node sliders() {
         M3Slider slider = new M3Slider(0.0, 100.0, 48.0);
-        slider.setPrefWidth(380.0);
+        configureResponsiveWidth(slider, 380.0);
         M3RangeSlider range = new M3RangeSlider(0.0, 100.0, 24.0, 76.0);
-        range.setPrefWidth(380.0);
+        configureResponsiveWidth(range, 380.0);
         return column(slider, range);
     }
 
@@ -621,7 +784,9 @@ final class CatalogSamples {
     /// @return the snackbar example
     static Node snackbars() {
         M3OverlayPane overlayPane = new M3OverlayPane();
+        overlayPane.setMinWidth(0.0);
         overlayPane.setPrefSize(420.0, 120.0);
+        overlayPane.setMaxWidth(420.0);
         M3Button show = new M3Button("Show snackbar", M3ButtonVariant.FILLED);
         show.setOnAction(event -> {
             M3Snackbar snackbar = new M3Snackbar("Message archived");
@@ -655,6 +820,17 @@ final class CatalogSamples {
         return column(notifications, location);
     }
 
+    /// Creates representative surface color and elevation variants.
+    ///
+    /// @return the surface example
+    static Node surfaces() {
+        return row(
+                sampleSurface("Surface", M3SurfaceVariant.SURFACE, M3SurfaceElevation.LEVEL0),
+                sampleSurface("Container", M3SurfaceVariant.CONTAINER, M3SurfaceElevation.LEVEL1),
+                sampleSurface("Primary", M3SurfaceVariant.PRIMARY_CONTAINER, M3SurfaceElevation.LEVEL3)
+        );
+    }
+
     /// Creates a primary tab bar with three selectable tabs.
     ///
     /// @return the tab example
@@ -665,7 +841,7 @@ final class CatalogSamples {
         M3Tab settings = new M3Tab("Settings");
         overview.setSelected(true);
         bar.getTabs().addAll(overview, activity, settings);
-        bar.setPrefWidth(520.0);
+        configureResponsiveWidth(bar, 520.0);
         return bar;
     }
 
@@ -683,8 +859,8 @@ final class CatalogSamples {
         M3TextInputLayout outlined = new M3TextInputLayout(email);
         outlined.setLabelText("Email");
         outlined.setSupportingText("Used for notifications");
-        filled.setPrefWidth(360.0);
-        outlined.setPrefWidth(360.0);
+        configureResponsiveWidth(filled, 360.0);
+        configureResponsiveWidth(outlined, 360.0);
         return column(filled, outlined);
     }
 
@@ -721,7 +897,7 @@ final class CatalogSamples {
                 iconButton(CatalogIcons.FAVORITE, "Favorite"),
                 iconButton(CatalogIcons.SETTINGS, "Settings")
         );
-        bar.setPrefWidth(620.0);
+        configureResponsiveWidth(bar, 620.0);
         return bar;
     }
 
@@ -766,6 +942,40 @@ final class CatalogSamples {
         M3Card card = new M3Card(content, variant);
         card.setPrefSize(180.0, 124.0);
         return card;
+    }
+
+    /// Creates a fixed-size surface sample.
+    ///
+    /// @param title     the surface label
+    /// @param variant   the surface color variant
+    /// @param elevation the surface elevation
+    /// @return the configured surface
+    private static M3Surface sampleSurface(
+            String title,
+            M3SurfaceVariant variant,
+            M3SurfaceElevation elevation
+    ) {
+        M3Surface surface = new M3Surface();
+        surface.setVariant(variant);
+        surface.setElevation(elevation);
+        surface.setContentPadding(20.0);
+        surface.getContent().add(new M3Text(title, M3TextRole.TITLE_MEDIUM));
+        surface.setPrefSize(168.0, 104.0);
+        surface.setMaxSize(168.0, 104.0);
+        return surface;
+    }
+
+    /// Creates an SVG icon with semantic size and color roles.
+    ///
+    /// @param path    the SVG path content
+    /// @param size    the semantic icon size
+    /// @param variant the semantic icon color
+    /// @return the configured icon
+    private static M3SVGIcon sampleIcon(String path, M3IconSize size, M3IconVariant variant) {
+        M3SVGIcon icon = CatalogIcons.create(path);
+        icon.setSize(size);
+        icon.setVariant(variant);
+        return icon;
     }
 
     /// Creates the content shared by side-sheet examples.
@@ -822,13 +1032,28 @@ final class CatalogSamples {
         return CatalogIcons.create(path);
     }
 
-    /// Arranges controls horizontally without adding a presentation surface.
+    /// Gives a resizable sample a preferred width while allowing it to contract in compact windows.
+    ///
+    /// @param <T>            the region type
+    /// @param region         the region to configure
+    /// @param preferredWidth the preferred and maximum width
+    /// @return `region`
+    private static <T extends Region> T configureResponsiveWidth(T region, double preferredWidth) {
+        region.setMinWidth(0.0);
+        region.setPrefWidth(preferredWidth);
+        region.setMaxWidth(preferredWidth);
+        return region;
+    }
+
+    /// Arranges controls in a centered row that wraps when horizontal space is constrained.
     ///
     /// @param children the nodes to arrange
-    /// @return the centered horizontal layout
-    private static HBox row(Node... children) {
-        HBox row = new HBox(SAMPLE_SPACING, children);
+    /// @return the centered wrapping layout
+    private static FlowPane row(Node... children) {
+        FlowPane row = new FlowPane(SAMPLE_SPACING, SAMPLE_SPACING);
+        row.getChildren().addAll(children);
         row.setAlignment(Pos.CENTER);
+        row.setMinWidth(0.0);
         return row;
     }
 
@@ -840,11 +1065,7 @@ final class CatalogSamples {
         VBox column = new VBox(SAMPLE_SPACING, children);
         column.setAlignment(Pos.CENTER);
         column.setPadding(new Insets(SAMPLE_SPACING));
-        for (Node child : children) {
-            if (child instanceof Region region) {
-                region.setMinWidth(Region.USE_PREF_SIZE);
-            }
-        }
+        column.setMinWidth(0.0);
         return column;
     }
 }

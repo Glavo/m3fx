@@ -20,6 +20,19 @@ final class CatalogContainerComponents {
     /// @return the immutable descriptor list
     static @Unmodifiable List<CatalogComponent> create() {
         return List.of(
+                CatalogComponents.extensionComponent(
+                        "Avatars",
+                        "Avatars provide compact text or graphic representations of people, entities, and objects.",
+                        CatalogIcons.AVATAR,
+                        "https://m3.material.io/styles/color/roles",
+                        "M3Avatar",
+                        CatalogComponents.example(
+                                "Avatar variants",
+                                "Initials and graphics across the semantic avatar color variants.",
+                                false,
+                                CatalogSamples::avatars
+                        )
+                ),
                 CatalogComponents.component(
                         "Badges",
                         "Badges show notifications, counts, or compact status information attached to another element.",
@@ -31,6 +44,19 @@ final class CatalogContainerComponents {
                                 "A count badge attached to an actionable icon.",
                                 false,
                                 CatalogSamples::badge
+                        )
+                ),
+                CatalogComponents.extensionComponent(
+                        "Banners",
+                        "Banners keep contextual messages and related actions visible within the current layout.",
+                        CatalogIcons.BANNER,
+                        "https://m3.material.io/components",
+                        "M3Banner",
+                        CatalogComponents.example(
+                                "Message banner",
+                                "A persistent informational message with an icon and actions.",
+                                false,
+                                CatalogSamples::banners
                         )
                 ),
                 CatalogComponents.component(
@@ -130,6 +156,19 @@ final class CatalogContainerComponents {
                                 CatalogSamples::segmentedList
                         )
                 ),
+                CatalogComponents.extensionComponent(
+                        "Scrims",
+                        "Scrims dim content behind a modal surface and may provide a dismiss action.",
+                        CatalogIcons.SCRIM,
+                        "https://m3.material.io/foundations/interaction/states/overview",
+                        "M3Scrim",
+                        CatalogComponents.example(
+                                "Dismissible scrim",
+                                "A local modal overlay with explicit show and dismiss actions.",
+                                false,
+                                CatalogSamples::scrims
+                        )
+                ),
                 CatalogComponents.component(
                         "Side sheets",
                         "Side sheets present supplementary content from a side edge without replacing the page.",
@@ -147,6 +186,19 @@ final class CatalogContainerComponents {
                                 "A dismissible modal sheet coordinated with a scrim.",
                                 false,
                                 CatalogSamples::modalSideSheet
+                        )
+                ),
+                CatalogComponents.extensionComponent(
+                        "Surfaces",
+                        "Surfaces apply Material container colors, padding, shape, and elevation to grouped content.",
+                        CatalogIcons.SURFACE,
+                        "https://m3.material.io/styles/elevation/overview",
+                        "M3Surface",
+                        CatalogComponents.example(
+                                "Surface variants",
+                                "Representative surface tones and elevation levels.",
+                                false,
+                                CatalogSamples::surfaces
                         )
                 )
         );

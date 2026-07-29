@@ -69,6 +69,14 @@ final class CatalogIcons {
     /// The bottom app bar icon path.
     static final String BOTTOM_APP_BAR = "M3 4h18v10H3zm0 13h18v3H3z";
 
+    /// The avatar icon path.
+    static final String AVATAR =
+            "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z";
+
+    /// The banner icon path.
+    static final String BANNER =
+            "M3 4h18v16H3zm2 2v12h14V6zm2 2h2v2H7zm4 0h6v2h-6zm-4 4h10v2H7z";
+
     /// The bottom sheet icon path.
     static final String BOTTOM_SHEET = "M4 3h16v18H4zm2 2v4h12V5zm0 6v8h12v-8z";
 
@@ -90,6 +98,13 @@ final class CatalogIcons {
 
     /// The side-sheet icon path.
     static final String SIDE_SHEET = "M3 3h18v18H3zm2 2v14h8V5zm10 0v14h4V5z";
+
+    /// The scrim icon path.
+    static final String SCRIM = "M3 3h18v18H3zm2 2v14h14V5zm2 2h10v10H7z";
+
+    /// The surface icon path.
+    static final String SURFACE =
+            "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 4h10v10H7z";
 
     /// The connected button-group icon path.
     static final String BUTTON_GROUP =
@@ -154,6 +169,10 @@ final class CatalogIcons {
     static final String TIME =
             "M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-1 3h2v5.4l4 2.3-1 1.7-5-2.9z";
 
+    /// The form icon path.
+    static final String FORM =
+            "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 4v2h10V7zm0 4v2h6v-2zm0 4v2h8v-2z";
+
     /// The navigation bar icon path.
     static final String NAVIGATION_BAR =
             "M2 15h20v6H2zm3 2v2h2v-2zm6 0v2h2v-2zm6 0v2h2v-2z";
@@ -190,6 +209,10 @@ final class CatalogIcons {
 
     /// The typography icon path.
     static final String TYPOGRAPHY = "M4 4v3h6.5v13h3V7H20V4zM3 17h5v3H3zm13 0h5v3h-5z";
+
+    /// The general iconography path.
+    static final String ICONS =
+            "m12 2 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z";
 
     /// Prevents utility class instantiation.
     private CatalogIcons() {
