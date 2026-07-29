@@ -43,6 +43,7 @@
 
 .catalog-sidebar-header {
     -fx-padding: 12px 4px;
+    -fx-spacing: 4px;
 }
 
 .catalog-sidebar-title {
@@ -54,8 +55,17 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.catalog-sidebar-search {
+    -fx-padding: 8px 0 0 0;
+}
+
 .catalog-sidebar-section-title {
     -fx-padding: 16px 16px 8px 16px;
+}
+
+.catalog-sidebar-empty {
+    -fx-padding: 16px;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .catalog-top-action .catalog-icon,
@@ -133,6 +143,32 @@
 
 .catalog-examples-title {
     -fx-padding: 16px 0 0 0;
+}
+
+.catalog-example-browser {
+    -fx-spacing: 8px;
+}
+
+.catalog-example-browser-controls {
+    -fx-alignment: center-left;
+}
+
+.catalog-example-result-summary,
+.catalog-example-empty-description {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-example-empty-state {
+    -fx-min-height: 160px;
+    -fx-spacing: 8px;
+    -fx-padding: 24px;
+    -fx-alignment: center;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+}
+
+.catalog-example-empty-title {
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .catalog-example-grid {

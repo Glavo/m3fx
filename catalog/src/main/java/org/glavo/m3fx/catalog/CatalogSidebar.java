@@ -10,6 +10,7 @@ import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
+import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -48,8 +50,20 @@ final class CatalogSidebar extends StackPane {
     /// The summary shown in the drawer header.
     private final M3Text summary = new M3Text("", M3TextRole.BODY_SMALL);
 
+    /// The persistent search field used to filter component destinations.
+    private final M3SearchBar componentSearch = new M3SearchBar("Search components");
+
+    /// The message shown when no component matches the current filters.
+    private final M3Text emptyMessage = new M3Text("No matching components", M3TextRole.BODY_MEDIUM);
+
     /// Persistent component destinations indexed in registry order.
     private final Map<CatalogComponent, M3ListItem> componentItems = new LinkedHashMap<>();
+
+    /// The most recently synchronized route, or `null` before the first refresh.
+    private @Nullable CatalogRoute currentRoute;
+
+    /// Whether the application-wide Expressive-only filter is active.
+    private boolean expressiveOnly;
 
     /// Creates a sidebar for a Catalog component registry.
     ///
@@ -82,7 +96,11 @@ final class CatalogSidebar extends StackPane {
         M3Text title = new M3Text("Catalog", M3TextRole.TITLE_LARGE);
         title.getStyleClass().add("catalog-sidebar-title");
         summary.getStyleClass().add("catalog-sidebar-summary");
-        VBox header = new VBox(4.0, title, summary);
+        componentSearch.getStyleClass().add("catalog-sidebar-search");
+        componentSearch.setAccessibleText("Search Catalog components");
+        componentSearch.setMaxWidth(Double.MAX_VALUE);
+        componentSearch.textProperty().addListener(observable -> updateItems());
+        VBox header = new VBox(4.0, title, summary, componentSearch);
         header.getStyleClass().add("catalog-sidebar-header");
 
         homeItem.getStyleClass().addAll("catalog-sidebar-item", "catalog-sidebar-home");
@@ -98,6 +116,11 @@ final class CatalogSidebar extends StackPane {
             componentItems.put(component, item);
             drawer.getItems().add(item);
         }
+
+        emptyMessage.getStyleClass().add("catalog-sidebar-empty");
+        emptyMessage.setVisible(false);
+        emptyMessage.setManaged(false);
+        drawer.getItems().add(emptyMessage);
     }
 
     /// Creates one persistent component destination.
@@ -117,9 +140,17 @@ final class CatalogSidebar extends StackPane {
     /// @param route the current Catalog route
     /// @param expressiveOnly whether components without Expressive examples are hidden
     void refresh(CatalogRoute route, boolean expressiveOnly) {
-        Objects.requireNonNull(route, "route");
-        @Nullable CatalogComponent activeComponent = componentOf(route);
+        currentRoute = Objects.requireNonNull(route, "route");
+        this.expressiveOnly = expressiveOnly;
+        updateItems();
+    }
 
+    /// Applies search and profile filtering while retaining every persistent destination node.
+    private void updateItems() {
+        @Nullable CatalogComponent activeComponent = currentRoute == null ? null : componentOf(currentRoute);
+        String query = componentSearch.getText().strip().toLowerCase(Locale.ROOT);
+
+        int profileComponentCount = 0;
         int visibleComponentCount = 0;
         int visibleExampleCount = 0;
         @Nullable M3ListItem selectedItem = activeComponent == null
@@ -129,7 +160,11 @@ final class CatalogSidebar extends StackPane {
         for (Map.Entry<CatalogComponent, M3ListItem> entry : componentItems.entrySet()) {
             CatalogComponent component = entry.getKey();
             M3ListItem item = entry.getValue();
-            boolean visible = !expressiveOnly || component.hasExpressiveExamples();
+            boolean includedByProfile = !expressiveOnly || component.hasExpressiveExamples();
+            if (includedByProfile) {
+                profileComponentCount++;
+            }
+            boolean visible = includedByProfile && matches(component, query);
             item.setVisible(visible);
             item.setManaged(visible);
             if (visible) {
@@ -137,12 +172,34 @@ final class CatalogSidebar extends StackPane {
                 visibleExampleCount += component.examples().size();
             }
         }
-        summary.setText(visibleComponentCount + " components · " + visibleExampleCount + " scenarios");
+        summary.setText(query.isEmpty()
+                ? visibleComponentCount + " components · " + visibleExampleCount + " scenarios"
+                : visibleComponentCount + " of " + profileComponentCount + " components · "
+                        + visibleExampleCount + " scenarios");
+        boolean empty = visibleComponentCount == 0;
+        emptyMessage.setVisible(empty);
+        emptyMessage.setManaged(empty);
         if (selectedItem != null && isEffectivelyReachable(selectedItem)) {
             drawer.select(selectedItem);
         } else if (selectedItem != homeItem && isEffectivelyReachable(homeItem)) {
             drawer.select(homeItem);
         }
+    }
+
+    /// Returns whether a component or one of its scenarios matches a normalized search query.
+    ///
+    /// @param component the component to inspect
+    /// @param query the stripped lower-case query, or an empty string to match every component
+    /// @return `true` when the component should remain visible
+    private static boolean matches(CatalogComponent component, String query) {
+        if (query.isEmpty()
+                || component.name().toLowerCase(Locale.ROOT).contains(query)
+                || component.description().toLowerCase(Locale.ROOT).contains(query)) {
+            return true;
+        }
+        return component.examples().stream().anyMatch(example ->
+                example.name().toLowerCase(Locale.ROOT).contains(query)
+                        || example.description().toLowerCase(Locale.ROOT).contains(query));
     }
 
     /// Sets the Material drawer presentation used by this sidebar.

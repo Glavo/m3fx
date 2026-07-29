@@ -21,13 +21,19 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3SearchBar;
+import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -221,13 +227,78 @@ final class CatalogViews {
         examples.setTileAlignment(Pos.TOP_LEFT);
         examples.setPrefTileWidth(EXAMPLE_CELL_MIN_WIDTH);
         examples.setPrefTileHeight(EXAMPLE_CELL_HEIGHT);
+        Map<CatalogExample, StackPane> exampleCells = new LinkedHashMap<>();
         for (CatalogExample example : target.examples()) {
-            examples.getChildren().add(createExampleCell(target, example, routeConsumer, markExpressive));
+            StackPane cell = createExampleCell(target, example, routeConsumer, markExpressive);
+            exampleCells.put(example, cell);
+            examples.getChildren().add(cell);
         }
         examples.widthProperty().addListener(observable ->
                 updateAdaptiveTileWidth(examples, EXAMPLE_CELL_MIN_WIDTH));
 
-        VBox page = new VBox(reference, examplesHeading, examplesDescription, examples);
+        M3SearchBar exampleSearch = new M3SearchBar("Search examples");
+        exampleSearch.getStyleClass().add("catalog-example-search");
+        exampleSearch.setAccessibleText("Search examples for " + target.name());
+        exampleSearch.setMinWidth(0.0);
+        exampleSearch.setPrefWidth(320.0);
+        exampleSearch.setMaxWidth(440.0);
+
+        M3SegmentedButton allFilter = createExampleFilterButton("All", "catalog-example-filter-all");
+        M3SegmentedButton baselineFilter =
+                createExampleFilterButton("Baseline", "catalog-example-filter-baseline");
+        M3SegmentedButton expressiveFilter =
+                createExampleFilterButton("Expressive", "catalog-example-filter-expressive");
+        M3SegmentedButtonGroup filterGroup = new M3SegmentedButtonGroup();
+        filterGroup.getStyleClass().add("catalog-example-filter-group");
+        filterGroup.setAccessibleText("Example profile filter");
+        filterGroup.getItems().addAll(allFilter, baselineFilter, expressiveFilter);
+        filterGroup.setAllowEmptySelection(false);
+        filterGroup.select(allFilter);
+
+        FlowPane browserControls = new FlowPane(12.0, 12.0);
+        browserControls.getStyleClass().add("catalog-example-browser-controls");
+        browserControls.getChildren().addAll(exampleSearch, filterGroup);
+
+        M3Text resultSummary = new M3Text("", M3TextRole.LABEL_MEDIUM);
+        resultSummary.getStyleClass().add("catalog-example-result-summary");
+
+        VBox browser = new VBox(browserControls, resultSummary);
+        browser.getStyleClass().add("catalog-example-browser");
+        browser.setFillWidth(true);
+
+        M3Text emptyTitle = new M3Text("No matching examples", M3TextRole.TITLE_MEDIUM);
+        emptyTitle.getStyleClass().add("catalog-example-empty-title");
+        M3Text emptyDescription = new M3Text(
+                "Try another search or choose a different profile.",
+                M3TextRole.BODY_MEDIUM
+        );
+        emptyDescription.getStyleClass().add("catalog-example-empty-description");
+        emptyDescription.setWrapText(true);
+        VBox emptyState = new VBox(emptyTitle, emptyDescription);
+        emptyState.getStyleClass().add("catalog-example-empty-state");
+        emptyState.setAlignment(Pos.CENTER);
+        emptyState.setVisible(false);
+        emptyState.setManaged(false);
+
+        Runnable updateFilter = () -> updateExampleVisibility(
+                exampleCells,
+                exampleSearch.getText(),
+                filterGroup.getSelectedIndex(),
+                resultSummary,
+                emptyState
+        );
+        exampleSearch.textProperty().addListener(observable -> updateFilter.run());
+        filterGroup.selectedButtonProperty().addListener(observable -> updateFilter.run());
+        updateFilter.run();
+
+        VBox page = new VBox(
+                reference,
+                examplesHeading,
+                examplesDescription,
+                browser,
+                examples,
+                emptyState
+        );
         page.getStyleClass().addAll("catalog-route-page", "catalog-component-page");
         page.setFillWidth(true);
 
@@ -240,6 +311,59 @@ final class CatalogViews {
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
+    }
+
+    /// Creates one segment for the example profile filter.
+    ///
+    /// @param label the visible segment label
+    /// @param styleClass the stable Catalog style class
+    /// @return a new unselected filter segment
+    private static M3SegmentedButton createExampleFilterButton(String label, String styleClass) {
+        M3SegmentedButton button = new M3SegmentedButton(label);
+        button.getStyleClass().add(styleClass);
+        return button;
+    }
+
+    /// Applies example search and profile filters without replacing example cells.
+    ///
+    /// Filter index `0` shows every example, index `1` shows Baseline examples, and index `2` shows Expressive
+    /// examples. An unknown or temporarily empty selection behaves like the All filter.
+    ///
+    /// @param cells the persistent cells indexed by their example descriptors
+    /// @param searchText the current search text
+    /// @param filterIndex the selected profile-filter index
+    /// @param resultSummary the label updated with the visible and total scenario counts
+    /// @param emptyState the state shown when no examples match
+    private static void updateExampleVisibility(
+            Map<CatalogExample, StackPane> cells,
+            String searchText,
+            int filterIndex,
+            M3Text resultSummary,
+            VBox emptyState
+    ) {
+        String query = searchText.strip().toLowerCase(Locale.ROOT);
+        int visibleCount = 0;
+        for (Map.Entry<CatalogExample, StackPane> entry : cells.entrySet()) {
+            CatalogExample example = entry.getKey();
+            boolean profileMatches = switch (filterIndex) {
+                case 1 -> !example.expressive();
+                case 2 -> example.expressive();
+                default -> true;
+            };
+            boolean queryMatches = query.isEmpty()
+                    || example.name().toLowerCase(Locale.ROOT).contains(query)
+                    || example.description().toLowerCase(Locale.ROOT).contains(query);
+            boolean visible = profileMatches && queryMatches;
+            entry.getValue().setVisible(visible);
+            entry.getValue().setManaged(visible);
+            if (visible) {
+                visibleCount++;
+            }
+        }
+        resultSummary.setText(visibleCount + " of " + cells.size() + " scenarios");
+        boolean empty = visibleCount == 0;
+        emptyState.setVisible(empty);
+        emptyState.setManaged(empty);
     }
 
     /// Creates an outlined external-reference action.

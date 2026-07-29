@@ -13,6 +13,7 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
+import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +78,13 @@ final class M3FXCatalogSnapshotTest {
                             .orElseThrow();
                     app.navigate(new CatalogRoute.Component(buttons));
                     writeSnapshot(scene, "component.png");
+                    M3SearchBar exampleSearch = assertInstanceOf(
+                            M3SearchBar.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-example-search"), "example search")
+                    );
+                    exampleSearch.setText("Filled button");
+                    writeSnapshot(scene, "component-search.png");
+                    exampleSearch.clear();
 
                     app.navigate(new CatalogRoute.Example(buttons, buttons.examples().get(0)));
                     writeSnapshot(scene, "example.png");

@@ -32,7 +32,9 @@ import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SVGIcon;
@@ -102,8 +104,10 @@ final class M3FXCatalogVisualTest {
                 assertRegistry(app.components());
                 assertRouteTransitionsAndSmoothScrolling(scene, app);
                 assertHome(scene, app);
+                assertSidebarSearch(scene, app);
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
+                assertExampleBrowserFiltering(scene, app);
                 assertSidebarScrollStability(scene, app);
                 assertThemeSettings(scene, app);
                 assertRightToLeftLayout(scene, app);
@@ -331,6 +335,61 @@ final class M3FXCatalogVisualTest {
         );
     }
 
+    /// Verifies that sidebar search filters persistent destinations and restores route selection when cleared.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertSidebarSearch(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+            app.navigate(new CatalogRoute.Component(buttons));
+            layout(scene);
+
+            CatalogSidebar sidebar = visibleSidebar(scene);
+            M3SearchBar search = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(sidebar.lookup(".catalog-sidebar-search"), "sidebar component search")
+            );
+            Set<Node> originalItems = Set.copyOf(sidebar.lookupAll(".catalog-sidebar-component"));
+            M3ListItem buttonsItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons");
+            assertSame(buttonsItem, sidebar.drawer().getSelectedItem());
+
+            search.setText("Navigation drawer");
+            layout(scene);
+            assertEquals(1L, visibleNodeCount(sidebar, ".catalog-sidebar-component"));
+            assertTrue(listItemNamed(
+                    sidebar,
+                    ".catalog-sidebar-component",
+                    "Navigation drawer"
+            ).isVisible());
+            assertSame(
+                    sidebar.lookup(".catalog-sidebar-home"),
+                    sidebar.drawer().getSelectedItem(),
+                    "a hidden active destination should fall back to Home"
+            );
+            assertEquals(
+                    originalItems,
+                    Set.copyOf(sidebar.lookupAll(".catalog-sidebar-component")),
+                    "search must not rebuild component destinations"
+            );
+
+            search.setText("No component has this phrase");
+            layout(scene);
+            assertEquals(0L, visibleNodeCount(sidebar, ".catalog-sidebar-component"));
+            assertTrue(Objects.requireNonNull(
+                    sidebar.lookup(".catalog-sidebar-empty"),
+                    "sidebar empty state"
+            ).isVisible());
+
+            search.clear();
+            layout(scene);
+            assertEquals(app.components().size(), visibleNodeCount(sidebar, ".catalog-sidebar-component"));
+            assertSame(buttonsItem, sidebar.drawer().getSelectedItem());
+            app.navigateHome();
+            layout(scene);
+        });
+    }
+
     /// Verifies component-card navigation, example-card navigation, and back behavior.
     ///
     /// @param scene the Catalog scene
@@ -398,6 +457,78 @@ final class M3FXCatalogVisualTest {
             assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Home.class, app.currentRoute());
+        });
+    }
+
+    /// Verifies example search, profile filtering, empty state, and cell identity preservation.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertExampleBrowserFiltering(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            CatalogComponent chips = componentNamed(app.components(), "Chips");
+            app.navigate(new CatalogRoute.Component(chips));
+            layout(scene);
+
+            M3SearchBar search = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-search"), "example search")
+            );
+            Set<Node> originalCells = Set.copyOf(scene.getRoot().lookupAll(".catalog-example-cell"));
+            search.setText("Selected filter chip");
+            layout(scene);
+            assertEquals(1L, visibleNodeCount(scene.getRoot(), ".catalog-example-cell"));
+            assertEquals(
+                    originalCells,
+                    Set.copyOf(scene.getRoot().lookupAll(".catalog-example-cell")),
+                    "search must not rebuild example cells"
+            );
+
+            search.clear();
+            M3SegmentedButton expressiveFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-example-filter-expressive"),
+                            "Expressive example filter"
+                    )
+            );
+            expressiveFilter.fire();
+            layout(scene);
+            assertEquals(0L, visibleNodeCount(scene.getRoot(), ".catalog-example-cell"));
+            assertTrue(Objects.requireNonNull(
+                    scene.lookup(".catalog-example-empty-state"),
+                    "example empty state"
+            ).isVisible());
+
+            M3SegmentedButton allFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-filter-all"), "All example filter")
+            );
+            allFilter.fire();
+            layout(scene);
+            assertEquals(chips.examples().size(), visibleNodeCount(scene.getRoot(), ".catalog-example-cell"));
+            assertFalse(Objects.requireNonNull(
+                    scene.lookup(".catalog-example-empty-state"),
+                    "example empty state"
+            ).isVisible());
+
+            CatalogComponent sliders = componentNamed(app.components(), "Sliders");
+            app.navigate(new CatalogRoute.Component(sliders));
+            layout(scene);
+            long expressiveCount = sliders.examples().stream().filter(CatalogExample::expressive).count();
+            assertTrue(expressiveCount > 0 && expressiveCount < sliders.examples().size());
+            expressiveFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-example-filter-expressive"),
+                            "Expressive example filter"
+                    )
+            );
+            expressiveFilter.fire();
+            layout(scene);
+            assertEquals(expressiveCount, visibleNodeCount(scene.getRoot(), ".catalog-example-cell"));
+            app.navigateHome();
+            layout(scene);
         });
     }
 
@@ -895,9 +1026,20 @@ final class M3FXCatalogVisualTest {
                     );
                     assertEquals(
                             1L,
-                            exampleGrid.getChildren().stream().map(Node::getLayoutX).distinct().count(),
+                            exampleGrid.getChildren().stream()
+                                    .filter(Node::isManaged)
+                                    .map(Node::getLayoutX)
+                                    .distinct()
+                                    .count(),
                             "compact component pages should use one example column"
                     );
+                    Node browser = Objects.requireNonNull(
+                            componentPage.lookup(".catalog-example-browser"),
+                            "compact example browser"
+                    );
+                    Bounds browserBounds = browser.localToScene(browser.getBoundsInLocal());
+                    assertTrue(browserBounds.getMinX() >= componentBounds.getMinX() - 0.5);
+                    assertTrue(browserBounds.getMaxX() <= componentBounds.getMaxX() + 0.5);
 
                     for (CatalogComponent component : app.components()) {
                         for (CatalogExample example : component.examples()) {
@@ -1075,6 +1217,18 @@ final class M3FXCatalogVisualTest {
                 .filter(item -> item.getHeadlineText().equals(headline))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Missing sidebar item: " + headline));
+    }
+
+    /// Counts visible and managed nodes matching a CSS selector below a root.
+    ///
+    /// @param root the lookup root
+    /// @param selector the CSS selector
+    /// @return the number of nodes currently participating in layout
+    private static long visibleNodeCount(Parent root, String selector) {
+        return root.lookupAll(selector).stream()
+                .filter(Node::isVisible)
+                .filter(Node::isManaged)
+                .count();
     }
 
     /// Creates and lays out every registered example in the running application.
