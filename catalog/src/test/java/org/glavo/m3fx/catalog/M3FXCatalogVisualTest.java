@@ -14,7 +14,9 @@ import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
@@ -936,17 +938,23 @@ final class M3FXCatalogVisualTest {
                     layout(scene);
                     @Nullable Node drawerNode = scene.lookup(".catalog-sidebar-drawer");
                     @Nullable Node scrim = scene.lookup(".catalog-sidebar-scrim");
-                    if (!(drawerNode instanceof M3NavigationDrawer drawer) || scrim == null || !scrim.isVisible()) {
+                    @Nullable Node visibilityNode = scene.lookup(".catalog-sidebar-visibility");
+                    if (!(drawerNode instanceof M3NavigationDrawer drawer)
+                            || !(visibilityNode instanceof M3AnimatedVisibility visibility)
+                            || scrim == null
+                            || !scrim.isVisible()) {
                         return false;
                     }
                     return drawer.getVariant() == M3NavigationDrawerVariant.MODAL
-                            && Math.abs(drawer.getWidth() - 360.0) <= 0.5;
+                            && Math.abs(drawer.getWidth() - 360.0) <= 0.5
+                            && visibility.getState() == M3VisibilityState.VISIBLE;
                 },
                 STABLE_PULSE_COUNT,
                 () -> {
                     CatalogComponent buttons = componentNamed(app.components(), "Buttons");
                     app.navigate(new CatalogRoute.Component(buttons));
                     layout(scene);
+                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
                     M3IconButton browseButton = assertInstanceOf(
                             M3IconButton.class,
                             Objects.requireNonNull(
@@ -955,9 +963,25 @@ final class M3FXCatalogVisualTest {
                             )
                     );
                     browseButton.fire();
+                    M3AnimatedVisibility visibility = assertInstanceOf(
+                            M3AnimatedVisibility.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-sidebar-visibility"),
+                                    "sidebar visibility transition"
+                            )
+                    );
+                    assertEquals(M3VisibilityState.ENTERING, visibility.getState());
+                    assertTrue(visibility.isTransitioning(), "modal drawer entry should animate");
                 },
                 () -> {
                     CatalogSidebar sidebar = visibleSidebar(scene);
+                    M3AnimatedVisibility visibility = assertInstanceOf(
+                            M3AnimatedVisibility.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-sidebar-visibility"),
+                                    "sidebar visibility transition"
+                            )
+                    );
                     M3ListItem selectedComponent = Objects.requireNonNull(
                             sidebar.drawer().getSelectedItem(),
                             "selected sidebar component"
@@ -971,6 +995,10 @@ final class M3FXCatalogVisualTest {
                     exampleItem.fire();
                     layout(scene);
                     assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
+                    assertEquals(M3VisibilityState.EXITING, visibility.getState());
+                    assertTrue(visibility.isTransitioning(), "modal drawer exit should animate");
+                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                    layout(scene);
                     assertNull(scene.lookup(".catalog-sidebar-drawer"));
                     assertNull(scene.lookup(".catalog-sidebar-scrim"));
                 }

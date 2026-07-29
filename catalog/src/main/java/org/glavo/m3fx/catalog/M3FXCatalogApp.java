@@ -16,11 +16,13 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3TransitionEdge;
+import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -142,6 +144,9 @@ public final class M3FXCatalogApp extends Application {
 
     /// The scrim behind the compact modal navigation drawer.
     private final M3Scrim sidebarScrim = new M3Scrim();
+
+    /// The interruptible logical-start slide transition used by compact modal navigation.
+    private final M3AnimatedVisibility sidebarVisibility = new M3AnimatedVisibility();
 
     /// The coordinated full-size layer containing compact modal navigation.
     private final StackPane sidebarLayer = new StackPane();
@@ -275,11 +280,10 @@ public final class M3FXCatalogApp extends Application {
         boolean presentationChanged = permanentSidebar != permanent;
         permanentSidebar = permanent;
         if (permanent) {
-            hideModalSidebar();
+            dismissModalSidebarImmediately();
             sidebar.setVariant(M3NavigationDrawerVariant.STANDARD);
             boolean attached = scaffold.getLeadingPane() == sidebar;
             if (!attached) {
-                sidebarLayer.getChildren().remove(sidebar);
                 scaffold.setLeadingPane(sidebar);
             }
             scaffold.setPaneLayout(M3PaneLayout.FIXED_LEADING);
@@ -306,10 +310,25 @@ public final class M3FXCatalogApp extends Application {
         sidebarScrim.setOnAction(event -> hideModalSidebar());
 
         sidebar.setMaxWidth(SIDEBAR_WIDTH);
+        sidebarVisibility.getStyleClass().add("catalog-sidebar-visibility");
+        sidebarVisibility.setAlignment(Pos.CENTER_LEFT);
+        sidebarVisibility.setSizeTransform(null);
+        sidebarVisibility.setEnterTransition(
+                M3EnterTransition.slideFrom(M3TransitionEdge.START, SIDEBAR_WIDTH)
+        );
+        sidebarVisibility.setExitTransition(
+                M3ExitTransition.slideTo(M3TransitionEdge.START, SIDEBAR_WIDTH)
+        );
+        sidebarVisibility.setShowing(false);
+        sidebarVisibility.stateProperty().addListener((observable, oldState, newState) ->
+                removeSidebarLayerWhenHidden());
+        sidebarScrim.visibleProperty().addListener((observable, oldVisible, visible) ->
+                removeSidebarLayerWhenHidden());
+
         sidebarLayer.getStyleClass().add("catalog-sidebar-layer");
         sidebarLayer.setPickOnBounds(false);
-        sidebarLayer.getChildren().setAll(sidebarScrim);
-        StackPane.setAlignment(sidebar, Pos.CENTER_LEFT);
+        sidebarLayer.getChildren().setAll(sidebarScrim, sidebarVisibility);
+        StackPane.setAlignment(sidebarVisibility, Pos.CENTER_LEFT);
     }
 
     /// Configures the modal theme settings sheet and its coordinated scrim.
@@ -528,8 +547,7 @@ public final class M3FXCatalogApp extends Application {
 
     /// Toggles the compact modal navigation drawer.
     private void toggleModalSidebar() {
-        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
-        if (currentHandle != null && currentHandle.isShowing()) {
+        if (sidebarVisibility.isShowing()) {
             hideModalSidebar();
         } else {
             showModalSidebar();
@@ -546,26 +564,51 @@ public final class M3FXCatalogApp extends Application {
             scaffold.setLeadingPane(null);
         }
         sidebar.setVariant(M3NavigationDrawerVariant.MODAL);
-        if (!sidebarLayer.getChildren().contains(sidebar)) {
-            sidebarLayer.getChildren().add(sidebar);
+        if (sidebarVisibility.getContent() != sidebar) {
+            sidebarVisibility.setContent(sidebar);
         }
         sidebar.refresh(currentRoute, expressiveOnly);
-        sidebarOverlayHandle = root.showModalOverlay(sidebarLayer);
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
+        if (currentHandle == null || !currentHandle.isShowing()) {
+            sidebarOverlayHandle = root.showModalOverlay(sidebarLayer);
+        }
         sidebarScrim.show();
+        sidebarVisibility.setShowing(true);
     }
 
-    /// Dismisses compact modal navigation and releases its sidebar node for permanent layouts.
+    /// Starts the coordinated modal drawer and scrim exit transitions.
     private void hideModalSidebar() {
-        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
-        if (currentHandle == null && !sidebarLayer.getChildren().contains(sidebar)) {
+        if (sidebarOverlayHandle == null && sidebarVisibility.getContent() == null) {
             return;
         }
-        sidebarOverlayHandle = null;
+        sidebarVisibility.setShowing(false);
         sidebarScrim.hide();
+    }
+
+    /// Detaches the compact navigation layer after both coordinated exit transitions complete.
+    private void removeSidebarLayerWhenHidden() {
+        if (sidebarVisibility.getState() != M3VisibilityState.HIDDEN || sidebarScrim.isVisible()) {
+            return;
+        }
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
+        sidebarOverlayHandle = null;
         if (currentHandle != null) {
             currentHandle.hide();
         }
-        sidebarLayer.getChildren().remove(sidebar);
+        sidebarVisibility.setContent(null);
+    }
+
+    /// Removes compact navigation synchronously before attaching the drawer to the standard scaffold slot.
+    private void dismissModalSidebarImmediately() {
+        @Nullable M3OverlayPane.OverlayHandle currentHandle = sidebarOverlayHandle;
+        sidebarOverlayHandle = null;
+        if (currentHandle != null) {
+            currentHandle.hide();
+        }
+        sidebarVisibility.setShowing(false);
+        sidebarVisibility.snapToCurrentState();
+        sidebarVisibility.setContent(null);
+        sidebarScrim.hide();
     }
 
     /// Returns the top-app-bar title for the current route.
