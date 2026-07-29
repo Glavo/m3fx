@@ -50,6 +50,9 @@ final class HMCLDemoSnapshotTest {
     /// Wide review width that activates the expanded primary navigation rail.
     private static final double WIDE_WINDOW_WIDTH = 1_100.0;
 
+    /// Compact expanded-rail width used by the HMCL shell.
+    private static final double EXPANDED_PRIMARY_RAIL_WIDTH = 200.0;
+
     /// Starts the JavaFX toolkit before creating a real window.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -261,6 +264,7 @@ final class HMCLDemoSnapshotTest {
                                 "scene"
                         );
                         assertAdaptiveNavigationIsAttached(scene);
+                        assertExpandedPrimaryNavigationWidth(scene);
                         writeSnapshot(scene, "16-home-wide-window.png");
                     }
             );
@@ -378,6 +382,18 @@ final class HMCLDemoSnapshotTest {
                 navigationGeometryError(scene) <= 0.5,
                 () -> "Adaptive navigation geometry mismatch: " + navigationGeometryError(scene)
         );
+    }
+
+    /// Verifies that the expanded HMCL rail uses its compact demo-specific width.
+    ///
+    /// @param scene the scene to inspect
+    private static void assertExpandedPrimaryNavigationWidth(Scene scene) {
+        M3NavigationRail rail = assertInstanceOf(
+                M3NavigationRail.class,
+                Objects.requireNonNull(scene.lookup(".hmcl-primary-nav-rail"), "primary navigation rail")
+        );
+        assertTrue(rail.isExpanded(), "primary navigation rail is not expanded");
+        assertEquals(EXPANDED_PRIMARY_RAIL_WIDTH, rail.getWidth(), 0.5);
     }
 
     /// Verifies that page transitions clip retained content to the scaffold main pane.
