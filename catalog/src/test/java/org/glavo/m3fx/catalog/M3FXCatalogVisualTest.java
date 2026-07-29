@@ -293,6 +293,8 @@ final class M3FXCatalogVisualTest {
             assertEquals(360.0, sidebar.getWidth(), 0.5);
             assertEquals(M3NavigationDrawerVariant.STANDARD, sidebar.drawer().getVariant());
             assertEquals(app.components().size(), scene.getRoot().lookupAll(".catalog-sidebar-component").size());
+            assertTrue(scene.getRoot().lookupAll(".catalog-sidebar-example").isEmpty());
+            assertTrue(scene.getRoot().lookupAll(".catalog-sidebar-component-group").isEmpty());
             M3ListItem homeItem = assertInstanceOf(
                     M3ListItem.class,
                     Objects.requireNonNull(scene.lookup(".catalog-sidebar-home"), "sidebar Home item")
@@ -362,6 +364,17 @@ final class M3FXCatalogVisualTest {
             );
             assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(componentScroll));
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-card").size());
+            assertEquals(16, scene.getRoot().lookupAll(".catalog-example-cell").size());
+            assertEquals(3, scene.getRoot().lookupAll(".catalog-component-reference-action").size());
+            assertNotNull(scene.lookup(".catalog-component-reference"));
+            TilePane exampleGrid = assertInstanceOf(
+                    TilePane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-grid"), "example grid")
+            );
+            assertTrue(
+                    exampleGrid.getChildren().stream().map(Node::getLayoutX).distinct().count() > 1,
+                    "expanded component pages should use more than one example column"
+            );
             CatalogSidebar sidebar = visibleSidebar(scene);
             M3ListItem selectedComponent = Objects.requireNonNull(
                     sidebar.drawer().getSelectedItem(),
@@ -375,11 +388,11 @@ final class M3FXCatalogVisualTest {
             assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
             assertNotNull(scene.lookup(".catalog-example-page"));
             assertNull(scene.lookup(".catalog-sample-surface"));
-            M3ListItem selectedExample = Objects.requireNonNull(
+            M3ListItem selectedOwner = Objects.requireNonNull(
                     sidebar.drawer().getSelectedItem(),
-                    "selected sidebar example"
+                    "selected sidebar component owner"
             );
-            assertEquals(example.name(), selectedExample.getHeadlineText());
+            assertEquals("Chips", selectedOwner.getHeadlineText());
 
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
@@ -401,38 +414,26 @@ final class M3FXCatalogVisualTest {
             CatalogSidebar sidebar = visibleSidebar(scene);
             M3NavigationDrawer drawer = sidebar.drawer();
             ScrollPane viewport = drawerViewport(sidebar);
-            M3ListItem componentItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons");
-            M3ListItem firstExample = listItemNamed(
-                    sidebar,
-                    ".catalog-sidebar-example",
-                    buttons.examples().get(0).name()
-            );
-            M3ListItem secondExample = listItemNamed(
-                    sidebar,
-                    ".catalog-sidebar-example",
-                    buttons.examples().get(1).name()
-            );
+            M3ListItem buttonsItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons");
+            M3ListItem cardsItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Cards");
+            assertTrue(sidebar.lookupAll(".catalog-sidebar-example").isEmpty());
 
             viewport.setVvalue(0.42);
             layout(scene);
             double initialVvalue = viewport.getVvalue();
 
-            firstExample.fire();
+            cardsItem.fire();
             layout(scene);
             assertSame(drawer, sidebar.drawer(), "route changes must retain the drawer");
-            assertSame(firstExample, drawer.getSelectedItem(), "selection must retain the destination node");
-            assertSame(componentItem, listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons"));
-            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "first destination changed scroll position");
+            assertSame(cardsItem, drawer.getSelectedItem(), "selection must retain the destination node");
+            assertSame(buttonsItem, listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons"));
+            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "Cards changed scroll position");
 
-            secondExample.fire();
+            buttonsItem.fire();
             layout(scene);
-            assertSame(secondExample, drawer.getSelectedItem(), "selection must retain the destination node");
-            assertSame(firstExample, listItemNamed(
-                    sidebar,
-                    ".catalog-sidebar-example",
-                    buttons.examples().get(0).name()
-            ));
-            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "second destination changed scroll position");
+            assertSame(buttonsItem, drawer.getSelectedItem(), "selection must retain the destination node");
+            assertSame(cardsItem, listItemNamed(sidebar, ".catalog-sidebar-component", "Cards"));
+            assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "Buttons changed scroll position");
             app.navigateHome();
             layout(scene);
         });
@@ -873,6 +874,31 @@ final class M3FXCatalogVisualTest {
                     Node routeHost = Objects.requireNonNull(scene.lookup(".catalog-route-host"), "route host");
                     assertTrue(routeHost.getLayoutBounds().getWidth() >= scene.getWidth() - 1.0);
 
+                    CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+                    app.navigate(new CatalogRoute.Component(buttons));
+                    layout(scene);
+                    Parent componentPage = assertInstanceOf(
+                            Parent.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-component-page"), "compact component page")
+                    );
+                    Node reference = Objects.requireNonNull(
+                            componentPage.lookup(".catalog-component-reference"),
+                            "compact component reference"
+                    );
+                    Bounds componentBounds = componentPage.localToScene(componentPage.getBoundsInLocal());
+                    Bounds referenceBounds = reference.localToScene(reference.getBoundsInLocal());
+                    assertTrue(referenceBounds.getMinX() >= componentBounds.getMinX() - 0.5);
+                    assertTrue(referenceBounds.getMaxX() <= componentBounds.getMaxX() + 0.5);
+                    TilePane exampleGrid = assertInstanceOf(
+                            TilePane.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-example-grid"), "compact example grid")
+                    );
+                    assertEquals(
+                            1L,
+                            exampleGrid.getChildren().stream().map(Node::getLayoutX).distinct().count(),
+                            "compact component pages should use one example column"
+                    );
+
                     for (CatalogComponent component : app.components()) {
                         for (CatalogExample example : component.examples()) {
                             app.navigate(new CatalogRoute.Example(component, example));
@@ -987,14 +1013,18 @@ final class M3FXCatalogVisualTest {
                             "selected sidebar component"
                     );
                     assertEquals("Buttons", selectedComponent.getHeadlineText());
-                    M3ListItem exampleItem = listItemNamed(
+                    M3ListItem cardsItem = listItemNamed(
                             sidebar,
-                            ".catalog-sidebar-example",
-                            componentNamed(app.components(), "Buttons").examples().get(0).name()
+                            ".catalog-sidebar-component",
+                            "Cards"
                     );
-                    exampleItem.fire();
+                    cardsItem.fire();
                     layout(scene);
-                    assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
+                    CatalogRoute.Component cardsRoute = assertInstanceOf(
+                            CatalogRoute.Component.class,
+                            app.currentRoute()
+                    );
+                    assertEquals("Cards", cardsRoute.component().name());
                     assertEquals(M3VisibilityState.EXITING, visibility.getState());
                     assertTrue(visibility.isTransitioning(), "modal drawer exit should animate");
                     M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);

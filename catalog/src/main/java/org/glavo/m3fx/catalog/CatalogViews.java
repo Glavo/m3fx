@@ -9,11 +9,15 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3ScrollPanes;
@@ -47,7 +51,13 @@ final class CatalogViews {
     private static final double COMPONENT_CARD_ICON_SIZE = 80.0;
 
     /// The icon size used by a component detail page, in logical pixels.
-    private static final double COMPONENT_PAGE_ICON_SIZE = 108.0;
+    private static final double COMPONENT_PAGE_ICON_SIZE = 80.0;
+
+    /// The minimum width of one component-page example cell, in logical pixels.
+    private static final double EXAMPLE_CELL_MIN_WIDTH = 320.0;
+
+    /// The fixed height of one component-page example cell, in logical pixels.
+    private static final double EXAMPLE_CELL_HEIGHT = 112.0;
 
     /// The uniform inner padding used by Catalog cards.
     private static final double CARD_CONTENT_PADDING = 16.0;
@@ -101,7 +111,7 @@ final class CatalogViews {
         for (CatalogComponent component : sortedComponents) {
             grid.getChildren().add(createComponentCard(component, routeConsumer, markExpressive));
         }
-        grid.widthProperty().addListener(observable -> updateHomeTileWidth(grid));
+        grid.widthProperty().addListener(observable -> updateAdaptiveTileWidth(grid, HOME_CELL_MIN_WIDTH));
 
         ScrollPane scrollPane = new ScrollPane(grid);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-home-scroll");
@@ -116,15 +126,16 @@ final class CatalogViews {
 
     /// Distributes adaptive-grid cells across the available row width.
     ///
-    /// @param grid the home component grid
-    private static void updateHomeTileWidth(TilePane grid) {
+    /// @param grid the adaptive tile grid
+    /// @param minimumTileWidth the minimum width used to derive the column count
+    private static void updateAdaptiveTileWidth(TilePane grid, double minimumTileWidth) {
         Insets insets = grid.getInsets();
         double availableWidth = grid.getWidth() - insets.getLeft() - insets.getRight();
         if (availableWidth <= 0.0) {
             return;
         }
 
-        int columns = Math.max(1, (int) Math.floor(availableWidth / HOME_CELL_MIN_WIDTH));
+        int columns = Math.max(1, (int) Math.floor(availableWidth / minimumTileWidth));
         double outputScale = grid.getScene() != null && grid.getScene().getWindow() != null
                 ? grid.getScene().getWindow().getOutputScaleX()
                 : 1.0;
@@ -134,52 +145,89 @@ final class CatalogViews {
         }
     }
 
-    /// Creates a component detail page with its overview and navigable example list.
+    /// Creates a component reference page with overview, source links, and a navigable example matrix.
     ///
-    /// The page contains the component icon, a description section, and one full-width outlined card for each
-    /// example. Activating an example card reports a [CatalogRoute.Example] through `navigate`.
+    /// The reference header contains the component identity, description, scenario count, and direct links to
+    /// Material guidance, M3FX API documentation, and source. Examples use an adaptive multi-column matrix.
+    /// Activating an example card reports a [CatalogRoute.Example] through `navigate`.
     ///
     /// @param component      the component described by the page
     /// @param navigate       the consumer that handles route changes
+    /// @param openExternal   the consumer that opens an absolute external URL
     /// @param markExpressive whether Expressive examples display a marker
     /// @return a new scrollable component detail view
-    /// @throws NullPointerException if `component` or `navigate` is `null`
+    /// @throws NullPointerException if `component`, `navigate`, or `openExternal` is `null`
     static Node createComponent(
             CatalogComponent component,
             Consumer<CatalogRoute> navigate,
+            Consumer<String> openExternal,
             boolean markExpressive
     ) {
         CatalogComponent target = Objects.requireNonNull(component, "component");
         Consumer<CatalogRoute> routeConsumer = Objects.requireNonNull(navigate, "navigate");
+        Consumer<String> externalConsumer = Objects.requireNonNull(openExternal, "openExternal");
 
-        StackPane iconRow = new StackPane(createSizedIcon(
+        StackPane icon = createSizedIcon(
                 target.iconPath(),
                 COMPONENT_PAGE_ICON_SIZE,
                 "catalog-component-page-icon"
-        ));
-        iconRow.getStyleClass().add("catalog-component-page-icon-row");
-        iconRow.setAlignment(Pos.CENTER);
-        iconRow.setMaxWidth(Double.MAX_VALUE);
+        );
 
-        M3Text descriptionHeading = new M3Text("Description", M3TextRole.TITLE_MEDIUM);
-        descriptionHeading.getStyleClass().addAll("catalog-component-section-title", "catalog-description-title");
+        M3Text title = new M3Text(target.name(), M3TextRole.HEADLINE_MEDIUM);
+        title.getStyleClass().add("catalog-component-reference-title");
 
         M3Text description = new M3Text(target.description(), M3TextRole.BODY_MEDIUM);
         description.getStyleClass().add("catalog-component-description");
         description.setWrapText(true);
         description.setMaxWidth(Double.MAX_VALUE);
 
-        M3Text examplesHeading = new M3Text("Examples", M3TextRole.TITLE_MEDIUM);
+        M3Text scenarioCount = new M3Text(
+                target.examples().size() + " interactive scenarios",
+                M3TextRole.LABEL_LARGE
+        );
+        scenarioCount.getStyleClass().add("catalog-component-scenario-count");
+
+        FlowPane referenceActions = new FlowPane(8.0, 8.0);
+        referenceActions.getStyleClass().add("catalog-component-reference-actions");
+        referenceActions.getChildren().addAll(
+                createReferenceButton("Guidelines", target.guidelinesUrl(), externalConsumer),
+                createReferenceButton("Source", target.sourceUrl(), externalConsumer),
+                createReferenceButton("API documentation", target.docsUrl(), externalConsumer)
+        );
+
+        VBox referenceLabels = new VBox(title, description, scenarioCount, referenceActions);
+        referenceLabels.getStyleClass().add("catalog-component-reference-labels");
+        referenceLabels.setFillWidth(true);
+        referenceLabels.setMaxWidth(Double.MAX_VALUE);
+
+        HBox reference = new HBox(icon, referenceLabels);
+        reference.getStyleClass().add("catalog-component-reference");
+        reference.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(referenceLabels, Priority.ALWAYS);
+
+        M3Text examplesHeading = new M3Text("Interactive examples", M3TextRole.TITLE_LARGE);
         examplesHeading.getStyleClass().addAll("catalog-component-section-title", "catalog-examples-title");
 
-        VBox examples = new VBox();
-        examples.getStyleClass().add("catalog-example-card-list");
-        examples.setFillWidth(true);
-        for (CatalogExample example : target.examples()) {
-            examples.getChildren().add(createExampleCard(target, example, routeConsumer, markExpressive));
-        }
+        M3Text examplesDescription = new M3Text(
+                "Open a focused specimen to inspect behavior, states, and responsive layout.",
+                M3TextRole.BODY_MEDIUM
+        );
+        examplesDescription.getStyleClass().add("catalog-examples-description");
+        examplesDescription.setWrapText(true);
 
-        VBox page = new VBox(iconRow, descriptionHeading, description, examplesHeading, examples);
+        TilePane examples = new TilePane(Orientation.HORIZONTAL);
+        examples.getStyleClass().add("catalog-example-grid");
+        examples.setAlignment(Pos.TOP_LEFT);
+        examples.setTileAlignment(Pos.TOP_LEFT);
+        examples.setPrefTileWidth(EXAMPLE_CELL_MIN_WIDTH);
+        examples.setPrefTileHeight(EXAMPLE_CELL_HEIGHT);
+        for (CatalogExample example : target.examples()) {
+            examples.getChildren().add(createExampleCell(target, example, routeConsumer, markExpressive));
+        }
+        examples.widthProperty().addListener(observable ->
+                updateAdaptiveTileWidth(examples, EXAMPLE_CELL_MIN_WIDTH));
+
+        VBox page = new VBox(reference, examplesHeading, examplesDescription, examples);
         page.getStyleClass().addAll("catalog-route-page", "catalog-component-page");
         page.setFillWidth(true);
 
@@ -192,6 +240,23 @@ final class CatalogViews {
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
+    }
+
+    /// Creates an outlined external-reference action.
+    ///
+    /// @param label the visible action label
+    /// @param url the absolute URL opened by the action
+    /// @param openExternal the external-document callback
+    /// @return the configured reference action
+    private static M3Button createReferenceButton(
+            String label,
+            String url,
+            Consumer<String> openExternal
+    ) {
+        M3Button button = new M3Button(label, M3ButtonVariant.OUTLINED);
+        button.getStyleClass().add("catalog-component-reference-action");
+        button.setOnAction(event -> openExternal.accept(url));
+        return button;
     }
 
     /// Creates a scrollable example route that centers one real, interactive example in the available area.
@@ -348,6 +413,32 @@ final class CatalogViews {
         card.setMaxWidth(Double.MAX_VALUE);
         card.setOnAction(event -> navigate.accept(new CatalogRoute.Example(component, example)));
         return card;
+    }
+
+    /// Creates one adaptive example-grid cell around an actionable example card.
+    ///
+    /// @param component the component that owns the example
+    /// @param example the example represented by the card
+    /// @param navigate the consumer that handles route changes
+    /// @param markExpressive whether an Expressive marker may be shown
+    /// @return a fixed-height resizable example cell
+    private static StackPane createExampleCell(
+            CatalogComponent component,
+            CatalogExample example,
+            Consumer<CatalogRoute> navigate,
+            boolean markExpressive
+    ) {
+        M3Card card = createExampleCard(component, example, navigate, markExpressive);
+        card.setMinSize(0.0, 0.0);
+        card.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        StackPane cell = new StackPane(card);
+        cell.getStyleClass().add("catalog-example-cell");
+        cell.setPadding(new Insets(HOME_CELL_OUTER_PADDING));
+        cell.setMinSize(0.0, EXAMPLE_CELL_HEIGHT);
+        cell.setPrefSize(EXAMPLE_CELL_MIN_WIDTH, EXAMPLE_CELL_HEIGHT);
+        cell.setMaxSize(Double.MAX_VALUE, EXAMPLE_CELL_HEIGHT);
+        return cell;
     }
 
     /// Creates a centered icon holder with a Material SVG icon rendered at the requested size.

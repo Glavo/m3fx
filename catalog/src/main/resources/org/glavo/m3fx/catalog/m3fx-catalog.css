@@ -58,10 +58,6 @@
     -fx-padding: 16px 16px 8px 16px;
 }
 
-.catalog-sidebar-drawer .catalog-sidebar-example {
-    -m3-horizontal-padding: 32px;
-}
-
 .catalog-top-action .catalog-icon,
 .catalog-component-card .catalog-icon,
 .catalog-example-card .catalog-icon {
@@ -83,8 +79,9 @@
 }
 
 .catalog-component-card-name,
+.catalog-component-reference-title,
 .catalog-component-section-title,
-.catalog-component-description,
+.catalog-component-scenario-count,
 .catalog-example-card-title {
     -fx-text-fill: -m3-color-on-surface;
 }
@@ -106,29 +103,54 @@
     -fx-spacing: 16px;
 }
 
-.catalog-component-page-icon-row {
-    -fx-padding: 42px 0;
+.catalog-component-reference {
+    -fx-padding: 24px;
+    -fx-spacing: 24px;
+    -fx-alignment: top-left;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
 }
 
-.catalog-description-title {
-    -fx-padding: 8px 0 0 0;
+.catalog-component-reference-labels {
+    -fx-spacing: 12px;
+    -fx-alignment: top-left;
+}
+
+.catalog-component-reference-actions {
+    -fx-padding: 4px 0 0 0;
+    -fx-alignment: center-left;
+}
+
+.catalog-component-scenario-count {
+    -fx-text-fill: -m3-color-primary;
 }
 
 .catalog-component-description,
+.catalog-examples-description,
 .catalog-example-card-description {
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .catalog-examples-title {
-    -fx-padding: 18px 0 0 0;
+    -fx-padding: 16px 0 0 0;
 }
 
-.catalog-example-card-list {
-    -fx-spacing: 8px;
+.catalog-example-grid {
+    -fx-padding: 0;
+    -fx-hgap: 0;
+    -fx-vgap: 0;
+    -fx-alignment: top-left;
+    -fx-tile-alignment: top-left;
+    -fx-background-color: transparent;
+}
+
+.catalog-example-cell {
+    -fx-alignment: center;
 }
 
 .catalog-example-card {
-    -fx-min-height: 88px;
+    -fx-min-height: 104px;
+    -fx-pref-height: 104px;
 }
 
 .catalog-example-card-content {

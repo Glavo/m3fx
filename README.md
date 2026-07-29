@@ -482,8 +482,9 @@ directionality, and motion cases used by the visual test matrix:
 
 The independent `catalog` project follows the AndroidX Material 3 Catalog's Home, Component, and Example
 hierarchy. Its home route is an alphabetical adaptive card grid; component routes provide descriptions and example
-lists, and example routes isolate one working specimen. A 360dp standard navigation drawer shares space with route
-content at expanded widths and becomes a scrim-backed modal drawer on smaller windows. Drawer destinations remain
+matrices, and example routes isolate one working specimen. Component reference pages also link directly to Material
+guidance, M3FX API documentation, and source. A 360dp standard navigation drawer provides a concise component
+directory at expanded widths and becomes a scrim-backed modal drawer on smaller windows. Drawer destinations remain
 persistent across route changes so selection does not rebuild the navigation tree or disturb its scroll position.
 Route replacement uses directional Material motion, and every Catalog viewport enables smooth wheel scrolling. The
 registry contains 47 component families and 319 independent examples covering variants, sizes, shapes, states,

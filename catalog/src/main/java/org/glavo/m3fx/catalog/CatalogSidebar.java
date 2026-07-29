@@ -3,14 +3,12 @@
 
 package org.glavo.m3fx.catalog;
 
-import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
-import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
@@ -24,18 +22,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/// Provides Material Design 3 component and example navigation for the Catalog.
+/// Provides Material Design 3 component-reference navigation for the Catalog.
 ///
-/// The sidebar builds one persistent [M3NavigationDrawer] hierarchy and retains every destination node for its
-/// lifetime. Route synchronization changes selection, visibility, and disclosure state in place; it does not rebuild
-/// drawer content or issue deferred scroll corrections. Component groups retain user-controlled expansion state,
-/// while the group associated with a route is expanded when necessary to expose the selected example.
+/// The sidebar exposes Home and one persistent destination per component. Example routes keep their owning component
+/// selected because detailed scenarios belong to the component page rather than the global application hierarchy.
+/// Route synchronization changes selection and filtering in place; it does not rebuild drawer content or issue
+/// deferred scroll corrections.
 @NotNullByDefault
 final class CatalogSidebar extends StackPane {
     /// The immutable complete component registry.
     private final @Unmodifiable List<CatalogComponent> components;
 
-    /// The callback used for component and example navigation.
+    /// The callback used for component navigation.
     private final Consumer<CatalogRoute> navigate;
 
     /// The callback used to clear history and navigate Home.
@@ -50,11 +48,8 @@ final class CatalogSidebar extends StackPane {
     /// The summary shown in the drawer header.
     private final M3Text summary = new M3Text("", M3TextRole.BODY_SMALL);
 
-    /// Persistent drawer entries indexed in registry order.
-    private final Map<CatalogComponent, ComponentEntry> componentEntries = new LinkedHashMap<>();
-
-    /// Whether route synchronization is currently mutating drawer state.
-    private boolean synchronizing;
+    /// Persistent component destinations indexed in registry order.
+    private final Map<CatalogComponent, M3ListItem> componentItems = new LinkedHashMap<>();
 
     /// Creates a sidebar for a Catalog component registry.
     ///
@@ -99,38 +94,22 @@ final class CatalogSidebar extends StackPane {
         drawer.getItems().addAll(header, new M3Divider(), homeItem, componentsHeading);
 
         for (CatalogComponent component : components) {
-            ComponentEntry entry = createComponentEntry(component);
-            componentEntries.put(component, entry);
-            drawer.getItems().add(entry.group());
+            M3ListItem item = createComponentItem(component);
+            componentItems.put(component, item);
+            drawer.getItems().add(item);
         }
     }
 
-    /// Creates one persistent component group and all of its example destinations.
+    /// Creates one persistent component destination.
     ///
     /// @param component the represented component
-    /// @return the persistent component entry
-    private ComponentEntry createComponentEntry(CatalogComponent component) {
-        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup(component.name());
-        group.getStyleClass().add("catalog-sidebar-component-group");
-
-        M3ListItem componentItem = group.getHeaderItem();
-        componentItem.getStyleClass().addAll("catalog-sidebar-item", "catalog-sidebar-component");
-        componentItem.setLeading(CatalogIcons.create(component.iconPath()));
-        componentItem.addEventHandler(ActionEvent.ACTION, event -> {
-            if (!synchronizing) {
-                navigate.accept(new CatalogRoute.Component(component));
-            }
-        });
-
-        Map<CatalogExample, M3ListItem> exampleItems = new LinkedHashMap<>();
-        for (CatalogExample example : component.examples()) {
-            M3ListItem exampleItem = new M3ListItem(example.name());
-            exampleItem.getStyleClass().addAll("catalog-sidebar-item", "catalog-sidebar-example");
-            exampleItem.setOnAction(event -> navigate.accept(new CatalogRoute.Example(component, example)));
-            exampleItems.put(example, exampleItem);
-            group.getItems().add(exampleItem);
-        }
-        return new ComponentEntry(component, group, componentItem, Map.copyOf(exampleItems));
+    /// @return the persistent component destination
+    private M3ListItem createComponentItem(CatalogComponent component) {
+        M3ListItem item = new M3ListItem(component.name());
+        item.getStyleClass().addAll("catalog-sidebar-item", "catalog-sidebar-component");
+        item.setLeading(CatalogIcons.create(component.iconPath()));
+        item.setOnAction(event -> navigate.accept(new CatalogRoute.Component(component)));
+        return item;
     }
 
     /// Synchronizes selection and filtering without replacing drawer items or changing scroll position.
@@ -140,40 +119,29 @@ final class CatalogSidebar extends StackPane {
     void refresh(CatalogRoute route, boolean expressiveOnly) {
         Objects.requireNonNull(route, "route");
         @Nullable CatalogComponent activeComponent = componentOf(route);
-        @Nullable CatalogExample activeExample = route instanceof CatalogRoute.Example exampleRoute
-                ? exampleRoute.example()
-                : null;
 
         int visibleComponentCount = 0;
         int visibleExampleCount = 0;
-        @Nullable M3ListItem selectedItem = route instanceof CatalogRoute.Home ? homeItem : null;
+        @Nullable M3ListItem selectedItem = activeComponent == null
+                ? homeItem
+                : componentItems.get(activeComponent);
 
-        synchronizing = true;
-        try {
-            for (ComponentEntry entry : componentEntries.values()) {
-                boolean visible = !expressiveOnly || entry.component().hasExpressiveExamples();
-                entry.group().setVisible(visible);
-                entry.group().setManaged(visible);
-                if (visible) {
-                    visibleComponentCount++;
-                    visibleExampleCount += entry.component().examples().size();
-                }
-
-                if (entry.component().equals(activeComponent)) {
-                    if (!entry.group().isExpanded()) {
-                        entry.group().setExpanded(true);
-                    }
-                    selectedItem = activeExample == null
-                            ? entry.componentItem()
-                            : entry.exampleItems().get(activeExample);
-                }
+        for (Map.Entry<CatalogComponent, M3ListItem> entry : componentItems.entrySet()) {
+            CatalogComponent component = entry.getKey();
+            M3ListItem item = entry.getValue();
+            boolean visible = !expressiveOnly || component.hasExpressiveExamples();
+            item.setVisible(visible);
+            item.setManaged(visible);
+            if (visible) {
+                visibleComponentCount++;
+                visibleExampleCount += component.examples().size();
             }
-            summary.setText(visibleComponentCount + " components · " + visibleExampleCount + " examples");
-            if (selectedItem != null && isEffectivelyReachable(selectedItem)) {
-                drawer.select(selectedItem);
-            }
-        } finally {
-            synchronizing = false;
+        }
+        summary.setText(visibleComponentCount + " components · " + visibleExampleCount + " scenarios");
+        if (selectedItem != null && isEffectivelyReachable(selectedItem)) {
+            drawer.select(selectedItem);
+        } else if (selectedItem != homeItem && isEffectivelyReachable(homeItem)) {
+            drawer.select(homeItem);
         }
     }
 
@@ -218,24 +186,4 @@ final class CatalogSidebar extends StackPane {
         return null;
     }
 
-    /// Stores the persistent nodes associated with one component.
-    ///
-    /// @param component the represented component
-    /// @param group the disclosure group containing the component and its examples
-    /// @param componentItem the group header destination
-    /// @param exampleItems immutable example-to-destination mappings
-    private record ComponentEntry(
-            CatalogComponent component,
-            M3NavigationDrawerGroup group,
-            M3ListItem componentItem,
-            @Unmodifiable Map<CatalogExample, M3ListItem> exampleItems
-    ) {
-        /// Validates the persistent entry.
-        private ComponentEntry {
-            Objects.requireNonNull(component, "component");
-            Objects.requireNonNull(group, "group");
-            Objects.requireNonNull(componentItem, "componentItem");
-            exampleItems = Map.copyOf(Objects.requireNonNull(exampleItems, "exampleItems"));
-        }
-    }
 }

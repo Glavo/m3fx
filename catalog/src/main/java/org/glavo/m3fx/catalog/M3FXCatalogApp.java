@@ -500,7 +500,12 @@ public final class M3FXCatalogApp extends Application {
         if (currentRoute instanceof CatalogRoute.Home) {
             content = CatalogViews.createHome(components, this::navigate, expressiveOnly, markExpressive);
         } else if (currentRoute instanceof CatalogRoute.Component componentRoute) {
-            content = CatalogViews.createComponent(componentRoute.component(), this::navigate, markExpressive);
+            content = CatalogViews.createComponent(
+                    componentRoute.component(),
+                    this::navigate,
+                    this::openDocument,
+                    markExpressive
+            );
         } else {
             CatalogRoute.Example exampleRoute = (CatalogRoute.Example) currentRoute;
             content = CatalogViews.createExample(exampleRoute.component(), exampleRoute.example());

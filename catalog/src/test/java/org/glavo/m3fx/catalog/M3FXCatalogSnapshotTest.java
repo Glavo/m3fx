@@ -199,6 +199,9 @@ final class M3FXCatalogSnapshotTest {
                             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                             M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
                             writeSnapshot(scene, "compact-home.png");
+                            CatalogComponent buttons = componentNamed(app, "Buttons");
+                            app.navigate(new CatalogRoute.Component(buttons));
+                            writeSnapshot(scene, "compact-component.png");
                             writeFirstExampleSnapshot(scene, app, "Forms", "compact-form.png");
                         }
                 );
