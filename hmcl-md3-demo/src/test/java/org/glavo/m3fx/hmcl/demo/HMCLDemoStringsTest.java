@@ -7,6 +7,7 @@ import javafx.beans.binding.StringBinding;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,6 +72,22 @@ final class HMCLDemoStringsTest {
         assertEquals("Hello Minecraft! Launcher", title.get());
         assertEquals("主页", strings.get("nav.home"));
         assertEquals("正在以 Glavo 启动 Creative Workshop", strings.format("snackbar.launching", "Creative Workshop", "Glavo"));
+    }
+
+    /// Verifies an explicit English selection cannot fall back to the JVM default Chinese locale.
+    @Test
+    @ResourceLock("java.util.Locale.default")
+    void resolvesEnglishWithoutDefaultLocaleFallback() {
+        Locale previousLocale = Locale.getDefault();
+        try {
+            Locale.setDefault(HMCLDemoStrings.SIMPLIFIED_CHINESE);
+            HMCLDemoStrings strings = new HMCLDemoStrings(HMCLDemoStrings.ENGLISH);
+
+            assertEquals(HMCLDemoStrings.ENGLISH, strings.getLocale());
+            assertEquals("Home", strings.get("nav.home"));
+        } finally {
+            Locale.setDefault(previousLocale);
+        }
     }
 
     /// Loads a UTF-8 properties resource as an immutable map.

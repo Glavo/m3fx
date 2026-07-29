@@ -24,10 +24,6 @@ public final class HMCLDemoStrings {
     /// The base name shared by the English and Simplified Chinese resource bundles.
     public static final String BUNDLE_BASE_NAME = "org.glavo.m3fx.hmcl.demo.messages";
 
-    /// Bundle lookup control that prevents the JVM default locale from replacing the normalized locale.
-    private static final ResourceBundle.Control NO_DEFAULT_LOCALE_FALLBACK =
-            ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_DEFAULT);
-
     /// The English locale exposed by the demo language selector.
     public static final Locale ENGLISH = Locale.ENGLISH;
 
@@ -115,12 +111,14 @@ public final class HMCLDemoStrings {
         return Bindings.createStringBinding(() -> format(key, arguments), locale);
     }
 
-    /// Returns the resource bundle for the current normalized locale.
+    /// Returns the resource bundle for the current normalized locale using named-module-compatible lookup.
     private ResourceBundle bundle() {
+        Locale locale = normalizedLocale();
+        Locale bundleLocale = SIMPLIFIED_CHINESE.equals(locale) ? SIMPLIFIED_CHINESE : Locale.ROOT;
         return ResourceBundle.getBundle(
                 BUNDLE_BASE_NAME,
-                normalizedLocale(),
-                NO_DEFAULT_LOCALE_FALLBACK
+                bundleLocale,
+                HMCLDemoStrings.class.getModule()
         );
     }
 
