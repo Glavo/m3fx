@@ -20,9 +20,8 @@ import org.jetbrains.annotations.Nullable;
 /// Primary app destinations shared by the adaptive navigation bar and rail.
 ///
 /// Compact widths present a bottom [M3NavigationBar]. Medium and wider widths present an [M3NavigationRail]. The
-/// rail collapses to icon-oriented destinations at medium widths and expands labels at expanded and larger
-/// breakpoints. Bar and rail own separate [M3NavigationItem] nodes (a node cannot have two parents); selection is
-/// synchronized between the two surfaces.
+/// rail remains collapsed with icon-oriented destinations at every breakpoint. Bar and rail own separate
+/// [M3NavigationItem] nodes (a node cannot have two parents); selection is synchronized between the two surfaces.
 @NotNullByDefault
 final class HMCLDemoPrimaryNav {
     /// Smallest rail item height that retains a touch-sized destination and its label.
@@ -170,18 +169,15 @@ final class HMCLDemoPrimaryNav {
         select(destinationFor(route));
     }
 
-    /// Applies Material-style rail expansion for the scaffold breakpoint.
+    /// Applies a scaffold breakpoint while keeping the primary rail collapsed.
     ///
-    /// Compact uses the bottom bar, so the rail's expanded flag is unused while hidden. Medium keeps a collapsed
-    /// icon rail; expanded and larger breakpoints reveal labels.
+    /// Compact uses the bottom bar, so the hidden rail remains collapsed as well. Medium and wider breakpoints
+    /// present the same icon-oriented rail without expanding labels.
     ///
     /// @param breakpoint the scaffold's effective breakpoint
     void applyBreakpoint(M3Breakpoint breakpoint) {
         currentBreakpoint = breakpoint;
-        boolean expandLabels = breakpoint == M3Breakpoint.EXPANDED
-                || breakpoint == M3Breakpoint.LARGE
-                || breakpoint == M3Breakpoint.EXTRA_LARGE;
-        navigationRail.setExpanded(expandLabels);
+        navigationRail.setExpanded(false);
         // Compact bar items stay vertical (icon above label); medium bar is unused when rail is shown.
         navigationBar.setItemLayout(
                 org.glavo.m3fx.controls.M3NavigationItemLayout.VERTICAL

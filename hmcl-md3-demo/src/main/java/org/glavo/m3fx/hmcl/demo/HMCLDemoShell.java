@@ -61,7 +61,7 @@ import java.util.Objects;
 /// Custom title-bar chrome hosts an [M3AdaptiveScaffold] for primary navigation and page content.
 ///
 /// Compact widths present a bottom [org.glavo.m3fx.controls.M3NavigationBar]; medium and wider widths present a
-/// leading [org.glavo.m3fx.controls.M3NavigationRail] that expands labels from the expanded breakpoint upward.
+/// leading [org.glavo.m3fx.controls.M3NavigationRail] that remains collapsed at every breakpoint.
 /// Secondary pages may still use their own section sidebars inside the main pane. Window chrome is self-drawn:
 /// - outer window padding 8 for shadow
 /// - clipped body with 16px MD3 corner radius

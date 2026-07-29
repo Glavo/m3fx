@@ -47,11 +47,8 @@ final class HMCLDemoSnapshotTest {
     private static final Path REPORT_DIRECTORY =
             Path.of(System.getProperty("user.dir"), "build", "reports", "hmcl-snapshots");
 
-    /// Wide review width that activates the expanded primary navigation rail.
+    /// Wide review width that exercises an expanded breakpoint while the primary rail remains collapsed.
     private static final double WIDE_WINDOW_WIDTH = 1_100.0;
-
-    /// Compact expanded-rail width used by the HMCL shell.
-    private static final double EXPANDED_PRIMARY_RAIL_WIDTH = 200.0;
 
     /// Starts the JavaFX toolkit before creating a real window.
     @BeforeAll
@@ -226,9 +223,9 @@ final class HMCLDemoSnapshotTest {
         }
     }
 
-    /// Verifies the wide-to-narrow resize path with motion enabled and writes both endpoint snapshots.
+    /// Verifies that the collapsed primary rail stays attached across a wide-to-narrow resize.
     @Test
-    void keepsPrimaryNavigationAttachedAfterWideNarrowResize() throws InterruptedException {
+    void keepsPrimaryNavigationCollapsedAndAttachedAcrossWideNarrowResize() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<Double> maximumGeometryError = new AtomicReference<>(0.0);
         try {
@@ -239,7 +236,7 @@ final class HMCLDemoSnapshotTest {
                             return false;
                         }
                         Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
-                        return primaryRailHasSettled(scene, true) && navigationGeometryError(scene) <= 1.0;
+                        return primaryRailHasSettled(scene) && navigationGeometryError(scene) <= 1.0;
                     },
                     3,
                     () -> {
@@ -264,7 +261,7 @@ final class HMCLDemoSnapshotTest {
                                 "scene"
                         );
                         assertAdaptiveNavigationIsAttached(scene);
-                        assertExpandedPrimaryNavigationWidth(scene);
+                        assertPrimaryNavigationIsCollapsed(scene);
                         writeSnapshot(scene, "16-home-wide-window.png");
                     }
             );
@@ -281,7 +278,7 @@ final class HMCLDemoSnapshotTest {
                                 navigationGeometryError(scene)
                         ));
                         return windowHasSize(stage, HMCLDemoShell.minWindowWidth(), HMCLDemoShell.minWindowHeight())
-                                && primaryRailHasSettled(scene, false)
+                                && primaryRailHasSettled(scene)
                                 && navigationGeometryError(scene) <= 1.0;
                     },
                     4,
@@ -301,6 +298,7 @@ final class HMCLDemoSnapshotTest {
                                         + maximumGeometryError.get() + " logical pixels"
                         );
                         assertAdaptiveNavigationIsAttached(scene);
+                        assertPrimaryNavigationIsCollapsed(scene);
                         assertPrimaryNavigationItemsAreContained(scene);
                         writeSnapshot(scene, "17-home-after-wide-narrow-resize.png");
                     }
@@ -327,20 +325,16 @@ final class HMCLDemoSnapshotTest {
                 && Math.abs(stage.getHeight() - height) <= 1.0;
     }
 
-    /// Returns whether the primary rail's rendered width reached its expanded or collapsed endpoint.
+    /// Returns whether the primary rail reached its collapsed endpoint.
     ///
-    /// @param scene    the scene to inspect
-    /// @param expanded whether the expanded endpoint is expected
-    /// @return `true` when the rail width is within one logical pixel of the requested endpoint
-    private static boolean primaryRailHasSettled(Scene scene, boolean expanded) {
+    /// @param scene the scene to inspect
+    /// @return `true` when the rail is collapsed and within one logical pixel of its collapsed width
+    private static boolean primaryRailHasSettled(Scene scene) {
         Node node = scene.lookup(".hmcl-primary-nav-rail");
-        if (!(node instanceof M3NavigationRail rail) || rail.isExpanded() != expanded) {
+        if (!(node instanceof M3NavigationRail rail) || rail.isExpanded()) {
             return false;
         }
-        double expectedWidth = expanded
-                ? rail.getExpandedContainerWidth()
-                : rail.getCollapsedContainerWidth();
-        return Math.abs(rail.getWidth() - expectedWidth) <= 1.0;
+        return Math.abs(rail.getWidth() - rail.getCollapsedContainerWidth()) <= 1.0;
     }
 
     /// Returns the largest separation among the rail, its stable slot, and the adjacent main pane.
@@ -384,16 +378,16 @@ final class HMCLDemoSnapshotTest {
         );
     }
 
-    /// Verifies that the expanded HMCL rail uses its compact demo-specific width.
+    /// Verifies that the HMCL rail is collapsed at its configured width.
     ///
     /// @param scene the scene to inspect
-    private static void assertExpandedPrimaryNavigationWidth(Scene scene) {
+    private static void assertPrimaryNavigationIsCollapsed(Scene scene) {
         M3NavigationRail rail = assertInstanceOf(
                 M3NavigationRail.class,
                 Objects.requireNonNull(scene.lookup(".hmcl-primary-nav-rail"), "primary navigation rail")
         );
-        assertTrue(rail.isExpanded(), "primary navigation rail is not expanded");
-        assertEquals(EXPANDED_PRIMARY_RAIL_WIDTH, rail.getWidth(), 0.5);
+        assertFalse(rail.isExpanded(), "primary navigation rail is expanded");
+        assertEquals(rail.getCollapsedContainerWidth(), rail.getWidth(), 0.5);
     }
 
     /// Verifies that page transitions clip retained content to the scaffold main pane.
