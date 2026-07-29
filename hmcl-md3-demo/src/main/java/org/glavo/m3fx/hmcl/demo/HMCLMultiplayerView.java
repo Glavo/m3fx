@@ -5,7 +5,7 @@ package org.glavo.m3fx.hmcl.demo;
 
 import javafx.geometry.Insets;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -73,13 +73,23 @@ final class HMCLMultiplayerView extends BorderPane {
 
         M3Card card = new M3Card();
         card.setVariant(M3CardVariant.ELEVATED);
+        FlowPane actions = new FlowPane(
+                8.0,
+                8.0,
+                createButton,
+                joinButton,
+                launchButton,
+                copyButton,
+                leaveButton
+        );
+        actions.getStyleClass().add("hmcl-multiplayer-actions");
         VBox cardBody = new VBox(
                 12.0,
                 statusTitle,
                 statusBody,
                 roomLabel,
                 joinLayout,
-                new HBox(8.0, createButton, joinButton, launchButton, copyButton, leaveButton),
+                actions,
                 new M3Text("", M3TextRole.TITLE_SMALL),
                 players
         );

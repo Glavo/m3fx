@@ -10,6 +10,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
@@ -100,7 +101,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         HMCLDemoUi.fill(centerHost);
         centerHost.setFitToWidth(true);
         centerHost.setFitToHeight(true);
-        setLeft(sidebar);
+        setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(centerHost);
 
         state.selectedInstanceProperty().addListener((observable, oldValue, newValue) -> {
@@ -231,6 +232,8 @@ final class HMCLInstanceDetailView extends BorderPane {
                                 : strings.get("instance.installers.remove"),
                         M3ButtonVariant.TEXT
                 );
+                action.getStyleClass().add("hmcl-row-action");
+                action.setMinWidth(Region.USE_PREF_SIZE);
                 action.setOnAction(event -> {
                     if (installer.installedVersion() == null) {
                         state.setInstallerVersion(installer.id(), "latest");
@@ -253,6 +256,8 @@ final class HMCLInstanceDetailView extends BorderPane {
 
     private Node modsContent(HMCLDemoInstance instance) {
         M3SearchBar search = new M3SearchBar(strings.get("instance.mods.search"));
+        search.setMinWidth(0.0);
+        HBox.setHgrow(search, Priority.ALWAYS);
         VBox list = new VBox(4.0);
         Runnable rebuild = () -> {
             list.getChildren().clear();
@@ -268,6 +273,8 @@ final class HMCLInstanceDetailView extends BorderPane {
                 enabled.selectedProperty().addListener((observable, oldValue, newValue) ->
                         state.setSelectedModEnabled(mod.id(), Boolean.TRUE.equals(newValue)));
                 M3Button remove = new M3Button(strings.get("instance.mods.remove"), M3ButtonVariant.TEXT);
+                remove.getStyleClass().add("hmcl-row-action");
+                remove.setMinWidth(Region.USE_PREF_SIZE);
                 remove.setOnAction(event -> {
                     state.removeMod(mod.id());
                     controller.showMessageKey("snackbar.mod_removed", mod.name());
@@ -275,6 +282,7 @@ final class HMCLInstanceDetailView extends BorderPane {
                 });
                 HBox trailing = new HBox(4.0, remove, enabled);
                 trailing.setAlignment(Pos.CENTER_RIGHT);
+                trailing.setMinWidth(Region.USE_PREF_SIZE);
                 M3ListItem row = new M3ListItem(mod.name());
                 row.setSupportingText(mod.version());
                 row.setTrailing(trailing);
@@ -287,6 +295,8 @@ final class HMCLInstanceDetailView extends BorderPane {
         };
         search.textProperty().addListener((observable, oldValue, newValue) -> rebuild.run());
         M3Button add = new M3Button(strings.get("instance.mods.add"), M3ButtonVariant.TONAL);
+        add.getStyleClass().add("hmcl-row-action");
+        add.setMinWidth(Region.USE_PREF_SIZE);
         add.setOnAction(event -> {
             @Nullable HMCLDemoMod mod = state.addDemoMod();
             if (mod != null) {
@@ -347,6 +357,8 @@ final class HMCLInstanceDetailView extends BorderPane {
         } else {
             for (HMCLDemoWorld world : instance.worlds()) {
                 M3Button remove = new M3Button(strings.get("instance.worlds.remove"), M3ButtonVariant.TEXT);
+                remove.getStyleClass().add("hmcl-row-action");
+                remove.setMinWidth(Region.USE_PREF_SIZE);
                 remove.setOnAction(event -> {
                     state.removeWorld(world.id());
                     controller.showMessageKey("snackbar.world_removed", world.name());

@@ -9,6 +9,7 @@ import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -38,6 +39,9 @@ final class HMCLInstancesView extends BorderPane {
     private final M3SearchBar searchBar = new M3SearchBar();
     private final M3ListPane instanceList = new M3ListPane();
 
+    /// Scrollable contextual navigation content.
+    private final VBox sidebar;
+
     /// Creates the instances page.
     ///
     /// @param controller the application controller
@@ -64,7 +68,7 @@ final class HMCLInstancesView extends BorderPane {
         globalSettingsButton.setOnAction(event ->
                 controller.openSettings(HMCLDemoRoute.SettingsSection.GLOBAL_GAME));
 
-        VBox sidebar = HMCLDemoUi.sidebar(
+        sidebar = HMCLDemoUi.sidebar(
                 HMCLDemoUi.sectionLabel(""),
                 directoryList,
                 newDirectoryButton,
@@ -83,7 +87,7 @@ final class HMCLInstancesView extends BorderPane {
         center.setPadding(new Insets(16.0, 20.0, 24.0, 20.0));
         VBox.setVgrow(instanceList, Priority.ALWAYS);
 
-        setLeft(sidebar);
+        setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(center);
 
         state.getDirectories().addListener((ListChangeListener<HMCLDemoGameDirectory>) change -> rebuildDirectories());
@@ -98,7 +102,6 @@ final class HMCLInstancesView extends BorderPane {
 
     /// Refreshes locale-dependent labels.
     void refreshLocale() {
-        VBox sidebar = (VBox) getLeft();
         sidebar.getChildren().set(0, HMCLDemoUi.sectionLabel(strings.get("instances.section.directories")));
         newDirectoryButton.setText(strings.get("instances.new_directory"));
         newGameButton.setText(strings.get("instances.new_game"));
@@ -128,15 +131,21 @@ final class HMCLInstancesView extends BorderPane {
         @Nullable HMCLDemoInstance selected = state.getSelectedInstance();
         for (HMCLDemoInstance instance : state.getFilteredInstances()) {
             M3Button manage = new M3Button(strings.get("instances.manage"), M3ButtonVariant.TEXT);
+            manage.getStyleClass().add("hmcl-row-action");
+            manage.setMinWidth(Region.USE_PREF_SIZE);
             manage.setOnAction(event ->
                     controller.openInstance(instance.id(), HMCLDemoRoute.InstanceSection.SETTINGS));
             M3Button launch = new M3Button(strings.get("instances.launch"), M3ButtonVariant.TEXT);
+            launch.getStyleClass().add("hmcl-row-action");
+            launch.setMinWidth(Region.USE_PREF_SIZE);
             launch.setOnAction(event -> {
                 state.selectInstance(instance.id());
                 controller.launchSelected();
             });
             HBox trailing = new HBox(4.0, manage, launch);
+            trailing.getStyleClass().add("hmcl-instance-actions");
             trailing.setAlignment(Pos.CENTER_RIGHT);
+            trailing.setMinWidth(Region.USE_PREF_SIZE);
 
             M3ListItem row = new M3ListItem(instance.name());
             row.setSupportingText(instance.gameVersion() + " · " + instance.loader());

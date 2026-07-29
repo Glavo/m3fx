@@ -8,6 +8,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3Button;
@@ -32,6 +33,9 @@ final class HMCLAccountsView extends BorderPane {
     private final M3ListItem externalItem = HMCLDemoUi.navItem(HMCLDemoIcons.GROUP);
     private final VBox accountCards = new VBox(8.0);
 
+    /// Scrollable contextual navigation content.
+    private final VBox sidebar;
+
     /// Creates the accounts page.
     ///
     /// @param controller the application controller
@@ -43,7 +47,7 @@ final class HMCLAccountsView extends BorderPane {
         getStyleClass().addAll("hmcl-accounts-page", "hmcl-secondary-page");
         HMCLDemoUi.fill(this);
 
-        VBox sidebar = HMCLDemoUi.sidebar(
+        sidebar = HMCLDemoUi.sidebar(
                 HMCLDemoUi.sectionLabel(""),
                 microsoftItem,
                 offlineItem,
@@ -59,7 +63,7 @@ final class HMCLAccountsView extends BorderPane {
         accountCards.getStyleClass().add("hmcl-card-list");
         accountCards.setPadding(new Insets(12.0, 16.0, 20.0, 16.0));
         accountCards.setFillWidth(true);
-        setLeft(sidebar);
+        setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(HMCLDemoUi.scroll(accountCards));
 
         state.getAccounts().addListener((ListChangeListener<HMCLDemoAccount>) change -> rebuildAccounts());
@@ -70,7 +74,6 @@ final class HMCLAccountsView extends BorderPane {
 
     /// Refreshes locale-dependent labels.
     void refreshLocale() {
-        VBox sidebar = (VBox) getLeft();
         sidebar.getChildren().set(0, HMCLDemoUi.sectionLabel(strings.get("accounts.section.add")));
         microsoftItem.setHeadlineText(strings.get("accounts.add.microsoft"));
         offlineItem.setHeadlineText(strings.get("accounts.add.offline"));
@@ -89,6 +92,8 @@ final class HMCLAccountsView extends BorderPane {
             selector.setFocusTraversable(false);
 
             M3Button remove = new M3Button(strings.get("accounts.remove"), M3ButtonVariant.TEXT);
+            remove.getStyleClass().add("hmcl-row-action");
+            remove.setMinWidth(Region.USE_PREF_SIZE);
             remove.setOnAction(event -> {
                 state.selectAccount(account.id());
                 if (state.removeSelectedAccount()) {

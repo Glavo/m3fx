@@ -117,6 +117,12 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     /// Requests layout after a metric or orientation change.
     private final InvalidationListener layoutListener = observable -> getSkinnable().requestLayout();
 
+    /// Prevents slot relocation from being mistaken for a child-originated metric change.
+    private boolean applyingRenderedLayout;
+
+    /// Whether stable slots must bridge child layout requests back to the scaffold.
+    private boolean slotLayoutPropagationEnabled;
+
     /// Retargets a running layout transition after its explicit motion specification changes.
     private final InvalidationListener motionSpecListener = observable -> invalidateRunningTransition();
 
@@ -164,12 +170,14 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         synchronizeSlots();
         refreshTargetVisibility();
         applySettledVisibility();
+        slotLayoutPropagationEnabled = true;
     }
 
     /// Removes listeners and releases all application nodes before disposal.
     @Override
     public void dispose() {
         M3AdaptiveScaffold control = getSkinnable();
+        slotLayoutPropagationEnabled = false;
         removeSlotListeners(control);
         control.effectivePaneLayoutProperty().removeListener(stateListener);
         control.effectiveNavigationLayoutProperty().removeListener(stateListener);
@@ -678,8 +686,13 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
 
     /// Applies current animated geometry to all stable slot containers.
     private void applyRenderedLayout() {
-        for (SlotState state : slotStates) {
-            state.applyRenderedGeometry();
+        applyingRenderedLayout = true;
+        try {
+            for (SlotState state : slotStates) {
+                state.applyRenderedGeometry();
+            }
+        } finally {
+            applyingRenderedLayout = false;
         }
     }
 
@@ -935,12 +948,8 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Creates one unmanaged stable slot.
-    private static StackPane createSlot(String styleClass) {
-        StackPane slot = new StackPane();
-        slot.setManaged(false);
-        slot.setFocusTraversable(false);
-        slot.getStyleClass().add(styleClass);
-        return slot;
+    private StackPane createSlot(String styleClass) {
+        return new ScaffoldSlot(styleClass);
     }
 
     /// Installs a node in a stable slot only when the node identity changed.
@@ -1001,6 +1010,27 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         }
         double height = minimum ? slot.minHeight(width) : slot.prefHeight(width);
         return Math.max(0.0, height);
+    }
+
+    /// Hosts one public scaffold node while forwarding its layout requests through the unmanaged skin layer.
+    private final class ScaffoldSlot extends StackPane {
+        /// Creates an unmanaged stable slot with the supplied style class.
+        ///
+        /// @param styleClass the slot style class
+        private ScaffoldSlot(String styleClass) {
+            setManaged(false);
+            setFocusTraversable(false);
+            getStyleClass().add(styleClass);
+        }
+
+        /// Requests local layout and notifies the scaffold when child metrics may have changed.
+        @Override
+        public void requestLayout() {
+            super.requestLayout();
+            if (slotLayoutPropagationEnabled && !applyingRenderedLayout) {
+                getSkinnable().requestLayout();
+            }
+        }
     }
 
     /// Identifies the edge used by one slot's enter and exit motion.

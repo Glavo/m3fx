@@ -7,6 +7,7 @@ import javafx.collections.ListChangeListener;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.controls.M3Button;
@@ -30,6 +31,9 @@ final class HMCLDownloadView extends BorderPane {
     private final M3ListItem shaderItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
     private final M3ListItem worldItem = HMCLDemoUi.navItem(HMCLDemoIcons.WORLD);
 
+    /// Scrollable contextual navigation content.
+    private final VBox sidebar;
+
     private final M3AnimatedContent centerHost = new M3AnimatedContent();
     private HMCLDemoRoute.DownloadCategory category = HMCLDemoRoute.DownloadCategory.GAME;
 
@@ -51,7 +55,7 @@ final class HMCLDownloadView extends BorderPane {
         shaderItem.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.SHADER));
         worldItem.setOnAction(event -> controller.openDownload(HMCLDemoRoute.DownloadCategory.WORLD));
 
-        VBox sidebar = HMCLDemoUi.sidebar(
+        sidebar = HMCLDemoUi.sidebar(
                 HMCLDemoUi.sectionLabel(""),
                 gameItem,
                 modpackItem,
@@ -65,7 +69,7 @@ final class HMCLDownloadView extends BorderPane {
         HMCLDemoUi.fill(centerHost);
         centerHost.setFitToWidth(true);
         centerHost.setFitToHeight(true);
-        setLeft(sidebar);
+        setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(centerHost);
 
         state.getFilteredMinecraftVersions().addListener(
@@ -93,7 +97,6 @@ final class HMCLDownloadView extends BorderPane {
 
     /// Refreshes locale-dependent labels.
     void refreshLocale() {
-        VBox sidebar = (VBox) getLeft();
         sidebar.getChildren().set(0, HMCLDemoUi.sectionLabel(strings.get("download.section.game")));
         sidebar.getChildren().set(3, HMCLDemoUi.sectionLabel(strings.get("download.section.content")));
         gameItem.setHeadlineText(strings.get("download.nav.game"));
@@ -145,6 +148,8 @@ final class HMCLDownloadView extends BorderPane {
         VBox list = new VBox(4.0);
         for (HMCLDemoMinecraftVersion version : state.getFilteredMinecraftVersions()) {
             M3Button install = new M3Button(strings.get("download.install"), M3ButtonVariant.TEXT);
+            install.getStyleClass().add("hmcl-row-action");
+            install.setMinWidth(Region.USE_PREF_SIZE);
             install.setOnAction(event -> controller.startInstallWizard(version));
             M3ListItem row = new M3ListItem(version.name());
             row.setSupportingText(channelLabel(version.channel()) + " · " + version.releaseTime());
@@ -177,6 +182,8 @@ final class HMCLDownloadView extends BorderPane {
         VBox list = new VBox(4.0);
         for (HMCLDemoCatalogItem item : state.getCatalog(kind)) {
             M3Button install = new M3Button(strings.get("download.install"), M3ButtonVariant.TEXT);
+            install.getStyleClass().add("hmcl-row-action");
+            install.setMinWidth(Region.USE_PREF_SIZE);
             install.setOnAction(event -> controller.showMessageKey("snackbar.installed", item.title()));
             M3ListItem row = new M3ListItem(item.title());
             row.setSupportingText(strings.format(

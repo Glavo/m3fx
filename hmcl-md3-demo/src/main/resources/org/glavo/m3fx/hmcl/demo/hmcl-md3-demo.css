@@ -149,6 +149,14 @@
 /* Secondary navigation rail */
 .hmcl-context-sidebar {
     -fx-background-color: -m3-color-surface-container-low;
+}
+
+.hmcl-context-sidebar-host.hmcl-context-sidebar-host,
+.hmcl-context-sidebar-host.hmcl-context-sidebar-host > .viewport {
+    -fx-background-color: -m3-color-surface-container-low;
+}
+
+.hmcl-context-sidebar-host.hmcl-context-sidebar-host {
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1 0 0;
 }

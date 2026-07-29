@@ -7,6 +7,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
+import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -33,6 +34,9 @@ final class HMCLDemoTransitions {
     /// Horizontal offset used by HMCL decorator title-bar `NavBarAnimations` (±50 logical pixels).
     private static final double TITLE_NAV_DISTANCE = 50.0;
 
+    /// Clips retained pages and title content to their assigned animated host bounds.
+    private static final M3SizeTransform CLIPPED_SIZE_TRANSFORM = new M3SizeTransform(true, null);
+
     /// Prevents utility-class instantiation.
     private HMCLDemoTransitions() {
     }
@@ -46,7 +50,7 @@ final class HMCLDemoTransitions {
                 .and(M3EnterTransition.slideFrom(M3TransitionEdge.END, TITLE_NAV_DISTANCE));
         M3ExitTransition exit = M3ExitTransition.fade(0.0)
                 .and(M3ExitTransition.slideTo(M3TransitionEdge.START, TITLE_NAV_DISTANCE));
-        return new M3ContentTransform(enter, exit, null, 0.0);
+        return new M3ContentTransform(enter, exit, CLIPPED_SIZE_TRANSFORM, 0.0);
     }
 
     /// Returns the title-bar transform for navigating back (HMCL `NavBarAnimations.PREVIOUS`).
@@ -58,7 +62,7 @@ final class HMCLDemoTransitions {
                 .and(M3EnterTransition.slideFrom(M3TransitionEdge.START, TITLE_NAV_DISTANCE));
         M3ExitTransition exit = M3ExitTransition.fade(0.0)
                 .and(M3ExitTransition.slideTo(M3TransitionEdge.END, TITLE_NAV_DISTANCE));
-        return new M3ContentTransform(enter, exit, null, 0.0);
+        return new M3ContentTransform(enter, exit, CLIPPED_SIZE_TRANSFORM, 0.0);
     }
 
     /// Returns the title-bar fade transform used for section or neutral title updates.
@@ -68,7 +72,7 @@ final class HMCLDemoTransitions {
         return new M3ContentTransform(
                 M3EnterTransition.fade(0.0).withDelay(Duration.millis(20.0)),
                 M3ExitTransition.fade(0.0),
-                null,
+                CLIPPED_SIZE_TRANSFORM,
                 0.0
         );
     }
@@ -84,7 +88,7 @@ final class HMCLDemoTransitions {
         return new M3ContentTransform(
                 M3EnterTransition.fade(0.0).withDelay(Duration.millis(40.0)),
                 M3ExitTransition.fade(0.0),
-                null,
+                CLIPPED_SIZE_TRANSFORM,
                 0.0
         );
     }
@@ -128,7 +132,7 @@ final class HMCLDemoTransitions {
                         .withDelay(Duration.millis(40.0))
                         .and(M3EnterTransition.slideFrom(M3TransitionEdge.BOTTOM, SECTION_ENTER_DISTANCE)),
                 M3ExitTransition.fade(0.0),
-                null,
+                CLIPPED_SIZE_TRANSFORM,
                 0.0
         );
     }
@@ -140,7 +144,7 @@ final class HMCLDemoTransitions {
         return new M3ContentTransform(
                 M3EnterTransition.fade(0.0),
                 M3ExitTransition.fade(0.0),
-                null,
+                CLIPPED_SIZE_TRANSFORM,
                 0.0
         );
     }

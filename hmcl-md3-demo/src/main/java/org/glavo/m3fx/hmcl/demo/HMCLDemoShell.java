@@ -38,6 +38,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3ContentTransform;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -136,6 +137,15 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     /// Routes retained for Back navigation, with the enter transition used to open each destination.
     private final Deque<StackEntry> backStack = new ArrayDeque<>();
+
+    /// Active split-pane navigation timeline, or `null` when the split is settled.
+    private @Nullable Timeline navigationSplitTimeline;
+
+    /// Left page region currently owned by the split navigation timeline, or `null`.
+    private @Nullable Node navigationSplitLeft;
+
+    /// Center page region currently owned by the split navigation timeline, or `null`.
+    private @Nullable Node navigationSplitCenter;
 
     private final HMCLHomeView homeView;
     private final HMCLAccountsView accountsView;
@@ -248,6 +258,11 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         StackPane.setAlignment(body, Pos.CENTER);
 
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
+        state.animationDisabledProperty().addListener((observable, oldValue, newValue) -> {
+            if (Boolean.TRUE.equals(newValue)) {
+                stopNavigationSplitAnimation();
+            }
+        });
         strings.localeProperty().addListener((observable, oldLocale, newLocale) -> refreshLocale());
         installWindowResizeSupport();
         updateWallpaper();
@@ -511,6 +526,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param route the route to show
     /// @param kind the transition kind
     private void showRoute(HMCLDemoRoute route, TransitionKind kind) {
+        stopNavigationSplitAnimation();
         currentRoute = route;
         if (route instanceof HMCLDemoRoute.Instance instanceRoute) {
             state.selectInstance(instanceRoute.instanceId());
@@ -520,7 +536,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         clearNavigationSplit(page);
         pageHost.setContentTransform(transformFor(kind));
         pageHost.setContent(page);
-        if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
+        if (kind == TransitionKind.IMMEDIATE
+                || state.isAnimationDisabled()
+                || M3MotionSettings.shouldReduceMotion(pageHost)) {
             pageHost.snapToCurrentState();
         } else if (kind == TransitionKind.NAVIGATION || kind == TransitionKind.NAVIGATION_BACK) {
             // Host fades; left/center reassemble with ±30px like HMCL DecoratorAnimatedPage NAVIGATION.
@@ -556,7 +574,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     ///
     /// @param page the incoming page root
     private void playNavigationSplitEnter(Node page) {
-        if (!(page instanceof BorderPane borderPane) || state.isAnimationDisabled()) {
+        if (!(page instanceof BorderPane borderPane)
+                || state.isAnimationDisabled()
+                || M3MotionSettings.shouldReduceMotion(pageHost)) {
             return;
         }
         @Nullable Node left = borderPane.getLeft();
@@ -584,7 +604,37 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
                 // Second half of a short navigation beat (matches HMCL half-duration reassemble).
                 new KeyFrame(Duration.millis(160.0), endValues.toArray(KeyValue[]::new))
         );
+        navigationSplitTimeline = timeline;
+        navigationSplitLeft = left;
+        navigationSplitCenter = center;
+        timeline.setOnFinished(event -> {
+            if (navigationSplitTimeline == timeline) {
+                navigationSplitTimeline = null;
+                navigationSplitLeft = null;
+                navigationSplitCenter = null;
+            }
+        });
         timeline.play();
+    }
+
+    /// Stops an interrupted split navigation and restores both page regions to their settled positions.
+    private void stopNavigationSplitAnimation() {
+        @Nullable Timeline timeline = navigationSplitTimeline;
+        if (timeline != null) {
+            timeline.stop();
+            timeline.setOnFinished(null);
+            navigationSplitTimeline = null;
+        }
+        @Nullable Node left = navigationSplitLeft;
+        if (left != null) {
+            left.setTranslateX(0.0);
+            navigationSplitLeft = null;
+        }
+        @Nullable Node center = navigationSplitCenter;
+        if (center != null) {
+            center.setTranslateX(0.0);
+            navigationSplitCenter = null;
+        }
     }
 
     /// Returns the transform for a transition kind.
@@ -592,7 +642,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param kind the transition kind
     /// @return the content transform
     private M3ContentTransform transformFor(TransitionKind kind) {
-        if (state.isAnimationDisabled() || kind == TransitionKind.IMMEDIATE) {
+        if (state.isAnimationDisabled()
+                || M3MotionSettings.shouldReduceMotion(pageHost)
+                || kind == TransitionKind.IMMEDIATE) {
             return HMCLDemoTransitions.none();
         }
         return switch (kind) {
@@ -762,7 +814,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     private void updateTitleBar(TransitionKind kind) {
         titleNavHost.setContentTransform(titleTransformFor(kind));
         titleNavHost.setContent(createTitleNavContent());
-        if (kind == TransitionKind.IMMEDIATE || state.isAnimationDisabled()) {
+        if (kind == TransitionKind.IMMEDIATE
+                || state.isAnimationDisabled()
+                || M3MotionSettings.shouldReduceMotion(titleNavHost)) {
             titleNavHost.snapToCurrentState();
         }
     }
@@ -772,7 +826,9 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param kind the page transition kind
     /// @return the title navigation transform
     private M3ContentTransform titleTransformFor(TransitionKind kind) {
-        if (state.isAnimationDisabled() || kind == TransitionKind.IMMEDIATE) {
+        if (state.isAnimationDisabled()
+                || M3MotionSettings.shouldReduceMotion(titleNavHost)
+                || kind == TransitionKind.IMMEDIATE) {
             return HMCLDemoTransitions.none();
         }
         return switch (kind) {

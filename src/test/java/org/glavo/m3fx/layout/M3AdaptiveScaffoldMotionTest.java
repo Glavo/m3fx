@@ -10,6 +10,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -227,6 +228,47 @@ final class M3AdaptiveScaffoldMotionTest {
         }
     }
 
+    /// Verifies that an animated rail metric change reflows its unmanaged scaffold slot and adjacent main pane.
+    @Tier2Test
+    @Test
+    void followsAnimatedNavigationRailWidthWithoutAnotherWindowResize() throws InterruptedException {
+        AtomicReference<@Nullable NavigationFixture> fixtureReference = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable NavigationFixture fixture = fixtureReference.get();
+                        return fixture != null
+                                && fixture.rail().prefWidth(-1.0)
+                                <= fixture.rail().getCollapsedContainerWidth() + 0.5;
+                    },
+                    2,
+                    () -> {
+                        NavigationFixture fixture = createNavigationFixture();
+                        fixtureReference.set(fixture);
+                        fixture.rail().setExpanded(false);
+                    },
+                    () -> {
+                        NavigationFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
+                        double collapsedWidth = fixture.rail().getCollapsedContainerWidth();
+                        assertEquals(collapsedWidth, fixture.railSlot().getWidth(), 1.0);
+                        assertEquals(collapsedWidth, fixture.rail().getWidth(), 1.0);
+                        assertEquals(
+                                fixture.railSlot().getLayoutX() + fixture.railSlot().getWidth(),
+                                fixture.mainSlot().getLayoutX(),
+                                1.0
+                        );
+                        assertEquals(
+                                fixture.scaffold().getWidth() - collapsedWidth,
+                                fixture.mainSlot().getWidth(),
+                                1.0
+                        );
+                    }
+            );
+        } finally {
+            closeNavigationFixture(fixtureReference.get());
+        }
+    }
+
     /// Returns whether a fixture currently displays a measurable pane-exit intermediate frame.
     ///
     /// @param fixture the fixture, or `null` before setup completes
@@ -284,6 +326,40 @@ final class M3AdaptiveScaffoldMotionTest {
         );
     }
 
+    /// Creates and shows a rail scaffold whose navigation starts at the expanded endpoint.
+    ///
+    /// @return the presenting navigation fixture
+    private static NavigationFixture createNavigationFixture() {
+        M3NavigationRail rail = new M3NavigationRail();
+        rail.setExpanded(true);
+
+        Pane mainPane = new Pane();
+        M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+        scaffold.setContentMargin(0.0);
+        scaffold.setNavigationLayout(M3NavigationLayout.RAIL);
+        scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+        scaffold.setNavigationRail(rail);
+        scaffold.setMainPane(mainPane);
+
+        StackPane root = new StackPane(scaffold);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root, 1_000.0, 600.0));
+        stage.show();
+        root.applyCss();
+        root.layout();
+
+        StackPane railSlot = (StackPane) Objects.requireNonNull(
+                scaffold.lookup(".m3-scaffold-navigation-rail"),
+                "navigation rail slot"
+        );
+        StackPane mainSlot = (StackPane) Objects.requireNonNull(
+                scaffold.lookup(".m3-scaffold-main-pane"),
+                "main slot"
+        );
+        assertEquals(rail.getExpandedContainerWidth(), railSlot.getWidth(), 1.0);
+        return new NavigationFixture(stage, scaffold, rail, railSlot, mainSlot);
+    }
+
     /// Closes a fixture and clears its local reduced-motion request.
     ///
     /// @param fixture the fixture to close, or `null` when setup failed
@@ -295,6 +371,16 @@ final class M3AdaptiveScaffoldMotionTest {
             M3MotionSettings.setReducedMotionRequested(fixture.scaffold(), false);
             fixture.stage().hide();
         });
+    }
+
+    /// Closes a navigation fixture.
+    ///
+    /// @param fixture the fixture to close, or `null` when setup failed
+    private static void closeNavigationFixture(@Nullable NavigationFixture fixture) {
+        if (fixture == null) {
+            return;
+        }
+        FxTestUtils.runOnFxThread(fixture.stage()::hide);
     }
 
     /// Retains the stage, scaffold, stable slots, and initial geometry used by one motion test.
@@ -314,6 +400,22 @@ final class M3AdaptiveScaffoldMotionTest {
             StackPane mainSlot,
             double initialLeadingWidth,
             double initialMainWidth
+    ) {
+    }
+
+    /// Retains the stage, scaffold, rail, and stable slots used by the animated-width regression test.
+    ///
+    /// @param stage      the presenting stage
+    /// @param scaffold   the adaptive scaffold
+    /// @param rail       the animated navigation rail
+    /// @param railSlot   the scaffold's stable navigation-rail slot
+    /// @param mainSlot   the scaffold's stable main-pane slot
+    private record NavigationFixture(
+            Stage stage,
+            M3AdaptiveScaffold scaffold,
+            M3NavigationRail rail,
+            StackPane railSlot,
+            StackPane mainSlot
     ) {
     }
 }

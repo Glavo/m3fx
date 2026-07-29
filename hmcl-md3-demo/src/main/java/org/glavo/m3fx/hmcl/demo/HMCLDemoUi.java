@@ -68,7 +68,7 @@ final class HMCLDemoUi {
         return scrollPane;
     }
 
-    /// Creates a fixed-width left sidebar shell that can shrink vertically.
+    /// Creates contextual sidebar content that fills the width supplied by its scroll host.
     ///
     /// @param children the sidebar children
     /// @return the configured sidebar
@@ -77,11 +77,24 @@ final class HMCLDemoUi {
         sidebar.getStyleClass().add("hmcl-context-sidebar");
         sidebar.setPadding(new Insets(8.0, 8.0, 12.0, 8.0));
         sidebar.setPrefWidth(SIDEBAR_WIDTH);
-        sidebar.setMinWidth(SIDEBAR_WIDTH);
-        sidebar.setMaxWidth(SIDEBAR_WIDTH);
+        sidebar.setMinWidth(0.0);
+        sidebar.setMaxWidth(Double.MAX_VALUE);
         sidebar.setMinHeight(0.0);
         sidebar.setMaxHeight(Double.MAX_VALUE);
         return sidebar;
+    }
+
+    /// Wraps a contextual sidebar in a fixed-width vertical scroll host.
+    ///
+    /// @param sidebar the sidebar content
+    /// @return the configured sidebar host
+    static ScrollPane sidebarHost(VBox sidebar) {
+        ScrollPane host = scroll(sidebar);
+        host.getStyleClass().add("hmcl-context-sidebar-host");
+        host.setMinWidth(SIDEBAR_WIDTH);
+        host.setPrefWidth(SIDEBAR_WIDTH);
+        host.setMaxWidth(SIDEBAR_WIDTH);
+        return host;
     }
 
     /// Creates a compact section label used above sidebar groups.

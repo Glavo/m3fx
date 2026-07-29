@@ -208,7 +208,7 @@ final class HMCLSettingsView extends BorderPane {
                 feedbackItem,
                 aboutItem
         );
-        setLeft(sidebar);
+        setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(contentHost);
 
         // Rebuild only when displayed supporting text or structure must change. Switch-only booleans keep the
