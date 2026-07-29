@@ -19,13 +19,13 @@ import java.util.function.Supplier;
 /// internal source-group hierarchy.
 @NotNullByDefault
 final class CatalogComponents {
-    /// The GitHub source root for M3FX controls.
+    /// The GitHub source root for M3FX API packages.
     private static final String SOURCE_ROOT =
-            "https://github.com/Glavo/m3fx/blob/main/src/main/java/org/glavo/m3fx/controls/";
+            "https://github.com/Glavo/m3fx/blob/main/src/main/java/org/glavo/m3fx/";
 
-    /// The prospective Javadoc root used by component API links.
+    /// The prospective Javadoc root used by M3FX API links.
     private static final String JAVADOC_ROOT =
-            "https://javadoc.io/doc/org.glavo/m3fx/latest/org.glavo.m3fx/org/glavo/m3fx/controls/";
+            "https://javadoc.io/doc/org.glavo/m3fx/latest/org.glavo.m3fx/org/glavo/m3fx/";
 
     /// The complete immutable component registry.
     private static final @Unmodifiable List<CatalogComponent> COMPONENTS = createComponents();
@@ -63,6 +63,7 @@ final class CatalogComponents {
                 description,
                 iconPath,
                 "https://m3.material.io/components/" + materialSlug + "/overview",
+                "controls",
                 className,
                 examples
         );
@@ -85,7 +86,27 @@ final class CatalogComponents {
             String className,
             CatalogExample... examples
     ) {
-        return linkedComponent(name, description, iconPath, guidelinesUrl, className, examples);
+        return linkedComponent(name, description, iconPath, guidelinesUrl, "controls", className, examples);
+    }
+
+    /// Creates a layout-API descriptor with an explicit guidelines link.
+    ///
+    /// @param name          the component name
+    /// @param description   the component description
+    /// @param iconPath      the component icon path
+    /// @param guidelinesUrl the applicable Material layout guidelines
+    /// @param className     the primary M3FX layout class name
+    /// @param examples      the component examples
+    /// @return the component descriptor
+    static CatalogComponent layoutComponent(
+            String name,
+            String description,
+            String iconPath,
+            String guidelinesUrl,
+            String className,
+            CatalogExample... examples
+    ) {
+        return linkedComponent(name, description, iconPath, guidelinesUrl, "layout", className, examples);
     }
 
     /// Creates a component descriptor with explicit links and derived API locations.
@@ -94,6 +115,7 @@ final class CatalogComponents {
     /// @param description   the component description
     /// @param iconPath      the component icon path
     /// @param guidelinesUrl the design or behavior guidelines
+    /// @param packageName   the M3FX package segment containing the primary class
     /// @param className     the primary M3FX class name
     /// @param examples      the component examples
     /// @return the component descriptor
@@ -102,6 +124,7 @@ final class CatalogComponents {
             String description,
             String iconPath,
             String guidelinesUrl,
+            String packageName,
             String className,
             CatalogExample... examples
     ) {
@@ -110,8 +133,8 @@ final class CatalogComponents {
                 description,
                 iconPath,
                 guidelinesUrl,
-                JAVADOC_ROOT + className + ".html",
-                SOURCE_ROOT + className + ".java",
+                JAVADOC_ROOT + packageName + "/" + className + ".html",
+                SOURCE_ROOT + packageName + "/" + className + ".java",
                 List.of(examples)
         );
     }
@@ -143,7 +166,7 @@ final class CatalogComponents {
     ///
     /// @return the immutable component registry
     private static @Unmodifiable List<CatalogComponent> createComponents() {
-        ArrayList<CatalogComponent> components = new ArrayList<>(46);
+        ArrayList<CatalogComponent> components = new ArrayList<>(47);
         components.addAll(CatalogContainerComponents.create());
         components.addAll(CatalogActionComponents.create());
         components.addAll(CatalogInputComponents.create());

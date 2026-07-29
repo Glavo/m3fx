@@ -1009,7 +1009,7 @@ final class CatalogSamples {
     /// @param path           the SVG path content
     /// @param accessibleText the accessible action description
     /// @return the configured icon button
-    private static M3IconButton iconButton(String path, String accessibleText) {
+    static M3IconButton iconButton(String path, String accessibleText) {
         M3IconButton button = new M3IconButton(icon(path));
         button.setAccessibleText(accessibleText);
         return button;
@@ -1020,7 +1020,7 @@ final class CatalogSamples {
     /// @param text the destination label
     /// @param path the SVG path content
     /// @return the configured navigation item
-    private static M3NavigationItem navigationItem(String text, String path) {
+    static M3NavigationItem navigationItem(String text, String path) {
         return new M3NavigationItem(text, icon(path));
     }
 
@@ -1028,7 +1028,7 @@ final class CatalogSamples {
     ///
     /// @param path the SVG path content
     /// @return the vector icon node
-    private static Node icon(String path) {
+    static Node icon(String path) {
         return CatalogIcons.create(path);
     }
 
@@ -1037,8 +1037,8 @@ final class CatalogSamples {
     /// @param <T>            the region type
     /// @param region         the region to configure
     /// @param preferredWidth the preferred and maximum width
-    /// @return `region`
-    private static <T extends Region> T configureResponsiveWidth(T region, double preferredWidth) {
+    /// @return the configured region
+    static <T extends Region> T configureResponsiveWidth(T region, double preferredWidth) {
         region.setMinWidth(0.0);
         region.setPrefWidth(preferredWidth);
         region.setMaxWidth(preferredWidth);
@@ -1049,7 +1049,7 @@ final class CatalogSamples {
     ///
     /// @param children the nodes to arrange
     /// @return the centered wrapping layout
-    private static FlowPane row(Node... children) {
+    static FlowPane row(Node... children) {
         FlowPane row = new FlowPane(SAMPLE_SPACING, SAMPLE_SPACING);
         row.getChildren().addAll(children);
         row.setAlignment(Pos.CENTER);
@@ -1061,7 +1061,7 @@ final class CatalogSamples {
     ///
     /// @param children the nodes to arrange
     /// @return the centered vertical layout
-    private static VBox column(Node... children) {
+    static VBox column(Node... children) {
         VBox column = new VBox(SAMPLE_SPACING, children);
         column.setAlignment(Pos.CENTER);
         column.setPadding(new Insets(SAMPLE_SPACING));

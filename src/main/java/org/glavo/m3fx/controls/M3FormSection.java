@@ -10,6 +10,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -233,6 +234,14 @@ public final class M3FormSection extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("form.css");
+    }
+
+    /// Returns the horizontal content bias used to propagate available width to responsive section rows.
+    ///
+    /// @return the horizontal orientation
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
     }
 
     /// Requests focus on the current or first accessibility item.

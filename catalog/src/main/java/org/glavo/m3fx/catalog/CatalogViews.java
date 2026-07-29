@@ -105,6 +105,7 @@ final class CatalogViews {
 
         ScrollPane scrollPane = new ScrollPane(grid);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-home-scroll");
+        scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
@@ -183,6 +184,7 @@ final class CatalogViews {
 
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-component-scroll");
+        scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
@@ -215,6 +217,7 @@ final class CatalogViews {
 
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-example-scroll");
+        scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);

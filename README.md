@@ -482,9 +482,10 @@ directionality, and motion cases used by the visual test matrix:
 
 The independent `catalog` project follows the AndroidX Material 3 Catalog's Home, Component, and Example
 hierarchy. Its home route is an alphabetical adaptive card grid; component routes provide descriptions and example
-lists, and example routes isolate one working specimen. The registry also covers the M3FX extension families for
-avatars, banners, color pickers, forms, icons, scrims, settings, and surfaces. Theme and display controls live in a
-modal bottom sheet:
+lists, and example routes isolate one working specimen. The registry contains 47 component families and 319
+independent examples covering variants, sizes, shapes, states, responsive layouts, and Material Expressive
+treatments. It includes the adaptive scaffold and the M3FX extension families for avatars, banners, color pickers,
+forms, icons, scrims, settings, and surfaces. Theme and display controls live in a modal bottom sheet:
 
 ```shell
 ./gradlew :catalog:run

@@ -81,17 +81,68 @@ final class M3FXCatalogSnapshotTest {
                     app.hideSettings();
 
                     CatalogComponent search = componentNamed(app, "Search");
-                    app.navigate(new CatalogRoute.Example(search, search.examples().get(1)));
+                    app.navigate(new CatalogRoute.Example(
+                            search,
+                            exampleNamed(search, "Contained docked search")
+                    ));
                     writeSnapshot(scene, "search-view.png");
 
                     CatalogComponent datePickers = componentNamed(app, "Date pickers");
-                    app.navigate(new CatalogRoute.Example(datePickers, datePickers.examples().get(1)));
+                    app.navigate(new CatalogRoute.Example(
+                            datePickers,
+                            exampleNamed(datePickers, "Date range picker")
+                    ));
                     writeSnapshot(scene, "date-range-picker.png");
 
                     CatalogComponent sideSheets = componentNamed(app, "Side sheets");
-                    app.navigate(new CatalogRoute.Example(sideSheets, sideSheets.examples().get(1)));
+                    app.navigate(new CatalogRoute.Example(
+                            sideSheets,
+                            exampleNamed(sideSheets, "Modal side sheet")
+                    ));
                     writeSnapshot(scene, "modal-side-sheet.png");
 
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Adaptive",
+                            "Expanded two pane",
+                            "adaptive-expanded.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Buttons",
+                            "Extra-large buttons",
+                            "button-extra-large.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Chips",
+                            "Selected filter chip",
+                            "chip-selected.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Navigation rail",
+                            "Expanded standard rail",
+                            "navigation-rail-expanded.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Progress indicators",
+                            "Expressive determinate linear",
+                            "progress-expressive.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Text fields",
+                            "Outlined error field",
+                            "text-field-error.png"
+                    );
                     writeFirstExampleSnapshot(scene, app, "Avatars", "avatars.png");
                     writeFirstExampleSnapshot(scene, app, "Banners", "banners.png");
                     writeFirstExampleSnapshot(scene, app, "Color pickers", "color-picker.png");
@@ -152,6 +203,25 @@ final class M3FXCatalogSnapshotTest {
         writeSnapshot(scene, fileName);
     }
 
+    /// Opens and captures a named example for a named component.
+    ///
+    /// @param scene the showing Catalog scene
+    /// @param app the running Catalog application
+    /// @param componentName the component display name
+    /// @param exampleName the example display name
+    /// @param fileName the report file name
+    private static void writeExampleSnapshot(
+            Scene scene,
+            M3FXCatalogApp app,
+            String componentName,
+            String exampleName,
+            String fileName
+    ) {
+        CatalogComponent component = componentNamed(app, componentName);
+        app.navigate(new CatalogRoute.Example(component, exampleNamed(component, exampleName)));
+        writeSnapshot(scene, fileName);
+    }
+
     /// Finds a registered component by its display name.
     ///
     /// @param app  the running Catalog application
@@ -162,6 +232,20 @@ final class M3FXCatalogSnapshotTest {
                 .filter(component -> component.name().equals(name))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("missing Catalog component: " + name));
+    }
+
+    /// Finds an example by its display name.
+    ///
+    /// @param component the owning component
+    /// @param name the example display name
+    /// @return the matching example
+    private static CatalogExample exampleNamed(CatalogComponent component, String name) {
+        return component.examples().stream()
+                .filter(example -> example.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "missing Catalog example: " + component.name() + " / " + name
+                ));
     }
 
     /// Captures, validates, and writes one scene image.

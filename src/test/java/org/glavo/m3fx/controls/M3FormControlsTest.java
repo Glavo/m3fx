@@ -9,6 +9,7 @@ import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.geometry.Bounds;
@@ -25,6 +26,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -92,6 +94,7 @@ final class M3FormControlsTest {
             M3FormRow first = new M3FormRow("Name", new Label("Content"));
             M3FormRow second = new M3FormRow("Email", new Label("Content"));
             M3FormPane form = formPane(first);
+            assertEquals(Orientation.HORIZONTAL, form.getContentBias());
             form.getItems().add(second);
             form.setContentPadding(20.0);
             form.setRowSpacing(10.0);
@@ -117,6 +120,7 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             M3FormRow row = new M3FormRow("Field", new Label("Value"));
             M3FormSection section = formSection("Account", "Profile fields", row);
+            assertEquals(Orientation.HORIZONTAL, section.getContentBias());
             section.setContentSpacing(18.0);
             section.setStyle("-m3-content-spacing: 18px;");
 
@@ -170,6 +174,36 @@ final class M3FormControlsTest {
             assertEquals(144.0, textColumn.getPrefWidth());
             assertNotNull(content.getParent());
             assertNotNull(trailing.getParent());
+        });
+    }
+
+    /// Verifies that constrained form rows stack labels above content instead of crushing the input column.
+    @Test
+    void formRowStacksContentWhenWidthIsConstrained() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextInputLayout input = new M3TextInputLayout(new M3TextField("M3FX"));
+            input.setLabelText("Project name");
+            input.setSupportingText("Visible to collaborators");
+            M3FormRow row = new M3FormRow("Display name", "Primary profile label", input);
+            assertEquals(Orientation.HORIZONTAL, row.getContentBias());
+            Pane root = new Pane(row);
+            Scene scene = new Scene(root, 640.0, 320.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+
+            row.resize(360.0, 160.0);
+            row.layout();
+
+            VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + "m3-form-row-text-column"));
+            StackPane contentSlot =
+                    assertInstanceOf(StackPane.class, row.lookup("." + "m3-form-row-content"));
+            assertTrue(textColumn.getBoundsInParent().getMaxY() <= contentSlot.getBoundsInParent().getMinY());
+            assertTrue(contentSlot.getWidth() >= 350.0, () -> "contentWidth=" + contentSlot.getWidth());
+
+            row.resize(620.0, 160.0);
+            row.layout();
+
+            assertTrue(textColumn.getBoundsInParent().getMaxX() <= contentSlot.getBoundsInParent().getMinX());
         });
     }
 

@@ -69,6 +69,10 @@ final class CatalogIcons {
     /// The bottom app bar icon path.
     static final String BOTTOM_APP_BAR = "M3 4h18v10H3zm0 13h18v3H3z";
 
+    /// The adaptive scaffold icon path.
+    static final String ADAPTIVE =
+            "M3 3h18v18H3zm2 2v14h4V5zm6 0v14h8V5zM6 7h2v2H6zm0 4h2v2H6zm0 4h2v2H6z";
+
     /// The avatar icon path.
     static final String AVATAR =
             "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z";

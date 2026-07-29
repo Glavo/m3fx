@@ -12,6 +12,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -36,9 +37,11 @@ import java.util.Objects;
 
 /// A Material Design 3 form row with label text, supporting text, content, and optional trailing content.
 ///
-/// The row aligns a label column, one primary content node, and an optional trailing node. It is intended for use
-/// in an [M3FormPane] or [M3FormSection], but may be used independently. The row is not focus traversable; Left and
-/// Right move focus between reachable content and trailing descendants using logical direction in RTL layouts.
+/// The row aligns a label column, one primary content node, and an optional trailing node. When the available width
+/// cannot preserve a usable content column, the default skin stacks the label column above the content and trailing
+/// nodes. The row is intended for use in an [M3FormPane] or [M3FormSection], but may be used independently. It is not
+/// focus traversable; Left and Right move focus between reachable content and trailing descendants using logical
+/// direction in RTL layouts.
 ///
 /// Content and trailing nodes are parented by this control while displayed. The same node instance cannot occupy
 /// both slots, and a displayed slot node must not simultaneously belong to another parent.
@@ -426,6 +429,14 @@ public final class M3FormRow extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("form.css");
+    }
+
+    /// Returns the horizontal content bias used to compute compact row height from the available width.
+    ///
+    /// @return the horizontal orientation
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
     }
 
     /// Requests focus on the current or first accessibility item.

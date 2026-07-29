@@ -9,7 +9,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -22,6 +23,12 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3FormRow].
 @NotNullByDefault
 public final class M3FormRowSkin extends SkinBase<M3FormRow> {
+    /// The minimum width preserved for primary content before the row stacks vertically.
+    private static final double MIN_WIDE_CONTENT_WIDTH = 200.0;
+
+    /// The vertical gap between the text and content rows in the compact layout.
+    private static final double COMPACT_ROW_SPACING = 8.0;
+
     /// The internal row-container style class.
     private static final String CONTAINER_STYLE_CLASS = "m3-form-row-container";
 
@@ -40,8 +47,8 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
     /// The internal trailing-slot style class.
     private static final String TRAILING_STYLE_CLASS = "m3-form-row-trailing";
 
-    /// The root horizontal row container.
-    private final HBox container = new HBox();
+    /// The responsive row container.
+    private final GridPane container = new GridPane();
 
     /// The label and supporting text column.
     private final VBox textColumn = new VBox();
@@ -57,6 +64,18 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
 
     /// The slot that renders optional trailing content.
     private final StackPane trailingSlot = new StackPane();
+
+    /// The fixed label column used by the wide layout.
+    private final ColumnConstraints labelColumn = new ColumnConstraints();
+
+    /// The growing primary content column.
+    private final ColumnConstraints contentColumn = new ColumnConstraints();
+
+    /// The trailing content column.
+    private final ColumnConstraints trailingColumn = new ColumnConstraints();
+
+    /// Whether the text column is currently stacked above the content row.
+    private boolean compactLayout;
 
     /// Updates rendered text, slots, and metrics after row properties change.
     private final InvalidationListener updateListener = observable -> updateView();
@@ -80,15 +99,21 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
 
         label.setWrapText(true);
         supportingLabel.setWrapText(true);
-        HBox.setHgrow(contentSlot, Priority.ALWAYS);
+        GridPane.setHgrow(contentSlot, Priority.ALWAYS);
         textColumn.setAlignment(Pos.CENTER_LEFT);
         label.setAlignment(Pos.CENTER_LEFT);
         supportingLabel.setAlignment(Pos.CENTER_LEFT);
         contentSlot.setAlignment(Pos.CENTER_LEFT);
         trailingSlot.setAlignment(Pos.CENTER_RIGHT);
+        contentSlot.setMaxWidth(Double.MAX_VALUE);
+        contentColumn.setMinWidth(0.0);
+        contentColumn.setHgrow(Priority.ALWAYS);
+        contentColumn.setFillWidth(true);
+        trailingColumn.setHgrow(Priority.NEVER);
 
         textColumn.getChildren().addAll(label, supportingLabel);
         container.getChildren().addAll(textColumn, contentSlot, trailingSlot);
+        configureGrid(false);
         getChildren().setAll(container);
 
         installListeners(control);
@@ -124,6 +149,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
             double bottomInset,
             double leftInset
     ) {
+        configureLayout(1.0);
         return leftInset + container.minWidth(height) + rightInset;
     }
 
@@ -136,7 +162,9 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
             double bottomInset,
             double leftInset
     ) {
-        double rowHeight = Math.max(getSkinnable().getRowMinHeight(), container.minHeight(width));
+        double contentWidth = contentWidth(width, leftInset, rightInset);
+        configureLayout(contentWidth);
+        double rowHeight = Math.max(getSkinnable().getRowMinHeight(), container.minHeight(contentWidth));
         return topInset + rowHeight + bottomInset;
     }
 
@@ -149,6 +177,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
             double bottomInset,
             double leftInset
     ) {
+        configureLayout(Double.POSITIVE_INFINITY);
         return leftInset + container.prefWidth(height) + rightInset;
     }
 
@@ -161,13 +190,16 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
             double bottomInset,
             double leftInset
     ) {
-        double rowHeight = Math.max(getSkinnable().getRowMinHeight(), container.prefHeight(width));
+        double contentWidth = contentWidth(width, leftInset, rightInset);
+        configureLayout(contentWidth);
+        double rowHeight = Math.max(getSkinnable().getRowMinHeight(), container.prefHeight(contentWidth));
         return topInset + rowHeight + bottomInset;
     }
 
     /// Lays out the row container in the full control bounds.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        configureLayout(width);
         container.resizeRelocate(x, y, width, height);
     }
 
@@ -199,10 +231,6 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         boolean textVisible = !labelText.isBlank() || !supportingText.isBlank();
         textColumn.setManaged(textVisible);
         textColumn.setVisible(textVisible);
-        textColumn.setPrefWidth(control.getLabelWidth());
-        textColumn.setMinWidth(control.getLabelWidth());
-        textColumn.setMaxWidth(control.getLabelWidth());
-
         @Nullable Node content = control.getContent();
         contentSlot.getChildren().setAll(content == null ? java.util.List.of() : java.util.List.of(content));
         contentSlot.setManaged(content != null);
@@ -213,9 +241,92 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         trailingSlot.setManaged(trailing != null);
         trailingSlot.setVisible(trailing != null);
 
-        container.setSpacing(control.getColumnSpacing());
+        configureLayout(getSkinnable().getWidth());
+        updateContentColumnSpan();
         container.setMinHeight(control.getRowMinHeight());
         control.requestLayout();
+    }
+
+    /// Returns the available content width after subtracting the control's horizontal insets.
+    private static double contentWidth(double width, double leftInset, double rightInset) {
+        return width < 0.0 ? width : Math.max(0.0, width - leftInset - rightInset);
+    }
+
+    /// Updates grid constraints and metrics for the layout selected by the available width.
+    private void configureLayout(double width) {
+        M3FormRow control = getSkinnable();
+        boolean useCompactLayout = shouldUseCompactLayout(width);
+        if (compactLayout != useCompactLayout) {
+            configureGrid(useCompactLayout);
+        }
+
+        if (compactLayout) {
+            textColumn.setMinWidth(0.0);
+            textColumn.setPrefWidth(VBox.USE_COMPUTED_SIZE);
+            textColumn.setMaxWidth(Double.MAX_VALUE);
+        } else {
+            double labelWidth = control.getLabelWidth();
+            textColumn.setMinWidth(labelWidth);
+            textColumn.setPrefWidth(labelWidth);
+            textColumn.setMaxWidth(labelWidth);
+            labelColumn.setMinWidth(labelWidth);
+            labelColumn.setPrefWidth(labelWidth);
+            labelColumn.setMaxWidth(labelWidth);
+        }
+
+        container.setHgap(control.getColumnSpacing());
+        container.setVgap(compactLayout ? COMPACT_ROW_SPACING : 0.0);
+    }
+
+    /// Returns whether the row must stack to preserve a usable primary content width.
+    private boolean shouldUseCompactLayout(double width) {
+        if (width <= 0.0 || !Double.isFinite(width)) {
+            return false;
+        }
+
+        M3FormRow control = getSkinnable();
+        double requiredWidth = 0.0;
+        if (textColumn.isManaged()) {
+            requiredWidth = control.getLabelWidth();
+        }
+        if (contentSlot.isManaged()) {
+            if (requiredWidth > 0.0) {
+                requiredWidth += control.getColumnSpacing();
+            }
+            requiredWidth += MIN_WIDE_CONTENT_WIDTH;
+        }
+        if (trailingSlot.isManaged()) {
+            if (requiredWidth > 0.0) {
+                requiredWidth += control.getColumnSpacing();
+            }
+            requiredWidth += trailingSlot.prefWidth(-1.0);
+        }
+        return width < requiredWidth;
+    }
+
+    /// Places the text, content, and trailing slots in wide or compact grid positions.
+    private void configureGrid(boolean compact) {
+        compactLayout = compact;
+        if (compact) {
+            container.getColumnConstraints().setAll(contentColumn, trailingColumn);
+            GridPane.setConstraints(textColumn, 0, 0, 2, 1);
+            GridPane.setConstraints(contentSlot, 0, 1);
+            GridPane.setConstraints(trailingSlot, 1, 1);
+        } else {
+            container.getColumnConstraints().setAll(labelColumn, contentColumn, trailingColumn);
+            GridPane.setConstraints(textColumn, 0, 0);
+            GridPane.setConstraints(contentSlot, 1, 0);
+            GridPane.setConstraints(trailingSlot, 2, 0);
+        }
+        updateContentColumnSpan();
+    }
+
+    /// Updates the compact content span after trailing-slot visibility changes.
+    private void updateContentColumnSpan() {
+        GridPane.setColumnSpan(
+                contentSlot,
+                compactLayout && !trailingSlot.isManaged() ? 2 : 1
+        );
     }
 
     /// Updates multiline text alignment from the current logical direction.

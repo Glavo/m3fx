@@ -196,6 +196,7 @@ public final class M3FXCatalogApp extends Application {
         scaffold.setTopBar(topAppBar);
 
         routeHost.setAlignment(Pos.TOP_CENTER);
+        routeHost.setMinSize(0.0, 0.0);
         routeHost.getStyleClass().add("catalog-route-host");
         scaffold.setMainPane(routeHost);
     }
