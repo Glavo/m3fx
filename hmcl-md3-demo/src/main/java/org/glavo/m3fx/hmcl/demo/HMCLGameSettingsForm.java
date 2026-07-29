@@ -10,7 +10,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3EnterTransition;
@@ -362,7 +361,6 @@ final class HMCLGameSettingsForm {
                 scope + ".memory",
                 strings.get("settings.memory"),
                 memorySummary(strings, settings),
-                false,
                 auto,
                 manual,
                 manualRow,
@@ -383,7 +381,6 @@ final class HMCLGameSettingsForm {
                 scope + ".window",
                 strings.get("settings.game.window_type"),
                 windowSummary(strings, settings),
-                false,
                 radioItem(strings.get("settings.game.window.windowed"), settings.resolution(),
                         "windowed".equals(settings.windowType()),
                         windowGroup,
@@ -488,7 +485,6 @@ final class HMCLGameSettingsForm {
                 scope + ".quickPlay",
                 strings.get("settings.game.quick_play"),
                 quickPlaySummary(strings, settings),
-                false,
                 radioItem(strings.get("settings.game.quick_play.none"), "",
                         "none".equals(settings.quickPlayType()),
                         quickPlayGroup,
@@ -543,7 +539,6 @@ final class HMCLGameSettingsForm {
                 scope + ".advancedLaunch",
                 strings.get("settings.advanced.launch_options"),
                 strings.get("settings.advanced.launch_options.subtitle"),
-                false,
                 // Path picker deferred: M3FX has no directory FileSelector control; text dialog is used instead.
                 textAction(strings.get("settings.game.running_directory"),
                         settings.runningDirectory().isBlank()
@@ -607,7 +602,6 @@ final class HMCLGameSettingsForm {
                 scope + ".jvm",
                 strings.get("settings.advanced.jvm"),
                 "",
-                false,
                 switchItem(strings.get("settings.advanced.no_jvm_args"),
                         strings.get("settings.advanced.no_jvm_args.support"),
                         settings.noJvmArgs(),
@@ -699,7 +693,6 @@ final class HMCLGameSettingsForm {
                 scope + ".jvmMemory",
                 strings.get("settings.advanced.jvm_memory"),
                 strings.get("settings.advanced.jvm_memory.support"),
-                false,
                 selectItem(
                         strings.get("settings.memory.min"),
                         List.of(256, 512, 1024, 2048),
@@ -741,17 +734,15 @@ final class HMCLGameSettingsForm {
     /// @param stateKey         key used to remember expansion across form rebuilds
     /// @param title            the expandable row headline
     /// @param support          optional supporting text (typically the current value summary)
-    /// @param defaultExpanded  whether the group starts expanded when no remembered state exists
     /// @param items            nested setting rows and free-form nodes
     /// @return the group root
     private static VBox expandableSection(
             String stateKey,
             String title,
             String support,
-            boolean defaultExpanded,
             Node... items
     ) {
-        boolean expanded = EXPANDED_SECTIONS.getOrDefault(stateKey, defaultExpanded);
+        boolean expanded = EXPANDED_SECTIONS.getOrDefault(stateKey, false);
         M3ExpandableSettingItem expandable = new M3ExpandableSettingItem(title);
         if (!support.isBlank()) {
             expandable.setSupportingText(support);

@@ -713,6 +713,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (height <= 0.0) {
             height = control.getLayoutBounds().getHeight();
         }
+        if (layoutGroupedButtonStateLayer(control, width, height)) {
+            stateLayer.animateOverlayOpacityFromOwnerState();
+            return;
+        }
         if (control instanceof M3IconButton iconButton) {
             layoutCenteredIconStateLayer(
                     width,
@@ -756,10 +760,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                     targetHeight,
                     Math.min(targetWidth, targetHeight) / 2.0
             );
-            stateLayer.animateOverlayOpacityFromOwnerState();
-            return;
-        }
-        if (layoutGroupedButtonStateLayer(control, width, height)) {
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }

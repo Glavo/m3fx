@@ -884,7 +884,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         }
         @Nullable Scene activeScene = getScene();
         @Nullable Window window = activeScene == null ? null : activeScene.getWindow();
-        if (window == null || activeScene == null) {
+        if (window == null) {
             return;
         }
         windowDragging = true;

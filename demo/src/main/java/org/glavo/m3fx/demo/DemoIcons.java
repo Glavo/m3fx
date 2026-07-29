@@ -190,8 +190,10 @@ final class DemoIcons {
             case "star" -> "M12 17.3 18.2 21l-1.6-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.5 14 5.8 21z";
             case "task" -> "M3 13h2v-2H3zm0 4h2v-2H3zm0-8h2V7H3zm4 4h14v-2H7zm0 4h14v-2H7zM7 7v2h14V7z";
             case "text" -> "M5 4v3h5v13h4V7h5V4z";
+            case "translate" -> "M12.9 15.1l-2.6-2.5c1.8-2 3-4.2 3.8-6.6H17V4h-7V2H8v2H1v2h11.2c-.7 1.9-1.7 3.8-3.2 5.4C8.1 10.3 7.3 9.2 6.7 8h-2c.7 1.6 1.7 3.2 3 4.6l-5.1 5L4 19l5-5 3.1 3.1zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2zm-2.6 7 1.6-4.3 1.6 4.3z";
             case "tune" -> "M3 17v2h6v-2zm0-6v2h12v-2zm0-6v2h18V5zm14 12v2h4v-2zm-8-6v2h12v-2zm6-6v2h6V5z";
-            case "upload" -> "M5 17h14v2H5zm7-14 5.5 5.5H14V15h-4V8.5H6.5z";            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
+            case "upload" -> "M5 17h14v2H5zm7-14 5.5 5.5H14V15h-4V8.5H6.5z";
+            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
             case "visibility" -> "M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z";
             case "work" -> "M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4z";
             default -> throw new IllegalArgumentException("Unknown demo icon: " + name);

@@ -15,6 +15,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 import static org.glavo.m3fx.M3TestControls.bottomSheet;
@@ -86,7 +88,11 @@ final class M3MixedPopupFocusTest {
                 menuButton.showMenu();
                 exportItem.showSubMenu();
                 recentItem.showSubMenu();
-                pdfItem.requestFocus();
+                assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                        recentItem.getSubMenu(),
+                        keyPressed(KeyCode.TAB),
+                        List.of(pdfItem)
+                ));
                 tooltip.show(pdfItem, stage.getX() + 312.0, stage.getY() + 144.0);
                 pdfItem.fireEvent(keyPressed(KeyCode.F6));
 
@@ -320,7 +326,11 @@ final class M3MixedPopupFocusTest {
                 listView.resizeRelocate(32.0, 32.0, 480.0, 160.0);
                 root.layout();
 
-                rowAction.requestFocus();
+                assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                        listView,
+                        keyPressed(KeyCode.TAB),
+                        List.of(rowAction)
+                ));
                 tooltip.show(rowAction, stage.getX() + 360.0, stage.getY() + 112.0);
                 rowAction.fireEvent(keyPressed(KeyCode.F6));
 
@@ -565,7 +575,11 @@ final class M3MixedPopupFocusTest {
                 toolbar.resizeRelocate(32.0, 32.0, 260.0, 72.0);
                 root.layout();
 
-                ownerAction.requestFocus();
+                assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                        toolbar,
+                        keyPressed(KeyCode.TAB),
+                        List.of(ownerAction)
+                ));
                 tooltip.show(ownerAction, stage.getX() + 160.0, stage.getY() + 112.0);
                 ownerAction.fireEvent(keyPressed(KeyCode.F6));
 

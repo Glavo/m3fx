@@ -37,6 +37,7 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -248,6 +249,10 @@ public final class M3FabMenu extends Control {
 
     /// The reusable expand and collapse animation for every action item.
     private final ActionItemsTransition animation = new ActionItemsTransition();
+
+    /// Settles active action transitions when the resolved motion context changes.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Collapses the menu when an action item is activated.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;

@@ -16,7 +16,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
-import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;

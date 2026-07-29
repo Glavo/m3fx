@@ -37,6 +37,9 @@
     -m3-list-item-supporting-color: -m3-color-on-surface-variant;
     -m3-list-item-selected-container-color: -m3-color-secondary-container;
     -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
+    -m3-list-item-selected-headline-color: -m3-list-item-selected-content-color;
+    -m3-list-item-selected-supporting-color: -m3-list-item-selected-content-color;
+    -m3-list-item-disabled-content-color: -m3-state-disabled-content-color;
     -m3-list-item-state-layer-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-cursor: default;
@@ -85,25 +88,6 @@
 .m3-list-item:hover .m3-list-item-container,
 .m3-list-item:selected:hover .m3-list-item-container {
     -fx-background-color: transparent;
-}
-
-.m3-list-item-overline {
-    -fx-text-fill: -m3-list-item-supporting-color;
-}
-
-.m3-list-item-headline {
-    -fx-text-fill: -m3-list-item-headline-color;
-}
-
-.m3-list-item-supporting {
-    -fx-text-fill: -m3-list-item-supporting-color;
-}
-
-.m3-list-item-overline:selected,
-.m3-list-item-headline:selected,
-.m3-list-item-supporting:selected,
-.m3-list-item-trailing-supporting:selected {
-    -fx-text-fill: -m3-list-item-selected-content-color;
 }
 
 .m3-list-item:selected {
@@ -163,10 +147,6 @@
     -fx-spacing: 16px;
 }
 
-.m3-list-item-trailing-supporting {
-    -fx-text-fill: -m3-list-item-supporting-color;
-}
-
 .m3-list-item-leading,
 .m3-list-item-trailing {
     -fx-alignment: center;
@@ -189,7 +169,6 @@
 .m3-list-item:disabled .m3-list-item-supporting,
 .m3-list-item:disabled .m3-list-item-trailing-supporting {
     -fx-opacity: 1;
-    -fx-text-fill: -m3-state-disabled-content-color;
 }
 
 .m3-list-item:disabled .m3-list-item-leading,
@@ -211,10 +190,8 @@
 .m3-setting-item {
     -m3-list-item-selected-container-color: transparent;
     -m3-list-item-selected-content-color: -m3-color-on-surface;
-}
-
-.m3-select-setting-item .m3-list-item-trailing-supporting {
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -m3-list-item-selected-headline-color: -m3-list-item-headline-color;
+    -m3-list-item-selected-supporting-color: -m3-list-item-supporting-color;
 }
 
 .m3-select-setting-item:disabled .m3-list-item-trailing-supporting {
@@ -225,24 +202,10 @@
     -fx-background-color: transparent;
 }
 
-.m3-setting-item .m3-list-item-overline:selected,
-.m3-setting-item .m3-list-item-supporting:selected,
-.m3-setting-item .m3-list-item-trailing-supporting:selected {
-    -fx-text-fill: -m3-list-item-supporting-color;
-}
-
-.m3-setting-item .m3-list-item-headline:selected {
-    -fx-text-fill: -m3-list-item-headline-color;
-}
-
 .m3-setting-item:disabled .m3-list-item-trailing {
     -fx-opacity: 1;
 }
 
 .m3-expandable-setting-item .m3-expandable-setting-content {
     -fx-padding: 0 0 8 0;
-}
-
-.m3-expandable-setting-item:expanded .m3-list-item-trailing-supporting {
-    -fx-text-fill: -m3-list-item-supporting-color;
 }

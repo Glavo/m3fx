@@ -4,7 +4,6 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// Offline game-launch settings shared by the global preset and per-instance overrides.
 ///

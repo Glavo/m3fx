@@ -27,9 +27,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// transitions preserve the visual relationship between both parts.
 @NotNullByDefault
 public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
-    /// The primary action part style class.
-    private static final String ACTION_BUTTON_STYLE_CLASS = "m3-split-button-action";
-
     /// The trailing menu part style class.
     private static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
 

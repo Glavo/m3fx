@@ -167,6 +167,9 @@ public final class M3FXDemoApp extends Application {
     /// The active modal navigation presentation, or `null` while no drawer overlay is shown.
     private @Nullable M3OverlayPane.OverlayHandle navigationOverlayHandle;
 
+    /// The container that temporarily owns the sidebar during a modal navigation presentation.
+    private @Nullable StackPane navigationOverlayLayer;
+
     /// The scrim used by the active modal navigation presentation.
     private @Nullable M3Scrim navigationOverlayScrim;
 
@@ -518,6 +521,14 @@ public final class M3FXDemoApp extends Application {
 
         if (persistentNavigation) {
             hideNavigationDrawer(false);
+            sidebar.setTranslateX(0.0);
+            sidebar.setNodeOrientation(NodeOrientation.INHERIT);
+            StackPane.setAlignment(sidebar, null);
+            sidebar.getStyleClass().remove("demo-modal-sidebar-scroll-pane");
+            M3NavigationDrawer drawer = sidebarDrawer;
+            if (drawer != null) {
+                drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
+            }
             if (scaffold.getLeadingPane() != sidebar) {
                 scaffold.setLeadingPane(sidebar);
             }
@@ -590,6 +601,7 @@ public final class M3FXDemoApp extends Application {
 
         M3OverlayPane.OverlayHandle handle = overlay.showModalOverlay(modalLayer);
         navigationOverlayHandle = handle;
+        navigationOverlayLayer = modalLayer;
         navigationOverlayScrim = scrim;
         navigationOverlayTransition = transition;
         navigationOverlayClosing = false;
@@ -677,12 +689,18 @@ public final class M3FXDemoApp extends Application {
         }
 
         handle.hide();
+        StackPane modalLayer = navigationOverlayLayer;
+        ScrollPane sidebar = sidebarScrollPane;
+        if (modalLayer != null && sidebar != null) {
+            modalLayer.getChildren().remove(sidebar);
+            StackPane.setAlignment(sidebar, null);
+        }
         navigationOverlayHandle = null;
+        navigationOverlayLayer = null;
         navigationOverlayScrim = null;
         navigationOverlayTransition = null;
         navigationOverlayClosing = false;
 
-        ScrollPane sidebar = sidebarScrollPane;
         if (sidebar != null) {
             sidebar.setTranslateX(0.0);
             sidebar.setNodeOrientation(NodeOrientation.INHERIT);
@@ -899,7 +917,15 @@ public final class M3FXDemoApp extends Application {
         return pages;
     }
 
-    /// Shows the demo page with the requested title.
+    /// Shows the demo page with the requested title without animating content replacement.
+    ///
+    /// This package-level entry point provides deterministic programmatic navigation for demo verification. User
+    /// activation through the sidebar continues to use [#showPage(DemoPage)] and its configured page transition.
+    ///
+    /// @param title the exact registered page title
+    /// @throws NullPointerException     if `title` is `null`
+    /// @throws IllegalStateException    if the page catalog has not been created
+    /// @throws IllegalArgumentException if no registered page has the requested title
     void showPageByTitle(String title) {
         Objects.requireNonNull(title, "title");
         if (pages.isEmpty()) {
@@ -907,7 +933,7 @@ public final class M3FXDemoApp extends Application {
         }
         for (DemoPage page : pages) {
             if (page.title().equals(title)) {
-                showPage(page);
+                presentPage(page, false);
                 return;
             }
         }

@@ -23,12 +23,6 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     /// Overlaps the entry and close buttons without stretching either one.
     private final AnchorPane activatorHolder = new AnchorPane();
 
-    /// The entry button owned by the skinnable control.
-    private final M3FloatingActionButton toggleButton;
-
-    /// The close button owned by the skinnable control.
-    private final M3FloatingActionButton closeButton;
-
     /// Creates a floating action button menu skin.
     ///
     /// @param control      the floating action button menu controlled by this skin
@@ -43,8 +37,6 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     ) {
         super(control);
         this.actions = actions;
-        this.toggleButton = toggleButton;
-        this.closeButton = closeButton;
         container.setManaged(false);
         container.spacingProperty().bind(control.closeSpacingProperty());
         actions.spacingProperty().bind(control.actionSpacingProperty());

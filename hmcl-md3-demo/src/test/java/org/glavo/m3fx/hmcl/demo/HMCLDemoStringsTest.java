@@ -65,9 +65,11 @@ final class HMCLDemoStringsTest {
 
         assertEquals(HMCLDemoStrings.ENGLISH, strings.getLocale());
         assertEquals("Hello Minecraft! Launcher", title.get());
+        assertEquals("Home", strings.get("nav.home"));
 
         strings.setLocale(Locale.SIMPLIFIED_CHINESE);
         assertEquals("Hello Minecraft! Launcher", title.get());
+        assertEquals("主页", strings.get("nav.home"));
         assertEquals("正在以 Glavo 启动 Creative Workshop", strings.format("snackbar.launching", "Creative Workshop", "Glavo"));
     }
 

@@ -99,8 +99,7 @@ final class M3PickerFieldTest {
             field.getPresets().clear();
 
             assertTrue(field.getPresets().isEmpty());
-            assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
-                    .contains("m3-date-picker-field-preset-content"));
+            assertNull(field.getPicker().getParent());
         });
     }
 
@@ -212,8 +211,7 @@ final class M3PickerFieldTest {
             field.getPresets().clear();
 
             assertTrue(field.getPresets().isEmpty());
-            assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
-                    .contains("m3-time-picker-field-preset-content"));
+            assertNull(field.getPicker().getParent());
         });
     }
 

@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 /// Owns deterministic, offline state for the HMCL-inspired M3FX demo.
 ///
@@ -764,8 +764,7 @@ public final class HMCLDemoState {
                 continue;
             }
             String javaId = switch (value.javaMode()) {
-                case "detected" -> value.javaId().isBlank() ? "auto" : value.javaId();
-                case "custom", "version" -> value.javaId().isBlank() ? "auto" : value.javaId();
+                case "detected", "custom", "version" -> value.javaId().isBlank() ? "auto" : value.javaId();
                 default -> "auto";
             };
             HMCLDemoInstance updated = instance.withSettings(
@@ -776,8 +775,8 @@ public final class HMCLDemoState {
                     javaId
             );
             instances.set(index, updated);
-            if (instance.equals(selectedInstance.get()) || instanceId.equals(
-                    selectedInstance.get() == null ? "" : selectedInstance.get().id())) {
+            @Nullable HMCLDemoInstance selected = selectedInstance.get();
+            if (instance.equals(selected) || selected != null && instanceId.equals(selected.id())) {
                 selectedInstance.set(updated);
             }
             return;
@@ -1798,7 +1797,9 @@ public final class HMCLDemoState {
     ///
     /// @param operator returns the replacement list, or `null` to abort
     /// @return whether the instance was updated
-    private boolean updateSelectedMods(UnaryOperator<@Unmodifiable List<HMCLDemoMod>> operator) {
+    private boolean updateSelectedMods(
+            Function<@Unmodifiable List<HMCLDemoMod>, @Nullable @Unmodifiable List<HMCLDemoMod>> operator
+    ) {
         HMCLDemoInstance instance = selectedInstance.get();
         if (instance == null) {
             return false;
@@ -1815,7 +1816,9 @@ public final class HMCLDemoState {
     ///
     /// @param operator returns the replacement list, or `null` to abort
     /// @return whether the instance was updated
-    private boolean updateSelectedResourcePacks(UnaryOperator<@Unmodifiable List<HMCLDemoPack>> operator) {
+    private boolean updateSelectedResourcePacks(
+            Function<@Unmodifiable List<HMCLDemoPack>, @Nullable @Unmodifiable List<HMCLDemoPack>> operator
+    ) {
         HMCLDemoInstance instance = selectedInstance.get();
         if (instance == null) {
             return false;
@@ -1832,7 +1835,9 @@ public final class HMCLDemoState {
     ///
     /// @param operator returns the replacement list, or `null` to abort
     /// @return whether the instance was updated
-    private boolean updateSelectedShaderPacks(UnaryOperator<@Unmodifiable List<HMCLDemoPack>> operator) {
+    private boolean updateSelectedShaderPacks(
+            Function<@Unmodifiable List<HMCLDemoPack>, @Nullable @Unmodifiable List<HMCLDemoPack>> operator
+    ) {
         HMCLDemoInstance instance = selectedInstance.get();
         if (instance == null) {
             return false;
@@ -1889,9 +1894,9 @@ public final class HMCLDemoState {
     /// Recomputes the download-version predicate.
     private void updateVersionFilter() {
         String query = versionSearchQuery.get().strip().toLowerCase(Locale.ROOT);
-        boolean release = Boolean.TRUE.equals(showReleaseVersions.get());
-        boolean snapshot = Boolean.TRUE.equals(showSnapshotVersions.get());
-        boolean old = Boolean.TRUE.equals(showOldVersions.get());
+        boolean release = showReleaseVersions.get();
+        boolean snapshot = showSnapshotVersions.get();
+        boolean old = showOldVersions.get();
         filteredMinecraftVersions.setPredicate(version -> {
             boolean channelAllowed = switch (version.channel()) {
                 case RELEASE -> release;

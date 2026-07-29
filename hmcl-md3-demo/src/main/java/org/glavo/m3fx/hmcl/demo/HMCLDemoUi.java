@@ -98,17 +98,12 @@ final class HMCLDemoUi {
 
     /// Creates a one-line navigation row for a contextual left pane.
     ///
-    /// @param headline the row text
     /// @param iconPath the icon path
-    /// @param action the activation handler, or `null`
     /// @return the list item
-    static M3ListItem navItem(String headline, String iconPath, @Nullable Runnable action) {
-        M3ListItem item = new M3ListItem(headline);
+    static M3ListItem navItem(String iconPath) {
+        M3ListItem item = new M3ListItem();
         item.getStyleClass().add("hmcl-sidebar-item");
         item.setLeading(HMCLDemoIcons.create(iconPath));
-        if (action != null) {
-            item.setOnAction(event -> action.run());
-        }
         return item;
     }
 
@@ -158,10 +153,9 @@ final class HMCLDemoUi {
     /// Returns a Minecraft skin-face avatar.
     ///
     /// @param account the account
-    /// @param size the logical size
     /// @return the face image
-    static ImageView accountFace(HMCLDemoAccount account, double size) {
-        return HMCLDemoAssets.skinFace(account.skinPath(), size);
+    static ImageView accountFace(HMCLDemoAccount account) {
+        return HMCLDemoAssets.skinFace(account.skinPath(), 32.0);
     }
 
     /// Returns an instance icon image view.

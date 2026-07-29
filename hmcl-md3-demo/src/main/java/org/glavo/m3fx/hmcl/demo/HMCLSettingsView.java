@@ -145,32 +145,20 @@ final class HMCLSettingsView extends BorderPane {
     private final M3Text helpSection = HMCLDemoUi.sectionLabel("");
 
     /// Navigation rows.
-    private final M3ListItem globalGameItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
-    private final M3ListItem javaItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CODE, null);
-    private final M3ListItem generalItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
-    private final M3ListItem appearanceItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-    private final M3ListItem downloadItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
-    private final M3ListItem helpItem = HMCLDemoUi.navItem("", HMCLDemoIcons.HELP, null);
-    private final M3ListItem feedbackItem = HMCLDemoUi.navItem("", HMCLDemoIcons.CHAT, null);
-    private final M3ListItem aboutItem = HMCLDemoUi.navItem("", HMCLDemoIcons.INFO, null);
+    private final M3ListItem globalGameItem = HMCLDemoUi.navItem(HMCLDemoIcons.SETTINGS);
+    private final M3ListItem javaItem = HMCLDemoUi.navItem(HMCLDemoIcons.CODE);
+    private final M3ListItem generalItem = HMCLDemoUi.navItem(HMCLDemoIcons.SETTINGS);
+    private final M3ListItem appearanceItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
+    private final M3ListItem downloadItem = HMCLDemoUi.navItem(HMCLDemoIcons.DOWNLOAD);
+    private final M3ListItem helpItem = HMCLDemoUi.navItem(HMCLDemoIcons.HELP);
+    private final M3ListItem feedbackItem = HMCLDemoUi.navItem(HMCLDemoIcons.CHAT);
+    private final M3ListItem aboutItem = HMCLDemoUi.navItem(HMCLDemoIcons.INFO);
 
     /// The animated center content host.
     private final M3AnimatedContent contentHost = new M3AnimatedContent();
 
     /// The active section.
     private Section section = Section.GENERAL;
-
-    /// Process priority for launched game processes.
-    private String processPriority = "normal";
-
-    /// Whether the game log window is shown while running.
-    private boolean showLogs;
-
-    /// Whether debug-level logging is enabled.
-    private boolean debugLog;
-
-    /// Whether integrity checks are skipped before launch.
-    private boolean skipIntegrityCheck;
 
     /// Background image load policy: `eager` or `lazy`.
     private String backgroundLoadPolicy = "eager";
@@ -1035,42 +1023,6 @@ final class HMCLSettingsView extends BorderPane {
     /// Shows the generic settings-saved snackbar.
     private void saved() {
         controller.showMessageKey("snackbar.settings_saved");
-    }
-
-    /// Returns the localized isolation label.
-    ///
-    /// @param isolation the isolation policy id
-    /// @return the label
-    private String isolationLabel(String isolation) {
-        return strings.get(switch (isolation) {
-            case "never" -> "settings.isolation.never";
-            case "always" -> "settings.isolation.always";
-            default -> "settings.isolation.modded";
-        });
-    }
-
-    /// Returns the localized launcher-visibility label.
-    ///
-    /// @param visibility the visibility policy id
-    /// @return the label
-    private String visibilityLabel(String visibility) {
-        return strings.get(switch (visibility) {
-            case "keep" -> "settings.visibility.keep";
-            case "close" -> "settings.visibility.close";
-            default -> "settings.visibility.hide";
-        });
-    }
-
-    /// Returns the localized process-priority label.
-    ///
-    /// @param priority the priority id
-    /// @return the label
-    private String priorityLabel(String priority) {
-        return strings.get(switch (priority) {
-            case "high" -> "settings.priority.high";
-            case "low" -> "settings.priority.low";
-            default -> "settings.priority.normal";
-        });
     }
 
     /// Returns the localized language label.

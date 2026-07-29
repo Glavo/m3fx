@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
@@ -11,6 +12,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.input.KeyCode;
@@ -23,6 +25,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.ArcTo;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
@@ -30,6 +33,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
@@ -196,6 +200,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Updates text nodes and metrics after text changes.
     private final InvalidationListener textInvalidation = observable -> updateTextAndMetrics();
 
+    /// Applies resolved list-item text paints after a component color token changes.
+    private final InvalidationListener textColorInvalidation = observable -> updateTextColors();
+
     /// Updates optional node slots after slot content changes.
     private final InvalidationListener slotInvalidation = observable -> updateSlots();
 
@@ -229,6 +236,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         if (newValue) {
             resetInteractionState();
         }
+        updateTextColors();
     };
 
     /// Cancels keyboard ownership when focus moves away before Space is released.
@@ -238,12 +246,17 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         }
     };
 
-    /// Clears gesture ownership when the item leaves its scene before release.
-    private final InvalidationListener sceneInvalidation = observable -> {
-        if (getSkinnable().getScene() == null) {
-            resetInteractionState();
-        }
-    };
+    /// Rebinds window lifecycle observation when the item moves between scenes.
+    private final ChangeListener<@Nullable Scene> sceneListener =
+            (observable, oldScene, newScene) -> updateObservedScene(oldScene, newScene);
+
+    /// Rebinds showing-state observation when the scene moves between windows.
+    private final ChangeListener<@Nullable Window> sceneWindowListener =
+            (observable, oldWindow, newWindow) -> updateObservedWindow(newWindow);
+
+    /// Settles selection feedback when the owning window is hidden and restores it when shown.
+    private final ChangeListener<Boolean> windowShowingListener =
+            (observable, oldValue, newValue) -> updateSelectionLifecycleState();
 
     /// Updates persistent active feedback while a submenu remains open.
     private final ChangeListener<Boolean> subMenuShowingListener =
@@ -255,6 +268,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Whether the space key currently owns the active ripple.
     private boolean spaceKeyPressed;
 
+    /// Whether a deferred selected-child CSS state refresh is already queued.
+    private boolean selectedChildStateRefreshScheduled;
+
+    /// Whether this skin has been disposed.
+    private boolean disposed;
+
+    /// The window whose showing state is currently observed, or `null` when the item has no window.
+    private @Nullable Window observedWindow;
+
     /// Creates a list item skin.
     ///
     /// @param control the list item controlled by this skin
@@ -263,11 +285,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         selectionContainer.getStyleClass().add("m3-list-item-selection-container");
         container.getStyleClass().add("m3-list-item-container");
         textBox.getStyleClass().add("m3-list-item-text");
-        overlineLabel.getStyleClass().add("m3-list-item-overline");
-        headlineLabel.getStyleClass().add("m3-list-item-headline");
-        supportingLabel.getStyleClass().add("m3-list-item-supporting");
+        initializeTextLabel(overlineLabel, "m3-list-item-overline");
+        initializeTextLabel(headlineLabel, "m3-list-item-headline");
+        initializeTextLabel(supportingLabel, "m3-list-item-supporting");
         trailingBox.getStyleClass().add("m3-list-item-trailing-box");
-        trailingSupportingLabel.getStyleClass().add("m3-list-item-trailing-supporting");
+        initializeTextLabel(trailingSupportingLabel, "m3-list-item-trailing-supporting");
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
         if (control instanceof M3MenuItem) {
@@ -306,8 +328,13 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         trailingBox.setAlignment(Pos.CENTER_RIGHT);
 
         stateLayer.installStateTransitions(control);
+        control.headlineColorProperty().addListener(textColorInvalidation);
+        control.supportingColorProperty().addListener(textColorInvalidation);
+        control.selectedHeadlineColorProperty().addListener(textColorInvalidation);
+        control.selectedSupportingColorProperty().addListener(textColorInvalidation);
+        control.disabledContentColorProperty().addListener(textColorInvalidation);
         updateSelectionContainerImmediate(control.isSelected());
-        updateSelectedChildPseudoClasses(control.isSelected());
+        updateSelectedChildPseudoClasses(false);
         updateMenuColorStylePseudoClasses();
         updateText();
         updateSlots();
@@ -334,7 +361,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
         control.focusedProperty().addListener(focusedListener);
-        control.sceneProperty().addListener(sceneInvalidation);
+        control.sceneProperty().addListener(sceneListener);
+        updateObservedScene(null, control.getScene());
         if (control instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().addListener(subMenuShowingListener);
             updateSubMenuActiveState();
@@ -345,6 +373,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     @Override
     public void dispose() {
         M3ListItemBase item = getSkinnable();
+        disposed = true;
         selectionAnimation.stop();
         @Nullable ContainerShapeTransition shapeAnimation = containerShapeAnimation;
         if (shapeAnimation != null) {
@@ -352,6 +381,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         }
         selectionAnimation.setOnFinished(null);
         resetInteractionState();
+        updateSelectedChildPseudoClasses(false);
         stateLayer.uninstallStateTransitions();
         item.overlineTextProperty().removeListener(textInvalidation);
         item.headlineTextProperty().removeListener(textInvalidation);
@@ -373,7 +403,21 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         item.focusedProperty().removeListener(focusedListener);
-        item.sceneProperty().removeListener(sceneInvalidation);
+        item.headlineColorProperty().removeListener(textColorInvalidation);
+        item.supportingColorProperty().removeListener(textColorInvalidation);
+        item.selectedHeadlineColorProperty().removeListener(textColorInvalidation);
+        item.selectedSupportingColorProperty().removeListener(textColorInvalidation);
+        item.disabledContentColorProperty().removeListener(textColorInvalidation);
+        item.sceneProperty().removeListener(sceneListener);
+        @Nullable Scene scene = item.getScene();
+        if (scene != null) {
+            scene.windowProperty().removeListener(sceneWindowListener);
+        }
+        @Nullable Window window = observedWindow;
+        observedWindow = null;
+        if (window != null) {
+            window.showingProperty().removeListener(windowShowingListener);
+        }
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().removeListener(subMenuShowingListener);
         }
@@ -505,6 +549,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     private void updateTextAndMetrics() {
         updateText();
         updateMetrics();
+    }
+
+    /// Configures an internal text label without the Modena color rule superseded by this skin's resolved paints.
+    private static void initializeTextLabel(Label label, String styleClass) {
+        label.getStyleClass().remove("label");
+        label.getStyleClass().add(styleClass);
     }
 
     /// Updates label text and visibility.
@@ -716,7 +766,103 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         headlineLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
         supportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
         trailingSupportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+        updateTextColors();
         updateProminentTypographyStyleClass();
+    }
+
+    /// Applies the control's resolved ordinary, selected, or disabled paints to its internal text nodes.
+    private void updateTextColors() {
+        M3ListItemBase item = getSkinnable();
+        boolean selected = headlineLabel.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS);
+        Paint headlineColor;
+        Paint supportingColor;
+        if (item.isDisabled()) {
+            headlineColor = item.getDisabledContentColor();
+            supportingColor = headlineColor;
+        } else if (selected) {
+            headlineColor = item.getSelectedHeadlineColor();
+            supportingColor = item.getSelectedSupportingColor();
+        } else {
+            headlineColor = item.getHeadlineColor();
+            supportingColor = item.getSupportingColor();
+        }
+
+        headlineLabel.setTextFill(headlineColor);
+        overlineLabel.setTextFill(supportingColor);
+        supportingLabel.setTextFill(supportingColor);
+        trailingSupportingLabel.setTextFill(supportingColor);
+    }
+
+    /// Transfers window-property observation between the old and new scenes.
+    private void updateObservedScene(@Nullable Scene oldScene, @Nullable Scene newScene) {
+        if (oldScene != null) {
+            oldScene.windowProperty().removeListener(sceneWindowListener);
+        }
+        if (newScene != null) {
+            newScene.windowProperty().addListener(sceneWindowListener);
+        }
+        updateObservedWindow(newScene == null ? null : newScene.getWindow());
+    }
+
+    /// Transfers showing-state observation to the supplied window.
+    private void updateObservedWindow(@Nullable Window newWindow) {
+        @Nullable Window oldWindow = observedWindow;
+        if (oldWindow != newWindow) {
+            if (oldWindow != null) {
+                oldWindow.showingProperty().removeListener(windowShowingListener);
+            }
+            observedWindow = newWindow;
+            if (newWindow != null) {
+                newWindow.showingProperty().addListener(windowShowingListener);
+            }
+        }
+        updateSelectionLifecycleState();
+    }
+
+    /// Stops detached or hidden-window feedback and restores settled selection state for active scenes.
+    private void updateSelectionLifecycleState() {
+        M3ListItemBase item = getSkinnable();
+        boolean active = isSelectionCssActive(item);
+        if (!active) {
+            selectionAnimation.stop();
+            resetInteractionState();
+            updateSelectionContainerImmediate(item.isSelected());
+            updateSelectedChildPseudoClasses(false);
+        } else {
+            updateSelectionContainerImmediate(item.isSelected());
+            if (item.isSelected()) {
+                scheduleSelectedChildStateRefresh();
+            } else {
+                updateSelectedChildPseudoClasses(false);
+            }
+        }
+    }
+
+    /// Returns whether selected child CSS may be applied in the item's current scene and window state.
+    private static boolean isSelectionCssActive(M3ListItemBase item) {
+        @Nullable Scene scene = item.getScene();
+        if (scene == null) {
+            return false;
+        }
+        @Nullable Window window = scene.getWindow();
+        return window == null || window.isShowing();
+    }
+
+    /// Defers selected child CSS state until the parent list item's current CSS transaction has completed.
+    private void scheduleSelectedChildStateRefresh() {
+        if (selectedChildStateRefreshScheduled || disposed) {
+            return;
+        }
+
+        selectedChildStateRefreshScheduled = true;
+        M3ListItemBase item = getSkinnable();
+        Platform.runLater(() -> {
+            selectedChildStateRefreshScheduled = false;
+            if (disposed || item.getSkin() != this || !isSelectionCssActive(item)) {
+                return;
+            }
+            updateSelectedChildPseudoClasses(item.isSelected());
+        });
     }
 
     /// Applies semantic typography roles for ordinary list, menu, and navigation-drawer contexts.
@@ -809,7 +955,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Mirrors the settled selected state after the reusable selection animation completes.
     private void finishSelectionAnimation() {
         boolean selected = selectionAnimationTargetSelected;
-        if (getSkinnable().isSelected() == selected) {
+        if (isSelectionCssActive(getSkinnable()) && getSkinnable().isSelected() == selected) {
             updateSelectedChildPseudoClasses(selected);
         }
     }

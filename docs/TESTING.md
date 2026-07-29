@@ -40,6 +40,9 @@ Run all test tiers for release candidates and deliberate full visual review:
 ./gradlew fullTest
 ```
 
-`releaseCheck` includes `fullTest`, publication verification, the demo and catalog shadow jars, and the host-platform jlink runtime image. Push and pull-request CI use Tier 1; manually dispatched CI runs `releaseCheck`.
+`releaseCheck` includes `fullTest`, publication verification, the demo, HMCL MD3 demo, and catalog shadow jars, and the host-platform jlink runtime image. Push and pull-request CI use Tier 1; manually dispatched CI runs `releaseCheck`.
 
-Gradle writes HTML reports below `build/reports/tests`, `demo/build/reports/tests`, and `catalog/build/reports/tests`, with XML results below the corresponding `build/test-results` directories. Visual suites additionally write reviewable snapshots and indexes below `build/reports/m3fx-visual`, `demo/build/reports/m3fx-demo-visual`, and `catalog/build/reports/catalog-snapshots`.
+Gradle writes HTML reports below each project's `build/reports/tests` directory, with XML results below the
+corresponding `build/test-results` directory. Visual suites additionally write reviewable snapshots and indexes
+below `build/reports/m3fx-visual`, `demo/build/reports/m3fx-demo-visual`,
+`catalog/build/reports/catalog-snapshots`, and `hmcl-md3-demo/build/reports/hmcl-snapshots`.

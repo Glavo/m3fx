@@ -40,7 +40,7 @@ final class M3CssEffectTransitionTest {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
-            Scene scene = new Scene(owner, 100.0, 40.0);
+            new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
             owner.applyCss();
@@ -66,7 +66,7 @@ final class M3CssEffectTransitionTest {
             Region target = new Region();
             owner.getChildren().add(target);
             M3MotionSettings.setReducedMotionRequested(owner, true);
-            Scene scene = new Scene(owner, 100.0, 40.0);
+            new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
             owner.applyCss();
@@ -89,7 +89,7 @@ final class M3CssEffectTransitionTest {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
-            Scene scene = new Scene(owner, 100.0, 40.0);
+            new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
             owner.applyCss();

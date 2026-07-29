@@ -77,7 +77,7 @@ final class HMCLDemoTransitions {
     ///
     /// Host-level motion is fade only. HMCL `ContainerAnimations.NAVIGATION` does **not** pan the whole page; it
     /// fades while optionally offsetting a `DecoratorAnimatedPage` left/center pair by ±30px. The shell applies that
-    /// split on [BorderPane] pages separately so the content area never slides as one solid block.
+    /// split on [javafx.scene.layout.BorderPane] pages separately so the content area never slides as one solid block.
     ///
     /// @return the transform
     static M3ContentTransform navigation() {
@@ -109,14 +109,14 @@ final class HMCLDemoTransitions {
     ///
     /// @return the transform
     static M3ContentTransform forward() {
-        return slide(M3TransitionEdge.END, M3TransitionEdge.START, PAGE_ENTER_DISTANCE, PAGE_EXIT_DISTANCE);
+        return slide(M3TransitionEdge.END, M3TransitionEdge.START);
     }
 
     /// Returns a hierarchical backward navigation transform.
     ///
     /// @return the transform
     static M3ContentTransform backward() {
-        return slide(M3TransitionEdge.START, M3TransitionEdge.END, PAGE_ENTER_DISTANCE, PAGE_EXIT_DISTANCE);
+        return slide(M3TransitionEdge.START, M3TransitionEdge.END);
     }
 
     /// Returns a slide-up fade transform used for in-page section changes.
@@ -149,20 +149,16 @@ final class HMCLDemoTransitions {
     ///
     /// @param enterEdge the edge from which the next page enters
     /// @param exitEdge the edge toward which the previous page exits
-    /// @param enterDistance enter slide distance
-    /// @param exitDistance exit slide distance
     /// @return the transform
     private static M3ContentTransform slide(
             M3TransitionEdge enterEdge,
-            M3TransitionEdge exitEdge,
-            double enterDistance,
-            double exitDistance
+            M3TransitionEdge exitEdge
     ) {
         M3EnterTransition enter = M3EnterTransition.fade(0.0)
                 .withDelay(Duration.millis(30.0))
-                .and(M3EnterTransition.slideFrom(enterEdge, enterDistance));
+                .and(M3EnterTransition.slideFrom(enterEdge, PAGE_ENTER_DISTANCE));
         M3ExitTransition exit = M3ExitTransition.fade(0.0)
-                .and(M3ExitTransition.slideTo(exitEdge, exitDistance));
+                .and(M3ExitTransition.slideTo(exitEdge, PAGE_EXIT_DISTANCE));
         return new M3ContentTransform(enter, exit, null, 0.0);
     }
 }

@@ -90,8 +90,15 @@
     -fx-background-color: transparent;
 }
 
-.hmcl-primary-nav-rail {
+.hmcl-primary-nav-rail.hmcl-primary-nav-rail {
+    -fx-padding: 4px 0px;
+    -m3-collapsed-container-width: 96px;
+    -m3-item-spacing: 4px;
     -fx-background-color: -m3-color-surface-container-low;
+}
+
+.hmcl-primary-nav-rail .hmcl-primary-nav-item.hmcl-primary-nav-item {
+    -fx-padding: 0px;
 }
 
 .m3-dark .hmcl-primary-nav-rail {

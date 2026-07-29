@@ -199,26 +199,17 @@ final class M3FXDemoAdaptiveShellTest {
                         AnimationTimer feedbackMonitor = new AnimationTimer() {
                             @Override
                             public void handle(long now) {
-                                Node stateLayer = Objects.requireNonNull(
-                                        navigation.lookup(".m3-state-layer"),
-                                        "navigation state layer"
-                                );
-                                Node ripple = Objects.requireNonNull(
-                                        navigation.lookup(".m3-ripple"),
-                                        "navigation ripple"
-                                );
-                                Node focusIndicator = Objects.requireNonNull(
-                                        navigation.lookup(".m3-focus-indicator"),
-                                        "navigation focus indicator"
-                                );
-                                if (stateLayer.getOpacity() > 0.0001
-                                        || ripple.getOpacity() > 0.0001
-                                        || focusIndicator.getOpacity() > 0.0001) {
+                                @Nullable Node stateLayer = navigation.lookup(".m3-state-layer");
+                                @Nullable Node ripple = navigation.lookup(".m3-ripple");
+                                @Nullable Node focusIndicator = navigation.lookup(".m3-focus-indicator");
+                                if (visibleOpacity(stateLayer) > 0.0001
+                                        || visibleOpacity(ripple) > 0.0001
+                                        || visibleOpacity(focusIndicator) > 0.0001) {
                                     transientFeedbackObserved.set(true);
                                     transientFeedbackDescription.set(
-                                            "stateOpacity=" + stateLayer.getOpacity()
-                                                    + ", rippleOpacity=" + ripple.getOpacity()
-                                                    + ", focusIndicatorOpacity=" + focusIndicator.getOpacity()
+                                            "stateOpacity=" + visibleOpacity(stateLayer)
+                                                    + ", rippleOpacity=" + visibleOpacity(ripple)
+                                                    + ", focusIndicatorOpacity=" + visibleOpacity(focusIndicator)
                                                     + ", focused=" + navigation.isFocused()
                                                     + ", hover=" + navigation.isHover()
                                                     + ", pseudoClasses=" + navigation.getPseudoClassStates()
@@ -288,10 +279,8 @@ final class M3FXDemoAdaptiveShellTest {
                         return !navigation.isFocused()
                                 && stateLayer != null
                                 && stateLayer.getOpacity() <= 0.0001
-                                && ripple != null
-                                && ripple.getOpacity() <= 0.0001
-                                && focusIndicator != null
-                                && focusIndicator.getOpacity() <= 0.0001;
+                                && visibleOpacity(ripple) <= 0.0001
+                                && visibleOpacity(focusIndicator) <= 0.0001;
                     },
                     STABLE_PULSES,
                     () -> {
@@ -310,9 +299,9 @@ final class M3FXDemoAdaptiveShellTest {
                                 + "navigationFocused=" + navigation.isFocused()
                                 + ", settingsFocused=" + settings.isFocused()
                                 + ", stateOpacity=" + navigation.lookup(".m3-state-layer").getOpacity()
-                                + ", rippleOpacity=" + navigation.lookup(".m3-ripple").getOpacity()
+                                + ", rippleOpacity=" + visibleOpacity(navigation.lookup(".m3-ripple"))
                                 + ", focusIndicatorOpacity="
-                                + navigation.lookup(".m3-focus-indicator").getOpacity()
+                                + visibleOpacity(navigation.lookup(".m3-focus-indicator"))
                                 + ", pseudoClasses=" + navigation.getPseudoClassStates();
                     },
                     () -> {
@@ -338,8 +327,8 @@ final class M3FXDemoAdaptiveShellTest {
                                 PseudoClass.getPseudoClass("focus-visible")
                         ));
                         assertEquals(0.0, navigation.lookup(".m3-state-layer").getOpacity(), 0.0001);
-                        assertEquals(0.0, navigation.lookup(".m3-ripple").getOpacity(), 0.0001);
-                        assertEquals(0.0, navigation.lookup(".m3-focus-indicator").getOpacity(), 0.0001);
+                        assertEquals(0.0, visibleOpacity(navigation.lookup(".m3-ripple")), 0.0001);
+                        assertEquals(0.0, visibleOpacity(navigation.lookup(".m3-focus-indicator")), 0.0001);
                         AnimationTimer feedbackMonitor = feedbackMonitorReference.getAndSet(null);
                         if (feedbackMonitor != null) {
                             feedbackMonitor.stop();
@@ -714,6 +703,19 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    @Nullable ScrollPane sidebar =
+                            visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
+                    return "Timed out restoring the expanded LTR shell: orientation="
+                            + scene.getRoot().getEffectiveNodeOrientation()
+                            + ", sceneWidth=" + scene.getWidth()
+                            + ", sidebar=" + (sidebar == null
+                            ? "absent"
+                            : sidebar.localToScene(sidebar.getBoundsInLocal())
+                            + ", orientation=" + sidebar.getEffectiveNodeOrientation()
+                            + ", translateX=" + sidebar.getTranslateX());
+                },
+                () -> {
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     setRightToLeftFromSettings(scene, false);
                     Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
                     stage.setWidth(1180.0);
@@ -781,6 +783,14 @@ final class M3FXDemoAdaptiveShellTest {
     private static void layout(Scene scene) {
         scene.getRoot().applyCss();
         scene.getRoot().layout();
+    }
+
+    /// Returns a node's rendered opacity, treating an absent optional skin node as fully clear.
+    ///
+    /// @param node the optional skin node
+    /// @return the node opacity, or `0.0` when the node is absent
+    private static double visibleOpacity(@Nullable Node node) {
+        return node == null ? 0.0 : node.getOpacity();
     }
 
     /// Fires one complete synthetic primary-button click at the center of a node.

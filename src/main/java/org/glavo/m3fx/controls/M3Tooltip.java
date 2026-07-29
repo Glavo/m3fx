@@ -15,6 +15,7 @@ import javafx.beans.property.ObjectPropertyBase;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
@@ -104,6 +105,12 @@ public class M3Tooltip extends PopupControl {
 
     /// The owner node currently supplying popup context.
     private @Nullable Node popupContextOwner;
+
+    /// The showing owner window currently observed for synchronous popup closure.
+    private @Nullable Window observedOwnerWindow;
+
+    /// Closes the popup before its owner window releases the native peer.
+    private final EventHandler<WindowEvent> ownerWindowHidingHandler = event -> hideForOwnerWindow();
 
     /// The popup skin node animated by the current visibility transition.
     private @Nullable Node visibilityNode;
@@ -531,6 +538,7 @@ public class M3Tooltip extends PopupControl {
             stopPopupContextSynchronizer();
             return;
         }
+        observeOwnerWindow();
         syncPopupRootThemeContext(ownerNode);
         if (!wasShowing) {
             playShowAnimation(ownerNode);
@@ -579,9 +587,11 @@ public class M3Tooltip extends PopupControl {
         setAutoFix(true);
         setAutoHide(true);
         setHideOnEscape(true);
+        addEventHandler(WindowEvent.WINDOW_HIDING, event -> resetVisibilityAnimation());
         addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
             resetVisibilityAnimation();
             stopPopupContextSynchronizer();
+            stopObservingOwnerWindow();
             @Nullable WeakReference<M3Tooltip> reference = activeTooltipReference;
             if (reference != null && reference.get() == this) {
                 activeTooltipReference = null;
@@ -683,16 +693,55 @@ public class M3Tooltip extends PopupControl {
 
     /// Hides the popup synchronously and restores neutral transforms for its next presentation.
     private void hideSynchronously() {
+        hideSynchronously(false);
+    }
+
+    /// Hides the popup synchronously, optionally while its owner window is beginning to close.
+    ///
+    /// @param ownerWindowHiding whether the owner is still dispatching its pre-close event
+    private void hideSynchronously(boolean ownerWindowHiding) {
         M3NodeTransition animation = visibilityAnimation;
         if (animation != null) {
             animation.stop();
             animation.setOnFinished(null);
         }
         hidingAfterAnimation = false;
-        super.hide();
+        @Nullable Window ownerWindow = getOwnerWindow();
+        if (ownerWindowHiding || ownerWindow == null || ownerWindow.isShowing()) {
+            super.hide();
+        }
         @Nullable Node node = visibilityNode;
         if (node != null) {
             resetVisibilityNode(node);
+        }
+    }
+
+    /// Observes the current owner so the popup closes before the owner's native peer is released.
+    private void observeOwnerWindow() {
+        @Nullable Window ownerWindow = getOwnerWindow();
+        if (observedOwnerWindow == ownerWindow) {
+            return;
+        }
+        stopObservingOwnerWindow();
+        if (ownerWindow != null) {
+            observedOwnerWindow = ownerWindow;
+            ownerWindow.addEventHandler(WindowEvent.WINDOW_HIDING, ownerWindowHidingHandler);
+        }
+    }
+
+    /// Stops observing the previous owner window.
+    private void stopObservingOwnerWindow() {
+        @Nullable Window ownerWindow = observedOwnerWindow;
+        observedOwnerWindow = null;
+        if (ownerWindow != null) {
+            ownerWindow.removeEventHandler(WindowEvent.WINDOW_HIDING, ownerWindowHidingHandler);
+        }
+    }
+
+    /// Closes the popup while its owner is still dispatching the pre-close event.
+    private void hideForOwnerWindow() {
+        if (isShowing()) {
+            hideSynchronously(true);
         }
     }
 

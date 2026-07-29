@@ -4,11 +4,13 @@
 package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -43,6 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies that transient interaction ownership ends when a control can no longer receive its matching release.
@@ -183,6 +187,111 @@ final class M3InteractionLifecycleTest {
             assertFalse(rangeSlider.isHighValueChanging());
             assertEquals(0.0, lookupRegion(button, ".m3-ripple").getOpacity(), 0.0001);
         });
+    }
+
+    /// Verifies that a completed selection animation cannot restore child CSS state after a list item is detached.
+    @Test
+    void listItemDetachStopsSelectionAnimationAndRestoresSelectedStateOnReattach() throws InterruptedException {
+        PseudoClass selectedPseudoClass = PseudoClass.getPseudoClass("selected");
+        M3ListItem[] itemReference = new M3ListItem[1];
+        Label[] headlineReference = new Label[1];
+        VBox[] rootReference = new VBox[1];
+        long[] verificationNotBeforeNanos = new long[1];
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> System.nanoTime() >= verificationNotBeforeNanos[0]
+                        && !headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                2,
+                () -> {
+                    M3ListItem item = new M3ListItem("Selected item");
+                    VBox root = new VBox(item);
+                    show(root, 320.0, 120.0);
+                    Label headline = assertInstanceOf(
+                            Label.class,
+                            item.lookup(".m3-list-item-headline")
+                    );
+
+                    item.setSelected(true);
+                    root.applyCss();
+                    root.layout();
+                    root.getChildren().remove(item);
+
+                    assertNull(item.getScene());
+                    assertFalse(headline.getPseudoClassStates().contains(selectedPseudoClass));
+                    itemReference[0] = item;
+                    headlineReference[0] = headline;
+                    rootReference[0] = root;
+                    verificationNotBeforeNanos[0] = System.nanoTime() + 700_000_000L;
+                },
+                () -> {
+                    M3ListItem item = itemReference[0];
+                    Label headline = headlineReference[0];
+                    assertNull(item.getScene());
+                    assertFalse(headline.getPseudoClassStates().contains(selectedPseudoClass));
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                2,
+                () -> {
+                    VBox root = rootReference[0];
+                    root.getChildren().add(itemReference[0]);
+                    root.applyCss();
+                    root.layout();
+                },
+                () -> assertTrue(
+                        headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass)
+                )
+        );
+    }
+
+    /// Verifies that hidden windows suspend selected child CSS state until the item is shown again.
+    @Test
+    void listItemWindowHideSuspendsSelectedChildCssStateUntilWindowShownAgain() throws InterruptedException {
+        PseudoClass selectedPseudoClass = PseudoClass.getPseudoClass("selected");
+        M3ListItem[] itemReference = new M3ListItem[1];
+        Label[] headlineReference = new Label[1];
+        Stage[] stageReference = new Stage[1];
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                2,
+                () -> {
+                    M3ListItem item = new M3ListItem("Selected item");
+                    item.setSelected(true);
+                    Stage stage = show(new VBox(item), 320.0, 120.0);
+                    itemReference[0] = item;
+                    headlineReference[0] = assertInstanceOf(
+                            Label.class,
+                            item.lookup(".m3-list-item-headline")
+                    );
+                    stageReference[0] = stage;
+                },
+                () -> assertTrue(
+                        headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass)
+                )
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> !headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                2,
+                () -> stageReference[0].close(),
+                () -> {
+                    assertFalse(stageReference[0].isShowing());
+                    assertNotNull(itemReference[0].getScene());
+                    assertFalse(headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass));
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                2,
+                () -> stageReference[0].show(),
+                () -> assertTrue(
+                        headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass)
+                )
+        );
     }
 
     /// Verifies that an unfinished switch drag cannot continue after the switch is detached and reattached.

@@ -499,15 +499,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             return Math.min(1.0, Math.max(0.0, (preferredWidth - availableWidth) / capacity));
         }
 
-        /// Returns the sum of fitted child widths after proportional compression.
-        private static double fittedChildrenWidth(
-                double preferredWidth,
-                double minimumWidth,
-                double shrinkRatio
-        ) {
-            return preferredWidth - (preferredWidth - minimumWidth) * shrinkRatio;
-        }
-
         /// Returns one child's width after proportional compression.
         private double fittedWidth(Node child, double height, double shrinkRatio) {
             double preferred = resolvedWidth(child, height, WidthMetric.PREFERRED);

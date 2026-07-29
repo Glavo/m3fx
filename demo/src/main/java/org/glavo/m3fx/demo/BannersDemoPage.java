@@ -33,7 +33,7 @@ final class BannersDemoPage extends DemoPageSupport {
 
         M3Banner warning = createBanner(
                 "The selected jlink target uses platform-specific BellSoft LibericaJDK Full jmods.",
-                createErrorIcon("warning"),
+                createWarningIcon(),
                 "Review"
         );
 

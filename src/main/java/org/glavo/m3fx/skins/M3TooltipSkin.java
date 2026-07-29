@@ -10,6 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.stage.Window;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -44,6 +45,12 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
 
     /// The generated theme stylesheet currently installed on the popup scene and skin root.
     private @Nullable String installedThemeStylesheet;
+
+    /// Whether a deferred showing-popup resize is already queued.
+    private boolean popupResizePending;
+
+    /// Whether this skin has released its bindings and must ignore deferred work.
+    private boolean disposed;
 
     /// Creates a tooltip skin.
     ///
@@ -102,6 +109,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// Releases bindings and listeners installed by this skin.
     @Override
     public void dispose() {
+        disposed = true;
         M3Tooltip tooltip = getSkinnable();
         tooltip.getStyleClass().removeListener(styleClassListener);
         tooltip.themeProperty().removeListener(themeListener);
@@ -182,7 +190,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
 
         @Nullable M3Theme theme = tooltip.getTheme();
         if (theme == null || newScene == null) {
-            resizeShowingPopup();
+            requestShowingPopupResize();
             return;
         }
 
@@ -192,14 +200,29 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         }
         M3PopupStyles.addStylesheet(root, themeStylesheet);
         installedThemeStylesheet = themeStylesheet;
-        resizeShowingPopup();
-        Platform.runLater(this::resizeShowingPopup);
+        requestShowingPopupResize();
+    }
+
+    /// Coalesces popup resize requests until current CSS and window lifecycle changes have settled.
+    private void requestShowingPopupResize() {
+        if (disposed || popupResizePending) {
+            return;
+        }
+
+        popupResizePending = true;
+        Platform.runLater(() -> {
+            popupResizePending = false;
+            if (!disposed) {
+                resizeShowingPopup();
+            }
+        });
     }
 
     /// Resizes an already visible popup after theme CSS changes its preferred content size.
     private void resizeShowingPopup() {
         M3Tooltip tooltip = getSkinnable();
-        if (!tooltip.isShowing()) {
+        @Nullable Window ownerWindow = tooltip.getOwnerWindow();
+        if (!tooltip.isShowing() || ownerWindow == null || !ownerWindow.isShowing()) {
             return;
         }
         root.applyCss();

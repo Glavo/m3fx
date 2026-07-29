@@ -27,9 +27,9 @@ final class HMCLAccountsView extends BorderPane {
     private final HMCLDemoStrings strings;
     private final HMCLDemoState state;
 
-    private final M3ListItem microsoftItem = HMCLDemoUi.navItem("", HMCLDemoIcons.ACCOUNTS, null);
-    private final M3ListItem offlineItem = HMCLDemoUi.navItem("", HMCLDemoIcons.ADD, null);
-    private final M3ListItem externalItem = HMCLDemoUi.navItem("", HMCLDemoIcons.GROUP, null);
+    private final M3ListItem microsoftItem = HMCLDemoUi.navItem(HMCLDemoIcons.ACCOUNTS);
+    private final M3ListItem offlineItem = HMCLDemoUi.navItem(HMCLDemoIcons.ADD);
+    private final M3ListItem externalItem = HMCLDemoUi.navItem(HMCLDemoIcons.GROUP);
     private final VBox accountCards = new VBox(8.0);
 
     /// Creates the accounts page.
@@ -102,7 +102,7 @@ final class HMCLAccountsView extends BorderPane {
             M3ListItem row = new M3ListItem(account.displayName());
             row.getStyleClass().add("hmcl-account-row");
             row.setSupportingText(HMCLDemoUi.accountTypeLabel(strings, account.type()));
-            row.setLeading(HMCLDemoUi.accountFace(account, 32.0));
+            row.setLeading(HMCLDemoUi.accountFace(account));
             row.setTrailing(trailing);
             row.setSelected(isSelected);
             row.setMaxWidth(Double.MAX_VALUE);

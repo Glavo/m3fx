@@ -52,8 +52,8 @@ public final class FxTestUtils {
     /// The default timeout in nanoseconds for pulse-driven JavaFX condition waits.
     private static final long FX_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
 
-    /// The number of pulses kept under CSS warning capture after pulse-based tests close windows or popups.
-    private static final int POST_PULSE_TEST_CSS_DRAIN_PULSES = 8;
+    /// The number of FX event-loop turns kept under CSS warning capture after tests close windows or popups.
+    private static final int POST_TEST_CSS_DRAIN_TURNS = 8;
 
     /// Prevents instantiation of this utility class.
     private FxTestUtils() {
@@ -339,11 +339,6 @@ public final class FxTestUtils {
         runOnFxThread(() -> runWithReducedMotion(task));
     }
 
-    /// Runs a task on the FX application thread with global Material motion settings restored afterward.
-    public static void runOnFxThreadWithMotionSettingsPreserved(Runnable task) {
-        runOnFxThread(() -> runWithMotionSettingsPreserved(task));
-    }
-
     /// Captures JavaFX CSS warnings emitted while running a task.
     public static @Unmodifiable List<LogRecord> captureCssWarnings(Runnable task) {
         return captureWarningsChecked(() -> task.run(), "javafx.css", "javafx.scene.CssStyleHelper");
@@ -418,10 +413,13 @@ public final class FxTestUtils {
                 .collect(Collectors.joining("\n"));
     }
 
-    /// Runs a supplier on the FX application thread and returns its result.
+    /// Runs a supplier on the FX application thread and returns its non-null result.
+    ///
+    /// @throws NullPointerException if `supplier` or its result is `null`
     public static <T> T callOnFxThread(Supplier<T> supplier) {
+        Objects.requireNonNull(supplier, "supplier");
         if (Platform.isFxApplicationThread()) {
-            return supplier.get();
+            return Objects.requireNonNull(supplier.get(), "FX task result");
         }
 
         AtomicReference<@Nullable T> result = new AtomicReference<>();
@@ -438,7 +436,7 @@ public final class FxTestUtils {
         });
         awaitUnchecked(latch);
         throwIfFailed(failure.get());
-        return result.get();
+        return Objects.requireNonNull(result.get(), "FX task result");
     }
 
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
@@ -533,7 +531,7 @@ public final class FxTestUtils {
                                     verification,
                                     timeoutNanos
                             );
-                            waitForPulses(POST_PULSE_TEST_CSS_DRAIN_PULSES);
+                            waitForFxTurns(POST_TEST_CSS_DRAIN_TURNS);
                         }
                 ),
                 "javafx.css",
@@ -710,36 +708,23 @@ public final class FxTestUtils {
         }
     }
 
-    /// Waits for deferred JavaFX pulse work before continuing on the test thread.
-    private static void waitForPulses(int pulseCount) throws InterruptedException {
+    /// Waits for deferred JavaFX event-loop work before continuing on the test thread.
+    private static void waitForFxTurns(int turnCount) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> runAfterPulses(pulseCount, latch::countDown));
+        Platform.runLater(() -> runAfterFxTurns(turnCount, latch::countDown));
         await(latch);
     }
 
-    /// Runs an action after the requested number of JavaFX pulses on the FX application thread.
-    private static void runAfterPulses(int pulseCount, Runnable action) {
-        if (pulseCount < 1) {
-            throw new IllegalArgumentException("pulseCount must be positive");
+    /// Runs an action after the requested number of JavaFX event-loop turns.
+    private static void runAfterFxTurns(int turnCount, Runnable action) {
+        if (turnCount < 1) {
+            throw new IllegalArgumentException("turnCount must be positive");
         }
-
-        AnimationTimer timer = new AnimationTimer() {
-            /// The number of pulses observed before running the action.
-            private int pulses;
-
-            /// Counts pulses and runs the action after the requested pulse.
-            @Override
-            public void handle(long now) {
-                pulses++;
-                if (pulses < pulseCount) {
-                    return;
-                }
-
-                stop();
-                action.run();
-            }
-        };
-        timer.start();
+        if (turnCount == 1) {
+            action.run();
+        } else {
+            Platform.runLater(() -> runAfterFxTurns(turnCount - 1, action));
+        }
     }
 
     /// Waits for a latch using the shared JavaFX test timeout.

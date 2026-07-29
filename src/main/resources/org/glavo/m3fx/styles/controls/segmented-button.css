@@ -112,6 +112,10 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
+.m3-segmented-button:disabled > *:m3-segmented-button-graphic-replaced {
+    -fx-opacity: 0;
+}
+
 .m3-segmented-button:disabled > .m3-segmented-button-selection-indicator {
     -fx-opacity: 1;
 }

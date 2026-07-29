@@ -10,7 +10,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -87,10 +86,8 @@ final class HMCLHomeView extends BorderPane {
         HBox topRow = new HBox(16.0);
         topRow.setAlignment(Pos.TOP_LEFT);
         topRow.setFillHeight(false);
-        Region topSpacer = new Region();
-        HBox.setHgrow(topSpacer, Priority.ALWAYS);
-        topRow.getChildren().setAll(shortcuts, topSpacer, announcementCard);
-        HBox.setHgrow(announcementCard, Priority.NEVER);
+        topRow.getChildren().setAll(shortcuts, announcementCard);
+        HBox.setHgrow(announcementCard, Priority.ALWAYS);
 
         HBox bottomRow = new HBox();
         bottomRow.setAlignment(Pos.BOTTOM_RIGHT);
@@ -135,8 +132,7 @@ final class HMCLHomeView extends BorderPane {
     /// Builds the compact account/instance shortcuts once.
     private void configureShortcuts() {
         shortcuts.getStyleClass().add("hmcl-home-shortcuts");
-        // Critical: Stack/Border children default to filling the parent; pin to preferred size.
-        shortcuts.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        shortcuts.setMinSize(220.0, Region.USE_PREF_SIZE);
         shortcuts.setPrefWidth(280.0);
         shortcuts.setMaxWidth(280.0);
         shortcuts.setMaxHeight(Region.USE_PREF_SIZE);
@@ -152,7 +148,7 @@ final class HMCLHomeView extends BorderPane {
     /// Builds the preview announcement once.
     private void configureAnnouncement() {
         announcementCard.getStyleClass().addAll("hmcl-card", "hmcl-announcement");
-        announcementCard.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        announcementCard.setMinSize(220.0, Region.USE_PREF_SIZE);
         announcementCard.setMaxWidth(420.0);
         announcementCard.setMaxHeight(Region.USE_PREF_SIZE);
         announcementCard.setPadding(new Insets(16.0, 20.0, 16.0, 20.0));
@@ -219,7 +215,7 @@ final class HMCLHomeView extends BorderPane {
         } else {
             accountItem.setHeadlineText(account.displayName());
             accountItem.setSupportingText(HMCLDemoUi.accountTypeLabel(strings, account.type()));
-            accountItem.setLeading(HMCLDemoUi.accountFace(account, 32.0));
+            accountItem.setLeading(HMCLDemoUi.accountFace(account));
         }
         refreshLaunchEnabled();
     }

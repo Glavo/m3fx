@@ -4,7 +4,6 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -22,7 +21,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Simplified multiplayer secondary route.
 @NotNullByDefault
 final class HMCLMultiplayerView extends BorderPane {
-    private final HMCLDemoController controller;
     private final HMCLDemoStrings strings;
     private final HMCLDemoState state;
 
@@ -42,7 +40,6 @@ final class HMCLMultiplayerView extends BorderPane {
     ///
     /// @param controller the application controller
     HMCLMultiplayerView(HMCLDemoController controller) {
-        this.controller = controller;
         this.strings = controller.strings();
         this.state = controller.state();
 

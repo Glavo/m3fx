@@ -129,7 +129,7 @@ final class DialogsDemoPage extends DemoPageSupport {
                 cancel,
                 delete
         );
-        dialog.getDialogPane().setGraphic(createErrorIcon("warning"));
+        dialog.getDialogPane().setGraphic(createWarningIcon());
         context.showDialog(dialog);
     }
 

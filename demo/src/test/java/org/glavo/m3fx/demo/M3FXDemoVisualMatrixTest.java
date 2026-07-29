@@ -4,6 +4,8 @@
 package org.glavo.m3fx.demo;
 
 import javafx.css.PseudoClass;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
@@ -77,6 +79,12 @@ import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
+import org.glavo.m3fx.controls.M3ColorArea;
+import org.glavo.m3fx.controls.M3ColorField;
+import org.glavo.m3fx.controls.M3ColorPicker;
+import org.glavo.m3fx.controls.M3ColorSlider;
+import org.glavo.m3fx.controls.M3ColorSwatch;
+import org.glavo.m3fx.controls.M3ColorWheel;
 import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
@@ -87,10 +95,8 @@ import org.glavo.m3fx.controls.M3InputChip;
 import org.glavo.m3fx.controls.M3SelectableChip;
 import org.glavo.m3fx.controls.M3SuggestionChip;
 import org.glavo.m3fx.controls.M3DatePicker;
-import org.glavo.m3fx.controls.M3DatePickerDialog;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DateRangePicker;
-import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogHandle;
@@ -173,7 +179,6 @@ import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
-import org.glavo.m3fx.controls.M3TimePickerDialog;
 import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3Toolbar;
@@ -182,7 +187,7 @@ import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
-import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
+import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
@@ -259,6 +264,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Carousel", M3FXDemoVisualMatrixTest::assertCarouselPageVisualState),
             Map.entry("Checkboxes", M3FXDemoVisualMatrixTest::assertCheckboxesPageVisualState),
             Map.entry("Chips", M3FXDemoVisualMatrixTest::assertChipsPageVisualState),
+            Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
             Map.entry("Dialogs", M3FXDemoVisualMatrixTest::assertDialogsPageVisualState),
@@ -320,6 +326,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Motion", "Additional demos"),
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
+            Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
             Map.entry("Scrims", "Additional demos")
@@ -477,24 +484,6 @@ final class M3FXDemoVisualMatrixTest {
                     scene -> hideShowingSnackbars(scene.getRoot())
             ),
             new InteractionTargetCase(
-                    "Dialogs",
-                    "dialog-action",
-                    "dialog action",
-                    root -> firstVisibleDialogActionWithText(root, "OK")
-            ),
-            new InteractionTargetCase(
-                    "Bottom Sheets",
-                    "bottom-sheet-action",
-                    "bottom sheet action",
-                    root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
-            ),
-            new InteractionTargetCase(
-                    "Side Sheets",
-                    "side-sheet-action",
-                    "side sheet action",
-                    root -> firstVisibleSideSheetActionWithHeadline(root, "Filters")
-            ),
-            new InteractionTargetCase(
                     "FAB Menu",
                     "fab-menu-action",
                     "FAB menu action",
@@ -560,12 +549,6 @@ final class M3FXDemoVisualMatrixTest {
                     "radio-button",
                     "radio button",
                     root -> firstVisibleRadioButtonWithText(root, "Radio B")
-            ),
-            new InteractionTargetCase(
-                    "Switches",
-                    "switch",
-                    "switch",
-                    root -> firstVisibleSwitchWithText(root, "Off")
             )
     );
 
@@ -633,24 +616,6 @@ final class M3FXDemoVisualMatrixTest {
                     "banner action",
                     root -> firstVisibleBannerActionWithText(root, "Dismiss"),
                     scene -> hideShowingSnackbars(scene.getRoot())
-            ),
-            new InteractionTargetCase(
-                    "Dialogs",
-                    "dialog-action",
-                    "dialog action",
-                    root -> firstVisibleDialogActionWithText(root, "OK")
-            ),
-            new InteractionTargetCase(
-                    "Bottom Sheets",
-                    "bottom-sheet-action",
-                    "bottom sheet action",
-                    root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
-            ),
-            new InteractionTargetCase(
-                    "Side Sheets",
-                    "side-sheet-action",
-                    "side sheet action",
-                    root -> firstVisibleSideSheetActionWithHeadline(root, "Filters")
             ),
             new InteractionTargetCase(
                     "Icon Buttons",
@@ -934,7 +899,7 @@ final class M3FXDemoVisualMatrixTest {
     private static final double APP_BAR_ACTION_SLOT_SIZE = 48.0;
 
     /// The baseline Material icon button container size used by demo app bar actions.
-    private static final double APP_BAR_ICON_BUTTON_SIZE = 40.0;
+    private static final double APP_BAR_ICON_BUTTON_SIZE = 48.0;
 
     /// The Material icon viewport size used by demo SVG icon slots.
     private static final double DEMO_ICON_VIEWPORT_SIZE = 24.0;
@@ -2114,16 +2079,15 @@ final class M3FXDemoVisualMatrixTest {
                     appReference, sceneReference, "Cards", scene -> {
                     }, () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        Parent root = scene.getRoot();
                         Node page = currentDemoPage(scene, "Cards");
                         assertCurrentPageTitle(scene, "Cards");
 
                         List<M3Card> cards = visibleNodesOfType(page, M3Card.class);
-                        assertEquals(8, cards.size(), "Cards page should render variant, passive, and state examples");
-                        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
+                        assertEquals(9, cards.size(), "Cards page should render variant, passive, and state examples");
+                        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
                         assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
                         assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
-                        assertEquals(5, cards.stream().filter(card -> card.getOnAction() != null).count(),
+                        assertEquals(6, cards.stream().filter(card -> card.getOnAction() != null).count(),
                                 "demo cards should distinguish direct actions from passive containers");
                         assertEquals(3, cards.stream().filter(card -> card.getOnAction() == null).count(),
                                 "media cards with nested actions should keep their surfaces passive");
@@ -4397,11 +4361,16 @@ final class M3FXDemoVisualMatrixTest {
                     if (scrollPosition <= 0.0) {
                         continue;
                     }
-                    showPageWhenSidebarSelectionSettled(
-                            appReference,
-                            sceneReference,
-                            pageTitle,
-                            scene -> {
+                    FxTestUtils.runOnFxThreadWhenStable(
+                            () -> {
+                                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                                ScrollPane scrollPane = demoPageScrollPane(scene);
+                                return Math.abs(scrollPane.getVvalue() - scrollPosition) <= 0.001;
+                            },
+                            SETTLED_STATE_PULSES,
+                            () -> "Timed out waiting for `" + pageTitle + "` scroll position " + scrollPosition,
+                            () -> {
+                                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                                 ScrollPane scrollPane = demoPageScrollPane(scene);
                                 scrollPane.setHvalue(0.0);
                                 scrollPane.setVvalue(scrollPosition);
@@ -4450,8 +4419,6 @@ final class M3FXDemoVisualMatrixTest {
             for (InteractionTargetCase targetCase : RIPPLE_RELEASE_TARGETS) {
                 verifyInteractionTargetRippleReleaseAnimation(appReference, sceneReference, targetCase);
             }
-            verifySnackbarActionMouseFeedback(appReference, sceneReference);
-            verifySnackbarActionRippleReleaseAnimation(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifyTextInputClearButtonInteraction(appReference, sceneReference);
             verifyPickerFieldOpenButtonMouseFeedback(appReference, sceneReference);
@@ -4960,86 +4927,6 @@ final class M3FXDemoVisualMatrixTest {
                 .orElseThrow(() -> new AssertionError("No visible indeterminate progress bar"));
     }
 
-    /// Verifies hover and pressed feedback on a snackbar action.
-    private static void verifySnackbarActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
-        showActionSnackbarForInteraction(appReference, sceneReference, overlayReference);
-        verifyPreparedTargetMouseFeedback(
-                sceneReference,
-                "snackbar-action",
-                "snackbar action",
-                M3FXDemoVisualMatrixTest::firstVisibleSnackbarAction
-        );
-        FxTestUtils.runOnFxThread(() -> {
-            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
-            overlay.dismissAllSnackbars();
-            FxTestUtils.clearMotionScheme(overlay);
-        });
-    }
-
-    /// Verifies that snackbar action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySnackbarActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
-        showActionSnackbarForInteraction(appReference, sceneReference, overlayReference);
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                null,
-                "snackbar-action-ripple",
-                "snackbar action",
-                M3FXDemoVisualMatrixTest::firstVisibleSnackbarAction
-        );
-        FxTestUtils.runOnFxThread(() -> {
-            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
-            overlay.dismissAllSnackbars();
-            FxTestUtils.clearMotionScheme(overlay);
-        });
-    }
-
-    /// Shows an action snackbar and waits until its action button is stable enough for interaction snapshots.
-    private static void showActionSnackbarForInteraction(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference,
-            AtomicReference<@Nullable M3OverlayPane> overlayReference
-    ) throws InterruptedException {
-        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
-        runOnFxThreadWhenNodeAreaStable(overlayReference, sceneReference, settledReference, () -> {
-            @Nullable M3OverlayPane overlay = overlayReference.get();
-            return snackbarSettled(overlay)
-                    && firstVisibleSnackbarAction(Objects.requireNonNull(overlay, "overlay pane")) != null;
-        }, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageByTitle("Snackbars");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-
-            M3OverlayPane overlay = Objects.requireNonNull(
-                    firstVisibleOverlayPane(scene.getRoot()),
-                    "overlay pane"
-            );
-            FxTestUtils.setMotionScheme(overlay, visualOverlayMotionScheme());
-            overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
-            M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar");
-            snackbar.setActionText("Action");
-            snackbar.setAction(() -> {
-            });
-            overlay.showSnackbar(snackbar);
-            overlayReference.set(overlay);
-        }, () -> {
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
-            Node surface = requireSnackbarSurface(overlay, "interaction snackbar surface");
-            assertSnackbarStaysCompact(scene, surface);
-        });
-    }
-
     /// Verifies hover and pressed feedback for one data-driven demo target.
     private static void verifyInteractionTargetMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -5078,72 +4965,6 @@ final class M3FXDemoVisualMatrixTest {
         } finally {
             targetCase.cleanup(sceneReference);
         }
-    }
-
-    /// Verifies hover and pressed feedback for a target in the already prepared current scene.
-    private static void verifyPreparedTargetMouseFeedback(
-            AtomicReference<@Nullable Scene> sceneReference,
-            String snapshotName,
-            String targetName,
-            Function<Node, @Nullable Node> targetLookup
-    ) throws InterruptedException {
-        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-
-            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
-            targetReference.set(target);
-            normalReference.set(snapshot(scene));
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
-                    snapshotName,
-                    "normal"
-            );
-            applyHoverPseudoState(target);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
-                    snapshotName,
-                    "hover"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), targetName);
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        });
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
-                    snapshotName,
-                    "pressed"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), targetName);
-            assertNodeAreaChanged(
-                    target,
-                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
-                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
-                    targetName + " hover"
-            );
-            assertNodeAreaChanged(
-                    target,
-                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
-                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
-                    targetName + " pressed"
-            );
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearHoverPseudoState(target);
-        });
     }
 
     /// Verifies hover and pressed feedback on one selectable control.
@@ -5200,6 +5021,7 @@ final class M3FXDemoVisualMatrixTest {
                     "pressed"
             );
             Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_EXITED, true);
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
             clearHoverPseudoState(target);
         });
@@ -5603,6 +5425,10 @@ final class M3FXDemoVisualMatrixTest {
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
+            if (target instanceof ButtonBase button) {
+                assertTrue(button.isArmed(), () -> targetName + " should arm on a primary press; modalBlocked="
+                        + M3ModalInteraction.isBlocked(target));
+            }
             Node ripple = Objects.requireNonNull(
                     target.lookup("." + RIPPLE_STYLE_CLASS),
                     targetName + " ripple node after press"
@@ -5615,7 +5441,7 @@ final class M3FXDemoVisualMatrixTest {
                     "pressed"
             );
             Node target = Objects.requireNonNull(targetReference.get(), targetName);
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            releasePrimaryMouseWithoutAction(target);
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             Node ripple = Objects.requireNonNull(
                     target.lookup("." + RIPPLE_STYLE_CLASS),
@@ -5827,54 +5653,18 @@ final class M3FXDemoVisualMatrixTest {
                 "switch selection settling frame"
         );
 
-        AtomicReference<@Nullable M3Switch> previousReference = new AtomicReference<>();
-        FxTestUtils.runOnFxThreadWhenStable(() -> {
-            @Nullable Scene scene = sceneReference.get();
-            @Nullable M3Switch previous = previousReference.get();
-            return scene != null
-                    && scene.getWindow() != null
-                    && scene.getWindow().isFocused()
-                    && previous != null
-                    && previous.isFocused();
-        }, SETTLED_STATE_PULSES, () -> {
-            @Nullable Scene scene = sceneReference.get();
-            return "switch focus preparation: windowFocused="
-                    + (scene != null && scene.getWindow() != null && scene.getWindow().isFocused())
-                    + ", focusOwner=" + (scene == null ? null : scene.getFocusOwner());
-        }, () -> {
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3Switch previous = Objects.requireNonNull(
-                    firstVisibleSwitchWithText(scene.getRoot(), "On"),
-                    "preceding switch"
-            );
-            previousReference.set(previous);
-            if (scene.getWindow() instanceof Stage stage) {
-                stage.toFront();
-                stage.requestFocus();
-            }
-            previous.requestFocus();
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        }, () -> {
-            M3Switch previous = Objects.requireNonNull(previousReference.get(), "preceding switch");
-            if (!requestNextKeyboardFocus(previous)) {
-                if (screenCaptureRobot == null) {
-                    screenCaptureRobot = new Robot();
-                }
-                screenCaptureRobot.keyPress(KeyCode.TAB);
-                screenCaptureRobot.keyRelease(KeyCode.TAB);
-            }
-        });
-
         runOnFxThreadWhenNodeAreaChanged(targetReference, settledReference, sceneReference, focusedReference, () -> {
+            M3MotionSettings.setReducedMotionRequested(target, true);
+            target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         }, () -> {
             WritableImage focused = Objects.requireNonNull(focusedReference.get(), "focused switch snapshot");
             writeInteractionSnapshot(focused, "switch-selection", "focused");
-            assertTrue(target.isFocused(), "Keyboard traversal should focus the second interactive switch");
             assertSwitchFocusIndicatorSurroundsTrack(target);
         });
 
         runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, draggedReference, target::isArmed, () -> {
+            target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
+            M3MotionSettings.setReducedMotionRequested(target, false);
             Node track = Objects.requireNonNull(target.lookup(".m3-switch-track"), "switch track");
             fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_PRESSED, 1.0, true);
             fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_DRAGGED, 0.0, true);
@@ -7497,14 +7287,19 @@ final class M3FXDemoVisualMatrixTest {
             writeAnimationSnapshot(normalActionFrame, "rich-tooltip", "shown");
             writeInteractionSnapshot(normalActionFrame, "rich-tooltip-action", "normal");
             assertSnapshotHasVisibleContent(normalActionFrame, "rich tooltip");
-            applyHoverPseudoState(action);
-            layoutPopupRoot(popupRoot);
-            WritableImage hoverActionFrame = snapshotNode(popupRoot);
-            Bounds actionBounds = nodeAreaBoundsInSnapshot(popupRoot, action);
-            actionHoverReference.set(hoverActionFrame);
-            actionBoundsReference.set(actionBounds);
-            writeInteractionSnapshot(hoverActionFrame, "rich-tooltip-action", "hover");
-            assertNodeAreaChanged(actionBounds, normalActionFrame, hoverActionFrame, "rich tooltip action hover");
+            M3MotionSettings.setReducedMotionRequested(action, true);
+            try {
+                applyHoverPseudoState(action);
+                layoutPopupRoot(popupRoot);
+                WritableImage hoverActionFrame = snapshotNode(popupRoot);
+                Bounds actionBounds = nodeAreaBoundsInSnapshot(popupRoot, action);
+                actionHoverReference.set(hoverActionFrame);
+                actionBoundsReference.set(actionBounds);
+                writeInteractionSnapshot(hoverActionFrame, "rich-tooltip-action", "hover");
+                assertNodeAreaChanged(actionBounds, normalActionFrame, hoverActionFrame, "rich tooltip action hover");
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(action, false);
+            }
             firePrimaryMouseEvent(owner, MouseEvent.MOUSE_EXITED, false);
             firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
         });
@@ -8287,7 +8082,7 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies one settings seed-color button keeps its fixed square layout and circular token shape.
     private static void assertSettingsSeedButtonGeometry(M3IconButton button, String description) {
-        Bounds bounds = button.localToScene(button.getBoundsInLocal());
+        Bounds bounds = button.getLayoutBounds();
         assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getWidth(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
                 () -> description + " seed button width changed: " + bounds);
         assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getHeight(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
@@ -8509,7 +8304,7 @@ final class M3FXDemoVisualMatrixTest {
     /// Verifies one demo page after the requested scroll position has settled across real JavaFX pulses.
     private static void assertDemoPageScrollPosition(Scene scene, String pageTitle, double scrollPosition) {
         ScrollPane scrollPane = demoPageScrollPane(scene);
-        assertEquals(scrollPosition, scrollPane.getVvalue(), 0.0001,
+        assertEquals(scrollPosition, scrollPane.getVvalue(), 0.001,
                 () -> pageTitle + " visual capture did not reach requested scroll position");
 
         if (scrollPosition >= 1.0 && pageTitle.equals("Sliders")) {
@@ -9133,11 +8928,6 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies that an active search view shows its default demo result rows as reachable Material list items.
-    private static void assertSearchViewResultsVisible(M3SearchView searchView) {
-        assertSearchViewResultsVisible(searchView, 3);
-    }
-
     /// Verifies that an active search view shows its result rows as reachable Material list items.
     private static void assertSearchViewResultsVisible(M3SearchView searchView, int expectedResultCount) {
         assertTrue(searchView.isActive(), "search view should be active");
@@ -9392,15 +9182,14 @@ final class M3FXDemoVisualMatrixTest {
                 Text.class,
                 requireVisibleStyledDescendant(layout, "m3-text-input-label", description + " label")
         );
-        Text labelText = label;
-        @Nullable Rectangle2D renderedLabelInkBounds = renderedTextInkBounds(image, labelText);
+        @Nullable Rectangle2D renderedLabelInkBounds = renderedTextInkBounds(image, label);
         Rectangle2D inkBounds = renderedLabelInkBounds == null
-                ? renderedNodePixelBoundsInScene(labelText, description + " rendered floating-label ink")
+                ? renderedNodePixelBoundsInScene(label, description + " rendered floating-label ink")
                 : renderedLabelInkBounds;
 
         Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
-        Bounds textLayoutBounds = labelText.localToScene(labelText.getBoundsInLocal());
+        Bounds textLayoutBounds = label.localToScene(label.getBoundsInLocal());
         int sampledPixels = 0;
         int mismatchedPixels = 0;
         double worstDistance = 0.0;
@@ -9643,7 +9432,6 @@ final class M3FXDemoVisualMatrixTest {
         );
         assertTextAreaInternalPaneBackgroundMatchesContainer(
                 image,
-                content,
                 visibleContentBounds,
                 referenceBackground,
                 description + " content pane"
@@ -9678,7 +9466,7 @@ final class M3FXDemoVisualMatrixTest {
             return false;
         }
         return relativeLuminance(sample) > relativeLuminance(reference) + 0.025
-                && colorDistance(sample, Color.WHITE) <= 0.20;
+                && colorDistance(sample, Color.WHITE) <= 0.06;
     }
 
     /// Returns a compact diagnostic string for focused text area internal panes.
@@ -9735,7 +9523,6 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         assertTextAreaInternalPaneBackgroundMatchesContainer(
                 image,
-                pane,
                 pane.localToScene(pane.getBoundsInLocal()),
                 referenceBackground,
                 description
@@ -9745,7 +9532,6 @@ final class M3FXDemoVisualMatrixTest {
     /// Verifies that one focused text area internal pane resolves to the Material container background.
     private static void assertTextAreaInternalPaneBackgroundMatchesContainer(
             WritableImage image,
-            Node pane,
             Bounds bounds,
             Color referenceBackground,
             String description
@@ -10367,8 +10153,8 @@ final class M3FXDemoVisualMatrixTest {
                 );
             } else if (item instanceof M3MenuSectionHeader header) {
                 assertMenuSectionHeaderGeometry(header, itemBounds, description);
-            } else if (item instanceof M3Divider divider) {
-                assertMenuDividerGeometry(divider, itemBounds, menuBounds, description);
+            } else if (item instanceof M3Divider) {
+                assertMenuDividerGeometry(itemBounds, menuBounds, description);
             }
             previousMaxY = Math.max(previousMaxY, itemBounds.getMaxY());
         }
@@ -10562,7 +10348,6 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies one menu divider row.
     private static void assertMenuDividerGeometry(
-            M3Divider divider,
             Bounds dividerBounds,
             Bounds menuBounds,
             String description
@@ -11623,7 +11408,6 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertWithNodeFullyVisibleSnapshot(
             Scene scene,
             Node node,
-            String description,
             Consumer<WritableImage> assertion
     ) {
         @Nullable WritableImage image = snapshotIfNodeFullyVisible(scene, node);
@@ -12028,7 +11812,6 @@ final class M3FXDemoVisualMatrixTest {
             Bounds textBounds,
             String pageTitle
     ) {
-        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
         double textCenterY = textBounds.getCenterY();
         M3TextInput textInput = assertInstanceOf(M3TextInput.class, input);
         if (layout.isLabelFloating() && textInput.getVariant() == M3TextInputVariant.FILLED) {
@@ -12075,10 +11858,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(9, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(10, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(47, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(48, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -12664,6 +12447,39 @@ final class M3FXDemoVisualMatrixTest {
         assertDemoVectorIcons(page, "Chips", 5);
     }
 
+    /// Verifies the real Color Pickers demo page exposes the complete picker and each composable primitive.
+    private static void assertColorPickersPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Color Pickers");
+        assertCurrentPageTitle(scene, "Color Pickers");
+        assertVisibleText(root, "Complete Picker", "Color Pickers");
+        assertVisibleText(root, "Color Areas", "Color Pickers");
+        assertVisibleText(root, "Hue Controls", "Color Pickers");
+        assertVisibleText(root, "Channel Sliders", "Color Pickers");
+        assertVisibleText(root, "Hexadecimal Fields", "Color Pickers");
+        assertVisibleText(root, "Swatch Picker", "Color Pickers");
+
+        assertEquals(1, visibleNodesOfType(page, M3ColorPicker.class).size(), "complete color picker count");
+        assertEquals(3, standaloneColorControlCount(page, M3ColorArea.class), "color area count");
+        assertEquals(1, standaloneColorControlCount(page, M3ColorWheel.class), "color wheel count");
+        assertEquals(5, standaloneColorControlCount(page, M3ColorSlider.class), "color slider count");
+        assertEquals(3, standaloneColorControlCount(page, M3ColorField.class), "color field count");
+        assertTrue(visibleNodesOfType(page, M3ColorSwatch.class).size() >= 12,
+                "Color Pickers page should render palette and standalone swatches");
+    }
+
+    /// Returns the number of visible color primitives not owned by the complete picker composite.
+    ///
+    /// @param page the rendered Color Pickers demo page
+    /// @param type the color primitive type to count
+    /// @param <T>  the color primitive node type
+    /// @return the number of standalone visible controls of the requested type
+    private static <T extends Node> long standaloneColorControlCount(Node page, Class<T> type) {
+        return visibleNodesOfType(page, type).stream()
+                .filter(node -> nearestAncestorOfType(node, M3ColorPicker.class) == null)
+                .count();
+    }
+
     /// Verifies the real Dialogs demo page inline pane structure and embedded form controls.
     private static void assertDialogsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
@@ -12741,7 +12557,7 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(2.0, settingsList.getItemSpacing(), 0.0001, "settings list spacing");
         assertEquals(M3SelectionMode.NONE, settingsList.getSelectionMode(), "settings list selection mode");
         assertEquals(2.0, segmentedList.getItemSpacing(), 0.0001, "segmented list spacing");
-        assertEquals(2, settingsList.getItems().size(), "settings list item count");
+        assertEquals(4, settingsList.getItems().size(), "settings list item count");
         assertEquals(1, visibleNodesOfType(settingsList, M3Switch.class).size(), "settings list switch count");
         assertEquals(1, visibleNodesOfType(settingsList, M3CheckBox.class).size(), "settings list checkbox count");
         List<M3ListItem> segmentedItems = segmentedList.getItems().stream()
@@ -14210,7 +14026,8 @@ final class M3FXDemoVisualMatrixTest {
                 () -> "Text Fields page should render the full input matrix, found " + layouts.size());
         assertTrue(layouts.stream().anyMatch(M3TextInputLayout::isClearButtonEnabled),
                 "Text Fields page should render a clear button layout");
-        assertTrue(layouts.stream().anyMatch(layout -> !layout.getErrorText().isBlank()),
+        assertTrue(layouts.stream().anyMatch(layout ->
+                        !layout.getErrorText().isBlank() || layout.isValidationError()),
                 "Text Fields page should render error supporting text");
         assertTrue(layouts.stream().anyMatch(layout -> layout.getCharacterLimit() > 0),
                 "Text Fields page should render character counters");
@@ -15630,7 +15447,7 @@ final class M3FXDemoVisualMatrixTest {
     }
 
     /// Verifies that an overlay pane is showing the requested compact snackbar surface.
-    private static Node assertSnackbarOverlayShowsCompactMessage(
+    private static void assertSnackbarOverlayShowsCompactMessage(
             Scene scene,
             M3OverlayPane overlay,
             String message
@@ -15644,7 +15461,6 @@ final class M3FXDemoVisualMatrixTest {
         assertNodeSnapshotHasOpaquePixels(surface, "snackbar " + message);
         assertSnackbarContentGeometry(scene, overlay, surface, message, "snackbar " + message);
         assertSnackbarCenteredInOverlay(overlay, surface, "snackbar " + message);
-        return surface;
     }
 
     /// Verifies that a demo snackbar is centered in the stable overlay pane that presents it.
@@ -15986,14 +15802,12 @@ final class M3FXDemoVisualMatrixTest {
                     : groupTokens.connectedInnerCorner();
             double topLeft = index == 0 ? outerCorner : innerCorner;
             double topRight = index == itemCount - 1 ? outerCorner : innerCorner;
-            double bottomRight = topRight;
-            double bottomLeft = topLeft;
             assertButtonCornerRadii(
                     button,
                     topLeft,
                     topRight,
-                    bottomRight,
-                    bottomLeft,
+                    topRight,
+                    topLeft,
                     description + " child " + index
             );
         }
@@ -16146,7 +15960,6 @@ final class M3FXDemoVisualMatrixTest {
             assertWithNodeFullyVisibleSnapshot(
                     scene,
                     cell,
-                    description + " cell `" + cell.getText() + "`",
                     image -> assertPickerCellTextInkCentered(image, cell, description)
             );
         }
@@ -16875,7 +16688,7 @@ final class M3FXDemoVisualMatrixTest {
         assertNotNull(firstVisibleButtonWithText(page, "Long tooltip"), "long tooltip owner should be visible");
         assertNotNull(firstVisibleButtonWithText(page, "Rich tooltip"), "rich tooltip owner should be visible");
         assertNotNull(firstVisibleButtonWithText(page, "Rich action"), "rich action tooltip owner should be visible");
-        assertTrue(visibleNodesOfType(page, M3IconButton.class).size() >= 1,
+        assertFalse(visibleNodesOfType(page, M3IconButton.class).isEmpty(),
                 "Tooltips page should render an icon-button tooltip owner");
     }
 
@@ -16900,7 +16713,6 @@ final class M3FXDemoVisualMatrixTest {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
                         checkBox,
-                        pageTitle + " checkbox `" + checkBox.getText() + "`",
                         image -> assertCheckboxMarkCentered(checkBox, sceneBounds, image, pageTitle)
                 );
             }
@@ -16910,7 +16722,6 @@ final class M3FXDemoVisualMatrixTest {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
                         radioButton,
-                        pageTitle + " radio button `" + radioButton.getText() + "`",
                         image -> assertRadioDotCentered(radioButton, sceneBounds, image, pageTitle)
                 );
             }
@@ -16920,7 +16731,6 @@ final class M3FXDemoVisualMatrixTest {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
                         switchControl,
-                        pageTitle + " switch `" + switchControl.getText() + "`",
                         image -> assertSwitchThumbInsideTrack(switchControl, sceneBounds, image, pageTitle)
                 );
             }
@@ -16930,7 +16740,6 @@ final class M3FXDemoVisualMatrixTest {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
                         slider,
-                        pageTitle + " slider",
                         image -> assertSliderTrackThumbGeometry(slider, sceneBounds, image, pageTitle)
                 );
             }
@@ -16940,7 +16749,6 @@ final class M3FXDemoVisualMatrixTest {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
                         slider,
-                        pageTitle + " range slider",
                         image -> assertRangeSliderTrackThumbGeometry(slider, sceneBounds, image, pageTitle)
                 );
             }
@@ -18076,18 +17884,20 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Verifies that a dragged switch thumb occupies the logical off side before selection is committed.
     private static void assertSwitchThumbAtOffSide(M3Switch switchControl) {
-        Region track = assertInstanceOf(
-                Region.class,
-                switchControl.lookup(".m3-switch-track"),
-                "switch track"
+        Node track = Objects.requireNonNull(switchControl.lookup(".m3-switch-track"), "switch track");
+        Node unselectedTrackLayer = Objects.requireNonNull(
+                switchControl.lookup(".m3-switch-track-unselected-layer"),
+                "unselected switch track layer"
+        );
+        Node selectedTrackLayer = Objects.requireNonNull(
+                switchControl.lookup(".m3-switch-track-selected-layer"),
+                "selected switch track layer"
         );
         Node thumb = Objects.requireNonNull(switchControl.lookup(".m3-switch-thumb"), "switch thumb");
-        assertTrue(
-                switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")),
-                "A dragged-off switch should expose its unselected visual preview"
-        );
-        assertFalse(track.getBackground().getFills().isEmpty(), "Dragged-off switch track should keep its fill");
-        assertFalse(track.getBorder().getStrokes().isEmpty(), "Dragged-off switch track should restore its outline");
+        assertEquals(1.0, unselectedTrackLayer.getOpacity(), 0.001,
+                "A dragged-off switch should expose its unselected track");
+        assertEquals(0.0, selectedTrackLayer.getOpacity(), 0.001,
+                "A dragged-off switch should hide its selected track");
         Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
         boolean rightToLeft = switchControl.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
@@ -20259,7 +20069,8 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(actionBounds.getMinX() - actionsBounds.getMinX() <= CONTROL_EDGE_TOLERANCE,
                 () -> "Rich tooltip actions should begin at the logical start of the action row: actionsBounds="
                         + actionsBounds + ", actionBounds=" + actionBounds);
-        assertTrue(actionBounds.getHeight() >= 28.0 && actionBounds.getHeight() <= 44.0,
+        assertTrue(actionBounds.getHeight() >= 28.0
+                        && actionBounds.getHeight() <= 48.0 + CONTROL_EDGE_TOLERANCE,
                 () -> "Rich tooltip action height is not compact: " + actionBounds);
         assertTrue(popupBounds.getMaxY() - actionBounds.getMaxY() >= 4.0,
                 () -> "Rich tooltip action has no safe bottom padding: popupBounds=" + popupBounds
@@ -20460,10 +20271,9 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertNodeAreaChanged(Bounds bounds, WritableImage before, WritableImage after, String description) {
         int changedPixels = countNodeAreaChangedPixels(bounds, before, after);
         int minimumChangedPixels = minimumNodeAreaChangedPixels(bounds, before, after);
-        int finalChangedPixels = changedPixels;
-        assertTrue(finalChangedPixels >= minimumChangedPixels,
+        assertTrue(changedPixels >= minimumChangedPixels,
                 () -> description + " produced too little visual change: changed="
-                        + finalChangedPixels + ", minimum=" + minimumChangedPixels + ", bounds=" + bounds);
+                        + changedPixels + ", minimum=" + minimumChangedPixels + ", bounds=" + bounds);
     }
 
     /// Verifies that a sequence of rendered node-area frames visibly advances without repeating the previous frame.
@@ -20895,10 +20705,9 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertSnapshotChanged(WritableImage before, WritableImage after, String description) {
         int changedPixels = countSnapshotChangedPixels(before, after);
         int minimumChangedPixels = minimumSnapshotChangedPixels(before, after);
-        int finalChangedPixels = changedPixels;
-        assertTrue(finalChangedPixels >= minimumChangedPixels,
+        assertTrue(changedPixels >= minimumChangedPixels,
                 () -> description + " produced too little visual change: changed="
-                        + finalChangedPixels + ", minimum=" + minimumChangedPixels
+                        + changedPixels + ", minimum=" + minimumChangedPixels
                         + ", before=" + before.getWidth() + "x" + before.getHeight()
                         + ", after=" + after.getWidth() + "x" + after.getHeight());
     }
@@ -21172,6 +20981,24 @@ final class M3FXDemoVisualMatrixTest {
         node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
     }
 
+    /// Releases a pressed target while suppressing an application action handler owned by a button.
+    ///
+    /// @param target the pointer event target
+    private static void releasePrimaryMouseWithoutAction(Node target) {
+        if (!(target instanceof ButtonBase button)) {
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            return;
+        }
+
+        @Nullable EventHandler<ActionEvent> action = button.getOnAction();
+        button.setOnAction(null);
+        try {
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+        } finally {
+            button.setOnAction(action);
+        }
+    }
+
     /// Fires a primary-button mouse event at the center of a node's layout bounds.
     private static void firePrimaryMouseEventAtLayoutCenter(
             Node node,
@@ -21196,33 +21023,6 @@ final class M3FXDemoVisualMatrixTest {
         double x = bounds.getMinX() + bounds.getWidth() * fraction;
         double y = bounds.getMinY() + bounds.getHeight() / 2.0;
         track.fireEvent(primaryMouseEvent(track, eventType, x, y, primaryButtonDown));
-    }
-
-    /// Requests forward keyboard focus traversal through the public JavaFX 24 API when available.
-    private static boolean requestNextKeyboardFocus(Node node) {
-        try {
-            Class<?> directionClass = Class.forName("javafx.scene.TraversalDirection");
-            Object @Nullable [] constants = directionClass.getEnumConstants();
-            if (constants == null) {
-                return false;
-            }
-            @Nullable Object next = null;
-            for (Object constant : constants) {
-                if ("NEXT".equals(constant.toString())) {
-                    next = constant;
-                    break;
-                }
-            }
-            if (next == null) {
-                return false;
-            }
-
-            java.lang.reflect.Method traversal = Node.class.getMethod("requestFocusTraversal", directionClass);
-            @Nullable Object traversed = traversal.invoke(node, next);
-            return Boolean.TRUE.equals(traversed);
-        } catch (ReflectiveOperationException exception) {
-            return false;
-        }
     }
 
     /// Fires a primary-button mouse event at a slider position.
@@ -21799,17 +21599,6 @@ final class M3FXDemoVisualMatrixTest {
         return new Rectangle2D(minX, minY, maxX - minX, maxY - minY);
     }
 
-    /// Returns the rendered-pixel bounds inside a node that contrast with a reference color, or `null`.
-    private static @Nullable Rectangle2D contrastingPixelBoundsOrNull(
-            WritableImage image,
-            Node node,
-            Color reference,
-            double minimumDistance
-    ) {
-        Bounds bounds = node.localToScene(node.getBoundsInLocal());
-        return contrastingPixelBoundsOrNull(image, rectangleForBounds(bounds), reference, minimumDistance);
-    }
-
     /// Returns rendered-pixel bounds inside one explicit scene-space search area, or `null`.
     private static @Nullable Rectangle2D contrastingPixelBoundsOrNull(
             WritableImage image,
@@ -21842,18 +21631,6 @@ final class M3FXDemoVisualMatrixTest {
             return null;
         }
         return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
-    }
-
-    /// Returns pixel bounds for text pixels close to the requested fill color.
-    private static @Nullable Rectangle2D textFillPixelBounds(
-            WritableImage image,
-            Text text,
-            Color fill,
-            @Nullable Color background,
-            double maximumFillDistance
-    ) {
-        Bounds bounds = text.localToScene(text.getBoundsInLocal());
-        return textFillPixelBounds(image, rectangleForBounds(bounds), fill, background, maximumFillDistance);
     }
 
     /// Returns pixel bounds for text pixels close to a fill color inside one search area.

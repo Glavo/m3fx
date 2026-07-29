@@ -19,7 +19,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3Switch;
-import org.glavo.m3fx.controls.M3SwitchSettingItem;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
@@ -32,22 +31,17 @@ import java.util.List;
 /// Instance management secondary route with animated sections.
 @NotNullByDefault
 final class HMCLInstanceDetailView extends BorderPane {
-    private static final int @org.jetbrains.annotations.Unmodifiable [] MEMORY_OPTIONS =
-            {2048, 4096, 6144, 8192, 12288};
-    private static final String @org.jetbrains.annotations.Unmodifiable [] RESOLUTION_OPTIONS =
-            {"854x480", "1280x720", "1600x900", "1920x1080", "2560x1440"};
-
     private final HMCLDemoController controller;
     private final HMCLDemoStrings strings;
     private final HMCLDemoState state;
 
-    private final M3ListItem settingsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.SETTINGS, null);
-    private final M3ListItem installersItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
-    private final M3ListItem modsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.EXTENSION, null);
-    private final M3ListItem resourcePacksItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-    private final M3ListItem worldsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.WORLD, null);
-    private final M3ListItem shadersItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-    private final M3ListItem schematicsItem = HMCLDemoUi.navItem("", HMCLDemoIcons.FOLDER, null);
+    private final M3ListItem settingsItem = HMCLDemoUi.navItem(HMCLDemoIcons.SETTINGS);
+    private final M3ListItem installersItem = HMCLDemoUi.navItem(HMCLDemoIcons.DOWNLOAD);
+    private final M3ListItem modsItem = HMCLDemoUi.navItem(HMCLDemoIcons.EXTENSION);
+    private final M3ListItem resourcePacksItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
+    private final M3ListItem worldsItem = HMCLDemoUi.navItem(HMCLDemoIcons.WORLD);
+    private final M3ListItem shadersItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
+    private final M3ListItem schematicsItem = HMCLDemoUi.navItem(HMCLDemoIcons.FOLDER);
 
     private final M3Button updateButton = new M3Button();
     private final M3Button testButton = new M3Button();
@@ -397,32 +391,6 @@ final class HMCLInstanceDetailView extends BorderPane {
             }
         });
         return HMCLDemoUi.scroll(HMCLDemoUi.pageColumn(add, list));
-    }
-
-    private void cycleMemory(HMCLDemoInstance instance) {
-        int next = MEMORY_OPTIONS[0];
-        for (int index = 0; index < MEMORY_OPTIONS.length; index++) {
-            if (MEMORY_OPTIONS[index] == instance.maxMemoryMb()) {
-                next = MEMORY_OPTIONS[(index + 1) % MEMORY_OPTIONS.length];
-                break;
-            }
-        }
-        state.updateSelectedInstanceSettings(
-                instance.isolated(), next, instance.resolution(), instance.fullscreen(), instance.javaId());
-        renderSection(false);
-    }
-
-    private void cycleResolution(HMCLDemoInstance instance) {
-        String next = RESOLUTION_OPTIONS[0];
-        for (int index = 0; index < RESOLUTION_OPTIONS.length; index++) {
-            if (RESOLUTION_OPTIONS[index].equals(instance.resolution())) {
-                next = RESOLUTION_OPTIONS[(index + 1) % RESOLUTION_OPTIONS.length];
-                break;
-            }
-        }
-        state.updateSelectedInstanceSettings(
-                instance.isolated(), instance.maxMemoryMb(), next, instance.fullscreen(), instance.javaId());
-        renderSection(false);
     }
 
     private void showRenameDialog(HMCLDemoInstance instance) {

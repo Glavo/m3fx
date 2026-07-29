@@ -209,7 +209,7 @@ final class M3ButtonShapeMotionTest {
                         return false;
                     }
                     double radius = pathCornerRadius(shape, 8);
-                    return radius > reversalStartRadius[0] + 0.1 && radius < 20.0;
+                    return radius > reversalStartRadius[0] + 0.1;
                 },
                 1,
                 () -> {

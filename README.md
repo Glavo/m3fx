@@ -501,15 +501,16 @@ Override the source archive for mirrors or local verification with `-Pm3fx.hmcl.
 archive bytes differ, `-Pm3fx.hmcl.sourceSha256=<sha256>`. Run `./gradlew :hmcl-md3-demo:verifyHmclAssets` to
 verify the extracted asset set.
 
-Build the exhaustive Demo or Catalog application as a shadow jar without bundling JavaFX:
+Build any sample application as a shadow jar without bundling JavaFX:
 
 ```shell
 ./gradlew shadowDemoJar
+./gradlew shadowHmclMd3DemoJar
 ./gradlew shadowCatalogJar
 ```
 
 The [M3FX Nightly Release](https://github.com/Glavo/m3fx/releases/tag/nightly) is rebuilt daily and can also be
-triggered manually. It publishes the latest verified Demo Shadow JAR together with self-contained Windows x64,
+triggered manually. It publishes the latest verified Demo Shadow JAR together with platform-specific Windows x64,
 Linux x64, and macOS AArch64 Native Image distributions and a SHA-256 checksum manifest.
 
 Build a host-platform jlink runtime image:
@@ -551,7 +552,7 @@ Common local gates:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library, demo, catalog, and HMCL MD3 demo test tier. `releaseCheck` adds both shadow jar verifications and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library, demo, catalog, and HMCL MD3 demo test tier. `releaseCheck` adds all three shadow jar verifications and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
 
 See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands.
 
@@ -561,7 +562,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands
 - The module descriptor uses transitive JavaFX readability because public M3FX APIs expose JavaFX types.
 - The demo shadow jar packages demo classes, demo CSS, M3FX, MonetFX, and non-JavaFX dependencies. It excludes JavaFX artifacts and fonts.
 - The catalog shadow jar packages the focused AndroidX-style Catalog, its CSS, M3FX, MonetFX, and non-JavaFX dependencies while excluding JavaFX.
-- The HMCL MD3 demo packages selected generated HMCL artwork and skin assets together with their upstream GPL-3.0 license.
+- The HMCL MD3 demo shadow jar packages its generated artwork and skin assets, the upstream GPL-3.0 license, M3FX, MonetFX, and non-JavaFX dependencies while excluding JavaFX.
 - Jlink tasks download BellSoft LibericaJDK Full archives and use target `jmods` to create runtime images.
 
 ## License

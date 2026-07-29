@@ -397,8 +397,8 @@ abstract class DemoPageSupport {
     }
 
     /// Creates a fixed viewport for an error-colored icon slot.
-    protected static StackPane createErrorIcon(String iconName) {
-        return createIconViewport(DemoIcons.error(iconName));
+    protected static StackPane createWarningIcon() {
+        return createIconViewport(DemoIcons.error("warning"));
     }
 
     /// Wraps a demo SVG icon in a stable 24 dp viewport.

@@ -1894,27 +1894,6 @@ final class ProjectContractTest {
         }
     }
 
-    /// Collects exported public and protected field signatures.
-    private static void collectExportedFieldSignatures(Class<?> owner, Set<String> fields) {
-        for (Field field : owner.getDeclaredFields()) {
-            if (isPublicOrProtected(field) && !field.isSynthetic() && !field.isEnumConstant()) {
-                fields.add(publicFieldSignature(field));
-            }
-        }
-
-        for (Class<?> nestedClass : owner.getDeclaredClasses()) {
-            int modifiers = nestedClass.getModifiers();
-            if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
-                collectExportedFieldSignatures(nestedClass, fields);
-            }
-        }
-    }
-
-    /// Returns a stable public field signature string.
-    private static String publicFieldSignature(Field field) {
-        return field.getDeclaringClass().getName() + '#' + field.getName() + ':' + typeName(field.getType());
-    }
-
     /// Collects exported field declarations that are not immutable constants.
     private static void collectExportedFieldMutabilityViolations(Class<?> owner, List<String> violations) {
         for (Field field : owner.getDeclaredFields()) {

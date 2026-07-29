@@ -13,7 +13,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -179,7 +178,7 @@ final class M3SelectionNavigationTest {
             HBox owner = new HBox(first, second, third);
             AtomicReference<@Nullable M3Button> selected = new AtomicReference<>(second);
 
-            KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true, false, false);
+            KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true);
             assertFalse(M3SelectionNavigation.handleKeySelection(
                     event,
                     owner.getChildren(),
@@ -204,7 +203,7 @@ final class M3SelectionNavigationTest {
             VBox owner = new VBox(first, second);
             AtomicReference<@Nullable NavigationRow> selected = new AtomicReference<>(first);
 
-            KeyEvent event = modifiedKeyEvent(KeyCode.PAGE_DOWN, true, false, false, false);
+            KeyEvent event = modifiedKeyEvent(KeyCode.PAGE_DOWN, true, false);
             assertFalse(M3SelectionNavigation.handlePageKeySelection(
                     event,
                     owner,
@@ -509,7 +508,7 @@ final class M3SelectionNavigationTest {
             layout(listPane);
             assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
 
-            KeyEvent event = modifiedTypedKeyEvent("s", false, true, false, false);
+            KeyEvent event = modifiedTypedKeyEvent("s", false, true);
             listPane.fireEvent(event);
 
             assertTrue(archive.isFocused());
@@ -528,7 +527,7 @@ final class M3SelectionNavigationTest {
             layout(listPane);
             assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
 
-            KeyEvent event = modifiedTypedKeyEvent("S", true, false, false, false);
+            KeyEvent event = modifiedTypedKeyEvent("S", true, false);
             listPane.fireEvent(event);
 
             assertTrue(settings.isFocused());
@@ -580,7 +579,7 @@ final class M3SelectionNavigationTest {
             assertTrue(M3Accessible.requestAccessibleFocus(menu, archive));
             menu.select(archive);
 
-            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true, false, false);
+            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true);
             menu.fireEvent(event);
 
             assertSame(archive, menu.getSelectedItem());
@@ -599,7 +598,7 @@ final class M3SelectionNavigationTest {
             listView.selectIndex(0);
             layout(listView);
 
-            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true, false, false);
+            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true);
             listView.fireEvent(event);
 
             assertEquals(0, listView.getSelectedIndex());
@@ -821,7 +820,7 @@ final class M3SelectionNavigationTest {
     }
 
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(ScrollPane scrollPane, double width, double height) {
+    private static void show(ScrollPane scrollPane, double width, double height) {
         Stage stage = new Stage();
         Scene scene = new Scene(scrollPane, width, height);
         stage.setScene(scene);
@@ -831,7 +830,6 @@ final class M3SelectionNavigationTest {
         scrollPane.requestFocus();
         scrollPane.applyCss();
         scrollPane.layout();
-        return scene;
     }
 
     /// Verifies that the target node is inside the current horizontal scroll pane viewport.
@@ -1068,9 +1066,9 @@ final class M3SelectionNavigationTest {
     }
 
     /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(Parent root, double width, double height) {
+    private static void show(Parent root) {
         Stage stage = new Stage();
-        Scene scene = new Scene(root, width, height);
+        Scene scene = new Scene(root, 360.0, 240.0);
         stage.setScene(scene);
         stage.show();
         stage.requestFocus();
@@ -1078,12 +1076,11 @@ final class M3SelectionNavigationTest {
         root.requestFocus();
         root.applyCss();
         root.layout();
-        return scene;
     }
 
     /// Creates a scene and lays out the supplied root for focus tests.
     private static void layout(Parent root) {
-        show(root, 360.0, 240.0);
+        show(root);
     }
 
     /// Creates a typed key event for type-ahead navigation behavior checks.
@@ -1104,9 +1101,7 @@ final class M3SelectionNavigationTest {
     private static KeyEvent modifiedTypedKeyEvent(
             String character,
             boolean shiftDown,
-            boolean controlDown,
-            boolean altDown,
-            boolean metaDown
+            boolean controlDown
     ) {
         return new KeyEvent(
                 KeyEvent.KEY_TYPED,
@@ -1115,8 +1110,8 @@ final class M3SelectionNavigationTest {
                 KeyCode.UNDEFINED,
                 shiftDown,
                 controlDown,
-                altDown,
-                metaDown
+                false,
+                false
         );
     }
 
@@ -1138,9 +1133,7 @@ final class M3SelectionNavigationTest {
     private static KeyEvent modifiedKeyEvent(
             KeyCode code,
             boolean shiftDown,
-            boolean controlDown,
-            boolean altDown,
-            boolean metaDown
+            boolean controlDown
     ) {
         return new KeyEvent(
                 KeyEvent.KEY_PRESSED,
@@ -1149,8 +1142,8 @@ final class M3SelectionNavigationTest {
                 code,
                 shiftDown,
                 controlDown,
-                altDown,
-                metaDown
+                false,
+                false
         );
     }
 }

@@ -14,7 +14,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.controls.M3ButtonVariant;
-import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;

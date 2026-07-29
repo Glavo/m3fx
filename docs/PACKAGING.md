@@ -56,6 +56,24 @@ The output is:
 catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar
 ```
 
+## HMCL MD3 Demo Shadow Jar
+
+The HMCL Material Design 3 demo has an independent shadow jar. It packages the application, generated HMCL artwork
+and skin assets, the upstream GPL-3.0 license, M3FX, MonetFX, and non-JavaFX runtime dependencies. JavaFX remains
+supplied by the application environment.
+
+Build it with:
+
+```shell
+./gradlew shadowHmclMd3DemoJar
+```
+
+The output is:
+
+```text
+hmcl-md3-demo/build/libs/hmcl-md3-demo-1.0-SNAPSHOT-shadow.jar
+```
+
 ## Demo Jlink Runtime
 
 The jlink tasks create runtime images for the demo application. They download a target BellSoft LibericaJDK Full archive, extract its `jmods`, and build a runtime image containing JavaFX and the demo modules. Windows and macOS targets use BellSoft zip archives; Linux targets use BellSoft `tar.gz` archives.
@@ -185,12 +203,13 @@ Use these tasks before distributing artifacts:
 ./gradlew compileJava
 ./gradlew test
 ./gradlew shadowDemoJar
+./gradlew shadowHmclMd3DemoJar
 ./gradlew shadowCatalogJar
 ./gradlew jlinkDemoRuntime
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`releaseCheck` runs `check`, `fullTest`, both sample-application shadow-jar verifications, and
+`releaseCheck` runs `check`, `fullTest`, all three sample-application shadow-jar verifications, and
 `jlinkDemoRuntime`. It is the local release gate for library publication and the host-platform demo distribution.
 
 ## Nightly Demo Release

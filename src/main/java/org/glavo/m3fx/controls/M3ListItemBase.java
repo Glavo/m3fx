@@ -15,7 +15,9 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.PaintConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -26,6 +28,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -97,6 +101,9 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
     /// The default spacing between list item content regions.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
+
+    /// The fallback text paint used before CSS resolves component colors.
+    private static final Paint DEFAULT_TEXT_COLOR = Color.BLACK;
 
     /// Creates an empty list item.
     protected M3ListItemBase() {
@@ -483,6 +490,191 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// The styleable paint used for the headline in its ordinary state.
+    ///
+    /// CSS exposes this property as `-m3-list-item-headline-color`.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> headlineColor;
+
+    /// Returns the effective headline paint.
+    ///
+    /// @return the non-null headline paint
+    public final Paint getHeadlineColor() {
+        return headlineColor == null
+                ? DEFAULT_TEXT_COLOR
+                : Objects.requireNonNullElse(headlineColor.get(), DEFAULT_TEXT_COLOR);
+    }
+
+    /// Sets the headline paint.
+    ///
+    /// @param color the non-null headline paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setHeadlineColor(Paint color) {
+        headlineColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the observable, bindable, styleable headline-paint property.
+    ///
+    /// A bound `null` value renders with the black fallback. CSS cannot set the property while it is bound.
+    ///
+    /// @return the headline-paint property
+    public final StyleableObjectProperty<@Nullable Paint> headlineColorProperty() {
+        if (headlineColor == null) {
+            headlineColor = createStyleablePaintProperty(
+                    "headlineColor",
+                    StyleableProperties.HEADLINE_COLOR
+            );
+        }
+        return headlineColor;
+    }
+
+    /// The styleable paint used for overline and supporting text in their ordinary state.
+    ///
+    /// CSS exposes this property as `-m3-list-item-supporting-color`.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> supportingColor;
+
+    /// Returns the effective supporting-text paint.
+    ///
+    /// @return the non-null supporting-text paint
+    public final Paint getSupportingColor() {
+        return supportingColor == null
+                ? DEFAULT_TEXT_COLOR
+                : Objects.requireNonNullElse(supportingColor.get(), DEFAULT_TEXT_COLOR);
+    }
+
+    /// Sets the overline and supporting-text paint.
+    ///
+    /// @param color the non-null supporting-text paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setSupportingColor(Paint color) {
+        supportingColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the observable, bindable, styleable supporting-text paint property.
+    ///
+    /// A bound `null` value renders with the black fallback. CSS cannot set the property while it is bound.
+    ///
+    /// @return the supporting-text paint property
+    public final StyleableObjectProperty<@Nullable Paint> supportingColorProperty() {
+        if (supportingColor == null) {
+            supportingColor = createStyleablePaintProperty(
+                    "supportingColor",
+                    StyleableProperties.SUPPORTING_COLOR
+            );
+        }
+        return supportingColor;
+    }
+
+    /// The styleable headline paint used after selected-state feedback settles.
+    ///
+    /// CSS exposes this property as `-m3-list-item-selected-headline-color`.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> selectedHeadlineColor;
+
+    /// Returns the effective selected headline paint.
+    ///
+    /// @return the non-null selected headline paint
+    public final Paint getSelectedHeadlineColor() {
+        return selectedHeadlineColor == null
+                ? DEFAULT_TEXT_COLOR
+                : Objects.requireNonNullElse(selectedHeadlineColor.get(), DEFAULT_TEXT_COLOR);
+    }
+
+    /// Sets the selected headline paint.
+    ///
+    /// @param color the non-null selected headline paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setSelectedHeadlineColor(Paint color) {
+        selectedHeadlineColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the observable, bindable, styleable selected-headline paint property.
+    ///
+    /// A bound `null` value renders with the black fallback. CSS cannot set the property while it is bound.
+    ///
+    /// @return the selected-headline paint property
+    public final StyleableObjectProperty<@Nullable Paint> selectedHeadlineColorProperty() {
+        if (selectedHeadlineColor == null) {
+            selectedHeadlineColor = createStyleablePaintProperty(
+                    "selectedHeadlineColor",
+                    StyleableProperties.SELECTED_HEADLINE_COLOR
+            );
+        }
+        return selectedHeadlineColor;
+    }
+
+    /// The styleable supporting-text paint used after selected-state feedback settles.
+    ///
+    /// CSS exposes this property as `-m3-list-item-selected-supporting-color`.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> selectedSupportingColor;
+
+    /// Returns the effective selected supporting-text paint.
+    ///
+    /// @return the non-null selected supporting-text paint
+    public final Paint getSelectedSupportingColor() {
+        return selectedSupportingColor == null
+                ? DEFAULT_TEXT_COLOR
+                : Objects.requireNonNullElse(selectedSupportingColor.get(), DEFAULT_TEXT_COLOR);
+    }
+
+    /// Sets the selected overline and supporting-text paint.
+    ///
+    /// @param color the non-null selected supporting-text paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setSelectedSupportingColor(Paint color) {
+        selectedSupportingColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the observable, bindable, styleable selected supporting-text paint property.
+    ///
+    /// A bound `null` value renders with the black fallback. CSS cannot set the property while it is bound.
+    ///
+    /// @return the selected supporting-text paint property
+    public final StyleableObjectProperty<@Nullable Paint> selectedSupportingColorProperty() {
+        if (selectedSupportingColor == null) {
+            selectedSupportingColor = createStyleablePaintProperty(
+                    "selectedSupportingColor",
+                    StyleableProperties.SELECTED_SUPPORTING_COLOR
+            );
+        }
+        return selectedSupportingColor;
+    }
+
+    /// The styleable paint used for all text while this row is disabled.
+    ///
+    /// CSS exposes this property as `-m3-list-item-disabled-content-color`.
+    private @Nullable StyleableObjectProperty<@Nullable Paint> disabledContentColor;
+
+    /// Returns the effective disabled text paint.
+    ///
+    /// @return the non-null disabled text paint
+    public final Paint getDisabledContentColor() {
+        return disabledContentColor == null
+                ? DEFAULT_TEXT_COLOR
+                : Objects.requireNonNullElse(disabledContentColor.get(), DEFAULT_TEXT_COLOR);
+    }
+
+    /// Sets the disabled text paint.
+    ///
+    /// @param color the non-null disabled text paint
+    /// @throws NullPointerException if `color` is `null`
+    public final void setDisabledContentColor(Paint color) {
+        disabledContentColorProperty().set(Objects.requireNonNull(color, "color"));
+    }
+
+    /// Returns the observable, bindable, styleable disabled text-paint property.
+    ///
+    /// A bound `null` value renders with the black fallback. CSS cannot set the property while it is bound.
+    ///
+    /// @return the disabled text-paint property
+    public final StyleableObjectProperty<@Nullable Paint> disabledContentColorProperty() {
+        if (disabledContentColor == null) {
+            disabledContentColor = createStyleablePaintProperty(
+                    "disabledContentColor",
+                    StyleableProperties.DISABLED_CONTENT_COLOR
+            );
+        }
+        return disabledContentColor;
     }
 
     /// The line count derived from populated overline and supporting-text slots.
@@ -1059,6 +1251,20 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         builder.append(text);
     }
 
+    /// Creates a styleable text-paint property with a black fallback.
+    private StyleableObjectProperty<@Nullable Paint> createStyleablePaintProperty(
+            String name,
+            CssMetaData<M3ListItemBase, @Nullable Paint> cssMetaData
+    ) {
+        return M3Css.styleableObjectProperty(
+                DEFAULT_TEXT_COLOR,
+                this,
+                name,
+                cssMetaData,
+                this::requestLayout
+        );
+    }
+
     /// Creates a non-negative styleable double property.
     private StyleableDoubleProperty createStyleableDoubleProperty(
             double initialValue,
@@ -1077,6 +1283,41 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// CSS metadata for M3FX list item component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the ordinary headline paint.
+        private static final CssMetaData<M3ListItemBase, @Nullable Paint> HEADLINE_COLOR =
+                createPaintCssMetaData(
+                        "-m3-list-item-headline-color",
+                        M3ListItemBase::headlineColorProperty
+                );
+
+        /// CSS metadata for the ordinary supporting-text paint.
+        private static final CssMetaData<M3ListItemBase, @Nullable Paint> SUPPORTING_COLOR =
+                createPaintCssMetaData(
+                        "-m3-list-item-supporting-color",
+                        M3ListItemBase::supportingColorProperty
+                );
+
+        /// CSS metadata for the selected headline paint.
+        private static final CssMetaData<M3ListItemBase, @Nullable Paint> SELECTED_HEADLINE_COLOR =
+                createPaintCssMetaData(
+                        "-m3-list-item-selected-headline-color",
+                        M3ListItemBase::selectedHeadlineColorProperty
+                );
+
+        /// CSS metadata for the selected supporting-text paint.
+        private static final CssMetaData<M3ListItemBase, @Nullable Paint> SELECTED_SUPPORTING_COLOR =
+                createPaintCssMetaData(
+                        "-m3-list-item-selected-supporting-color",
+                        M3ListItemBase::selectedSupportingColorProperty
+                );
+
+        /// CSS metadata for the disabled text paint.
+        private static final CssMetaData<M3ListItemBase, @Nullable Paint> DISABLED_CONTENT_COLOR =
+                createPaintCssMetaData(
+                        "-m3-list-item-disabled-content-color",
+                        M3ListItemBase::disabledContentColorProperty
+                );
+
         /// CSS metadata for the one-line height token.
         private static final CssMetaData<M3ListItemBase, Number> ONE_LINE_HEIGHT =
                 createSizeCssMetaData("-m3-one-line-height", DEFAULT_ONE_LINE_HEIGHT, M3ListItemBase::oneLineHeightProperty);
@@ -1110,6 +1351,11 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(HEADLINE_COLOR);
+            styleables.add(SUPPORTING_COLOR);
+            styleables.add(SELECTED_HEADLINE_COLOR);
+            styleables.add(SELECTED_SUPPORTING_COLOR);
+            styleables.add(DISABLED_CONTENT_COLOR);
             styleables.add(ONE_LINE_HEIGHT);
             styleables.add(TWO_LINE_HEIGHT);
             styleables.add(THREE_LINE_HEIGHT);
@@ -1118,6 +1364,26 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
             styleables.add(VERTICAL_PADDING);
             styleables.add(CONTENT_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Creates CSS metadata for a text-paint token.
+        private static CssMetaData<M3ListItemBase, @Nullable Paint> createPaintCssMetaData(
+                String property,
+                StyleablePaintPropertyProvider provider
+        ) {
+            return new CssMetaData<>(property, PaintConverter.getInstance(), DEFAULT_TEXT_COLOR) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3ListItemBase control) {
+                    return M3Css.isSettable(provider.property(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<@Nullable Paint> getStyleableProperty(M3ListItemBase control) {
+                    return provider.property(control);
+                }
+            };
         }
 
         /// Creates CSS metadata for a size token.
@@ -1140,6 +1406,14 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
                 }
             };
         }
+    }
+
+    /// Provides a styleable text-paint property for a list item.
+    @FunctionalInterface
+    @NotNullByDefault
+    private interface StyleablePaintPropertyProvider {
+        /// Returns the styleable paint property for a list item.
+        StyleableObjectProperty<@Nullable Paint> property(M3ListItemBase control);
     }
 
     /// Provides a styleable double property for a list item.

@@ -295,7 +295,7 @@ final class M3TimePickerTest {
                 label.requestFocus();
                 assertTrue(label.isFocused());
                 assertSame(label, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertEquals(14, picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(5, picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
 
                 picker.executeAccessibleAction(
                         AccessibleAction.SET_SELECTED_ITEMS,

@@ -9,7 +9,6 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -57,6 +56,7 @@ final class M3ListViewFocusTraversalTest {
         FxTestUtils.runOnFxThread(() -> {
             for (Window window : List.copyOf(Window.getWindows())) {
                 if (window instanceof Stage stage) {
+                    stage.setScene(null);
                     stage.close();
                 }
             }
@@ -67,8 +67,8 @@ final class M3ListViewFocusTraversalTest {
     @Test
     void tabTraversalEntersFocusedRowAndExitsCompositeInBothDirections() {
         FxTestUtils.runOnFxThread(() -> {
-            Button before = new Button("Before");
-            Button after = new Button("After");
+            M3Button before = new M3Button("Before");
+            M3Button after = new M3Button("After");
             M3ListView<String> listView = listView("First", "Second", "Third");
             listView.setListStyle(M3ListStyle.SEGMENTED);
             listView.setSelectionMode(M3SelectionMode.SINGLE);
@@ -103,13 +103,14 @@ final class M3ListViewFocusTraversalTest {
     /// Verifies a non-focusable page viewport does not hide a virtualized list from scene traversal.
     @Test
     void tabTraversalEntersListInsidePageViewport() {
-        FxTestUtils.runOnFxThread(() -> {
-            Button before = new Button("Before");
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            M3Button before = new M3Button("Before");
             M3ListView<String> listView = listView("First", "Second", "Third");
             listView.setListStyle(M3ListStyle.SEGMENTED);
-            Button after = new Button("After");
+            M3Button after = new M3Button("After");
             VBox page = new VBox(before, listView, after);
             ScrollPane viewport = new ScrollPane(page);
+            M3ScrollPanes.style(viewport);
             viewport.setFocusTraversable(false);
             viewport.setFitToWidth(true);
             StackPane root = new StackPane(viewport);
@@ -124,7 +125,7 @@ final class M3ListViewFocusTraversalTest {
 
             listView.fireEvent(tabKeyEvent(false));
             assertTrue(after.isFocused());
-        });
+        }));
     }
 
     /// Verifies focus entry skips unreachable rows and keeps vertical list order independent of node orientation.
@@ -143,7 +144,7 @@ final class M3ListViewFocusTraversalTest {
                 M3ListItem secondReachable = new M3ListItem("Second reachable");
                 M3ListView<M3ListItem> listView = listView(hidden, disabled, firstReachable, secondReachable);
                 listView.setNodeOrientation(orientation);
-                Button outside = new Button("Outside");
+                M3Button outside = new M3Button("Outside");
 
                 VBox root = new VBox(listView, outside);
                 show(root);
@@ -232,8 +233,8 @@ final class M3ListViewFocusTraversalTest {
 
     /// Shows a focus test scene and performs its initial CSS and layout pass.
     private static void show(Parent root) {
-        M3ThemeManager.install(root, M3Theme.defaultTheme());
         Scene scene = new Scene(root, 320.0, 260.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
         Stage stage = new Stage();
         stage.setScene(scene);
         stage.show();

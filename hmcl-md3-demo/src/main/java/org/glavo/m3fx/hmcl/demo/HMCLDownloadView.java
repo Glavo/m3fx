@@ -4,11 +4,8 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3AnimatedContent;
@@ -17,8 +14,6 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3FilterChip;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3SearchBar;
-import org.glavo.m3fx.controls.M3Text;
-import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Download center primary destination.
@@ -28,12 +23,12 @@ final class HMCLDownloadView extends BorderPane {
     private final HMCLDemoStrings strings;
     private final HMCLDemoState state;
 
-    private final M3ListItem gameItem = HMCLDemoUi.navItem("", HMCLDemoIcons.HOME, null);
-    private final M3ListItem modpackItem = HMCLDemoUi.navItem("", HMCLDemoIcons.DOWNLOAD, null);
-    private final M3ListItem modItem = HMCLDemoUi.navItem("", HMCLDemoIcons.EXTENSION, null);
-    private final M3ListItem resourcePackItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-    private final M3ListItem shaderItem = HMCLDemoUi.navItem("", HMCLDemoIcons.IMAGE, null);
-    private final M3ListItem worldItem = HMCLDemoUi.navItem("", HMCLDemoIcons.WORLD, null);
+    private final M3ListItem gameItem = HMCLDemoUi.navItem(HMCLDemoIcons.HOME);
+    private final M3ListItem modpackItem = HMCLDemoUi.navItem(HMCLDemoIcons.DOWNLOAD);
+    private final M3ListItem modItem = HMCLDemoUi.navItem(HMCLDemoIcons.EXTENSION);
+    private final M3ListItem resourcePackItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
+    private final M3ListItem shaderItem = HMCLDemoUi.navItem(HMCLDemoIcons.IMAGE);
+    private final M3ListItem worldItem = HMCLDemoUi.navItem(HMCLDemoIcons.WORLD);
 
     private final M3AnimatedContent centerHost = new M3AnimatedContent();
     private HMCLDemoRoute.DownloadCategory category = HMCLDemoRoute.DownloadCategory.GAME;
@@ -173,11 +168,10 @@ final class HMCLDownloadView extends BorderPane {
 
         HMCLDemoCatalogItem.Kind kind = switch (category) {
             case MODPACK -> HMCLDemoCatalogItem.Kind.MODPACK;
-            case MOD -> HMCLDemoCatalogItem.Kind.MOD;
+            case MOD, GAME -> HMCLDemoCatalogItem.Kind.MOD;
             case RESOURCE_PACK -> HMCLDemoCatalogItem.Kind.RESOURCE_PACK;
             case SHADER -> HMCLDemoCatalogItem.Kind.SHADER;
             case WORLD -> HMCLDemoCatalogItem.Kind.WORLD;
-            case GAME -> HMCLDemoCatalogItem.Kind.MOD;
         };
 
         VBox list = new VBox(4.0);

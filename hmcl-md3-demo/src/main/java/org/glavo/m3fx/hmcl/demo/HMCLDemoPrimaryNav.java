@@ -3,7 +3,12 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationRail;
@@ -20,6 +25,12 @@ import org.jetbrains.annotations.Nullable;
 /// synchronized between the two surfaces.
 @NotNullByDefault
 final class HMCLDemoPrimaryNav {
+    /// Smallest rail item height that retains a touch-sized destination and its label.
+    private static final double MIN_RAIL_ITEM_HEIGHT = 52.0;
+
+    /// Preferred rail item height used when the window provides sufficient vertical space.
+    private static final double MAX_RAIL_ITEM_HEIGHT = 64.0;
+
     /// Stable destination ids used for selection mapping.
     enum Destination {
         /// Launcher home.
@@ -47,6 +58,14 @@ final class HMCLDemoPrimaryNav {
     /// Leading rail used at medium and wider breakpoints.
     private final M3NavigationRail navigationRail = new M3NavigationRail();
 
+    /// Height shared by rail destinations and constrained by the rail's current content area.
+    private final DoubleBinding railItemHeight = Bindings.createDoubleBinding(
+            this::computeRailItemHeight,
+            navigationRail.heightProperty(),
+            navigationRail.insetsProperty(),
+            navigationRail.itemSpacingProperty()
+    );
+
     /// Localization for destination labels.
     private final HMCLDemoStrings strings;
 
@@ -55,6 +74,12 @@ final class HMCLDemoPrimaryNav {
 
     /// When true, selection listeners must not re-enter navigation.
     private boolean synchronizingSelection;
+
+    /// The destination that must be selected on whichever adaptive navigation surface is reachable.
+    private Destination selectedDestination = Destination.HOME;
+
+    /// The most recently applied scaffold breakpoint.
+    private M3Breakpoint currentBreakpoint = M3Breakpoint.COMPACT;
 
     /// Bar destination items in display order.
     private final M3NavigationItem barHome = item(Destination.HOME);
@@ -83,6 +108,8 @@ final class HMCLDemoPrimaryNav {
         navigationRail.getStyleClass().add("hmcl-primary-nav-rail");
         navigationRail.setNarrow(false);
         navigationRail.setItemsCentered(true);
+        navigationRail.setMinHeight(0.0);
+        navigationRail.setMaxHeight(Double.MAX_VALUE);
 
         navigationBar.getItems().setAll(
                 barHome, barAccounts, barInstances, barDownload, barSettings, barMultiplayer
@@ -90,6 +117,9 @@ final class HMCLDemoPrimaryNav {
         navigationRail.getItems().setAll(
                 railHome, railAccounts, railInstances, railDownload, railSettings, railMultiplayer
         );
+        for (M3NavigationItem item : navigationRail.getItems()) {
+            item.containerHeightProperty().bind(railItemHeight);
+        }
 
         wireActivation(barHome, Destination.HOME);
         wireActivation(barAccounts, Destination.ACCOUNTS);
@@ -147,6 +177,7 @@ final class HMCLDemoPrimaryNav {
     ///
     /// @param breakpoint the scaffold's effective breakpoint
     void applyBreakpoint(M3Breakpoint breakpoint) {
+        currentBreakpoint = breakpoint;
         boolean expandLabels = breakpoint == M3Breakpoint.EXPANDED
                 || breakpoint == M3Breakpoint.LARGE
                 || breakpoint == M3Breakpoint.EXTRA_LARGE;
@@ -155,17 +186,64 @@ final class HMCLDemoPrimaryNav {
         navigationBar.setItemLayout(
                 org.glavo.m3fx.controls.M3NavigationItemLayout.VERTICAL
         );
+        select(selectedDestination);
+        Platform.runLater(() -> {
+            if (currentBreakpoint == breakpoint) {
+                select(selectedDestination);
+            }
+        });
     }
 
     /// Selects one destination on both surfaces without re-entering navigation.
     private void select(Destination destination) {
+        selectedDestination = destination;
         synchronizingSelection = true;
         try {
-            navigationBar.select(barItem(destination));
-            navigationRail.select(railItem(destination));
+            if (isEffectivelyReachable(navigationBar)) {
+                navigationBar.select(barItem(destination));
+            }
+            if (isEffectivelyReachable(navigationRail)) {
+                navigationRail.select(railItem(destination));
+            }
         } finally {
             synchronizingSelection = false;
         }
+    }
+
+    /// Returns whether a navigation surface and all of its ancestors are visible and enabled.
+    private static boolean isEffectivelyReachable(Node node) {
+        if (node.getScene() == null) {
+            return false;
+        }
+        Node current = node;
+        while (true) {
+            if (!current.isVisible() || current.isDisabled()) {
+                return false;
+            }
+            @Nullable Parent parent = current.getParent();
+            if (parent == null) {
+                return true;
+            }
+            current = parent;
+        }
+    }
+
+    /// Returns a shared item height that keeps all destinations within the available rail height.
+    private double computeRailItemHeight() {
+        int itemCount = navigationRail.getItems().size();
+        if (itemCount == 0) {
+            return MAX_RAIL_ITEM_HEIGHT;
+        }
+
+        Insets insets = navigationRail.getInsets();
+        double spacing = navigationRail.getItemSpacing() * Math.max(0, itemCount - 1);
+        double availableItemHeight = (
+                navigationRail.getHeight() - insets.getTop() - insets.getBottom() - spacing
+        ) / itemCount;
+        return Math.max(
+                MIN_RAIL_ITEM_HEIGHT,
+                Math.min(MAX_RAIL_ITEM_HEIGHT, availableItemHeight)
+        );
     }
 
     /// Maps a route onto a primary destination.

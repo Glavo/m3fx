@@ -1058,17 +1058,17 @@ final class M3FormControlsTest {
                                 row.lookup(".m3-state-layer-container"),
                                 "validation summary item state layer"
                         );
-                        Node ripple = Objects.requireNonNull(
-                                row.lookup(".m3-ripple"),
-                                "validation summary item ripple"
-                        );
-                        assertNotNull(stateLayer.lookup(".m3-focus-indicator"));
+                        assertNull(stateLayer.lookup(".m3-ripple"));
+                        assertNull(stateLayer.lookup(".m3-focus-indicator"));
 
                         stageReference.set(stage);
                         fieldReference.set(field);
                         rowReference.set(row);
-                        rippleReference.set(ripple);
                         firePrimaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, true);
+                        rippleReference.set(Objects.requireNonNull(
+                                stateLayer.lookup(".m3-ripple"),
+                                "validation summary item ripple"
+                        ));
                     },
                     () -> {
                         Node row = Objects.requireNonNull(rowReference.get(), "validation summary item");

@@ -808,7 +808,7 @@ public final class M3SplitButton extends Control {
             return false;
         }
 
-        if (parameters.length > 0 && getMenu().canShowAccessibleItem(parameters)) {
+        if (getMenu().canShowAccessibleItem(parameters)) {
             ensureButtonPartsInitialized();
             if (menuButton.showAccessibleMenuItem(parameters)) {
                 notifyFocusNodeChanged();

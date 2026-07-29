@@ -437,54 +437,6 @@ public final class M3Accessible {
         return index < items.size() ? items.get(index) : null;
     }
 
-    /// Returns whether parameters contain a value accepted by the target matcher.
-    ///
-    /// Nested iterable values and object arrays are searched recursively.
-    ///
-    /// @param targetMatcher the predicate that recognizes a target value
-    /// @param parameters    the parameter values to search
-    /// @return `true` when the matcher accepts any direct or nested value
-    /// @throws NullPointerException if `targetMatcher` or `parameters` is `null`
-    public static boolean parametersContainDirectTarget(
-            Predicate<@Nullable Object> targetMatcher,
-            Object... parameters
-    ) {
-        Objects.requireNonNull(targetMatcher, "targetMatcher");
-        Objects.requireNonNull(parameters, "parameters");
-        for (Object parameter : parameters) {
-            if (parameterContainsDirectTarget(targetMatcher, parameter)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// Returns whether one parameter contains a direct atomic value accepted by the target matcher.
-    private static boolean parameterContainsDirectTarget(
-            Predicate<@Nullable Object> targetMatcher,
-            @Nullable Object parameter
-    ) {
-        if (targetMatcher.test(parameter)) {
-            return true;
-        }
-        if (parameter instanceof Iterable<?> values) {
-            for (Object value : values) {
-                if (parameterContainsDirectTarget(targetMatcher, value)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        if (parameter instanceof Object[] values) {
-            for (Object value : values) {
-                if (parameterContainsDirectTarget(targetMatcher, value)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     /// Returns whether parameters directly express exactly one target accepted by the matcher and nothing else.
     ///
     /// A single chain of one-element iterable values or object arrays is accepted; empty or multi-value containers
