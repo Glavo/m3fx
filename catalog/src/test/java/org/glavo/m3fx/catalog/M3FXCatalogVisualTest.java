@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
@@ -290,6 +291,11 @@ final class M3FXCatalogVisualTest {
             assertEquals(firstCell.getLayoutBounds().getWidth() - 8.0, firstCard.getWidth(), 0.5);
             assertEquals(172.0, firstCard.getHeight(), 0.5);
             assertEquals(firstCard.getWidth(), cardSurface.getLayoutBounds().getWidth(), 0.5);
+            firstCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            scene.getRoot().applyCss();
+            assertNull(cardSurface.getEffect(), "Catalog component cards must not add delayed hover elevation");
+            firstCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+            scene.getRoot().applyCss();
             M3SVGIcon firstIcon = assertInstanceOf(
                     M3SVGIcon.class,
                     Objects.requireNonNull(firstCard.lookup(".catalog-component-card-icon"), "component icon")
@@ -647,6 +653,22 @@ final class M3FXCatalogVisualTest {
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-cell").size());
             assertEquals(3, scene.getRoot().lookupAll(".catalog-component-reference-action").size());
             assertNotNull(scene.lookup(".catalog-component-reference"));
+            M3Card firstExampleCard = assertInstanceOf(
+                    M3Card.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-card"), "first example card")
+            );
+            Node firstExampleCardSurface = Objects.requireNonNull(
+                    firstExampleCard.lookup(".m3-card-container"),
+                    "first example card surface"
+            );
+            firstExampleCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            scene.getRoot().applyCss();
+            assertNull(
+                    firstExampleCardSurface.getEffect(),
+                    "Catalog example cards must not add delayed hover elevation"
+            );
+            firstExampleCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+            scene.getRoot().applyCss();
             TilePane exampleGrid = assertInstanceOf(
                     TilePane.class,
                     Objects.requireNonNull(scene.lookup(".catalog-example-grid"), "example grid")

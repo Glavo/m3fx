@@ -137,6 +137,11 @@
     -fx-text-alignment: left;
 }
 
+.catalog-component-card:actionable:hover .m3-card-container,
+.catalog-example-card:actionable:hover .m3-card-container {
+    -fx-effect: null;
+}
+
 .catalog-component-card-favorite-marker {
     -fx-background-color: -m3-color-primary-container;
     -fx-background-radius: 999px;
