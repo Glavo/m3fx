@@ -514,7 +514,12 @@ public final class M3FXCatalogApp extends Application {
             );
         } else {
             CatalogRoute.Example exampleRoute = (CatalogRoute.Example) currentRoute;
-            content = CatalogViews.createExample(exampleRoute.component(), exampleRoute.example());
+            content = CatalogViews.createExample(
+                    exampleRoute.component(),
+                    exampleRoute.example(),
+                    this::navigateBack,
+                    this::openDocument
+            );
         }
         sidebar.refresh(currentRoute, expressiveOnly);
         routeHost.setContentTransform(contentTransform);

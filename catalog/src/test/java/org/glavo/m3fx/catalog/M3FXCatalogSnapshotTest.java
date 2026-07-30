@@ -14,6 +14,7 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.testing.Tier2Test;
@@ -190,6 +191,8 @@ final class M3FXCatalogSnapshotTest {
                     );
                     favoritesFilter.fire();
                     writeSnapshot(scene, "home-favorites.png");
+                    M3OverlayPane root = assertInstanceOf(M3OverlayPane.class, scene.getRoot());
+                    root.dismissAllSnackbars();
                 });
 
                 FxTestUtils.runOnFxThreadWhenStable(

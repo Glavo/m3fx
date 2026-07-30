@@ -254,7 +254,68 @@
 }
 
 .catalog-example-page {
-    -fx-padding: 32px;
+    -fx-padding: 24px 16px 48px 16px;
+    -fx-spacing: 16px;
+}
+
+.catalog-example-detail-header {
+    -fx-padding: 24px;
+    -fx-spacing: 12px;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+}
+
+.catalog-example-component-label,
+.catalog-example-profile {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.catalog-example-detail-title,
+.catalog-example-specimen-title {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.catalog-example-detail-description {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-example-profile {
+    -fx-padding: 6px 12px;
+    -fx-background-radius: 999px;
+    -fx-max-width: 96px;
+}
+
+.catalog-example-profile-baseline {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.catalog-example-profile-expressive {
+    -fx-background-color: -m3-color-tertiary-container;
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.catalog-example-detail-actions {
+    -fx-padding: 4px 0 0 0;
+    -fx-alignment: center-left;
+}
+
+.catalog-example-specimen-title {
+    -fx-padding: 8px 0 0 0;
+}
+
+.catalog-sample-surface {
+    -fx-min-height: 360px;
+    -fx-padding: 16px;
+    -fx-alignment: center;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-radius: 28px;
+    -fx-border-width: 1px;
+}
+
+.catalog-sample-content {
     -fx-alignment: center;
 }
 

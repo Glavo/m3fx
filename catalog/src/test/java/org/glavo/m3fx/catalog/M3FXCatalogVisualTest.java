@@ -20,6 +20,7 @@ import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3DateRangePicker;
@@ -40,6 +41,7 @@ import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -446,6 +448,7 @@ final class M3FXCatalogVisualTest {
             assertTrue(favoriteAction.isSelected());
             favoriteAction.fire();
             assertFalse(favoriteAction.isSelected());
+            assertInstanceOf(M3OverlayPane.class, root).dismissAllSnackbars();
             app.navigateHome();
             layout(scene);
         });
@@ -562,17 +565,49 @@ final class M3FXCatalogVisualTest {
             layout(scene);
             assertInstanceOf(CatalogRoute.Example.class, app.currentRoute());
             assertNotNull(scene.lookup(".catalog-example-page"));
-            assertNull(scene.lookup(".catalog-sample-surface"));
+            assertNotNull(scene.lookup(".catalog-example-detail-header"));
+            assertNotNull(scene.lookup(".catalog-sample-surface"));
+            Parent sampleContent = assertInstanceOf(
+                    Parent.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-sample-content"), "live sample content")
+            );
+            assertEquals(1, sampleContent.getChildrenUnmodifiable().size());
+            M3Text profile = assertInstanceOf(
+                    M3Text.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-profile"), "example profile")
+            );
+            assertEquals("Baseline", profile.getText());
+            assertNotNull(scene.lookup(".catalog-example-source-action"));
             M3ListItem selectedOwner = Objects.requireNonNull(
                     sidebar.drawer().getSelectedItem(),
                     "selected sidebar component owner"
             );
             assertEquals("Chips", selectedOwner.getHeadlineText());
 
-            app.navigateBack();
+            M3Button backAction = assertInstanceOf(
+                    M3Button.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-back-action"), "example back action")
+            );
+            backAction.fire();
             assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
             app.navigateBack();
             assertInstanceOf(CatalogRoute.Home.class, app.currentRoute());
+
+            CatalogComponent sliders = componentNamed(app.components(), "Sliders");
+            CatalogExample expressiveExample = sliders.examples().stream()
+                    .filter(CatalogExample::expressive)
+                    .findFirst()
+                    .orElseThrow();
+            app.navigate(new CatalogRoute.Example(sliders, expressiveExample));
+            layout(scene);
+            profile = assertInstanceOf(
+                    M3Text.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-profile"), "Expressive example profile")
+            );
+            assertEquals("Expressive", profile.getText());
+            assertTrue(profile.getStyleClass().contains("catalog-example-profile-expressive"));
+            app.navigateHome();
+            layout(scene);
         });
     }
 
@@ -1053,29 +1088,33 @@ final class M3FXCatalogVisualTest {
         });
     }
 
-    /// Opens the first example for a named component and returns its route page.
+    /// Opens the first example for a named component and returns its live-sample content.
     ///
     /// @param scene         the Catalog scene
     /// @param app           the running Catalog application
     /// @param componentName the component display name
-    /// @return the example route page
+    /// @return the live-sample content wrapper
     private static Parent openFirstExample(Scene scene, M3FXCatalogApp app, String componentName) {
         CatalogComponent component = componentNamed(app.components(), componentName);
         app.navigate(new CatalogRoute.Example(component, component.examples().get(0)));
         layout(scene);
-        return assertInstanceOf(
+        Parent page = assertInstanceOf(
                 Parent.class,
                 Objects.requireNonNull(scene.lookup(".catalog-example-page"), componentName + " example page")
         );
+        return assertInstanceOf(
+                Parent.class,
+                Objects.requireNonNull(page.lookup(".catalog-sample-content"), componentName + " sample content")
+        );
     }
 
-    /// Opens a named example for a named component and returns its route page.
+    /// Opens a named example for a named component and returns its live-sample content.
     ///
     /// @param scene the Catalog scene
     /// @param app the running Catalog application
     /// @param componentName the component display name
     /// @param exampleName the example display name
-    /// @return the example route page
+    /// @return the live-sample content wrapper
     private static Parent openExample(
             Scene scene,
             M3FXCatalogApp app,
@@ -1085,9 +1124,13 @@ final class M3FXCatalogVisualTest {
         CatalogComponent component = componentNamed(app.components(), componentName);
         app.navigate(new CatalogRoute.Example(component, exampleNamed(component, exampleName)));
         layout(scene);
-        return assertInstanceOf(
+        Parent page = assertInstanceOf(
                 Parent.class,
                 Objects.requireNonNull(scene.lookup(".catalog-example-page"), componentName + " example page")
+        );
+        return assertInstanceOf(
+                Parent.class,
+                Objects.requireNonNull(page.lookup(".catalog-sample-content"), componentName + " sample content")
         );
     }
 
@@ -1188,10 +1231,17 @@ final class M3FXCatalogVisualTest {
                                             component.name() + " example page"
                                     )
                             );
-                            Node sample = page.getChildrenUnmodifiable().get(0);
+                            String description = component.name() + " / " + example.name();
+                            Parent sampleContent = assertInstanceOf(
+                                    Parent.class,
+                                    Objects.requireNonNull(
+                                            page.lookup(".catalog-sample-content"),
+                                            description + " sample content"
+                                    )
+                            );
+                            Node sample = sampleContent.getChildrenUnmodifiable().get(0);
                             Bounds pageBounds = page.localToScene(page.getBoundsInLocal());
                             Bounds sampleBounds = sample.localToScene(sample.getBoundsInLocal());
-                            String description = component.name() + " / " + example.name();
 
                             assertEquals(
                                     scrollPane.getViewportBounds().getWidth(),
@@ -1370,7 +1420,14 @@ final class M3FXCatalogVisualTest {
                     app.navigate(new CatalogRoute.Example(component, example));
                     layout(scene);
                     Node page = Objects.requireNonNull(scene.lookup(".catalog-example-page"), component.name());
-                    assertFalse(((javafx.scene.Parent) page).getChildrenUnmodifiable().isEmpty());
+                    Parent sampleContent = assertInstanceOf(
+                            Parent.class,
+                            Objects.requireNonNull(
+                                    page.lookup(".catalog-sample-content"),
+                                    component.name() + " sample content"
+                            )
+                    );
+                    assertEquals(1, sampleContent.getChildrenUnmodifiable().size());
                 }
             }
         });

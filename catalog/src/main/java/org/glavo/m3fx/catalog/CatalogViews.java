@@ -525,27 +525,93 @@ final class CatalogViews {
         return button;
     }
 
-    /// Creates a scrollable example route that centers one real, interactive example in the available area.
+    /// Creates a contextual specimen page around one real, interactive example.
     ///
-    /// No card, sample surface, title, or explanatory wrapper is added around the example. The route fits compact
-    /// examples to the viewport width and preserves vertical scrolling for examples whose intrinsic height exceeds
-    /// the window.
+    /// The page identifies the owning component, describes the scenario, labels its Baseline or Expressive profile,
+    /// and provides direct back and source actions. The example factory is invoked once and the returned node is
+    /// placed unchanged inside a centered live-sample surface. The route fits compact examples to the viewport width
+    /// and preserves vertical scrolling for examples whose intrinsic height exceeds the window.
     ///
-    /// @param component the component that owns `example`
-    /// @param example   the example to instantiate
+    /// @param component    the component that owns `example`
+    /// @param example      the example to instantiate
+    /// @param navigateBack the action that returns to the preceding route
+    /// @param openExternal the consumer that opens an absolute external URL
     /// @return a new centered, scrollable example view
-    /// @throws NullPointerException     if `component` or `example` is `null`, or if the example factory returns `null`
+    /// @throws NullPointerException     if an argument is `null`, or if the example factory returns `null`
     /// @throws IllegalArgumentException if `example` does not belong to `component`
-    static Node createExample(CatalogComponent component, CatalogExample example) {
+    static Node createExample(
+            CatalogComponent component,
+            CatalogExample example,
+            Runnable navigateBack,
+            Consumer<String> openExternal
+    ) {
         CatalogComponent owner = Objects.requireNonNull(component, "component");
         CatalogExample target = Objects.requireNonNull(example, "example");
+        Runnable backAction = Objects.requireNonNull(navigateBack, "navigateBack");
+        Consumer<String> externalConsumer = Objects.requireNonNull(openExternal, "openExternal");
         if (!owner.examples().contains(target)) {
             throw new IllegalArgumentException("example does not belong to component");
         }
 
-        StackPane page = new StackPane(target.createContent());
+        M3Text componentLabel = new M3Text(owner.name() + " component", M3TextRole.LABEL_LARGE);
+        componentLabel.getStyleClass().add("catalog-example-component-label");
+
+        M3Text title = new M3Text(target.name(), M3TextRole.HEADLINE_MEDIUM);
+        title.getStyleClass().add("catalog-example-detail-title");
+        title.setWrapText(true);
+
+        M3Text description = new M3Text(target.description(), M3TextRole.BODY_MEDIUM);
+        description.getStyleClass().add("catalog-example-detail-description");
+        description.setWrapText(true);
+
+        M3Text profile = new M3Text(
+                target.expressive() ? "Expressive" : "Baseline",
+                M3TextRole.LABEL_MEDIUM
+        );
+        profile.getStyleClass().addAll(
+                "catalog-example-profile",
+                target.expressive()
+                        ? "catalog-example-profile-expressive"
+                        : "catalog-example-profile-baseline"
+        );
+
+        M3Button backButton = new M3Button(
+                "Back to " + owner.name(),
+                CatalogIcons.createDirectional(CatalogIcons.ARROW_BACK),
+                M3ButtonVariant.TEXT
+        );
+        backButton.getStyleClass().add("catalog-example-back-action");
+        backButton.setOnAction(event -> backAction.run());
+
+        M3Button sourceButton = new M3Button("View source", M3ButtonVariant.OUTLINED);
+        sourceButton.getStyleClass().add("catalog-example-source-action");
+        sourceButton.setOnAction(event -> externalConsumer.accept(target.sourceUrl()));
+
+        FlowPane actions = new FlowPane(8.0, 8.0, backButton, sourceButton);
+        actions.getStyleClass().add("catalog-example-detail-actions");
+
+        VBox header = new VBox(componentLabel, title, description, profile, actions);
+        header.getStyleClass().add("catalog-example-detail-header");
+        header.setFillWidth(true);
+
+        M3Text specimenHeading = new M3Text("Live specimen", M3TextRole.TITLE_LARGE);
+        specimenHeading.getStyleClass().add("catalog-example-specimen-title");
+
+        StackPane sampleContent = new StackPane(target.createContent());
+        sampleContent.getStyleClass().add("catalog-sample-content");
+        sampleContent.setAlignment(Pos.CENTER);
+        sampleContent.setMinWidth(0.0);
+        sampleContent.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        StackPane sampleSurface = new StackPane(sampleContent);
+        sampleSurface.getStyleClass().add("catalog-sample-surface");
+        sampleSurface.setAlignment(Pos.CENTER);
+        sampleSurface.setMinWidth(0.0);
+        sampleSurface.setMaxWidth(Double.MAX_VALUE);
+
+        VBox page = new VBox(header, specimenHeading, sampleSurface);
         page.getStyleClass().addAll("catalog-route-page", "catalog-example-page");
-        page.setAlignment(Pos.CENTER);
+        page.setFillWidth(true);
         page.setMinWidth(0.0);
 
         ScrollPane scrollPane = new ScrollPane(page);
