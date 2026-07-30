@@ -39,6 +39,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
@@ -389,6 +390,25 @@ public final class M3NavigationDrawer extends Control {
             return;
         }
         throw new IllegalArgumentException("child at index is not an M3ListItem");
+    }
+
+    /// Scrolls the drawer just enough to reveal a reachable list item.
+    ///
+    /// This method does not change selection or keyboard focus. If layout is not established yet, the reveal is
+    /// retried on a later JavaFX pulse.
+    ///
+    /// @param item the drawer list item to reveal
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not a reachable member of this drawer
+    public final void scrollTo(M3ListItem item) {
+        Objects.requireNonNull(item, "item");
+        if (!containsListItem(item)) {
+            throw new IllegalArgumentException("item must belong to this navigation drawer");
+        }
+        if (!isSelectableDrawerItem(item)) {
+            throw new IllegalArgumentException("item must be reachable");
+        }
+        M3ScrollReveal.revealTarget(this, item);
     }
 
     /// Selects the first drawer list item when one exists.
@@ -1067,6 +1087,7 @@ public final class M3NavigationDrawer extends Control {
             updatingSelection = false;
         }
         refreshSelectedItems();
+        requestLayout();
     }
 
     /// Selects the supplied drawer item and moves keyboard focus to it when it is reachable.

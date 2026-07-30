@@ -28,8 +28,8 @@ import java.util.Objects;
 /// This region does not modify the content node's own opacity, scale, translation, or transform list. By default,
 /// preferred and minimum size animate between the content's measured size and zero, and drawing is clipped to the
 /// current region bounds. The enter, exit, and size transforms are independently configurable.
-/// Set [#fitToWidthProperty()] when a width-constraining parent must reflow retained content instead of preserving
-/// its independent preferred width.
+/// Set [#fitToWidthProperty()] or [#fitToHeightProperty()] when a constraining parent must fit retained content to
+/// an assigned dimension instead of preserving its independent preferred size.
 /// Replacing [#getContent()] is immediate and is not treated as an animated content transformation; use
 /// [M3AnimatedContent] when old and new content should coexist during replacement.
 ///
@@ -299,6 +299,46 @@ public final class M3AnimatedVisibility extends Region {
     /// @return the fit-to-width property
     public BooleanProperty fitToWidthProperty() {
         return fitToWidth;
+    }
+
+    /// Whether a positive assigned height constrains content measurement.
+    ///
+    /// When `false`, the default, this region measures visible content at its independent preferred height. When
+    /// `true`, a positive assigned height constrains content measurement and allows ordinary resizable content to fit
+    /// a height-constraining parent.
+    private final BooleanProperty fitToHeight = new SimpleBooleanProperty(this, "fitToHeight", false) {
+        /// Synchronizes the retained-content engine after the outer measurement contract changes.
+        @Override
+        protected void invalidated() {
+            animatedContent.setFitToHeight(get());
+            requestLayout();
+        }
+    };
+
+    /// Returns whether content is fitted to this region's assigned height.
+    ///
+    /// @return `true` when a positive assigned height constrains retained content
+    public boolean isFitToHeight() {
+        return fitToHeight.get();
+    }
+
+    /// Sets whether content is fitted to this region's assigned height.
+    ///
+    /// Changing this value requests a target remeasurement. It does not alter the configured enter or exit effects
+    /// and may retarget an active size transition when the measured content height changes.
+    ///
+    /// @param fitToHeight whether the assigned height constrains retained content
+    public void setFitToHeight(boolean fitToHeight) {
+        this.fitToHeight.set(fitToHeight);
+    }
+
+    /// Returns the observable fit-to-height property.
+    ///
+    /// The default value is `false`.
+    ///
+    /// @return the fit-to-height property
+    public BooleanProperty fitToHeightProperty() {
+        return fitToHeight;
     }
 
     /// The animated size and clipping behavior, or `null` for synchronous un-clipped size changes.

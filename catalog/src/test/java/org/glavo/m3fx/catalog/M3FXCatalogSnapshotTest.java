@@ -3,15 +3,20 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
@@ -34,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -251,11 +257,14 @@ final class M3FXCatalogSnapshotTest {
                             }
                             @Nullable Node drawerNode = scene.lookup(".catalog-sidebar-drawer");
                             @Nullable Node scrim = scene.lookup(".catalog-sidebar-scrim");
+                            @Nullable Node visibilityNode = scene.lookup(".catalog-sidebar-visibility");
                             return drawerNode instanceof M3NavigationDrawer drawer
+                                    && visibilityNode instanceof M3AnimatedVisibility visibility
                                     && drawer.getVariant() == M3NavigationDrawerVariant.MODAL
                                     && Math.abs(drawer.getWidth() - 360.0) <= 0.5
                                     && scrim != null
-                                    && scrim.isVisible();
+                                    && scrim.isVisible()
+                                    && visibility.getState() == M3VisibilityState.VISIBLE;
                         },
                         2,
                         () -> {
@@ -272,10 +281,38 @@ final class M3FXCatalogSnapshotTest {
                             );
                             browseButton.fire();
                         },
-                        () -> writeSnapshot(
-                                Objects.requireNonNull(sceneReference.get(), "scene"),
-                                "compact-sidebar.png"
-                        )
+                        () -> {
+                            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                            CatalogSidebar sidebar = assertInstanceOf(
+                                    CatalogSidebar.class,
+                                    Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "compact sidebar")
+                            );
+                            M3ListItem selectedItem = Objects.requireNonNull(
+                                    sidebar.drawer().getSelectedItem(),
+                                    "selected compact sidebar destination"
+                            );
+                            assertEquals("Buttons", selectedItem.getHeadlineText());
+                            assertEquals(
+                                    0.0,
+                                    sidebar.drawer().localToScene(sidebar.drawer().getBoundsInLocal()).getMinX(),
+                                    1.5,
+                                    "compact drawer is not aligned to the logical start edge"
+                            );
+                            ScrollPane viewport = assertInstanceOf(
+                                    ScrollPane.class,
+                                    Objects.requireNonNull(
+                                            sidebar.lookup(".m3-navigation-drawer-viewport"),
+                                            "compact drawer viewport"
+                                    )
+                            );
+                            assertTrue(
+                                    viewport.localToScene(viewport.getBoundsInLocal()).intersects(
+                                            selectedItem.localToScene(selectedItem.getBoundsInLocal())
+                                    ),
+                                    "compact-sidebar.png does not reveal its selected destination"
+                            );
+                            writeSnapshot(scene, "compact-sidebar.png");
+                        }
                 );
             });
         } finally {
@@ -363,6 +400,7 @@ final class M3FXCatalogSnapshotTest {
         scene.snapshot(image);
         scene.snapshot(image);
         assertVisualRange(image, fileName);
+        assertStandardSidebarVisualRange(scene, image, fileName);
 
         try {
             Files.createDirectories(REPORT_DIRECTORY);
@@ -377,14 +415,67 @@ final class M3FXCatalogSnapshotTest {
     /// @param image       the captured image
     /// @param description the report description used by assertion output
     private static void assertVisualRange(WritableImage image, String description) {
+        Set<Integer> colors = sampledColors(
+                image,
+                0,
+                0,
+                (int) image.getWidth(),
+                (int) image.getHeight()
+        );
+        assertTrue(colors.size() >= 16, () -> description + " contains too little visual variation");
+    }
+
+    /// Verifies that a visible standard drawer renders its destinations instead of only its background.
+    ///
+    /// @param scene the scene containing the drawer
+    /// @param image the captured scene image
+    /// @param description the report description used by assertion output
+    private static void assertStandardSidebarVisualRange(
+            Scene scene,
+            WritableImage image,
+            String description
+    ) {
+        @Nullable Node drawerNode = scene.lookup(".catalog-sidebar-drawer");
+        if (!(drawerNode instanceof M3NavigationDrawer drawer)
+                || !drawer.isVisible()
+                || drawer.getVariant() != M3NavigationDrawerVariant.STANDARD) {
+            return;
+        }
+
+        Bounds bounds = drawer.localToScene(drawer.getBoundsInLocal());
+        int minX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int minY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int maxX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int maxY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        Set<Integer> colors = sampledColors(image, minX, minY, maxX, maxY);
+        assertTrue(colors.size() >= 16, () -> description + " contains a visually empty standard sidebar");
+    }
+
+    /// Returns colors sampled at a stable interval within one image region.
+    ///
+    /// @param image the image to sample
+    /// @param minX the inclusive minimum x-coordinate
+    /// @param minY the inclusive minimum y-coordinate
+    /// @param maxX the exclusive maximum x-coordinate
+    /// @param maxY the exclusive maximum y-coordinate
+    /// @return the distinct sampled ARGB values
+    private static Set<Integer> sampledColors(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY
+    ) {
         Set<Integer> colors = new HashSet<>();
-        int step = Math.max(2, Math.min((int) image.getWidth(), (int) image.getHeight()) / 160);
-        for (int y = step / 2; y < image.getHeight(); y += step) {
-            for (int x = step / 2; x < image.getWidth(); x += step) {
+        int width = Math.max(0, maxX - minX);
+        int height = Math.max(0, maxY - minY);
+        int step = Math.max(2, Math.min(width, height) / 160);
+        for (int y = minY + step / 2; y < maxY; y += step) {
+            for (int x = minX + step / 2; x < maxX; x += step) {
                 colors.add(image.getPixelReader().getArgb(x, y));
             }
         }
-        assertTrue(colors.size() >= 16, () -> description + " contains too little visual variation");
+        return colors;
     }
 
     /// Converts a JavaFX image to the standard image representation accepted by ImageIO.

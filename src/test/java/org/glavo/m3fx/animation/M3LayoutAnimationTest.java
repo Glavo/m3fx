@@ -674,6 +674,18 @@ final class M3LayoutAnimationTest {
             visibilityRoot.applyCss();
             visibilityRoot.layout();
             assertEquals(360.0, visibility.prefWidth(-1.0), 1.0e-6);
+
+            assertFalse(visibility.isFitToHeight());
+            visibleContent.setMaxHeight(Double.MAX_VALUE);
+            visibility.setFitToHeight(true);
+            assertEquals(0.0, visibility.minHeight(-1.0), 1.0e-6);
+            assertEquals(0.0, visibility.prefHeight(-1.0), 1.0e-6);
+            visibilityRoot.layout();
+            assertEquals(visibility.getHeight(), visibleContent.getHeight(), 1.0e-6);
+
+            visibility.setFitToHeight(false);
+            visibilityRoot.layout();
+            assertEquals(46.0, visibility.prefHeight(-1.0), 1.0e-6);
         });
     }
 

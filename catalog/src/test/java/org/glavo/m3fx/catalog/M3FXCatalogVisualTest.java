@@ -1480,6 +1480,13 @@ final class M3FXCatalogVisualTest {
                             "selected sidebar component"
                     );
                     assertEquals("Buttons", selectedComponent.getHeadlineText());
+                    ScrollPane viewport = drawerViewport(sidebar);
+                    assertTrue(
+                            viewport.localToScene(viewport.getBoundsInLocal()).intersects(
+                                    selectedComponent.localToScene(selectedComponent.getBoundsInLocal())
+                            ),
+                            "the modal drawer should reveal its selected destination when opened"
+                    );
                     M3ListItem cardsItem = listItemNamed(
                             sidebar,
                             ".catalog-sidebar-component",

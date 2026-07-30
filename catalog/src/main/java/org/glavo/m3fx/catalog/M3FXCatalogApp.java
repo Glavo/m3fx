@@ -4,6 +4,7 @@
 package org.glavo.m3fx.catalog;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
@@ -28,6 +29,7 @@ import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
@@ -164,6 +166,12 @@ public final class M3FXCatalogApp extends Application {
 
     /// The active compact sidebar presentation, or `null` while the layer is detached.
     private @Nullable M3OverlayPane.OverlayHandle sidebarOverlayHandle;
+
+    /// The reusable post-layout callback that reveals the selected compact destination.
+    private final Runnable sidebarRevealPulseListener = this::revealModalSidebarSelectionAfterLayout;
+
+    /// Whether the selected compact destination is awaiting a post-layout reveal.
+    private boolean sidebarRevealPending;
 
     /// The modal theme-settings scrim.
     private final M3Scrim settingsScrim = new M3Scrim();
@@ -323,6 +331,7 @@ public final class M3FXCatalogApp extends Application {
         sidebar.setMaxWidth(SIDEBAR_WIDTH);
         sidebarVisibility.getStyleClass().add("catalog-sidebar-visibility");
         sidebarVisibility.setAlignment(Pos.CENTER_LEFT);
+        sidebarVisibility.setFitToHeight(true);
         sidebarVisibility.setSizeTransform(null);
         sidebarVisibility.setEnterTransition(
                 M3EnterTransition.slideFrom(M3TransitionEdge.START, SIDEBAR_WIDTH)
@@ -608,6 +617,36 @@ public final class M3FXCatalogApp extends Application {
         }
         sidebarScrim.show();
         sidebarVisibility.setShowing(true);
+        scheduleModalSidebarSelectionReveal();
+    }
+
+    /// Schedules selection reveal after the overlay establishes its compact viewport.
+    private void scheduleModalSidebarSelectionReveal() {
+        @Nullable Scene activeScene = scene;
+        if (activeScene == null) {
+            return;
+        }
+        if (!sidebarRevealPending) {
+            sidebarRevealPending = true;
+            activeScene.addPostLayoutPulseListener(sidebarRevealPulseListener);
+        }
+        Platform.requestNextPulse();
+    }
+
+    /// Reveals the selected modal destination after the pending layout pulse.
+    private void revealModalSidebarSelectionAfterLayout() {
+        @Nullable Scene activeScene = scene;
+        if (activeScene != null) {
+            activeScene.removePostLayoutPulseListener(sidebarRevealPulseListener);
+        }
+        sidebarRevealPending = false;
+        if (!sidebarVisibility.isShowing() || sidebarVisibility.getContent() != sidebar) {
+            return;
+        }
+        @Nullable M3ListItem selectedItem = sidebar.drawer().getSelectedItem();
+        if (selectedItem != null) {
+            sidebar.drawer().scrollTo(selectedItem);
+        }
     }
 
     /// Starts the coordinated modal drawer and scrim exit transitions.

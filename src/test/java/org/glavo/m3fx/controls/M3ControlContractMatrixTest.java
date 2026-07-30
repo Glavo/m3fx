@@ -31871,7 +31871,13 @@ final class M3ControlContractMatrixTest {
                                 + ", viewport=" + viewport.getViewportBounds());
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
 
+                drawer.scrollTo(trash);
+                root.layout();
+                assertFalse(trash.isFocused());
+                assertTrue(viewport.getVvalue() > 0.5, () -> "vvalue=" + viewport.getVvalue());
+
                 M3MotionSettings.setReducedMotionRequested(viewport, true);
+                viewport.setVvalue(0.0);
                 ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
                 viewport.fireEvent(event);
                 root.layout();
