@@ -52,6 +52,11 @@
     -fx-max-height: 18px;
 }
 
+.m3-segmented-button-selection-indicator-backdrop {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
+}
+
 .m3-segmented-button-selection-indicator-mark {
     -fx-background-color: -m3-color-on-secondary-container;
     -fx-shape: "M9 16.2 4.8 12 3.4 13.4 9 19 21 7 19.6 5.6z";
@@ -132,6 +137,10 @@
 .m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-mark {
     -fx-background-color: -m3-color-on-surface;
     -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-backdrop {
+    -fx-background-color: -m3-state-disabled-container-color;
 }
 
 .m3-segmented-button:selected:disabled {

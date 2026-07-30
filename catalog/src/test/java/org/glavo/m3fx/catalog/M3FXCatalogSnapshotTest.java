@@ -168,6 +168,13 @@ final class M3FXCatalogSnapshotTest {
                     writeExampleSnapshot(
                             scene,
                             app,
+                            "Segmented buttons",
+                            "Icon and label",
+                            "segmented-icons.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
                             "Text fields",
                             "Outlined error field",
                             "text-field-error.png"

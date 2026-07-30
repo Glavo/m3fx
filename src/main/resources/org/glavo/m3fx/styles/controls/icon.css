@@ -18,6 +18,10 @@
     -fx-text-fill: -m3-button-icon-color;
 }
 
+.m3-icon:m3-segmented-button-graphic-replaced {
+    -fx-opacity: 0;
+}
+
 .m3-icon.m3-chip-leading-graphic {
     -fx-text-fill: -m3-chip-leading-icon-color;
 }

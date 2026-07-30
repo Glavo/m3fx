@@ -46,6 +46,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The built-in selected-state check indicator style class.
     private static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
 
+    /// The backing layer that visually covers an application graphic in the selected state.
+    private static final String SELECTION_INDICATOR_BACKDROP_STYLE_CLASS =
+            "m3-segmented-button-selection-indicator-backdrop";
+
     /// Marks an application graphic that is currently replaced by the built-in selected-state check.
     private static final PseudoClass GRAPHIC_REPLACED_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("m3-segmented-button-graphic-replaced");
@@ -124,11 +128,14 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         getChildren().add(0, selectionContainer);
 
         selectionIndicator.getStyleClass().add(SELECTION_INDICATOR_STYLE_CLASS);
+        Region selectionIndicatorBackdrop = new Region();
         Region selectionIndicatorMark = new Region();
+        selectionIndicatorBackdrop.getStyleClass().add(SELECTION_INDICATOR_BACKDROP_STYLE_CLASS);
         selectionIndicatorMark.getStyleClass().add(SELECTION_INDICATOR_MARK_STYLE_CLASS);
-        selectionIndicator.getChildren().setAll(selectionIndicatorMark);
+        selectionIndicator.getChildren().setAll(selectionIndicatorBackdrop, selectionIndicatorMark);
         selectionIndicator.setManaged(false);
         selectionIndicator.setMouseTransparent(true);
+        selectionIndicator.setViewOrder(-1.0);
         getChildren().add(selectionIndicator);
         selectionIndicatorAnimation.setOnFinished(event -> finishSelectionIndicatorAnimation());
 
@@ -193,6 +200,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         super.layoutChildren(x, y, width, height);
         layoutSelectionContainer();
         layoutSelectionIndicator();
+        selectionIndicator.toFront();
     }
 
     /// Lays out the built-in check and the inherited label as one centered logical content row.
@@ -212,8 +220,8 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         @Nullable Node graphic = button.getGraphic();
         if (selectionIndicatorOccupiesContentSlot && graphic != null) {
             Bounds graphicBounds = graphic.getBoundsInParent();
-            double iconX = snapPositionX(graphicBounds.getCenterX() - INDICATOR_SIZE / 2.0);
-            double graphicIconY = snapPositionY(graphicBounds.getCenterY() - INDICATOR_SIZE / 2.0);
+            double iconX = graphicBounds.getCenterX() - INDICATOR_SIZE / 2.0;
+            double graphicIconY = graphicBounds.getCenterY() - INDICATOR_SIZE / 2.0;
             selectionIndicator.resizeRelocate(iconX, graphicIconY, INDICATOR_SIZE, INDICATOR_SIZE);
             return;
         }

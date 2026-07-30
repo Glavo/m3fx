@@ -18368,21 +18368,56 @@ final class M3ControlContractMatrixTest {
             assertEquals(1.0, graphicIndicator.getOpacity(), 0.0001);
             assertEquals(graphicBounds.getCenterX(), indicatorBounds.getCenterX(), 0.0001);
             assertEquals(graphicBounds.getCenterY(), indicatorBounds.getCenterY(), 0.0001);
+            assertTrue(graphicIndicator.getViewOrder() < graphic.getViewOrder());
             assertSame(graphic, graphicButton.getGraphic());
             assertEquals(0.0, graphic.getOpacity(), 0.0001);
-            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
 
             PseudoClass hover = PseudoClass.getPseudoClass("hover");
             graphicButton.pseudoClassStateChanged(hover, true);
             root.applyCss();
             assertEquals(0.0, graphic.getOpacity(), 0.0001);
-            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
 
             M3MotionSettings.setReducedMotionRequested(root, true);
             try {
                 graphicButton.setSelected(false);
                 root.applyCss();
                 assertEquals(1.0, graphic.getOpacity(), 0.0001);
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(root, false);
+            }
+        });
+    }
+
+    /// Verifies that a selected-state indicator inherits the exact center of the graphic it replaces.
+    @Test
+    void segmentedButtonSelectionIndicatorDoesNotResnapGraphicCenter() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SVGIcon graphic = svgTestIcon();
+            M3SegmentedButton button = new M3SegmentedButton("Month", graphic);
+            StackPane root = new StackPane(button);
+            Scene scene = new Scene(root, 181.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+            button.layout();
+
+            assertEquals(18.0, graphic.getIconSize(), 0.0001);
+            double graphicCenterBefore = graphic.localToScene(graphic.getBoundsInLocal()).getCenterX();
+            M3MotionSettings.setReducedMotionRequested(root, true);
+            try {
+                button.setSelected(true);
+                root.applyCss();
+                root.layout();
+                button.layout();
+
+                Region indicator = segmentedButtonSelectionIndicator(button);
+                double graphicCenterAfter = graphic.localToScene(graphic.getBoundsInLocal()).getCenterX();
+                double indicatorCenter = indicator.localToScene(indicator.getBoundsInLocal()).getCenterX();
+                assertEquals(graphicCenterBefore, graphicCenterAfter, 0.0001);
+                assertEquals(graphicCenterAfter, indicatorCenter, 0.0001);
+                assertEquals(0.0, graphic.getOpacity(), 0.0001);
             } finally {
                 M3MotionSettings.setReducedMotionRequested(root, false);
             }

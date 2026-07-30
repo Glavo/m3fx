@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
@@ -116,6 +117,7 @@ final class M3FXCatalogVisualTest {
                 assertAdaptiveGrid(scene, stage);
                 assertBreakpointContinuity(scene, stage, app);
                 assertComponentAndExampleNavigation(scene, app);
+                assertSegmentedButtonIconStability(scene, app);
                 assertExampleBrowserFiltering(scene, app);
                 assertRouteStateRestoration(scene, app);
                 assertSidebarScrollStability(scene, app);
@@ -732,6 +734,85 @@ final class M3FXCatalogVisualTest {
             assertTrue(profile.getStyleClass().contains("catalog-example-profile-expressive"));
             app.navigateHome();
             layout(scene);
+        });
+    }
+
+    /// Verifies that switching an icon-bearing segmented group keeps every leading slot at a fixed position.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertSegmentedButtonIconStability(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            Parent sampleContent = openExample(
+                    scene,
+                    app,
+                    "Segmented buttons",
+                    "Icon and label"
+            );
+            M3SegmentedButtonGroup group = assertInstanceOf(
+                    M3SegmentedButtonGroup.class,
+                    Objects.requireNonNull(
+                            sampleContent.lookup(".m3-segmented-button-group"),
+                            "icon segmented group"
+                    )
+            );
+            M3SegmentedButton day = group.getItems().get(0);
+            M3SegmentedButton week = group.getItems().get(1);
+            Node dayGraphic = Objects.requireNonNull(day.getGraphic(), "Day graphic");
+            Node weekGraphic = Objects.requireNonNull(week.getGraphic(), "Week graphic");
+            layout(scene);
+
+            double dayGraphicCenterBefore = sceneCenterX(dayGraphic);
+            double weekGraphicCenterBefore = sceneCenterX(weekGraphic);
+            Region weekIndicator = assertInstanceOf(
+                    Region.class,
+                    Objects.requireNonNull(
+                            week.lookup(".m3-segmented-button-selection-indicator"),
+                            "Week selection indicator"
+                    )
+            );
+            assertEquals(weekGraphicCenterBefore, sceneCenterX(weekIndicator), 0.01);
+            assertSame(weekGraphic.getParent(), weekIndicator.getParent());
+            assertTrue(weekIndicator.getViewOrder() < weekGraphic.getViewOrder());
+            assertEquals(18.0, dayGraphic.getLayoutBounds().getWidth(), 0.01);
+            assertEquals(18.0, weekGraphic.getLayoutBounds().getWidth(), 0.01);
+            assertEquals(0.0, weekGraphic.getOpacity(), 0.0001);
+            Region weekBackdrop = assertInstanceOf(
+                    Region.class,
+                    Objects.requireNonNull(
+                            week.lookup(".m3-segmented-button-selection-indicator-backdrop"),
+                            "Week selection indicator backdrop"
+                    )
+            );
+            assertEquals(18.0, weekBackdrop.getWidth(), 0.01);
+            assertFalse(weekBackdrop.getBackground().getFills().isEmpty());
+
+            day.fire();
+            layout(scene);
+            assertTrue(day.isSelected());
+            assertFalse(week.isSelected());
+
+            Region dayIndicator = assertInstanceOf(
+                    Region.class,
+                    Objects.requireNonNull(
+                            day.lookup(".m3-segmented-button-selection-indicator"),
+                            "Day selection indicator"
+                    )
+            );
+            assertEquals(dayGraphicCenterBefore, sceneCenterX(dayGraphic), 0.01);
+            assertEquals(weekGraphicCenterBefore, sceneCenterX(weekGraphic), 0.01);
+            assertEquals(dayGraphicCenterBefore, sceneCenterX(dayIndicator), 0.01);
+            assertEquals(0.0, dayGraphic.getOpacity(), 0.0001);
+            assertEquals(1.0, weekGraphic.getOpacity(), 0.0001);
+            Region dayBackdrop = assertInstanceOf(
+                    Region.class,
+                    Objects.requireNonNull(
+                            day.lookup(".m3-segmented-button-selection-indicator-backdrop"),
+                            "Day selection indicator backdrop"
+                    )
+            );
+            assertEquals(18.0, dayBackdrop.getWidth(), 0.01);
+            assertFalse(dayBackdrop.getBackground().getFills().isEmpty());
         });
     }
 
@@ -1783,6 +1864,14 @@ final class M3FXCatalogVisualTest {
     /// @param width the requested scene width in logical pixels
     private static void resizeSceneToWidth(Stage stage, Scene scene, double width) {
         stage.setWidth(stage.getWidth() + width - scene.getWidth());
+    }
+
+    /// Returns the horizontal center of a node's rendered bounds in scene coordinates.
+    ///
+    /// @param node the attached node
+    /// @return the scene-space center x-coordinate
+    private static double sceneCenterX(Node node) {
+        return node.localToScene(node.getBoundsInLocal()).getCenterX();
     }
 
     /// Completes CSS and layout before querying scene-graph geometry.

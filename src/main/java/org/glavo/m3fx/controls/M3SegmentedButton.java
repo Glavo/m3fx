@@ -54,6 +54,9 @@ public final class M3SegmentedButton extends ButtonBase {
     /// The selected pseudo-class used by segmented buttons.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// The Material segmented-button graphic size.
+    private static final double DEFAULT_ICON_SIZE = 18.0;
+
     /// The default segmented button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
 
@@ -361,7 +364,16 @@ public final class M3SegmentedButton extends ButtonBase {
         restoreStandaloneAccessibleRole();
         setFocusTraversable(true);
         setPickOnBounds(true);
+        graphicProperty().addListener(observable -> updateGraphicMetrics());
+        updateGraphicMetrics();
         updateMetrics();
+    }
+
+    /// Applies the Material icon-slot size to a direct M3FX icon graphic.
+    private void updateGraphicMetrics() {
+        if (getGraphic() instanceof M3IconGraphic icon) {
+            icon.setIconSize(DEFAULT_ICON_SIZE);
+        }
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.
