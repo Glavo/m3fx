@@ -11368,6 +11368,67 @@ final class M3ControlContractMatrixTest {
                 Color.rgb(46, 47, 48),
                 assertInstanceOf(SVGPath.class, dialogIcon.lookup("." + "m3-svg-icon-path")).getFill()
         );
+
+        M3SVGIcon selectedSwitchIcon = svgTestIcon();
+        M3SVGIcon unselectedSwitchIcon = svgTestIcon();
+        M3Switch switchControl = new M3Switch("Notifications");
+        switchControl.setSelectedIcon(selectedSwitchIcon);
+        switchControl.setUnselectedIcon(unselectedSwitchIcon);
+        switchControl.setIconSize(16.0);
+        switchControl.setSelected(true);
+        switchControl.setStyle(buttonStateTestColors());
+        applyCss(switchControl);
+
+        assertEquals(16.0, selectedSwitchIcon.getIconSize(), 0.0001);
+        assertEquals(16.0, unselectedSwitchIcon.getIconSize(), 0.0001);
+        assertEquals(
+                Color.rgb(1, 2, 3),
+                assertInstanceOf(SVGPath.class, selectedSwitchIcon.lookup("." + "m3-svg-icon-path")).getFill()
+        );
+
+        M3SVGIcon activeTrackIcon = svgTestIcon();
+        M3SVGIcon inactiveTrackIcon = svgTestIcon();
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setActiveTrackGraphic(activeTrackIcon);
+        slider.setInactiveTrackGraphic(inactiveTrackIcon);
+        slider.setIconSize(32.0);
+        slider.setStyle(buttonStateTestColors());
+        applyCss(slider);
+
+        assertEquals(32.0, activeTrackIcon.getIconSize(), 0.0001);
+        assertEquals(32.0, inactiveTrackIcon.getIconSize(), 0.0001);
+        assertEquals(
+                Color.rgb(4, 5, 6),
+                assertInstanceOf(SVGPath.class, activeTrackIcon.lookup("." + "m3-svg-icon-path")).getFill()
+        );
+        assertEquals(
+                Color.rgb(10, 11, 12),
+                assertInstanceOf(SVGPath.class, inactiveTrackIcon.lookup("." + "m3-svg-icon-path")).getFill()
+        );
+
+        M3SVGIcon fabIcon = svgTestIcon();
+        M3FloatingActionButton fab = new M3FloatingActionButton(fabIcon);
+        fab.setSize(M3FloatingActionButtonSize.LARGE);
+        fab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+        fab.setStyle(buttonStateTestColors());
+        applyCss(fab);
+
+        assertEquals(36.0, fabIcon.getIconSize(), 0.0001);
+        assertEquals(
+                Color.rgb(4, 5, 6),
+                assertInstanceOf(SVGPath.class, fabIcon.lookup("." + "m3-svg-icon-path")).getFill()
+        );
+
+        M3SVGIcon navigationIcon = svgTestIcon();
+        M3NavigationItem navigationItem = new M3NavigationItem("Home", navigationIcon);
+        navigationItem.setSelected(true);
+        navigationItem.setStyle(buttonStateTestColors());
+        applyCss(navigationItem);
+
+        assertEquals(
+                Color.rgb(10, 11, 12),
+                assertInstanceOf(SVGPath.class, navigationIcon.lookup("." + "m3-svg-icon-path")).getFill()
+        );
     }
 
     /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
@@ -12126,7 +12187,8 @@ final class M3ControlContractMatrixTest {
             Color expectedStateLayerFill
     ) {
         M3MenuItem open = new M3MenuItem("Open");
-        M3MenuItem save = new M3MenuItem("Save");
+        M3SVGIcon selectedIcon = svgTestIcon();
+        M3MenuItem save = new M3MenuItem("Save", selectedIcon);
         M3MenuItem disabled = new M3MenuItem("Unavailable");
         disabled.setDisable(true);
         M3Menu menu = new M3Menu(open, save, disabled);
@@ -12155,6 +12217,10 @@ final class M3ControlContractMatrixTest {
         assertRegionFill(selectedContainer, expectedSelectedFill);
         Label selectedHeadline = assertInstanceOf(Label.class, save.lookup(".m3-list-item-headline"));
         assertEquals(expectedSelectedTextFill, selectedHeadline.getTextFill());
+        assertEquals(
+                expectedSelectedTextFill,
+                assertInstanceOf(SVGPath.class, selectedIcon.lookup(".m3-svg-icon-path")).getFill()
+        );
         assertRegionFill(lookupRegion(open, ".m3-state-layer"), expectedStateLayerFill);
         assertRegionFill(lookupRegion(disabled, ".m3-list-item-container"), Color.TRANSPARENT);
     }
@@ -18872,6 +18938,11 @@ final class M3ControlContractMatrixTest {
                         + primaryTab.getActiveIndicatorHorizontalInset() * 2.0
         );
         assertEquals(expectedPrimaryIndicatorWidth, primaryIndicator.getWidth(), 1.0);
+        assertEquals(
+                primaryText.getBoundsInParent().getCenterX(),
+                primaryIndicator.getBoundsInParent().getCenterX(),
+                0.0001
+        );
         assertTrue(primaryIndicator.getWidth() < primaryTab.getWidth());
         assertEquals(3.0, primaryIndicator.getHeight(), 0.0001);
         assertEquals(3.0, primaryTab.getActiveIndicatorShape(), 0.0001);

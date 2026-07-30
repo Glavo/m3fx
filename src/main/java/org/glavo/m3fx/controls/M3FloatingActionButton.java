@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -58,6 +59,15 @@ public final class M3FloatingActionButton extends ButtonBase {
 
     /// The default logical trailing content padding for extended floating action buttons.
     private static final double DEFAULT_TRAILING_PADDING = 20.0;
+
+    /// The default floating action button icon size.
+    private static final double DEFAULT_ICON_SIZE = 24.0;
+
+    /// Marks a direct M3FX icon mounted as the floating action button graphic.
+    private static final PseudoClass FAB_GRAPHIC_PSEUDO_CLASS = PseudoClass.getPseudoClass("m3-fab-graphic");
+
+    /// The direct M3FX icon currently managed as the graphic.
+    private @Nullable Node managedIconGraphic;
 
     /// Creates an iconless, unlabeled regular primary-container floating action button.
     public M3FloatingActionButton() {
@@ -334,6 +344,45 @@ public final class M3FloatingActionButton extends ButtonBase {
         return trailingPadding;
     }
 
+    /// The icon size for a direct M3FX graphic, in logical pixels.
+    ///
+    /// @defaultValue `24.0`
+    private @Nullable StyleableDoubleProperty iconSize;
+
+    /// Returns the direct M3FX graphic icon-size token.
+    ///
+    /// @return the icon size in logical pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the direct M3FX graphic icon-size token.
+    ///
+    /// @param iconSize the icon size in logical pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the observable, bindable, styleable graphic icon-size property.
+    ///
+    /// The property defaults to `24.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
+    /// the property while it is bound.
+    ///
+    /// @return the graphic icon-size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateGraphicMetrics
+            );
+        }
+        return iconSize;
+    }
+
     /// Fires an [ActionEvent] from this button unless it is disabled.
     ///
     /// The event is dispatched even when no action handler is installed and may bubble to ancestors.
@@ -380,6 +429,7 @@ public final class M3FloatingActionButton extends ButtonBase {
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());
+        graphicProperty().addListener(observable -> updateGraphicMetrics());
         updateMetrics();
     }
 
@@ -428,6 +478,25 @@ public final class M3FloatingActionButton extends ButtonBase {
             M3Css.setMinWidthIfUnbound(this, size);
             M3Css.setPrefWidthIfUnbound(this, size);
             M3Css.setPaddingIfUnbound(this, Insets.EMPTY);
+        }
+        updateGraphicMetrics();
+    }
+
+    /// Applies the current icon tokens to a direct M3FX graphic and clears stale managed state.
+    private void updateGraphicMetrics() {
+        @Nullable Node graphic = getGraphic();
+        @Nullable Node previous = managedIconGraphic;
+        if (previous != graphic) {
+            if (previous != null) {
+                previous.pseudoClassStateChanged(FAB_GRAPHIC_PSEUDO_CLASS, false);
+            }
+            managedIconGraphic = graphic instanceof M3IconGraphic ? graphic : null;
+            if (managedIconGraphic != null) {
+                managedIconGraphic.pseudoClassStateChanged(FAB_GRAPHIC_PSEUDO_CLASS, true);
+            }
+        }
+        if (graphic instanceof M3IconGraphic icon) {
+            icon.setIconSize(getIconSize());
         }
     }
 
@@ -498,6 +567,22 @@ public final class M3FloatingActionButton extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the direct M3FX graphic icon size.
+        private static final CssMetaData<M3FloatingActionButton, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-fab-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3FloatingActionButton control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -507,6 +592,7 @@ public final class M3FloatingActionButton extends ButtonBase {
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);
             styleables.add(TRAILING_PADDING);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

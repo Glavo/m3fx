@@ -175,6 +175,41 @@ final class M3FXCatalogSnapshotTest {
                     writeExampleSnapshot(
                             scene,
                             app,
+                            "Switches",
+                            "Handle icons",
+                            "switch-icons.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Floating action buttons",
+                            "Size overview",
+                            "fab-icon-sizes.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Navigation bar",
+                            "Compact navigation bar",
+                            "navigation-item-icons.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Tabs",
+                            "Primary fixed tabs",
+                            "tab-indicator-alignment.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
+                            "Menus",
+                            "Single-select menu",
+                            "menu-item-icons.png"
+                    );
+                    writeExampleSnapshot(
+                            scene,
+                            app,
                             "Text fields",
                             "Outlined error field",
                             "text-field-error.png"

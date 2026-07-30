@@ -134,19 +134,22 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
             double contentWidth = hasContentBounds
                     ? Math.max(0.0, contentMaxX - contentMinX)
                     : 0.0;
-            indicatorWidth = Math.min(
+            double desiredIndicatorWidth = Math.min(
                     tabWidth,
                     Math.max(
                             tab.getActiveIndicatorMinWidth(),
                             contentWidth + tab.getActiveIndicatorHorizontalInset() * 2.0
                     )
             );
+            indicatorWidth = snapSizeX(desiredIndicatorWidth);
             indicatorX = Math.max(0.0, Math.min(tabWidth - indicatorWidth, contentCenterX - indicatorWidth / 2.0));
+        } else {
+            indicatorWidth = snapSizeX(indicatorWidth);
         }
         activeIndicator.resizeRelocate(
-                snapPositionX(indicatorX),
+                indicatorX,
                 snapPositionY(tabHeight - indicatorHeight),
-                snapSizeX(indicatorWidth),
+                indicatorWidth,
                 snapSizeY(indicatorHeight)
         );
         double indicatorShape = tab.getActiveIndicatorShape();

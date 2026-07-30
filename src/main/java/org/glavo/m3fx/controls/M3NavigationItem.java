@@ -52,6 +52,13 @@ public final class M3NavigationItem extends ButtonBase {
     /// The selected pseudo-class used by navigation items.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// Marks a direct M3FX icon mounted as the navigation item graphic.
+    private static final PseudoClass NAVIGATION_GRAPHIC_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-navigation-item-graphic");
+
+    /// The direct M3FX icon currently managed as the navigation item graphic.
+    private @Nullable Node managedIconGraphic;
+
     /// The default navigation item container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 80.0;
 
@@ -527,7 +534,25 @@ public final class M3NavigationItem extends ButtonBase {
         setFocusTraversable(true);
         setPickOnBounds(true);
         updateItemLayoutStyleClass();
+        graphicProperty().addListener(observable -> updateGraphicStyle());
+        updateGraphicStyle();
         updateMetrics();
+    }
+
+    /// Applies navigation-item semantic coloring to a direct M3FX icon and clears stale managed state.
+    private void updateGraphicStyle() {
+        @Nullable Node graphic = getGraphic();
+        @Nullable Node previous = managedIconGraphic;
+        if (previous == graphic) {
+            return;
+        }
+        if (previous != null) {
+            previous.pseudoClassStateChanged(NAVIGATION_GRAPHIC_PSEUDO_CLASS, false);
+        }
+        managedIconGraphic = graphic instanceof M3IconGraphic ? graphic : null;
+        if (managedIconGraphic != null) {
+            managedIconGraphic.pseudoClassStateChanged(NAVIGATION_GRAPHIC_PSEUDO_CLASS, true);
+        }
     }
 
     /// Applies the style class matching the icon and label arrangement.

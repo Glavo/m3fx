@@ -9,6 +9,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
@@ -33,6 +34,14 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// The style class applied temporarily to the currently displayed handle icon.
     private static final String HANDLE_ICON_STYLE_CLASS = "m3-switch-handle-icon";
+
+    /// Marks a handle icon currently representing the unselected state.
+    private static final PseudoClass UNSELECTED_HANDLE_ICON_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-switch-handle-unselected");
+
+    /// Marks a handle icon currently representing the selected state.
+    private static final PseudoClass SELECTED_HANDLE_ICON_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-switch-handle-selected");
 
     /// The style class applied to the icon slot while it presents the unselected icon.
     private static final String UNSELECTED_ICON_SLOT_STYLE_CLASS = "m3-switch-icon-slot-unselected";
@@ -403,8 +412,12 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     private void setDisplayedIcon(@Nullable Node icon, boolean selected) {
         if (displayedIcon != icon) {
             Node oldIcon = displayedIcon;
-            if (oldIcon != null && displayedIconStyleClassAdded) {
-                oldIcon.getStyleClass().remove(HANDLE_ICON_STYLE_CLASS);
+            if (oldIcon != null) {
+                oldIcon.pseudoClassStateChanged(UNSELECTED_HANDLE_ICON_PSEUDO_CLASS, false);
+                oldIcon.pseudoClassStateChanged(SELECTED_HANDLE_ICON_PSEUDO_CLASS, false);
+                if (displayedIconStyleClassAdded) {
+                    oldIcon.getStyleClass().remove(HANDLE_ICON_STYLE_CLASS);
+                }
             }
             iconSlot.getChildren().clear();
             displayedIcon = icon;
@@ -427,6 +440,11 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
             iconSlot.getStyleClass().add(selected
                     ? SELECTED_ICON_SLOT_STYLE_CLASS
                     : UNSELECTED_ICON_SLOT_STYLE_CLASS);
+        }
+        if (icon != null) {
+            icon.pseudoClassStateChanged(UNSELECTED_HANDLE_ICON_PSEUDO_CLASS, !selected);
+            icon.pseudoClassStateChanged(SELECTED_HANDLE_ICON_PSEUDO_CLASS, selected);
+            icon.applyCss();
         }
     }
 

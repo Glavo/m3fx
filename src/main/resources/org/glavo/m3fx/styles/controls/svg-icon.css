@@ -20,6 +20,116 @@
     -fx-opacity: 0;
 }
 
+.m3-svg-icon:m3-switch-handle-unselected {
+    -fx-text-fill: -m3-color-surface-container-highest;
+}
+
+.m3-svg-icon:m3-switch-handle-selected {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-svg-icon:m3-switch-handle-selected:disabled {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-svg-icon:m3-navigation-item-graphic {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-svg-icon:m3-list-item-leading-graphic,
+.m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-fab.m3-surface-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-fab.m3-secondary-container-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-fab.m3-tertiary-container-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-fab.m3-primary-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-fab.m3-secondary-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-secondary;
+}
+
+.m3-fab.m3-tertiary-fab .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-tertiary;
+}
+
+.m3-fab:disabled .m3-svg-icon:m3-fab-graphic {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-navigation-item:selected .m3-svg-icon:m3-navigation-item-graphic,
+.m3-list-item:selected .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:selected .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-list-item:navigation-drawer:hover .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:navigation-drawer:hover .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-list-item:navigation-drawer:focus-visible .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:navigation-drawer:focus-visible .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-list-item:navigation-drawer:pressed .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:navigation-drawer:pressed .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-list-item:navigation-drawer:armed .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:navigation-drawer:armed .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-menu-item:selected .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:selected .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-menu-selected-item-content-color;
+}
+
+.m3-menu-item:vibrant .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:vibrant .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-menu-item:disabled:vibrant .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:disabled:vibrant .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-menu-vibrant-item-content-color;
+}
+
+.m3-menu-item:vibrant:hover .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:vibrant:hover .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-menu-item:vibrant:focus-visible .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:vibrant:focus-visible .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-menu-item:vibrant:pressed .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:vibrant:pressed .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-menu-item:vibrant:armed .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:vibrant:armed .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-menu-vibrant-interaction-icon-color;
+}
+
+.m3-menu-item:selected:vibrant .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:selected:vibrant .m3-svg-icon:m3-list-item-trailing-graphic,
+.m3-menu-item:selected:disabled:vibrant .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:selected:disabled:vibrant .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-menu-vibrant-selected-item-content-color;
+}
+
+.m3-list-item:disabled .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-list-item:disabled .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-menu-item:selected:disabled .m3-svg-icon:m3-list-item-leading-graphic,
+.m3-menu-item:selected:disabled .m3-svg-icon:m3-list-item-trailing-graphic {
+    -fx-text-fill: -m3-menu-selected-item-content-color;
+}
+
 .m3-svg-icon.m3-chip-leading-graphic {
     -fx-text-fill: -m3-chip-leading-icon-color;
 }
@@ -74,6 +184,14 @@
 
 .m3-svg-icon.m3-dialog-graphic-icon {
     -fx-text-fill: -m3-color-secondary;
+}
+
+.m3-svg-icon.m3-slider-active-track-graphic {
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-svg-icon.m3-slider-inactive-track-graphic {
+    -fx-text-fill: -m3-color-on-secondary-container;
 }
 
 .m3-svg-icon:disabled {

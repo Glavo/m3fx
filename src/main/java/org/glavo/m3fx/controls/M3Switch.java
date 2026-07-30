@@ -187,6 +187,7 @@ public final class M3Switch extends ButtonBase {
                 /// Requests handle content layout when the selected icon changes.
                 @Override
                 protected void invalidated() {
+                    updateIconMetrics();
                     requestLayout();
                 }
             };
@@ -229,6 +230,7 @@ public final class M3Switch extends ButtonBase {
                 /// Requests handle content layout when the unselected icon changes.
                 @Override
                 protected void invalidated() {
+                    updateIconMetrics();
                     requestLayout();
                 }
             };
@@ -596,9 +598,25 @@ public final class M3Switch extends ButtonBase {
     /// @return the `iconSize` property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
-            iconSize = sizeProperty(DEFAULT_ICON_SIZE, "iconSize", StyleableProperties.ICON_SIZE, this::requestLayout);
+            iconSize = sizeProperty(
+                    DEFAULT_ICON_SIZE,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateIconMetrics
+            );
         }
         return iconSize;
+    }
+
+    /// Applies the switch icon-size token to direct M3FX handle icons and requests layout.
+    private void updateIconMetrics() {
+        if (getSelectedIcon() instanceof M3IconGraphic icon) {
+            icon.setIconSize(getIconSize());
+        }
+        if (getUnselectedIcon() instanceof M3IconGraphic icon) {
+            icon.setIconSize(getIconSize());
+        }
+        requestLayout();
     }
 
     /// Returns the CSS metadata for this control class.

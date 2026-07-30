@@ -67,6 +67,14 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The pseudo-class applied while a submenu owner keeps its submenu open.
     private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
 
+    /// Marks a node currently mounted in the logical leading graphic slot.
+    private static final PseudoClass LEADING_GRAPHIC_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-list-item-leading-graphic");
+
+    /// Marks a node currently mounted in the logical trailing graphic slot.
+    private static final PseudoClass TRAILING_GRAPHIC_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("m3-list-item-trailing-graphic");
+
     /// The pseudo-class mirrored to internal nodes when a menu item uses the vibrant color style.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
 
@@ -274,6 +282,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Whether this skin has been disposed.
     private boolean disposed;
 
+    /// The application node currently mounted in the logical leading slot.
+    private @Nullable Node displayedLeading;
+
+    /// The application node currently mounted in the logical trailing slot.
+    private @Nullable Node displayedTrailing;
+
     /// The window whose showing state is currently observed, or `null` when the item has no window.
     private @Nullable Window observedWindow;
 
@@ -430,6 +444,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         trailingBox.nodeOrientationProperty().unbind();
         selectionContainer.setClip(null);
         container.setClip(null);
+        updateSlot(leadingSlot, displayedLeading, null, LEADING_GRAPHIC_PSEUDO_CLASS);
+        updateSlot(trailingSlot, displayedTrailing, null, TRAILING_GRAPHIC_PSEUDO_CLASS);
+        displayedLeading = null;
+        displayedTrailing = null;
         getChildren().removeAll(selectionContainer, container, stateLayer);
         super.dispose();
     }
@@ -578,22 +596,36 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Updates leading and trailing slot content.
     private void updateSlots() {
         M3ListItemBase item = getSkinnable();
-        updateSlot(leadingSlot, item.getLeading());
-        updateSlot(trailingSlot, item.getTrailing());
+        @Nullable Node leading = item.getLeading();
+        @Nullable Node trailing = item.getTrailing();
+        updateSlot(leadingSlot, displayedLeading, leading, LEADING_GRAPHIC_PSEUDO_CLASS);
+        updateSlot(trailingSlot, displayedTrailing, trailing, TRAILING_GRAPHIC_PSEUDO_CLASS);
+        displayedLeading = leading;
+        displayedTrailing = trailing;
         updateTrailingBoxVisibility();
     }
 
     /// Updates a slot with an optional node.
-    private static void updateSlot(StackPane slot, @Nullable Node node) {
+    private static void updateSlot(
+            StackPane slot,
+            @Nullable Node oldNode,
+            @Nullable Node node,
+            PseudoClass slotPseudoClass
+    ) {
+        if (oldNode != null && oldNode != node) {
+            oldNode.pseudoClassStateChanged(slotPseudoClass, false);
+        }
         if (node == null) {
             slot.getChildren().clear();
             slot.setVisible(false);
             slot.setManaged(false);
             return;
         }
+        node.pseudoClassStateChanged(slotPseudoClass, true);
         slot.getChildren().setAll(node);
         slot.setVisible(true);
         slot.setManaged(true);
+        node.applyCss();
     }
 
     /// Updates fixed metrics and clipping for optional node slots.

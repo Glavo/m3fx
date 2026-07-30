@@ -218,6 +218,7 @@ public final class M3Slider extends Control {
                 /// Requests layout when the mounted graphic changes.
                 @Override
                 protected void invalidated() {
+                    updateTrackGraphicMetrics();
                     requestLayout();
                 }
 
@@ -273,6 +274,7 @@ public final class M3Slider extends Control {
                 /// Requests layout when the mounted graphic changes.
                 @Override
                 protected void invalidated() {
+                    updateTrackGraphicMetrics();
                     requestLayout();
                 }
 
@@ -1206,10 +1208,21 @@ public final class M3Slider extends Control {
                     this,
                     "iconSize",
                     StyleableProperties.ICON_SIZE,
-                    this::requestLayout
+                    this::updateTrackGraphicMetrics
             );
         }
         return iconSize;
+    }
+
+    /// Applies the inset-icon size token to direct M3FX track graphics and requests layout.
+    private void updateTrackGraphicMetrics() {
+        if (getActiveTrackGraphic() instanceof M3IconGraphic icon) {
+            icon.setIconSize(getIconSize());
+        }
+        if (getInactiveTrackGraphic() instanceof M3IconGraphic icon) {
+            icon.setIconSize(getIconSize());
+        }
+        requestLayout();
     }
 
     /// The inset-icon outer padding in logical pixels.
