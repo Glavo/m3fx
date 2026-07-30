@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /// Describes a Material component presented by the Catalog.
@@ -49,5 +50,24 @@ record CatalogComponent(
     /// @return `true` when the component has an Expressive example
     boolean hasExpressiveExamples() {
         return examples.stream().anyMatch(CatalogExample::expressive);
+    }
+
+    /// Returns whether this component or one of its scenarios matches search text.
+    ///
+    /// Matching is case-insensitive and examines the component name and description plus every example name and
+    /// description. Leading and trailing whitespace is ignored, and an empty query matches every component.
+    ///
+    /// @param searchText the search text
+    /// @return `true` when this component matches the search text
+    boolean matchesSearch(String searchText) {
+        String query = Objects.requireNonNull(searchText, "searchText").strip().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()
+                || name.toLowerCase(Locale.ROOT).contains(query)
+                || description.toLowerCase(Locale.ROOT).contains(query)) {
+            return true;
+        }
+        return examples.stream().anyMatch(example ->
+                example.name().toLowerCase(Locale.ROOT).contains(query)
+                        || example.description().toLowerCase(Locale.ROOT).contains(query));
     }
 }

@@ -28,6 +28,7 @@ import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /// Builds the three content views used by the Compose Material Catalog-style navigation hierarchy.
@@ -81,26 +83,33 @@ final class CatalogViews {
     private CatalogViews() {
     }
 
-    /// Creates the alphabetical, adaptive component grid displayed by the Catalog home route.
+    /// Creates the searchable, filterable component browser displayed by the Catalog home route.
     ///
     /// Components without Expressive examples are omitted when `expressiveOnly` is `true`. Component cards use
-    /// an outlined Material surface and navigate to the corresponding [CatalogRoute.Component] when activated.
-    /// The returned scroll pane fits its content to the viewport width, allowing the tile pane to recompute its
-    /// column count as the available width changes.
+    /// an outlined Material surface and navigate to the corresponding [CatalogRoute.Component] when activated. The
+    /// All, Favorites, and Expressive segments filter persistent card nodes without rebuilding the adaptive grid.
+    /// The returned scroll pane fits its content to the viewport width, allowing the grid to recompute its column
+    /// count as the available width changes.
     ///
     /// @param components     the components available to the Catalog
+    /// @param favoriteNames  the component names favorited when this view is created
     /// @param navigate       the consumer that handles route changes
     /// @param expressiveOnly whether only components with Expressive examples are shown
     /// @param markExpressive whether components with Expressive examples display a corner marker
     /// @return a new scrollable home view
-    /// @throws NullPointerException if `components`, an element of `components`, or `navigate` is `null`
+    /// @throws NullPointerException if `components`, `favoriteNames`, either collection's elements, or `navigate`
+    ///                              is `null`
     static Node createHome(
             List<CatalogComponent> components,
+            Set<String> favoriteNames,
             Consumer<CatalogRoute> navigate,
             boolean expressiveOnly,
             boolean markExpressive
     ) {
         Consumer<CatalogRoute> routeConsumer = Objects.requireNonNull(navigate, "navigate");
+        @Unmodifiable Set<String> favorites = Set.copyOf(
+                Objects.requireNonNull(favoriteNames, "favoriteNames")
+        );
         List<CatalogComponent> sortedComponents = List.copyOf(Objects.requireNonNull(components, "components"))
                 .stream()
                 .filter(component -> !expressiveOnly || component.hasExpressiveExamples())
@@ -114,12 +123,90 @@ final class CatalogViews {
         grid.setTileAlignment(Pos.TOP_LEFT);
         grid.setPrefTileWidth(HOME_CELL_MIN_WIDTH);
         grid.setPrefTileHeight(HOME_CELL_HEIGHT);
+        Map<CatalogComponent, StackPane> componentCells = new LinkedHashMap<>();
         for (CatalogComponent component : sortedComponents) {
-            grid.getChildren().add(createComponentCard(component, routeConsumer, markExpressive));
+            StackPane cell = createComponentCard(
+                    component,
+                    routeConsumer,
+                    markExpressive,
+                    favorites.contains(component.name())
+            );
+            componentCells.put(component, cell);
+            grid.getChildren().add(cell);
         }
         grid.widthProperty().addListener(observable -> updateAdaptiveTileWidth(grid, HOME_CELL_MIN_WIDTH));
 
-        ScrollPane scrollPane = new ScrollPane(grid);
+        M3Text title = new M3Text("Material components", M3TextRole.HEADLINE_MEDIUM);
+        title.getStyleClass().add("catalog-home-title");
+        M3Text description = new M3Text(
+                "Browse the complete M3FX component set and open focused interactive scenarios.",
+                M3TextRole.BODY_MEDIUM
+        );
+        description.getStyleClass().add("catalog-home-description");
+        description.setWrapText(true);
+        VBox heading = new VBox(title, description);
+        heading.getStyleClass().add("catalog-home-heading");
+
+        M3SearchBar componentSearch = new M3SearchBar("Search components");
+        componentSearch.getStyleClass().add("catalog-home-search");
+        componentSearch.setAccessibleText("Search Catalog components and scenarios");
+        componentSearch.setMinWidth(0.0);
+        componentSearch.setPrefWidth(320.0);
+        componentSearch.setMaxWidth(400.0);
+
+        M3SegmentedButton allFilter = createHomeFilterButton("All", "catalog-home-filter-all");
+        M3SegmentedButton favoritesFilter =
+                createHomeFilterButton("Favorites", "catalog-home-filter-favorites");
+        M3SegmentedButton expressiveFilter =
+                createHomeFilterButton("Expressive", "catalog-home-filter-expressive");
+        M3SegmentedButtonGroup filterGroup = new M3SegmentedButtonGroup();
+        filterGroup.getStyleClass().add("catalog-home-filter-group");
+        filterGroup.setAccessibleText("Component collection filter");
+        filterGroup.getItems().addAll(allFilter, favoritesFilter, expressiveFilter);
+        filterGroup.setAllowEmptySelection(false);
+        filterGroup.select(allFilter);
+
+        FlowPane browserControls = new FlowPane(12.0, 12.0);
+        browserControls.getStyleClass().add("catalog-home-browser-controls");
+        browserControls.getChildren().addAll(componentSearch, filterGroup);
+
+        M3Text resultSummary = new M3Text("", M3TextRole.LABEL_MEDIUM);
+        resultSummary.getStyleClass().add("catalog-home-result-summary");
+        VBox browser = new VBox(browserControls, resultSummary);
+        browser.getStyleClass().add("catalog-home-browser");
+
+        M3Text emptyTitle = new M3Text("No matching components", M3TextRole.TITLE_MEDIUM);
+        emptyTitle.getStyleClass().add("catalog-home-empty-title");
+        M3Text emptyDescription = new M3Text(
+                "Try another search or choose a different collection.",
+                M3TextRole.BODY_MEDIUM
+        );
+        emptyDescription.getStyleClass().add("catalog-home-empty-description");
+        emptyDescription.setWrapText(true);
+        VBox emptyState = new VBox(emptyTitle, emptyDescription);
+        emptyState.getStyleClass().add("catalog-home-empty-state");
+        emptyState.setAlignment(Pos.CENTER);
+        emptyState.setVisible(false);
+        emptyState.setManaged(false);
+
+        Runnable updateFilter = () -> updateComponentVisibility(
+                componentCells,
+                favorites,
+                componentSearch.getText(),
+                filterGroup.getSelectedIndex(),
+                resultSummary,
+                grid,
+                emptyState
+        );
+        componentSearch.textProperty().addListener(observable -> updateFilter.run());
+        filterGroup.selectedButtonProperty().addListener(observable -> updateFilter.run());
+        updateFilter.run();
+
+        VBox page = new VBox(heading, browser, grid, emptyState);
+        page.getStyleClass().addAll("catalog-route-page", "catalog-home-page");
+        page.setFillWidth(true);
+
+        ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-home-scroll");
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
@@ -128,6 +215,61 @@ final class CatalogViews {
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
+    }
+
+    /// Creates one segment for the Home component-collection filter.
+    ///
+    /// @param label the visible segment label
+    /// @param styleClass the stable Catalog style class
+    /// @return a new unselected filter segment
+    private static M3SegmentedButton createHomeFilterButton(String label, String styleClass) {
+        M3SegmentedButton button = new M3SegmentedButton(label);
+        button.getStyleClass().add(styleClass);
+        return button;
+    }
+
+    /// Applies Home search and collection filters without replacing component cells.
+    ///
+    /// Filter index `0` shows every component, index `1` shows favorites, and index `2` shows components with an
+    /// Expressive scenario. An unknown or temporarily empty selection behaves like the All filter.
+    ///
+    /// @param cells the persistent cells indexed by their component descriptors
+    /// @param favoriteNames the immutable set of favorite component names
+    /// @param searchText the current search text
+    /// @param filterIndex the selected collection-filter index
+    /// @param resultSummary the label updated with visible and total component counts
+    /// @param grid the adaptive component grid hidden while the result is empty
+    /// @param emptyState the state shown when no components match
+    private static void updateComponentVisibility(
+            Map<CatalogComponent, StackPane> cells,
+            @Unmodifiable Set<String> favoriteNames,
+            String searchText,
+            int filterIndex,
+            M3Text resultSummary,
+            TilePane grid,
+            VBox emptyState
+    ) {
+        int visibleCount = 0;
+        for (Map.Entry<CatalogComponent, StackPane> entry : cells.entrySet()) {
+            CatalogComponent component = entry.getKey();
+            boolean collectionMatches = switch (filterIndex) {
+                case 1 -> favoriteNames.contains(component.name());
+                case 2 -> component.hasExpressiveExamples();
+                default -> true;
+            };
+            boolean visible = collectionMatches && component.matchesSearch(searchText);
+            entry.getValue().setVisible(visible);
+            entry.getValue().setManaged(visible);
+            if (visible) {
+                visibleCount++;
+            }
+        }
+        resultSummary.setText(visibleCount + " of " + cells.size() + " components");
+        boolean empty = visibleCount == 0;
+        grid.setVisible(!empty);
+        grid.setManaged(!empty);
+        emptyState.setVisible(empty);
+        emptyState.setManaged(empty);
     }
 
     /// Distributes adaptive-grid cells across the available row width.
@@ -429,7 +571,8 @@ final class CatalogViews {
     private static StackPane createComponentCard(
             CatalogComponent component,
             Consumer<CatalogRoute> navigate,
-            boolean markExpressive
+            boolean markExpressive,
+            boolean favorite
     ) {
         BorderPane body = new BorderPane();
         body.getStyleClass().add("catalog-component-card-body");
@@ -453,6 +596,20 @@ final class CatalogViews {
         content.getStyleClass().add("catalog-component-card-content");
         content.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         clipToCardShape(content);
+        if (favorite) {
+            M3SVGIcon favoriteIcon = CatalogIcons.create(CatalogIcons.FAVORITE);
+            favoriteIcon.getStyleClass().add("catalog-component-card-favorite-icon");
+            favoriteIcon.setIconSize(20.0);
+            StackPane favoriteMarker = new StackPane(favoriteIcon);
+            favoriteMarker.getStyleClass().add("catalog-component-card-favorite-marker");
+            favoriteMarker.setMinSize(40.0, 40.0);
+            favoriteMarker.setPrefSize(40.0, 40.0);
+            favoriteMarker.setMaxSize(40.0, 40.0);
+            favoriteMarker.setMouseTransparent(true);
+            content.getChildren().add(favoriteMarker);
+            StackPane.setAlignment(favoriteMarker, Pos.TOP_LEFT);
+            StackPane.setMargin(favoriteMarker, new Insets(12.0));
+        }
         if (markExpressive && component.hasExpressiveExamples()) {
             StackPane marker = createExpressiveMarker(
                     COMPONENT_BANNER_SIZE,

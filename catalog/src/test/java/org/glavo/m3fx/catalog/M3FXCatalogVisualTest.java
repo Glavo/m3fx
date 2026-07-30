@@ -26,6 +26,7 @@ import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
@@ -104,6 +105,7 @@ final class M3FXCatalogVisualTest {
                 assertRegistry(app.components());
                 assertRouteTransitionsAndSmoothScrolling(scene, app);
                 assertHome(scene, app);
+                assertHomeBrowserAndFavorites(scene, app);
                 assertSidebarSearch(scene, app);
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
@@ -333,6 +335,120 @@ final class M3FXCatalogVisualTest {
                     assertGridUsesAvailableWidth(scene);
                 }
         );
+    }
+
+    /// Verifies Home search, collection filtering, empty state, and the favorite browsing loop.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertHomeBrowserAndFavorites(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            app.navigateHome();
+            layout(scene);
+
+            Parent root = scene.getRoot();
+            M3SearchBar search = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-search"), "Home component search")
+            );
+            Set<Node> originalCells = Set.copyOf(root.lookupAll(".catalog-component-cell"));
+
+            search.setText("Selected filter chip");
+            layout(scene);
+            assertEquals(1L, visibleNodeCount(root, ".catalog-component-cell"));
+            assertEquals(
+                    originalCells,
+                    Set.copyOf(root.lookupAll(".catalog-component-cell")),
+                    "Home search must not rebuild component cells"
+            );
+
+            search.clear();
+            M3SegmentedButton expressiveFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-home-filter-expressive"),
+                            "Expressive component filter"
+                    )
+            );
+            expressiveFilter.fire();
+            layout(scene);
+            long expressiveCount = app.components().stream()
+                    .filter(CatalogComponent::hasExpressiveExamples)
+                    .count();
+            assertTrue(expressiveCount > 0 && expressiveCount < app.components().size());
+            assertEquals(expressiveCount, visibleNodeCount(root, ".catalog-component-cell"));
+            assertEquals(
+                    originalCells,
+                    Set.copyOf(root.lookupAll(".catalog-component-cell")),
+                    "Home collection filters must not rebuild component cells"
+            );
+
+            M3SegmentedButton allFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-filter-all"), "All component filter")
+            );
+            allFilter.fire();
+            search.setText("No component has this phrase");
+            layout(scene);
+            assertEquals(0L, visibleNodeCount(root, ".catalog-component-cell"));
+            assertFalse(Objects.requireNonNull(
+                    scene.lookup(".catalog-component-grid"),
+                    "component grid"
+            ).isVisible());
+            assertTrue(Objects.requireNonNull(
+                    scene.lookup(".catalog-home-empty-state"),
+                    "Home empty state"
+            ).isVisible());
+
+            search.clear();
+            M3SegmentedButton favoritesFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-home-filter-favorites"),
+                            "Favorites component filter"
+                    )
+            );
+            favoritesFilter.fire();
+            layout(scene);
+            assertEquals(0L, visibleNodeCount(root, ".catalog-component-cell"));
+
+            CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+            app.navigate(new CatalogRoute.Component(buttons));
+            layout(scene);
+            M3IconToggleButton favoriteAction = assertInstanceOf(
+                    M3IconToggleButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-favorite-action"), "favorite action")
+            );
+            assertFalse(favoriteAction.isSelected());
+            favoriteAction.fire();
+            assertTrue(favoriteAction.isSelected());
+
+            app.navigateHome();
+            layout(scene);
+            favoritesFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-home-filter-favorites"),
+                            "Favorites component filter"
+                    )
+            );
+            favoritesFilter.fire();
+            layout(scene);
+            assertEquals(1L, visibleNodeCount(root, ".catalog-component-cell"));
+            assertEquals(1L, visibleNodeCount(root, ".catalog-component-card-favorite-marker"));
+
+            app.navigate(new CatalogRoute.Component(buttons));
+            layout(scene);
+            favoriteAction = assertInstanceOf(
+                    M3IconToggleButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-favorite-action"), "favorite action")
+            );
+            assertTrue(favoriteAction.isSelected());
+            favoriteAction.fire();
+            assertFalse(favoriteAction.isSelected());
+            app.navigateHome();
+            layout(scene);
+        });
     }
 
     /// Verifies that sidebar search filters persistent destinations and restores route selection when cleared.
@@ -1004,6 +1120,18 @@ final class M3FXCatalogVisualTest {
                     assertFalse(leadingPane.isVisible(), "the sidebar should start collapsed at compact width");
                     Node routeHost = Objects.requireNonNull(scene.lookup(".catalog-route-host"), "route host");
                     assertTrue(routeHost.getLayoutBounds().getWidth() >= scene.getWidth() - 1.0);
+                    Parent homePage = assertInstanceOf(
+                            Parent.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-home-page"), "compact Home page")
+                    );
+                    Node homeBrowser = Objects.requireNonNull(
+                            homePage.lookup(".catalog-home-browser"),
+                            "compact Home browser"
+                    );
+                    Bounds homeBounds = homePage.localToScene(homePage.getBoundsInLocal());
+                    Bounds homeBrowserBounds = homeBrowser.localToScene(homeBrowser.getBoundsInLocal());
+                    assertTrue(homeBrowserBounds.getMinX() >= homeBounds.getMinX() - 0.5);
+                    assertTrue(homeBrowserBounds.getMaxX() <= homeBounds.getMaxX() + 0.5);
 
                     CatalogComponent buttons = componentNamed(app.components(), "Buttons");
                     app.navigate(new CatalogRoute.Component(buttons));

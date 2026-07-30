@@ -498,7 +498,13 @@ public final class M3FXCatalogApp extends Application {
         configureTopAppBar();
         Node content;
         if (currentRoute instanceof CatalogRoute.Home) {
-            content = CatalogViews.createHome(components, this::navigate, expressiveOnly, markExpressive);
+            content = CatalogViews.createHome(
+                    components,
+                    favorites,
+                    this::navigate,
+                    expressiveOnly,
+                    markExpressive
+            );
         } else if (currentRoute instanceof CatalogRoute.Component componentRoute) {
             content = CatalogViews.createComponent(
                     componentRoute.component(),
@@ -648,7 +654,7 @@ public final class M3FXCatalogApp extends Application {
     /// @return the configured toggle action
     private M3IconToggleButton createFavoriteButton(CatalogComponent component) {
         M3IconToggleButton button = new M3IconToggleButton(CatalogIcons.create(CatalogIcons.FAVORITE));
-        button.getStyleClass().add("catalog-top-action");
+        button.getStyleClass().addAll("catalog-top-action", "catalog-favorite-action");
         button.setAccessibleText("Favorite " + component.name());
         button.setSelected(favorites.contains(component.name()));
         button.setOnAction(event -> {

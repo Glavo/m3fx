@@ -11,9 +11,11 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3SearchBar;
+import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -71,6 +73,13 @@ final class M3FXCatalogSnapshotTest {
                     M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
 
                     writeSnapshot(scene, "home.png");
+                    M3SearchBar homeSearch = assertInstanceOf(
+                            M3SearchBar.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-home-search"), "Home component search")
+                    );
+                    homeSearch.setText("Navigation drawer");
+                    writeSnapshot(scene, "home-search.png");
+                    homeSearch.clear();
 
                     CatalogComponent buttons = app.components().stream()
                             .filter(component -> component.name().equals("Buttons"))
@@ -164,6 +173,23 @@ final class M3FXCatalogSnapshotTest {
                     writeFirstExampleSnapshot(scene, app, "Scrims", "scrims.png");
                     writeFirstExampleSnapshot(scene, app, "Settings", "settings.png");
                     writeFirstExampleSnapshot(scene, app, "Surfaces", "surfaces.png");
+
+                    app.navigate(new CatalogRoute.Component(buttons));
+                    M3IconToggleButton favoriteAction = assertInstanceOf(
+                            M3IconToggleButton.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-favorite-action"), "favorite action")
+                    );
+                    favoriteAction.fire();
+                    app.navigateHome();
+                    M3SegmentedButton favoritesFilter = assertInstanceOf(
+                            M3SegmentedButton.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-home-filter-favorites"),
+                                    "Favorites component filter"
+                            )
+                    );
+                    favoritesFilter.fire();
+                    writeSnapshot(scene, "home-favorites.png");
                 });
 
                 FxTestUtils.runOnFxThreadWhenStable(

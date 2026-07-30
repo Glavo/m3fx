@@ -75,12 +75,49 @@
 }
 
 .catalog-component-grid {
-    -fx-padding: 12px;
+    -fx-padding: 0;
     -fx-hgap: 0px;
     -fx-vgap: 0px;
     -fx-alignment: top-left;
     -fx-tile-alignment: top-left;
     -fx-background-color: -m3-color-surface;
+}
+
+.catalog-home-page {
+    -fx-padding: 24px 16px 48px 16px;
+    -fx-spacing: 16px;
+}
+
+.catalog-home-heading {
+    -fx-spacing: 8px;
+}
+
+.catalog-home-title,
+.catalog-home-empty-title {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.catalog-home-description,
+.catalog-home-result-summary,
+.catalog-home-empty-description {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-home-browser {
+    -fx-spacing: 8px;
+}
+
+.catalog-home-browser-controls {
+    -fx-alignment: center-left;
+}
+
+.catalog-home-empty-state {
+    -fx-min-height: 200px;
+    -fx-spacing: 8px;
+    -fx-padding: 24px;
+    -fx-alignment: center;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
 }
 
 .catalog-component-card-icon,
@@ -98,6 +135,15 @@
 
 .catalog-component-card-name {
     -fx-text-alignment: left;
+}
+
+.catalog-component-card-favorite-marker {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-background-radius: 999px;
+}
+
+.catalog-component-card-favorite-icon {
+    -fx-text-fill: -m3-color-on-primary-container;
 }
 
 .catalog-expressive-marker {

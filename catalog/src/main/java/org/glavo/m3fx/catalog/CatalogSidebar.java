@@ -19,7 +19,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -148,7 +147,7 @@ final class CatalogSidebar extends StackPane {
     /// Applies search and profile filtering while retaining every persistent destination node.
     private void updateItems() {
         @Nullable CatalogComponent activeComponent = currentRoute == null ? null : componentOf(currentRoute);
-        String query = componentSearch.getText().strip().toLowerCase(Locale.ROOT);
+        String query = componentSearch.getText();
 
         int profileComponentCount = 0;
         int visibleComponentCount = 0;
@@ -164,7 +163,7 @@ final class CatalogSidebar extends StackPane {
             if (includedByProfile) {
                 profileComponentCount++;
             }
-            boolean visible = includedByProfile && matches(component, query);
+            boolean visible = includedByProfile && component.matchesSearch(query);
             item.setVisible(visible);
             item.setManaged(visible);
             if (visible) {
@@ -172,7 +171,7 @@ final class CatalogSidebar extends StackPane {
                 visibleExampleCount += component.examples().size();
             }
         }
-        summary.setText(query.isEmpty()
+        summary.setText(query.isBlank()
                 ? visibleComponentCount + " components · " + visibleExampleCount + " scenarios"
                 : visibleComponentCount + " of " + profileComponentCount + " components · "
                         + visibleExampleCount + " scenarios");
@@ -184,22 +183,6 @@ final class CatalogSidebar extends StackPane {
         } else if (selectedItem != homeItem && isEffectivelyReachable(homeItem)) {
             drawer.select(homeItem);
         }
-    }
-
-    /// Returns whether a component or one of its scenarios matches a normalized search query.
-    ///
-    /// @param component the component to inspect
-    /// @param query the stripped lower-case query, or an empty string to match every component
-    /// @return `true` when the component should remain visible
-    private static boolean matches(CatalogComponent component, String query) {
-        if (query.isEmpty()
-                || component.name().toLowerCase(Locale.ROOT).contains(query)
-                || component.description().toLowerCase(Locale.ROOT).contains(query)) {
-            return true;
-        }
-        return component.examples().stream().anyMatch(example ->
-                example.name().toLowerCase(Locale.ROOT).contains(query)
-                        || example.description().toLowerCase(Locale.ROOT).contains(query));
     }
 
     /// Sets the Material drawer presentation used by this sidebar.
