@@ -120,29 +120,49 @@ public final class M3Motion {
     private M3Motion() {
     }
 
-    /// Evaluates a cubic Bezier easing curve for the supplied x progress.
-    private static double cubicBezier(double x1, double y1, double x2, double y2, double x) {
+    /// Evaluates a cubic Bezier easing curve with precomputed polynomial coefficients.
+    private static double cubicBezier(
+            double xA,
+            double xB,
+            double xC,
+            double yA,
+            double yB,
+            double yC,
+            double x
+    ) {
         double low = 0.0;
         double high = 1.0;
         double t = x;
         for (int i = 0; i < 24; i++) {
             t = (low + high) / 2.0;
-            double estimate = cubicCoordinate(x1, x2, t);
+            double estimate = cubicCoordinate(xA, xB, xC, t);
             if (estimate < x) {
                 low = t;
             } else {
                 high = t;
             }
         }
-        return cubicCoordinate(y1, y2, t);
+        return cubicCoordinate(yA, yB, yC, t);
     }
 
-    /// Evaluates one coordinate of a cubic Bezier curve whose endpoints are zero and one.
-    private static double cubicCoordinate(double firstControl, double secondControl, double t) {
-        double inverse = 1.0 - t;
-        return 3.0 * firstControl * inverse * inverse * t
-                + 3.0 * secondControl * inverse * t * t
-                + t * t * t;
+    /// Evaluates one precomputed coordinate polynomial whose endpoints are zero and one.
+    private static double cubicCoordinate(double a, double b, double c, double t) {
+        return ((a * t + b) * t + c) * t;
+    }
+
+    /// Returns the cubic coefficient for one pair of control coordinates.
+    private static double cubicA(double firstControl, double secondControl) {
+        return 1.0 - 3.0 * secondControl + 3.0 * firstControl;
+    }
+
+    /// Returns the quadratic coefficient for one pair of control coordinates.
+    private static double cubicB(double firstControl, double secondControl) {
+        return 3.0 * secondControl - 6.0 * firstControl;
+    }
+
+    /// Returns the linear coefficient for the first control coordinate.
+    private static double cubicC(double firstControl) {
+        return 3.0 * firstControl;
     }
 
     /// A two-dimensional control point.
@@ -156,59 +176,96 @@ public final class M3Motion {
     /// A JavaFX interpolator backed by one cubic Bezier curve.
     @NotNullByDefault
     private static final class CubicInterpolator extends Interpolator {
-        /// The x coordinate of the first control point.
-        private final double x1;
+        /// The cubic coefficient of the x coordinate polynomial.
+        private final double xA;
 
-        /// The y coordinate of the first control point.
-        private final double y1;
+        /// The quadratic coefficient of the x coordinate polynomial.
+        private final double xB;
 
-        /// The x coordinate of the second control point.
-        private final double x2;
+        /// The linear coefficient of the x coordinate polynomial.
+        private final double xC;
 
-        /// The y coordinate of the second control point.
-        private final double y2;
+        /// The cubic coefficient of the y coordinate polynomial.
+        private final double yA;
+
+        /// The quadratic coefficient of the y coordinate polynomial.
+        private final double yB;
+
+        /// The linear coefficient of the y coordinate polynomial.
+        private final double yC;
 
         /// Creates a cubic Bezier interpolator.
         private CubicInterpolator(double x1, double y1, double x2, double y2) {
-            this.x1 = x1;
-            this.y1 = y1;
-            this.x2 = x2;
-            this.y2 = y2;
+            xA = cubicA(x1, x2);
+            xB = cubicB(x1, x2);
+            xC = cubicC(x1);
+            yA = cubicA(y1, y2);
+            yB = cubicB(y1, y2);
+            yC = cubicC(y1);
         }
 
         /// Computes the eased value for the supplied progress.
         @Override
         protected double curve(double t) {
-            return cubicBezier(x1, y1, x2, y2, t);
+            return cubicBezier(xA, xB, xC, yA, yB, yC, t);
         }
 
         /// Returns a debug representation of this curve.
         @Override
         public String toString() {
-            return "CubicInterpolator[x1=" + x1
-                    + ", y1=" + y1
-                    + ", x2=" + x2
-                    + ", y2=" + y2 + "]";
+            return "CubicInterpolator[xA=" + xA
+                    + ", xB=" + xB
+                    + ", xC=" + xC
+                    + ", yA=" + yA
+                    + ", yB=" + yB
+                    + ", yC=" + yC + "]";
         }
     }
 
     /// A JavaFX interpolator backed by two cubic Bezier curves with a shared midpoint.
     @NotNullByDefault
     private static final class ThreePointCubicInterpolator extends Interpolator {
-        /// The first control point of the first cubic curve.
-        private final Offset firstStartControl;
+        /// The shared midpoint x coordinate.
+        private final double midpointX;
 
-        /// The second control point of the first cubic curve.
-        private final Offset firstEndControl;
+        /// The shared midpoint y coordinate.
+        private final double midpointY;
 
-        /// The midpoint shared by both cubic curves.
-        private final Offset midpoint;
+        /// The cubic coefficient of the first segment's x polynomial.
+        private final double firstXA;
 
-        /// The first control point of the second cubic curve.
-        private final Offset secondStartControl;
+        /// The quadratic coefficient of the first segment's x polynomial.
+        private final double firstXB;
 
-        /// The second control point of the second cubic curve.
-        private final Offset secondEndControl;
+        /// The linear coefficient of the first segment's x polynomial.
+        private final double firstXC;
+
+        /// The cubic coefficient of the first segment's y polynomial.
+        private final double firstYA;
+
+        /// The quadratic coefficient of the first segment's y polynomial.
+        private final double firstYB;
+
+        /// The linear coefficient of the first segment's y polynomial.
+        private final double firstYC;
+
+        /// The cubic coefficient of the second segment's x polynomial.
+        private final double secondXA;
+
+        /// The quadratic coefficient of the second segment's x polynomial.
+        private final double secondXB;
+
+        /// The linear coefficient of the second segment's x polynomial.
+        private final double secondXC;
+
+        /// The cubic coefficient of the second segment's y polynomial.
+        private final double secondYA;
+
+        /// The quadratic coefficient of the second segment's y polynomial.
+        private final double secondYB;
+
+        /// The linear coefficient of the second segment's y polynomial.
+        private final double secondYC;
 
         /// Creates a three-point cubic interpolator.
         private ThreePointCubicInterpolator(
@@ -218,49 +275,81 @@ public final class M3Motion {
                 Offset secondStartControl,
                 Offset secondEndControl
         ) {
-            this.firstStartControl = firstStartControl;
-            this.firstEndControl = firstEndControl;
-            this.midpoint = midpoint;
-            this.secondStartControl = secondStartControl;
-            this.secondEndControl = secondEndControl;
+            midpointX = midpoint.x();
+            midpointY = midpoint.y();
+
+            double firstX1 = firstStartControl.x() / midpointX;
+            double firstX2 = firstEndControl.x() / midpointX;
+            double firstY1 = firstStartControl.y() / midpointY;
+            double firstY2 = firstEndControl.y() / midpointY;
+            firstXA = cubicA(firstX1, firstX2);
+            firstXB = cubicB(firstX1, firstX2);
+            firstXC = cubicC(firstX1);
+            firstYA = cubicA(firstY1, firstY2);
+            firstYB = cubicB(firstY1, firstY2);
+            firstYC = cubicC(firstY1);
+
+            double secondScaleX = 1.0 - midpointX;
+            double secondScaleY = 1.0 - midpointY;
+            double secondX1 = (secondStartControl.x() - midpointX) / secondScaleX;
+            double secondX2 = (secondEndControl.x() - midpointX) / secondScaleX;
+            double secondY1 = (secondStartControl.y() - midpointY) / secondScaleY;
+            double secondY2 = (secondEndControl.y() - midpointY) / secondScaleY;
+            secondXA = cubicA(secondX1, secondX2);
+            secondXB = cubicB(secondX1, secondX2);
+            secondXC = cubicC(secondX1);
+            secondYA = cubicA(secondY1, secondY2);
+            secondYB = cubicB(secondY1, secondY2);
+            secondYC = cubicC(secondY1);
         }
 
         /// Computes the eased value for the supplied progress.
         @Override
         protected double curve(double t) {
-            if (t < midpoint.x()) {
-                double scaleX = midpoint.x();
-                double scaleY = midpoint.y();
-                double scaledT = t / scaleX;
+            if (t < midpointX) {
+                double scaledT = t / midpointX;
                 return cubicBezier(
-                        firstStartControl.x() / scaleX,
-                        firstStartControl.y() / scaleY,
-                        firstEndControl.x() / scaleX,
-                        firstEndControl.y() / scaleY,
+                        firstXA,
+                        firstXB,
+                        firstXC,
+                        firstYA,
+                        firstYB,
+                        firstYC,
                         scaledT
-                ) * scaleY;
+                ) * midpointY;
             }
 
-            double scaleX = 1.0 - midpoint.x();
-            double scaleY = 1.0 - midpoint.y();
-            double scaledT = (t - midpoint.x()) / scaleX;
+            double scaleX = 1.0 - midpointX;
+            double scaleY = 1.0 - midpointY;
+            double scaledT = (t - midpointX) / scaleX;
             return cubicBezier(
-                    (secondStartControl.x() - midpoint.x()) / scaleX,
-                    (secondStartControl.y() - midpoint.y()) / scaleY,
-                    (secondEndControl.x() - midpoint.x()) / scaleX,
-                    (secondEndControl.y() - midpoint.y()) / scaleY,
+                    secondXA,
+                    secondXB,
+                    secondXC,
+                    secondYA,
+                    secondYB,
+                    secondYC,
                     scaledT
-            ) * scaleY + midpoint.y();
+            ) * scaleY + midpointY;
         }
 
         /// Returns a debug representation of this curve.
         @Override
         public String toString() {
-            return "ThreePointCubicInterpolator[firstStartControl=" + firstStartControl
-                    + ", firstEndControl=" + firstEndControl
-                    + ", midpoint=" + midpoint
-                    + ", secondStartControl=" + secondStartControl
-                    + ", secondEndControl=" + secondEndControl + "]";
+            return "ThreePointCubicInterpolator[midpointX=" + midpointX
+                    + ", midpointY=" + midpointY
+                    + ", firstXA=" + firstXA
+                    + ", firstXB=" + firstXB
+                    + ", firstXC=" + firstXC
+                    + ", firstYA=" + firstYA
+                    + ", firstYB=" + firstYB
+                    + ", firstYC=" + firstYC
+                    + ", secondXA=" + secondXA
+                    + ", secondXB=" + secondXB
+                    + ", secondXC=" + secondXC
+                    + ", secondYA=" + secondYA
+                    + ", secondYB=" + secondYB
+                    + ", secondYC=" + secondYC + "]";
         }
     }
 }

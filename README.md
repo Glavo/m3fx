@@ -208,7 +208,8 @@ policy.
 Changes between resolved pane and navigation presentations may animate bounds and opacity. An active transition can
 be retargeted, while continuous resizing within the same presentation remains direct. Set
 `layoutMotionSpecProperty()` for a local specification, or leave it `null` to use the theme's default spatial motion
-role.
+role. Flexible two-pane layouts place their gap at the visual center by default; bind
+`splitPositionProperty()` to move it along the logical horizontal axis while pane minimum widths remain enforced.
 
 ## Motion And Layout Transitions
 
@@ -321,6 +322,11 @@ content.setContentTransform(new M3ContentTransform(
 ));
 content.setContent(detailsPane);
 ```
+
+Reusable `NONE`, `FADE`, and `FADE_THROUGH` transforms cover common replacement patterns.
+`M3ContentTransform.sharedAxis(M3TransitionAxis.X, true)` returns a cached horizontal forward transform; X motion
+follows logical direction, Y uses vertical translation, and Z uses depth scale. Use `withSizeTransform(null)` when
+the host must adopt target size synchronously instead of animating and clipping it.
 
 Individual effects may carry independent motion specifications and delays. Set the content transform's size
 transform to `null` when replacement must adopt the target size synchronously.
@@ -477,7 +483,7 @@ The `demo` project is the exhaustive verification gallery. It exposes complete c
 directionality, and motion cases used by the visual test matrix:
 
 ```shell
-./gradlew :demo:run
+./gradlew runDemo
 ```
 
 The independent `catalog` project follows the AndroidX Material 3 Catalog's Home, Component, and Example
@@ -493,7 +499,7 @@ families for avatars, banners, color pickers, forms, icons, scrims, settings, an
 controls live in a modal bottom sheet:
 
 ```shell
-./gradlew :catalog:run
+./gradlew runCatalog
 ```
 
 The `hmcl-md3-demo` project is a Material Design 3 reinterpretation of the HMCL launcher shell. It keeps the

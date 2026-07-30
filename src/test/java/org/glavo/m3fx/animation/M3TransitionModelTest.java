@@ -13,7 +13,12 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.internal.animation.M3EnterTransitionImpl;
+import org.glavo.m3fx.internal.animation.M3ExitTransitionImpl;
+import org.glavo.m3fx.internal.animation.M3TransitionEffect;
+import org.glavo.m3fx.internal.animation.M3TransitionEffectKind;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -89,6 +95,97 @@ final class M3TransitionModelTest {
                 new M3ContentTransform(null, exit, null, 0.0));
         assertThrows(IllegalArgumentException.class, () ->
                 new M3ContentTransform(enter, exit, null, Double.NaN));
+    }
+
+    /// Verifies Material content-transition presets are cached, axis-aware, and immutably configurable.
+    @Test
+    void contentTransformPresetsExposeMaterialPatterns() {
+        assertSame(M3ContentTransform.FADE_THROUGH, M3ContentTransform.DEFAULT);
+        assertNull(M3ContentTransform.NONE.sizeTransform());
+        assertNotNull(M3ContentTransform.FADE.sizeTransform());
+        assertNotNull(M3ContentTransform.FADE_THROUGH.sizeTransform());
+
+        M3TransitionEffect fadeScale = effect(
+                M3ContentTransform.FADE.targetContentEnter(),
+                M3TransitionEffectKind.SCALE
+        );
+        assertEquals(0.8, fadeScale.value(), 0.0);
+        assertNull(effectOrNull(
+                M3ContentTransform.FADE.initialContentExit(),
+                M3TransitionEffectKind.SCALE
+        ));
+
+        M3TransitionEffect fadeThroughFade = effect(
+                M3ContentTransform.FADE_THROUGH.targetContentEnter(),
+                M3TransitionEffectKind.FADE
+        );
+        M3TransitionEffect fadeThroughScale = effect(
+                M3ContentTransform.FADE_THROUGH.targetContentEnter(),
+                M3TransitionEffectKind.SCALE
+        );
+        assertEquals(Duration.millis(90.0), fadeThroughFade.delay());
+        assertEquals(Duration.ZERO, fadeThroughScale.delay());
+
+        M3ContentTransform forwardX = M3ContentTransform.sharedAxis(M3TransitionAxis.X, true);
+        M3ContentTransform backwardX = M3ContentTransform.sharedAxis(M3TransitionAxis.X, false);
+        assertSame(forwardX, M3ContentTransform.sharedAxis(M3TransitionAxis.X, true));
+        assertNotSame(forwardX, backwardX);
+        assertEquals(
+                M3TransitionEdge.END,
+                effect(forwardX.targetContentEnter(), M3TransitionEffectKind.SLIDE).edge()
+        );
+        assertEquals(
+                M3TransitionEdge.START,
+                effect(forwardX.initialContentExit(), M3TransitionEffectKind.SLIDE).edge()
+        );
+        assertEquals(
+                M3TransitionEdge.START,
+                effect(backwardX.targetContentEnter(), M3TransitionEffectKind.SLIDE).edge()
+        );
+        assertEquals(
+                30.0,
+                effect(forwardX.targetContentEnter(), M3TransitionEffectKind.SLIDE).value(),
+                0.0
+        );
+
+        M3ContentTransform forwardY = M3ContentTransform.sharedAxis(M3TransitionAxis.Y, true);
+        assertEquals(
+                M3TransitionEdge.BOTTOM,
+                effect(forwardY.targetContentEnter(), M3TransitionEffectKind.SLIDE).edge()
+        );
+        assertEquals(
+                M3TransitionEdge.TOP,
+                effect(forwardY.initialContentExit(), M3TransitionEffectKind.SLIDE).edge()
+        );
+
+        M3ContentTransform forwardZ = M3ContentTransform.sharedAxis(M3TransitionAxis.Z, true);
+        M3ContentTransform backwardZ = M3ContentTransform.sharedAxis(M3TransitionAxis.Z, false);
+        assertEquals(
+                0.8,
+                effect(forwardZ.targetContentEnter(), M3TransitionEffectKind.SCALE).value(),
+                0.0
+        );
+        assertEquals(
+                1.1,
+                effect(forwardZ.initialContentExit(), M3TransitionEffectKind.SCALE).value(),
+                0.0
+        );
+        assertEquals(
+                1.1,
+                effect(backwardZ.targetContentEnter(), M3TransitionEffectKind.SCALE).value(),
+                0.0
+        );
+        assertThrows(NullPointerException.class, () -> M3ContentTransform.sharedAxis(null, true));
+
+        M3ContentTransform unclipped = forwardX.withSizeTransform(null);
+        assertNull(unclipped.sizeTransform());
+        assertSame(unclipped, unclipped.withSizeTransform(null));
+        assertSame(forwardX, forwardX.withTargetContentZIndex(0.0));
+        assertEquals(-1.0, forwardX.withTargetContentZIndex(-1.0).targetContentZIndex(), 0.0);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> forwardX.withTargetContentZIndex(Double.POSITIVE_INFINITY)
+        );
     }
 
     /// Verifies logical slides, private visual ownership, interactivity, and target drawing order.
@@ -201,6 +298,68 @@ final class M3TransitionModelTest {
     /// Returns a long linear motion specification that keeps initial transition values observable.
     private static M3MotionSpec slowMotionSpec() {
         return M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
+    }
+
+    /// Returns one required effect from an enter transition.
+    ///
+    /// @param transition the transition to inspect
+    /// @param kind       the required effect kind
+    /// @return the matching effect
+    private static M3TransitionEffect effect(
+            M3EnterTransition transition,
+            M3TransitionEffectKind kind
+    ) {
+        M3TransitionEffect effect = effectOrNull(transition, kind);
+        assertNotNull(effect);
+        return effect;
+    }
+
+    /// Returns one required effect from an exit transition.
+    ///
+    /// @param transition the transition to inspect
+    /// @param kind       the required effect kind
+    /// @return the matching effect
+    private static M3TransitionEffect effect(
+            M3ExitTransition transition,
+            M3TransitionEffectKind kind
+    ) {
+        M3TransitionEffect effect = effectOrNull(transition, kind);
+        assertNotNull(effect);
+        return effect;
+    }
+
+    /// Returns one matching enter effect when present.
+    ///
+    /// @param transition the transition to inspect
+    /// @param kind       the requested effect kind
+    /// @return the matching effect, or `null`
+    private static @Nullable M3TransitionEffect effectOrNull(
+            M3EnterTransition transition,
+            M3TransitionEffectKind kind
+    ) {
+        for (M3TransitionEffect effect : ((M3EnterTransitionImpl) transition).effects()) {
+            if (effect.kind() == kind) {
+                return effect;
+            }
+        }
+        return null;
+    }
+
+    /// Returns one matching exit effect when present.
+    ///
+    /// @param transition the transition to inspect
+    /// @param kind       the requested effect kind
+    /// @return the matching effect, or `null`
+    private static @Nullable M3TransitionEffect effectOrNull(
+            M3ExitTransition transition,
+            M3TransitionEffectKind kind
+    ) {
+        for (M3TransitionEffect effect : ((M3ExitTransitionImpl) transition).effects()) {
+            if (effect.kind() == kind) {
+                return effect;
+            }
+        }
+        return null;
     }
 
     /// Creates a region with fixed minimum and preferred dimensions.

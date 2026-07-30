@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
@@ -276,9 +275,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Whether the space key currently owns the active ripple.
     private boolean spaceKeyPressed;
 
-    /// Whether a deferred selected-child CSS state refresh is already queued.
-    private boolean selectedChildStateRefreshScheduled;
-
     /// Whether this skin has been disposed.
     private boolean disposed;
 
@@ -348,7 +344,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         control.selectedSupportingColorProperty().addListener(textColorInvalidation);
         control.disabledContentColorProperty().addListener(textColorInvalidation);
         updateSelectionContainerImmediate(control.isSelected());
-        updateSelectedChildPseudoClasses(false);
+        updateSelectedChildPseudoClasses(isSelectionCssActive(control) && control.isSelected());
         updateMenuColorStylePseudoClasses();
         updateText();
         updateSlots();
@@ -855,19 +851,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     private void updateSelectionLifecycleState() {
         M3ListItemBase item = getSkinnable();
         boolean active = isSelectionCssActive(item);
+        selectionAnimation.stop();
+        updateSelectedChildPseudoClasses(active && item.isSelected());
         if (!active) {
-            selectionAnimation.stop();
             resetInteractionState();
-            updateSelectionContainerImmediate(item.isSelected());
-            updateSelectedChildPseudoClasses(false);
-        } else {
-            updateSelectionContainerImmediate(item.isSelected());
-            if (item.isSelected()) {
-                scheduleSelectedChildStateRefresh();
-            } else {
-                updateSelectedChildPseudoClasses(false);
-            }
         }
+        updateSelectionContainerImmediate(item.isSelected());
     }
 
     /// Returns whether selected child CSS may be applied in the item's current scene and window state.
@@ -878,23 +867,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         }
         @Nullable Window window = scene.getWindow();
         return window == null || window.isShowing();
-    }
-
-    /// Defers selected child CSS state until the parent list item's current CSS transaction has completed.
-    private void scheduleSelectedChildStateRefresh() {
-        if (selectedChildStateRefreshScheduled || disposed) {
-            return;
-        }
-
-        selectedChildStateRefreshScheduled = true;
-        M3ListItemBase item = getSkinnable();
-        Platform.runLater(() -> {
-            selectedChildStateRefreshScheduled = false;
-            if (disposed || item.getSkin() != this || !isSelectionCssActive(item)) {
-                return;
-            }
-            updateSelectedChildPseudoClasses(item.isSelected());
-        });
     }
 
     /// Applies semantic typography roles for ordinary list, menu, and navigation-drawer contexts.
@@ -965,6 +937,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
     /// Animates the selected container to the requested state.
     private void animateSelectionContainer(boolean selected) {
+        M3ListItemBase item = getSkinnable();
+        boolean active = isSelectionCssActive(item);
+        if (!active) {
+            selectionAnimation.stop();
+            updateSelectedChildPseudoClasses(false);
+            updateSelectionContainerImmediate(selected);
+            return;
+        }
+
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
@@ -972,7 +953,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             updateSelectedChildPseudoClasses(false);
         }
         selectionAnimationTargetSelected = selected;
-        M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
+        M3MotionSpec spec = M3Animation.defaultEffects(item);
         selectionAnimation.configure(
                 spec,
                 targetOpacity,
@@ -981,13 +962,14 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
                 selectionContainer.getTranslateX(),
                 selectionContainer.getTranslateY()
         );
-        M3Animation.playFromStart(getSkinnable(), selectionAnimation);
+        M3Animation.playFromStart(item, selectionAnimation);
     }
 
     /// Mirrors the settled selected state after the reusable selection animation completes.
     private void finishSelectionAnimation() {
+        M3ListItemBase item = getSkinnable();
         boolean selected = selectionAnimationTargetSelected;
-        if (isSelectionCssActive(getSkinnable()) && getSkinnable().isSelected() == selected) {
+        if (!disposed && item.getSkin() == this && isSelectionCssActive(item) && item.isSelected() == selected) {
             updateSelectedChildPseudoClasses(selected);
         }
     }

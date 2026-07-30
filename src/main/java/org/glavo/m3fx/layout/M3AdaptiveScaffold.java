@@ -639,6 +639,44 @@ public final class M3AdaptiveScaffold extends Control {
         return paneSpacing;
     }
 
+    /// The logical position of the gap between two flexible panes.
+    ///
+    /// The value is a fraction of the scaffold's inner body width measured from logical start. Minimum pane widths,
+    /// rails, margins, and safety insets may constrain the rendered position. The property affects only
+    /// [M3PaneLayout#SPLIT_LEADING] and [M3PaneLayout#SPLIT_TRAILING].
+    ///
+    /// @defaultValue `0.5`
+    private final DoubleProperty splitPosition = createSplitPositionProperty();
+
+    /// Returns the requested logical split position.
+    ///
+    /// @return a finite fraction in `[0.0, 1.0]`
+    /// @throws IllegalArgumentException if a bound property currently supplies an invalid value
+    public double getSplitPosition() {
+        return validateUnitInterval(splitPosition.get(), "splitPosition");
+    }
+
+    /// Sets the logical center position of the gap between two flexible panes.
+    ///
+    /// A value of `0.0` requests the logical start edge and `1.0` requests the logical end edge. The skin clamps
+    /// that request so both visible panes retain their minimum widths. Logical positions mirror with effective node
+    /// orientation.
+    ///
+    /// @param splitPosition the finite position fraction in `[0.0, 1.0]`
+    /// @throws IllegalArgumentException if `splitPosition` is not finite or lies outside `[0.0, 1.0]`
+    public void setSplitPosition(double splitPosition) {
+        this.splitPosition.set(validateUnitInterval(splitPosition, "splitPosition"));
+    }
+
+    /// Returns the observable, bindable logical split-position property.
+    ///
+    /// A binding source must supply a finite value in `[0.0, 1.0]`.
+    ///
+    /// @return the split-position property
+    public DoubleProperty splitPositionProperty() {
+        return splitPosition;
+    }
+
     /// The explicit fixed leading-pane width, or [Region#USE_COMPUTED_SIZE] for the breakpoint default.
     ///
     /// @defaultValue [Region#USE_COMPUTED_SIZE]
@@ -969,6 +1007,18 @@ public final class M3AdaptiveScaffold extends Control {
         };
     }
 
+    /// Creates the split-position property constrained to the inclusive unit interval.
+    private DoubleProperty createSplitPositionProperty() {
+        return new SimpleDoubleProperty(this, "splitPosition", 0.5) {
+            /// Validates the bound value and requests layout when the split position changes.
+            @Override
+            protected void invalidated() {
+                validateUnitInterval(get(), "splitPosition");
+                requestLayout();
+            }
+        };
+    }
+
     /// Validates a configured metric.
     private static double validateMetric(double value, String name) {
         if (Double.compare(value, Region.USE_COMPUTED_SIZE) != 0
@@ -976,6 +1026,14 @@ public final class M3AdaptiveScaffold extends Control {
             throw new IllegalArgumentException(
                     name + " must be USE_COMPUTED_SIZE or a finite non-negative value"
             );
+        }
+        return value;
+    }
+
+    /// Validates a finite value in the inclusive unit interval.
+    private static double validateUnitInterval(double value, String name) {
+        if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException(name + " must be finite and in the range 0.0 through 1.0");
         }
         return value;
     }

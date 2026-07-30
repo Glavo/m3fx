@@ -64,6 +64,8 @@ final class M3AdaptiveScaffoldStateTest {
             assertEquals(0, scaffold.visiblePaneCountProperty().get());
             assertEquals(Region.USE_COMPUTED_SIZE, scaffold.getContentMargin());
             assertEquals(Region.USE_COMPUTED_SIZE, scaffold.getPaneSpacing());
+            assertEquals(0.5, scaffold.getSplitPosition());
+            assertEquals(0.5, scaffold.splitPositionProperty().get());
             assertEquals(Region.USE_COMPUTED_SIZE, scaffold.getFixedLeadingPaneWidth());
             assertEquals(Region.USE_COMPUTED_SIZE, scaffold.getFixedTrailingPaneWidth());
         });
@@ -346,6 +348,35 @@ final class M3AdaptiveScaffoldStateTest {
             source.set(Double.NaN);
             assertThrows(IllegalArgumentException.class, scaffold::getEffectiveContentMargin);
             scaffold.contentMarginProperty().unbind();
+        });
+    }
+
+    /// Verifies that split position follows the JavaFX property contract and rejects invalid direct or bound values.
+    @Test
+    void exposesBindableValidatedSplitPosition() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+            scaffold.setSplitPosition(0.35);
+            assertEquals(0.35, scaffold.getSplitPosition());
+            assertSame(scaffold, scaffold.splitPositionProperty().getBean());
+            assertEquals("splitPosition", scaffold.splitPositionProperty().getName());
+
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setSplitPosition(-0.01));
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setSplitPosition(1.01));
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setSplitPosition(Double.NaN));
+            assertThrows(IllegalArgumentException.class, () -> scaffold.setSplitPosition(Double.POSITIVE_INFINITY));
+            assertEquals(0.35, scaffold.getSplitPosition());
+
+            SimpleDoubleProperty source = new SimpleDoubleProperty(0.7);
+            scaffold.splitPositionProperty().bind(source);
+            assertEquals(0.7, scaffold.getSplitPosition());
+            assertInstanceOf(
+                    IllegalArgumentException.class,
+                    captureUncaughtListenerException(() -> source.set(1.1))
+            );
+            assertThrows(IllegalArgumentException.class, scaffold::getSplitPosition);
+            scaffold.splitPositionProperty().unbind();
+            scaffold.setSplitPosition(0.5);
         });
     }
 

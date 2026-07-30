@@ -1,3 +1,5 @@
+import java.lang.module.ModuleDescriptor
+import java.lang.module.ModuleFinder
 import java.util.zip.ZipFile
 import org.glavo.m3fx.build.M3FXStandardDoclet
 import org.gradle.api.component.AdhocComponentWithVariants
@@ -54,8 +56,15 @@ fun DependencyHandler.addJavafxDependencies(configurationName: String, version: 
     }
 }
 
+val javafxJavadocElements = configurations.create("javafxJavadocElements") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+
 dependencies {
     addJavafxDependencies("compileOnly", javafxVersion)
+    addJavafxDependencies(javafxJavadocElements.name, javafxVersion)
     api("org.glavo:MonetFX:$monetFxVersion")
     compileOnlyApi("org.jetbrains:annotations:26.1.0")
 
@@ -169,6 +178,72 @@ components.named<AdhocComponentWithVariants>("java") {
 
 val monetFxJavadocLinkDirectory =
     layout.buildDirectory.dir("generated/javadoc-links/monetfx-$monetFxVersion")
+val javaSEJavadocLinkDirectory =
+    layout.buildDirectory.dir("generated/javadoc-links/java-se-17")
+val javafxJavadocLinkDirectory =
+    layout.buildDirectory.dir("generated/javadoc-links/javafx-$javafxVersion")
+
+fun writeJavadocElementList(outputDirectory: File, descriptors: Iterable<ModuleDescriptor>) {
+    val content = buildString {
+        descriptors
+            .sortedBy(ModuleDescriptor::name)
+            .forEach { descriptor ->
+                val exportedPackages = descriptor.exports()
+                    .asSequence()
+                    .filterNot(ModuleDescriptor.Exports::isQualified)
+                    .map(ModuleDescriptor.Exports::source)
+                    .sorted()
+                    .toList()
+                if (exportedPackages.isNotEmpty()) {
+                    appendLine("module:${descriptor.name()}")
+                    exportedPackages.forEach(::appendLine)
+                }
+            }
+    }
+    val elementList = outputDirectory.resolve("element-list")
+    elementList.parentFile.mkdirs()
+    elementList.writeText(content, Charsets.UTF_8)
+}
+
+val generateJavaSEJavadocElementList = tasks.register("generateJavaSEJavadocElementList") {
+    group = "documentation"
+    description = "Generates the offline Javadoc element list for Java SE."
+
+    val outputDirectory = javaSEJavadocLinkDirectory
+    inputs.property("javaRuntimeVersion", System.getProperty("java.runtime.version", "unknown"))
+    outputs.dir(outputDirectory)
+
+    doLast {
+        val descriptors = ModuleLayer.boot()
+            .modules()
+            .asSequence()
+            .map(Module::getDescriptor)
+            .filter { descriptor ->
+                descriptor.name().startsWith("java.") || descriptor.name().startsWith("jdk.")
+            }
+            .toList()
+        writeJavadocElementList(outputDirectory.get().asFile, descriptors)
+    }
+}
+
+val generateJavafxJavadocElementList = tasks.register("generateJavafxJavadocElementList") {
+    group = "documentation"
+    description = "Generates the offline Javadoc element list for JavaFX."
+
+    val outputDirectory = javafxJavadocLinkDirectory
+    inputs.files(javafxJavadocElements)
+    outputs.dir(outputDirectory)
+
+    doLast {
+        val modulePaths = javafxJavadocElements.files
+            .map(File::toPath)
+            .toTypedArray()
+        val descriptors = ModuleFinder.of(*modulePaths)
+            .findAll()
+            .map { reference -> reference.descriptor() }
+        writeJavadocElementList(outputDirectory.get().asFile, descriptors)
+    }
+}
 
 val generateMonetFxJavadocElementList = tasks.register("generateMonetFxJavadocElementList") {
     group = "documentation"
@@ -195,8 +270,16 @@ val generateMonetFxJavadocElementList = tasks.register("generateMonetFxJavadocEl
 
 tasks.withType<Javadoc> {
     val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
-    dependsOn(generateMonetFxJavadocElementList)
-    inputs.dir(monetFxJavadocLinkDirectory)
+    dependsOn(
+        generateJavaSEJavadocElementList,
+        generateJavafxJavadocElementList,
+        generateMonetFxJavadocElementList
+    )
+    inputs.files(
+        javaSEJavadocLinkDirectory,
+        javafxJavadocLinkDirectory,
+        monetFxJavadocLinkDirectory
+    )
     setSource(fileTree(mainSourceDirectory) {
         include("org/glavo/m3fx/controls/package-info.java")
     })
@@ -216,9 +299,13 @@ tasks.withType<Javadoc> {
         it.encoding("UTF-8")
         it.addStringOption("sourcepath", mainSourceDirectory.absolutePath)
         it.addStringOption("subpackages", "org.glavo.m3fx")
-        it.links(
+        it.linksOffline(
             "https://docs.oracle.com/en/java/javase/17/docs/api/",
-            "https://openjfx.io/javadoc/$javafxVersion/"
+            javaSEJavadocLinkDirectory.get().asFile.absolutePath
+        )
+        it.linksOffline(
+            "https://openjfx.io/javadoc/$javafxVersion/",
+            javafxJavadocLinkDirectory.get().asFile.absolutePath
         )
         it.linksOffline(
             "https://javadoc.io/doc/org.glavo/MonetFX/$monetFxVersion/",
@@ -675,6 +762,12 @@ tasks.register("runDemo") {
     group = "application"
     description = "Runs the M3FX JavaFX demo application."
     dependsOn(":demo:run")
+}
+
+tasks.register("runCatalog") {
+    group = "application"
+    description = "Runs the M3FX component catalog application."
+    dependsOn(":catalog:run")
 }
 
 tasks.register("runHmclMd3Demo") {

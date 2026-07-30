@@ -1384,10 +1384,11 @@ final class M3FXCatalogVisualTest {
             assertTrue(avatarsPage.lookupAll(".m3-avatar").stream().allMatch(M3Avatar.class::isInstance));
 
             Parent adaptivePage = openFirstExample(scene, app, "Adaptive");
-            assertInstanceOf(
+            M3AdaptiveScaffold adaptiveScaffold = assertInstanceOf(
                     M3AdaptiveScaffold.class,
                     Objects.requireNonNull(adaptivePage.lookup(".m3-adaptive-scaffold"), "adaptive scaffold")
             );
+            assertEquals(0.36, adaptiveScaffold.getSplitPosition(), 0.0);
 
             Parent bannersPage = openFirstExample(scene, app, "Banners");
             assertInstanceOf(

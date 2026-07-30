@@ -22,6 +22,7 @@ import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3TransitionAxis;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3BottomSheet;
@@ -87,28 +88,15 @@ public final class M3FXCatalogApp extends Application {
     private static final double SIDEBAR_WIDTH = 360.0;
 
     /// The content transform used when navigating deeper into the route hierarchy.
-    private static final M3ContentTransform FORWARD_ROUTE_TRANSFORM = new M3ContentTransform(
-            M3EnterTransition.fade(0.0).and(M3EnterTransition.slideFrom(M3TransitionEdge.END, 32.0)),
-            M3ExitTransition.fade(0.0).and(M3ExitTransition.slideTo(M3TransitionEdge.START, 16.0)),
-            null,
-            0.0
-    );
+    private static final M3ContentTransform FORWARD_ROUTE_TRANSFORM =
+            M3ContentTransform.sharedAxis(M3TransitionAxis.X, true).withSizeTransform(null);
 
     /// The content transform used when returning toward the Catalog home route.
-    private static final M3ContentTransform BACKWARD_ROUTE_TRANSFORM = new M3ContentTransform(
-            M3EnterTransition.fade(0.0).and(M3EnterTransition.slideFrom(M3TransitionEdge.START, 32.0)),
-            M3ExitTransition.fade(0.0).and(M3ExitTransition.slideTo(M3TransitionEdge.END, 16.0)),
-            null,
-            0.0
-    );
+    private static final M3ContentTransform BACKWARD_ROUTE_TRANSFORM =
+            M3ContentTransform.sharedAxis(M3TransitionAxis.X, false).withSizeTransform(null);
 
     /// The content transform used for route rebuilds that do not represent navigation.
-    private static final M3ContentTransform INSTANT_ROUTE_TRANSFORM = new M3ContentTransform(
-            M3EnterTransition.none(),
-            M3ExitTransition.none(),
-            null,
-            0.0
-    );
+    private static final M3ContentTransform INSTANT_ROUTE_TRANSFORM = M3ContentTransform.NONE;
 
     /// The default M3 seed color.
     private static final Color DEFAULT_SEED_COLOR = Color.web("#6750A4");

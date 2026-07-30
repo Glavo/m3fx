@@ -6929,6 +6929,7 @@ final class M3FXDemoVisualMatrixTest {
     ) throws InterruptedException {
         AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable Node> surfaceReference = new AtomicReference<>();
+        AtomicReference<@Nullable Bounds> surfaceBoundsReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hiddenBaselineReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
@@ -6990,6 +6991,7 @@ final class M3FXDemoVisualMatrixTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
             assertSnackbarStaysCompact(scene, surface);
+            surfaceBoundsReference.set(nodeAreaBounds(surface));
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
                     "snackbar-overlay",
@@ -7028,17 +7030,21 @@ final class M3FXDemoVisualMatrixTest {
             FxTestUtils.clearMotionScheme(overlay);
         });
 
-        assertSnapshotChanged(
+        Bounds surfaceBounds = Objects.requireNonNull(surfaceBoundsReference.get(), "snackbar surface bounds");
+        assertNodeAreaChanged(
+                surfaceBounds,
                 Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
                 Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
                 "snackbar overlay enter motion"
         );
-        assertSnapshotChanged(
+        assertNodeAreaChanged(
+                surfaceBounds,
                 Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
                 Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
                 "snackbar overlay exit motion"
         );
-        assertSnapshotChanged(
+        assertNodeAreaChanged(
+                surfaceBounds,
                 Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
                 Objects.requireNonNull(hiddenReference.get(), "hidden snackbar snapshot"),
                 "snackbar overlay hidden frame"
@@ -7051,6 +7057,7 @@ final class M3FXDemoVisualMatrixTest {
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
         AtomicReference<@Nullable M3FabMenu> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable Bounds> targetBoundsReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> collapsedReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> expandingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> expandedReference = new AtomicReference<>();
@@ -7094,6 +7101,7 @@ final class M3FXDemoVisualMatrixTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
             assertFabMenuActionsStayInsideShowcase(target);
+            targetBoundsReference.set(nodeAreaBounds(target));
             writeAnimationSnapshot(
                     Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
                     "fab-menu",
@@ -7130,22 +7138,27 @@ final class M3FXDemoVisualMatrixTest {
             FxTestUtils.clearMotionScheme(target);
         });
 
-        assertSnapshotChanged(
+        Bounds targetBounds = Objects.requireNonNull(targetBoundsReference.get(), "expanded FAB menu bounds");
+        assertNodeAreaChanged(
+                targetBounds,
                 Objects.requireNonNull(collapsedReference.get(), "collapsed FAB menu snapshot"),
                 Objects.requireNonNull(expandingReference.get(), "expanding FAB menu snapshot"),
                 "FAB menu expanding frame"
         );
-        assertSnapshotChanged(
+        assertNodeAreaChanged(
+                targetBounds,
                 Objects.requireNonNull(expandingReference.get(), "expanding FAB menu snapshot"),
                 Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
                 "FAB menu expanded frame"
         );
-        assertSnapshotChanged(
+        assertNodeAreaChanged(
+                targetBounds,
                 Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
                 Objects.requireNonNull(collapsingReference.get(), "collapsing FAB menu snapshot"),
                 "FAB menu collapsing frame"
         );
-        assertSnapshotChanged(
+        assertNodeAreaChanged(
+                targetBounds,
                 Objects.requireNonNull(collapsingReference.get(), "collapsing FAB menu snapshot"),
                 Objects.requireNonNull(recollapsedReference.get(), "recollapsed FAB menu snapshot"),
                 "FAB menu recollapsed frame"
@@ -12883,8 +12896,13 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(animatedVisibilities.get(0).isFitToWidth(),
                 "Motion page animated visibility should reflow within its showcase width");
         List<M3Slider> sliders = visibleNodesOfType(page, M3Slider.class);
-        assertEquals(1, sliders.size(), "Motion page seekable transition slider count");
-        assertTrue(sliders.get(0).isManaged(), "Motion page seekable transition slider should participate in layout");
+        assertEquals(2, sliders.size(), "Motion page seekable transition and adaptive split slider count");
+        assertTrue(sliders.stream().allMatch(Node::isManaged),
+                "Motion page sliders should participate in layout");
+        assertTrue(sliders.stream().anyMatch(slider -> slider.getMin() == 0.0 && slider.getMax() == 1.0),
+                "Motion page should expose the seekable transition range");
+        assertTrue(sliders.stream().anyMatch(slider -> slider.getMin() == 0.2 && slider.getMax() == 0.8),
+                "Motion page should expose the adaptive split-position range");
     }
 
     /// Verifies the real Navigation Drawer demo page drawer and grouped destination states.

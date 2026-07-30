@@ -15,7 +15,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3ContentTransform;
@@ -23,8 +22,8 @@ import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3LayoutTransition;
-import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.animation.M3StateTransition;
+import org.glavo.m3fx.animation.M3TransitionAxis;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VectorConverters;
 import org.glavo.m3fx.controls.M3Button;
@@ -330,6 +329,8 @@ final class MotionDemoPage extends DemoPageSupport {
         adaptiveScaffold.setPaneLayout(M3PaneLayout.ADAPTIVE);
         adaptiveScaffold.setNavigationLayout(M3NavigationLayout.ADAPTIVE);
 
+        M3Slider splitPosition = new M3Slider(0.2, 0.8, 0.5);
+        adaptiveScaffold.splitPositionProperty().bind(splitPosition.valueProperty());
         M3Button changeAdaptiveLayout = new M3Button("Use compact topology", M3ButtonVariant.FILLED);
         changeAdaptiveLayout.setOnAction(event -> {
             boolean compact = adaptiveScaffold.getPaneLayout() != M3PaneLayout.SINGLE;
@@ -337,7 +338,13 @@ final class MotionDemoPage extends DemoPageSupport {
             adaptiveScaffold.setNavigationLayout(compact ? M3NavigationLayout.BAR : M3NavigationLayout.ADAPTIVE);
             changeAdaptiveLayout.setText(compact ? "Resume adaptive topology" : "Use compact topology");
         });
-        VBox adaptiveExample = new VBox(12.0, adaptiveScaffold, changeAdaptiveLayout);
+        VBox adaptiveExample = new VBox(
+                12.0,
+                adaptiveScaffold,
+                new Label("Flexible pane split"),
+                splitPosition,
+                changeAdaptiveLayout
+        );
         configureResponsiveWidth(adaptiveExample, 560.0);
 
         return createGallery(
@@ -358,16 +365,14 @@ final class MotionDemoPage extends DemoPageSupport {
     private static void configureContentTransform(M3AnimatedContent animatedContent, boolean forward) {
         M3TransitionEdge enterEdge = forward ? M3TransitionEdge.END : M3TransitionEdge.START;
         M3TransitionEdge exitEdge = forward ? M3TransitionEdge.START : M3TransitionEdge.END;
+        M3ContentTransform sharedAxis = M3ContentTransform.sharedAxis(M3TransitionAxis.X, forward);
         animatedContent.setContentTransform(new M3ContentTransform(
-                M3EnterTransition.fade(0.0)
-                        .withDelay(Duration.millis(60.0))
-                        .and(M3EnterTransition.slideFrom(enterEdge, 32.0))
+                sharedAxis.targetContentEnter()
                         .and(M3EnterTransition.expandHorizontally(enterEdge)),
-                M3ExitTransition.fade(0.0)
-                        .and(M3ExitTransition.slideTo(exitEdge, 16.0))
+                sharedAxis.initialContentExit()
                         .and(M3ExitTransition.shrinkHorizontally(exitEdge)),
-                new M3SizeTransform(true, null),
-                0.0
+                sharedAxis.sizeTransform(),
+                sharedAxis.targetContentZIndex()
         ));
     }
 

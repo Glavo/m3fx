@@ -23,10 +23,10 @@ public enum M3PaneLayout {
     /// Shows one flexible pane selected by [M3AdaptiveScaffold#activePaneProperty()].
     SINGLE,
 
-    /// Shows the leading and main panes as flexible panes separated at the visual center.
+    /// Shows the leading and main panes as flexible panes separated at the configured split position.
     SPLIT_LEADING,
 
-    /// Shows the main and trailing panes as flexible panes separated at the visual center.
+    /// Shows the main and trailing panes as flexible panes separated at the configured split position.
     SPLIT_TRAILING,
 
     /// Shows a fixed-width leading pane and a flexible main pane.

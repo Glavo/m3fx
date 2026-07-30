@@ -162,6 +162,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         control.safetyInsetsProperty().addListener(layoutListener);
         control.contentMarginProperty().addListener(layoutListener);
         control.paneSpacingProperty().addListener(layoutListener);
+        control.splitPositionProperty().addListener(layoutListener);
         control.fixedLeadingPaneWidthProperty().addListener(layoutListener);
         control.fixedTrailingPaneWidthProperty().addListener(layoutListener);
         control.effectiveNodeOrientationProperty().addListener(layoutListener);
@@ -185,6 +186,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         control.safetyInsetsProperty().removeListener(layoutListener);
         control.contentMarginProperty().removeListener(layoutListener);
         control.paneSpacingProperty().removeListener(layoutListener);
+        control.splitPositionProperty().removeListener(layoutListener);
         control.fixedLeadingPaneWidthProperty().removeListener(layoutListener);
         control.fixedTrailingPaneWidthProperty().removeListener(layoutListener);
         control.effectiveNodeOrientationProperty().removeListener(layoutListener);
@@ -478,7 +480,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         }
     }
 
-    /// Lays out two flexible panes around the visual center of the scaffold.
+    /// Lays out two flexible panes around the requested logical split position.
     private void layoutSplit(
             double x,
             double y,
@@ -498,8 +500,8 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         );
         double minimumSplit = paneStart + firstMinimum;
         double maximumSplit = Math.max(minimumSplit, paneEnd - spacing - secondMinimum);
-        double centeredSplit = width / 2.0 - spacing / 2.0;
-        double split = clamp(centeredSplit, minimumSplit, maximumSplit);
+        double requestedSplit = width * getSkinnable().getSplitPosition() - spacing / 2.0;
+        double split = clamp(requestedSplit, minimumSplit, maximumSplit);
 
         layoutLogical(first, x, paneStart, y, Math.max(0.0, split - paneStart), height);
         double secondStart = split + spacing;

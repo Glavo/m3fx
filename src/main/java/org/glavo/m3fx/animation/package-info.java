@@ -18,9 +18,10 @@
 /// content node. [M3AnimatedContent] animates content replacement and preferred size. Its immutable
 /// [M3EnterTransition] and [M3ExitTransition] values compose independent fade, scale, logical-edge slide, and
 /// RTL-aware expand or shrink reveal effects, while [M3ContentTransform] coordinates those effects with size and
-/// drawing-order behavior. [M3LayoutTransition] animates direct-child placement in an existing JavaFX layout
-/// container. These runtime APIs resolve reduced-motion policy from their owner nodes and do not require specialized
-/// animated layout subclasses.
+/// drawing-order behavior. Cached fade, fade-through, and [shared-axis][M3TransitionAxis] presets cover standard
+/// Material content-replacement patterns. [M3LayoutTransition] animates direct-child placement in an existing
+/// JavaFX layout container. These runtime APIs resolve reduced-motion policy from their owner nodes and do not
+/// require specialized animated layout subclasses.
 ///
 /// Motion specs and schemes are immutable and can be shared. Their builders are mutable, reusable, and not
 /// thread-safe. Runtime settings that observe or mutate live nodes follow JavaFX scene-graph threading rules.

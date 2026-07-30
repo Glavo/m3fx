@@ -164,6 +164,47 @@ final class M3AdaptiveScaffoldLayoutTest {
         });
     }
 
+    /// Verifies configurable split positions are logical, mirrored, and constrained by pane minimum widths.
+    @Test
+    void honorsLogicalSplitPositionAndPaneMinimums() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
+            Pane leadingPane = new Pane();
+            Pane mainPane = new Pane();
+            scaffold.setLeadingPane(leadingPane);
+            scaffold.setMainPane(mainPane);
+            scaffold.setPaneLayout(M3PaneLayout.SPLIT_LEADING);
+            scaffold.setNavigationLayout(M3NavigationLayout.NONE);
+            scaffold.setContentMargin(0.0);
+            scaffold.setPaneSpacing(20.0);
+            scaffold.setSplitPosition(0.35);
+
+            Pane root = installForLayout(scaffold, 1_000.0, 600.0);
+            Bounds leftToRightLeading = sceneBounds(leadingPane);
+            Bounds leftToRightMain = sceneBounds(mainPane);
+            assertEquals(350.0, splitCenter(leftToRightLeading, leftToRightMain), 0.001);
+            assertEquals(340.0, leftToRightLeading.getWidth(), 0.001);
+            assertEquals(640.0, leftToRightMain.getWidth(), 0.001);
+
+            scaffold.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            layoutScaffold(root, scaffold, 1_000.0, 600.0);
+            Bounds rightToLeftLeading = sceneBounds(leadingPane);
+            Bounds rightToLeftMain = sceneBounds(mainPane);
+            assertEquals(650.0, splitCenter(rightToLeftMain, rightToLeftLeading), 0.001);
+            assertEquals(340.0, rightToLeftLeading.getWidth(), 0.001);
+            assertEquals(640.0, rightToLeftMain.getWidth(), 0.001);
+
+            scaffold.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            leadingPane.setMinWidth(420.0);
+            scaffold.setSplitPosition(0.1);
+            layoutScaffold(root, scaffold, 1_000.0, 600.0);
+            Bounds constrainedLeading = sceneBounds(leadingPane);
+            Bounds constrainedMain = sceneBounds(mainPane);
+            assertEquals(420.0, constrainedLeading.getWidth(), 0.001);
+            assertEquals(430.0, splitCenter(constrainedLeading, constrainedMain), 0.001);
+        });
+    }
+
     /// Verifies that a leading navigation rail compresses only the logical leading side of a centered split.
     @Test
     void keepsSplitDividerCenteredBesideLeadingRail() {

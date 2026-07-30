@@ -77,6 +77,7 @@ final class CatalogContainerSamples {
         scaffold.setBreakpointOverride(breakpoint);
         scaffold.setPaneLayout(paneLayout);
         scaffold.setNavigationLayout(navigationLayout);
+        scaffold.setSplitPosition(0.36);
         scaffold.setTopBar(new M3TopAppBar("Adaptive layout"));
         scaffold.setNavigationBar(navigationBar());
         scaffold.setNavigationRail(navigationRail());
