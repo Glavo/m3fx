@@ -753,6 +753,8 @@ public final class M3FXCatalogApp extends Application {
     ) {
         M3MenuButton button = new M3MenuButton();
         button.setGraphic(CatalogIcons.create(CatalogIcons.MORE_VERTICAL));
+        button.setVariant(M3ButtonVariant.TEXT);
+        button.setHorizontalPadding(10.0);
         button.getStyleClass().addAll("catalog-top-action", "catalog-overflow-action");
         button.setAccessibleText("More options");
 

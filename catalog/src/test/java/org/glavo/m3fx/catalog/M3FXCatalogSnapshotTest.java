@@ -235,6 +235,24 @@ final class M3FXCatalogSnapshotTest {
                             Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
                             M3FXCatalogApp app = Objects.requireNonNull(appReference.get(), "app");
                             app.navigateHome();
+                            M3SearchBar homeSearch = assertInstanceOf(
+                                    M3SearchBar.class,
+                                    Objects.requireNonNull(
+                                            stage.getScene().lookup(".catalog-home-search"),
+                                            "compact Home search"
+                                    )
+                            );
+                            homeSearch.clear();
+                            M3SegmentedButton allFilter = assertInstanceOf(
+                                    M3SegmentedButton.class,
+                                    Objects.requireNonNull(
+                                            stage.getScene().lookup(".catalog-home-filter-all"),
+                                            "compact Home All filter"
+                                    )
+                            );
+                            if (!allFilter.isSelected()) {
+                                allFilter.fire();
+                            }
                             stage.setWidth(460.0);
                             stage.setHeight(560.0);
                         },

@@ -21,6 +21,7 @@ import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3DateRangePicker;
@@ -29,6 +30,7 @@ import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
@@ -111,6 +113,7 @@ final class M3FXCatalogVisualTest {
                 assertHomeBrowserAndFavorites(scene, app);
                 assertSidebarSearch(scene, app);
                 assertAdaptiveGrid(scene, stage);
+                assertBreakpointContinuity(scene, stage, app);
                 assertComponentAndExampleNavigation(scene, app);
                 assertExampleBrowserFiltering(scene, app);
                 assertRouteStateRestoration(scene, app);
@@ -315,6 +318,14 @@ final class M3FXCatalogVisualTest {
             assertNull(scene.lookup(".catalog-navigation-drawer"));
             assertNull(scene.lookup(".catalog-navigation-rail"));
             assertNull(scene.lookup(".catalog-navigation-bar"));
+            M3MenuButton overflowAction = assertInstanceOf(
+                    M3MenuButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-overflow-action"), "overflow action")
+            );
+            assertEquals(M3ButtonVariant.TEXT, overflowAction.getVariant());
+            assertEquals(10.0, overflowAction.getHorizontalPadding(), 0.01);
+            assertEquals(48.0, overflowAction.getWidth(), 0.5);
+            assertEquals(48.0, overflowAction.getHeight(), 0.5);
         });
     }
 
@@ -337,6 +348,90 @@ final class M3FXCatalogVisualTest {
                 () -> {
                     assertTrue(columnCount(scene) > compactColumns.get());
                     assertGridUsesAvailableWidth(scene);
+                }
+        );
+    }
+
+    /// Verifies that crossing the expanded breakpoint cannot retain a stale modal drawer or lose route selection.
+    ///
+    /// @param scene the Catalog scene
+    /// @param stage the Catalog stage
+    /// @param app the running Catalog application
+    private static void assertBreakpointContinuity(
+            Scene scene,
+            Stage stage,
+            M3FXCatalogApp app
+    ) throws InterruptedException {
+        CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> Math.abs(scene.getWidth() - 839.0) <= 0.5
+                        && scene.lookup(".catalog-sidebar-action") != null,
+                STABLE_PULSE_COUNT,
+                () -> {
+                    app.navigate(new CatalogRoute.Component(buttons));
+                    resizeSceneToWidth(stage, scene, 839.0);
+                },
+                () -> {
+                    M3IconButton browseButton = assertInstanceOf(
+                            M3IconButton.class,
+                            Objects.requireNonNull(scene.lookup(".catalog-sidebar-action"), "modal sidebar action")
+                    );
+                    browseButton.fire();
+                    M3AnimatedVisibility visibility = assertInstanceOf(
+                            M3AnimatedVisibility.class,
+                            Objects.requireNonNull(
+                                    scene.lookup(".catalog-sidebar-visibility"),
+                                    "modal sidebar visibility"
+                            )
+                    );
+                    assertTrue(visibility.isShowing());
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> Math.abs(scene.getWidth() - 840.0) <= 0.5
+                        && scene.lookup(".catalog-sidebar-action") == null
+                        && scene.lookup(".catalog-sidebar-scrim") == null,
+                STABLE_PULSE_COUNT,
+                () -> resizeSceneToWidth(stage, scene, 840.0),
+                () -> {
+                    CatalogSidebar sidebar = visibleSidebar(scene);
+                    assertEquals(M3NavigationDrawerVariant.STANDARD, sidebar.drawer().getVariant());
+                    assertEquals(360.0, sidebar.getWidth(), 0.5);
+                    assertEquals(
+                            "Buttons",
+                            Objects.requireNonNull(
+                                    sidebar.drawer().getSelectedItem(),
+                                    "selected standard destination"
+                            ).getHeadlineText()
+                    );
+                    assertInstanceOf(CatalogRoute.Component.class, app.currentRoute());
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> Math.abs(scene.getWidth() - 839.0) <= 0.5
+                        && scene.lookup(".catalog-sidebar-action") != null
+                        && scene.lookup(".catalog-sidebar") == null,
+                STABLE_PULSE_COUNT,
+                () -> resizeSceneToWidth(stage, scene, 839.0),
+                () -> assertInstanceOf(CatalogRoute.Component.class, app.currentRoute())
+        );
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> scene.getWidth() >= 1_100.0 && scene.lookup(".catalog-sidebar") != null,
+                STABLE_PULSE_COUNT,
+                () -> resizeSceneToWidth(stage, scene, 1_120.0),
+                () -> {
+                    CatalogSidebar sidebar = visibleSidebar(scene);
+                    assertEquals(M3NavigationDrawerVariant.STANDARD, sidebar.drawer().getVariant());
+                    assertEquals(
+                            "Buttons",
+                            Objects.requireNonNull(
+                                    sidebar.drawer().getSelectedItem(),
+                                    "restored standard destination"
+                            ).getHeadlineText()
+                    );
                 }
         );
     }
@@ -1657,6 +1752,15 @@ final class M3FXCatalogVisualTest {
                 .orElseThrow(() -> new AssertionError(
                         "missing Catalog example: " + component.name() + " / " + name
                 ));
+    }
+
+    /// Resizes the decorated stage so its scene reaches a requested logical width.
+    ///
+    /// @param stage the showing Catalog stage
+    /// @param scene the stage scene
+    /// @param width the requested scene width in logical pixels
+    private static void resizeSceneToWidth(Stage stage, Scene scene, double width) {
+        stage.setWidth(stage.getWidth() + width - scene.getWidth());
     }
 
     /// Completes CSS and layout before querying scene-graph geometry.
