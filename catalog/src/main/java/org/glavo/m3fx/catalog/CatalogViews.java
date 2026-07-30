@@ -38,12 +38,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 
 /// Builds the three content views used by the Compose Material Catalog-style navigation hierarchy.
 ///
-/// The builders are stateless. Each invocation creates a fresh node tree and reports navigation requests through
-/// the supplied route consumer. Layout nodes expose catalog-specific style classes so spacing, shape, typography,
-/// and responsive refinements can be supplied by the Catalog stylesheet without embedding theme colors here.
+/// The builders are stateless. Each invocation creates a fresh node tree, restores browser state supplied by the
+/// application, and reports navigation and state changes through callbacks. Layout nodes expose catalog-specific
+/// style classes so spacing, shape, typography, and responsive refinements can be supplied by the Catalog stylesheet
+/// without embedding theme colors here.
 @NotNullByDefault
 final class CatalogViews {
     /// The minimum adaptive-grid cell width, in logical pixels.
@@ -93,19 +95,25 @@ final class CatalogViews {
     ///
     /// @param components     the components available to the Catalog
     /// @param favoriteNames  the component names favorited when this view is created
+    /// @param initialState   the search, filter, and scroll state to restore
+    /// @param updateState    the consumer that retains subsequent browser-state changes
     /// @param navigate       the consumer that handles route changes
     /// @param expressiveOnly whether only components with Expressive examples are shown
     /// @param markExpressive whether components with Expressive examples display a corner marker
     /// @return a new scrollable home view
-    /// @throws NullPointerException if `components`, `favoriteNames`, either collection's elements, or `navigate`
-    ///                              is `null`
+    /// @throws NullPointerException if `components`, `favoriteNames`, `initialState`, `updateState`, `navigate`,
+    ///                              or either collection's elements is `null`
     static Node createHome(
             List<CatalogComponent> components,
             Set<String> favoriteNames,
+            CatalogBrowserState initialState,
+            Consumer<CatalogBrowserState> updateState,
             Consumer<CatalogRoute> navigate,
             boolean expressiveOnly,
             boolean markExpressive
     ) {
+        CatalogBrowserState browserState = Objects.requireNonNull(initialState, "initialState");
+        Consumer<CatalogBrowserState> stateConsumer = Objects.requireNonNull(updateState, "updateState");
         Consumer<CatalogRoute> routeConsumer = Objects.requireNonNull(navigate, "navigate");
         @Unmodifiable Set<String> favorites = Set.copyOf(
                 Objects.requireNonNull(favoriteNames, "favoriteNames")
@@ -153,6 +161,7 @@ final class CatalogViews {
         componentSearch.setMinWidth(0.0);
         componentSearch.setPrefWidth(320.0);
         componentSearch.setMaxWidth(400.0);
+        componentSearch.setText(browserState.query());
 
         M3SegmentedButton allFilter = createHomeFilterButton("All", "catalog-home-filter-all");
         M3SegmentedButton favoritesFilter =
@@ -164,7 +173,7 @@ final class CatalogViews {
         filterGroup.setAccessibleText("Component collection filter");
         filterGroup.getItems().addAll(allFilter, favoritesFilter, expressiveFilter);
         filterGroup.setAllowEmptySelection(false);
-        filterGroup.select(allFilter);
+        filterGroup.selectIndex(browserState.filterIndex());
 
         FlowPane browserControls = new FlowPane(12.0, 12.0);
         browserControls.getStyleClass().add("catalog-home-browser-controls");
@@ -198,10 +207,6 @@ final class CatalogViews {
                 grid,
                 emptyState
         );
-        componentSearch.textProperty().addListener(observable -> updateFilter.run());
-        filterGroup.selectedButtonProperty().addListener(observable -> updateFilter.run());
-        updateFilter.run();
-
         VBox page = new VBox(heading, browser, grid, emptyState);
         page.getStyleClass().addAll("catalog-route-page", "catalog-home-page");
         page.setFillWidth(true);
@@ -212,6 +217,18 @@ final class CatalogViews {
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
+        scrollPane.setVvalue(browserState.scrollPosition());
+        componentSearch.textProperty().addListener(observable -> {
+            updateFilter.run();
+            publishBrowserState(componentSearch, filterGroup, scrollPane, stateConsumer);
+        });
+        filterGroup.selectedButtonProperty().addListener(observable -> {
+            updateFilter.run();
+            publishBrowserState(componentSearch, filterGroup, scrollPane, stateConsumer);
+        });
+        scrollPane.vvalueProperty().addListener(observable ->
+                publishBrowserState(componentSearch, filterGroup, scrollPane, stateConsumer));
+        updateFilter.run();
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
@@ -300,18 +317,25 @@ final class CatalogViews {
     /// Activating an example card reports a [CatalogRoute.Example] through `navigate`.
     ///
     /// @param component      the component described by the page
+    /// @param initialState   the search, filter, and scroll state to restore
+    /// @param updateState    the consumer that retains subsequent browser-state changes
     /// @param navigate       the consumer that handles route changes
     /// @param openExternal   the consumer that opens an absolute external URL
     /// @param markExpressive whether Expressive examples display a marker
     /// @return a new scrollable component detail view
-    /// @throws NullPointerException if `component`, `navigate`, or `openExternal` is `null`
+    /// @throws NullPointerException if `component`, `initialState`, `updateState`, `navigate`, or `openExternal`
+    ///                              is `null`
     static Node createComponent(
             CatalogComponent component,
+            CatalogBrowserState initialState,
+            Consumer<CatalogBrowserState> updateState,
             Consumer<CatalogRoute> navigate,
             Consumer<String> openExternal,
             boolean markExpressive
     ) {
         CatalogComponent target = Objects.requireNonNull(component, "component");
+        CatalogBrowserState browserState = Objects.requireNonNull(initialState, "initialState");
+        Consumer<CatalogBrowserState> stateConsumer = Objects.requireNonNull(updateState, "updateState");
         Consumer<CatalogRoute> routeConsumer = Objects.requireNonNull(navigate, "navigate");
         Consumer<String> externalConsumer = Objects.requireNonNull(openExternal, "openExternal");
 
@@ -384,6 +408,7 @@ final class CatalogViews {
         exampleSearch.setMinWidth(0.0);
         exampleSearch.setPrefWidth(320.0);
         exampleSearch.setMaxWidth(440.0);
+        exampleSearch.setText(browserState.query());
 
         M3SegmentedButton allFilter = createExampleFilterButton("All", "catalog-example-filter-all");
         M3SegmentedButton baselineFilter =
@@ -395,7 +420,7 @@ final class CatalogViews {
         filterGroup.setAccessibleText("Example profile filter");
         filterGroup.getItems().addAll(allFilter, baselineFilter, expressiveFilter);
         filterGroup.setAllowEmptySelection(false);
-        filterGroup.select(allFilter);
+        filterGroup.selectIndex(browserState.filterIndex());
 
         FlowPane browserControls = new FlowPane(12.0, 12.0);
         browserControls.getStyleClass().add("catalog-example-browser-controls");
@@ -429,10 +454,6 @@ final class CatalogViews {
                 resultSummary,
                 emptyState
         );
-        exampleSearch.textProperty().addListener(observable -> updateFilter.run());
-        filterGroup.selectedButtonProperty().addListener(observable -> updateFilter.run());
-        updateFilter.run();
-
         VBox page = new VBox(
                 reference,
                 examplesHeading,
@@ -450,6 +471,18 @@ final class CatalogViews {
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
+        scrollPane.setVvalue(browserState.scrollPosition());
+        exampleSearch.textProperty().addListener(observable -> {
+            updateFilter.run();
+            publishBrowserState(exampleSearch, filterGroup, scrollPane, stateConsumer);
+        });
+        filterGroup.selectedButtonProperty().addListener(observable -> {
+            updateFilter.run();
+            publishBrowserState(exampleSearch, filterGroup, scrollPane, stateConsumer);
+        });
+        scrollPane.vvalueProperty().addListener(observable ->
+                publishBrowserState(exampleSearch, filterGroup, scrollPane, stateConsumer));
+        updateFilter.run();
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
@@ -532,21 +565,30 @@ final class CatalogViews {
     /// placed unchanged inside a centered live-sample surface. The route fits compact examples to the viewport width
     /// and preserves vertical scrolling for examples whose intrinsic height exceeds the window.
     ///
-    /// @param component    the component that owns `example`
-    /// @param example      the example to instantiate
-    /// @param navigateBack the action that returns to the preceding route
-    /// @param openExternal the consumer that opens an absolute external URL
+    /// @param component            the component that owns `example`
+    /// @param example              the example to instantiate
+    /// @param scrollPosition       the vertical scroll position to restore
+    /// @param updateScrollPosition the consumer that retains subsequent vertical scroll changes
+    /// @param navigateBack         the action that returns to the preceding route
+    /// @param openExternal         the consumer that opens an absolute external URL
     /// @return a new centered, scrollable example view
     /// @throws NullPointerException     if an argument is `null`, or if the example factory returns `null`
-    /// @throws IllegalArgumentException if `example` does not belong to `component`
+    /// @throws IllegalArgumentException if `example` does not belong to `component`, or if `scrollPosition` is
+    ///                                  non-finite or outside the range from `0.0` through `1.0`
     static Node createExample(
             CatalogComponent component,
             CatalogExample example,
+            double scrollPosition,
+            DoubleConsumer updateScrollPosition,
             Runnable navigateBack,
             Consumer<String> openExternal
     ) {
         CatalogComponent owner = Objects.requireNonNull(component, "component");
         CatalogExample target = Objects.requireNonNull(example, "example");
+        if (!Double.isFinite(scrollPosition) || scrollPosition < 0.0 || scrollPosition > 1.0) {
+            throw new IllegalArgumentException("scrollPosition must be between 0.0 and 1.0");
+        }
+        DoubleConsumer scrollConsumer = Objects.requireNonNull(updateScrollPosition, "updateScrollPosition");
         Runnable backAction = Objects.requireNonNull(navigateBack, "navigateBack");
         Consumer<String> externalConsumer = Objects.requireNonNull(openExternal, "openExternal");
         if (!owner.examples().contains(target)) {
@@ -620,12 +662,40 @@ final class CatalogViews {
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(false);
         scrollPane.setPannable(true);
+        scrollPane.setVvalue(scrollPosition);
+        scrollPane.vvalueProperty().addListener(observable ->
+                scrollConsumer.accept(scrollPane.getVvalue()));
         scrollPane.viewportBoundsProperty().addListener(
                 (observable, oldBounds, newBounds) -> page.setMinHeight(newBounds.getHeight())
         );
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
+    }
+
+    /// Reports the current controls and vertical position of a browser route.
+    ///
+    /// A temporarily empty segmented-button selection is ignored because it is an intermediate control state rather
+    /// than a restorable user choice.
+    ///
+    /// @param search the route's search control
+    /// @param filterGroup the route's segmented filter
+    /// @param scrollPane the route's vertical viewport
+    /// @param updateState the consumer that retains the state
+    private static void publishBrowserState(
+            M3SearchBar search,
+            M3SegmentedButtonGroup filterGroup,
+            ScrollPane scrollPane,
+            Consumer<CatalogBrowserState> updateState
+    ) {
+        int filterIndex = filterGroup.getSelectedIndex();
+        if (filterIndex >= 0) {
+            updateState.accept(new CatalogBrowserState(
+                    search.getText(),
+                    filterIndex,
+                    scrollPane.getVvalue()
+            ));
+        }
     }
 
     /// Creates one adaptive-grid cell containing an actionable component card.

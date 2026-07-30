@@ -55,8 +55,10 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -129,6 +131,15 @@ public final class M3FXCatalogApp extends Application {
 
     /// Component names marked as favorites during this application session.
     private final Set<String> favorites = new HashSet<>();
+
+    /// Restorable browser state for the Home route.
+    private CatalogBrowserState homeBrowserState = CatalogBrowserState.INITIAL;
+
+    /// Restorable browser state retained independently for each component route.
+    private final Map<CatalogComponent, CatalogBrowserState> componentBrowserStates = new HashMap<>();
+
+    /// Restorable vertical scroll positions retained independently for each example route.
+    private final Map<CatalogRoute.Example, Double> exampleScrollPositions = new HashMap<>();
 
     /// The stable root containing application content and in-scene presentation layers.
     private final M3OverlayPane root = new M3OverlayPane();
@@ -501,13 +512,18 @@ public final class M3FXCatalogApp extends Application {
             content = CatalogViews.createHome(
                     components,
                     favorites,
+                    homeBrowserState,
+                    state -> homeBrowserState = state,
                     this::navigate,
                     expressiveOnly,
                     markExpressive
             );
         } else if (currentRoute instanceof CatalogRoute.Component componentRoute) {
+            CatalogComponent component = componentRoute.component();
             content = CatalogViews.createComponent(
-                    componentRoute.component(),
+                    component,
+                    componentBrowserStates.getOrDefault(component, CatalogBrowserState.INITIAL),
+                    state -> componentBrowserStates.put(component, state),
                     this::navigate,
                     this::openDocument,
                     markExpressive
@@ -517,6 +533,8 @@ public final class M3FXCatalogApp extends Application {
             content = CatalogViews.createExample(
                     exampleRoute.component(),
                     exampleRoute.example(),
+                    exampleScrollPositions.getOrDefault(exampleRoute, 0.0),
+                    position -> exampleScrollPositions.put(exampleRoute, position),
                     this::navigateBack,
                     this::openDocument
             );

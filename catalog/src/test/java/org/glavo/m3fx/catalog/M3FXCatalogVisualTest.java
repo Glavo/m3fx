@@ -37,6 +37,7 @@ import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SVGIcon;
@@ -112,6 +113,7 @@ final class M3FXCatalogVisualTest {
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
                 assertExampleBrowserFiltering(scene, app);
+                assertRouteStateRestoration(scene, app);
                 assertSidebarScrollStability(scene, app);
                 assertThemeSettings(scene, app);
                 assertRightToLeftLayout(scene, app);
@@ -451,6 +453,11 @@ final class M3FXCatalogVisualTest {
             assertInstanceOf(M3OverlayPane.class, root).dismissAllSnackbars();
             app.navigateHome();
             layout(scene);
+            assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-filter-all"), "All component filter")
+            ).fire();
+            layout(scene);
         });
     }
 
@@ -678,6 +685,146 @@ final class M3FXCatalogVisualTest {
             expressiveFilter.fire();
             layout(scene);
             assertEquals(expressiveCount, visibleNodeCount(scene.getRoot(), ".catalog-example-cell"));
+            app.navigateHome();
+            layout(scene);
+        });
+    }
+
+    /// Verifies that route reconstruction restores browser controls and independent scroll positions.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertRouteStateRestoration(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            app.navigateHome();
+            layout(scene);
+
+            M3SearchBar homeSearch = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-search"), "Home component search")
+            );
+            M3SegmentedButton expressiveFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-home-filter-expressive"),
+                            "Expressive component filter"
+                    )
+            );
+            ScrollPane homeScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-scroll"), "Home scroll pane")
+            );
+            homeSearch.setText("a");
+            expressiveFilter.fire();
+            homeScroll.setVvalue(0.37);
+
+            CatalogComponent chips = componentNamed(app.components(), "Chips");
+            app.navigate(new CatalogRoute.Component(chips));
+            layout(scene);
+            app.navigateBack();
+            layout(scene);
+
+            homeSearch = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-search"), "restored Home component search")
+            );
+            expressiveFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-home-filter-expressive"),
+                            "restored Expressive component filter"
+                    )
+            );
+            homeScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-scroll"), "restored Home scroll pane")
+            );
+            assertEquals("a", homeSearch.getText());
+            assertTrue(expressiveFilter.isSelected());
+            assertEquals(0.37, homeScroll.getVvalue(), 0.001);
+
+            homeSearch.clear();
+            assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-home-filter-all"), "All component filter")
+            ).fire();
+            homeScroll.setVvalue(0.0);
+
+            app.navigate(new CatalogRoute.Component(chips));
+            layout(scene);
+            M3SearchBar exampleSearch = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-search"), "example search")
+            );
+            M3SegmentedButton baselineFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-example-filter-baseline"),
+                            "Baseline example filter"
+                    )
+            );
+            ScrollPane componentScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-scroll"), "component scroll pane")
+            );
+            exampleSearch.setText("chip");
+            baselineFilter.fire();
+            componentScroll.setVvalue(0.43);
+
+            CatalogExample selectedFilterChip = exampleNamed(chips, "Selected filter chip");
+            CatalogRoute.Example exampleRoute = new CatalogRoute.Example(chips, selectedFilterChip);
+            app.navigate(exampleRoute);
+            layout(scene);
+            ScrollPane exampleScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-scroll"), "example scroll pane")
+            );
+            exampleScroll.setVvalue(0.61);
+            app.navigateBack();
+            layout(scene);
+
+            exampleSearch = assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-search"), "restored example search")
+            );
+            baselineFilter = assertInstanceOf(
+                    M3SegmentedButton.class,
+                    Objects.requireNonNull(
+                            scene.lookup(".catalog-example-filter-baseline"),
+                            "restored Baseline example filter"
+                    )
+            );
+            componentScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-scroll"), "restored component scroll pane")
+            );
+            assertEquals("chip", exampleSearch.getText());
+            assertTrue(baselineFilter.isSelected());
+            assertEquals(0.43, componentScroll.getVvalue(), 0.001);
+
+            app.navigate(exampleRoute);
+            layout(scene);
+            exampleScroll = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-scroll"), "restored example scroll pane")
+            );
+            assertEquals(0.61, exampleScroll.getVvalue(), 0.001);
+
+            app.navigateBack();
+            layout(scene);
+            assertInstanceOf(
+                    M3SearchBar.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-search"), "example search")
+            ).clear();
+            M3SegmentedButtonGroup filterGroup = assertInstanceOf(
+                    M3SegmentedButtonGroup.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-example-filter-group"), "example filter group")
+            );
+            filterGroup.selectIndex(0);
+            assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-scroll"), "component scroll pane")
+            ).setVvalue(0.0);
             app.navigateHome();
             layout(scene);
         });
