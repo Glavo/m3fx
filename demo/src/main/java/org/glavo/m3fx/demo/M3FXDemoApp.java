@@ -6,6 +6,7 @@ package org.glavo.m3fx.demo;
 import javafx.animation.Animation;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,6 +29,7 @@ import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3SizeTransform;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Button;
@@ -97,6 +99,9 @@ public final class M3FXDemoApp extends Application {
     /// The delay that separates outgoing and incoming page opacity.
     private static final Duration PAGE_ENTER_DELAY = Duration.millis(60.0);
 
+    /// The shared size policy that clips page motion to the main-content viewport.
+    private static final M3SizeTransform PAGE_SIZE_TRANSFORM = new M3SizeTransform(true, null);
+
     /// The current seed color used by the demo theme.
     private Color seedColor = M3Theme.DEFAULT_SEED_COLOR;
 
@@ -133,8 +138,11 @@ public final class M3FXDemoApp extends Application {
     /// The navigation drawer used by the demo sidebar.
     private @Nullable M3NavigationDrawer sidebarDrawer;
 
-    /// The scroll pane that hosts the current demo page.
-    private @Nullable ScrollPane pageScrollPane;
+    /// The scroll pane owned by the current demo page.
+    private @Nullable ScrollPane currentPageScrollPane;
+
+    /// Updates the app-bar surface state from the current page viewport.
+    private final InvalidationListener currentPageScrollListener = observable -> updateHeaderScrolledUnder();
 
     /// The currently shown demo page.
     private @Nullable DemoPage currentPage;
@@ -147,6 +155,9 @@ public final class M3FXDemoApp extends Application {
 
     /// The adaptive scaffold that owns the demo header, navigation, and page content.
     private @Nullable M3AdaptiveScaffold adaptiveScaffold;
+
+    /// The app bar whose surface state follows the current page viewport.
+    private @Nullable M3TopAppBar topAppBar;
 
     /// The header action that opens navigation while the persistent drawer is unavailable.
     private @Nullable M3IconButton navigationButton;
@@ -298,12 +309,8 @@ public final class M3FXDemoApp extends Application {
         appBar.setNavigation(menuButton);
         appBar.getActions().add(settingsButton);
 
-        ScrollPane scrollPane = pageScrollPane;
-        if (scrollPane != null) {
-            Runnable updateScrolledUnder = () -> appBar.setScrolledUnder(scrollPane.getVvalue() > 0.001);
-            scrollPane.vvalueProperty().addListener(observable -> updateScrolledUnder.run());
-            updateScrolledUnder.run();
-        }
+        topAppBar = appBar;
+        updateHeaderScrolledUnder();
         return appBar;
     }
 
@@ -454,7 +461,7 @@ public final class M3FXDemoApp extends Application {
         scaffold.setPaneSpacing(0.0);
         scaffold.setFixedLeadingPaneWidth(NAVIGATION_DRAWER_WIDTH);
         scaffold.setLeadingPane(createSidebar(pages));
-        scaffold.setMainPane(createPageScrollPane());
+        scaffold.setMainPane(createPageHost());
         scaffold.setActivePane(M3PaneRole.MAIN);
         scaffold.breakpointProperty().addListener(
                 (observable, oldBreakpoint, newBreakpoint) -> updateAdaptiveLayout()
@@ -739,24 +746,73 @@ public final class M3FXDemoApp extends Application {
         return item;
     }
 
-    /// Creates the scrollable page host.
-    private Node createPageScrollPane() {
+    /// Creates the retained host that transitions between page-owned scroll panes.
+    ///
+    /// @return the configured page host
+    private M3AnimatedContent createPageHost() {
         M3AnimatedContent host = new M3AnimatedContent();
         host.getStyleClass().add("demo-page-host");
         host.setMinWidth(0.0);
+        host.setMinHeight(0.0);
         host.setMaxWidth(Double.MAX_VALUE);
+        host.setMaxHeight(Double.MAX_VALUE);
         host.setFitToWidth(true);
+        host.setFitToHeight(true);
         pageHost = host;
+        return host;
+    }
 
-        ScrollPane scrollPane = new ScrollPane(host);
-        pageScrollPane = scrollPane;
+    /// Creates an independent scroll viewport for one demo page.
+    ///
+    /// @param pageNode the page root shown by the viewport
+    /// @return the configured page viewport, initialized at its minimum scroll values
+    /// @throws NullPointerException if `pageNode` is `null`
+    private static ScrollPane createPageScrollPane(Node pageNode) {
+        ScrollPane scrollPane = new ScrollPane(Objects.requireNonNull(pageNode, "pageNode"));
         scrollPane.getStyleClass().add("demo-scroll-pane");
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFocusTraversable(false);
+        scrollPane.setMinWidth(0.0);
+        scrollPane.setMinHeight(0.0);
+        scrollPane.setMaxWidth(Double.MAX_VALUE);
+        scrollPane.setMaxHeight(Double.MAX_VALUE);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setHvalue(scrollPane.getHmin());
+        scrollPane.setVvalue(scrollPane.getVmin());
         return scrollPane;
+    }
+
+    /// Transfers app-level scroll observation to the current page viewport.
+    ///
+    /// Pending smooth movement on the outgoing viewport is stopped so its rendered position remains stable during
+    /// the exit transition.
+    ///
+    /// @param scrollPane the incoming page viewport
+    private void setCurrentPageScrollPane(ScrollPane scrollPane) {
+        ScrollPane current = Objects.requireNonNull(scrollPane, "scrollPane");
+        @Nullable ScrollPane previous = currentPageScrollPane;
+        if (previous == current) {
+            return;
+        }
+        if (previous != null) {
+            previous.vvalueProperty().removeListener(currentPageScrollListener);
+            M3ScrollPanes.disableSmoothScrolling(previous);
+        }
+        currentPageScrollPane = current;
+        current.vvalueProperty().addListener(currentPageScrollListener);
+        updateHeaderScrolledUnder();
+    }
+
+    /// Updates whether the app bar renders over scrolled page content.
+    private void updateHeaderScrolledUnder() {
+        @Nullable M3TopAppBar appBar = topAppBar;
+        if (appBar == null) {
+            return;
+        }
+        @Nullable ScrollPane scrollPane = currentPageScrollPane;
+        appBar.setScrolledUnder(scrollPane != null && scrollPane.getVvalue() > 0.001);
     }
 
     /// Shows a registered component page in the center pane.
@@ -808,15 +864,12 @@ public final class M3FXDemoApp extends Application {
             region.setMaxWidth(Double.MAX_VALUE);
         }
         pageNode.getChildren().addAll(createPageHeader(page), pageContent);
-        host.setContent(pageNode);
+        ScrollPane scrollPane = createPageScrollPane(pageNode);
+        host.setContent(scrollPane);
         if (!animateReplacement) {
             host.snapToCurrentState();
         }
-        ScrollPane scrollPane = pageScrollPane;
-        if (scrollPane != null) {
-            scrollPane.setHvalue(0.0);
-            scrollPane.setVvalue(0.0);
-        }
+        setCurrentPageScrollPane(scrollPane);
         revealSidebarPage(page);
         hideNavigationDrawer(true);
     }
@@ -831,7 +884,7 @@ public final class M3FXDemoApp extends Application {
                 .and(M3EnterTransition.slideFrom(enterEdge, PAGE_ENTER_DISTANCE));
         M3ExitTransition exit = M3ExitTransition.fade(0.0)
                 .and(M3ExitTransition.slideTo(exitEdge, PAGE_EXIT_DISTANCE));
-        host.setContentTransform(new M3ContentTransform(enter, exit, null, 0.0));
+        host.setContentTransform(new M3ContentTransform(enter, exit, PAGE_SIZE_TRANSFORM, 0.0));
     }
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.

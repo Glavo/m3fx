@@ -227,6 +227,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1161,9 +1162,9 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies that switching pages starts each page from the top-left content viewport.
+    /// Verifies that an incoming page starts at the top without changing the outgoing page's scroll position.
     @Test
-    void demoPageSwitchResetsMainPageScrollPane() throws InterruptedException {
+    void demoPageSwitchUsesIndependentScrollPanes() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -1196,15 +1197,34 @@ final class M3FXDemoVisualMatrixTest {
                 assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
                         "precondition should set a non-zero vertical page scroll value");
 
-                app.showPageByTitle("Typography");
+                DemoPage targetPage = app.demoPages().stream()
+                        .filter(page -> page.title().equals("Typography"))
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("Typography demo page not found"));
+                app.showPage(targetPage);
                 applySceneCssAndLayout(scene);
-                assertCurrentPageTitle(scene, "Typography");
-                assertSame(pageScrollPane, demoPageScrollPane(scene),
-                        "page switches should reuse the shared page scroll pane");
-                assertEquals(0.0, pageScrollPane.getHvalue(), 0.001,
-                        "page switch should reset horizontal content scroll");
-                assertEquals(0.0, pageScrollPane.getVvalue(), 0.001,
-                        "page switch should reset vertical content scroll");
+                M3AnimatedContent pageHost = demoPageHost(scene);
+                assertTrue(pageHost.isTransitioning(), "animated page navigation should retain the outgoing page");
+                ScrollPane incomingScrollPane = demoPageScrollPane(scene);
+                Label incomingTitle = assertInstanceOf(
+                        Label.class,
+                        requireVisibleStyledDescendant(
+                                incomingScrollPane,
+                                "demo-page-title",
+                                "incoming Typography page title"
+                        )
+                );
+                assertEquals("Typography", incomingTitle.getText());
+                assertNotSame(pageScrollPane, incomingScrollPane,
+                        "each transitioning page should own an independent scroll viewport");
+                assertEquals(0.45, pageScrollPane.getHvalue(), 0.001,
+                        "page switch must preserve outgoing horizontal scroll during its exit transition");
+                assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
+                        "page switch must preserve outgoing vertical scroll during its exit transition");
+                assertEquals(incomingScrollPane.getHmin(), incomingScrollPane.getHvalue(), 0.001,
+                        "incoming page should start at its minimum horizontal scroll value");
+                assertEquals(incomingScrollPane.getVmin(), incomingScrollPane.getVvalue(), 0.001,
+                        "incoming page should start at its minimum vertical scroll value");
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -8351,22 +8371,27 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Returns the scroll pane that owns the current demo page content.
     private static ScrollPane demoPageScrollPane(Scene scene) {
-        return visibleNodesOfType(scene.getRoot(), ScrollPane.class)
-                .stream()
-                .filter(scrollPane -> scrollPane.getContent() != null
-                        && scrollPane.getContent().getStyleClass().contains("demo-page-host"))
+        return assertInstanceOf(
+                ScrollPane.class,
+                demoPageHost(scene).getContent(),
+                "current demo page should own a scroll pane"
+        );
+    }
+
+    /// Returns the retained host that owns the current and outgoing demo page viewports.
+    private static M3AnimatedContent demoPageHost(Scene scene) {
+        return visibleNodesOfType(scene.getRoot(), M3AnimatedContent.class).stream()
+                .filter(host -> host.getStyleClass().contains("demo-page-host"))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("demo page scroll pane not found"));
+                .orElseThrow(() -> new AssertionError("demo page host not found"));
     }
 
     /// Returns whether the shared demo page host has released its outgoing page.
     private static boolean demoPageTransitionSettled(Scene scene) {
-        return visibleNodesOfType(scene.getRoot(), M3AnimatedContent.class).stream()
-                .filter(host -> host.getStyleClass().contains("demo-page-host"))
-                .noneMatch(M3AnimatedContent::isTransitioning);
+        return !demoPageHost(scene).isTransitioning();
     }
 
-    /// Resets the shared demo page scroll pane before a visual page assertion.
+    /// Resets the current demo page scroll pane before a visual page assertion.
     private static void resetDemoPageScroll(Scene scene) {
         ScrollPane scrollPane = demoPageScrollPane(scene);
         scrollPane.setVvalue(0.0);
