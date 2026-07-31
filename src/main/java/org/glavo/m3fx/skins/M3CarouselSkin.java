@@ -23,7 +23,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ScrollPane;
-import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3ScrollToEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -219,7 +218,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         stopScrollAnimation();
         motionSettingsObserver.dispose();
         track.dispose();
-        M3ScrollPanes.disableSmoothScrolling(viewport);
+        M3ScrollPane.disableSmoothScrolling(viewport);
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().selectedIndexProperty().removeListener(selectedIndexListener);
         getSkinnable().carouselLayoutProperty().removeListener(carouselLayoutListener);

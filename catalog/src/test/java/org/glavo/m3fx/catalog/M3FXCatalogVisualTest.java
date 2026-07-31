@@ -37,7 +37,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
@@ -161,8 +161,8 @@ final class M3FXCatalogVisualTest {
                     Objects.requireNonNull(scene.lookup(".catalog-sidebar"), "Catalog sidebar")
             );
             ScrollPane sidebarScroll = drawerViewport(sidebar);
-            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(homeScroll));
-            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(sidebarScroll));
+            assertTrue(M3ScrollPane.isSmoothScrollingEnabled(homeScroll));
+            assertTrue(M3ScrollPane.isSmoothScrollingEnabled(sidebarScroll));
             assertEquals(ScrollPane.ScrollBarPolicy.NEVER, sidebarScroll.getVbarPolicy());
 
             CatalogComponent buttons = componentNamed(app.components(), "Buttons");
@@ -650,7 +650,7 @@ final class M3FXCatalogVisualTest {
                     componentPage.getLayoutBounds().getWidth(),
                     0.5
             );
-            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(componentScroll));
+            assertTrue(M3ScrollPane.isSmoothScrollingEnabled(componentScroll));
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-card").size());
             assertEquals(16, scene.getRoot().lookupAll(".catalog-example-cell").size());
             assertEquals(3, scene.getRoot().lookupAll(".catalog-component-reference-action").size());
@@ -1167,7 +1167,7 @@ final class M3FXCatalogVisualTest {
                                     "settings scroll pane"
                             )
                     );
-                    assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(settingsScroll));
+                    assertTrue(M3ScrollPane.isSmoothScrollingEnabled(settingsScroll));
 
                     Node focusOwner = Objects.requireNonNull(scene.getFocusOwner(), "settings focus owner");
                     assertTrue(containsNode(layer, focusOwner), "modal settings should contain keyboard focus");

@@ -16,7 +16,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3ScrollPane;
-import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3NavigationDrawerPresentation;
 import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -93,7 +92,7 @@ public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3Navi
         clearPendingReveal();
         getSkinnable().sceneProperty().removeListener(sceneListener);
         viewport.removeEventFilter(ScrollEvent.SCROLL, userScrollHandler);
-        M3ScrollPanes.disableSmoothScrolling(viewport);
+        M3ScrollPane.disableSmoothScrolling(viewport);
         viewport.nodeOrientationProperty().unbind();
         viewport.setContent(null);
         getChildren().remove(viewport);

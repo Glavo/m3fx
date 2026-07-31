@@ -463,13 +463,14 @@ Existing application-owned JavaFX scroll panes can opt into the same behaviors i
 
 ```java
 ScrollPane viewport = new ScrollPane(content);
-M3ScrollPanes.style(viewport);
-M3ScrollPanes.enableSmoothScrolling(viewport);
+M3ScrollPane.style(viewport);
+M3ScrollPane.enableSmoothScrolling(viewport);
 ```
 
-`M3ScrollPanes.disableSmoothScrolling(...)` can temporarily remove wheel motion from either type without removing
+`M3ScrollPane.disableSmoothScrolling(...)` can temporarily remove wheel motion from either type without removing
 its visual styling. Other M3FX scrolling controls, including `M3ListView` and `M3TextArea`, apply Material scrollbar
-styling automatically. Ordinary JavaFX scroll panes remain unchanged until passed to the static utility.
+styling automatically. Ordinary JavaFX scroll panes remain unchanged until passed to the static `M3ScrollPane`
+methods.
 
 ## Component Areas
 

@@ -140,6 +140,13 @@ final class ProjectContractTest {
             "org.glavo.m3fx.controls.M3Tooltip"
     );
 
+    /// Reviewed static adapter families exposed by concrete controls for existing JavaFX instances.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>>
+            ALLOWED_CONCRETE_CONTROL_STATIC_METHODS = Map.of(
+                    "org.glavo.m3fx.controls.M3ScrollPane",
+                    Set.of("disableSmoothScrolling", "enableSmoothScrolling", "isSmoothScrollingEnabled", "style")
+            );
+
     /// Public control type suffixes reserved for implementation details.
     private static final @Unmodifiable List<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_SUFFIXES = List.of(
             "Cell",
@@ -234,7 +241,6 @@ final class ProjectContractTest {
     private static final @Unmodifiable Set<String> PUBLIC_CONTROL_UTILITY_TYPES = Set.of(
             "org.glavo.m3fx.controls.M3DatePresets",
             "org.glavo.m3fx.controls.M3DateRangePresets",
-            "org.glavo.m3fx.controls.M3ScrollPanes",
             "org.glavo.m3fx.controls.M3TextInputValidators",
             "org.glavo.m3fx.controls.M3TimePresets"
     );
@@ -829,7 +835,7 @@ final class ProjectContractTest {
                 () -> "Concrete controls must be final, sealed, or reviewed extension points: " + openControls);
     }
 
-    /// Verifies that concrete public controls expose constructors and properties instead of static factories.
+    /// Verifies that concrete public controls expose no unreviewed static convenience methods.
     @Test
     void concretePublicControlsDoNotExposeStaticConvenienceMethods() throws Exception {
         List<String> staticMethods = new ArrayList<>();
@@ -843,11 +849,16 @@ final class ProjectContractTest {
                 continue;
             }
 
+            Set<String> allowedMethods = ALLOWED_CONCRETE_CONTROL_STATIC_METHODS.getOrDefault(
+                    type.getName(),
+                    Set.of()
+            );
             for (Method method : type.getDeclaredMethods()) {
                 int methodModifiers = method.getModifiers();
                 if (Modifier.isPublic(methodModifiers)
                         && Modifier.isStatic(methodModifiers)
-                        && !method.getName().equals("getClassCssMetaData")) {
+                        && !method.getName().equals("getClassCssMetaData")
+                        && !allowedMethods.contains(method.getName())) {
                     staticMethods.add(type.getName() + "#" + method.getName());
                 }
             }

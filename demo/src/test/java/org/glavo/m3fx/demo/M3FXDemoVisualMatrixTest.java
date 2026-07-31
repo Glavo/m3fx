@@ -147,7 +147,7 @@ import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SearchViewLayout;
@@ -4074,7 +4074,7 @@ final class M3FXDemoVisualMatrixTest {
                         );
                         assertEquals(1.0, sidebarViewport.getVvalue(), 0.001,
                                 "fully expanded sidebar should support scrolling to the bottom");
-                        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(sidebarViewport),
+                        assertTrue(M3ScrollPane.isSmoothScrollingEnabled(sidebarViewport),
                                 "demo sidebar should delegate wheel input to its Material viewport");
                         Node sidebarContent = Objects.requireNonNull(
                                 sidebarViewport.getContent(),
@@ -13113,7 +13113,7 @@ final class M3FXDemoVisualMatrixTest {
                 "long standard drawer content should exceed its independent viewport");
         assertEquals(ScrollPane.ScrollBarPolicy.NEVER, drawerViewport.getHbarPolicy(),
                 "navigation drawer should not reduce the active-indicator width with a horizontal bar");
-        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(drawerViewport),
+        assertTrue(M3ScrollPane.isSmoothScrollingEnabled(drawerViewport),
                 "navigation drawer viewport should use Material wheel motion");
         scrollDemoPageNodeIntoView(scene, groupedDrawer);
         WritableImage groupedImage = requireSnapshotWithNodeFullyVisible(

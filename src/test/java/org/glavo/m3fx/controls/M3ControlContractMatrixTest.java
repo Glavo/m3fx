@@ -6638,7 +6638,7 @@ final class M3ControlContractMatrixTest {
                 );
                 assertTrue(viewport.getStyleClass().contains("m3-scroll-pane"));
                 assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
-                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+                assertTrue(M3ScrollPane.isSmoothScrollingEnabled(viewport));
 
                 carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
 
@@ -6684,7 +6684,7 @@ final class M3ControlContractMatrixTest {
             VBox content = new VBox(carousel, filler);
             ScrollPane outerScrollPane = new ScrollPane(content);
             outerScrollPane.setPrefSize(300.0, 180.0);
-            M3ScrollPanes.style(outerScrollPane);
+            M3ScrollPane.style(outerScrollPane);
             StackPane root = new StackPane(outerScrollPane);
             Scene scene = new Scene(root, 340.0, 240.0);
             Stage stage = new Stage();
@@ -6703,16 +6703,16 @@ final class M3ControlContractMatrixTest {
                         carousel.lookup("." + "m3-carousel-viewport")
                 );
                 assertTrue(viewport.getStyleClass().contains("m3-scroll-pane"));
-                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
-                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport));
-                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport.getContent()));
-                assertTrue(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, filler));
+                assertTrue(M3ScrollPane.isSmoothScrollingEnabled(viewport));
+                assertFalse(M3ScrollPane.isEventTargetForScrollPane(outerScrollPane, viewport));
+                assertFalse(M3ScrollPane.isEventTargetForScrollPane(outerScrollPane, viewport.getContent()));
+                assertTrue(M3ScrollPane.isEventTargetForScrollPane(outerScrollPane, filler));
 
                 carousel.selectIndex(4);
                 root.layout();
                 ScrollPane currentViewport = viewport;
                 assertTrue(currentViewport.getHvalue() > 0.5, () -> "hvalue=" + currentViewport.getHvalue());
-                M3ScrollPanes.enableSmoothScrolling(outerScrollPane);
+                M3ScrollPane.enableSmoothScrolling(outerScrollPane);
                 M3MotionSettings.setReducedMotionRequested(outerScrollPane, true);
                 M3MotionSettings.setReducedMotionRequested(viewport, true);
                 viewport.setHvalue(0.0);
@@ -6726,7 +6726,7 @@ final class M3ControlContractMatrixTest {
                 if (viewport != null) {
                     M3MotionSettings.setReducedMotionRequested(viewport, false);
                 }
-                M3ScrollPanes.disableSmoothScrolling(outerScrollPane);
+                M3ScrollPane.disableSmoothScrolling(outerScrollPane);
                 M3MotionSettings.setReducedMotionRequested(outerScrollPane, false);
                 stage.close();
             }
@@ -23397,8 +23397,8 @@ final class M3ControlContractMatrixTest {
 
             ScrollPane styled = new ScrollPane(styledContent);
             styled.setPrefSize(180.0, 120.0);
-            M3ScrollPanes.style(styled);
-            M3ScrollPanes.style(styled);
+            M3ScrollPane.style(styled);
+            M3ScrollPane.style(styled);
 
             ScrollPane plain = new ScrollPane(plainContent);
             plain.setPrefSize(180.0, 120.0);
@@ -31996,7 +31996,7 @@ final class M3ControlContractMatrixTest {
                                 > viewport.getViewportBounds().getHeight(),
                         () -> "content=" + viewport.getContent().getLayoutBounds()
                                 + ", viewport=" + viewport.getViewportBounds());
-                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+                assertTrue(M3ScrollPane.isSmoothScrollingEnabled(viewport));
                 fixtureReference.set(new DrawerScrollFixture(stage, root, drawer, trash, viewport));
             }, () -> {
                 DrawerScrollFixture fixture = Objects.requireNonNull(fixtureReference.get());

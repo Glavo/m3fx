@@ -8,7 +8,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -78,8 +78,8 @@ final class M3FXDemoPageTransitionTest {
                 assertEquals(0.75, outgoing.getVvalue(), 0.001);
                 assertEquals(incoming.getVmin(), incoming.getVvalue(), 0.001);
                 assertFalse(appBar.isScrolledUnder());
-                assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(outgoing));
-                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(incoming));
+                assertFalse(M3ScrollPane.isSmoothScrollingEnabled(outgoing));
+                assertTrue(M3ScrollPane.isSmoothScrollingEnabled(incoming));
             } finally {
                 stage.close();
             }

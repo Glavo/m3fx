@@ -110,7 +110,7 @@ final class M3ListViewFocusTraversalTest {
             M3Button after = new M3Button("After");
             VBox page = new VBox(before, listView, after);
             ScrollPane viewport = new ScrollPane(page);
-            M3ScrollPanes.style(viewport);
+            M3ScrollPane.style(viewport);
             viewport.setFocusTraversable(false);
             viewport.setFitToWidth(true);
             StackPane root = new StackPane(viewport);

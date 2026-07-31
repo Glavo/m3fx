@@ -45,7 +45,6 @@ import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPane;
-import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -797,7 +796,7 @@ public final class M3FXDemoApp extends Application {
         }
         if (previous != null) {
             previous.vvalueProperty().removeListener(currentPageScrollListener);
-            M3ScrollPanes.disableSmoothScrolling(previous);
+            M3ScrollPane.disableSmoothScrolling(previous);
         }
         currentPageScrollPane = current;
         current.vvalueProperty().addListener(currentPageScrollListener);

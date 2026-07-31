@@ -25,7 +25,7 @@ import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListCell;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3ScrollToEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
@@ -724,8 +724,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListCell<T>> {
         /// Applies standalone Material styling to both virtual-flow scroll bars.
         private void styleScrollBars() {
-            M3ScrollPanes.style(getHbar());
-            M3ScrollPanes.style(getVbar());
+            M3ScrollPane.style(getHbar());
+            M3ScrollPane.style(getVbar());
         }
 
         /// Invalidates cached variable cell lengths after item stride metrics change.
