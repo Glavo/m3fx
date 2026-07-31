@@ -18,7 +18,7 @@ import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -284,9 +284,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return clamp(segmentProgress) * QUARTER_ROTATION + morphRotationTarget + globalRotation;
     }
 
-    /// Returns whether activity animations should pause for the current window render state.
+    /// Returns whether activity animations should pause for the current presentation state.
     private boolean shouldPauseActivityAnimations() {
-        return !M3WindowActivity.isRenderActive(getSkinnable());
+        return !M3PresentationActivity.isRenderActive(getSkinnable());
     }
 
     /// Returns the active morph duration used before the shape settles for the rest of the interval.

@@ -715,16 +715,16 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Applies changed runtime motion settings and window lifecycle.
     private void refreshMotionSettings() {
-        if (isWindowUnavailable()) {
+        if (isPresentationUnavailable()) {
             M3Animation.finishIfRunning(showAnimation);
             M3Animation.finishIfRunning(hideAnimation);
         }
         refreshDisplayTimer();
     }
 
-    /// Returns whether the presenter lacks a render-active window.
-    private boolean isWindowUnavailable() {
-        return !M3WindowActivity.isRenderActive(this);
+    /// Returns whether the presenter lacks an effectively visible presentation.
+    private boolean isPresentationUnavailable() {
+        return !M3PresentationActivity.isRenderActive(this);
     }
 
     /// Resolves the effective automatic-dismissal duration.
@@ -740,7 +740,7 @@ public final class M3SnackbarPresenter extends Control {
         if (target == null
                 || !showing.get()
                 || modalBlocked
-                || isWindowUnavailable()
+                || isPresentationUnavailable()
                 || target.hasAction()
                 || target.isCloseButtonVisible()
                 || duration.isUnknown()

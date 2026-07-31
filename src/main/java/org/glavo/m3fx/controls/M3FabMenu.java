@@ -37,7 +37,7 @@ import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -685,14 +685,14 @@ public final class M3FabMenu extends Control {
 
     /// Applies changed runtime motion settings to the active expand or collapse animation.
     private void refreshMotionSettings() {
-        if (!M3Animation.areAnimationsEnabled(this) || !isShowingWindow()) {
+        if (!M3Animation.areAnimationsEnabled(this) || !isPresentationActive()) {
             M3Animation.finishIfRunning(animation);
         }
     }
 
-    /// Returns whether this menu is attached to a render-active window.
-    private boolean isShowingWindow() {
-        return M3WindowActivity.isRenderActive(this);
+    /// Returns whether this menu belongs to an effectively visible presentation.
+    private boolean isPresentationActive() {
+        return M3PresentationActivity.isRenderActive(this);
     }
 
     /// Prepares action items to participate in layout while expanded.

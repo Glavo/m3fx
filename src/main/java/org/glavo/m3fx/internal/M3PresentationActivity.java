@@ -13,16 +13,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Resolves whether a JavaFX window can currently produce user-visible rendered output.
+/// Resolves whether a JavaFX node or window can currently produce user-visible rendered output.
 ///
-/// Render activity requires the window and every popup owner to be showing. The presentation [Stage] must additionally
-/// not be iconified. Window focus is not required because an unfocused window remains visible and should continue
-/// rendering. This state is intended for pulse-driven visual work and must not be used as a substitute for scene-graph
-/// visibility or input reachability.
+/// Node render activity requires the node and every ancestor to have [Node#visibleProperty()] set to `true`, scene
+/// attachment, and a render-active window. A window and every popup owner must be showing, and the presentation
+/// [Stage] must not be iconified. Window focus is not required because an unfocused window remains visible.
+///
+/// Managed state, opacity, clipping, viewport intersection, and disabled state are intentionally excluded. They do not
+/// determine whether JavaFX may render the node, and treating them as visibility would break valid animation and
+/// presentation behavior such as fades from zero opacity.
+///
+/// If the JavaFX module does not expose its tree-visible property, node visibility silently falls back to the public
+/// [Node] parent chain. That fallback cannot observe an enclosing [javafx.scene.SubScene] across its root boundary.
 @NotNullByDefault
-public final class M3WindowActivity {
+public final class M3PresentationActivity {
     /// Prevents utility class instantiation.
-    private M3WindowActivity() {
+    private M3PresentationActivity() {
     }
 
     /// Returns whether the window can currently produce visible rendered output.
@@ -50,18 +56,31 @@ public final class M3WindowActivity {
         return false;
     }
 
-    /// Returns whether the node belongs to a render-active window.
+    /// Returns whether the node belongs to a visible tree in a render-active window.
     ///
-    /// @param owner the node whose scene and window should be inspected
-    /// @return `true` when the node is attached to a scene presented by a render-active window
+    /// @param owner the node whose ancestor chain, scene, and window should be inspected
+    /// @return `true` when the node is effectively visible and presented by a render-active window
     /// @throws NullPointerException if `owner` is `null`
     public static boolean isRenderActive(Node owner) {
         Objects.requireNonNull(owner, "owner");
+        if (!isTreeVisible(owner)) {
+            return false;
+        }
         @Nullable Scene scene = owner.getScene();
         return scene != null && isRenderActive(scene.getWindow());
     }
 
-    /// Returns the stage that ultimately presents a window, following popup ownership when necessary.
+    /// Returns the best available indication that the node and its tree ancestors are visible.
+    ///
+    /// Scene and window attachment are not required.
+    ///
+    /// @param node the node whose visible ancestor chain should be inspected, or `null`
+    /// @return `true` when every ancestor visible to the selected native or fallback implementation is visible
+    public static boolean isTreeVisible(@Nullable Node node) {
+        return M3TreeVisibility.isTreeVisible(node);
+    }
+
+    /// Returns the stage that presents a window, following popup ownership when necessary.
     ///
     /// @param window the window whose presentation stage should be resolved, or `null`
     /// @return the presenting stage, or `null` when the window has no stage owner

@@ -26,7 +26,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3ProgressIndicator].
@@ -383,9 +383,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         }
     }
 
-    /// Returns whether pulse-driven progress animations should pause for the current window lifecycle state.
+    /// Returns whether pulse-driven progress animations should pause for the current presentation state.
     private boolean shouldPauseActivityAnimations() {
-        return !M3WindowActivity.isRenderActive(getSkinnable());
+        return !M3PresentationActivity.isRenderActive(getSkinnable());
     }
 
     /// Starts the shared linear activity loop when it is not already running with the current duration.

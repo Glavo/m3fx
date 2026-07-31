@@ -218,13 +218,70 @@ final class M3MotionSettingsObserverTest {
         });
     }
 
+    /// Verifies visibility observation, effective-state coalescing, ancestor-chain rebuilding, and listener release.
+    @Test
+    void observesEffectiveTreeVisibility() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Pane oldParent = new Pane(owner);
+            Pane newParent = new Pane();
+            Scene scene = new Scene(new Pane(oldParent, newParent));
+            AtomicInteger refreshes = new AtomicInteger();
+            M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, refreshes::incrementAndGet);
+
+            try {
+                assertEquals(1, refreshes.get());
+                assertTrue(M3PresentationActivity.isTreeVisible(owner));
+
+                int activeRefreshes = refreshes.get();
+                owner.setManaged(false);
+                owner.setOpacity(0.0);
+                owner.setDisable(true);
+                assertEquals(activeRefreshes, refreshes.get());
+
+                oldParent.setVisible(false);
+                assertEquals(activeRefreshes + 1, refreshes.get());
+                assertFalse(M3PresentationActivity.isTreeVisible(owner));
+
+                owner.setVisible(false);
+                oldParent.setVisible(true);
+                assertEquals(activeRefreshes + 1, refreshes.get());
+
+                owner.setVisible(true);
+                assertEquals(activeRefreshes + 2, refreshes.get());
+                assertTrue(M3PresentationActivity.isTreeVisible(owner));
+
+                oldParent.getChildren().remove(owner);
+                newParent.getChildren().add(owner);
+                int movedRefreshes = refreshes.get();
+
+                oldParent.setVisible(false);
+                assertEquals(movedRefreshes, refreshes.get());
+
+                newParent.setVisible(false);
+                assertEquals(movedRefreshes + 1, refreshes.get());
+                assertFalse(M3PresentationActivity.isTreeVisible(owner));
+
+                observer.dispose();
+                int disposedRefreshes = refreshes.get();
+                newParent.setVisible(true);
+                assertEquals(disposedRefreshes, refreshes.get());
+                assertFalse(owner.hasProperties());
+                assertFalse(scene.hasProperties());
+            } finally {
+                observer.dispose();
+            }
+        });
+    }
+
     /// Verifies that stage iconification refreshes observers and changes render activity without hiding the window.
     @Tier2Test
     @Test
     void observesStageIconificationLifecycle() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            Scene scene = new Scene(owner);
+            Pane ancestor = new Pane(owner);
+            Scene scene = new Scene(ancestor);
             AtomicInteger refreshes = new AtomicInteger();
             M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, refreshes::incrementAndGet);
             Stage stage = new Stage();
@@ -232,21 +289,31 @@ final class M3MotionSettingsObserverTest {
             try {
                 stage.setScene(scene);
                 stage.show();
-                assertTrue(M3WindowActivity.isRenderActive(owner));
+                assertTrue(M3PresentationActivity.isRenderActive(owner));
+
+                int activeRefreshes = refreshes.get();
+                ancestor.setVisible(false);
+                assertFalse(M3PresentationActivity.isRenderActive(owner));
+                assertTrue(refreshes.get() > activeRefreshes);
+
+                int hiddenRefreshes = refreshes.get();
+                ancestor.setVisible(true);
+                assertTrue(M3PresentationActivity.isRenderActive(owner));
+                assertTrue(refreshes.get() > hiddenRefreshes);
 
                 int shownRefreshes = refreshes.get();
                 stage.setIconified(true);
 
                 assertTrue(stage.isShowing());
                 assertTrue(stage.isIconified());
-                assertFalse(M3WindowActivity.isRenderActive(owner));
+                assertFalse(M3PresentationActivity.isRenderActive(owner));
                 assertTrue(refreshes.get() > shownRefreshes);
 
                 int iconifiedRefreshes = refreshes.get();
                 stage.setIconified(false);
 
                 assertFalse(stage.isIconified());
-                assertTrue(M3WindowActivity.isRenderActive(owner));
+                assertTrue(M3PresentationActivity.isRenderActive(owner));
                 assertTrue(refreshes.get() > iconifiedRefreshes);
 
                 observer.dispose();
@@ -276,8 +343,8 @@ final class M3MotionSettingsObserverTest {
                 stage.setScene(new Scene(stageRoot));
                 stage.show();
                 popup.show(stage);
-                assertSame(stage, M3WindowActivity.presentationStage(popup));
-                assertTrue(M3WindowActivity.isRenderActive(popupOwner));
+                assertSame(stage, M3PresentationActivity.presentationStage(popup));
+                assertTrue(M3PresentationActivity.isRenderActive(popupOwner));
 
                 AtomicInteger refreshes = new AtomicInteger();
                 observer = new M3MotionSettingsObserver(popupOwner, refreshes::incrementAndGet);
@@ -285,7 +352,7 @@ final class M3MotionSettingsObserverTest {
 
                 stage.setIconified(true);
 
-                assertFalse(M3WindowActivity.isRenderActive(popupOwner));
+                assertFalse(M3PresentationActivity.isRenderActive(popupOwner));
                 assertTrue(refreshes.get() > shownRefreshes);
             } finally {
                 if (observer != null) {

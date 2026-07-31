@@ -37,7 +37,7 @@ import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeTransition;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -676,7 +676,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         @Nullable ContainerShapeTransition transition = containerShapeTransition;
-        boolean canAnimate = M3WindowActivity.isRenderActive(button)
+        boolean canAnimate = M3PresentationActivity.isRenderActive(button)
                 && M3Animation.areAnimationsEnabled(button)
                 && (button.getShape() == null
                 || transition != null && transition.isSurfaceShapeActive());

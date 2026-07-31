@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -19,13 +20,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-/// Observes resolved M3FX motion context and window render activity while an owner node is attached to a scene.
+/// Observes resolved M3FX motion context and presentation activity while an owner node is attached to a scene.
 ///
-/// Observers that share an owner also share one owner coordinator and one scene-property listener. Scene dispatchers
+/// Observers that share an owner also share one owner coordinator and one tree-visible observation. The native JavaFX
+/// property is preferred; the public parent chain is observed when that property is inaccessible. Scene dispatchers
 /// register coordinators rather than individual callbacks, so controls with several animated features do not multiply
-/// scene and window observation overhead. Notifications raised off the JavaFX application thread are coalesced and
-/// dispatched on that thread. Callback dispatch does not allocate snapshots and remains stable when callbacks dispose
-/// subscriptions or move their owner to another scene.
+/// ancestor, scene, or window observation overhead. Notifications raised off the JavaFX application thread are
+/// coalesced and dispatched on that thread. Callback dispatch does not allocate snapshots and remains stable when
+/// callbacks dispose subscriptions or move their owner to another scene.
 ///
 /// Construction and lifecycle methods must be invoked on the JavaFX application thread. A disposed observer cannot
 /// be restarted. Calling [stop] or [dispose] more than once has no effect.
@@ -53,13 +55,16 @@ public final class M3MotionSettingsObserver {
     /// Empty nullable owner storage reused before the first scene registration.
     private static final @Nullable OwnerObserver[] EMPTY_OWNERS = new OwnerObserver[0];
 
+    /// Empty nullable node storage reused before the first ancestor-chain observation.
+    private static final @Nullable Node[] EMPTY_NODES = new Node[0];
+
     /// The node whose attachment controls observation lifetime.
     private final Node owner;
 
     /// The shared coordinator used while this observer is active.
     private @Nullable OwnerObserver ownerObserver;
 
-    /// The action invoked when motion settings may affect the owner.
+    /// The action invoked when motion settings or presentation activity may affect the owner.
     private final Runnable refreshAction;
 
     /// Whether this observer has been disposed.
@@ -71,7 +76,7 @@ public final class M3MotionSettingsObserver {
     /// Creates an observer for one owner node.
     ///
     /// @param owner         the node whose scene attachment controls listener lifetime
-    /// @param refreshAction the action invoked when motion settings may affect the owner
+    /// @param refreshAction the action invoked when motion settings or presentation activity may affect the owner
     /// @throws NullPointerException if `owner` or `refreshAction` is `null`
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction) {
         this(owner, refreshAction, true);
@@ -82,7 +87,7 @@ public final class M3MotionSettingsObserver {
     /// An inactive observer does not allocate owner or scene observation state until [start] is called.
     ///
     /// @param owner              the node whose scene attachment controls listener lifetime
-    /// @param refreshAction      the action invoked when motion settings may affect the owner
+    /// @param refreshAction      the action invoked when motion settings or presentation activity may affect the owner
     /// @param observeImmediately whether observation should start during construction
     /// @throws NullPointerException if `owner` or `refreshAction` is `null`
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction, boolean observeImmediately) {
@@ -129,14 +134,14 @@ public final class M3MotionSettingsObserver {
         }
 
         observing = false;
-        OwnerObserver coordinator = ownerObserver;
+        @Nullable OwnerObserver coordinator = ownerObserver;
         ownerObserver = null;
         if (coordinator != null) {
             coordinator.remove(this);
         }
     }
 
-    /// Permanently stops observing scene and runtime motion setting changes.
+    /// Permanently stops observing ancestor, scene, window, and runtime motion-setting changes.
     public void dispose() {
         if (disposed) {
             return;
@@ -229,8 +234,23 @@ public final class M3MotionSettingsObserver {
         /// Re-registers this coordinator when the owner moves between scenes.
         private final InvalidationListener sceneListener = observable -> updateRegistration();
 
-        /// Refreshes inherited settings when the owner moves between parents without leaving its scene.
+        /// Refreshes presentation activity when the owner or one of its ancestors changes visibility.
+        private final InvalidationListener visibilityListener = observable -> refreshAfterVisibilityChange();
+
+        /// Rebuilds presentation observation when any link in the current ancestor chain changes.
         private final InvalidationListener parentListener = observable -> refreshAfterParentChange();
+
+        /// The native JavaFX tree-visible property currently observed, or `null` while using the public fallback.
+        private @Nullable ObservableBooleanValue observedTreeVisibleProperty;
+
+        /// Nullable node slots containing the owner followed by its currently observed ancestors.
+        private @Nullable Node[] observedNodes = EMPTY_NODES;
+
+        /// The number of occupied slots in the observed ancestor chain.
+        private int observedNodeCount;
+
+        /// The most recently observed effective tree-visible state.
+        private boolean treeVisible;
 
         /// Nullable observer slots; removals during dispatch leave temporary tombstones.
         private @Nullable M3MotionSettingsObserver[] observers = EMPTY_OBSERVERS;
@@ -265,12 +285,12 @@ public final class M3MotionSettingsObserver {
             append(observer);
             if (wasEmpty) {
                 owner.sceneProperty().addListener(sceneListener);
-                owner.parentProperty().addListener(parentListener);
+                installTreeVisibilityObservation();
                 updateRegistration();
                 return;
             }
 
-            SceneObserver sceneObserver = registeredSceneObserver;
+            @Nullable SceneObserver sceneObserver = registeredSceneObserver;
             if (sceneObserver != null && owner.getScene() == sceneObserver.scene) {
                 observer.refresh();
             }
@@ -300,7 +320,7 @@ public final class M3MotionSettingsObserver {
                 refreshRequested = false;
                 unregisterSceneObserver();
                 owner.sceneProperty().removeListener(sceneListener);
-                owner.parentProperty().removeListener(parentListener);
+                releaseTreeVisibilityObservation();
                 if (owner.getProperties().get(OWNER_OBSERVER_KEY) == this) {
                     owner.getProperties().remove(OWNER_OBSERVER_KEY);
                 }
@@ -338,7 +358,7 @@ public final class M3MotionSettingsObserver {
         /// Updates scene registration after owner attachment changes.
         private void updateRegistration() {
             @Nullable Scene scene = owner.getScene();
-            SceneObserver currentObserver = registeredSceneObserver;
+            @Nullable SceneObserver currentObserver = registeredSceneObserver;
             if (currentObserver == null ? scene == null : currentObserver.scene == scene) {
                 return;
             }
@@ -353,19 +373,107 @@ public final class M3MotionSettingsObserver {
             requestRefresh();
         }
 
-        /// Refreshes inherited settings only when a parent change leaves the owner in its registered scene.
-        private void refreshAfterParentChange() {
-            SceneObserver sceneObserver = registeredSceneObserver;
-            if (owner.getParent() != null
-                    && sceneObserver != null
-                    && owner.getScene() == sceneObserver.scene) {
+        /// Refreshes subscriptions when effective tree visibility changes.
+        private void refreshAfterVisibilityChange() {
+            boolean currentTreeVisible = M3PresentationActivity.isTreeVisible(owner);
+            if (treeVisible == currentTreeVisible) {
+                return;
+            }
+
+            treeVisible = currentTreeVisible;
+            @Nullable SceneObserver sceneObserver = registeredSceneObserver;
+            if (sceneObserver != null && owner.getScene() == sceneObserver.scene) {
                 requestRefresh();
             }
         }
 
+        /// Rebuilds ancestor observation and refreshes inherited settings after a parent link changes.
+        private void refreshAfterParentChange() {
+            @Nullable ObservableBooleanValue property = observedTreeVisibleProperty;
+            if (property == null) {
+                rebuildObservedChain();
+            } else {
+                treeVisible = property.get();
+            }
+            @Nullable SceneObserver sceneObserver = registeredSceneObserver;
+            if (sceneObserver != null
+                    && owner.getScene() == sceneObserver.scene
+                    && (owner.getParent() != null || sceneObserver.scene.getRoot() == owner)) {
+                requestRefresh();
+            }
+        }
+
+        /// Installs native tree-visible observation or a public ancestor-chain fallback.
+        private void installTreeVisibilityObservation() {
+            @Nullable ObservableBooleanValue property = M3TreeVisibility.treeVisibleProperty(owner);
+            observedTreeVisibleProperty = property;
+            if (property == null) {
+                rebuildObservedChain();
+                return;
+            }
+
+            property.addListener(visibilityListener);
+            owner.parentProperty().addListener(parentListener);
+            treeVisible = property.get();
+        }
+
+        /// Removes native or fallback tree-visible observation and releases fallback storage.
+        private void releaseTreeVisibilityObservation() {
+            @Nullable ObservableBooleanValue property = observedTreeVisibleProperty;
+            observedTreeVisibleProperty = null;
+            if (property != null) {
+                property.removeListener(visibilityListener);
+                owner.parentProperty().removeListener(parentListener);
+            }
+            releaseObservedChain();
+        }
+
+        /// Rebuilds visible and parent-property observation from the owner through its current public parent root.
+        private void rebuildObservedChain() {
+            removeObservedChain();
+            @Nullable Node current = owner;
+            while (current != null) {
+                ensureObservedNodeCapacity();
+                observedNodes[observedNodeCount++] = current;
+                current.visibleProperty().addListener(visibilityListener);
+                current.parentProperty().addListener(parentListener);
+                current = current.getParent();
+            }
+            treeVisible = M3PresentationActivity.isTreeVisible(owner);
+        }
+
+        /// Grows ancestor storage before one node is appended.
+        private void ensureObservedNodeCapacity() {
+            if (observedNodeCount < observedNodes.length) {
+                return;
+            }
+            int currentCapacity = observedNodes.length;
+            int nextCapacity = currentCapacity == 0 ? 8 : currentCapacity + (currentCapacity >> 1);
+            observedNodes = Arrays.copyOf(observedNodes, nextCapacity);
+        }
+
+        /// Removes listeners from the currently observed ancestor chain while retaining reusable storage.
+        private void removeObservedChain() {
+            for (int index = 0; index < observedNodeCount; index++) {
+                @Nullable Node node = observedNodes[index];
+                if (node != null) {
+                    node.visibleProperty().removeListener(visibilityListener);
+                    node.parentProperty().removeListener(parentListener);
+                }
+            }
+            Arrays.fill(observedNodes, 0, observedNodeCount, null);
+            observedNodeCount = 0;
+        }
+
+        /// Removes ancestor listeners and releases reusable node storage.
+        private void releaseObservedChain() {
+            removeObservedChain();
+            observedNodes = EMPTY_NODES;
+        }
+
         /// Removes this owner from its current scene and releases an empty scene dispatcher.
         private void unregisterSceneObserver() {
-            SceneObserver currentObserver = registeredSceneObserver;
+            @Nullable SceneObserver currentObserver = registeredSceneObserver;
             if (currentObserver == null) {
                 return;
             }
@@ -572,20 +680,20 @@ public final class M3MotionSettingsObserver {
                 return;
             }
 
-            Window currentWindow = observedWindow;
+            @Nullable Window currentWindow = observedWindow;
             if (currentWindow != null) {
                 currentWindow.showingProperty().removeListener(windowShowingListener);
             }
-            Stage currentStage = observedStage;
+            @Nullable Stage currentStage = observedStage;
             if (currentStage != null) {
                 currentStage.iconifiedProperty().removeListener(stageIconifiedListener);
             }
             observedWindow = window;
-            observedStage = M3WindowActivity.presentationStage(window);
+            observedStage = M3PresentationActivity.presentationStage(window);
             if (window != null) {
                 window.showingProperty().addListener(windowShowingListener);
             }
-            Stage stage = observedStage;
+            @Nullable Stage stage = observedStage;
             if (stage != null) {
                 stage.iconifiedProperty().addListener(stageIconifiedListener);
             }

@@ -87,6 +87,31 @@ final class M3AnimationTest {
         }));
     }
 
+    /// Verifies that tree visibility settles a finite transition before its scene acquires a window.
+    @Test
+    void hidingAncestorFinishesFiniteTransitionInSceneWithoutWindow() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Pane parent = new Pane(owner);
+            Scene scene = new Scene(parent);
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            AtomicBoolean animationFinished = new AtomicBoolean(false);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            transition.setOnFinished(event -> animationFinished.set(true));
+
+            M3Animation.playFromStart(owner, transition);
+            assertEquals(Animation.Status.RUNNING, transition.getStatus());
+
+            parent.setVisible(false);
+
+            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+            assertEquals(1.0, value.get(), 0.0001);
+            assertTrue(animationFinished.get());
+            assertFalse(owner.hasProperties());
+            assertFalse(scene.hasProperties());
+        });
+    }
+
     /// Verifies that iconifying a presenting stage settles a finite transition and releases its observers.
     @Tier2Test
     @Test
@@ -107,6 +132,40 @@ final class M3AnimationTest {
                 assertEquals(Animation.Status.RUNNING, transition.getStatus());
 
                 stage.setIconified(true);
+
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+                assertTrue(animationFinished.get());
+                assertFalse(owner.hasProperties());
+                assertFalse(scene.hasProperties());
+            } finally {
+                transition.stop();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hiding an owner ancestor settles a finite transition and releases its observers.
+    @Tier2Test
+    @Test
+    void hidingAncestorFinishesFiniteTransition() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Pane parent = new Pane(owner);
+            Scene scene = new Scene(parent);
+            Stage stage = new Stage();
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            AtomicBoolean animationFinished = new AtomicBoolean(false);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            transition.setOnFinished(event -> animationFinished.set(true));
+
+            try {
+                stage.setScene(scene);
+                stage.show();
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+
+                parent.setVisible(false);
 
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
                 assertEquals(1.0, value.get(), 0.0001);

@@ -39,7 +39,7 @@ import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -940,7 +940,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             return true;
         }
         @Nullable Window window = scene.getWindow();
-        return window != null && !M3WindowActivity.isRenderActive(window);
+        return !M3PresentationActivity.isTreeVisible(owner)
+                || window != null && !M3PresentationActivity.isRenderActive(window);
     }
 
     /// Returns the target overlay opacity for the owner interaction state.

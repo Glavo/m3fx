@@ -62,6 +62,24 @@ final class M3DelayedTimerLifecycleTest {
         }
     }
 
+    /// Verifies that an invisible owner tree cancels delayed interactions even before its scene acquires a window.
+    @Test
+    void hidingAncestorCancelsDelaysInSceneWithoutWindow() {
+        FxTestUtils.runOnFxThread(() -> {
+            LifecycleFixture fixture = new LifecycleFixture(LONG_DELAY);
+            try {
+                fixture.startDelays();
+                fixture.assertDelaysPending();
+
+                fixture.root.setVisible(false);
+
+                fixture.assertDelaysReleased();
+            } finally {
+                fixture.dispose();
+            }
+        });
+    }
+
     /// Verifies that removing owners from their scene cancels pending work and releases lifecycle observers.
     @Test
     void sceneDetachmentCancelsDelays() {
@@ -138,6 +156,29 @@ final class M3DelayedTimerLifecycleTest {
                 fixture.assertDelaysPending();
 
                 stage.setIconified(true);
+
+                fixture.assertDelaysReleased();
+            } finally {
+                fixture.dispose();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hiding a shared owner ancestor cancels pending delayed interactions.
+    @Test
+    @Tier2Test
+    void hidingAncestorCancelsDelays() {
+        FxTestUtils.runOnFxThread(() -> {
+            LifecycleFixture fixture = new LifecycleFixture(LONG_DELAY);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(fixture.scene);
+                stage.show();
+                fixture.startDelays();
+                fixture.assertDelaysPending();
+
+                fixture.root.setVisible(false);
 
                 fixture.assertDelaysReleased();
             } finally {

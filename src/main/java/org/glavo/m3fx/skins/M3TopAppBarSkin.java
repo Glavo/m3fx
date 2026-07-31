@@ -18,7 +18,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -416,7 +416,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         boolean flexible = variant == M3TopAppBarVariant.MEDIUM_FLEXIBLE
                 || variant == M3TopAppBarVariant.LARGE_FLEXIBLE;
         double target = flexible && control.isScrolledUnder() ? 1.0 : 0.0;
-        if (!animate || !isVisibleInWindow() || Double.compare(control.getCollapseProgress(), target) == 0) {
+        if (!animate || !isPresentationActive() || Double.compare(control.getCollapseProgress(), target) == 0) {
             collapseAnimation.stop();
             control.setCollapseProgress(target);
             updateTransitionVisuals();
@@ -428,9 +428,9 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         M3Animation.playFromStart(control, collapseAnimation);
     }
 
-    /// Returns whether animation pulses can currently be observed in a render-active window.
-    private boolean isVisibleInWindow() {
-        return M3WindowActivity.isRenderActive(getSkinnable());
+    /// Returns whether animation pulses can currently produce visible output.
+    private boolean isPresentationActive() {
+        return M3PresentationActivity.isRenderActive(getSkinnable());
     }
 
     /// Updates expanded and compact title opacity, scale, and visibility for the current transition frame.

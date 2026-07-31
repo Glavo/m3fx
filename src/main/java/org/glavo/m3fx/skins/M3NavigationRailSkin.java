@@ -22,7 +22,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3WindowActivity;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,13 +109,13 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
 
     /// Animates between collapsed and expanded rail widths.
     private final ChangeListener<Boolean> expandedListener =
-            (observable, oldValue, newValue) -> updateExpandedState(newValue, isVisibleInWindow());
+            (observable, oldValue, newValue) -> updateExpandedState(newValue, isPresentationActive());
 
     /// Recomputes the collapsed target when immersive hiding is enabled or disabled.
     private final ChangeListener<Boolean> hideWhenCollapsedListener =
             (observable, oldValue, newValue) -> updateExpandedState(
                     getSkinnable().isExpanded(),
-                    isVisibleInWindow()
+                    isPresentationActive()
             );
 
     /// Requests a destination relayout when top or center alignment changes.
@@ -339,9 +339,9 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         return collapsed + (expanded - collapsed) * expansionProgress.get();
     }
 
-    /// Returns whether the rail is attached to a render-active window.
-    private boolean isVisibleInWindow() {
-        return M3WindowActivity.isRenderActive(getSkinnable());
+    /// Returns whether the rail belongs to an effectively visible presentation.
+    private boolean isPresentationActive() {
+        return M3PresentationActivity.isRenderActive(getSkinnable());
     }
 
     /// Applies an expanded-state target, optionally using Material spatial motion.

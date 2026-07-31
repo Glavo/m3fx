@@ -11,10 +11,10 @@ import java.util.Objects;
 
 /// Provides guarded popup-window lifecycle operations.
 ///
-/// JavaFX records a popup owner before checking whether the root owner window can present the popup. Calling
-/// [PopupWindow#show(Node, double, double)] for a scene attached to a hidden or iconified stage can therefore leave a
-/// non-showing popup retaining its owner. This helper rejects that state before JavaFX mutates the popup and tears down
-/// transient owner listeners when a show request is rejected during popup events.
+/// JavaFX records a popup owner before checking whether the owner tree and root window can present the popup. Calling
+/// [PopupWindow#show(Node, double, double)] for an invisible owner or a scene attached to a hidden or iconified stage
+/// can therefore leave a non-showing popup retaining its owner. This helper rejects that state before JavaFX mutates
+/// the popup and tears down transient owner listeners when a show request is rejected during popup events.
 @NotNullByDefault
 public final class M3PopupWindows {
     /// Prevents utility class instantiation.
@@ -27,7 +27,7 @@ public final class M3PopupWindows {
     /// @return `true` when JavaFX can present a popup for the owner
     /// @throws NullPointerException if `owner` is `null`
     public static boolean canShow(Node owner) {
-        return M3WindowActivity.isRenderActive(Objects.requireNonNull(owner, "owner"));
+        return M3PresentationActivity.isRenderActive(Objects.requireNonNull(owner, "owner"));
     }
 
     /// Shows a popup only for a render-active owner window and confirms that it remained visible.

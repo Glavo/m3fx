@@ -17,8 +17,8 @@ import java.util.Objects;
 /// The reset transition and motion observer are created only after the first accepted key. The observer remains
 /// installed only while a prefix is active, so controls that never use type-ahead navigation do not participate in
 /// runtime motion dispatch. An active prefix is cleared when an attached owner leaves its scene or when the scene's
-/// window becomes hidden. An owner that has not yet entered a scene, or whose scene has no window, can still use the
-/// inactivity timer for headless interaction.
+/// window becomes hidden. An owner that has not yet entered a scene, or whose visible scene has no window, can still
+/// use the inactivity timer for headless interaction.
 @NotNullByDefault
 public final class M3TypeAheadState {
     /// The control that supplies inherited motion behavior.
@@ -154,6 +154,7 @@ public final class M3TypeAheadState {
 
         resetDelayObservedScene = true;
         @Nullable Window window = scene.getWindow();
-        return window != null && !M3WindowActivity.isRenderActive(window);
+        return !M3PresentationActivity.isTreeVisible(owner)
+                || window != null && !M3PresentationActivity.isRenderActive(window);
     }
 }
