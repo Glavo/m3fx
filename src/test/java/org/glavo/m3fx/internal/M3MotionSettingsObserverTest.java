@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -212,6 +213,85 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(disposedRefreshes, refreshes.get());
             } finally {
                 observer.dispose();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that stage iconification refreshes observers and changes render activity without hiding the window.
+    @Tier2Test
+    @Test
+    void observesStageIconificationLifecycle() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            AtomicInteger refreshes = new AtomicInteger();
+            M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, refreshes::incrementAndGet);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                stage.show();
+                assertTrue(M3WindowActivity.isRenderActive(owner));
+
+                int shownRefreshes = refreshes.get();
+                stage.setIconified(true);
+
+                assertTrue(stage.isShowing());
+                assertTrue(stage.isIconified());
+                assertFalse(M3WindowActivity.isRenderActive(owner));
+                assertTrue(refreshes.get() > shownRefreshes);
+
+                int iconifiedRefreshes = refreshes.get();
+                stage.setIconified(false);
+
+                assertFalse(stage.isIconified());
+                assertTrue(M3WindowActivity.isRenderActive(owner));
+                assertTrue(refreshes.get() > iconifiedRefreshes);
+
+                observer.dispose();
+                int disposedRefreshes = refreshes.get();
+                stage.setIconified(true);
+                assertEquals(disposedRefreshes, refreshes.get());
+            } finally {
+                observer.dispose();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that popup-owned observers inherit iconification changes from their presenting stage.
+    @Tier2Test
+    @Test
+    void observesPresentingStageThroughPopupOwnership() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane stageRoot = new Pane();
+            Pane popupOwner = new Pane();
+            Stage stage = new Stage();
+            Popup popup = new Popup();
+            popup.getContent().add(popupOwner);
+            @Nullable M3MotionSettingsObserver observer = null;
+
+            try {
+                stage.setScene(new Scene(stageRoot));
+                stage.show();
+                popup.show(stage);
+                assertSame(stage, M3WindowActivity.presentationStage(popup));
+                assertTrue(M3WindowActivity.isRenderActive(popupOwner));
+
+                AtomicInteger refreshes = new AtomicInteger();
+                observer = new M3MotionSettingsObserver(popupOwner, refreshes::incrementAndGet);
+                int shownRefreshes = refreshes.get();
+
+                stage.setIconified(true);
+
+                assertFalse(M3WindowActivity.isRenderActive(popupOwner));
+                assertTrue(refreshes.get() > shownRefreshes);
+            } finally {
+                if (observer != null) {
+                    observer.dispose();
+                }
+                popup.hide();
                 stage.close();
             }
         });

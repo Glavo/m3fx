@@ -124,6 +124,29 @@ final class M3DelayedTimerLifecycleTest {
         });
     }
 
+    /// Verifies that iconifying a presenting window cancels pending delayed interactions.
+    @Test
+    @Tier2Test
+    void iconifyingWindowCancelsDelays() {
+        FxTestUtils.runOnFxThread(() -> {
+            LifecycleFixture fixture = new LifecycleFixture(LONG_DELAY);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(fixture.scene);
+                stage.show();
+                fixture.startDelays();
+                fixture.assertDelaysPending();
+
+                stage.setIconified(true);
+
+                fixture.assertDelaysReleased();
+            } finally {
+                fixture.dispose();
+                stage.close();
+            }
+        });
+    }
+
     /// Disposes a fixture retained by an asynchronous test, when one was created.
     ///
     /// @param fixtureReference the reference containing the fixture to dispose

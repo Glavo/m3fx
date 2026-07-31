@@ -102,7 +102,7 @@ public final class M3Animation {
     }
 
     /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled or the
-    /// owner is attached to a hidden window.
+    /// owner is attached to a hidden or iconified window.
     ///
     /// @param owner      the node whose animation settings should be honored
     /// @param transition the transition to play or finish

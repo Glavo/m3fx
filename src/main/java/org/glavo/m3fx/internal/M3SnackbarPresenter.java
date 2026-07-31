@@ -30,7 +30,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -723,11 +722,9 @@ public final class M3SnackbarPresenter extends Control {
         refreshDisplayTimer();
     }
 
-    /// Returns whether the presenter lacks a showing window.
+    /// Returns whether the presenter lacks a render-active window.
     private boolean isWindowUnavailable() {
-        @Nullable Scene scene = getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window == null || !window.isShowing();
+        return !M3WindowActivity.isRenderActive(this);
     }
 
     /// Resolves the effective automatic-dismissal duration.

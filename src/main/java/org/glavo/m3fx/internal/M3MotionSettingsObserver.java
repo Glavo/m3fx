@@ -8,6 +8,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-/// Observes resolved M3FX motion context and window activity while an owner node is attached to a scene.
+/// Observes resolved M3FX motion context and window render activity while an owner node is attached to a scene.
 ///
 /// Observers that share an owner also share one owner coordinator and one scene-property listener. Scene dispatchers
 /// register coordinators rather than individual callbacks, so controls with several animated features do not multiply
@@ -468,8 +469,14 @@ public final class M3MotionSettingsObserver {
         /// Receives showing-state changes from the current scene window.
         private final InvalidationListener windowShowingListener = observable -> requestRefresh(null);
 
+        /// Receives iconification changes from the stage that presents the current scene window.
+        private final InvalidationListener stageIconifiedListener = observable -> requestRefresh(null);
+
         /// The window whose showing state is currently observed.
         private @Nullable Window observedWindow;
+
+        /// The stage whose iconification state controls the current window's presentation.
+        private @Nullable Stage observedStage;
 
         /// The number of active owner dispatches.
         private int dispatchDepth;
@@ -553,7 +560,7 @@ public final class M3MotionSettingsObserver {
             return -1;
         }
 
-        /// Reattaches the shared showing-state listener to the scene's current window.
+        /// Reattaches shared render-activity listeners to the scene's current window.
         ///
         /// @param window  the new window, or null when detached
         /// @param refresh whether subscribers should be refreshed
@@ -569,9 +576,18 @@ public final class M3MotionSettingsObserver {
             if (currentWindow != null) {
                 currentWindow.showingProperty().removeListener(windowShowingListener);
             }
+            Stage currentStage = observedStage;
+            if (currentStage != null) {
+                currentStage.iconifiedProperty().removeListener(stageIconifiedListener);
+            }
             observedWindow = window;
+            observedStage = M3WindowActivity.presentationStage(window);
             if (window != null) {
                 window.showingProperty().addListener(windowShowingListener);
+            }
+            Stage stage = observedStage;
+            if (stage != null) {
+                stage.iconifiedProperty().addListener(stageIconifiedListener);
             }
             if (refresh) {
                 requestRefresh(null);

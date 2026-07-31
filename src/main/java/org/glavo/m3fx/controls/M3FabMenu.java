@@ -21,13 +21,11 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -39,6 +37,7 @@ import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -691,11 +690,9 @@ public final class M3FabMenu extends Control {
         }
     }
 
-    /// Returns whether this menu is attached to a currently showing window.
+    /// Returns whether this menu is attached to a render-active window.
     private boolean isShowingWindow() {
-        @Nullable Scene scene = getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window != null && window.isShowing();
+        return M3WindowActivity.isRenderActive(this);
     }
 
     /// Prepares action items to participate in layout while expanded.

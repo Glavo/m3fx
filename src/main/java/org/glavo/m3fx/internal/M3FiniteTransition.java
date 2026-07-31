@@ -18,8 +18,8 @@ import java.util.Objects;
 /// JavaFX does not guarantee that jumping a stopped custom [Transition] to its total duration invokes
 /// `interpolate(1)`. M3FX finite transitions expose this operation so reduced-motion paths can settle reliably. A
 /// run adopts the first [Scene] and [Window] to which its owner is attached. It settles if the owner subsequently
-/// leaves or moves from either presentation context, or if the presenting window is hidden, preventing detached or
-/// non-visible content from retaining an active JavaFX pulse receiver.
+/// leaves or moves from either presentation context, or if the presenting window becomes hidden or iconified,
+/// preventing non-visible content from retaining an active JavaFX pulse receiver.
 @NotNullByDefault
 public abstract class M3FiniteTransition extends Transition {
     /// The owner whose resolved motion setting controls the current run.
@@ -62,7 +62,7 @@ public abstract class M3FiniteTransition extends Transition {
 
         motionScene = checkedOwner.getScene();
         motionWindow = motionScene == null ? null : motionScene.getWindow();
-        if (motionWindow != null && !motionWindow.isShowing()) {
+        if (motionWindow != null && !M3WindowActivity.isRenderActive(motionWindow)) {
             M3Animation.finish(this);
             return;
         }
@@ -116,7 +116,7 @@ public abstract class M3FiniteTransition extends Transition {
             M3Animation.finish(this);
             return;
         }
-        if (currentWindow != null && !currentWindow.isShowing()) {
+        if (currentWindow != null && !M3WindowActivity.isRenderActive(currentWindow)) {
             M3Animation.finish(this);
         }
     }

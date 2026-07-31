@@ -11,7 +11,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
-import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
@@ -21,21 +20,20 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
-import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ProgressBar].
 ///
 /// The skin renders determinate and indeterminate linear progress using standard or expressive wavy geometry.
 /// Determinate value changes use the active motion profile; indeterminate activity pauses while the control has no
-/// showing window. Disabling full motion retains a basic continuously moving indeterminate presentation.
+/// render-active window. Disabling full motion retains a basic continuously moving indeterminate presentation.
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The AndroidX Material 3 linear indeterminate cycle duration used to normalize keyframe timings.
@@ -758,9 +756,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Returns whether pulse-driven progress animations should pause for the current window lifecycle state.
     private boolean shouldPauseActivityAnimations() {
-        @Nullable Scene scene = getSkinnable().getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window == null || !window.isShowing();
+        return !M3WindowActivity.isRenderActive(getSkinnable());
     }
 
     /// Starts the shared linear activity loop when it is not already running with the current duration.

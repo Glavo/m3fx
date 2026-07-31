@@ -48,6 +48,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3TooltipInstallation;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
@@ -1810,7 +1811,7 @@ public class M3Tooltip extends PopupControl {
         ///
         /// A node that has never entered a scene and a scene without an associated window remain valid so delayed
         /// behavior can be exercised headlessly. Once the current delay has observed a scene, detachment invalidates
-        /// it. A non-showing associated window always invalidates the delay.
+        /// it. A render-inactive associated window always invalidates the delay.
         ///
         /// @return `true` when the delayed action was cancelled
         private boolean cancelTimerForUnavailableOwner() {
@@ -1822,7 +1823,7 @@ public class M3Tooltip extends PopupControl {
             } else {
                 timerObservedScene = true;
                 @Nullable Window window = scene.getWindow();
-                if (window == null || window.isShowing()) {
+                if (window == null || M3WindowActivity.isRenderActive(window)) {
                     return false;
                 }
             }

@@ -7,11 +7,9 @@ import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
-import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
 import javafx.scene.shape.Path;
-import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
@@ -20,9 +18,9 @@ import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3LoadingIndicator].
 ///
@@ -286,11 +284,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return clamp(segmentProgress) * QUARTER_ROTATION + morphRotationTarget + globalRotation;
     }
 
-    /// Returns whether activity animations should pause for the current scene attachment state.
+    /// Returns whether activity animations should pause for the current window render state.
     private boolean shouldPauseActivityAnimations() {
-        @Nullable Scene scene = getSkinnable().getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window == null || !window.isShowing();
+        return !M3WindowActivity.isRenderActive(getSkinnable());
     }
 
     /// Returns the active morph duration used before the shape settles for the rest of the interval.

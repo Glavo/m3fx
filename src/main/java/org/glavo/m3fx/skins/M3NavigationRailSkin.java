@@ -22,6 +22,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -338,10 +339,9 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         return collapsed + (expanded - collapsed) * expansionProgress.get();
     }
 
-    /// Returns whether the rail is attached to a currently visible window that can render animation pulses.
+    /// Returns whether the rail is attached to a render-active window.
     private boolean isVisibleInWindow() {
-        @Nullable javafx.scene.Scene scene = getSkinnable().getScene();
-        return scene != null && scene.getWindow() != null && scene.getWindow().isShowing();
+        return M3WindowActivity.isRenderActive(getSkinnable());
     }
 
     /// Applies an expanded-state target, optionally using Material spatial motion.

@@ -10,6 +10,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
@@ -17,6 +18,7 @@ import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.animation.M3SpringParameters;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -29,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies Material motion settings and animation lifecycle behavior.
@@ -82,6 +85,39 @@ final class M3AnimationTest {
             assertEquals(ownerPropertyCount, owner.getProperties().size());
             assertEquals(scenePropertyCount, scene.getProperties().size());
         }));
+    }
+
+    /// Verifies that iconifying a presenting stage settles a finite transition and releases its observers.
+    @Tier2Test
+    @Test
+    void iconifyingWindowFinishesFiniteTransition() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            Stage stage = new Stage();
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            AtomicBoolean animationFinished = new AtomicBoolean(false);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            transition.setOnFinished(event -> animationFinished.set(true));
+
+            try {
+                stage.setScene(scene);
+                stage.show();
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+
+                stage.setIconified(true);
+
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+                assertTrue(animationFinished.get());
+                assertFalse(owner.hasProperties());
+                assertFalse(scene.hasProperties());
+            } finally {
+                transition.stop();
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that animation defaults resolve the theme motion scheme through the parent chain.

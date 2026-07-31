@@ -154,6 +154,6 @@ public final class M3TypeAheadState {
 
         resetDelayObservedScene = true;
         @Nullable Window window = scene.getWindow();
-        return window != null && !window.isShowing();
+        return window != null && !M3WindowActivity.isRenderActive(window);
     }
 }

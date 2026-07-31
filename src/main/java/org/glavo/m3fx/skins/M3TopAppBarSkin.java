@@ -10,16 +10,15 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -429,11 +428,9 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         M3Animation.playFromStart(control, collapseAnimation);
     }
 
-    /// Returns whether animation pulses can currently be observed in a showing window.
+    /// Returns whether animation pulses can currently be observed in a render-active window.
     private boolean isVisibleInWindow() {
-        @Nullable Scene scene = getSkinnable().getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window != null && window.isShowing();
+        return M3WindowActivity.isRenderActive(getSkinnable());
     }
 
     /// Updates expanded and compact title opacity, scale, and visibility for the current transition frame.

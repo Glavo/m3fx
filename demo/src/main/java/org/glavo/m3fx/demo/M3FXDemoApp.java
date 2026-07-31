@@ -112,6 +112,9 @@ public final class M3FXDemoApp extends Application {
     /// Whether demo animations are enabled.
     private boolean animationsEnabled = true;
 
+    /// Whether the demo stage is currently iconified.
+    private boolean windowIconified;
+
     /// Animations owned by the active demo page.
     private final List<Animation> animations = new ArrayList<>();
 
@@ -198,6 +201,10 @@ public final class M3FXDemoApp extends Application {
         stage.setMinWidth(360.0);
         stage.setMinHeight(520.0);
         stage.setScene(scene);
+        stage.iconifiedProperty().addListener(observable -> {
+            windowIconified = stage.isIconified();
+            updatePageAnimations();
+        });
         stage.show();
         installWindowsScaleTransitionRepair(stage);
     }
@@ -967,22 +974,23 @@ public final class M3FXDemoApp extends Application {
 
     /// Registers an animation whose lifetime follows the active demo page.
     ///
-    /// The animation starts immediately when full motion is enabled. Otherwise it remains stopped until presentation
-    /// settings enable animation or the active page is replaced.
+    /// The animation starts immediately when full motion is enabled and the demo window is not iconified. Otherwise
+    /// it remains stopped until presentation settings enable animation, the window is restored, or the active page is
+    /// replaced.
     ///
     /// @param animation the animation to register
     void registerPageAnimation(Animation animation) {
         Objects.requireNonNull(animation, "animation");
         animations.add(animation);
-        if (animationsEnabled) {
+        if (animationsEnabled && !windowIconified) {
             animation.play();
         }
     }
 
-    /// Applies the current demo animation switch to page-owned animations.
+    /// Applies the current demo animation switch and window state to page-owned animations.
     private void updatePageAnimations() {
         for (Animation animation : animations) {
-            if (animationsEnabled) {
+            if (animationsEnabled && !windowIconified) {
                 animation.play();
             } else {
                 animation.pause();

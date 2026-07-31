@@ -4,38 +4,33 @@
 package org.glavo.m3fx.internal;
 
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.stage.PopupWindow;
-import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /// Provides guarded popup-window lifecycle operations.
 ///
-/// JavaFX records a popup owner before checking whether the root owner window is visible. Calling
-/// [PopupWindow#show(Node, double, double)] for a scene attached to a hidden window can therefore leave a
-/// non-showing popup retaining its owner. This helper rejects that state before JavaFX mutates the popup and
-/// tears down transient owner listeners when a show request is rejected during popup events.
+/// JavaFX records a popup owner before checking whether the root owner window can present the popup. Calling
+/// [PopupWindow#show(Node, double, double)] for a scene attached to a hidden or iconified stage can therefore leave a
+/// non-showing popup retaining its owner. This helper rejects that state before JavaFX mutates the popup and tears down
+/// transient owner listeners when a show request is rejected during popup events.
 @NotNullByDefault
 public final class M3PopupWindows {
     /// Prevents utility class instantiation.
     private M3PopupWindows() {
     }
 
-    /// Returns whether an owner node belongs to a currently showing window.
+    /// Returns whether an owner node belongs to a render-active window.
     ///
     /// @param owner the prospective popup owner
     /// @return `true` when JavaFX can present a popup for the owner
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean canShow(Node owner) {
-        Objects.requireNonNull(owner, "owner");
-        @Nullable Scene scene = owner.getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        return window != null && window.isShowing();
+        return M3WindowActivity.isRenderActive(Objects.requireNonNull(owner, "owner"));
     }
 
-    /// Shows a popup only for a visible owner window and confirms that it remained visible.
+    /// Shows a popup only for a render-active owner window and confirms that it remained visible.
     ///
     /// If JavaFX or a popup event handler rejects the show request, this method calls [PopupWindow#hide()] to
     /// release transient JavaFX owner listeners before returning or rethrowing the failure.
@@ -45,6 +40,7 @@ public final class M3PopupWindows {
     /// @param anchorX the screen x coordinate for the popup anchor
     /// @param anchorY the screen y coordinate for the popup anchor
     /// @return `true` when the popup is showing after the request
+    /// @throws NullPointerException if `popup` or `owner` is `null`
     public static boolean show(PopupWindow popup, Node owner, double anchorX, double anchorY) {
         Objects.requireNonNull(popup, "popup");
         if (!canShow(owner)) {

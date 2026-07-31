@@ -19,6 +19,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.layout.M3NavigationLayout;
@@ -667,10 +668,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
 
     /// Returns whether this scaffold can currently render animation pulses.
     private boolean canAnimateLayout() {
-        Scene scene = getSkinnable().getScene();
-        return scene != null
-                && scene.getWindow() != null
-                && scene.getWindow().isShowing()
+        return M3WindowActivity.isRenderActive(getSkinnable())
                 && M3Animation.areAnimationsEnabled(getSkinnable());
     }
 

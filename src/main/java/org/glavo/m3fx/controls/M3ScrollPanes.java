@@ -29,6 +29,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -395,7 +396,7 @@ public final class M3ScrollPanes {
                 return true;
             }
             @Nullable Window window = scene.getWindow();
-            return window != null && !window.isShowing();
+            return window != null && !M3WindowActivity.isRenderActive(window);
         }
 
         /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.

@@ -11,7 +11,6 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.skin.LabeledSkinBase;
@@ -38,6 +37,7 @@ import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3WindowActivity;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -675,11 +675,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             return;
         }
 
-        @Nullable Scene scene = button.getScene();
         @Nullable ContainerShapeTransition transition = containerShapeTransition;
-        boolean canAnimate = scene != null
-                && scene.getWindow() != null
-                && scene.getWindow().isShowing()
+        boolean canAnimate = M3WindowActivity.isRenderActive(button)
                 && M3Animation.areAnimationsEnabled(button)
                 && (button.getShape() == null
                 || transition != null && transition.isSurfaceShapeActive());
