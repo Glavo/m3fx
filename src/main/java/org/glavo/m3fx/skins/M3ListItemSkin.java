@@ -10,7 +10,6 @@ import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -106,15 +105,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The Material body-small typography role style class.
     private static final String BODY_SMALL_TEXT_STYLE_CLASS = "m3-body-small-text";
 
-    /// The Material prominent-weight typography style class.
-    private static final String PROMINENT_TEXT_STYLE_CLASS = "m3-prominent-text";
-
-    /// The style class applied to the coincident navigation-drawer headline layers.
-    private static final String HEADLINE_STACK_STYLE_CLASS = "m3-list-item-headline-stack";
-
-    /// The style class that identifies the prominent navigation-drawer headline layer.
-    private static final String HEADLINE_EMPHASIS_STYLE_CLASS = "m3-list-item-headline-emphasis";
-
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
 
@@ -138,12 +128,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
     /// The headline text label.
     private final Label headlineLabel = new Label();
-
-    /// The coincident headline container installed only while this item belongs to a navigation drawer.
-    private @Nullable StackPane headlineStack;
-
-    /// The prominent headline layer installed only while this item belongs to a navigation drawer.
-    private @Nullable Label headlineEmphasisLabel;
 
     /// The supporting text label.
     private final Label supportingLabel = new Label();
@@ -231,11 +215,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
-
-    /// Mirrors the selected-container animation progress to coincident navigation-drawer headline layers.
-    private final InvalidationListener selectionProgressInvalidation =
-            observable -> updateHeadlineEmphasisProgress(selectionContainer.getOpacity());
-
 
     /// Mirrors menu-owned pseudo-classes to internal skin nodes.
     private final SetChangeListener<PseudoClass> skinnablePseudoClassListener = change -> {
@@ -335,11 +314,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             baseContainerClip = null;
             containerShapeAnimation = null;
         }
+        updateTypographyRoleStyleClasses();
+
         selectionContainer.setManaged(false);
         selectionContainer.setMouseTransparent(true);
         selectionAnimation.setOnFinished(event -> finishSelectionAnimation());
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
-        updateTypographyRoleStyleClasses();
         HBox.setHgrow(textBox, Priority.ALWAYS);
         trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
         container.getChildren().addAll(leadingSlot, textBox, trailingBox);
@@ -401,7 +381,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         M3ListItemBase item = getSkinnable();
         disposed = true;
         selectionAnimation.stop();
-        uninstallHeadlineEmphasisLayer();
         @Nullable ContainerShapeTransition shapeAnimation = containerShapeAnimation;
         if (shapeAnimation != null) {
             shapeAnimation.stop();
@@ -593,15 +572,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         M3ListItemBase item = getSkinnable();
         updateLabel(overlineLabel, item.getOverlineText());
         updateLabel(headlineLabel, item.getHeadlineText());
-        @Nullable Label emphasisLabel = headlineEmphasisLabel;
-        if (emphasisLabel != null) {
-            updateLabel(emphasisLabel, item.getHeadlineText());
-            @Nullable StackPane stack = headlineStack;
-            if (stack != null) {
-                stack.setVisible(headlineLabel.isVisible());
-                stack.setManaged(headlineLabel.isManaged());
-            }
-        }
         updateLabel(supportingLabel, item.getSupportingText());
         updateLabel(trailingSupportingLabel, item.getTrailingSupportingText());
         updateTrailingBoxVisibility();
@@ -613,57 +583,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         label.setText(text);
         label.setVisible(visible);
         label.setManaged(visible);
-    }
-
-    /// Installs coincident ordinary and prominent headline layers for navigation-drawer selection feedback.
-    private void installHeadlineEmphasisLayer() {
-        if (headlineStack != null) {
-            return;
-        }
-
-        int headlineIndex = textBox.getChildren().indexOf(headlineLabel);
-        if (headlineIndex < 0) {
-            return;
-        }
-
-        Label emphasisLabel = new Label();
-        initializeTextLabel(emphasisLabel, "m3-list-item-headline");
-        emphasisLabel.getStyleClass().add(HEADLINE_EMPHASIS_STYLE_CLASS);
-        emphasisLabel.setAccessibleRole(AccessibleRole.NODE);
-        emphasisLabel.setMouseTransparent(true);
-
-        StackPane stack = new StackPane(headlineLabel, emphasisLabel);
-        stack.getStyleClass().add(HEADLINE_STACK_STYLE_CLASS);
-        stack.setAlignment(Pos.CENTER_LEFT);
-        stack.setMinWidth(0.0);
-        stack.setMaxWidth(Double.MAX_VALUE);
-        textBox.getChildren().set(headlineIndex, stack);
-
-        headlineStack = stack;
-        headlineEmphasisLabel = emphasisLabel;
-        selectionContainer.opacityProperty().addListener(selectionProgressInvalidation);
-        emphasisLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, true);
-        updateText();
-        updateTextColors();
-        updateHeadlineEmphasisImmediate(getSkinnable().isSelected());
-    }
-
-    /// Removes navigation-drawer headline layers and restores the ordinary headline node.
-    private void uninstallHeadlineEmphasisLayer() {
-        @Nullable StackPane stack = headlineStack;
-        if (stack == null) {
-            return;
-        }
-
-        selectionContainer.opacityProperty().removeListener(selectionProgressInvalidation);
-        int stackIndex = textBox.getChildren().indexOf(stack);
-        stack.getChildren().remove(headlineLabel);
-        if (stackIndex >= 0) {
-            textBox.getChildren().set(stackIndex, headlineLabel);
-        }
-        headlineLabel.setOpacity(1.0);
-        headlineStack = null;
-        headlineEmphasisLabel = null;
     }
 
     /// Updates leading and trailing slot content.
@@ -891,16 +810,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             supportingColor = item.getSupportingColor();
         }
 
-        @Nullable Label emphasisLabel = headlineEmphasisLabel;
-        if (emphasisLabel == null) {
-            headlineLabel.setTextFill(headlineColor);
-        } else if (item.isDisabled()) {
-            headlineLabel.setTextFill(item.getDisabledContentColor());
-            emphasisLabel.setTextFill(item.getDisabledContentColor());
-        } else {
-            headlineLabel.setTextFill(item.getHeadlineColor());
-            emphasisLabel.setTextFill(item.getSelectedHeadlineColor());
-        }
+        headlineLabel.setTextFill(headlineColor);
         overlineLabel.setTextFill(supportingColor);
         supportingLabel.setTextFill(supportingColor);
         trailingSupportingLabel.setTextFill(supportingColor);
@@ -942,7 +852,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             resetInteractionState();
         }
         updateSelectionContainerImmediate(item.isSelected());
-        updateHeadlineEmphasisImmediate(item.isSelected());
     }
 
     /// Returns whether selected child CSS may be applied in the item's current scene and window state.
@@ -960,11 +869,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         M3ListItemBase item = getSkinnable();
         boolean menuItem = item instanceof M3MenuItem;
         boolean navigationDrawerItem = item.getPseudoClassStates().contains(NAVIGATION_DRAWER_PSEUDO_CLASS);
-        if (navigationDrawerItem && !menuItem) {
-            installHeadlineEmphasisLayer();
-        } else {
-            uninstallHeadlineEmphasisLayer();
-        }
 
         M3ControlStyles.add(overlineLabel, LABEL_SMALL_TEXT_STYLE_CLASS);
         M3ControlStyles.replaceVariant(
@@ -973,16 +877,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
                 LABEL_LARGE_TEXT_STYLE_CLASS,
                 BODY_LARGE_TEXT_STYLE_CLASS
         );
-        @Nullable Label emphasisLabel = headlineEmphasisLabel;
-        if (emphasisLabel != null) {
-            M3ControlStyles.replaceVariant(
-                    emphasisLabel,
-                    LABEL_LARGE_TEXT_STYLE_CLASS,
-                    LABEL_LARGE_TEXT_STYLE_CLASS,
-                    BODY_LARGE_TEXT_STYLE_CLASS
-            );
-            M3ControlStyles.add(emphasisLabel, PROMINENT_TEXT_STYLE_CLASS);
-        }
         M3ControlStyles.replaceVariant(
                 supportingLabel,
                 menuItem ? BODY_SMALL_TEXT_STYLE_CLASS : BODY_MEDIUM_TEXT_STYLE_CLASS,
@@ -1004,10 +898,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         selectionContainer.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         overlineLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         headlineLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
-        @Nullable Label emphasisLabel = headlineEmphasisLabel;
-        if (emphasisLabel != null) {
-            emphasisLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
-        }
         supportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         trailingSupportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         stateLayer.setContentPseudoClass(VIBRANT_PSEUDO_CLASS, vibrant);
@@ -1036,12 +926,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             selectionAnimation.stop();
             updateSelectedChildPseudoClasses(false);
             updateSelectionContainerImmediate(selected);
-            updateHeadlineEmphasisImmediate(selected);
             return;
         }
 
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
+        selectionAnimation.stop();
         if (!selected) {
             updateSelectedChildPseudoClasses(false);
         }
@@ -1072,21 +962,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         selectionContainer.setOpacity(selected ? 1.0 : 0.0);
         selectionContainer.setScaleX(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
         selectionContainer.setScaleY(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
-    }
-
-    /// Updates navigation-drawer headline emphasis without animation.
-    private void updateHeadlineEmphasisImmediate(boolean selected) {
-        updateHeadlineEmphasisProgress(selected ? 1.0 : 0.0);
-    }
-
-    /// Applies complementary headline-layer opacities for one selected-container progress value.
-    private void updateHeadlineEmphasisProgress(double progress) {
-        @Nullable Label emphasisLabel = headlineEmphasisLabel;
-        if (emphasisLabel != null) {
-            double clampedProgress = Math.max(0.0, Math.min(1.0, progress));
-            headlineLabel.setOpacity(1.0 - clampedProgress);
-            emphasisLabel.setOpacity(clampedProgress);
-        }
     }
 
     /// Resolves a shape token to a radius that can be represented within the current bounds.

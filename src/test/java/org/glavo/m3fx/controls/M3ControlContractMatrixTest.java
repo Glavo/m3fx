@@ -32041,7 +32041,7 @@ final class M3ControlContractMatrixTest {
         }
     }
 
-    /// Verifies navigation drawer typography emphasis and interaction colors against the baseline component tokens.
+    /// Verifies navigation drawer typography stability and interaction colors against the baseline component tokens.
     @Test
     void navigationDrawerResolvesDestinationTypographyAndStateColors() {
         M3ListItem home = new M3ListItem("Home");
@@ -32061,28 +32061,13 @@ final class M3ControlContractMatrixTest {
             drawer.layout();
 
             Label archiveLabel = listItemHeadlineLabel(archive);
-            Label archiveEmphasisLabel = assertInstanceOf(
-                    Label.class,
-                    archive.lookup(".m3-list-item-headline-emphasis")
-            );
-            StackPane archiveHeadlineStack = assertInstanceOf(
-                    StackPane.class,
-                    archive.lookup(".m3-list-item-headline-stack")
-            );
             Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
             assertTrue(archiveLabel.getStyleClass().contains("m3-label-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-body-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
-            assertTrue(archiveEmphasisLabel.getStyleClass().contains("m3-label-large-text"));
-            assertTrue(archiveEmphasisLabel.getStyleClass().contains("m3-prominent-text"));
             assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
             var unselectedFont = archiveLabel.getFont();
             double unselectedTextWidth = archiveLabel.prefWidth(-1.0);
-            double stableHeadlineWidth = archiveHeadlineStack.prefWidth(-1.0);
-            assertEquals(1.0, archiveLabel.getOpacity(), 0.0001);
-            assertEquals(0.0, archiveEmphasisLabel.getOpacity(), 0.0001);
-            assertTrue(archiveEmphasisLabel.getFont().getStyle().contains("Bold"),
-                    () -> "emphasized drawer label style=" + archiveEmphasisLabel.getFont().getStyle());
             assertEquals(
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
                     archiveLabel.getTextFill()
@@ -32130,104 +32115,19 @@ final class M3ControlContractMatrixTest {
             root.applyCss();
             assertEquals(
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
-                    archiveEmphasisLabel.getTextFill()
+                    archiveLabel.getTextFill()
             );
             assertEquals(unselectedFont, archiveLabel.getFont());
             assertEquals(unselectedTextWidth, archiveLabel.prefWidth(-1.0), 0.0001);
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
-            assertEquals(0.0, archiveLabel.getOpacity(), 0.0001);
-            assertEquals(1.0, archiveEmphasisLabel.getOpacity(), 0.0001);
-            assertEquals(stableHeadlineWidth, archiveHeadlineStack.prefWidth(-1.0), 0.0001);
 
             drawer.getItems().remove(archive);
 
-            assertNull(archive.lookup(".m3-list-item-headline-emphasis"));
-            assertNull(archive.lookup(".m3-list-item-headline-stack"));
-            assertEquals(1.0, archiveLabel.getOpacity(), 0.0001);
             assertTrue(archiveLabel.getStyleClass().contains("m3-body-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-label-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
         } finally {
             M3MotionSettings.setReducedMotionRequested(drawer, false);
-        }
-    }
-
-    /// Verifies that navigation drawer emphasis exposes complementary intermediate text layers.
-    @Tier2Test
-    @Test
-    void navigationDrawerCrossFadesDestinationTypography() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
-        AtomicReference<@Nullable Label> headlineReference = new AtomicReference<>();
-        AtomicReference<@Nullable Label> emphasisReference = new AtomicReference<>();
-
-        try {
-            FxTestUtils.runOnFxThreadWhen(
-                    () -> {
-                        @Nullable Label headline = headlineReference.get();
-                        @Nullable Label emphasis = emphasisReference.get();
-                        if (headline == null || emphasis == null) {
-                            return false;
-                        }
-                        double headlineOpacity = headline.getOpacity();
-                        double emphasisOpacity = emphasis.getOpacity();
-                        return headlineOpacity > 0.05
-                                && headlineOpacity < 0.95
-                                && emphasisOpacity > 0.05
-                                && emphasisOpacity < 0.95
-                                && Math.abs(headlineOpacity + emphasisOpacity - 1.0) < 0.0001;
-                    },
-                    () -> {
-                        M3ListItem home = new M3ListItem("Home");
-                        M3ListItem archive = new M3ListItem("Archive");
-                        M3NavigationDrawer drawer = navigationDrawer(home, archive);
-                        Pane root = new Pane(drawer);
-                        Scene scene = new Scene(root, 360.0, 160.0);
-                        Stage stage = new Stage();
-
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                        M3MotionSettings.setReducedMotionRequested(root, false);
-                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
-                        stage.setScene(scene);
-                        stage.show();
-                        root.applyCss();
-                        drawer.resize(360.0, 160.0);
-                        root.layout();
-
-                        Label headline = listItemHeadlineLabel(archive);
-                        Label emphasis = assertInstanceOf(
-                                Label.class,
-                                archive.lookup(".m3-list-item-headline-emphasis")
-                        );
-                        assertEquals(1.0, headline.getOpacity(), 0.0001);
-                        assertEquals(0.0, emphasis.getOpacity(), 0.0001);
-
-                        stageReference.set(stage);
-                        rootReference.set(root);
-                        headlineReference.set(headline);
-                        emphasisReference.set(emphasis);
-                        drawer.select(archive);
-                    },
-                    () -> {
-                        Label headline = Objects.requireNonNull(headlineReference.get(), "headline");
-                        Label emphasis = Objects.requireNonNull(emphasisReference.get(), "emphasis");
-                        assertEquals(1.0, headline.getOpacity() + emphasis.getOpacity(), 0.0001);
-                        assertTrue(emphasis.getFont().getStyle().contains("Bold"),
-                                () -> "emphasized drawer label style=" + emphasis.getFont().getStyle());
-                    }
-            );
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                @Nullable Pane root = rootReference.get();
-                if (root != null) {
-                    M3MotionSettings.setReducedMotionRequested(root, false);
-                    FxTestUtils.clearMotionScheme(root);
-                }
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
         }
     }
 
