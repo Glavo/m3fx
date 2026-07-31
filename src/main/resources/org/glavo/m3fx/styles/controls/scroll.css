@@ -1,48 +1,59 @@
 .scroll-pane.m3-scroll-pane,
-.scroll-pane.m3-scroll-pane:focused {
+.scroll-pane.m3-scroll-pane:focused,
+.m3-text-area .scroll-pane,
+.m3-text-area .scroll-pane:focused {
     -fx-background-color: transparent;
     -fx-background: transparent;
     -fx-padding: 0;
 }
 
-.scroll-pane.m3-scroll-pane > .viewport {
+.scroll-pane.m3-scroll-pane > .viewport,
+.m3-text-area .scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
 
-.scroll-pane.m3-scroll-pane > .corner {
+.scroll-pane.m3-scroll-pane > .corner,
+.m3-text-area .scroll-pane > .corner {
     -fx-background-color: transparent;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar,
 .scroll-pane.m3-scroll-pane > .scroll-bar:focused,
 .scroll-bar.m3-scroll-bar,
-.scroll-bar.m3-scroll-bar:focused {
+.scroll-bar.m3-scroll-bar:focused,
+.m3-text-area .scroll-pane > .scroll-bar,
+.m3-text-area .scroll-pane > .scroll-bar:focused {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-padding: 3px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:vertical,
-.scroll-bar.m3-scroll-bar:vertical {
+.scroll-bar.m3-scroll-bar:vertical,
+.m3-text-area .scroll-pane > .scroll-bar:vertical {
     -fx-pref-width: 16px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:horizontal,
-.scroll-bar.m3-scroll-bar:horizontal {
+.scroll-bar.m3-scroll-bar:horizontal,
+.m3-text-area .scroll-pane > .scroll-bar:horizontal {
     -fx-pref-height: 16px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .track,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .track-background,
 .scroll-bar.m3-scroll-bar > .track,
-.scroll-bar.m3-scroll-bar > .track-background {
+.scroll-bar.m3-scroll-bar > .track-background,
+.m3-text-area .scroll-pane > .scroll-bar > .track,
+.m3-text-area .scroll-pane > .scroll-bar > .track-background {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb,
-.scroll-bar.m3-scroll-bar > .thumb {
+.scroll-bar.m3-scroll-bar > .thumb,
+.m3-text-area .scroll-pane > .scroll-bar > .thumb {
     -fx-background-color: -monet-surface-tint;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
@@ -52,21 +63,27 @@
 .scroll-pane.m3-scroll-pane > .scroll-bar:hover > .thumb,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:hover,
 .scroll-bar.m3-scroll-bar > .thumb:hover,
-.scroll-bar.m3-scroll-bar:hover > .thumb {
+.scroll-bar.m3-scroll-bar:hover > .thumb,
+.m3-text-area .scroll-pane > .scroll-bar:hover > .thumb,
+.m3-text-area .scroll-pane > .scroll-bar > .thumb:hover {
     -fx-opacity: 0.64;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:pressed > .thumb,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:pressed,
 .scroll-bar.m3-scroll-bar > .thumb:pressed,
-.scroll-bar.m3-scroll-bar:pressed > .thumb {
+.scroll-bar.m3-scroll-bar:pressed > .thumb,
+.m3-text-area .scroll-pane > .scroll-bar:pressed > .thumb,
+.m3-text-area .scroll-pane > .scroll-bar > .thumb:pressed {
     -fx-opacity: 0.78;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .increment-button,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .decrement-button,
 .scroll-bar.m3-scroll-bar > .increment-button,
-.scroll-bar.m3-scroll-bar > .decrement-button {
+.scroll-bar.m3-scroll-bar > .decrement-button,
+.m3-text-area .scroll-pane > .scroll-bar > .increment-button,
+.m3-text-area .scroll-pane > .scroll-bar > .decrement-button {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-padding: 0;
@@ -76,21 +93,27 @@
 .scroll-pane.m3-scroll-pane > .scroll-bar:vertical > .increment-button,
 .scroll-pane.m3-scroll-pane > .scroll-bar:vertical > .decrement-button,
 .scroll-bar.m3-scroll-bar:vertical > .increment-button,
-.scroll-bar.m3-scroll-bar:vertical > .decrement-button {
+.scroll-bar.m3-scroll-bar:vertical > .decrement-button,
+.m3-text-area .scroll-pane > .scroll-bar:vertical > .increment-button,
+.m3-text-area .scroll-pane > .scroll-bar:vertical > .decrement-button {
     -fx-pref-height: 0;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:horizontal > .increment-button,
 .scroll-pane.m3-scroll-pane > .scroll-bar:horizontal > .decrement-button,
 .scroll-bar.m3-scroll-bar:horizontal > .increment-button,
-.scroll-bar.m3-scroll-bar:horizontal > .decrement-button {
+.scroll-bar.m3-scroll-bar:horizontal > .decrement-button,
+.m3-text-area .scroll-pane > .scroll-bar:horizontal > .increment-button,
+.m3-text-area .scroll-pane > .scroll-bar:horizontal > .decrement-button {
     -fx-pref-width: 0;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .increment-button > .increment-arrow,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .decrement-button > .decrement-arrow,
 .scroll-bar.m3-scroll-bar > .increment-button > .increment-arrow,
-.scroll-bar.m3-scroll-bar > .decrement-button > .decrement-arrow {
+.scroll-bar.m3-scroll-bar > .decrement-button > .decrement-arrow,
+.m3-text-area .scroll-pane > .scroll-bar > .increment-button > .increment-arrow,
+.m3-text-area .scroll-pane > .scroll-bar > .decrement-button > .decrement-arrow {
     -fx-background-color: transparent;
     -fx-padding: 0;
 }

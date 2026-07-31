@@ -289,9 +289,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         scaffold.setNavigationRail(primaryNav.navigationRail());
         scaffold.setMainPane(pageHost);
         HMCLDemoUi.fill(scaffold);
-        scaffold.breakpointProperty().addListener((observable, oldBreakpoint, newBreakpoint) ->
-                primaryNav.applyBreakpoint(newBreakpoint));
-        primaryNav.applyBreakpoint(scaffold.getBreakpoint());
     }
 
     /// Returns the undecorated stage minimum width including shadow padding.

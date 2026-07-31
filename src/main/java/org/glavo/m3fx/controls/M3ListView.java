@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
@@ -527,18 +526,6 @@ public final class M3ListView<T> extends Control {
 
     /// The lazily activated printable-key prefix used for list view type-ahead focus navigation.
     private final M3TypeAheadState typeAheadState = new M3TypeAheadState(this);
-
-    /// The row index for a deferred explicit accessibility reveal request.
-    private int pendingAccessibleRevealIndex = -1;
-
-    /// The parameters for a deferred explicit accessibility reveal request.
-    private Object @Nullable [] pendingAccessibleRevealParameters;
-
-    /// The remaining next-pulse retries for a deferred accessibility reveal request.
-    private int pendingAccessibleRevealRetries;
-
-    /// Whether a deferred accessibility reveal retry is already queued.
-    private boolean pendingAccessibleRevealScheduled;
 
     /// Updates selection and focus when a node data item or observed ancestor changes reachability.
     private final InvalidationListener itemReachabilityStateInvalidation =
@@ -1374,7 +1361,12 @@ public final class M3ListView<T> extends Control {
                 }
                 int previousFocusedIndex = getFocusedIndex();
                 focusAccessibleIndex(requestedIndex);
-                boolean shown = showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
+                if (parameters.length == 1
+                        && currentPresentation() == null
+                        && dataNodeIndex(requestedNode) == requestedIndex) {
+                    return true;
+                }
+                boolean shown = showAccessibleActionTargetAtIndex(requestedIndex, parameters);
                 if (!shown) {
                     updateFocusedIndex(previousFocusedIndex, false, false);
                 }
@@ -1386,7 +1378,7 @@ public final class M3ListView<T> extends Control {
         if (index >= 0) {
             int previousFocusedIndex = getFocusedIndex();
             focusAccessibleIndex(index);
-            boolean shown = showMaterializedOrDeferAccessibleActionTarget(index, parameters);
+            boolean shown = showAccessibleActionTargetAtIndex(index, parameters);
             if (!shown) {
                 updateFocusedIndex(previousFocusedIndex, false, false);
             }
@@ -1420,10 +1412,10 @@ public final class M3ListView<T> extends Control {
         return true;
     }
 
-    /// Delegates an explicit reveal request now, or retries after the virtualized row is attached.
+    /// Delegates an explicit reveal request after synchronously materializing its virtualized row when necessary.
     ///
-    /// @return `true` when the row target was handled immediately or queued for deferred reveal
-    private boolean showMaterializedOrDeferAccessibleActionTarget(int index, Object... parameters) {
+    /// @return `true` when the row target was handled
+    private boolean showAccessibleActionTargetAtIndex(int index, Object... parameters) {
         Object[] targetParameters = nestedRevealParameters(index, parameters);
         if (targetParameters.length == 0) {
             return true;
@@ -1433,22 +1425,11 @@ public final class M3ListView<T> extends Control {
             return true;
         }
 
-        scrollTo(index, false);
-        applyCss();
-        layout();
-        if (showMaterializedAccessibleActionTarget(index, targetParameters)) {
-            return true;
-        }
         @Nullable M3ListViewPresentation presentation = currentPresentation();
-        if (presentation != null && presentation.attachedVisibleItem(index) != null) {
+        if (presentation == null || presentation.materializeItem(index) == null) {
             return false;
         }
-
-        pendingAccessibleRevealIndex = index;
-        pendingAccessibleRevealParameters = targetParameters.clone();
-        pendingAccessibleRevealRetries = 8;
-        completePendingAccessibleReveal();
-        return true;
+        return showMaterializedAccessibleActionTarget(index, targetParameters);
     }
 
     /// Returns reveal parameters with one explicit row selector removed.
@@ -1493,57 +1474,6 @@ public final class M3ListView<T> extends Control {
 
         updateFocusedIndexForAttachedNode(index);
         return true;
-    }
-
-    /// Queues a next-pulse retry for a deferred explicit accessibility reveal request.
-    private void schedulePendingAccessibleReveal() {
-        if (pendingAccessibleRevealScheduled) {
-            return;
-        }
-
-        pendingAccessibleRevealScheduled = true;
-        Platform.runLater(() -> {
-            pendingAccessibleRevealScheduled = false;
-            completePendingAccessibleReveal();
-        });
-    }
-
-    /// Completes a deferred explicit accessibility reveal request when its virtualized row is attached.
-    private void completePendingAccessibleReveal() {
-        Object @Nullable [] parameters = pendingAccessibleRevealParameters;
-        int index = pendingAccessibleRevealIndex;
-        if (parameters == null || index < 0 || getScene() == null) {
-            clearPendingAccessibleReveal();
-            return;
-        }
-
-        if (showMaterializedAccessibleActionTarget(index, parameters)) {
-            clearPendingAccessibleReveal();
-            return;
-        }
-
-        if (pendingAccessibleRevealRetries <= 0) {
-            clearPendingAccessibleReveal();
-            return;
-        }
-
-        pendingAccessibleRevealRetries--;
-        scrollTo(index, false);
-        applyCss();
-        layout();
-        if (showMaterializedAccessibleActionTarget(index, parameters)) {
-            clearPendingAccessibleReveal();
-            return;
-        }
-        schedulePendingAccessibleReveal();
-    }
-
-    /// Clears the deferred explicit accessibility reveal request.
-    private void clearPendingAccessibleReveal() {
-        pendingAccessibleRevealIndex = -1;
-        pendingAccessibleRevealParameters = null;
-        pendingAccessibleRevealRetries = 0;
-        pendingAccessibleRevealScheduled = false;
     }
 
     /// Returns whether accessibility parameters include a nested target beyond a row index.

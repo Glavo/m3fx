@@ -27,6 +27,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3BottomSheetPresentation;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3NodeTransition;
@@ -56,9 +57,6 @@ import java.util.Objects;
 public final class M3BottomSheet extends Control {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-bottom-sheet";
-
-    /// The drag handle container style class.
-    private static final String DRAG_HANDLE_CONTAINER_STYLE_CLASS = "m3-bottom-sheet-drag-handle-container";
 
     /// Creates a shown standard sheet with empty headline text and no content or actions.
     public M3BottomSheet() {
@@ -625,9 +623,9 @@ public final class M3BottomSheet extends Control {
 
     /// Returns the actionable drag-handle focus target, if available.
     private @Nullable Node dragHandleFocusTarget() {
-        @Nullable Node target = lookup("." + DRAG_HANDLE_CONTAINER_STYLE_CLASS);
-        return target != null && target.isFocusTraversable() && !target.isDisabled() && target.isVisible()
-                ? target
+        Skin<?> skin = getSkin();
+        return skin instanceof M3BottomSheetPresentation presentation
+                ? presentation.dragHandleFocusTarget()
                 : null;
     }
 

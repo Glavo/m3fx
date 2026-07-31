@@ -6,8 +6,10 @@ package org.glavo.m3fx.internal;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.Region;
+import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,13 +57,25 @@ public final class M3ScrollReveal {
         Objects.requireNonNull(containsNode, "containsNode");
 
         boolean needsLayoutRetry = revealTargetNow(owner, target, containsNode);
-        if (needsLayoutRetry && owner.getScene() != null && target.getScene() != null) {
-            Platform.runLater(() -> {
-                if (owner.getScene() != null && target.getScene() != null) {
-                    revealTargetNow(owner, target, containsNode);
-                }
-            });
+        @Nullable Scene scene = owner.getScene();
+        if (needsLayoutRetry && scene != null && target.getScene() == scene) {
+            new DeferredReveal(scene, owner, target, containsNode).schedule();
         }
+    }
+
+    /// Scrolls a target inside one known scroll pane and reports whether established layout is still required.
+    ///
+    /// This overload performs no deferred scheduling. It is intended for skins that already coordinate work with a
+    /// layout pulse or a longer-running geometry transition.
+    ///
+    /// @param scrollPane the scroll pane whose viewport should reveal the target
+    /// @param target the descendant target to reveal
+    /// @return `true` when viewport or target geometry is not established yet
+    /// @throws NullPointerException if `scrollPane` or `target` is `null`
+    public static boolean revealTargetInScrollPane(ScrollPane scrollPane, Node target) {
+        Objects.requireNonNull(scrollPane, "scrollPane");
+        Objects.requireNonNull(target, "target");
+        return revealTargetInScrollPane(scrollPane, target, M3FocusGuards::containsNode);
     }
 
     /// Scrolls the target into view and returns whether a later layout pulse should retry the reveal.
@@ -114,9 +128,29 @@ public final class M3ScrollReveal {
         Bounds viewportBounds = scrollPane.getViewportBounds();
         Bounds targetBounds = content.sceneToLocal(target.localToScene(target.getBoundsInLocal()));
         boolean needsLayoutRetry = targetBounds.getWidth() <= 0.0 || targetBounds.getHeight() <= 0.0;
+        needsLayoutRetry |= hasPendingLayout(scrollPane, content, target);
         needsLayoutRetry |= revealTargetHorizontally(scrollPane, content, viewportBounds, targetBounds);
         needsLayoutRetry |= revealTargetVertically(scrollPane, content, viewportBounds, targetBounds);
         return needsLayoutRetry;
+    }
+
+    /// Returns whether the viewport or target hierarchy still has unresolved layout.
+    private static boolean hasPendingLayout(ScrollPane scrollPane, Node content, Node target) {
+        if (scrollPane.isNeedsLayout()) {
+            return true;
+        }
+
+        @Nullable Node current = target;
+        while (current != null) {
+            if (current instanceof Parent parent && parent.isNeedsLayout()) {
+                return true;
+            }
+            if (current == content) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return false;
     }
 
     /// Returns the nearest ancestor scroll pane whose content subtree contains the owner.
@@ -164,16 +198,19 @@ public final class M3ScrollReveal {
             Bounds targetBounds
     ) {
         double viewportWidth = viewportBounds.getWidth();
-        double scrollableWidth = scrollContentWidth(content, viewportBounds.getHeight()) - viewportWidth;
+        Bounds contentBounds = content.getLayoutBounds();
+        double contentLeft = contentBounds.getMinX();
+        double scrollableWidth = contentBounds.getWidth() - viewportWidth;
         double valueRange = scrollPane.getHmax() - scrollPane.getHmin();
         if (viewportWidth <= 0.0) {
             return true;
         }
         if (scrollableWidth <= 0.0 || valueRange <= 0.0) {
-            return targetBounds.getMinX() < 0.0 || targetBounds.getMaxX() > viewportWidth;
+            return targetBounds.getMinX() < contentLeft
+                    || targetBounds.getMaxX() > contentLeft + viewportWidth;
         }
 
-        double visibleLeft = scrollValueToContentOffset(
+        double visibleLeft = contentLeft + scrollValueToContentOffset(
                 scrollPane.getHvalue(),
                 scrollPane.getHmin(),
                 scrollableWidth,
@@ -186,10 +223,10 @@ public final class M3ScrollReveal {
                 targetBounds.getMaxX()
         );
         if (nextLeft != visibleLeft) {
-            double clampedLeft = Math.max(0.0, Math.min(scrollableWidth, nextLeft));
+            double clampedLeft = Math.max(contentLeft, Math.min(contentLeft + scrollableWidth, nextLeft));
             scrollPane.setHvalue(contentOffsetToScrollValue(
                     scrollPane.getHmin(),
-                    clampedLeft,
+                    clampedLeft - contentLeft,
                     scrollableWidth,
                     valueRange
             ));
@@ -205,16 +242,19 @@ public final class M3ScrollReveal {
             Bounds targetBounds
     ) {
         double viewportHeight = viewportBounds.getHeight();
-        double scrollableHeight = scrollContentHeight(content, viewportBounds.getWidth()) - viewportHeight;
+        Bounds contentBounds = content.getLayoutBounds();
+        double contentTop = contentBounds.getMinY();
+        double scrollableHeight = contentBounds.getHeight() - viewportHeight;
         double valueRange = scrollPane.getVmax() - scrollPane.getVmin();
         if (viewportHeight <= 0.0) {
             return true;
         }
         if (scrollableHeight <= 0.0 || valueRange <= 0.0) {
-            return targetBounds.getMinY() < 0.0 || targetBounds.getMaxY() > viewportHeight;
+            return targetBounds.getMinY() < contentTop
+                    || targetBounds.getMaxY() > contentTop + viewportHeight;
         }
 
-        double visibleTop = scrollValueToContentOffset(
+        double visibleTop = contentTop + scrollValueToContentOffset(
                 scrollPane.getVvalue(),
                 scrollPane.getVmin(),
                 scrollableHeight,
@@ -227,10 +267,10 @@ public final class M3ScrollReveal {
                 targetBounds.getMaxY()
         );
         if (nextTop != visibleTop) {
-            double clampedTop = Math.max(0.0, Math.min(scrollableHeight, nextTop));
+            double clampedTop = Math.max(contentTop, Math.min(contentTop + scrollableHeight, nextTop));
             scrollPane.setVvalue(contentOffsetToScrollValue(
                     scrollPane.getVmin(),
-                    clampedTop,
+                    clampedTop - contentTop,
                     scrollableHeight,
                     valueRange
             ));
@@ -280,23 +320,67 @@ public final class M3ScrollReveal {
         return minValue + (contentOffset / scrollableLength) * valueRange;
     }
 
-    /// Returns the current scroll content width, including height-dependent preferred width updates.
-    private static double scrollContentWidth(Node content, double viewportHeight) {
-        double width = content.getBoundsInLocal().getWidth();
-        if (content instanceof Region region) {
-            double preferredWidth = region.prefWidth(viewportHeight > 0.0 ? viewportHeight : -1.0);
-            width = Math.max(width, preferredWidth);
-        }
-        return width;
-    }
+    /// Runs one deferred reveal after the owning scene has completed its next layout pass.
+    ///
+    /// An offscreen scene has no automatic layout pulse, so its request instead runs on the next FX event turn after
+    /// the caller has had an opportunity to establish layout explicitly.
+    @NotNullByDefault
+    private static final class DeferredReveal implements Runnable {
+        /// The scene whose post-layout pulse owns this request.
+        private final Scene scene;
 
-    /// Returns the current scroll content height, including width-dependent preferred height updates.
-    private static double scrollContentHeight(Node content, double viewportWidth) {
-        double height = content.getBoundsInLocal().getHeight();
-        if (content instanceof Region region) {
-            double preferredHeight = region.prefHeight(viewportWidth > 0.0 ? viewportWidth : -1.0);
-            height = Math.max(height, preferredHeight);
+        /// The reveal scope owner.
+        private final Node owner;
+
+        /// The target to reveal.
+        private final Node target;
+
+        /// The containment policy captured from the request.
+        private final BiPredicate<Node, Node> containsNode;
+
+        /// Whether this request is currently registered as a scene post-layout callback.
+        private boolean postLayoutRegistered;
+
+        /// Creates one deferred reveal request.
+        ///
+        /// @param scene the scene that will execute the request
+        /// @param owner the reveal scope owner
+        /// @param target the target to reveal
+        /// @param containsNode the containment policy
+        private DeferredReveal(
+                Scene scene,
+                Node owner,
+                Node target,
+                BiPredicate<Node, Node> containsNode
+        ) {
+            this.scene = scene;
+            this.owner = owner;
+            this.target = target;
+            this.containsNode = containsNode;
         }
-        return height;
+
+        /// Schedules this request according to whether the scene participates in window layout pulses.
+        private void schedule() {
+            @Nullable Window window = scene.getWindow();
+            if (window == null || !window.isShowing()) {
+                Platform.runLater(this);
+                return;
+            }
+            postLayoutRegistered = true;
+            scene.addPostLayoutPulseListener(this);
+            Platform.requestNextPulse();
+        }
+
+        /// Removes this one-shot request and reveals the target when it still belongs to the same scene.
+        @Override
+        public void run() {
+            if (postLayoutRegistered) {
+                postLayoutRegistered = false;
+                scene.removePostLayoutPulseListener(this);
+            }
+            if (owner.getScene() == scene && target.getScene() == scene) {
+                revealTargetNow(owner, target, containsNode);
+            }
+        }
     }
 }

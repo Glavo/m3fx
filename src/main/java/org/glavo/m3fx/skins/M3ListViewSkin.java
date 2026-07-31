@@ -9,7 +9,6 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
@@ -145,9 +144,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     /// Whether a focused cell should refresh logical row focus after the next layout pass.
     private boolean focusRequestPending;
 
-    /// Whether a deferred focus retry has already been queued for the next pulse.
-    private boolean focusRetryScheduled;
-
     /// The focused row index whose attached item has been reported as the accessibility focus node.
     private int materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
 
@@ -226,7 +222,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
         focusVisibleCellIfNeeded();
         notifyAccessibleFocusNodeMaterialized();
-        scheduleFocusRetry();
     }
 
     /// Computes the preferred width from the virtual flow.
@@ -310,7 +305,23 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         getSkinnable().requestLayout();
         focusVisibleCellIfNeeded();
         notifyAccessibleFocusNodeMaterialized();
-        scheduleFocusRetry();
+    }
+
+    /// Synchronously attaches one row using the virtual flow's exact indexed scrolling primitive.
+    ///
+    /// @param index the data item index
+    /// @return the attached row, or `null` when the index is invalid or the scene cannot currently be refreshed
+    @Override
+    public @Nullable Node materializeItem(int index) {
+        if (index < 0 || index >= getSkinnable().getItems().size() || !isSceneRefreshable()) {
+            return null;
+        }
+
+        stopSmoothScrollAnimation();
+        flow.scrollTo(index);
+        flow.requestLayout();
+        layoutFlowAfterImmediateScroll();
+        return attachedVisibleItem(index);
     }
 
     /// Recreates visible cells after the cell factory changes.
@@ -337,7 +348,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     private void handleSceneChanged(@Nullable Scene scene) {
         if (scene == null) {
             focusRequestPending = false;
-            focusRetryScheduled = false;
             stopSmoothScrollAnimation();
             return;
         }
@@ -422,34 +432,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
     }
 
-    /// Queues a next-pulse focus retry when `VirtualFlow` has not materialized the requested row yet.
-    private void scheduleFocusRetry() {
-        if (!focusRequestPending || focusRetryScheduled) {
-            return;
-        }
-
-        focusRetryScheduled = true;
-        Platform.runLater(() -> {
-            focusRetryScheduled = false;
-            if (!focusRequestPending) {
-                return;
-            }
-            if (!isSceneRefreshable()) {
-                focusRequestPending = false;
-                return;
-            }
-
-            getSkinnable().applyCss();
-            flow.applyCss();
-            flow.layout();
-            focusVisibleCellIfNeeded();
-            notifyAccessibleFocusNodeMaterialized();
-            if (focusRequestPending) {
-                getSkinnable().requestLayout();
-            }
-        });
-    }
-
     /// Handles one indirect wheel or trackpad scroll event.
     private void handleSmoothScroll(ScrollEvent event) {
         if (event.isDirect() || !isEventForThisFlow(event)) {
@@ -513,21 +495,17 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
             return;
         }
 
-        double targetPosition = scrollPositionForIndex(index);
         if (!animated
                 || !isSceneRefreshable()
                 || !animationsEnabled()) {
             stopSmoothScrollAnimation();
-            if (Double.isNaN(targetPosition)) {
-                flow.scrollTo(index);
-            } else {
-                flow.setPosition(targetPosition);
-            }
+            flow.scrollTo(index);
             flow.requestLayout();
             layoutFlowAfterImmediateScroll();
             return;
         }
 
+        double targetPosition = scrollPositionForIndex(index);
         if (Double.isNaN(targetPosition)) {
             stopSmoothScrollAnimation();
             flow.scrollTo(index);
@@ -537,7 +515,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
 
         if (close(flow.getPosition(), targetPosition)) {
-            flow.setPosition(targetPosition);
+            flow.scrollTo(index);
             flow.requestLayout();
             layoutFlowAfterImmediateScroll();
             return;
@@ -549,11 +527,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
 
     /// Finishes focus updates after an animated index scroll reaches its target.
     private void finishAnimatedIndexScroll(int index) {
+        flow.scrollTo(index);
         flow.requestLayout();
+        layoutFlowAfterImmediateScroll();
         if (getSkinnable().getFocusedIndex() == index) {
             focusVisibleCellIfNeeded();
             notifyAccessibleFocusNodeMaterialized();
-            scheduleFocusRetry();
         }
     }
 

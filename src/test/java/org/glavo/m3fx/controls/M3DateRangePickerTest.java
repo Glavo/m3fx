@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.assertSnapshotAreaChanged;
@@ -100,6 +101,72 @@ final class M3DateRangePickerTest {
         picker.selectDate(LocalDate.of(2026, 5, 25));
         assertEquals(LocalDate.of(2026, 5, 25), picker.getStartDate());
         assertNull(picker.getEndDate());
+    }
+
+    /// Verifies that compound endpoint changes publish one final immutable selection snapshot.
+    @Test
+    void dateRangePickerPublishesAtomicSelectionSnapshots() {
+        M3DateRangePicker picker = new M3DateRangePicker();
+        List<M3DateRangeSelection> changes = new ArrayList<>();
+        picker.selectionProperty().addListener((observable, oldValue, newValue) -> changes.add(newValue));
+
+        LocalDate start = LocalDate.of(2026, 5, 18);
+        LocalDate end = LocalDate.of(2026, 5, 22);
+        picker.setRange(start, end);
+
+        assertEquals(new M3DateRangeSelection(start, end), picker.getSelection());
+        assertEquals(new M3DateRange(start, end), picker.getRange());
+        assertEquals(List.of(new M3DateRangeSelection(start, end)), changes);
+
+        picker.setStartDate(null);
+
+        assertSame(M3DateRangeSelection.EMPTY, picker.getSelection());
+        assertEquals(
+                List.of(new M3DateRangeSelection(start, end), M3DateRangeSelection.EMPTY),
+                changes
+        );
+
+        LocalDate restarted = LocalDate.of(2026, 6, 2);
+        picker.selectDate(restarted);
+
+        assertEquals(new M3DateRangeSelection(restarted, null), picker.getSelection());
+        assertEquals(
+                List.of(
+                        new M3DateRangeSelection(start, end),
+                        M3DateRangeSelection.EMPTY,
+                        new M3DateRangeSelection(restarted, null)
+                ),
+                changes
+        );
+    }
+
+    /// Verifies the immutable selection value's empty, in-progress, complete, and invalid states.
+    @Test
+    void dateRangeSelectionEnforcesEndpointInvariants() {
+        LocalDate start = LocalDate.of(2026, 5, 18);
+        LocalDate end = LocalDate.of(2026, 5, 22);
+
+        assertTrue(M3DateRangeSelection.EMPTY.isEmpty());
+        assertFalse(M3DateRangeSelection.EMPTY.isComplete());
+        assertNull(M3DateRangeSelection.EMPTY.toRange());
+
+        M3DateRangeSelection inProgress = new M3DateRangeSelection(start, null);
+        assertFalse(inProgress.isEmpty());
+        assertFalse(inProgress.isComplete());
+        assertNull(inProgress.toRange());
+
+        M3DateRangeSelection complete = new M3DateRangeSelection(start, end);
+        assertTrue(complete.isComplete());
+        assertEquals(new M3DateRange(start, end), complete.toRange());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new M3DateRangeSelection(null, end)
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new M3DateRangeSelection(end, start)
+        );
     }
 
     /// Verifies that the range picker skin marks range start, middle, and end day cells.

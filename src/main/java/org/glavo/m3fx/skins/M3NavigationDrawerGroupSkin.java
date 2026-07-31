@@ -116,6 +116,13 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         super.dispose();
     }
 
+    /// Returns whether the child viewport is currently moving between collapsed and expanded geometry.
+    ///
+    /// @return `true` while the reusable expansion animation is running
+    boolean isExpansionAnimationRunning() {
+        return expansionAnimation.getStatus() == Animation.Status.RUNNING;
+    }
+
     /// Computes the minimum width from the internal item container.
     @Override
     protected double computeMinWidth(

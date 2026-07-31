@@ -53,9 +53,12 @@ import java.util.Objects;
 /// before its action event continues through the event dispatch chain.
 ///
 /// [#getItems()] is a live mutable list. The default bar uses vertical item layout, does not add spacing between
-/// targets, and requires one selected destination whenever a reachable item exists. [#getSelectedItems()] is a live,
-/// unmodifiable observable view containing zero or one item. Item nodes are owned by the bar while displayed and
-/// must not belong to another parent.
+/// targets, and requires one selected destination whenever a visible, directly enabled item exists.
+/// [#getSelectedItems()] is a live, unmodifiable observable view containing zero or one item. Item nodes are owned by
+/// the bar while displayed and must not belong to another parent.
+///
+/// Selection is retained when the bar or one of its ancestors is hidden or disabled. This allows a navigation bar
+/// and rail to mirror the same route while an adaptive scaffold presents only one of them.
 ///
 /// ```java
 /// M3NavigationBar navigationBar = new M3NavigationBar();
@@ -148,7 +151,7 @@ public final class M3NavigationBar extends Control {
     /// Whether the navigation bar is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty vertical navigation bar that requires selection when a reachable item is added.
+    /// Creates an empty vertical navigation bar that requires selection when a visible, directly enabled item is added.
     public M3NavigationBar() {
         initialize();
     }
@@ -261,17 +264,17 @@ public final class M3NavigationBar extends Control {
 
     /// Returns the observable, read-only selected-item property.
     ///
-    /// The property is `null` by default and tracks the selected reachable destination. It becomes `null` when no
-    /// item is selected.
+    /// The property is `null` by default and tracks the selected visible, directly enabled destination. Ancestor
+    /// visibility and disable state do not clear the value, so selection survives adaptive presentation changes.
     ///
     /// @return the read-only selected-item property
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
-    /// Whether selection may be empty while reachable items exist.
+    /// Whether selection may be empty while visible, directly enabled items exist.
     ///
-    /// Setting the value to `false` selects the first reachable item if the selection is empty.
+    /// Setting the value to `false` selects the first visible, directly enabled item if the selection is empty.
     ///
     /// @defaultValue `false`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -300,8 +303,9 @@ public final class M3NavigationBar extends Control {
 
     /// Returns the observable, bindable empty-selection policy property.
     ///
-    /// The property is `false` by default. Setting it to `false` while selection is empty selects the first
-    /// reachable destination, when one exists.
+    /// The property is `false` by default. Setting it to `false` while selection is empty selects the first visible,
+    /// directly enabled destination, when one exists. Ancestor reachability does not affect the retained navigation
+    /// state.
     ///
     /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
@@ -339,15 +343,18 @@ public final class M3NavigationBar extends Control {
 
     /// Selects a navigation item that belongs to this bar.
     ///
+    /// The bar and its ancestors may be hidden or disabled. This permits an application to keep alternate adaptive
+    /// navigation surfaces synchronized before or while one surface is not interactive.
+    ///
     /// @param item the navigation item to select
     /// @throws NullPointerException     if `item` is `null`
-    /// @throws IllegalArgumentException if `item` is not an effectively reachable member of this bar
+    /// @throws IllegalArgumentException if `item` is hidden, disabled, or does not belong to this bar
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this navigation bar");
         }
-        if (!isSelectableNavigationItem(item)) {
+        if (!isModelSelectableNavigationItem(item)) {
             throw new IllegalArgumentException("item must be selectable");
         }
         selectItem(item);
@@ -416,7 +423,7 @@ public final class M3NavigationBar extends Control {
 
     /// Clears the current selection if empty selection is allowed.
     ///
-    /// Otherwise, this method preserves or restores the first reachable destination.
+    /// Otherwise, this method preserves or restores the first visible, directly enabled destination.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
             selectFirstItemIfNeeded();
@@ -610,7 +617,7 @@ public final class M3NavigationBar extends Control {
             return;
         }
 
-        if (!isSelectableNavigationItem(item)) {
+        if (!isModelSelectableNavigationItem(item)) {
             if (selected) {
                 clearItemSelection(item);
                 if (!isAllowEmptySelection()) {
@@ -630,9 +637,9 @@ public final class M3NavigationBar extends Control {
         }
     }
 
-    /// Keeps selection and accessibility state consistent when an item becomes unreachable.
+    /// Keeps selection and accessibility state consistent when an item itself becomes hidden or disabled.
     private void handleItemReachabilityChanged(M3NavigationItem item) {
-        if (item.isSelected() && !isSelectableNavigationItem(item)) {
+        if (item.isSelected() && !isModelSelectableNavigationItem(item)) {
             clearItemSelection(item);
         }
         enforceSelectionPolicy();
@@ -698,7 +705,7 @@ public final class M3NavigationBar extends Control {
         selectedItemsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3NavigationItem item && item.isSelected()) {
-                if (isSelectableNavigationItem(item)) {
+                if (isModelSelectableNavigationItem(item)) {
                     selectedItemsScratch.add(item);
                 } else {
                     clearItemSelectionWithoutRefresh(item);
@@ -721,7 +728,12 @@ public final class M3NavigationBar extends Control {
 
     /// Returns the first navigation item child.
     private @Nullable M3NavigationItem firstNavigationItem() {
-        return M3SelectionNavigation.first(getItems(), M3NavigationItem.class);
+        for (M3NavigationItem item : getItems()) {
+            if (isModelSelectableNavigationItem(item)) {
+                return item;
+            }
+        }
+        return null;
     }
 
     /// Returns the first selectable item referenced by accessibility parameters.
@@ -729,7 +741,7 @@ public final class M3NavigationBar extends Control {
         Objects.requireNonNull(parameters, "parameters");
         for (Node child : getItems()) {
             if (child instanceof M3NavigationItem item
-                    && isSelectableNavigationItem(item)
+                    && isAccessibleNavigationItem(item)
                     && M3Accessible.containsSelectionTarget(item, parameters)) {
                 return item;
             }
@@ -737,8 +749,13 @@ public final class M3NavigationBar extends Control {
         return null;
     }
 
-    /// Returns whether a navigation item can currently participate in selection.
-    private boolean isSelectableNavigationItem(M3NavigationItem item) {
+    /// Returns whether a navigation item can participate in the retained selection model.
+    private static boolean isModelSelectableNavigationItem(M3NavigationItem item) {
+        return item.isVisible() && !item.isDisable();
+    }
+
+    /// Returns whether a navigation item can currently be addressed by an accessibility action.
+    private boolean isAccessibleNavigationItem(M3NavigationItem item) {
         return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(item);
     }
 

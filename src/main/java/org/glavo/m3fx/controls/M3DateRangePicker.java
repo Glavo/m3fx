@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.AccessibleAction;
@@ -36,10 +38,12 @@ import java.util.Objects;
 
 /// A Material Design 3 calendar for selecting an inclusive local-date range.
 ///
-/// Selection consists of independently observable start and end properties. A start without an end represents an
-/// in-progress range and [getRange][#getRange()] returns `null` until both endpoints are present. After a range is
-/// complete, selecting another date starts a new range. When completing an in-progress range, a date before the
-/// current start becomes the new start and the old start becomes the end.
+/// Selection consists of independently bindable start and end properties. A start without an end represents an
+/// in-progress range and [getRange][#getRange()] returns `null` until both endpoints are present.
+/// [#selectionProperty()] publishes one immutable snapshot after each complete control mutation, including
+/// [#setRange(LocalDate, LocalDate)], so observers do not need to reconstruct atomic range changes from two endpoint
+/// notifications. After a range is complete, selecting another date starts a new range. When completing an
+/// in-progress range, a date before the current start becomes the new start and the old start becomes the end.
 ///
 /// Both endpoints must be within the inclusive minimum and maximum bounds and the start may not follow the end.
 /// Changing a bound so that either endpoint becomes invalid clears the entire range. The calendar's keyboard
@@ -88,14 +92,19 @@ public final class M3DateRangePicker extends Control {
                 /// Validates the date range before applying direct property writes.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
-                    if (!applyingRange) {
-                        if (newValue == null && getEndDate() != null && endDate.isBound()) {
-                            throw new RuntimeException("A bound range end cannot be cleared");
+                    beginRangeMutation();
+                    try {
+                        if (!applyingRange) {
+                            if (newValue == null && getEndDate() != null && endDate.isBound()) {
+                                throw new RuntimeException("A bound range end cannot be cleared");
+                            }
+                            validateDate(newValue);
+                            validateDateRange(newValue, getEndDate());
                         }
-                        validateDate(newValue);
-                        validateDateRange(newValue, getEndDate());
+                        super.set(newValue);
+                    } finally {
+                        endRangeMutation();
                     }
-                    super.set(newValue);
                 }
 
                 /// Keeps the displayed month and accessibility state synchronized.
@@ -108,7 +117,7 @@ public final class M3DateRangePicker extends Control {
                     if (date != null) {
                         showMonth(YearMonth.from(date));
                     }
-                    notifyAccessibleRangeChanged();
+                    markRangeChanged();
                 }
             };
 
@@ -151,14 +160,19 @@ public final class M3DateRangePicker extends Control {
                 /// Validates the date range before applying direct property writes.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
-                    if (!applyingRange) {
-                        if (newValue != null && getStartDate() == null) {
-                            throw new IllegalArgumentException("startDate must be selected before endDate");
+                    beginRangeMutation();
+                    try {
+                        if (!applyingRange) {
+                            if (newValue != null && getStartDate() == null) {
+                                throw new IllegalArgumentException("startDate must be selected before endDate");
+                            }
+                            validateDate(newValue);
+                            validateDateRange(getStartDate(), newValue);
                         }
-                        validateDate(newValue);
-                        validateDateRange(getStartDate(), newValue);
+                        super.set(newValue);
+                    } finally {
+                        endRangeMutation();
                     }
-                    super.set(newValue);
                 }
 
                 /// Keeps the displayed month and accessibility state synchronized.
@@ -168,7 +182,7 @@ public final class M3DateRangePicker extends Control {
                     if (date != null) {
                         showMonth(YearMonth.from(date));
                     }
-                    notifyAccessibleRangeChanged();
+                    markRangeChanged();
                 }
             };
 
@@ -415,13 +429,23 @@ public final class M3DateRangePicker extends Control {
         return showAdjacentMonthDays;
     }
 
+    /// The atomic empty, in-progress, or complete selection snapshot.
+    private final ReadOnlyObjectWrapper<M3DateRangeSelection> selection =
+            new ReadOnlyObjectWrapper<>(this, "selection", M3DateRangeSelection.EMPTY);
+
+    /// The nesting depth of endpoint mutations contributing to one atomic selection notification.
+    private int rangeMutationDepth;
+
+    /// Whether an endpoint changed during the current atomic mutation.
+    private boolean rangeMutationDirty;
+
     /// Whether both endpoints are currently being assigned through [setRange][#setRange(LocalDate, LocalDate)].
     private boolean applyingRange;
 
     /// Sets both range endpoints after validating ordering and selectable bounds.
     ///
-    /// The start property is assigned before the end property. Property listeners may therefore observe the new
-    /// start together with the previous end before the second assignment completes.
+    /// The start property is assigned before the end property. Individual endpoint listeners may therefore observe
+    /// an intermediate pair, while [#selectionProperty()] publishes only the final pair.
     ///
     /// @param startDate the first selected date, or `null` to clear the range
     /// @param endDate   the last selected date, or `null` for an incomplete range
@@ -434,12 +458,14 @@ public final class M3DateRangePicker extends Control {
         if (this.startDate.isBound() || this.endDate.isBound()) {
             throw new RuntimeException("A bound range endpoint cannot be set");
         }
+        beginRangeMutation();
         applyingRange = true;
         try {
             this.startDate.set(startDate);
             this.endDate.set(endDate);
         } finally {
             applyingRange = false;
+            endRangeMutation();
         }
     }
 
@@ -467,16 +493,32 @@ public final class M3DateRangePicker extends Control {
     ///
     /// @return `true` when both range endpoints are selected
     public final boolean isRangeComplete() {
-        return getStartDate() != null && getEndDate() != null;
+        return getSelection().isComplete();
     }
 
     /// Returns the selected range, or `null` when the range is incomplete.
     ///
     /// @return the selected range, or `null` when the range is incomplete
     public final @Nullable M3DateRange getRange() {
-        @Nullable LocalDate start = getStartDate();
-        @Nullable LocalDate end = getEndDate();
-        return start == null || end == null ? null : new M3DateRange(start, end);
+        return getSelection().toRange();
+    }
+
+    /// Returns the atomic empty, in-progress, or complete selection snapshot.
+    ///
+    /// @return the current immutable selection snapshot
+    public final M3DateRangeSelection getSelection() {
+        return selection.get();
+    }
+
+    /// Returns the observable, read-only atomic selection property.
+    ///
+    /// The property initially contains [M3DateRangeSelection#EMPTY]. A direct endpoint change publishes after its
+    /// validation and any dependent endpoint clearing complete. [#setRange(LocalDate, LocalDate)] publishes once
+    /// after both endpoint properties have been assigned.
+    ///
+    /// @return the read-only atomic selection property
+    public final ReadOnlyObjectProperty<M3DateRangeSelection> selectionProperty() {
+        return selection.getReadOnlyProperty();
     }
 
     /// Applies a labeled date range preset and shows the preset start month.
@@ -1058,6 +1100,34 @@ public final class M3DateRangePicker extends Control {
             }
         }
         return null;
+    }
+
+    /// Begins one possibly nested endpoint mutation.
+    private void beginRangeMutation() {
+        rangeMutationDepth++;
+    }
+
+    /// Completes one endpoint mutation and publishes the final snapshot at the outer boundary.
+    private void endRangeMutation() {
+        rangeMutationDepth--;
+        if (rangeMutationDepth == 0 && rangeMutationDirty) {
+            publishRangeSelection();
+        }
+    }
+
+    /// Records an endpoint change and publishes immediately when no compound mutation owns it.
+    private void markRangeChanged() {
+        rangeMutationDirty = true;
+        if (rangeMutationDepth == 0) {
+            publishRangeSelection();
+        }
+    }
+
+    /// Publishes one immutable selection snapshot and its accessibility notifications.
+    private void publishRangeSelection() {
+        rangeMutationDirty = false;
+        selection.set(M3DateRangeSelection.of(getStartDate(), getEndDate()));
+        notifyAccessibleRangeChanged();
     }
 
     /// Notifies accessibility clients that selected range values changed.

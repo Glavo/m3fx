@@ -167,8 +167,7 @@ public final class M3DateRangePickerDialog extends M3Dialog {
         cancelAction.setCancelButton(true);
         confirmAction.setDefaultButton(true);
         pane.getActions().setAll(cancelAction, confirmAction);
-        picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
-        picker.endDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
+        picker.selectionProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);
         picker.maxDateProperty().addListener(presetBoundsInvalidation);
         presetController.install();

@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -105,28 +105,39 @@ final class M3DateRangePickerFieldTest {
         });
     }
 
-    /// Verifies that popup picker selections are coalesced and mirrored back into the field editors.
+    /// Verifies that picker selections synchronously publish one atomic field update.
     @Test
     void dateRangePickerFieldSyncsPopupPickerSelection() {
-        AtomicReference<M3DateRangePickerField> fieldReference = new AtomicReference<>();
-
         FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField();
-            fieldReference.set(field);
+            List<M3DateRangeSelection> changes = new ArrayList<>();
+            field.selectionProperty().addListener((observable, oldValue, newValue) -> changes.add(newValue));
+
             field.getPicker().selectDate(LocalDate.of(2026, 5, 18));
-        });
-        FxTestUtils.runOnFxThread(() -> {
-            M3DateRangePickerField field = fieldReference.get();
+
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertNull(field.getEndDate());
             assertEquals("2026-05-18", field.getStartEditor().getText());
+            assertEquals(
+                    List.of(new M3DateRangeSelection(LocalDate.of(2026, 5, 18), null)),
+                    changes
+            );
+
             field.getPicker().selectDate(LocalDate.of(2026, 5, 22));
-        });
-        FxTestUtils.runOnFxThread(() -> {
-            M3DateRangePickerField field = fieldReference.get();
+
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertEquals(LocalDate.of(2026, 5, 22), field.getEndDate());
             assertEquals("2026-05-22", field.getEndEditor().getText());
+            assertEquals(
+                    List.of(
+                            new M3DateRangeSelection(LocalDate.of(2026, 5, 18), null),
+                            new M3DateRangeSelection(
+                                    LocalDate.of(2026, 5, 18),
+                                    LocalDate.of(2026, 5, 22)
+                            )
+                    ),
+                    changes
+            );
         });
     }
 

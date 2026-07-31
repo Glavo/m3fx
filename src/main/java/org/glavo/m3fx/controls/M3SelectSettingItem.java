@@ -200,7 +200,8 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Converts a selectable value to the text shown on the row and in the menu.
     ///
-    /// When the converter is `null`, the control uses [Objects#toString(Object, String)] with an empty fallback.
+    /// When the converter is `null`, the control uses [Objects#toString(Object, String)] with an empty fallback. A
+    /// `null` selected value always produces an empty trailing label and is not passed to the converter.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Function<? super T, String>> converter =
@@ -567,20 +568,13 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     }
 
     /// Formats a choice for display on the row or in the menu.
-    @SuppressWarnings("unchecked")
     private String formatValue(@Nullable T choice) {
         @Nullable Function<? super T, String> activeConverter = getConverter();
+        if (choice == null) {
+            return "";
+        }
         if (activeConverter == null) {
             return Objects.toString(choice, "");
-        }
-        if (choice == null) {
-            // Most converters label concrete choices; empty selection uses a blank trailing label.
-            try {
-                @Nullable String text = ((Function<@Nullable T, String>) activeConverter).apply(null);
-                return text == null ? "" : text;
-            } catch (RuntimeException ignored) {
-                return "";
-            }
         }
         @Nullable String text = activeConverter.apply(choice);
         return text == null ? "" : text;

@@ -1055,6 +1055,62 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
+    /// Verifies that reduced-motion navigation settles when a destination expands the next collapsed group.
+    @Test
+    void reducedMotionSidebarRevealSettlesAcrossGroupBoundary() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<String>> pageTitlesReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+            scene.getRoot().setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            List<String> pageTitles = app.demoPageTitles();
+            int targetIndex = pageTitles.indexOf("Date Pickers");
+            assertTrue(targetIndex > 0, "Date Pickers should follow earlier demo destinations");
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(scene);
+            pageTitlesReference.set(List.copyOf(pageTitles.subList(0, targetIndex + 1)));
+        });
+
+        try {
+            FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
+                for (String pageTitle : Objects.requireNonNull(pageTitlesReference.get(), "page titles")) {
+                    showPageWhenSidebarSelectionSettled(
+                            appReference,
+                            sceneReference,
+                            pageTitle,
+                            M3FXDemoVisualMatrixTest::resetDemoPageScroll,
+                            () -> {
+                                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                                assertCurrentPageTitle(scene, pageTitle);
+                                assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
+                                assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
+                            }
+                    );
+                }
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies segmented-button icon replacement and logical ordering in the right-to-left demo hierarchy.
     @Test
     void segmentedButtonsRenderWithLogicalIconOrderInRightToLeftDemo() throws InterruptedException {
@@ -4007,16 +4063,19 @@ final class M3FXDemoVisualMatrixTest {
                         assertTrue(sidebarContent.getLayoutBounds().getHeight()
                                         > sidebarViewport.getViewportBounds().getHeight(),
                                 "the Material viewport should own the expanded sidebar scroll range");
-                        ScrollPane sidebarHost = assertInstanceOf(
-                                ScrollPane.class,
+                        M3NavigationDrawer sidebarDrawer = assertInstanceOf(
+                                M3NavigationDrawer.class,
                                 requireVisibleStyledDescendant(
                                         scene.getRoot(),
-                                        "demo-sidebar-scroll-pane",
-                                        "demo sidebar host"
+                                        "demo-sidebar-drawer",
+                                        "demo sidebar drawer"
                                 )
                         );
-                        assertTrue(sidebarHost.isFitToHeight(),
-                                "the adaptive sidebar host should constrain the drawer to its viewport");
+                        assertSame(
+                                sidebarViewport,
+                                sidebarDrawer.lookup(".m3-navigation-drawer-viewport"),
+                                "the drawer should own the only sidebar scroll viewport"
+                        );
 
                         M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
                         assertEquals("Scrims", lastItem.getHeadlineText(), "last fully expanded sidebar destination");
@@ -8202,7 +8261,7 @@ final class M3FXDemoVisualMatrixTest {
                 },
                 SETTLED_STATE_PULSES,
                 () -> "Timed out waiting for sidebar selection to settle for page `" + pageTitle + "`: "
-                        + sidebarScrollDebug(sceneReference.get()),
+                        + sidebarSettlementDebug(appReference.get(), sceneReference.get()),
                 () -> {
                     M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -8529,6 +8588,51 @@ final class M3FXDemoVisualMatrixTest {
         return builder.toString();
     }
 
+    /// Returns compact transition, selection, and viewport diagnostics for one sidebar navigation request.
+    private static String sidebarSettlementDebug(
+            @Nullable M3FXDemoApp app,
+            @Nullable Scene scene
+    ) {
+        if (app == null || scene == null) {
+            return "app=" + app + ", scene=" + scene;
+        }
+
+        @Nullable String expected = app.currentPageNavigationTitle();
+        @Nullable M3ListItem selectedItem = expected == null
+                ? null
+                : selectedDemoSidebarItem(scene.getRoot(), expected);
+        @Nullable Node selectionContainer = selectedItem == null
+                ? null
+                : selectedItem.lookup(".m3-list-item-selection-container");
+        @Nullable ScrollPane scrollPane = demoSidebarViewport(scene.getRoot());
+        @Nullable Node content = scrollPane == null ? null : scrollPane.getContent();
+        @Nullable Bounds selectedContentBounds = selectedItem == null || content == null
+                ? null
+                : content.sceneToLocal(selectedItem.localToScene(selectedItem.getBoundsInLocal()));
+        return "pageTransitionSettled=" + demoPageTransitionSettled(scene)
+                + ", selectionSettled=" + sidebarVisualSelectionSettled(app, scene)
+                + ", selectedInsideViewport=" + selectedSidebarItemInsideViewport(app, scene)
+                + ", expected=" + expected
+                + ", selected=" + demoSidebarItems(scene.getRoot()).stream()
+                .filter(M3ListItem::isSelected)
+                .map(M3ListItem::getHeadlineText)
+                .toList()
+                + ", selectedBounds=" + (selectedItem == null
+                ? "missing"
+                : selectedItem.localToScene(selectedItem.getBoundsInLocal()))
+                + ", selectedContentBounds=" + selectedContentBounds
+                + ", nearestViewportBounds=" + (selectedItem == null
+                ? "missing"
+                : nearestScrollViewportBounds(selectedItem))
+                + ", selectionContainer=" + (selectionContainer == null
+                ? "missing"
+                : "opacity=" + selectionContainer.getOpacity()
+                + ", scaleX=" + selectionContainer.getScaleX()
+                + ", scaleY=" + selectionContainer.getScaleY())
+                + ", selectionState={" + sidebarSelectionDebug(scene) + "}"
+                + ", scroll={" + sidebarScrollDebug(scene) + "}";
+    }
+
     /// Returns visible navigation drawer groups that belong to the demo sidebar.
     private static List<M3NavigationDrawerGroup> demoSidebarDrawerGroups(Node root) {
         return visibleNodesOfType(root, M3NavigationDrawerGroup.class)
@@ -8613,13 +8717,12 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Returns the internal Material viewport that owns demo sidebar scrolling.
     private static @Nullable ScrollPane demoSidebarViewport(Node root) {
-        @Nullable Node host = firstVisibleStyledDescendant(root, "demo-sidebar-scroll-pane");
-        if (!(host instanceof ScrollPane hostScrollPane)) {
+        @Nullable Node drawer = firstVisibleStyledDescendant(root, "demo-sidebar-drawer");
+        if (!(drawer instanceof M3NavigationDrawer)) {
             return null;
         }
 
-        @Nullable Node drawer = hostScrollPane.getContent();
-        @Nullable Node viewport = drawer == null ? null : drawer.lookup(".m3-navigation-drawer-viewport");
+        @Nullable Node viewport = drawer.lookup(".m3-navigation-drawer-viewport");
         return viewport instanceof ScrollPane scrollPane ? scrollPane : null;
     }
 

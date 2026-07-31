@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -19,6 +20,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DateRangePicker;
+import org.glavo.m3fx.controls.M3DateRangeSelection;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
@@ -127,8 +129,9 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     /// Whether the current reusable day-cell mapping exposes adjacent-month days.
     private boolean mappedShowAdjacentMonthDays;
 
-    /// Refreshes range selection classes after either selected endpoint changes.
-    private final InvalidationListener rangeInvalidation = observable -> refreshRangeSelection();
+    /// Refreshes range selection classes after one atomic selection change.
+    private final ChangeListener<M3DateRangeSelection> rangeChange =
+            (observable, oldSelection, newSelection) -> refreshRangeSelection();
 
     /// Refreshes calendar structure after month, weekday-order, or adjacent-day changes.
     private final InvalidationListener calendarInvalidation = observable -> refreshCalendar();
@@ -196,8 +199,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     @Override
     public void dispose() {
         M3DateRangePicker control = getSkinnable();
-        control.startDateProperty().removeListener(rangeInvalidation);
-        control.endDateProperty().removeListener(rangeInvalidation);
+        control.selectionProperty().removeListener(rangeChange);
         control.displayedMonthProperty().removeListener(calendarInvalidation);
         control.firstDayOfWeekProperty().removeListener(calendarInvalidation);
         control.minDateProperty().removeListener(boundsInvalidation);
@@ -298,8 +300,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
 
     /// Installs listeners that keep the skin synchronized with control state.
     private void installListeners(M3DateRangePicker control) {
-        control.startDateProperty().addListener(rangeInvalidation);
-        control.endDateProperty().addListener(rangeInvalidation);
+        control.selectionProperty().addListener(rangeChange);
         control.displayedMonthProperty().addListener(calendarInvalidation);
         control.firstDayOfWeekProperty().addListener(calendarInvalidation);
         control.minDateProperty().addListener(boundsInvalidation);

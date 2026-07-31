@@ -3,19 +3,16 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3SVGIcon;
-import org.glavo.m3fx.layout.M3Breakpoint;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// Primary app destinations shared by the adaptive navigation bar and rail.
 ///
@@ -74,12 +71,6 @@ final class HMCLDemoPrimaryNav {
     /// When true, selection listeners must not re-enter navigation.
     private boolean synchronizingSelection;
 
-    /// The destination that must be selected on whichever adaptive navigation surface is reachable.
-    private Destination selectedDestination = Destination.HOME;
-
-    /// The most recently applied scaffold breakpoint.
-    private M3Breakpoint currentBreakpoint = M3Breakpoint.COMPACT;
-
     /// Bar destination items in display order.
     private final M3NavigationItem barHome = item(Destination.HOME);
     private final M3NavigationItem barAccounts = item(Destination.ACCOUNTS);
@@ -106,9 +97,11 @@ final class HMCLDemoPrimaryNav {
         navigationBar.getStyleClass().add("hmcl-primary-nav-bar");
         navigationRail.getStyleClass().add("hmcl-primary-nav-rail");
         navigationRail.setNarrow(false);
+        navigationRail.setExpanded(false);
         navigationRail.setItemsCentered(true);
         navigationRail.setMinHeight(0.0);
         navigationRail.setMaxHeight(Double.MAX_VALUE);
+        navigationBar.setItemLayout(M3NavigationItemLayout.VERTICAL);
 
         navigationBar.getItems().setAll(
                 barHome, barAccounts, barInstances, barDownload, barSettings, barMultiplayer
@@ -169,58 +162,14 @@ final class HMCLDemoPrimaryNav {
         select(destinationFor(route));
     }
 
-    /// Applies a scaffold breakpoint while keeping the primary rail collapsed.
-    ///
-    /// Compact uses the bottom bar, so the hidden rail remains collapsed as well. Medium and wider breakpoints
-    /// present the same icon-oriented rail without expanding labels.
-    ///
-    /// @param breakpoint the scaffold's effective breakpoint
-    void applyBreakpoint(M3Breakpoint breakpoint) {
-        currentBreakpoint = breakpoint;
-        navigationRail.setExpanded(false);
-        // Compact bar items stay vertical (icon above label); medium bar is unused when rail is shown.
-        navigationBar.setItemLayout(
-                org.glavo.m3fx.controls.M3NavigationItemLayout.VERTICAL
-        );
-        select(selectedDestination);
-        Platform.runLater(() -> {
-            if (currentBreakpoint == breakpoint) {
-                select(selectedDestination);
-            }
-        });
-    }
-
-    /// Selects one destination on both surfaces without re-entering navigation.
+    /// Selects one destination on both adaptive surfaces without re-entering navigation.
     private void select(Destination destination) {
-        selectedDestination = destination;
         synchronizingSelection = true;
         try {
-            if (isEffectivelyReachable(navigationBar)) {
-                navigationBar.select(barItem(destination));
-            }
-            if (isEffectivelyReachable(navigationRail)) {
-                navigationRail.select(railItem(destination));
-            }
+            navigationBar.select(barItem(destination));
+            navigationRail.select(railItem(destination));
         } finally {
             synchronizingSelection = false;
-        }
-    }
-
-    /// Returns whether a navigation surface and all of its ancestors are visible and enabled.
-    private static boolean isEffectivelyReachable(Node node) {
-        if (node.getScene() == null) {
-            return false;
-        }
-        Node current = node;
-        while (true) {
-            if (!current.isVisible() || current.isDisabled()) {
-                return false;
-            }
-            @Nullable Parent parent = current.getParent();
-            if (parent == null) {
-                return true;
-            }
-            current = parent;
         }
     }
 

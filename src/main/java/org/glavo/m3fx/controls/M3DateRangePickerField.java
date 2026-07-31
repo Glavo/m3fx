@@ -4,10 +4,11 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -56,9 +57,10 @@ import java.util.Objects;
 /// A Material Design 3 date range picker field with editable start and end date inputs.
 ///
 /// The field maintains nullable start and end values and their independently editable text. A start without an end
-/// is an in-progress range; an end without a start is not permitted. Raw editor text does not replace the selected
-/// endpoints until [commitEditorText()] succeeds. A failed commit preserves the previous range and updates the
-/// relevant error text.
+/// is an in-progress range; an end without a start is not permitted. [#selectionProperty()] publishes one immutable
+/// snapshot after each complete field mutation, so observers do not need to combine two endpoint notifications.
+/// Raw editor text does not replace the selected endpoints until [commitEditorText()] succeeds. A failed commit
+/// preserves the previous range and updates the relevant error text.
 ///
 /// The owned [picker][#getPicker()] is synchronized with committed endpoints. Completing a range in the calendar
 /// updates both editors and closes the popup. The popup can be opened from either trailing button, Down, or F4 and
@@ -138,16 +140,21 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 /// Validates direct property writes before applying them.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
-                    if (!applyingRange) {
-                        if (newValue == null && getEndDate() != null && endDate.isBound()) {
-                            throw new RuntimeException("cannot clear startDate while endDate is bound and non-null");
+                    beginRangeMutation();
+                    try {
+                        if (!applyingRange) {
+                            if (newValue == null && getEndDate() != null && endDate.isBound()) {
+                                throw new RuntimeException("cannot clear startDate while endDate is bound and non-null");
+                            }
+                            validateDate(newValue);
+                            if (newValue != null) {
+                                validateDateRange(newValue, getEndDate());
+                            }
                         }
-                        validateDate(newValue);
-                        if (newValue != null) {
-                            validateDateRange(newValue, getEndDate());
-                        }
+                        super.set(newValue);
+                    } finally {
+                        endRangeMutation();
                     }
-                    super.set(newValue);
                 }
 
                 /// Synchronizes editors and popup selection after the start date changes.
@@ -159,9 +166,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                     if (!applyingRange && get() == null && getEndDate() != null) {
                         endDate.set(null);
                     }
-                    if (!applyingRange) {
-                        handleFieldRangeChanged();
-                    }
+                    markRangeChanged();
                 }
             };
 
@@ -205,14 +210,19 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 /// Validates direct property writes before applying them.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
-                    if (!applyingRange) {
-                        if (newValue != null && getStartDate() == null) {
-                            throw new IllegalArgumentException("startDate must be selected before endDate");
+                    beginRangeMutation();
+                    try {
+                        if (!applyingRange) {
+                            if (newValue != null && getStartDate() == null) {
+                                throw new IllegalArgumentException("startDate must be selected before endDate");
+                            }
+                            validateDate(newValue);
+                            validateDateRange(getStartDate(), newValue);
                         }
-                        validateDate(newValue);
-                        validateDateRange(getStartDate(), newValue);
+                        super.set(newValue);
+                    } finally {
+                        endRangeMutation();
                     }
-                    super.set(newValue);
                 }
 
                 /// Synchronizes editors and popup selection after the end date changes.
@@ -221,9 +231,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                     if (!applyingRange && isBound() && !isFieldRangeValid()) {
                         return;
                     }
-                    if (!applyingRange) {
-                        handleFieldRangeChanged();
-                    }
+                    markRangeChanged();
                 }
             };
 
@@ -841,6 +849,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3ReachabilityObserver reachabilityObserver =
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
+    /// The atomic empty, in-progress, or complete field selection snapshot.
+    private final ReadOnlyObjectWrapper<M3DateRangeSelection> selection =
+            new ReadOnlyObjectWrapper<>(this, "selection", M3DateRangeSelection.EMPTY);
+
+    /// The nesting depth of endpoint mutations contributing to one atomic selection notification.
+    private int rangeMutationDepth;
+
+    /// Whether an endpoint changed during the current atomic mutation.
+    private boolean rangeMutationDirty;
+
     /// Whether both field endpoints are currently being assigned through
     /// [setRange][#setRange(LocalDate, LocalDate)].
     private boolean applyingRange;
@@ -850,12 +868,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Whether popup picker state is currently being copied into the field.
     private boolean synchronizingFromPicker;
-
-    /// Whether picker range synchronization has been queued for the next FX pulse.
-    private boolean pickerSyncScheduled;
-
-    /// The generation used to ignore stale queued picker range synchronization.
-    private int pickerSyncGeneration;
 
     /// Whether editor text is currently being rewritten from selected dates.
     private boolean updatingEditorText;
@@ -874,32 +886,31 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Sets both range endpoints after validating ordering and selectable bounds.
     ///
-    /// The start property is assigned before the end property. Property listeners may therefore observe the new
-    /// start together with the previous end; editor and popup synchronization occurs after both assignments.
+    /// The start property is assigned before the end property. Individual endpoint listeners may therefore observe
+    /// an intermediate pair, while [#selectionProperty()] and all owned editor and picker synchronization publish
+    /// only the final pair.
     ///
     /// @param startDate the first selected date, or `null` to clear the range
     /// @param endDate   the last selected date, or `null` for an incomplete range
     /// @throws IllegalArgumentException if an endpoint is outside the current picker bounds, `endDate` is non-null
     ///         while `startDate` is null, or the start is after the end
-    /// @throws RuntimeException         if either endpoint property is bound to a different value
+    /// @throws RuntimeException         if either endpoint property is bound
     public void setRange(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         validateDate(startDate);
         validateDate(endDate);
         validateDateRange(startDate, endDate);
-        if (this.startDate.isBound() && !Objects.equals(getStartDate(), startDate)) {
-            throw new RuntimeException("cannot replace a bound startDate property");
+        if (this.startDate.isBound() || this.endDate.isBound()) {
+            throw new RuntimeException("cannot set a range while an endpoint property is bound");
         }
-        if (this.endDate.isBound() && !Objects.equals(getEndDate(), endDate)) {
-            throw new RuntimeException("cannot replace a bound endDate property");
-        }
+        beginRangeMutation();
         applyingRange = true;
         try {
             this.startDate.set(startDate);
             this.endDate.set(endDate);
         } finally {
             applyingRange = false;
+            endRangeMutation();
         }
-        handleFieldRangeChanged();
     }
 
     /// Sets both range endpoints from the supplied inclusive range.
@@ -923,16 +934,32 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @return `true` when both range endpoints are selected
     public boolean isRangeComplete() {
-        return getStartDate() != null && getEndDate() != null;
+        return getSelection().isComplete();
     }
 
     /// Returns the selected range, or `null` when the range is incomplete.
     ///
     /// @return the selected range, or `null` when the range is incomplete
     public @Nullable M3DateRange getRange() {
-        @Nullable LocalDate start = getStartDate();
-        @Nullable LocalDate end = getEndDate();
-        return start == null || end == null ? null : new M3DateRange(start, end);
+        return getSelection().toRange();
+    }
+
+    /// Returns the atomic empty, in-progress, or complete selection snapshot.
+    ///
+    /// @return the current immutable selection snapshot
+    public M3DateRangeSelection getSelection() {
+        return selection.get();
+    }
+
+    /// Returns the observable, read-only atomic selection property.
+    ///
+    /// The property initially contains [M3DateRangeSelection#EMPTY]. A direct endpoint change publishes after its
+    /// validation and any dependent endpoint clearing complete. [#setRange(LocalDate, LocalDate)] and a committed
+    /// editor pair publish once after both endpoint properties have been assigned and owned views are synchronized.
+    ///
+    /// @return the read-only atomic selection property
+    public ReadOnlyObjectProperty<M3DateRangeSelection> selectionProperty() {
+        return selection.getReadOnlyProperty();
     }
 
     /// Applies a date range preset, updates the editors, and closes the popup when it is showing.
@@ -1124,7 +1151,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             case COLLAPSE -> hidePicker(true);
             case SHOW_ITEM -> showAccessibleItem(parameters);
             case SET_SELECTED_ITEMS, INCREMENT, DECREMENT, BLOCK_INCREMENT, BLOCK_DECREMENT ->
-                    forwardPickerAccessibleAction(action, true, parameters);
+                    forwardPickerAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -1199,8 +1226,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endEditor.focusedProperty().addListener((observable, oldValue, focused) -> handleEditorFocusChanged());
         startEditor.textProperty().addListener((observable, oldValue, newValue) -> handleEditorTextChanged());
         endEditor.textProperty().addListener((observable, oldValue, newValue) -> handleEditorTextChanged());
-        picker.startDateProperty().addListener(observable -> schedulePickerRangeSync());
-        picker.endDateProperty().addListener(observable -> schedulePickerRangeSync());
+        picker.selectionProperty().addListener(
+                (observable, oldSelection, newSelection) -> syncRangeFromPicker(newSelection)
+        );
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
@@ -1312,45 +1340,50 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     }
 
-    /// Schedules synchronization after the picker finishes its atomic range mutation.
-    private void schedulePickerRangeSync() {
-        if (synchronizingPicker || pickerSyncScheduled) {
+    /// Synchronizes field state from one atomic popup picker selection.
+    private void syncRangeFromPicker(M3DateRangeSelection pickerSelection) {
+        if (synchronizingPicker) {
             return;
         }
-
-        int generation = ++pickerSyncGeneration;
-        pickerSyncScheduled = true;
-        try {
-            Platform.runLater(() -> {
-                if (generation != pickerSyncGeneration) {
-                    return;
-                }
-                pickerSyncScheduled = false;
-                if (!synchronizingPicker) {
-                    syncRangeFromPicker();
-                }
-            });
-        } catch (IllegalStateException ignored) {
-            pickerSyncScheduled = false;
-            syncRangeFromPicker();
-        }
-    }
-
-    /// Synchronizes field state from the popup picker.
-    private void syncRangeFromPicker() {
-        pickerSyncGeneration++;
-        pickerSyncScheduled = false;
-        boolean completeRange = picker.isRangeComplete();
         synchronizingFromPicker = true;
         try {
-            setRange(picker.getStartDate(), picker.getEndDate());
+            setRange(pickerSelection.startDate(), pickerSelection.endDate());
         } finally {
             synchronizingFromPicker = false;
         }
 
-        if (completeRange && popup.isShowing()) {
+        if (pickerSelection.isComplete() && popup.isShowing()) {
             hidePicker(true);
         }
+    }
+
+    /// Begins one possibly nested endpoint mutation.
+    private void beginRangeMutation() {
+        rangeMutationDepth++;
+    }
+
+    /// Completes one endpoint mutation and publishes the final snapshot at the outer boundary.
+    private void endRangeMutation() {
+        rangeMutationDepth--;
+        if (rangeMutationDepth == 0 && rangeMutationDirty) {
+            publishRangeSelection();
+        }
+    }
+
+    /// Records an endpoint change and publishes immediately when no compound mutation owns it.
+    private void markRangeChanged() {
+        rangeMutationDirty = true;
+        if (rangeMutationDepth == 0) {
+            publishRangeSelection();
+        }
+    }
+
+    /// Synchronizes owned views and publishes one immutable selection snapshot.
+    private void publishRangeSelection() {
+        rangeMutationDirty = false;
+        M3DateRangeSelection snapshot = M3DateRangeSelection.of(getStartDate(), getEndDate());
+        handleFieldRangeChanged();
+        selection.set(snapshot);
     }
 
     /// Synchronizes dependent state after either field endpoint changes.
@@ -1359,8 +1392,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         clearGeneratedErrorText();
 
         if (!synchronizingFromPicker) {
-            pickerSyncGeneration++;
-            pickerSyncScheduled = false;
             synchronizingPicker = true;
             try {
                 picker.setRange(getStartDate(), getEndDate());
@@ -1614,21 +1645,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return false;
         }
         if (!preservePopupFocus) {
-            forwardPickerAccessibleAction(AccessibleAction.SHOW_ITEM, false, parameters);
+            forwardPickerAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
         }
         return focusPicker();
     }
 
-    /// Forwards an accessibility action to the popup range picker and optionally syncs edited endpoints.
-    private void forwardPickerAccessibleAction(
-            AccessibleAction action,
-            boolean syncRange,
-            Object... parameters
-    ) {
+    /// Forwards an accessibility action to the popup range picker.
+    private void forwardPickerAccessibleAction(AccessibleAction action, Object... parameters) {
         picker.executeAccessibleAction(action, parameters);
-        if (syncRange && !synchronizingPicker) {
-            syncRangeFromPicker();
-        }
     }
 
     /// Focuses the preferred node inside the popup picker.

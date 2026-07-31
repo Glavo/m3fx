@@ -1684,7 +1684,12 @@ final class M3FXCatalogVisualTest {
                             viewport.localToScene(viewport.getBoundsInLocal()).intersects(
                                     selectedComponent.localToScene(selectedComponent.getBoundsInLocal())
                             ),
-                            "the modal drawer should reveal its selected destination when opened"
+                            () -> "the modal drawer should reveal its selected destination when opened: vvalue="
+                                    + viewport.getVvalue()
+                                    + ", viewport="
+                                    + viewport.localToScene(viewport.getBoundsInLocal())
+                                    + ", selected="
+                                    + selectedComponent.localToScene(selectedComponent.getBoundsInLocal())
                     );
                     M3ListItem cardsItem = listItemNamed(
                             sidebar,

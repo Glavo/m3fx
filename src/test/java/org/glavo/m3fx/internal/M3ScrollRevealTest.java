@@ -67,6 +67,27 @@ final class M3ScrollRevealTest {
         });
     }
 
+    /// Verifies reveal uses the content extent that the scroll pane actually laid out.
+    @Test
+    void revealUsesLaidOutExtentWhenPreferredSizeExceedsMaximum() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(200.0);
+            Label target = new Label("Target");
+            VBox content = new VBox(spacer, target);
+            content.setPrefHeight(320.0);
+            content.setMaxHeight(240.0);
+            ScrollPane scrollPane = scrollPane(content, true, false);
+
+            assertEquals(240.0, content.getLayoutBounds().getHeight(), 0.5);
+
+            M3ScrollReveal.revealTarget(content, target);
+
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+            assertTargetVerticallyVisible(scrollPane, content, target);
+        });
+    }
+
     /// Verifies focus-and-reveal requests move focus and scroll the target into view.
     @Test
     void requestFocusAndRevealMovesFocusAndScrollsTargetIntoView() {
@@ -347,10 +368,11 @@ final class M3ScrollRevealTest {
 
     /// Verifies that the target is visible in the scroll pane's vertical viewport.
     private static void assertTargetVerticallyVisible(ScrollPane scrollPane, Node content, Node target) {
+        Bounds contentBounds = content.getLayoutBounds();
         double viewportHeight = scrollPane.getViewportBounds().getHeight();
-        double scrollableHeight = Math.max(0.0, scrollContentHeight(content, scrollPane.getViewportBounds().getWidth())
-                - viewportHeight);
-        double visibleTop = scrollOffset(scrollPane.getVvalue(), scrollPane.getVmin(), scrollableHeight,
+        double scrollableHeight = Math.max(0.0, contentBounds.getHeight() - viewportHeight);
+        double visibleTop = contentBounds.getMinY()
+                + scrollOffset(scrollPane.getVvalue(), scrollPane.getVmin(), scrollableHeight,
                 scrollPane.getVmax() - scrollPane.getVmin());
         double visibleBottom = visibleTop + viewportHeight;
         Bounds targetBounds = content.sceneToLocal(target.localToScene(target.getBoundsInLocal()));
@@ -362,10 +384,11 @@ final class M3ScrollRevealTest {
 
     /// Verifies that the target is visible in the scroll pane's horizontal viewport.
     private static void assertTargetHorizontallyVisible(ScrollPane scrollPane, Node content, Node target) {
+        Bounds contentBounds = content.getLayoutBounds();
         double viewportWidth = scrollPane.getViewportBounds().getWidth();
-        double scrollableWidth = Math.max(0.0, scrollContentWidth(content, scrollPane.getViewportBounds().getHeight())
-                - viewportWidth);
-        double visibleLeft = scrollOffset(scrollPane.getHvalue(), scrollPane.getHmin(), scrollableWidth,
+        double scrollableWidth = Math.max(0.0, contentBounds.getWidth() - viewportWidth);
+        double visibleLeft = contentBounds.getMinX()
+                + scrollOffset(scrollPane.getHvalue(), scrollPane.getHmin(), scrollableWidth,
                 scrollPane.getHmax() - scrollPane.getHmin());
         double visibleRight = visibleLeft + viewportWidth;
         Bounds targetBounds = content.sceneToLocal(target.localToScene(target.getBoundsInLocal()));
@@ -373,26 +396,6 @@ final class M3ScrollRevealTest {
                 () -> "targetLeft=" + targetBounds.getMinX() + ", visibleLeft=" + visibleLeft);
         assertTrue(targetBounds.getMaxX() <= visibleRight + 0.5,
                 () -> "targetRight=" + targetBounds.getMaxX() + ", visibleRight=" + visibleRight);
-    }
-
-    /// Returns the current scroll content width, including height-dependent preferred width updates.
-    private static double scrollContentWidth(Node content, double viewportHeight) {
-        double width = content.getBoundsInLocal().getWidth();
-        if (content instanceof Region region) {
-            double preferredWidth = region.prefWidth(viewportHeight > 0.0 ? viewportHeight : -1.0);
-            width = Math.max(width, preferredWidth);
-        }
-        return width;
-    }
-
-    /// Returns the current scroll content height, including width-dependent preferred height updates.
-    private static double scrollContentHeight(Node content, double viewportWidth) {
-        double height = content.getBoundsInLocal().getHeight();
-        if (content instanceof Region region) {
-            double preferredHeight = region.prefHeight(viewportWidth > 0.0 ? viewportWidth : -1.0);
-            height = Math.max(height, preferredHeight);
-        }
-        return height;
     }
 
     /// Returns the content offset represented by one scroll value.

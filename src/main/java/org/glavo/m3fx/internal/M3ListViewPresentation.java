@@ -28,6 +28,12 @@ public interface M3ListViewPresentation {
     /// @param animated         whether revealing the row should animate when motion is available
     void refreshFocus(boolean requestNodeFocus, boolean animated);
 
+    /// Synchronously scrolls and lays out the presentation so the specified row is attached.
+    ///
+    /// @param index the data item index
+    /// @return the attached row, or `null` when the index is invalid or the presentation cannot currently lay out
+    @Nullable Node materializeItem(int index);
+
     /// Returns a rendered row for the specified index.
     ///
     /// The returned row may be reusable without currently being attached to the scene graph.

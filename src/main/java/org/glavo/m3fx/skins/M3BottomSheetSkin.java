@@ -22,6 +22,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.internal.M3BottomSheetPresentation;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3BottomSheet].
 @NotNullByDefault
-public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
+public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> implements M3BottomSheetPresentation {
     /// The internal drag-handle-container style class.
     private static final String DRAG_HANDLE_CONTAINER_STYLE_CLASS = "m3-bottom-sheet-drag-handle-container";
 
@@ -167,6 +168,18 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         container.setCenter(null);
         getChildren().remove(container);
         super.dispose();
+    }
+
+    /// Returns the actionable drag-handle target owned by this presentation.
+    ///
+    /// @return the drag-handle target, or `null` while it is not actionable
+    @Override
+    public @Nullable Node dragHandleFocusTarget() {
+        return dragHandleSlot.isFocusTraversable()
+                && !dragHandleSlot.isDisabled()
+                && dragHandleSlot.isVisible()
+                ? dragHandleSlot
+                : null;
     }
 
     /// Computes the minimum width from the internal container.

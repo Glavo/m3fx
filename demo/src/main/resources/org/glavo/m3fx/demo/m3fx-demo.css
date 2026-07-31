@@ -36,9 +36,11 @@
     -fx-fill-width: true;
 }
 
-.demo-sidebar-scroll-pane {
-    -fx-background-color: -m3-color-surface;
-    -fx-background: -m3-color-surface;
+.demo-modal-navigation-layer {
+    -fx-alignment: center-left;
+}
+
+.m3-navigation-drawer.demo-sidebar-drawer {
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1px 0 0;
     -fx-min-width: 360px;
@@ -46,35 +48,15 @@
     -fx-max-width: 360px;
 }
 
-.demo-sidebar-scroll-pane > .viewport {
-    -fx-background-color: -m3-color-surface;
-}
-
-.demo-sidebar-scroll-pane:rtl {
+.m3-navigation-drawer.demo-sidebar-drawer:rtl {
     -fx-border-color: transparent transparent transparent -m3-color-outline-variant;
     -fx-border-width: 0 0 0 1px;
 }
 
-.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane,
-.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane:rtl {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+.m3-navigation-drawer.demo-sidebar-drawer.demo-modal-sidebar-drawer,
+.m3-navigation-drawer.demo-sidebar-drawer.demo-modal-sidebar-drawer:rtl {
     -fx-border-color: transparent;
     -fx-border-width: 0;
-}
-
-.demo-sidebar-scroll-pane.demo-modal-sidebar-scroll-pane > .viewport {
-    -fx-background-color: transparent;
-}
-
-.demo-modal-navigation-layer {
-    -fx-alignment: center-left;
-}
-
-.m3-navigation-drawer.demo-sidebar-drawer {
-    -fx-min-width: 360px;
-    -fx-pref-width: 360px;
-    -fx-max-width: 360px;
 }
 
 .m3-navigation-drawer.demo-sidebar-drawer .demo-sidebar-top-item,

@@ -23,9 +23,12 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
+import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.testing.Tier3Test;
@@ -237,8 +240,8 @@ final class M3FXDemoAdaptiveShellTest {
                         return visibleScrim(scene.getRoot()) == null
                                 && visibleStyledNode(
                                 scene.getRoot(),
-                                "demo-modal-sidebar-scroll-pane",
-                                ScrollPane.class
+                                "demo-modal-sidebar-drawer",
+                                M3NavigationDrawer.class
                         ) == null
                                 && navigation.lookup(".m3-state-layer").getOpacity() <= 0.0001;
                     },
@@ -425,8 +428,8 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     layout(scene);
-                    @Nullable ScrollPane sidebar =
-                            visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
+                    @Nullable M3NavigationDrawer sidebar =
+                            visibleStyledNode(scene.getRoot(), "demo-sidebar-drawer", M3NavigationDrawer.class);
                     @Nullable M3IconButton navigation =
                             visibleStyledNode(scene.getRoot(), "demo-navigation-button", M3IconButton.class);
                     return sidebar != null
@@ -439,10 +442,10 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertEquals(NodeOrientation.LEFT_TO_RIGHT, scene.getRoot().getEffectiveNodeOrientation());
-                    ScrollPane sidebar = requireVisibleStyledNode(
+                    M3NavigationDrawer sidebar = requireVisibleStyledNode(
                             scene.getRoot(),
-                            "demo-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-sidebar-drawer",
+                            M3NavigationDrawer.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, false, "LTR persistent drawer");
                     assertDrawerItemLogicalStart(sidebar, false, "LTR persistent drawer item");
@@ -465,8 +468,8 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     layout(scene);
-                    @Nullable ScrollPane sidebar =
-                            visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
+                    @Nullable M3NavigationDrawer sidebar =
+                            visibleStyledNode(scene.getRoot(), "demo-sidebar-drawer", M3NavigationDrawer.class);
                     return scene.getRoot().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
                             && sidebar != null
                             && Math.abs(sidebar.localToScene(sidebar.getBoundsInLocal()).getMaxX() - scene.getWidth())
@@ -480,10 +483,10 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
-                    ScrollPane sidebar = requireVisibleStyledNode(
+                    M3NavigationDrawer sidebar = requireVisibleStyledNode(
                             scene.getRoot(),
-                            "demo-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-sidebar-drawer",
+                            M3NavigationDrawer.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL persistent drawer");
                     assertDrawerItemLogicalStart(sidebar, true, "RTL persistent drawer item");
@@ -510,8 +513,8 @@ final class M3FXDemoAdaptiveShellTest {
                     ) != null
                             && visibleStyledNode(
                             scene.getRoot(),
-                            "demo-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-sidebar-drawer",
+                            M3NavigationDrawer.class
                     ) == null;
                 },
                 STABLE_PULSES,
@@ -528,8 +531,8 @@ final class M3FXDemoAdaptiveShellTest {
                     ));
                     assertNull(visibleStyledNode(
                             scene.getRoot(),
-                            "demo-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-sidebar-drawer",
+                            M3NavigationDrawer.class
                     ));
                     ScrollPane pageScrollPane = requireVisibleStyledNode(
                             scene.getRoot(),
@@ -555,16 +558,22 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     layout(scene);
-                    @Nullable ScrollPane sidebar = visibleStyledNode(
+                    @Nullable M3NavigationDrawer sidebar = visibleStyledNode(
                             scene.getRoot(),
-                            "demo-modal-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-modal-sidebar-drawer",
+                            M3NavigationDrawer.class
                     );
                     @Nullable M3Scrim scrim = visibleScrim(scene.getRoot());
+                    @Nullable M3AnimatedVisibility visibility = visibleStyledNode(
+                            scene.getRoot(),
+                            "demo-navigation-visibility",
+                            M3AnimatedVisibility.class
+                    );
                     return sidebar != null
                             && scrim != null
                             && scrim.isShown()
-                            && Math.abs(sidebar.getTranslateX()) <= EDGE_TOLERANCE;
+                            && visibility != null
+                            && visibility.getState() == M3VisibilityState.VISIBLE;
                 },
                 STABLE_PULSES,
                 () -> {
@@ -585,10 +594,10 @@ final class M3FXDemoAdaptiveShellTest {
                 },
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    ScrollPane sidebar = requireVisibleStyledNode(
+                    M3NavigationDrawer sidebar = requireVisibleStyledNode(
                             scene.getRoot(),
-                            "demo-modal-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-modal-sidebar-drawer",
+                            M3NavigationDrawer.class
                     );
                     assertSceneLeadingEdge(sidebar, scene, true, "RTL modal drawer");
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, sidebar.getEffectiveNodeOrientation());
@@ -625,8 +634,8 @@ final class M3FXDemoAdaptiveShellTest {
                     layout(scene);
                     return visibleStyledNode(
                             scene.getRoot(),
-                            "demo-modal-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-modal-sidebar-drawer",
+                            M3NavigationDrawer.class
                     ) == null
                             && visibleScrim(scene.getRoot()) == null;
                 },
@@ -639,8 +648,8 @@ final class M3FXDemoAdaptiveShellTest {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertNull(visibleStyledNode(
                             scene.getRoot(),
-                            "demo-modal-sidebar-scroll-pane",
-                            ScrollPane.class
+                            "demo-modal-sidebar-drawer",
+                            M3NavigationDrawer.class
                     ));
                     assertNull(visibleScrim(scene.getRoot()));
                     ScrollPane pageScrollPane = requireVisibleStyledNode(
@@ -694,8 +703,8 @@ final class M3FXDemoAdaptiveShellTest {
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     layout(scene);
-                    @Nullable ScrollPane sidebar =
-                            visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
+                    @Nullable M3NavigationDrawer sidebar =
+                            visibleStyledNode(scene.getRoot(), "demo-sidebar-drawer", M3NavigationDrawer.class);
                     return scene.getRoot().getEffectiveNodeOrientation() == NodeOrientation.LEFT_TO_RIGHT
                             && sidebar != null
                             && Math.abs(sidebar.localToScene(sidebar.getBoundsInLocal()).getMinX()) <= EDGE_TOLERANCE;
@@ -703,8 +712,8 @@ final class M3FXDemoAdaptiveShellTest {
                 STABLE_PULSES,
                 () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    @Nullable ScrollPane sidebar =
-                            visibleStyledNode(scene.getRoot(), "demo-sidebar-scroll-pane", ScrollPane.class);
+                    @Nullable M3NavigationDrawer sidebar =
+                            visibleStyledNode(scene.getRoot(), "demo-sidebar-drawer", M3NavigationDrawer.class);
                     return "Timed out restoring the expanded LTR shell: orientation="
                             + scene.getRoot().getEffectiveNodeOrientation()
                             + ", sceneWidth=" + scene.getWidth()
@@ -726,8 +735,8 @@ final class M3FXDemoAdaptiveShellTest {
                     assertSceneLeadingEdge(
                             requireVisibleStyledNode(
                                     scene.getRoot(),
-                                    "demo-sidebar-scroll-pane",
-                                    ScrollPane.class
+                                    "demo-sidebar-drawer",
+                                    M3NavigationDrawer.class
                             ),
                             scene,
                             false,
@@ -736,8 +745,8 @@ final class M3FXDemoAdaptiveShellTest {
                     assertDrawerItemLogicalStart(
                             requireVisibleStyledNode(
                                     scene.getRoot(),
-                                    "demo-sidebar-scroll-pane",
-                                    ScrollPane.class
+                                    "demo-sidebar-drawer",
+                                    M3NavigationDrawer.class
                             ),
                             false,
                             "restored LTR persistent drawer item"
@@ -874,11 +883,11 @@ final class M3FXDemoAdaptiveShellTest {
 
     /// Verifies that a drawer destination aligns its text to the current logical start edge.
     ///
-    /// @param drawer      the drawer viewport
+    /// @param drawer      the navigation drawer
     /// @param rightToLeft whether the logical start edge is the physical right edge
     /// @param description the assertion description
     private static void assertDrawerItemLogicalStart(
-            ScrollPane drawer,
+            M3NavigationDrawer drawer,
             boolean rightToLeft,
             String description
     ) {

@@ -4,21 +4,16 @@
 package org.glavo.m3fx.demo;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -28,12 +23,13 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.animation.M3TransitionEdge;
+import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Dialog;
@@ -134,14 +130,8 @@ public final class M3FXDemoApp extends Application {
     /// The navigation drawer used by the demo sidebar.
     private @Nullable M3NavigationDrawer sidebarDrawer;
 
-    /// The scroll pane that hosts the demo sidebar.
-    private @Nullable ScrollPane sidebarScrollPane;
-
     /// The scroll pane that hosts the current demo page.
     private @Nullable ScrollPane pageScrollPane;
-
-    /// The pending retry that scrolls the active sidebar destination after drawer expansion settles.
-    private @Nullable Timeline sidebarScrollRetryAnimation;
 
     /// The currently shown demo page.
     private @Nullable DemoPage currentPage;
@@ -167,17 +157,14 @@ public final class M3FXDemoApp extends Application {
     /// The active modal navigation presentation, or `null` while no drawer overlay is shown.
     private @Nullable M3OverlayPane.OverlayHandle navigationOverlayHandle;
 
-    /// The container that temporarily owns the sidebar during a modal navigation presentation.
-    private @Nullable StackPane navigationOverlayLayer;
+    /// The reusable scrim behind compact and medium navigation.
+    private final M3Scrim navigationOverlayScrim = new M3Scrim();
 
-    /// The scrim used by the active modal navigation presentation.
-    private @Nullable M3Scrim navigationOverlayScrim;
+    /// The reusable interruptible slide host for compact and medium navigation.
+    private final M3AnimatedVisibility navigationOverlayVisibility = new M3AnimatedVisibility();
 
-    /// The coordinated slide transition used by the active modal navigation presentation.
-    private @Nullable M3StateTransition<Boolean> navigationOverlayTransition;
-
-    /// Whether the active modal navigation presentation is already running its exit transition.
-    private boolean navigationOverlayClosing;
+    /// The reusable modal layer containing the navigation scrim and slide host.
+    private final StackPane navigationOverlayLayer = new StackPane();
 
     /// Starts the demo application.
     @Override
@@ -190,6 +177,7 @@ public final class M3FXDemoApp extends Application {
         M3OverlayPane root = new M3OverlayPane();
         root.getStyleClass().add("demo-root");
         overlayPane = root;
+        configureNavigationOverlay();
 
         List<DemoPage> createdPages = DemoPageCatalog.createPages(new DemoPageContext(this));
         pages = createdPages;
@@ -478,23 +466,13 @@ public final class M3FXDemoApp extends Application {
         sidebarGroups.clear();
         sidebarGroups.addAll(createSidebarGroups(pages));
         buildSidebarItems();
-
-        ScrollPane scrollPane = new ScrollPane(sidebar);
-        scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
-        M3ScrollPanes.style(scrollPane);
-        scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> cancelSidebarScrollRetry());
-        scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        sidebarScrollPane = scrollPane;
-        return scrollPane;
+        return sidebar;
     }
 
     /// Applies the current Material breakpoint to persistent navigation and the header navigation action.
     private void updateAdaptiveLayout() {
         M3AdaptiveScaffold scaffold = adaptiveScaffold;
-        ScrollPane sidebar = sidebarScrollPane;
+        M3NavigationDrawer sidebar = sidebarDrawer;
         if (scaffold == null || sidebar == null) {
             return;
         }
@@ -524,11 +502,8 @@ public final class M3FXDemoApp extends Application {
             sidebar.setTranslateX(0.0);
             sidebar.setNodeOrientation(NodeOrientation.INHERIT);
             StackPane.setAlignment(sidebar, null);
-            sidebar.getStyleClass().remove("demo-modal-sidebar-scroll-pane");
-            M3NavigationDrawer drawer = sidebarDrawer;
-            if (drawer != null) {
-                drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
-            }
+            sidebar.getStyleClass().remove("demo-modal-sidebar-drawer");
+            sidebar.setVariant(M3NavigationDrawerVariant.STANDARD);
             if (scaffold.getLeadingPane() != sidebar) {
                 scaffold.setLeadingPane(sidebar);
             }
@@ -551,166 +526,133 @@ public final class M3FXDemoApp extends Application {
         };
     }
 
-    /// Shows the component drawer as a modal leading-edge overlay in compact and medium layouts.
-    private void showNavigationDrawer() {
-        M3AdaptiveScaffold scaffold = adaptiveScaffold;
-        M3OverlayPane overlay = overlayPane;
-        ScrollPane sidebar = sidebarScrollPane;
-        M3NavigationDrawer drawer = sidebarDrawer;
-        if (scaffold == null
-                || overlay == null
-                || sidebar == null
-                || drawer == null
-                || usesPersistentNavigation(scaffold.getBreakpoint())) {
-            return;
-        }
-
-        M3OverlayPane.OverlayHandle existingHandle = navigationOverlayHandle;
-        if (existingHandle != null && existingHandle.isShowing()) {
-            return;
-        }
-
-        scaffold.setLeadingPane(null);
-        drawer.setVariant(M3NavigationDrawerVariant.MODAL);
-        if (!sidebar.getStyleClass().contains("demo-modal-sidebar-scroll-pane")) {
-            sidebar.getStyleClass().add("demo-modal-sidebar-scroll-pane");
-        }
-
-        NodeOrientation drawerOrientation = overlay.getEffectiveNodeOrientation();
-        boolean rightToLeft = drawerOrientation == NodeOrientation.RIGHT_TO_LEFT;
-        double hiddenOffset = rightToLeft ? NAVIGATION_DRAWER_WIDTH : -NAVIGATION_DRAWER_WIDTH;
-
-        M3Scrim scrim = new M3Scrim();
-        scrim.setAccessibleText("Close component navigation");
-        scrim.setShown(false);
-
-        StackPane modalLayer = new StackPane(scrim, sidebar);
-        modalLayer.getStyleClass().add("demo-modal-navigation-layer");
-        modalLayer.setPickOnBounds(true);
-        // Keep physical edge placement and translation independent from JavaFX's RTL mirroring.
-        modalLayer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        sidebar.setNodeOrientation(drawerOrientation);
-        StackPane.setAlignment(sidebar, rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-
-        M3StateTransition<Boolean> transition = new M3StateTransition<>(modalLayer, false);
-        transition.addDouble(
-                sidebar.translateXProperty(),
-                shown -> shown ? 0.0 : hiddenOffset,
-                0.5
+    /// Configures the reusable compact and medium navigation presentation.
+    private void configureNavigationOverlay() {
+        navigationOverlayScrim.setAccessibleText("Close component navigation");
+        navigationOverlayScrim.setShown(false);
+        navigationOverlayScrim.setOnAction(event -> hideNavigationDrawer(true));
+        navigationOverlayScrim.visibleProperty().addListener(
+                (observable, oldVisible, newVisible) -> removeNavigationOverlayWhenHidden()
         );
 
-        M3OverlayPane.OverlayHandle handle = overlay.showModalOverlay(modalLayer);
-        navigationOverlayHandle = handle;
-        navigationOverlayLayer = modalLayer;
-        navigationOverlayScrim = scrim;
-        navigationOverlayTransition = transition;
-        navigationOverlayClosing = false;
+        navigationOverlayVisibility.getStyleClass().add("demo-navigation-visibility");
+        navigationOverlayVisibility.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        navigationOverlayVisibility.setFitToHeight(true);
+        navigationOverlayVisibility.setSizeTransform(null);
+        configureNavigationOverlayDirection(NodeOrientation.LEFT_TO_RIGHT);
+        navigationOverlayVisibility.setShowing(false);
+        navigationOverlayVisibility.stateProperty().addListener(
+                (observable, oldState, newState) -> removeNavigationOverlayWhenHidden()
+        );
 
-        scrim.setOnAction(event -> hideNavigationDrawer(true));
-        modalLayer.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+        navigationOverlayLayer.getStyleClass().add("demo-modal-navigation-layer");
+        navigationOverlayLayer.setPickOnBounds(true);
+        navigationOverlayLayer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        navigationOverlayLayer.getChildren().setAll(navigationOverlayScrim, navigationOverlayVisibility);
+        navigationOverlayLayer.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
                 hideNavigationDrawer(true);
                 event.consume();
             }
         });
+    }
 
-        Platform.runLater(() -> {
-            if (navigationOverlayHandle != handle || !handle.isShowing()) {
-                return;
-            }
-            scrim.show();
-            transition.setTargetState(true);
-            drawer.requestFocus();
-            DemoPage page = currentPage;
-            if (page != null) {
-                scrollSidebarPageIntoViewLater(page);
-            }
-        });
+    /// Applies physical alignment and logical-edge motion for one content direction.
+    private void configureNavigationOverlayDirection(NodeOrientation orientation) {
+        boolean rightToLeft = orientation == NodeOrientation.RIGHT_TO_LEFT;
+        Pos alignment = rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT;
+        M3TransitionEdge edge = rightToLeft ? M3TransitionEdge.END : M3TransitionEdge.START;
+        navigationOverlayVisibility.setAlignment(alignment);
+        navigationOverlayVisibility.setEnterTransition(
+                M3EnterTransition.slideFrom(edge, NAVIGATION_DRAWER_WIDTH)
+        );
+        navigationOverlayVisibility.setExitTransition(
+                M3ExitTransition.slideTo(edge, NAVIGATION_DRAWER_WIDTH)
+        );
+        StackPane.setAlignment(navigationOverlayVisibility, alignment);
+    }
+
+    /// Shows the component drawer as a modal leading-edge overlay in compact and medium layouts.
+    private void showNavigationDrawer() {
+        M3AdaptiveScaffold scaffold = adaptiveScaffold;
+        M3OverlayPane overlay = overlayPane;
+        M3NavigationDrawer drawer = sidebarDrawer;
+        if (scaffold == null
+                || overlay == null
+                || drawer == null
+                || usesPersistentNavigation(scaffold.getBreakpoint())) {
+            return;
+        }
+
+        scaffold.setLeadingPane(null);
+        drawer.setVariant(M3NavigationDrawerVariant.MODAL);
+        if (!drawer.getStyleClass().contains("demo-modal-sidebar-drawer")) {
+            drawer.getStyleClass().add("demo-modal-sidebar-drawer");
+        }
+
+        NodeOrientation drawerOrientation = overlay.getEffectiveNodeOrientation();
+        drawer.setNodeOrientation(drawerOrientation);
+        configureNavigationOverlayDirection(drawerOrientation);
+        if (navigationOverlayVisibility.getContent() != drawer) {
+            navigationOverlayVisibility.setContent(drawer);
+        }
+
+        M3OverlayPane.OverlayHandle currentHandle = navigationOverlayHandle;
+        if (currentHandle == null || !currentHandle.isShowing()) {
+            navigationOverlayHandle = overlay.showModalOverlay(navigationOverlayLayer);
+        }
+        navigationOverlayScrim.show();
+        navigationOverlayVisibility.setShowing(true);
+        drawer.requestFocus();
+        DemoPage page = currentPage;
+        if (page != null) {
+            revealSidebarPage(page);
+        }
     }
 
     /// Hides the compact or medium modal component drawer.
     ///
     /// @param animated whether to run the drawer and scrim exit transitions
     private void hideNavigationDrawer(boolean animated) {
-        M3OverlayPane.OverlayHandle handle = navigationOverlayHandle;
-        if (handle == null) {
+        if (navigationOverlayHandle == null && navigationOverlayVisibility.getContent() == null) {
             return;
         }
-        if (animated && navigationOverlayClosing) {
-            return;
-        }
-
-        M3Scrim scrim = navigationOverlayScrim;
-        M3StateTransition<Boolean> transition = navigationOverlayTransition;
-        if (!animated || scrim == null || transition == null) {
-            if (transition != null) {
-                transition.snapTo(false);
-            }
-            finishNavigationDrawerClose(handle);
-            return;
-        }
-
-        navigationOverlayClosing = true;
-        scrim.hide();
-        transition.statusProperty().addListener((observable, oldStatus, newStatus) -> {
-            if (newStatus == Animation.Status.STOPPED) {
-                finishNavigationDrawerCloseWhenSettled(handle, scrim, transition);
-            }
-        });
-        scrim.visibleProperty().addListener(
-                (observable, oldVisible, newVisible) ->
-                        finishNavigationDrawerCloseWhenSettled(handle, scrim, transition)
-        );
-        transition.setTargetState(false);
-        finishNavigationDrawerCloseWhenSettled(handle, scrim, transition);
-    }
-
-    /// Releases a closing drawer only after both the surface translation and scrim fade have settled.
-    ///
-    /// @param handle     the presentation being closed
-    /// @param scrim      the presentation scrim
-    /// @param transition the drawer slide transition
-    private void finishNavigationDrawerCloseWhenSettled(
-            M3OverlayPane.OverlayHandle handle,
-            M3Scrim scrim,
-            M3StateTransition<Boolean> transition
-    ) {
-        if (navigationOverlayClosing && !scrim.isVisible() && !transition.isRunning()) {
-            finishNavigationDrawerClose(handle);
+        navigationOverlayVisibility.setShowing(false);
+        navigationOverlayScrim.hide();
+        if (!animated) {
+            navigationOverlayVisibility.snapToCurrentState();
+            releaseNavigationOverlay();
         }
     }
 
-    /// Releases one completed modal drawer presentation and restores the breakpoint-selected drawer layout.
-    ///
-    /// @param handle the presentation that completed its exit
-    private void finishNavigationDrawerClose(M3OverlayPane.OverlayHandle handle) {
-        if (navigationOverlayHandle != handle) {
+    /// Releases the modal layer after both reusable visibility components finish exiting.
+    private void removeNavigationOverlayWhenHidden() {
+        if (navigationOverlayVisibility.getState() != M3VisibilityState.HIDDEN
+                || navigationOverlayScrim.isVisible()) {
+            return;
+        }
+        releaseNavigationOverlay();
+    }
+
+    /// Detaches the reusable modal presentation and restores the breakpoint-selected drawer state.
+    private void releaseNavigationOverlay() {
+        M3OverlayPane.OverlayHandle currentHandle = navigationOverlayHandle;
+        if (currentHandle == null && navigationOverlayVisibility.getContent() == null) {
             return;
         }
 
-        handle.hide();
-        StackPane modalLayer = navigationOverlayLayer;
-        ScrollPane sidebar = sidebarScrollPane;
-        if (modalLayer != null && sidebar != null) {
-            modalLayer.getChildren().remove(sidebar);
-            StackPane.setAlignment(sidebar, null);
-        }
         navigationOverlayHandle = null;
-        navigationOverlayLayer = null;
-        navigationOverlayScrim = null;
-        navigationOverlayTransition = null;
-        navigationOverlayClosing = false;
-
-        if (sidebar != null) {
-            sidebar.setTranslateX(0.0);
-            sidebar.setNodeOrientation(NodeOrientation.INHERIT);
-            sidebar.getStyleClass().remove("demo-modal-sidebar-scroll-pane");
+        if (currentHandle != null) {
+            currentHandle.hide();
         }
+        navigationOverlayVisibility.setContent(null);
         M3NavigationDrawer drawer = sidebarDrawer;
         if (drawer != null) {
+            drawer.setTranslateX(0.0);
+            drawer.setNodeOrientation(NodeOrientation.INHERIT);
+            drawer.getStyleClass().remove("demo-modal-sidebar-drawer");
             drawer.setVariant(M3NavigationDrawerVariant.STANDARD);
         }
-        updateAdaptiveLayout();
     }
 
     /// Creates sidebar groups from ordered demo pages.
@@ -868,7 +810,7 @@ public final class M3FXDemoApp extends Application {
             scrollPane.setHvalue(0.0);
             scrollPane.setVvalue(0.0);
         }
-        scrollSidebarPageIntoViewLater(page);
+        revealSidebarPage(page);
         hideNavigationDrawer(true);
     }
 
@@ -995,108 +937,13 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Schedules scrolling the active sidebar destination after layout and disclosure motion settle.
-    private void scrollSidebarPageIntoViewLater(DemoPage page) {
-        cancelSidebarScrollRetry();
-        Platform.runLater(() -> {
-            scrollSidebarPageIntoViewIfCurrent(page);
-            Platform.runLater(() -> scrollSidebarPageIntoViewIfCurrent(page));
-        });
-
-        Timeline retryAnimation = new Timeline(
-                new KeyFrame(Duration.millis(120.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
-                new KeyFrame(Duration.millis(260.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
-                new KeyFrame(Duration.millis(420.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
-                new KeyFrame(Duration.millis(680.0), event -> scrollSidebarPageIntoViewIfCurrent(page))
-        );
-        sidebarScrollRetryAnimation = retryAnimation;
-        retryAnimation.setOnFinished(event -> {
-            if (sidebarScrollRetryAnimation == retryAnimation) {
-                sidebarScrollRetryAnimation = null;
-            }
-        });
-        retryAnimation.play();
-    }
-
-    /// Cancels a pending sidebar scroll retry from a previously selected page.
-    private void cancelSidebarScrollRetry() {
-        Timeline retryAnimation = sidebarScrollRetryAnimation;
-        if (retryAnimation != null) {
-            retryAnimation.stop();
-            sidebarScrollRetryAnimation = null;
-        }
-    }
-
-    /// Scrolls the sidebar destination only when it still belongs to the active page.
-    private void scrollSidebarPageIntoViewIfCurrent(DemoPage page) {
-        if (currentPage == page) {
-            scrollSidebarPageIntoView(page);
-        }
-    }
-
-    /// Scrolls the active sidebar destination into view when it is outside the current viewport.
-    private void scrollSidebarPageIntoView(DemoPage page) {
-        @Nullable ScrollPane scrollPane = sidebarDrawerViewport();
-        Node content = scrollPane == null ? null : scrollPane.getContent();
+    /// Reveals the active sidebar destination through the drawer's layout-aware scroll contract.
+    private void revealSidebarPage(DemoPage page) {
+        @Nullable M3NavigationDrawer drawer = sidebarDrawer;
         @Nullable M3ListItem item = sidebarItemForPage(page);
-        if (scrollPane == null || content == null || item == null || item.getScene() == null) {
-            return;
+        if (currentPage == page && drawer != null && item != null) {
+            drawer.scrollTo(item);
         }
-
-        scrollPane.applyCss();
-        content.applyCss();
-        if (content instanceof Parent parent) {
-            parent.layout();
-        }
-
-        Bounds viewportBounds = scrollPane.getViewportBounds();
-        double viewportHeight = viewportBounds.getHeight();
-        double contentHeight = scrollContentHeight(content, viewportBounds.getWidth());
-        double scrollableHeight = contentHeight - viewportHeight;
-        if (viewportHeight <= 0.0 || scrollableHeight <= 0.0) {
-            return;
-        }
-
-        Bounds itemBounds = content.sceneToLocal(item.localToScene(item.getBoundsInLocal()));
-        double visibleTop = scrollPane.getVvalue() * scrollableHeight;
-        double visibleBottom = visibleTop + viewportHeight;
-        double safePadding = 24.0;
-        if (itemBounds.getMinY() >= visibleTop + safePadding
-                && itemBounds.getMaxY() <= visibleBottom - safePadding) {
-            return;
-        }
-
-        double targetTop;
-        if (itemBounds.getMinY() < visibleTop + safePadding) {
-            targetTop = itemBounds.getMinY() - safePadding;
-        } else {
-            targetTop = itemBounds.getMaxY() + safePadding - viewportHeight;
-        }
-
-        double clampedTop = Math.max(0.0, Math.min(scrollableHeight, targetTop));
-        scrollPane.setVvalue(clampedTop / scrollableHeight);
-    }
-
-    /// Returns the navigation drawer viewport that owns sidebar scrolling.
-    private @Nullable ScrollPane sidebarDrawerViewport() {
-        M3NavigationDrawer drawer = sidebarDrawer;
-        if (drawer == null || drawer.getScene() == null) {
-            return null;
-        }
-
-        drawer.applyCss();
-        Node viewport = drawer.lookup(".m3-navigation-drawer-viewport");
-        return viewport instanceof ScrollPane scrollPane ? scrollPane : null;
-    }
-
-    /// Returns the current scroll content height, including width-dependent preferred height updates.
-    private static double scrollContentHeight(Node content, double viewportWidth) {
-        double height = content.getLayoutBounds().getHeight();
-        if (content instanceof Region region) {
-            double preferredHeight = region.prefHeight(viewportWidth > 0.0 ? viewportWidth : -1.0);
-            height = Math.max(height, preferredHeight);
-        }
-        return height;
     }
 
     /// Returns the rendered sidebar destination item for a page.

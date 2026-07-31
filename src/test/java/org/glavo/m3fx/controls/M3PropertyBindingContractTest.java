@@ -209,6 +209,7 @@ final class M3PropertyBindingContractTest {
             endSource.set(end);
             assertEquals(start, boundField.getStartDate());
             assertEquals(end, boundField.getEndDate());
+            assertThrows(RuntimeException.class, () -> boundField.setRange(start, end));
             endSource.set(null);
             startSource.set(null);
             assertNull(boundField.getStartDate());

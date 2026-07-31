@@ -34,6 +34,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TextInputLayoutPresentation;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -69,9 +70,6 @@ import java.util.Objects;
 public final class M3TextInputLayout extends Control {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-text-input-layout";
-
-    /// The style class applied to the built-in clear button.
-    private static final String CLEAR_BUTTON_STYLE_CLASS = "m3-text-input-clear-button";
 
     /// The pseudo-class used while the wrapped input is effectively disabled.
     private static final PseudoClass INPUT_DISABLED_PSEUDO_CLASS =
@@ -1035,12 +1033,13 @@ public final class M3TextInputLayout extends Control {
             return trailing;
         }
 
-        if (!clearButtonActive || getSkin() == null) {
+        if (!clearButtonActive) {
             return null;
         }
-
-        @Nullable Node clearButton = lookup("." + CLEAR_BUTTON_STYLE_CLASS);
-        return clearButton != null && clearButton.isVisible() ? clearButton : null;
+        Skin<?> skin = getSkin();
+        return skin instanceof M3TextInputLayoutPresentation presentation
+                ? presentation.clearButton()
+                : null;
     }
 
     /// Recomputes whether the built-in clear button belongs to the semantic child set.

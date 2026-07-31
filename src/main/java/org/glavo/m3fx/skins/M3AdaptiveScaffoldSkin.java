@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -135,8 +136,18 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     /// Whether slot geometry is currently between resolved adaptive states.
     private boolean transitionActive;
 
-    /// Prevents duplicate deferred focus-repair requests.
-    private boolean focusRepairPending;
+    /// Reusable post-layout callback that repairs focus after adaptive slot visibility settles.
+    private final Runnable focusRepairPulseListener = this::repairFocusAfterLayout;
+
+    /// Moves a pending focus repair when the scaffold enters another scene.
+    private final ChangeListener<@Nullable Scene> focusRepairSceneListener =
+            (observable, oldScene, newScene) -> movePendingFocusRepair(oldScene, newScene);
+
+    /// Whether a focus repair remains required, including while the scaffold is between scenes.
+    private boolean focusRepairRequested;
+
+    /// The scene currently retaining [#focusRepairPulseListener], or `null` when no callback is registered.
+    private @Nullable Scene focusRepairScene;
 
     /// Creates a skin for the supplied scaffold.
     ///
@@ -167,6 +178,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         control.fixedTrailingPaneWidthProperty().addListener(layoutListener);
         control.effectiveNodeOrientationProperty().addListener(layoutListener);
         control.layoutMotionSpecProperty().addListener(motionSpecListener);
+        control.sceneProperty().addListener(focusRepairSceneListener);
 
         synchronizeSlots();
         refreshTargetVisibility();
@@ -191,7 +203,9 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         control.fixedTrailingPaneWidthProperty().removeListener(layoutListener);
         control.effectiveNodeOrientationProperty().removeListener(layoutListener);
         control.layoutMotionSpecProperty().removeListener(motionSpecListener);
+        control.sceneProperty().removeListener(focusRepairSceneListener);
 
+        clearPendingFocusRepair();
         layoutAnimation.stop();
         layoutAnimation.setOnFinished(null);
         for (SlotState state : slotStates) {
@@ -832,19 +846,60 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         }
     }
 
-    /// Schedules focus transfer after an adaptive region is hidden or replaced.
+    /// Schedules focus transfer after the next layout establishes adaptive slot visibility.
     private void scheduleFocusRepair() {
-        if (focusRepairPending) {
+        focusRepairRequested = true;
+        installFocusRepairPulseListener(getSkinnable().getScene());
+    }
+
+    /// Installs the reusable focus-repair callback on the supplied scene.
+    private void installFocusRepairPulseListener(@Nullable Scene scene) {
+        if (scene == null) {
             return;
         }
-        focusRepairPending = true;
-        Platform.runLater(() -> {
-            focusRepairPending = false;
-            M3AdaptiveScaffold control = getSkinnable();
-            if (control.getSkin() == this) {
-                requestFocusInVisibleRegion();
-            }
-        });
+        if (focusRepairScene != scene) {
+            removeFocusRepairPulseListener();
+            focusRepairScene = scene;
+            scene.addPostLayoutPulseListener(focusRepairPulseListener);
+        }
+        Platform.requestNextPulse();
+    }
+
+    /// Repairs focus after unregistering the one-shot post-layout callback.
+    private void repairFocusAfterLayout() {
+        @Nullable Scene scene = focusRepairScene;
+        focusRepairRequested = false;
+        removeFocusRepairPulseListener();
+        M3AdaptiveScaffold control = getSkinnable();
+        if (scene != null && control.getScene() == scene && control.getSkin() == this) {
+            requestFocusInVisibleRegion();
+        }
+    }
+
+    /// Moves a pending focus repair between scenes without changing its intent.
+    private void movePendingFocusRepair(@Nullable Scene oldScene, @Nullable Scene newScene) {
+        if (oldScene != null && oldScene == focusRepairScene) {
+            oldScene.removePostLayoutPulseListener(focusRepairPulseListener);
+            focusRepairScene = null;
+        }
+        if (focusRepairRequested) {
+            installFocusRepairPulseListener(newScene);
+        }
+    }
+
+    /// Removes a pending focus-repair callback from its owning scene.
+    private void clearPendingFocusRepair() {
+        focusRepairRequested = false;
+        removeFocusRepairPulseListener();
+    }
+
+    /// Removes the focus-repair callback from its current scene without discarding the pending intent.
+    private void removeFocusRepairPulseListener() {
+        @Nullable Scene scene = focusRepairScene;
+        if (scene != null) {
+            scene.removePostLayoutPulseListener(focusRepairPulseListener);
+            focusRepairScene = null;
+        }
     }
 
     /// Requests focus on the first reachable target in the preferred visible region order.

@@ -42,6 +42,7 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3TextInputLayoutPresentation;
 import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +63,8 @@ import java.util.Objects;
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
-public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
+public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
+        implements M3TextInputLayoutPresentation {
     /// The wrapped input style class.
     private static final String INPUT_STYLE_CLASS = "m3-text-input-layout-input";
 
@@ -461,6 +463,14 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         control.characterLimitProperty().removeListener(supportingContentListener);
         control.clearButtonEnabledProperty().removeListener(clearButtonListener);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationListener);
+    }
+
+    /// Returns the visible built-in clear button owned by this presentation.
+    ///
+    /// @return the clear button, or `null` while another trailing node is installed
+    @Override
+    public @Nullable Node clearButton() {
+        return installedTrailing == clearButton && clearButton.isVisible() ? clearButton : null;
     }
 
     /// Releases all presentation resources and restores the wrapped input.

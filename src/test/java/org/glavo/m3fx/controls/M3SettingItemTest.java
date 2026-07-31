@@ -236,6 +236,12 @@ final class M3SettingItemTest {
     @Test
     void selectSettingItemFormatsValueAndFiresOnChoice() {
         FxTestUtils.runOnFxThread(() -> {
+            M3SelectSettingItem<String> emptyItem = new M3SelectSettingItem<>("Empty");
+            emptyItem.setConverter(value -> {
+                throw new AssertionError("the converter must not receive an absent selection");
+            });
+            assertEquals("", emptyItem.getTrailingSupportingText());
+
             M3SelectSettingItem<String> item = new M3SelectSettingItem<>("Language");
             item.getItems().setAll("English", "中文", "日本語");
             item.setConverter(value -> switch (value) {

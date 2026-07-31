@@ -39,11 +39,12 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3NavigationDrawerPresentation;
 import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
-import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -180,6 +181,9 @@ public final class M3NavigationDrawer extends Control {
 
     /// Whether the drawer is currently synchronizing selected states.
     private boolean updatingSelection;
+
+    /// The latest scroll target retained until a skin can present it.
+    private @Nullable M3ListItem pendingScrollItem;
 
     /// Creates an empty standard drawer that requires selection when a reachable destination is added.
     public M3NavigationDrawer() {
@@ -392,23 +396,25 @@ public final class M3NavigationDrawer extends Control {
         throw new IllegalArgumentException("child at index is not an M3ListItem");
     }
 
-    /// Scrolls the drawer just enough to reveal a reachable list item.
+    /// Scrolls the drawer just enough to reveal a visible, enabled destination in its expanded content model.
     ///
-    /// This method does not change selection or keyboard focus. If layout is not established yet, the reveal is
-    /// retried on a later JavaFX pulse.
+    /// This method does not change selection or keyboard focus. The latest request is retained while no skin is
+    /// installed. The default skin follows an active group-expansion transition and keeps the target revealed as
+    /// drawer geometry changes.
     ///
     /// @param item the drawer list item to reveal
     /// @throws NullPointerException if `item` is `null`
-    /// @throws IllegalArgumentException if `item` is not a reachable member of this drawer
+    /// @throws IllegalArgumentException if `item` is not a visible, enabled member of this drawer's expanded content
     public final void scrollTo(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!containsListItem(item)) {
             throw new IllegalArgumentException("item must belong to this navigation drawer");
         }
-        if (!isSelectableDrawerItem(item)) {
-            throw new IllegalArgumentException("item must be reachable");
+        if (!isRevealableDrawerItem(item)) {
+            throw new IllegalArgumentException("item must be revealable");
         }
-        M3ScrollReveal.revealTarget(this, item);
+        pendingScrollItem = item;
+        presentPendingScrollItem();
     }
 
     /// Selects the first drawer list item when one exists.
@@ -546,6 +552,7 @@ public final class M3NavigationDrawer extends Control {
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        skinProperty().addListener(observable -> presentPendingScrollItem());
         effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());
         focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -553,6 +560,24 @@ public final class M3NavigationDrawer extends Control {
                 typeAheadState.clear();
             }
         });
+    }
+
+    /// Presents the retained scroll target through the installed skin.
+    private void presentPendingScrollItem() {
+        @Nullable M3ListItem item = pendingScrollItem;
+        Skin<?> skin = getSkin();
+        if (item == null || skin == null) {
+            return;
+        }
+        pendingScrollItem = null;
+        if (!containsListItem(item) || !isRevealableDrawerItem(item)) {
+            return;
+        }
+        if (skin instanceof M3NavigationDrawerPresentation presentation) {
+            presentation.revealItem(item);
+        } else {
+            M3ScrollReveal.revealTarget(this, item);
+        }
     }
 
     /// Updates pseudo-classes representing the current drawer variant.
@@ -1053,6 +1078,7 @@ public final class M3NavigationDrawer extends Control {
     /// Keeps selection and accessibility state consistent when an item becomes unreachable.
     private void handleItemReachabilityChanged(M3ListItem item) {
         typeAheadState.clear();
+        discardInvalidPendingScrollItem();
         if (item.isSelected() && !isSelectableDrawerItem(item)) {
             clearItemSelection(item);
         }
@@ -1196,6 +1222,11 @@ public final class M3NavigationDrawer extends Control {
                 && flattenedContent().contains(item);
     }
 
+    /// Returns whether a list item can be retained as a presentation-level reveal target.
+    private boolean isRevealableDrawerItem(M3ListItem item) {
+        return item.isVisible() && !item.isDisabled() && flattenedContent().contains(item);
+    }
+
     /// Returns the drawer group that owns the supplied header item.
     private @Nullable M3NavigationDrawerGroup groupForHeader(M3ListItem item) {
         for (Node child : getItems()) {
@@ -1247,6 +1278,15 @@ public final class M3NavigationDrawer extends Control {
             } else {
                 flattenedItems.add(child);
             }
+        }
+        discardInvalidPendingScrollItem();
+    }
+
+    /// Discards a retained scroll request when its target can no longer be presented.
+    private void discardInvalidPendingScrollItem() {
+        @Nullable M3ListItem item = pendingScrollItem;
+        if (item != null && !isRevealableDrawerItem(item)) {
+            pendingScrollItem = null;
         }
     }
 

@@ -369,7 +369,12 @@ final class M3FXCatalogSnapshotTest {
                                     viewport.localToScene(viewport.getBoundsInLocal()).intersects(
                                             selectedItem.localToScene(selectedItem.getBoundsInLocal())
                                     ),
-                                    "compact-sidebar.png does not reveal its selected destination"
+                                    () -> "compact-sidebar.png does not reveal its selected destination: vvalue="
+                                            + viewport.getVvalue()
+                                            + ", viewport="
+                                            + viewport.localToScene(viewport.getBoundsInLocal())
+                                            + ", selected="
+                                            + selectedItem.localToScene(selectedItem.getBoundsInLocal())
                             );
                             writeSnapshot(scene, "compact-sidebar.png");
                         }

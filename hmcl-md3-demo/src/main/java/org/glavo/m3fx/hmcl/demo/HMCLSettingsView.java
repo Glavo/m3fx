@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
-import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
@@ -211,26 +210,6 @@ final class HMCLSettingsView extends BorderPane {
         setLeft(HMCLDemoUi.sidebarHost(sidebar));
         setCenter(contentHost);
 
-        // Rebuild only when displayed supporting text or structure must change. Switch-only booleans keep the
-        // live control so M3Switch motion and drag interaction are not destroyed mid-gesture.
-        state.defaultIsolationProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GLOBAL_GAME));
-        state.selectedJavaIdProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.JAVA));
-        state.updateChannelProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
-        state.languageProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.GENERAL));
-        state.brightnessProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.themeColorProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.wallpaperProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.backgroundOpacityProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.APPEARANCE));
-        state.versionListSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.fileDownloadSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.defaultAddonSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.downloadSourceProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.downloadThreadsProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.cacheDirectoryTypeProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.proxyTypeProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.proxyHostProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-        state.proxyPortProperty().addListener((observable, oldValue, newValue) -> refreshIf(Section.DOWNLOAD));
-
         refreshLocale();
         showSection(Section.GENERAL);
     }
@@ -250,26 +229,25 @@ final class HMCLSettingsView extends BorderPane {
         renderSection(false);
     }
 
-    /// Rebuilds the active section when it matches `target`.
-    ///
-    /// @param target the section that owns the changed property
-    private void refreshIf(Section target) {
-        if (section == target) {
-            renderSection(false);
-        }
-    }
-
     /// Selects a settings section from the shell route model.
     ///
     /// @param next the route section
     void showSection(HMCLDemoRoute.SettingsSection next) {
-        showSection(mapSection(next));
+        showSection(mapSection(next), true);
     }
 
     /// Selects a settings section and updates navigation selection.
     ///
     /// @param next the section
     private void showSection(Section next) {
+        showSection(next, false);
+    }
+
+    /// Selects a settings section and optionally refreshes a retained route on re-entry.
+    ///
+    /// @param next the section
+    /// @param refreshCurrent whether to rebuild an unchanged section from current application state
+    private void showSection(Section next, boolean refreshCurrent) {
         boolean changed = section != next;
         section = next;
         globalGameItem.setSelected(next == Section.GLOBAL_GAME);
@@ -280,7 +258,9 @@ final class HMCLSettingsView extends BorderPane {
         helpItem.setSelected(next == Section.HELP);
         feedbackItem.setSelected(next == Section.FEEDBACK);
         aboutItem.setSelected(next == Section.ABOUT);
-        renderSection(changed);
+        if (changed || refreshCurrent || contentHost.getContent() == null) {
+            renderSection(changed);
+        }
     }
 
     /// Maps a shell route section onto the local settings section model.
@@ -302,8 +282,8 @@ final class HMCLSettingsView extends BorderPane {
 
     /// Rebuilds the center content for the active section.
     ///
-    /// When the same section is refreshed after a setting mutation, the previous scroll offsets are restored so a
-    /// mid-page click does not jump back to the top.
+    /// When the same section is refreshed after locale or route state changes, the previous scroll offsets are
+    /// restored.
     ///
     /// @param animate whether to animate the section replacement
     private void renderSection(boolean animate) {
@@ -335,17 +315,8 @@ final class HMCLSettingsView extends BorderPane {
             contentHost.snapToCurrentState();
         }
         if (restoreScroll && content instanceof ScrollPane scrollPane) {
-            double v = previousV;
-            double h = previousH;
-            // Apply after layout so vmax/hmax are valid for the rebuilt content.
-            scrollPane.setVvalue(v);
-            scrollPane.setHvalue(h);
-            Platform.runLater(() -> {
-                scrollPane.applyCss();
-                scrollPane.layout();
-                scrollPane.setVvalue(v);
-                scrollPane.setHvalue(h);
-            });
+            scrollPane.setVvalue(previousV);
+            scrollPane.setHvalue(previousH);
         }
     }
 

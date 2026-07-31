@@ -222,8 +222,8 @@ final class M3ControlContractMatrixTest {
     /// The pulse count used after standalone fallback styles have a ready rendered target.
     private static final int STANDALONE_FALLBACK_STYLE_STABLE_PULSES = 2;
 
-    /// The pulse count used after closing a virtualized list view window with a pending focus retry.
-    private static final int DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES = 8;
+    /// The pulse count used to verify detached virtualized focus remains quiescent.
+    private static final int DETACHED_LIST_FOCUS_STABLE_PULSES = 2;
 
     /// The pulse count used after a smooth scroll reaches its target position.
     private static final int SMOOTH_SCROLL_COMPLETION_STABLE_PULSES = 2;
@@ -23465,10 +23465,24 @@ final class M3ControlContractMatrixTest {
                         textArea.lookup(".scroll-pane"),
                         "text area viewport"
                 );
-                assertTrue(textAreaViewport.getStyleClass().contains("m3-scroll-pane"));
-                assertEquals(1, textAreaViewport.getStylesheets().stream()
-                        .filter(stylesheet -> stylesheet.endsWith("/scroll.css"))
-                        .count());
+                ScrollBar textAreaVerticalBar = textAreaViewport.lookupAll(".scroll-bar").stream()
+                        .filter(ScrollBar.class::isInstance)
+                        .map(ScrollBar.class::cast)
+                        .filter(scrollBar -> scrollBar.getOrientation() == Orientation.VERTICAL)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("text area vertical scrollbar"));
+                Region textAreaThumb = assertInstanceOf(
+                        Region.class,
+                        textAreaVerticalBar.lookup(".thumb"),
+                        "text area scrollbar thumb"
+                );
+                assertEquals(16.0, textAreaVerticalBar.getPrefWidth(), 0.0001);
+                assertEquals(0.48, textAreaThumb.getOpacity(), 0.0001);
+                assertEquals(
+                        theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY),
+                        textAreaThumb.getBackground().getFills().get(0).getFill(),
+                        "text area scrollbar surface tint"
+                );
 
                 VirtualFlow<?> flow = assertInstanceOf(
                         VirtualFlow.class,
@@ -25312,16 +25326,16 @@ final class M3ControlContractMatrixTest {
         }
     }
 
-    /// Verifies that deferred virtualized focus retries do not apply CSS after the list view is detached.
+    /// Verifies that virtualized focus work stops cleanly when the list view is detached.
     @Tier2Test
     @Test
-    void listViewSkipsDeferredFocusCssWhenDetached() throws InterruptedException {
+    void listViewStopsFocusWorkWhenDetached() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable Stage stage = stageReference.get();
             return stage != null && !stage.isShowing();
-        }, DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES, () -> {
+        }, DETACHED_LIST_FOCUS_STABLE_PULSES, () -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.getItems().add(i);
@@ -30013,9 +30027,9 @@ final class M3ControlContractMatrixTest {
         assertEquals(railSecond, navigationRail.getSelectedItem());
     }
 
-    /// Verifies that grouped selection containers reject targets hidden by ancestor containers.
+    /// Verifies that navigation routes retain model selection while interactive groups reject unreachable targets.
     @Test
-    void groupedSelectionContainersRejectAncestorHiddenTargets() {
+    void groupedSelectionContainersDistinguishModelSelectionFromReachability() {
         M3IconToggleButton iconFirst = new M3IconToggleButton("First");
         M3IconToggleButton iconSecond = new M3IconToggleButton("Second");
         M3IconToggleButtonGroup iconGroup = iconToggleButtonGroup(iconFirst, iconSecond);
@@ -30081,8 +30095,10 @@ final class M3ControlContractMatrixTest {
         assertThrows(IllegalArgumentException.class, () -> segmentedGroup.select(segmentSecond));
         assertThrows(IllegalArgumentException.class, () -> chipGroup.select(chipSecond));
         assertThrows(IllegalArgumentException.class, () -> tabBar.select(tabSecond));
-        assertThrows(IllegalArgumentException.class, () -> navigationBar.select(barSecond));
-        assertThrows(IllegalArgumentException.class, () -> navigationRail.select(railSecond));
+        navigationBar.select(barSecond);
+        navigationRail.select(railSecond);
+        assertEquals(barSecond, navigationBar.getSelectedItem());
+        assertEquals(railSecond, navigationRail.getSelectedItem());
         assertThrows(IllegalArgumentException.class, () -> list.select(listSecond));
         assertThrows(IllegalArgumentException.class, () -> menu.select(menuSecond));
         assertThrows(IllegalArgumentException.class, () -> carousel.select(carousel.getItems().get(1)));
@@ -30102,8 +30118,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
         assertEquals(chipFirst, chipGroup.getSelectedChip());
         assertEquals(tabFirst, tabBar.getSelectedTab());
-        assertEquals(barFirst, navigationBar.getSelectedItem());
-        assertEquals(railFirst, navigationRail.getSelectedItem());
+        assertEquals(barSecond, navigationBar.getSelectedItem());
+        assertEquals(railSecond, navigationRail.getSelectedItem());
         assertEquals(listFirst, list.getSelectedItem());
         assertEquals(menuFirst, menu.getSelectedItem());
         assertNull(carousel.getSelectedItem());
@@ -31923,34 +31939,39 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that a constrained drawer owns vertical scrolling and reveals requested destinations.
     @Test
-    void navigationDrawerScrollsContentAndRevealsRequestedDestinations() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3ListItem archive = new M3ListItem("Archive");
-            M3ListItem drafts = new M3ListItem("Drafts");
-            M3ListItem inbox = new M3ListItem("Inbox");
-            M3ListItem labels = new M3ListItem("Labels");
-            M3ListItem sent = new M3ListItem("Sent");
-            M3ListItem settings = new M3ListItem("Settings");
-            M3ListItem spam = new M3ListItem("Spam");
-            M3ListItem trash = new M3ListItem("Trash");
-            M3NavigationDrawer drawer = navigationDrawer(
-                    archive,
-                    drafts,
-                    inbox,
-                    labels,
-                    sent,
-                    settings,
-                    spam,
-                    trash
-            );
-            drawer.setMinHeight(180.0);
-            drawer.setPrefHeight(180.0);
-            drawer.setMaxHeight(180.0);
-            Pane root = new Pane(drawer);
-            Scene scene = new Scene(root, 360.0, 180.0);
-            Stage stage = new Stage();
-
-            try {
+    void navigationDrawerScrollsContentAndRevealsRequestedDestinations() throws InterruptedException {
+        AtomicReference<@Nullable DrawerScrollFixture> fixtureReference = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhen(() -> {
+                @Nullable DrawerScrollFixture fixture = fixtureReference.get();
+                return fixture != null && fixture.viewport().getVvalue() > 0.5;
+            }, () -> {
+                M3ListItem archive = new M3ListItem("Archive");
+                M3ListItem drafts = new M3ListItem("Drafts");
+                M3ListItem inbox = new M3ListItem("Inbox");
+                M3ListItem labels = new M3ListItem("Labels");
+                M3ListItem sent = new M3ListItem("Sent");
+                M3ListItem settings = new M3ListItem("Settings");
+                M3ListItem spam = new M3ListItem("Spam");
+                M3ListItem trash = new M3ListItem("Trash");
+                M3NavigationDrawer drawer = navigationDrawer(
+                        archive,
+                        drafts,
+                        inbox,
+                        labels,
+                        sent,
+                        settings,
+                        spam,
+                        trash
+                );
+                drawer.setMinHeight(180.0);
+                drawer.setPrefHeight(180.0);
+                drawer.setMaxHeight(180.0);
+                assertNull(drawer.getSkin());
+                drawer.scrollTo(trash);
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 360.0, 180.0);
+                Stage stage = new Stage();
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
                 stage.show();
@@ -31976,7 +31997,19 @@ final class M3ControlContractMatrixTest {
                         () -> "content=" + viewport.getContent().getLayoutBounds()
                                 + ", viewport=" + viewport.getViewportBounds());
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+                fixtureReference.set(new DrawerScrollFixture(stage, root, drawer, trash, viewport));
+            }, () -> {
+                DrawerScrollFixture fixture = Objects.requireNonNull(fixtureReference.get());
+                Pane root = fixture.root();
+                M3NavigationDrawer drawer = fixture.drawer();
+                M3ListItem trash = fixture.trash();
+                ScrollPane viewport = fixture.viewport();
+                assertTrue(
+                        viewport.getVvalue() > 0.5,
+                        () -> "a pre-skin scroll request should be retained: vvalue=" + viewport.getVvalue()
+                );
 
+                viewport.setVvalue(0.0);
                 drawer.scrollTo(trash);
                 root.layout();
                 assertFalse(trash.isFocused());
@@ -31997,10 +32030,15 @@ final class M3ControlContractMatrixTest {
                 assertTrue(trash.isFocused());
                 assertTrue(viewport.getVvalue() > 0.5, () -> "vvalue=" + viewport.getVvalue());
                 M3MotionSettings.setReducedMotionRequested(viewport, false);
-            } finally {
-                stage.close();
-            }
-        });
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable DrawerScrollFixture fixture = fixtureReference.get();
+                if (fixture != null) {
+                    fixture.stage().close();
+                }
+            });
+        }
     }
 
     /// Verifies navigation drawer typography and interaction colors against the baseline component tokens.
@@ -44828,5 +44866,22 @@ final class M3ControlContractMatrixTest {
         M3RichTooltip tooltip = richTooltip(title, supportingText, actions);
         M3Tooltip.install(node, tooltip);
         return tooltip;
+    }
+
+    /// Retains the nodes used while a drawer reveal waits for a real layout pulse.
+    ///
+    /// @param stage the stage owning the rendered drawer
+    /// @param root the scene root
+    /// @param drawer the drawer under test
+    /// @param trash the destination requested before skin creation
+    /// @param viewport the drawer-owned scroll viewport
+    @NotNullByDefault
+    private record DrawerScrollFixture(
+            Stage stage,
+            Pane root,
+            M3NavigationDrawer drawer,
+            M3ListItem trash,
+            ScrollPane viewport
+    ) {
     }
 }

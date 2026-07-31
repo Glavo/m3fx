@@ -4,7 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
-import javafx.beans.property.Property;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.event.ActionEvent;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -86,6 +86,7 @@ final class M3CompositeControlApiTest {
             M3DateRangePickerField field = new M3DateRangePickerField();
             assertOwnedBy(field, field.startDateProperty());
             assertOwnedBy(field, field.endDateProperty());
+            assertOwnedBy(field, field.selectionProperty());
             assertOwnedBy(field, field.startTextProperty());
             assertOwnedBy(field, field.endTextProperty());
             assertOwnedBy(field, field.startVariantProperty());
@@ -101,6 +102,11 @@ final class M3CompositeControlApiTest {
             field.setEndText("2026-07-18");
             assertEquals("2026-07-16", field.getStartEditor().getText());
             assertEquals("2026-07-18", field.getEndEditor().getText());
+
+            M3DateRangePicker picker = new M3DateRangePicker();
+            assertOwnedBy(picker, picker.startDateProperty());
+            assertOwnedBy(picker, picker.endDateProperty());
+            assertOwnedBy(picker, picker.selectionProperty());
         });
     }
 
@@ -123,7 +129,7 @@ final class M3CompositeControlApiTest {
     }
 
     /// Asserts that a JavaFX property reports the public control that exposes it as its bean.
-    private static void assertOwnedBy(Object owner, Property<?> property) {
+    private static void assertOwnedBy(Object owner, ReadOnlyProperty<?> property) {
         assertSame(owner, property.getBean());
     }
 }

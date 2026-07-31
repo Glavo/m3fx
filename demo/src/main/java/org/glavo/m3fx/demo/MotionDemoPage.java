@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
@@ -286,11 +285,7 @@ final class MotionDemoPage extends DemoPageSupport {
             if (newScene == null) {
                 layoutTransition.stop();
             } else {
-                Platform.runLater(() -> {
-                    if (layoutTrack.getScene() != null) {
-                        layoutTransition.start();
-                    }
-                });
+                layoutTransition.start();
             }
         });
 
