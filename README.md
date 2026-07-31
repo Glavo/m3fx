@@ -453,7 +453,13 @@ projectCard.setOnAction(event -> openProject());
 
 Leave `onAction` unset when a card contains independent buttons or links. This keeps the card passive and lets its descendants own pointer and keyboard actions.
 
-Style an application-owned JavaFX scroll pane explicitly; this installs only the Material scrollbar visuals. Smooth wheel motion remains an independent opt-in:
+Use `M3ScrollPane` for a new viewport that should receive Material scrollbar styling and smooth wheel motion by default:
+
+```java
+M3ScrollPane viewport = new M3ScrollPane(content);
+```
+
+Existing application-owned JavaFX scroll panes can opt into the same behaviors independently:
 
 ```java
 ScrollPane viewport = new ScrollPane(content);
@@ -461,8 +467,9 @@ M3ScrollPanes.style(viewport);
 M3ScrollPanes.enableSmoothScrolling(viewport);
 ```
 
-M3FX scrolling controls, including `M3ListView` and `M3TextArea`, apply Material scrollbar styling automatically.
-Ordinary JavaFX scroll panes remain unchanged until passed to `M3ScrollPanes.style(...)`.
+`M3ScrollPanes.disableSmoothScrolling(...)` can temporarily remove wheel motion from either type without removing
+its visual styling. Other M3FX scrolling controls, including `M3ListView` and `M3TextArea`, apply Material scrollbar
+styling automatically. Ordinary JavaFX scroll panes remain unchanged until passed to the static utility.
 
 ## Component Areas
 

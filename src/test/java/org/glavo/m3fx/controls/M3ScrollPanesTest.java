@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies Material smooth scrolling behavior.
@@ -54,6 +56,34 @@ final class M3ScrollPanesTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Verifies that both Material scroll-pane constructors install styling and smooth wheel behavior.
+    @Test
+    void materialScrollPaneConstructorsApplyDefaults() {
+        Region content = new Region();
+        M3ScrollPane empty = new M3ScrollPane();
+        M3ScrollPane explicitlyEmpty = new M3ScrollPane(null);
+        M3ScrollPane populated = new M3ScrollPane(content);
+
+        assertNull(empty.getContent());
+        assertNull(explicitlyEmpty.getContent());
+        assertTrue(empty.getStyleClass().contains("m3-scroll-pane"));
+        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(empty));
+        assertSame(content, populated.getContent());
+        assertTrue(populated.getStyleClass().contains("m3-scroll-pane"));
+        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(populated));
+    }
+
+    /// Verifies that the static behavior API remains authoritative for Material scroll panes.
+    @Test
+    void materialScrollPaneSupportsStaticBehaviorControl() {
+        M3ScrollPane scrollPane = new M3ScrollPane();
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+    }
 
     /// Verifies uninstalled smooth-scroll queries and cleanup do not allocate a node properties map.
     @Test

@@ -5,7 +5,6 @@ package org.glavo.m3fx.catalog;
 
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -36,6 +35,7 @@ import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
@@ -284,7 +284,7 @@ final class CatalogContainerSamples {
                 paragraph.setWrapText(true);
                 body.getChildren().add(paragraph);
             }
-            ScrollPane scrollPane = new ScrollPane(body);
+            M3ScrollPane scrollPane = new M3ScrollPane(body);
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefViewportHeight(150.0);
             pane.setContent(scrollPane);

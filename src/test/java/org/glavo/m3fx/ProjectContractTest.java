@@ -458,6 +458,7 @@ final class ProjectContractTest {
             "TextField",
             "PasswordField",
             "TextArea",
+            "ScrollPane",
             "IndexedCell"
     );
 
@@ -482,6 +483,7 @@ final class ProjectContractTest {
             "ProgressBar",
             "ProgressIndicator",
             "RadioButton",
+            "ScrollPane",
             "Slider",
             "SplitMenuButton",
             "TextArea",
@@ -490,9 +492,10 @@ final class ProjectContractTest {
             "Tooltip"
     );
 
-    /// Public controls that intentionally keep a concrete JavaFX text editing implementation.
+    /// Public controls that intentionally retain a concrete JavaFX control implementation.
     private static final @Unmodifiable Map<String, String> ALLOWED_CONCRETE_CONTROL_SUPERCLASSES = Map.of(
             "M3PasswordField", "PasswordField",
+            "M3ScrollPane", "ScrollPane",
             "M3TextArea", "TextArea",
             "M3TextField", "TextField"
     );
@@ -502,6 +505,7 @@ final class ProjectContractTest {
             Map.of(
                     "org.glavo.m3fx.controls.M3ListCell", "javafx.scene.control.IndexedCell",
                     "org.glavo.m3fx.controls.M3PasswordField", "javafx.scene.control.PasswordField",
+                    "org.glavo.m3fx.controls.M3ScrollPane", "javafx.scene.control.ScrollPane",
                     "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
                     "org.glavo.m3fx.controls.M3TextField", "javafx.scene.control.TextField",
                     "org.glavo.m3fx.controls.M3Tooltip", "javafx.scene.control.PopupControl"

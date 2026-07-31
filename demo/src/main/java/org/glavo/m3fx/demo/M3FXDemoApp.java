@@ -44,6 +44,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
@@ -768,10 +769,8 @@ public final class M3FXDemoApp extends Application {
     /// @return the configured page viewport, initialized at its minimum scroll values
     /// @throws NullPointerException if `pageNode` is `null`
     private static ScrollPane createPageScrollPane(Node pageNode) {
-        ScrollPane scrollPane = new ScrollPane(Objects.requireNonNull(pageNode, "pageNode"));
+        M3ScrollPane scrollPane = new M3ScrollPane(Objects.requireNonNull(pageNode, "pageNode"));
         scrollPane.getStyleClass().add("demo-scroll-pane");
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFocusTraversable(false);
         scrollPane.setMinWidth(0.0);
         scrollPane.setMinHeight(0.0);

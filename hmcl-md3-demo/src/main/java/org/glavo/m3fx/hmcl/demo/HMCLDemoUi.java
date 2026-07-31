@@ -16,7 +16,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3SettingItem;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -52,7 +52,7 @@ final class HMCLDemoUi {
     /// @param content the scrolled content
     /// @return the configured scroll pane
     static ScrollPane scroll(Node content) {
-        ScrollPane scrollPane = new ScrollPane(content);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
         scrollPane.getStyleClass().add("hmcl-page-scroll");
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -60,9 +60,6 @@ final class HMCLDemoUi {
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
         scrollPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        // Styling and smooth wheel motion are separate M3FX opt-ins.
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         HBox.setHgrow(scrollPane, Priority.ALWAYS);
         return scrollPane;

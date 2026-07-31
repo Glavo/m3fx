@@ -14,7 +14,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
@@ -221,7 +221,7 @@ final class DialogsDemoPage extends DemoPageSupport {
             }
         }
 
-        ScrollPane scrollPane = new ScrollPane(content);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
         scrollPane.getStyleClass().add("demo-dialog-scroll-pane");
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefViewportHeight(132.0);
@@ -229,8 +229,6 @@ final class DialogsDemoPage extends DemoPageSupport {
         scrollPane.setMaxWidth(Double.MAX_VALUE);
         scrollPane.setMaxHeight(Region.USE_PREF_SIZE);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 }

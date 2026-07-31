@@ -37,7 +37,8 @@ import java.util.Objects;
 
 /// Applies M3FX Material scroll styling and wheel motion to JavaFX scroll controls.
 ///
-/// This utility class styles standard JavaFX [ScrollPane] and [ScrollBar] instances instead of replacing them,
+/// Use [M3ScrollPane] when creating a scroll pane that should receive both behaviors by default. This utility class
+/// applies the same behavior to existing JavaFX [ScrollPane] instances and styles standalone [ScrollBar] instances,
 /// keeping their public API, layout behavior, and virtualization intact. Styling and smooth scrolling are separate:
 /// [#style(ScrollPane)] installs Material visual treatment, while [#enableSmoothScrolling(ScrollPane)] changes wheel
 /// input handling. Neither operation affects unrelated scroll controls.

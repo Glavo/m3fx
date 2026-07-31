@@ -20,7 +20,7 @@ import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
-import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
@@ -211,7 +211,7 @@ final class CatalogViews {
         page.getStyleClass().addAll("catalog-route-page", "catalog-home-page");
         page.setFillWidth(true);
 
-        ScrollPane scrollPane = new ScrollPane(page);
+        M3ScrollPane scrollPane = new M3ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-home-scroll");
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
@@ -229,8 +229,6 @@ final class CatalogViews {
         scrollPane.vvalueProperty().addListener(observable ->
                 publishBrowserState(componentSearch, filterGroup, scrollPane, stateConsumer));
         updateFilter.run();
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 
@@ -465,7 +463,7 @@ final class CatalogViews {
         page.getStyleClass().addAll("catalog-route-page", "catalog-component-page");
         page.setFillWidth(true);
 
-        ScrollPane scrollPane = new ScrollPane(page);
+        M3ScrollPane scrollPane = new M3ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-component-scroll");
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
@@ -483,8 +481,6 @@ final class CatalogViews {
         scrollPane.vvalueProperty().addListener(observable ->
                 publishBrowserState(exampleSearch, filterGroup, scrollPane, stateConsumer));
         updateFilter.run();
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 
@@ -656,7 +652,7 @@ final class CatalogViews {
         page.setFillWidth(true);
         page.setMinWidth(0.0);
 
-        ScrollPane scrollPane = new ScrollPane(page);
+        M3ScrollPane scrollPane = new M3ScrollPane(page);
         scrollPane.getStyleClass().addAll("catalog-route-scroll", "catalog-example-scroll");
         scrollPane.setMinSize(0.0, 0.0);
         scrollPane.setFitToWidth(true);
@@ -668,8 +664,6 @@ final class CatalogViews {
         scrollPane.viewportBoundsProperty().addListener(
                 (observable, oldBounds, newBounds) -> page.setMinHeight(newBounds.getHeight())
         );
-        M3ScrollPanes.style(scrollPane);
-        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         return scrollPane;
     }
 

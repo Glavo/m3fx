@@ -22,6 +22,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3ScrollToEvent;
 import org.glavo.m3fx.internal.M3Animation;
@@ -44,7 +45,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private final M3CarouselTrack track = new M3CarouselTrack(getSkinnable());
 
     /// The internal viewport used to scroll the item track.
-    private final ScrollPane viewport = new ScrollPane(track);
+    private final M3ScrollPane viewport = new M3ScrollPane(track);
 
     /// The reusable selected-item horizontal scroll transition.
     private final M3DoubleTransition horizontalScrollAnimation =
@@ -316,11 +317,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Initializes viewport style classes and scrolling policies.
     private void installViewport() {
         viewport.getStyleClass().add(VIEWPORT_STYLE_CLASS);
-        M3ScrollPanes.style(viewport);
         viewport.addEventFilter(ScrollEvent.SCROLL, viewportScrollInteractionHandler);
         viewport.addEventFilter(MouseEvent.MOUSE_DRAGGED, viewportDragInteractionHandler);
         viewport.addEventFilter(MouseEvent.MOUSE_RELEASED, viewportReleaseInteractionHandler);
-        M3ScrollPanes.enableSmoothScrolling(viewport);
         track.getStyleClass().add(TRACK_STYLE_CLASS);
         viewport.setManaged(false);
         viewport.setPannable(true);

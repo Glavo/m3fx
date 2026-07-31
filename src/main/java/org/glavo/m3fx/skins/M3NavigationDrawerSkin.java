@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3NavigationDrawerPresentation;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -32,7 +33,7 @@ import java.util.Objects;
 public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3NavigationDrawer, VBox, Node>
         implements M3NavigationDrawerPresentation {
     /// The vertically scrollable viewport containing the drawer destinations.
-    private final ScrollPane viewport = new ScrollPane();
+    private final M3ScrollPane viewport = new M3ScrollPane();
 
     /// Reusable post-layout callback that follows a target through disclosure motion.
     private final Runnable revealPulseListener = this::revealPendingTargetAfterLayout;
@@ -68,9 +69,7 @@ public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3Navi
         viewport.setFocusTraversable(false);
         viewport.getStyleClass().add("m3-navigation-drawer-viewport");
         viewport.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        M3ScrollPanes.style(viewport);
         viewport.addEventFilter(ScrollEvent.SCROLL, userScrollHandler);
-        M3ScrollPanes.enableSmoothScrolling(viewport);
         control.sceneProperty().addListener(sceneListener);
         getChildren().setAll(viewport);
     }
