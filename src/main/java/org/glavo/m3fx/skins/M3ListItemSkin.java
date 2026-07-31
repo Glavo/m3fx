@@ -105,9 +105,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The Material body-small typography role style class.
     private static final String BODY_SMALL_TEXT_STYLE_CLASS = "m3-body-small-text";
 
-    /// The Material prominent-weight typography style class.
-    private static final String PROMINENT_TEXT_STYLE_CLASS = "m3-prominent-text";
-
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
 
@@ -795,7 +792,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         supportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
         trailingSupportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
         updateTextColors();
-        updateProminentTypographyStyleClass();
     }
 
     /// Applies the control's resolved ordinary, selected, or disabled paints to its internal text nodes.
@@ -894,18 +890,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
                 LABEL_LARGE_TEXT_STYLE_CLASS,
                 LABEL_SMALL_TEXT_STYLE_CLASS
         );
-        updateProminentTypographyStyleClass();
-    }
-
-    /// Applies prominent weight after a navigation-drawer selection becomes visually active.
-    private void updateProminentTypographyStyleClass() {
-        boolean prominent = getSkinnable().getPseudoClassStates().contains(NAVIGATION_DRAWER_PSEUDO_CLASS)
-                && headlineLabel.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS);
-        if (prominent) {
-            M3ControlStyles.add(headlineLabel, PROMINENT_TEXT_STYLE_CLASS);
-        } else {
-            headlineLabel.getStyleClass().remove(PROMINENT_TEXT_STYLE_CLASS);
-        }
     }
 
     /// Mirrors menu color style pseudo-classes to direct internal nodes.

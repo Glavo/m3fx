@@ -32041,7 +32041,7 @@ final class M3ControlContractMatrixTest {
         }
     }
 
-    /// Verifies navigation drawer typography and interaction colors against the baseline component tokens.
+    /// Verifies navigation drawer typography stability and interaction colors against the baseline component tokens.
     @Test
     void navigationDrawerResolvesDestinationTypographyAndStateColors() {
         M3ListItem home = new M3ListItem("Home");
@@ -32066,6 +32066,8 @@ final class M3ControlContractMatrixTest {
             assertFalse(archiveLabel.getStyleClass().contains("m3-body-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
             assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
+            var unselectedFont = archiveLabel.getFont();
+            double unselectedTextWidth = archiveLabel.prefWidth(-1.0);
             assertEquals(
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
                     archiveLabel.getTextFill()
@@ -32115,9 +32117,9 @@ final class M3ControlContractMatrixTest {
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
                     archiveLabel.getTextFill()
             );
-            assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
-                    () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
-            assertTrue(archiveLabel.getStyleClass().contains("m3-prominent-text"));
+            assertEquals(unselectedFont, archiveLabel.getFont());
+            assertEquals(unselectedTextWidth, archiveLabel.prefWidth(-1.0), 0.0001);
+            assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
 
             drawer.getItems().remove(archive);
 
