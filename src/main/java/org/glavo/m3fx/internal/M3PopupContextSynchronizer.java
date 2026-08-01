@@ -20,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /// Synchronizes detached popup context for popup-hosted roots while they remain visible.
@@ -32,6 +31,7 @@ import java.util.function.Supplier;
 ///
 /// Construction, [start], [stop], and [sync] must be performed on the JavaFX application thread. Motion-setting
 /// notifications received on another thread are coalesced onto that thread before scene-graph state is updated.
+/// Consecutive stylesheet-list mutations in one application-thread turn produce one synchronization pass.
 @NotNullByDefault
 public final class M3PopupContextSynchronizer {
     /// The control or item that owns the popup content.
@@ -58,8 +58,11 @@ public final class M3PopupContextSynchronizer {
     /// Whether a synchronization pass is already in progress.
     private boolean syncing;
 
-    /// Whether an off-thread motion change already scheduled one JavaFX application-thread synchronization.
-    private volatile boolean motionSyncPending;
+    /// Whether one stylesheet or theme notification already scheduled a synchronization pass.
+    private boolean syncPending;
+
+    /// Invalidates queued synchronization callbacks when observation stops or an immediate pass supersedes them.
+    private long syncRequestEpoch;
 
     /// Whether the current observation run has copied context from an attached owner scene.
     private boolean hasSyncedAttachedOwnerContext;
@@ -165,6 +168,7 @@ public final class M3PopupContextSynchronizer {
         try {
             currentObservation.start();
             sync();
+            currentObservation.startMotionObservation();
         } catch (RuntimeException | Error exception) {
             running = false;
             currentObservation.stop();
@@ -187,6 +191,7 @@ public final class M3PopupContextSynchronizer {
         if (currentObservation != null) {
             currentObservation.stop();
         }
+        cancelPendingSync();
         hasSyncedAttachedOwnerContext = false;
         clearSyncedMotionContext();
     }
@@ -196,6 +201,7 @@ public final class M3PopupContextSynchronizer {
     /// Reentrant calls have no effect. Suppliers are evaluated during the synchronization pass and may return
     /// `null` as declared by their types.
     public void sync() {
+        cancelPendingSync();
         if (syncing) {
             return;
         }
@@ -291,29 +297,31 @@ public final class M3PopupContextSynchronizer {
         }
     }
 
-    /// Synchronizes an affected popup on the JavaFX application thread and coalesces background notifications.
-    private void requestMotionContextSync(@Nullable Node source) {
-        if (Platform.isFxApplicationThread()) {
-            if (source == null || containsOwner(source)) {
-                syncIfMotionContextChanged();
-            }
+    /// Coalesces related stylesheet and theme notifications into one JavaFX application-thread synchronization.
+    private void requestSync() {
+        if (!running || syncPending) {
             return;
         }
 
-        synchronized (this) {
-            if (motionSyncPending) {
+        syncPending = true;
+        long requestEpoch = syncRequestEpoch;
+        Platform.runLater(() -> {
+            if (!syncPending || requestEpoch != syncRequestEpoch) {
                 return;
             }
-            motionSyncPending = true;
-        }
-        Platform.runLater(() -> {
-            synchronized (this) {
-                motionSyncPending = false;
-            }
+            syncPending = false;
             if (running) {
-                syncIfMotionContextChanged();
+                sync();
             }
         });
+    }
+
+    /// Invalidates one queued synchronization pass without touching copied popup context.
+    private void cancelPendingSync() {
+        if (syncPending) {
+            syncPending = false;
+            syncRequestEpoch++;
+        }
     }
 
     /// Records the owner-resolved motion settings copied during the latest synchronization pass.
@@ -325,18 +333,6 @@ public final class M3PopupContextSynchronizer {
     /// Clears the cached owner-resolved motion context after listener teardown.
     private void clearSyncedMotionContext() {
         hasSyncedMotionContext = false;
-    }
-
-    /// Returns whether the owner belongs to a subtree whose local motion setting changed.
-    private boolean containsOwner(Node source) {
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current == source) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
     }
 
     /// Owns listeners and mutable lookup caches used only while popup context is observed.
@@ -354,16 +350,20 @@ public final class M3PopupContextSynchronizer {
         private final ChangeListener<NodeOrientation> ownerOrientationListener =
                 (observable, oldValue, newValue) -> syncNodeOrientationAndLayout();
 
-        /// Handles global and node-local motion setting changes.
-        private final Consumer<@Nullable Node> motionSettingsListener =
-                M3PopupContextSynchronizer.this::requestMotionContextSync;
+        /// Shares scene-scoped motion observation with other animated owners.
+        private final M3MotionSettingsObserver motionSettingsObserver =
+                new M3MotionSettingsObserver(
+                        owner,
+                        M3PopupContextSynchronizer.this::syncIfMotionContextChanged,
+                        false
+                );
 
         /// Handles root changes on the current owner scene.
         private final ChangeListener<Parent> sceneRootListener =
                 (observable, oldRoot, newRoot) -> sync();
 
         /// Handles stylesheet list mutations from the current stylesheet source.
-        private final ListChangeListener<String> stylesheetSourceListener = change -> sync();
+        private final ListChangeListener<String> stylesheetSourceListener = change -> requestSync();
 
         /// Handles theme metadata changes on the owner scene root.
         private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
@@ -399,12 +399,16 @@ public final class M3PopupContextSynchronizer {
         /// Reusable storage for collecting the current owner ancestor chain.
         private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
 
-        /// Installs owner and global listeners before the first synchronization pass.
+        /// Installs owner-context listeners before the first synchronization pass.
         private void start() {
             owner.sceneProperty().addListener(ownerSceneListener);
             owner.parentProperty().addListener(ownerParentListener);
             owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
-            M3MotionSettingsObserver.addSettingsChangeListener(motionSettingsListener);
+        }
+
+        /// Starts shared motion observation after the initial resolved context has been cached.
+        private void startMotionObservation() {
+            motionSettingsObserver.start();
         }
 
         /// Removes every external listener and clears observed object references.
@@ -412,7 +416,7 @@ public final class M3PopupContextSynchronizer {
             owner.sceneProperty().removeListener(ownerSceneListener);
             owner.parentProperty().removeListener(ownerParentListener);
             owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
-            M3MotionSettingsObserver.removeSettingsChangeListener(motionSettingsListener);
+            motionSettingsObserver.stop();
             updateObservedStylesheetSource(null);
             updateObservedScene(null);
             updateObservedSceneRoot(null);

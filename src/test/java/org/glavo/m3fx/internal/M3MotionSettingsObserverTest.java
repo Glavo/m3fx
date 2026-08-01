@@ -6,12 +6,15 @@ package org.glavo.m3fx.internal;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -187,7 +190,7 @@ final class M3MotionSettingsObserverTest {
     /// Verifies that one observer refreshes when its scene enters, leaves, shows, or hides a window.
     @Test
     void observesSceneWindowLifecycle() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             Pane owner = new Pane();
             Scene scene = new Scene(owner);
             AtomicInteger refreshes = new AtomicInteger();
@@ -207,15 +210,24 @@ final class M3MotionSettingsObserverTest {
                 stage.hide();
                 assertTrue(refreshes.get() > shownRefreshes);
 
+                int hiddenRefreshes = refreshes.get();
+                M3MotionSettings.setGlobalReducedMotionRequested(
+                        !M3MotionSettings.isGlobalReducedMotionRequested());
+                assertEquals(hiddenRefreshes, refreshes.get());
+
+                stage.show();
+                assertTrue(refreshes.get() > hiddenRefreshes);
+
                 observer.dispose();
                 int disposedRefreshes = refreshes.get();
+                stage.hide();
                 stage.show();
                 assertEquals(disposedRefreshes, refreshes.get());
             } finally {
                 observer.dispose();
                 stage.close();
             }
-        });
+        }));
     }
 
     /// Verifies visibility observation, effective-state coalescing, ancestor-chain rebuilding, and listener release.
@@ -278,7 +290,7 @@ final class M3MotionSettingsObserverTest {
     @Tier2Test
     @Test
     void observesStageIconificationLifecycle() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             Pane owner = new Pane();
             Pane ancestor = new Pane(owner);
             Scene scene = new Scene(ancestor);
@@ -310,6 +322,11 @@ final class M3MotionSettingsObserverTest {
                 assertTrue(refreshes.get() > shownRefreshes);
 
                 int iconifiedRefreshes = refreshes.get();
+                M3MotionSettings.setGlobalReducedMotionRequested(
+                        !M3MotionSettings.isGlobalReducedMotionRequested());
+
+                assertEquals(iconifiedRefreshes, refreshes.get());
+
                 stage.setIconified(false);
 
                 assertFalse(stage.isIconified());
@@ -324,7 +341,7 @@ final class M3MotionSettingsObserverTest {
                 observer.dispose();
                 stage.close();
             }
-        });
+        }));
     }
 
     /// Verifies that popup-owned observers inherit iconification changes from their presenting stage.
@@ -407,7 +424,7 @@ final class M3MotionSettingsObserverTest {
         }));
     }
 
-    /// Verifies that theme motion-token changes refresh only observers in the affected subtree.
+    /// Verifies that theme changes refresh affected observers only when motion tokens change.
     @Test
     void observesLocalThemeMotionContextChanges() {
         FxTestUtils.runOnFxThread(() -> {
@@ -427,14 +444,28 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(1, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3ThemeManager.install(firstScope, M3Theme.fromSeed(javafx.scene.paint.Color.CORNFLOWERBLUE));
+                M3ThemeManager.install(firstScope, M3Theme.fromSeed(Color.CORNFLOWERBLUE));
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3ThemeManager.uninstall(firstScope);
+                M3ThemeManager.install(firstScope, M3Theme.fromSeed(Color.DARKORANGE));
+
+                assertEquals(2, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+
+                M3ThemeManager.install(firstScope, M3Theme.fromSeed(
+                        Color.DARKORANGE,
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.LIGHT
+                ));
 
                 assertEquals(3, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+
+                M3ThemeManager.uninstall(firstScope);
+
+                assertEquals(4, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
             } finally {
                 first.dispose();

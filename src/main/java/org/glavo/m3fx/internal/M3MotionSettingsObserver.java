@@ -5,20 +5,20 @@ package org.glavo.m3fx.internal;
 
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 /// Observes resolved M3FX motion context and presentation activity while an owner node is attached to a scene.
 ///
@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 /// ancestor, scene, or window observation overhead. Notifications raised off the JavaFX application thread are
 /// coalesced and dispatched on that thread. Callback dispatch does not allocate snapshots and remains stable when
 /// callbacks dispose subscriptions or move their owner to another scene.
+/// Application-wide motion settings are not observed while the presenting window is hidden or iconified; restoring
+/// the presentation refreshes subscribers against the latest setting.
 ///
 /// Construction and lifecycle methods must be invoked on the JavaFX application thread. A disposed observer cannot
 /// be restarted. Calling [stop] or [dispose] more than once has no effect.
@@ -40,10 +42,6 @@ public final class M3MotionSettingsObserver {
     /// Opaque scene property key for the shared motion-settings dispatcher.
     private static final IdentityKey SCENE_OBSERVER_KEY =
             new IdentityKey(M3MotionSettingsObserver.class.getName() + ".sceneObserver");
-
-    /// Internal listeners notified when global settings or one local motion-context subtree changes.
-    private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> MOTION_CONTEXT_CHANGE_LISTENERS =
-            new CopyOnWriteArrayList<>();
 
     /// Changes whenever global or node-local reduced-motion settings change.
     private static final AtomicLong REDUCED_MOTION_REVISION = new AtomicLong();
@@ -200,26 +198,27 @@ public final class M3MotionSettingsObserver {
     /// @param source the root of the affected subtree, or null for a global change
     public static void reducedMotionChanged(@Nullable Node source) {
         REDUCED_MOTION_REVISION.incrementAndGet();
-        motionContextChanged(source);
-    }
-
-    /// Notifies internal motion observers after reduced-motion settings or theme motion tokens change.
-    ///
-    /// @param source the root of the affected subtree, or null for a global change
-    public static void motionContextChanged(@Nullable Node source) {
-        for (Consumer<@Nullable Node> listener : MOTION_CONTEXT_CHANGE_LISTENERS) {
-            listener.accept(source);
+        if (source != null) {
+            motionContextChanged(source);
         }
     }
 
-    /// Registers one internal settings listener.
-    static void addSettingsChangeListener(Consumer<@Nullable Node> listener) {
-        MOTION_CONTEXT_CHANGE_LISTENERS.add(Objects.requireNonNull(listener, "listener"));
-    }
-
-    /// Removes one internal settings listener.
-    static void removeSettingsChangeListener(Consumer<@Nullable Node> listener) {
-        MOTION_CONTEXT_CHANGE_LISTENERS.remove(Objects.requireNonNull(listener, "listener"));
+    /// Notifies internal motion observers after one subtree's reduced-motion settings or theme motion tokens change.
+    ///
+    /// Global reduced-motion changes are delivered by the global property's weak per-scene listeners instead.
+    /// Detached subtrees have no active scene dispatcher and require no notification.
+    ///
+    /// @param source the root of the affected subtree
+    public static void motionContextChanged(Node source) {
+        Objects.requireNonNull(source, "source");
+        @Nullable Scene scene = source.getScene();
+        if (scene == null || !scene.hasProperties()) {
+            return;
+        }
+        @Nullable Object value = scene.getProperties().get(SCENE_OBSERVER_KEY);
+        if (value instanceof SceneObserver observer) {
+            observer.requestRefresh(source);
+        }
     }
 
     /// Shares owner lifecycle observation across all subscriptions attached to one node.
@@ -567,24 +566,31 @@ public final class M3MotionSettingsObserver {
         /// The number of live owner coordinators.
         private int ownerCount;
 
-        /// Receives global and node-local motion-settings revisions.
-        private final Consumer<@Nullable Node> settingsListener = this::requestRefresh;
+        /// Receives global reduced-motion changes without retaining this scene from the static property.
+        private final InvalidationListener globalSettingsListener = observable -> requestRefresh(null);
+
+        /// Weak wrapper registered with the application-wide reduced-motion property.
+        private final WeakInvalidationListener weakGlobalSettingsListener =
+                new WeakInvalidationListener(globalSettingsListener);
 
         /// Receives changes to the window that presents the scene.
         private final ChangeListener<@Nullable Window> windowListener =
                 (observable, oldWindow, newWindow) -> updateWindow(newWindow, true);
 
         /// Receives showing-state changes from the current scene window.
-        private final InvalidationListener windowShowingListener = observable -> requestRefresh(null);
+        private final InvalidationListener windowShowingListener = observable -> handleWindowShowingChanged();
 
         /// Receives iconification changes from the stage that presents the current scene window.
-        private final InvalidationListener stageIconifiedListener = observable -> requestRefresh(null);
+        private final InvalidationListener stageIconifiedListener = observable -> handleStageIconifiedChanged();
 
         /// The window whose showing state is currently observed.
         private @Nullable Window observedWindow;
 
         /// The stage whose iconification state controls the current window's presentation.
         private @Nullable Stage observedStage;
+
+        /// Whether the global reduced-motion property currently contains this dispatcher's weak listener.
+        private boolean globalSettingsObserved;
 
         /// The number of active owner dispatches.
         private int dispatchDepth;
@@ -616,7 +622,6 @@ public final class M3MotionSettingsObserver {
             }
             owners[ownerSlots++] = ownerObserver;
             if (ownerCount++ == 0) {
-                addSettingsChangeListener(settingsListener);
                 scene.windowProperty().addListener(windowListener);
                 updateWindow(scene.getWindow(), false);
             }
@@ -649,7 +654,6 @@ public final class M3MotionSettingsObserver {
                 return false;
             }
 
-            removeSettingsChangeListener(settingsListener);
             scene.windowProperty().removeListener(windowListener);
             updateWindow(null, false);
             return true;
@@ -674,6 +678,7 @@ public final class M3MotionSettingsObserver {
         /// @param refresh whether subscribers should be refreshed
         private void updateWindow(@Nullable Window window, boolean refresh) {
             if (observedWindow == window) {
+                updateGlobalSettingsObservation();
                 if (refresh) {
                     requestRefresh(null);
                 }
@@ -697,9 +702,38 @@ public final class M3MotionSettingsObserver {
             if (stage != null) {
                 stage.iconifiedProperty().addListener(stageIconifiedListener);
             }
+            updateGlobalSettingsObservation();
             if (refresh) {
                 requestRefresh(null);
             }
+        }
+
+        /// Updates global setting observation for the current presentation lifecycle.
+        private void updateGlobalSettingsObservation() {
+            boolean shouldObserve = ownerCount != 0
+                    && (observedWindow == null
+                    || observedWindow.isShowing() && (observedStage == null || !observedStage.isIconified()));
+            if (globalSettingsObserved == shouldObserve) {
+                return;
+            }
+            globalSettingsObserved = shouldObserve;
+            if (shouldObserve) {
+                M3MotionSettings.globalReducedMotionRequestedProperty().addListener(weakGlobalSettingsListener);
+            } else {
+                M3MotionSettings.globalReducedMotionRequestedProperty().removeListener(weakGlobalSettingsListener);
+            }
+        }
+
+        /// Refreshes presentation state and global setting observation after a window shows or hides.
+        private void handleWindowShowingChanged() {
+            updateGlobalSettingsObservation();
+            requestRefresh(null);
+        }
+
+        /// Refreshes presentation state and global setting observation after the presenting stage is iconified.
+        private void handleStageIconifiedChanged() {
+            updateGlobalSettingsObservation();
+            requestRefresh(null);
         }
 
         /// Coalesces off-thread notifications into one JavaFX application-thread dispatch per scene.

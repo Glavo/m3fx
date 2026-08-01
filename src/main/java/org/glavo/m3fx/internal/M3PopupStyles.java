@@ -41,6 +41,17 @@ public final class M3PopupStyles {
     private M3PopupStyles() {
     }
 
+    /// Prepares popup content that may be styled before an owner context is available.
+    ///
+    /// The fallback stylesheet and root class are installed immediately. A later call to [#preparePopupRoot]
+    /// replaces the empty source snapshot with the owner stylesheets and copied theme context.
+    ///
+    /// @param popupRoot the detached popup root to prepare
+    /// @param controlStylesheet the popup-specific control stylesheet URL, or `null` for none
+    public static void prepareStandalonePopupRoot(Parent popupRoot, @Nullable String controlStylesheet) {
+        preparePopupRoot(popupRoot, List.of(), null, controlStylesheet);
+    }
+
     /// Prepares a popup root with copied stylesheets, fallback tokens, and optional local theme context.
     ///
     /// @param popupRoot the popup-hosted root that will be styled before or after popup scene creation

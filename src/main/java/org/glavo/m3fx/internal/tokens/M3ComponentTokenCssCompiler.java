@@ -2833,7 +2833,7 @@ public final class M3ComponentTokenCssCompiler {
         endRule(builder);
 
         beginRule(builder, ".m3-snackbar-presenter .m3-snackbar-action");
-        appendDeclaration(builder, "-m3-container-height", "-m3-action-container-height");
+        appendDeclaration(builder, "-m3-container-height", pixels(tokens.actionContainerHeight()));
         endRule(builder);
     }
 

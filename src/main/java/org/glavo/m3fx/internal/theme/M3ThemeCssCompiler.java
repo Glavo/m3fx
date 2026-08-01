@@ -84,6 +84,10 @@ public final class M3ThemeCssCompiler {
 
     /// Appends component selector rules for a complete token set to an existing CSS buffer.
     ///
+    /// Non-paint values are emitted as concrete values at their consuming selectors. JavaFX looked-up values do not
+    /// provide the general typed custom-property substitution supported by web CSS, so geometry, typography, and
+    /// effect values must retain the converter associated with their actual [javafx.css.CssMetaData].
+    ///
     /// @param builder the destination CSS buffer
     /// @param tokens  the token set to compile
     /// @throws NullPointerException if `builder` or `tokens` is `null`

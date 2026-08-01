@@ -46,6 +46,7 @@ import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.testing.Tier2Test;
@@ -121,6 +122,7 @@ final class M3FXCatalogVisualTest {
                 assertExampleBrowserFiltering(scene, app);
                 assertRouteStateRestoration(scene, app);
                 assertSidebarScrollStability(scene, app);
+                assertProfileSwitchPreservesRoute(scene, app);
                 assertThemeSettings(scene, app);
                 assertRightToLeftLayout(scene, app);
                 assertExpandedComponentCoverage(scene, app);
@@ -1063,6 +1065,53 @@ final class M3FXCatalogVisualTest {
             assertSame(buttonsItem, drawer.getSelectedItem(), "selection must retain the destination node");
             assertSame(cardsItem, listItemNamed(sidebar, ".catalog-sidebar-component", "Cards"));
             assertEquals(initialVvalue, viewport.getVvalue(), 1.0e-9, "Buttons changed scroll position");
+            app.navigateHome();
+            layout(scene);
+        });
+    }
+
+    /// Verifies that changing the component profile updates CSS without rebuilding route content.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app the running Catalog application
+    private static void assertProfileSwitchPreservesRoute(Scene scene, M3FXCatalogApp app) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            CatalogComponent buttons = componentNamed(app.components(), "Buttons");
+            app.navigate(new CatalogRoute.Component(buttons));
+            layout(scene);
+
+            Node page = Objects.requireNonNull(scene.lookup(".catalog-component-page"), "component page");
+            ScrollPane scrollPane = assertInstanceOf(
+                    ScrollPane.class,
+                    Objects.requireNonNull(scene.lookup(".catalog-component-scroll"), "component scroll pane")
+            );
+            scrollPane.setVvalue(0.37);
+            layout(scene);
+            double scrollPosition = scrollPane.getVvalue();
+
+            app.showSettings();
+            layout(scene);
+            M3Switch expressiveSwitch = scene.getRoot().lookupAll(".m3-switch").stream()
+                    .filter(M3Switch.class::isInstance)
+                    .map(M3Switch.class::cast)
+                    .filter(control -> control.getText().equals("Expressive components"))
+                    .findFirst()
+                    .orElseThrow();
+            expressiveSwitch.fire();
+            layout(scene);
+
+            assertSame(page, scene.lookup(".catalog-component-page"));
+            assertSame(scrollPane, scene.lookup(".catalog-component-scroll"));
+            assertEquals(
+                    scrollPosition,
+                    scrollPane.getVvalue(),
+                    0.05,
+                    "profile-dependent layout must not reset the retained viewport to the top"
+            );
+
+            expressiveSwitch.fire();
+            app.hideSettings();
             app.navigateHome();
             layout(scene);
         });

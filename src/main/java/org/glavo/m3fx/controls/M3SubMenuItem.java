@@ -36,6 +36,7 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3KeyEvents;
@@ -396,6 +397,7 @@ public final class M3SubMenuItem extends M3MenuItem {
         });
         hoverDelay.setOnFinished(event -> handleHoverDelayFinished());
         popup.setAutoHide(true);
+        M3PopupStyles.prepareStandalonePopupRoot(subMenu, M3Stylesheets.controlStylesheet("menu.css"));
         popup.getContent().add(subMenu);
         popupAnimation.setOnFinished(event -> {
             if (hidingPopup) {

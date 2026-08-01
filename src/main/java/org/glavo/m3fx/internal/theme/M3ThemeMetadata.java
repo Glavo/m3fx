@@ -30,11 +30,15 @@ public final class M3ThemeMetadata {
     public static void setTheme(Parent root, M3Theme theme) {
         Parent checkedRoot = Objects.requireNonNull(root, "root");
         M3Theme checkedTheme = Objects.requireNonNull(theme, "theme");
-        if (getTheme(checkedRoot) == checkedTheme && hasTheme(checkedRoot)) {
+        @Nullable M3Theme previousTheme = getTheme(checkedRoot);
+        if (previousTheme == checkedTheme && hasTheme(checkedRoot)) {
             return;
         }
         checkedRoot.getProperties().put(THEME_PROPERTY_KEY, checkedTheme);
-        M3MotionSettingsObserver.motionContextChanged(checkedRoot);
+        if (previousTheme == null
+                || !previousTheme.tokens().motionTokens().equals(checkedTheme.tokens().motionTokens())) {
+            M3MotionSettingsObserver.motionContextChanged(checkedRoot);
+        }
     }
 
     /// Returns installed theme metadata from a root.

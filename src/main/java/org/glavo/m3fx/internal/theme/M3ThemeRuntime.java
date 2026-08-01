@@ -75,9 +75,9 @@ public final class M3ThemeRuntime {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
 
-        installSceneTheme(scene, theme);
         installStylesheet(scene);
         installThemeStylesheet(scene, theme);
+        installSceneTheme(scene, theme);
     }
 
     /// Returns the theme installed on the scene root.
@@ -141,8 +141,9 @@ public final class M3ThemeRuntime {
 
     /// Adds the generated theme stylesheet to a scene.
     ///
-    /// Any previously managed generated theme stylesheet is removed before the replacement is inserted immediately
-    /// after the base M3FX stylesheet when possible.
+    /// A previously managed generated stylesheet is replaced in its existing list slot when possible, then kept
+    /// immediately after the base M3FX stylesheet. This preserves one observable list mutation for the common theme
+    /// replacement path.
     ///
     /// @param scene the scene whose stylesheet list should be updated
     /// @param theme the theme whose token stylesheet should be installed
@@ -156,10 +157,13 @@ public final class M3ThemeRuntime {
         Object previousValue = scene.getProperties().get(THEME_STYLESHEET_KEY);
         @Nullable String previousStylesheet = previousValue instanceof String value ? value : null;
         if (!stylesheet.equals(previousStylesheet)) {
-            scene.getProperties().put(THEME_STYLESHEET_KEY, stylesheet);
-            if (previousStylesheet != null) {
-                stylesheets.remove(previousStylesheet);
+            int previousIndex = previousStylesheet == null ? -1 : stylesheets.indexOf(previousStylesheet);
+            if (previousIndex >= 0 && !stylesheets.contains(stylesheet)) {
+                stylesheets.set(previousIndex, stylesheet);
+            } else if (previousIndex >= 0) {
+                stylesheets.remove(previousIndex);
             }
+            scene.getProperties().put(THEME_STYLESHEET_KEY, stylesheet);
         }
         int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
         int stylesheetIndex = baseStylesheetIndex >= 0
@@ -178,11 +182,11 @@ public final class M3ThemeRuntime {
     public static void uninstall(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
+        uninstallThemeStylesheet(scene);
+        uninstallStylesheet(scene);
         if (!uninstallSceneTheme(scene)) {
             uninstall(scene.getRoot());
         }
-        uninstallThemeStylesheet(scene);
-        uninstallStylesheet(scene);
     }
 
     /// Removes M3FX theme tokens from a root node.

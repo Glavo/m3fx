@@ -23,6 +23,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.glavo.m3fx.internal.M3PopupWindows;
@@ -316,6 +317,7 @@ public final class M3MenuButton extends M3ButtonBase {
                 this::canShowAccessibleMenuItem
         );
         popup.setAutoHide(true);
+        M3PopupStyles.prepareStandalonePopupRoot(menu, M3Stylesheets.controlStylesheet("menu.css"));
         popup.getContent().add(menu);
         popupAnimation.setOnFinished(event -> {
             if (hidingPopup) {

@@ -92,6 +92,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
@@ -10766,21 +10767,29 @@ final class M3ControlContractMatrixTest {
     /// Verifies that visible installed tooltip popups mirror owner stylesheet and theme context changes.
     @Test
     void tooltipPopupContextSynchronizesOwnerStylesheetsAndRuntimeTheme() {
-        FxTestUtils.runOnFxThread(() -> {
-            Label target = new Label("Target");
-            Pane root = new Pane(target);
-            Scene scene = new Scene(root, 280.0, 140.0);
-            M3Tooltip tooltip = installTooltip(target, "Installed");
-            M3Theme baselineTheme = M3Theme.defaultTheme();
-            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                    Color.web("#006a6a"),
-                    M3Profile.EXPRESSIVE_2025,
-                    Brightness.DARK
-            );
-            String extraStylesheet = M3Stylesheets.controlStylesheet("button.css");
-            Stage stage = new Stage();
-
-            try {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> popupRootReference = new AtomicReference<>();
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+        String extraStylesheet = M3Stylesheets.controlStylesheet("button.css");
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Label target = new Label("Target");
+                Pane root = new Pane(target);
+                Scene scene = new Scene(root, 280.0, 140.0);
+                M3Tooltip tooltip = installTooltip(target, "Installed");
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                sceneReference.set(scene);
+                targetReference.set(target);
+                tooltipReference.set(tooltip);
                 M3ThemeManager.install(scene, baselineTheme);
                 stage.setScene(scene);
                 stage.show();
@@ -10789,6 +10798,7 @@ final class M3ControlContractMatrixTest {
 
                 tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
                 Parent popupRoot = tooltip.getScene().getRoot();
+                popupRootReference.set(popupRoot);
 
                 assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
@@ -10796,7 +10806,11 @@ final class M3ControlContractMatrixTest {
                 assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
                 scene.getStylesheets().add(extraStylesheet);
+            });
 
+            FxTestUtils.runOnFxThread(() -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                Parent popupRoot = Objects.requireNonNull(popupRootReference.get(), "popupRoot");
                 assertTrue(popupRoot.getStylesheets().contains(extraStylesheet));
 
                 M3ThemeManager.install(scene, expressiveDarkTheme);
@@ -10816,12 +10830,23 @@ final class M3ControlContractMatrixTest {
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupRoot.getStylesheets().contains(extraStylesheet));
-            } finally {
-                tooltip.hide();
-                M3Tooltip.uninstall(target, tooltip);
-                stage.close();
-            }
-        });
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3Tooltip tooltip = tooltipReference.get();
+                if (tooltip != null) {
+                    tooltip.hide();
+                }
+                @Nullable Label target = targetReference.get();
+                if (target != null && tooltip != null) {
+                    M3Tooltip.uninstall(target, tooltip);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that explicitly themed tooltip popup roots are not overridden by owner theme changes.
@@ -13072,13 +13097,17 @@ final class M3ControlContractMatrixTest {
     /// Verifies that an already open menu button popup mirrors runtime owner scene stylesheet changes.
     @Test
     void menuButtonPopupMirrorsRuntimeOwnerSceneStylesheetChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
-            M3Theme theme = M3Theme.defaultTheme();
-            String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
-            String secondStylesheet = M3Stylesheets.controlStylesheet("text-field.css");
-            Stage stage = new Stage();
-            try {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        M3Theme theme = M3Theme.defaultTheme();
+        String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
+        String secondStylesheet = M3Stylesheets.controlStylesheet("text-field.css");
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                menuButtonReference.set(menuButton);
                 Pane root = new Pane(menuButton);
                 Scene scene = new Scene(root, 360.0, 180.0);
                 M3ThemeManager.install(scene, theme);
@@ -13098,16 +13127,28 @@ final class M3ControlContractMatrixTest {
 
                 scene.getStylesheets().remove(firstStylesheet);
                 scene.getStylesheets().add(secondStylesheet);
+            });
 
+            FxTestUtils.runOnFxThread(() -> {
+                M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                M3Menu menu = menuButton.getMenu();
                 assertFalse(menu.getStylesheets().contains(firstStylesheet));
                 assertTrue(menu.getStylesheets().contains(secondStylesheet));
                 assertTrue(menu.getStylesheets().contains(M3Stylesheets.controlStylesheet("menu.css")));
                 assertSame(theme, M3ThemeManager.getTheme(menu));
-            } finally {
-                menuButton.hideMenu();
-                stage.close();
-            }
-        });
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that popup context synchronizers mirror owner scene stylesheet list mutations.
@@ -13154,6 +13195,7 @@ final class M3ControlContractMatrixTest {
 
                 scene.getStylesheets().remove(firstStylesheet);
                 scene.getStylesheets().add(secondStylesheet);
+                synchronizer.sync();
 
                 assertFalse(popupRoot.getStylesheets().contains(firstStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
@@ -13194,6 +13236,7 @@ final class M3ControlContractMatrixTest {
 
             synchronizer.start();
             int readsAfterStart = stylesheetReads.get();
+            assertEquals(1, readsAfterStart);
             synchronizer.stop();
 
             root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -13206,17 +13249,70 @@ final class M3ControlContractMatrixTest {
             synchronizer.start();
             int readsAfterRestart = stylesheetReads.get();
 
-            assertTrue(readsAfterRestart > readsAfterStart);
+            assertEquals(readsAfterStart + 1, readsAfterRestart);
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, popupRoot.getEffectiveNodeOrientation());
             assertTrue(popupRoot.getStylesheets().contains(firstStylesheet));
 
             scene.getStylesheets().add(secondStylesheet);
+            synchronizer.sync();
 
             assertEquals(readsAfterRestart + 1, stylesheetReads.get());
             assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
 
             synchronizer.stop();
         });
+    }
+
+    /// Verifies that one stylesheet mutation burst schedules only one popup synchronization pass.
+    @Test
+    void popupContextSynchronizerCoalescesStylesheetMutationBurst() {
+        AtomicInteger stylesheetReads = new AtomicInteger();
+        AtomicReference<@Nullable M3PopupContextSynchronizer> synchronizerReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> popupRootReference = new AtomicReference<>();
+        String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
+        String secondStylesheet = M3Stylesheets.controlStylesheet("text-field.css");
+
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Label owner = new Label("Owner");
+                Pane root = new Pane(owner);
+                Pane popupRoot = new Pane();
+                Scene scene = new Scene(root, 420.0, 220.0);
+                scene.getStylesheets().add(firstStylesheet);
+                M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
+                        owner,
+                        popupRoot,
+                        () -> {
+                            stylesheetReads.incrementAndGet();
+                            return scene.getStylesheets();
+                        },
+                        () -> null
+                );
+                synchronizerReference.set(synchronizer);
+                popupRootReference.set(popupRoot);
+                synchronizer.start();
+                stylesheetReads.set(0);
+
+                scene.getStylesheets().remove(firstStylesheet);
+                scene.getStylesheets().add(secondStylesheet);
+
+                assertEquals(0, stylesheetReads.get());
+            });
+
+            FxTestUtils.runOnFxThread(() -> {
+                Pane popupRoot = Objects.requireNonNull(popupRootReference.get(), "popupRoot");
+                assertEquals(1, stylesheetReads.get());
+                assertFalse(popupRoot.getStylesheets().contains(firstStylesheet));
+                assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3PopupContextSynchronizer synchronizer = synchronizerReference.get();
+                if (synchronizer != null) {
+                    synchronizer.stop();
+                }
+            });
+        }
     }
 
     /// Verifies a failed initial popup synchronization removes every listener and can be retried cleanly.
@@ -14638,6 +14734,26 @@ final class M3ControlContractMatrixTest {
                 menuButton.hideMenu();
                 stage.close();
             }
+        }));
+    }
+
+    /// Verifies that popup-owned menu content has fallback tokens before its owner enters a scene.
+    @Test
+    void popupMenuContentResolvesFallbackBeforeOwnerAttachment() {
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            M3MenuButton menuButton = new M3MenuButton(
+                    "Open menu",
+                    new M3MenuItem("Duplicate"),
+                    new M3MenuItem("Archive")
+            );
+            M3Menu menu = menuButton.getMenu();
+
+            menu.applyCss();
+            menu.layout();
+
+            assertTrue(menu.getStyleClass().contains(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS));
+            assertTrue(menu.getStylesheets().contains(M3Stylesheets.fallbackStylesheet()));
+            assertResolvedListItemTextFill(assertInstanceOf(M3MenuItem.class, menu.getItems().get(0)));
         }));
     }
 

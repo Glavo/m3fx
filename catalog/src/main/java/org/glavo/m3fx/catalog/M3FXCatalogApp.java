@@ -376,7 +376,6 @@ public final class M3FXCatalogApp extends Application {
         expressiveSwitch.setOnAction(event -> {
             profile = expressiveSwitch.isSelected() ? M3Profile.EXPRESSIVE_2025 : M3Profile.BASELINE_2021;
             applyTheme();
-            renderCurrentRoute();
         });
         rightToLeftSwitch.setOnAction(event -> {
             rightToLeft = rightToLeftSwitch.isSelected();

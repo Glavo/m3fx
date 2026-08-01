@@ -909,6 +909,30 @@ final class M3ThemeTest {
         assertEquals(0, scene.getStylesheets().size());
     }
 
+    /// Verifies that a scene theme replacement changes the stylesheet list only once.
+    @Test
+    void replacesManagedSceneThemeStylesheetInOneMutation() {
+        Pane root = new Pane();
+        Scene scene = new Scene(root);
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        );
+        M3ThemeManager.install(scene, baselineTheme);
+        AtomicInteger stylesheetChanges = new AtomicInteger();
+        scene.getStylesheets().addListener(
+                (ListChangeListener<String>) change -> stylesheetChanges.incrementAndGet()
+        );
+
+        M3ThemeManager.install(scene, expressiveTheme);
+
+        assertEquals(1, stylesheetChanges.get());
+        assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
+        assertTrue(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(expressiveTheme)));
+    }
+
     /// Verifies that a local theme owns only its generated stylesheet and preserves application stylesheet order.
     @Test
     void managesGeneratedStylesheetForLocalThemeScope() {

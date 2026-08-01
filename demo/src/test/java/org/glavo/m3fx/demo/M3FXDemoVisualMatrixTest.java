@@ -18833,12 +18833,20 @@ final class M3FXDemoVisualMatrixTest {
         }
         assertEquals(expectedRole, pane.getAccessibleRole());
         assertDialogPaneFitsOwner(scene, pane);
-        assertNotNull(pane.getBackground(), "dialog pane should resolve a Material background");
-        assertFalse(pane.getBackground().getFills().isEmpty(),
-                "dialog pane should resolve a visible Material background fill");
+        Region surface = assertInstanceOf(
+                Region.class,
+                requireVisibleStyledDescendant(pane, "m3-dialog-surface", "dialog surface")
+        );
+        assertNotNull(surface.getBackground(), "dialog surface should resolve a Material background");
+        assertFalse(surface.getBackground().getFills().isEmpty(),
+                "dialog surface should resolve a visible Material background fill");
         assertFalse(pane.getActions().isEmpty(), "demo dialog panes should expose action buttons");
 
         Bounds paneBounds = pane.localToScene(pane.getBoundsInLocal());
+        Bounds surfaceBounds = surface.localToScene(surface.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(paneBounds, surfaceBounds, CONTROL_EDGE_TOLERANCE),
+                () -> "dialog surface should stay inside the pane: pane="
+                        + paneBounds + ", surface=" + surfaceBounds);
         Node actionRow = requireVisibleStyledDescendant(
                 pane,
                 "m3-dialog-actions",

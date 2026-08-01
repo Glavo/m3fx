@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -504,6 +505,16 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-action-spacing: 7px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-toolbar"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-toolbar-item-slot-size: 49px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
+                ".m3-snackbar-presenter .m3-snackbar-action"
+        ));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-height: 32px"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
+                "-m3-container-height: -m3-action-container-height"
+        ));
+        assertFalse(Pattern.compile("(?m)^\\s*-[\\w-]+:\\s+-m3-[\\w-]+\\s*;$")
+                .matcher(M3ThemeCssCompiler.controlStyleRules(tokenSet))
+                .find(), "generated component CSS should emit concrete typed values");
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-drawer .m3-list-item"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(

@@ -74,8 +74,8 @@ public final class HMCLM3DemoApp extends Application {
         state.brightnessProperty().addListener((observable, oldBrightness, newBrightness) -> applyTheme.run());
         state.profileProperty().addListener((observable, oldProfile, newProfile) -> applyTheme.run());
         state.animationDisabledProperty().addListener((observable, oldValue, newValue) ->
-                M3MotionSettings.setGlobalReducedMotionRequested(Boolean.TRUE.equals(newValue)));
-        M3MotionSettings.setGlobalReducedMotionRequested(state.isAnimationDisabled());
+                M3MotionSettings.setReducedMotionRequested(root, Boolean.TRUE.equals(newValue)));
+        M3MotionSettings.setReducedMotionRequested(root, state.isAnimationDisabled());
         applyTheme.run();
 
         stage.setScene(activeScene);

@@ -223,6 +223,41 @@ final class HMCLDemoSnapshotTest {
         }
     }
 
+    /// Verifies that the demo animation preference changes only the demo scene subtree.
+    @Test
+    void scopesAnimationPreferenceToDemoRoot() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        boolean previousGlobalRequest = M3MotionSettings.isGlobalReducedMotionRequested();
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                M3MotionSettings.setGlobalReducedMotionRequested(false);
+                Stage stage = new Stage();
+                HMCLM3DemoApp app = new HMCLM3DemoApp();
+                app.start(stage);
+                stageReference.set(stage);
+                Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
+                M3OverlayPaneRoot shell = resolveShell(scene);
+
+                shell.controller().state().setAnimationDisabled(true);
+
+                assertFalse(M3MotionSettings.isGlobalReducedMotionRequested());
+                assertTrue(M3MotionSettings.isReducedMotionRequested(scene.getRoot()));
+
+                shell.controller().state().setAnimationDisabled(false);
+
+                assertFalse(M3MotionSettings.isReducedMotionRequested(scene.getRoot()));
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+                M3MotionSettings.setGlobalReducedMotionRequested(previousGlobalRequest);
+            });
+        }
+    }
+
     /// Verifies that the collapsed primary rail stays attached across a wide-to-narrow resize.
     @Test
     void keepsPrimaryNavigationCollapsedAndAttachedAcrossWideNarrowResize() throws InterruptedException {
