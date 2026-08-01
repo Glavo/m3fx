@@ -40,6 +40,7 @@ import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3FiniteTransition;
@@ -556,7 +557,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
         setContainerShape(radius, radius, radius, radius);
         setContainerShapeTarget(radius, radius, radius, radius);
-        String style = "-fx-background-radius: " + formatPixels(radius) + ";";
+        String style = "-fx-background-radius: " + M3Css.pixels(radius) + ";";
         selectionContainer.setStyle(style);
         container.setStyle(style);
         if (getSkinnable().getScene() != null) {
@@ -985,14 +986,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             maximumRadius = Math.min(maximumRadius, width / 2.0);
         }
         return Math.min(Math.max(0.0, shapeRadius), maximumRadius);
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 
     /// Installs behavior handlers for pointer and keyboard activation.

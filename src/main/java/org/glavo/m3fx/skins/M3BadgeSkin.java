@@ -10,6 +10,7 @@ import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -178,7 +179,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
             label.setPrefSize(size, size);
             label.setMaxSize(size, size);
             label.setPadding(Insets.EMPTY);
-            label.setStyle("-fx-background-radius: " + formatPixels(size / 2.0) + ";");
+            label.setStyle("-fx-background-radius: " + M3Css.pixels(size / 2.0) + ";");
         } else {
             double height = badge.getLargeHeight();
             label.setMinSize(badge.getLargeMinWidth(), height);
@@ -186,7 +187,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
             label.setMaxHeight(height);
             label.setMaxWidth(Double.MAX_VALUE);
             label.setPadding(new Insets(0.0, badge.getHorizontalPadding(), 0.0, badge.getHorizontalPadding()));
-            label.setStyle("-fx-background-radius: " + formatPixels(badge.getContainerShape()) + ";");
+            label.setStyle("-fx-background-radius: " + M3Css.pixels(badge.getContainerShape()) + ";");
         }
         getSkinnable().requestLayout();
     }
@@ -227,13 +228,5 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         label.setOpacity(1.0);
         label.setScaleX(1.0);
         label.setScaleY(1.0);
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 }

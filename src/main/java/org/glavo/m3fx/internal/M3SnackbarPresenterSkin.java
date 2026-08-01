@@ -320,7 +320,7 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
                 StyleOrigin.USER_AGENT,
                 presenter.getActionContainerHeight()
         );
-        container.setStyle("-fx-background-radius: " + formatPixels(presenter.getContainerShape()) + ";");
+        container.setStyle("-fx-background-radius: " + M3Css.pixels(presenter.getContainerShape()) + ";");
     }
 
     /// Returns the effective minimum container width.
@@ -360,13 +360,5 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         }
         labelWidth = Math.max(0.0, labelWidth);
         return textLabel.prefHeight(labelWidth) > textLabel.prefHeight(-1.0) + 0.5;
-    }
-
-    /// Formats one CSS pixel value without unnecessary decimal digits.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 }

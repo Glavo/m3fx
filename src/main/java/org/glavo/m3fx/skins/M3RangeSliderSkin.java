@@ -30,6 +30,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -724,7 +725,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Applies logical outer corners and flat handle-adjacent corners to track segments.
     private void updateTrackStyles() {
         M3RangeSlider slider = getSkinnable();
-        String shape = formatPixels(slider.getTrackShape());
+        String shape = M3Css.pixels(slider.getTrackShape());
         if (slider.getOrientation() == Orientation.VERTICAL) {
             leadingTrack.setStyle("-fx-background-radius: " + shape + " " + shape + " 0px 0px;");
             trailingTrack.setStyle("-fx-background-radius: 0px 0px " + shape + " " + shape + ";");
@@ -1085,11 +1086,6 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Clamps a coordinate to a local range.
     private static double clampToRange(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        return Math.rint(value) == value ? (long) value + "px" : value + "px";
     }
 
     /// Identifies an internal range-slider handle.

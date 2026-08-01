@@ -425,9 +425,9 @@ final class M3StateLayerTest {
             assertEquals(-7.0, focusIndicator.getLayoutY(), 0.0001);
             assertEquals(114.0, focusIndicator.getWidth(), 0.0001);
             assertEquals(54.0, focusIndicator.getHeight(), 0.0001);
-            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 0.0px"));
-            assertTrue(focusIndicator.getStyle().contains("-fx-border-width: 4.0px"));
-            assertTrue(focusIndicator.getStyle().contains("27.0px"));
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 0px"));
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-width: 4px"));
+            assertTrue(focusIndicator.getStyle().contains("27px"));
             assertFalse(stateLayer.isFocusIndicatorOpacityAnimationRunning());
         });
     }
@@ -495,8 +495,8 @@ final class M3StateLayerTest {
             assertEquals(0.0, focusIndicator.getLayoutY(), 0.0001);
             assertEquals(100.0, focusIndicator.getWidth(), 0.0001);
             assertEquals(40.0, focusIndicator.getHeight(), 0.0001);
-            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 5.0px"));
-            assertTrue(focusIndicator.getStyle().contains("15.0px"));
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 5px"));
+            assertTrue(focusIndicator.getStyle().contains("15px"));
         });
     }
 

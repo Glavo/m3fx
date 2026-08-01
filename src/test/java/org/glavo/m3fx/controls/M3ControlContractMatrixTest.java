@@ -6811,9 +6811,10 @@ final class M3ControlContractMatrixTest {
         M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
         okAction.setDefaultButton(true);
         dialogPane.getActions().setAll(cancelAction, okAction);
-        dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px; "
+        String applicationStyle = "-m3-container-shape: 20px; -m3-content-padding: 28px; "
                 + "-m3-container-min-width: 300px; -m3-container-max-width: 520px; "
-                + "-m3-action-spacing: 12px; -m3-dialog-icon-size: 28px;");
+                + "-m3-action-spacing: 12px; -m3-dialog-icon-size: 28px;";
+        dialogPane.setStyle(applicationStyle);
         Pane root = new Pane(dialogPane);
         Scene scene = new Scene(root, 480.0, 240.0);
 
@@ -6845,14 +6846,18 @@ final class M3ControlContractMatrixTest {
                 dialogPane.lookup("." + "m3-dialog-actions")
         );
         assertEquals(12.0, actionRow.getSpacing(), 0.0001);
-        assertRegionRadii(dialogPane, 20.0, 20.0, 20.0, 20.0);
+        Region dialogSurface = lookupRegion(dialogPane, ".m3-dialog-surface");
+        assertRegionRadii(dialogSurface, 20.0, 20.0, 20.0, 20.0);
+        assertEquals(applicationStyle, dialogPane.getStyle());
 
         dialogPane.setContainerShape(12.0);
+        root.applyCss();
         root.layout();
         dialogPane.layout();
 
         assertEquals(12.0, dialogPane.getContainerShape(), 0.0001);
-        assertRegionRadii(dialogPane, 12.0, 12.0, 12.0, 12.0);
+        assertRegionRadii(dialogSurface, 12.0, 12.0, 12.0, 12.0);
+        assertEquals(applicationStyle, dialogPane.getStyle());
     }
 
     /// Verifies that dialog panes retain, configure, and incrementally lay out caller-owned Material actions.
@@ -6929,7 +6934,9 @@ final class M3ControlContractMatrixTest {
         root.setStyle(root.getStyle() + " " + buttonStateTestColors());
         root.applyCss();
 
-        assertRegionFill(dialogPane, Color.rgb(19, 20, 21));
+        Region dialogSurface = lookupRegion(dialogPane, ".m3-dialog-surface");
+        assertRegionFill(dialogSurface, Color.rgb(19, 20, 21));
+        assertDropShadow(dialogSurface);
         Region headerPanel = lookupRegion(dialogPane, ".header-panel");
         assertRegionFill(headerPanel, Color.TRANSPARENT);
         assertRegionFill(lookupRegion(headerPanel, ".label"), Color.TRANSPARENT);

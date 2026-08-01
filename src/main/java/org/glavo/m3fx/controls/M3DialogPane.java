@@ -100,11 +100,6 @@ public class M3DialogPane extends Control {
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         graphicProperty().addListener((observable, oldValue, newValue) -> updateGraphicMetrics(oldValue, newValue));
         getActions().addListener((ListChangeListener<M3Button>) change -> notifyAccessibleItemsChanged());
-        styleProperty().addListener((observable, oldValue, newValue) -> {
-            if (!updatingManagedStyle && managedContainerShapeStyle != null) {
-                requestContainerShapeStyleSync();
-            }
-        });
         visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleActionNavigationKey);
         addEventHandler(ActionEvent.ACTION, this::handleActionButtonEvent);
@@ -294,7 +289,7 @@ public class M3DialogPane extends Control {
                     this,
                     "containerShape",
                     StyleableProperties.CONTAINER_SHAPE,
-                    this::requestContainerShapeStyleSync
+                    this::requestLayout
             );
         }
         return containerShape;
@@ -523,15 +518,6 @@ public class M3DialogPane extends Control {
 
     /// Whether this pane currently forms the active modal surface of a dialog overlay.
     private boolean modalActive;
-
-    /// The inline style declaration managed by the container shape token.
-    private @Nullable String managedContainerShapeStyle;
-
-    /// Whether the current style change is produced by managed metric synchronization.
-    private boolean updatingManagedStyle;
-
-    /// Whether the managed container shape style must be synchronized before the next layout pass.
-    private boolean containerShapeStyleDirty;
 
     /// Reports focused dialog content or action changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -778,14 +764,6 @@ public class M3DialogPane extends Control {
         return M3Stylesheets.controlStylesheet("dialog.css");
     }
 
-    /// Lays out the dialog pane after synchronizing managed shape styles.
-    @Override
-    protected void layoutChildren() {
-        synchronizeContainerShapeStyle();
-        updateGraphicMetrics(null, getGraphic());
-        super.layoutChildren();
-    }
-
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double surfaceInsets = SURFACE_EFFECT_MARGIN * 2.0;
@@ -828,73 +806,6 @@ public class M3DialogPane extends Control {
     /// Removes dialog-specific styling after an icon leaves the graphic slot.
     private static void restoreGraphicIconStyle(Node icon) {
         icon.getStyleClass().remove(GRAPHIC_ICON_STYLE_CLASS);
-    }
-
-    /// Requests managed container shape synchronization before layout.
-    private void requestContainerShapeStyleSync() {
-        containerShapeStyleDirty = true;
-        requestLayout();
-    }
-
-    /// Synchronizes the resolved background radius with the current container shape token.
-    private void synchronizeContainerShapeStyle() {
-        if (!containerShapeStyleDirty || updatingManagedStyle) {
-            return;
-        }
-        containerShapeStyleDirty = false;
-        String baseStyle = removeManagedContainerShapeStyle(getStyle());
-        String nextManagedStyle = "-fx-background-radius: " + formatPixels(getContainerShape()) + ";";
-        String nextStyle = mergeStyles(baseStyle, nextManagedStyle);
-        managedContainerShapeStyle = nextManagedStyle;
-        if (nextStyle.equals(getStyle())) {
-            return;
-        }
-
-        updatingManagedStyle = true;
-        try {
-            setStyle(nextStyle);
-            if (getScene() != null) {
-                applyCss();
-            }
-        } finally {
-            updatingManagedStyle = false;
-        }
-    }
-
-    /// Removes the previous managed background-radius declaration from a style string.
-    private String removeManagedContainerShapeStyle(String style) {
-        @Nullable String managedStyle = managedContainerShapeStyle;
-        if (managedStyle == null || style.isBlank()) {
-            return style;
-        }
-
-        int index = style.indexOf(managedStyle);
-        if (index < 0) {
-            return style;
-        }
-
-        String before = style.substring(0, index).stripTrailing();
-        String after = style.substring(index + managedStyle.length()).stripLeading();
-        return mergeStyles(before, after);
-    }
-
-    /// Formats a token value as a CSS pixel size.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
-    }
-
-    /// Merges two inline style fragments.
-    private static String mergeStyles(String first, String second) {
-        if (first.isBlank()) {
-            return second;
-        }
-        if (second.isBlank()) {
-            return first;
-        }
-        return first.stripTrailing() + " " + second.stripLeading();
     }
 
     /// Updates the accessibility label from the dialog header and content text.

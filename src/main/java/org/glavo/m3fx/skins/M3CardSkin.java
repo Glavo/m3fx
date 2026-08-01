@@ -24,6 +24,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Paint;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -189,8 +190,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
     private void updateTokenStyles() {
         M3Card card = getSkinnable();
         container.setPadding(new Insets(card.getContentPadding()));
-        String shape = formatPixels(card.getContainerShape());
-        String outlineWidth = formatPixels(card.getOutlineWidth());
+        String shape = M3Css.pixels(card.getContainerShape());
+        String outlineWidth = M3Css.pixels(card.getOutlineWidth());
         container.setStyle("-fx-background-radius: " + shape
                 + "; -fx-border-radius: " + shape
                 + "; -fx-border-width: " + outlineWidth + ";");
@@ -220,14 +221,6 @@ public class M3CardSkin extends SkinBase<M3Card> {
         containerPaintLayer.setBackground(new Background(
                 new BackgroundFill(paint, new CornerRadii(radius), Insets.EMPTY)
         ));
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 
     /// Installs feedback handlers for pointer and keyboard interactions.

@@ -35,6 +35,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -1319,18 +1320,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 focusIndicatorWidth,
                 focusIndicatorHeight
         );
-        indicator.setStyle("-fx-background-radius: "
-                + formatPixels(focusIndicatorTopLeftRadius) + " "
-                + formatPixels(focusIndicatorTopRightRadius) + " "
-                + formatPixels(focusIndicatorBottomRightRadius) + " "
-                + formatPixels(focusIndicatorBottomLeftRadius) + "; "
-                + "-fx-border-insets: " + formatPixels(focusIndicatorInset) + "; "
-                + "-fx-border-width: " + formatPixels(focusIndicatorThickness) + "; "
-                + "-fx-border-radius: "
-                + formatPixels(focusIndicatorTopLeftRadius) + " "
-                + formatPixels(focusIndicatorTopRightRadius) + " "
-                + formatPixels(focusIndicatorBottomRightRadius) + " "
-                + formatPixels(focusIndicatorBottomLeftRadius) + ";");
+        String radii = M3Css.pixels(focusIndicatorTopLeftRadius) + " "
+                + M3Css.pixels(focusIndicatorTopRightRadius) + " "
+                + M3Css.pixels(focusIndicatorBottomRightRadius) + " "
+                + M3Css.pixels(focusIndicatorBottomLeftRadius);
+        indicator.setStyle("-fx-background-radius: " + radii + "; "
+                + "-fx-border-insets: " + M3Css.pixels(focusIndicatorInset) + "; "
+                + "-fx-border-width: " + M3Css.pixels(focusIndicatorThickness) + "; "
+                + "-fx-border-radius: " + radii + ";");
     }
 
     /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.
@@ -1453,10 +1450,5 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         if (clip.getElements().get(index) != target) {
             clip.getElements().set(index, target);
         }
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        return value + "px";
     }
 }

@@ -26,6 +26,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
@@ -382,7 +383,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private void applyIndicatorShape(double indicatorShape) {
         if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
             appliedIndicatorShape = indicatorShape;
-            indicator.setStyle("-fx-background-radius: " + indicatorShape + "px;");
+            indicator.setStyle("-fx-background-radius: " + M3Css.pixels(indicatorShape) + ";");
         }
     }
 

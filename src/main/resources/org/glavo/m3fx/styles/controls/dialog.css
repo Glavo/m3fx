@@ -10,10 +10,12 @@
     -m3-container-max-width: 560px;
     -m3-action-spacing: 8px;
     -m3-dialog-icon-size: 24px;
+    -fx-padding: 36px;
+}
+
+.m3-dialog-pane .m3-dialog-surface {
     -fx-background-color: -m3-color-surface-container-high;
     -fx-background-insets: 12px;
-    -fx-background-radius: 28px;
-    -fx-padding: 36px;
     -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 6, 0.18, 0, 3);
 }
 

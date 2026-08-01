@@ -151,7 +151,9 @@ final class M3TokenFactoryTest {
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-fab:hover"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-surface-elevation-level3"));
         assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-menu, .m3-rich-tooltip-container"));
-        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-dialog-pane, .m3-snackbar-container"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(
+                ".m3-dialog-pane .m3-dialog-surface, .m3-snackbar-container"
+        ));
     }
 
     /// Verifies that public token factories reject non-finite values before rendering.

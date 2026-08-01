@@ -60,6 +60,22 @@ public final class M3Css {
     private M3Css() {
     }
 
+    /// Formats a finite logical-pixel value for use in JavaFX CSS.
+    ///
+    /// Integral values representable as `long` omit the decimal point. Other values use [Double#toString(double)]
+    /// so the result is locale-independent and preserves the supplied value without formatter allocation or
+    /// precision loss.
+    ///
+    /// @param value the finite value to format
+    /// @return the CSS pixel value
+    /// @throws IllegalArgumentException if `value` is infinite or NaN
+    public static String pixels(double value) {
+        finite(value, "value");
+        return Math.rint(value) == value && value >= -0x1.0p63 && value < 0x1.0p63
+                ? (long) value + "px"
+                : value + "px";
+    }
+
     /// Returns whether a styleable numeric property can be set by CSS.
     ///
     /// A property is settable when it is unbound and has not received an explicit application value through an

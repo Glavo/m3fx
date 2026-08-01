@@ -17,6 +17,7 @@ import javafx.scene.text.Text;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -323,10 +324,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         selectionBottomRightRadius = bottomRight;
         selectionBottomLeftRadius = bottomLeft;
         String style = "-fx-background-radius: "
-                + formatPixels(topLeft) + " "
-                + formatPixels(topRight) + " "
-                + formatPixels(bottomRight) + " "
-                + formatPixels(bottomLeft) + ";";
+                + M3Css.pixels(topLeft) + " "
+                + M3Css.pixels(topRight) + " "
+                + M3Css.pixels(bottomRight) + " "
+                + M3Css.pixels(bottomLeft) + ";";
         selectionContainer.setStyle(style);
         selectionContainer.applyCss();
     }
@@ -532,13 +533,5 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     ) {
         double innerShapeRadius = Math.max(0.0, shapeRadius - Math.max(horizontalInset, verticalInset));
         return Math.min(innerShapeRadius, Math.max(0.0, Math.min(width, height) / 2.0));
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 }

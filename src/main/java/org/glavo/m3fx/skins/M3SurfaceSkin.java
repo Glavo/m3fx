@@ -14,6 +14,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Paint;
 import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -122,7 +123,7 @@ public final class M3SurfaceSkin extends SkinBase<M3Surface> {
     /// Applies the token-backed corner radius to the visual surface container.
     private void updateContainerShape() {
         surfaceContainer.setStyle(
-                "-fx-background-radius: " + getSkinnable().getContainerShape() + "px;"
+                "-fx-background-radius: " + M3Css.pixels(getSkinnable().getContainerShape()) + ";"
         );
         getSkinnable().requestLayout();
     }

@@ -18,6 +18,7 @@ import javafx.scene.transform.Transform;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -339,7 +340,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Applies the switch track shape token to the visual track.
     private void updateTrackStyle() {
-        String shape = formatPixels(getSkinnable().getTrackShape());
+        String shape = M3Css.pixels(getSkinnable().getTrackShape());
         String style = "-fx-background-radius: " + shape + "; -fx-border-radius: " + shape + ";";
         unselectedTrackPaint.setStyle(style);
         selectedTrackPaint.setStyle(style);
@@ -516,13 +517,5 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Constrains a normalized position to the closed unit interval.
     private static double clamp01(double value) {
         return Math.max(0.0, Math.min(1.0, value));
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 }

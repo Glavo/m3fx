@@ -300,7 +300,7 @@ public final class M3TokenCssCompiler {
         appendShadowRule(builder, ".m3-menu, .m3-rich-tooltip-container", tokens.level2(), Math.max(tokens.level1(), tokens.level2() - tokens.level1()));
         appendShadowRule(builder, ".m3-top-app-bar:scrolled-under", tokens.level2(), Math.max(tokens.level1(), tokens.level2() - tokens.level1()));
         appendShadowRule(builder, ".m3-toolbar-floating", tokens.level3(), Math.max(tokens.level1(), tokens.level3() - tokens.level2()));
-        appendShadowRule(builder, ".m3-dialog-pane, .m3-snackbar-container", tokens.level3(), Math.max(tokens.level1(), tokens.level3() - tokens.level2()));
+        appendShadowRule(builder, ".m3-dialog-pane .m3-dialog-surface, .m3-snackbar-container", tokens.level3(), Math.max(tokens.level1(), tokens.level3() - tokens.level2()));
     }
 
     /// Appends an effect reset CSS rule.

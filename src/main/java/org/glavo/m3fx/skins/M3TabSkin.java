@@ -13,6 +13,7 @@ import javafx.scene.text.Text;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -155,7 +156,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         double indicatorShape = tab.getActiveIndicatorShape();
         if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
             appliedIndicatorShape = indicatorShape;
-            String radius = indicatorShape + "px";
+            String radius = M3Css.pixels(indicatorShape);
             activeIndicator.setStyle("-fx-background-radius: " + radius + " " + radius + " 0px 0px;");
         }
     }

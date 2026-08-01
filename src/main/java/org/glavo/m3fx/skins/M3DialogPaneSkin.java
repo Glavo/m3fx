@@ -14,6 +14,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DialogPane;
+import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,8 +27,14 @@ import java.util.Objects;
 /// lifecycle when the pane is presented.
 @NotNullByDefault
 public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
+    /// The internal dialog-surface style class.
+    private static final String SURFACE_STYLE_CLASS = "m3-dialog-surface";
+
     /// The internal dialog-actions style class.
     private static final String ACTIONS_STYLE_CLASS = "m3-dialog-actions";
+
+    /// The visual dialog surface behind the section layout.
+    private final Region surface = new Region();
 
     /// The vertical layout containing all visible dialog sections.
     private final VBox layout = new VBox();
@@ -65,6 +72,9 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         rebuildSections();
     };
 
+    /// Updates the visual surface after the container-shape token changes.
+    private final InvalidationListener shapeInvalidation = observable -> updateSurfaceShape();
+
     /// Creates a skin around the actions owned by the supplied pane.
     ///
     /// @param control       the dialog pane being skinned
@@ -74,6 +84,9 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         super(Objects.requireNonNull(control, "control"));
         this.leadingAction = leadingAction;
 
+        surface.getStyleClass().add(SURFACE_STYLE_CLASS);
+        surface.setManaged(false);
+        surface.setMouseTransparent(true);
         layout.getStyleClass().add("m3-dialog-layout");
         layout.setFillWidth(true);
         graphicContainer.getStyleClass().add("graphic-container");
@@ -97,8 +110,10 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         control.contentProperty().addListener(structureInvalidation);
         control.contentTextProperty().addListener(structureInvalidation);
         control.getActions().addListener(actionsInvalidation);
+        control.containerShapeProperty().addListener(shapeInvalidation);
 
-        getChildren().add(layout);
+        getChildren().addAll(surface, layout);
+        updateSurfaceShape();
         rebuildActions();
         rebuildSections();
     }
@@ -112,12 +127,18 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         control.contentProperty().removeListener(structureInvalidation);
         control.contentTextProperty().removeListener(structureInvalidation);
         control.getActions().removeListener(actionsInvalidation);
+        control.containerShapeProperty().removeListener(shapeInvalidation);
         headerLabel.textProperty().unbind();
         contentLabel.textProperty().unbind();
         actionBar.spacingProperty().unbind();
         actionBar.getChildren().clear();
         layout.getChildren().clear();
         super.dispose();
+    }
+
+    /// Applies the dialog shape token to the skin-owned surface without changing the control's application style.
+    private void updateSurfaceShape() {
+        surface.setStyle("-fx-background-radius: " + M3Css.pixels(getSkinnable().getContainerShape()) + ";");
     }
 
     /// Rebuilds the action row from the stable leading slot and current action list.
@@ -216,6 +237,8 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     /// Sizes the section layout to the dialog pane's available content area.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        M3DialogPane control = getSkinnable();
+        surface.resizeRelocate(0.0, 0.0, control.getWidth(), control.getHeight());
         layout.resizeRelocate(x, y, width, height);
     }
 }

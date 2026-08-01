@@ -24,9 +24,10 @@ import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Slider;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -340,7 +341,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Applies the slider track shape token to both track segments.
     private void updateTrackStyle() {
         M3Slider slider = getSkinnable();
-        String shape = formatPixels(slider.getTrackShape());
+        String shape = M3Css.pixels(slider.getTrackShape());
         String leadingRadii;
         String trailingRadii;
         if (slider.getOrientation() == Orientation.VERTICAL) {
@@ -357,7 +358,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Applies the slider thumb shape from the current short-side width token.
     private void updateThumbStyle() {
-        String radius = formatPixels(getSkinnable().getThumbWidth() / 2.0);
+        String radius = M3Css.pixels(getSkinnable().getThumbWidth() / 2.0);
         thumb.setStyle(
                 "-fx-background-radius: " + radius + ";"
         );
@@ -1345,13 +1346,5 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clamps a coordinate to a local range.
     private static double clampToRange(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
-    }
-
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return (long) value + "px";
-        }
-        return value + "px";
     }
 }
