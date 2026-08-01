@@ -15741,6 +15741,12 @@ final class M3ControlContractMatrixTest {
         assertTrue(ripple.getOpacity() > 0.0, "released search-bar ripple should fade instead of disappearing");
 
         M3MotionSettings.setReducedMotionRequested(root, true);
+        assertEquals(0.0, overlay.getOpacity(), 0.0001,
+                "persistent interaction overlays should not stack over a fading ripple");
+        searchBar.setDisable(true);
+        searchBar.setDisable(false);
+        assertEquals(0.0, ripple.getOpacity(), 0.0001,
+                "disabling the search bar should clear transient ripple feedback");
         searchBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         assertEquals(0.08, overlay.getOpacity(), 0.0001);
 
@@ -18437,13 +18443,15 @@ final class M3ControlContractMatrixTest {
             assertTrue(graphicIndicator.getViewOrder() < graphic.getViewOrder());
             assertSame(graphic, graphicButton.getGraphic());
             assertEquals(0.0, graphic.getOpacity(), 0.0001);
-            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-mark"));
 
             PseudoClass hover = PseudoClass.getPseudoClass("hover");
             graphicButton.pseudoClassStateChanged(hover, true);
             root.applyCss();
             assertEquals(0.0, graphic.getOpacity(), 0.0001);
-            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertNotNull(graphicButton.lookup(".m3-segmented-button-selection-indicator-mark"));
 
             M3MotionSettings.setReducedMotionRequested(root, true);
             try {
@@ -18527,7 +18535,9 @@ final class M3ControlContractMatrixTest {
             );
             Bounds rightToLeftLabel = rightToLeftLabelNode.localToScene(rightToLeftLabelNode.getBoundsInLocal());
             assertTrue(rightToLeftIndicator.getMinX() > rightToLeftLabel.getMaxX(),
-                    "an inherited RTL change should move the indicator after its label physically");
+                    () -> "an inherited RTL change should move the indicator after its label physically: orientation="
+                            + button.getEffectiveNodeOrientation() + ", indicator=" + rightToLeftIndicator
+                            + ", label=" + rightToLeftLabel);
 
             M3SegmentedButton attachedButton = new M3SegmentedButton("Week");
             attachedButton.setSelected(true);
@@ -32041,7 +32051,7 @@ final class M3ControlContractMatrixTest {
         }
     }
 
-    /// Verifies navigation drawer typography stability and interaction colors against the baseline component tokens.
+    /// Verifies navigation drawer typography emphasis and interaction colors against the baseline component tokens.
     @Test
     void navigationDrawerResolvesDestinationTypographyAndStateColors() {
         M3ListItem home = new M3ListItem("Home");
@@ -32066,8 +32076,8 @@ final class M3ControlContractMatrixTest {
             assertFalse(archiveLabel.getStyleClass().contains("m3-body-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
             assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
-            var unselectedFont = archiveLabel.getFont();
-            double unselectedTextWidth = archiveLabel.prefWidth(-1.0);
+            assertFalse(archiveLabel.getFont().getStyle().contains("Bold"),
+                    () -> "unselected drawer label style=" + archiveLabel.getFont().getStyle());
             assertEquals(
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
                     archiveLabel.getTextFill()
@@ -32117,8 +32127,8 @@ final class M3ControlContractMatrixTest {
                     theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
                     archiveLabel.getTextFill()
             );
-            assertEquals(unselectedFont, archiveLabel.getFont());
-            assertEquals(unselectedTextWidth, archiveLabel.prefWidth(-1.0), 0.0001);
+            assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
+                    () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
 
             drawer.getItems().remove(archive);
@@ -32128,6 +32138,86 @@ final class M3ControlContractMatrixTest {
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
         } finally {
             M3MotionSettings.setReducedMotionRequested(drawer, false);
+        }
+    }
+
+    /// Verifies that selected drawer typography changes before the selected-container animation settles.
+    @Tier2Test
+    @Test
+    void navigationDrawerAppliesSelectedWeightImmediately() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> archiveReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> headlineReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> selectionContainerReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable Region selectionContainer = selectionContainerReference.get();
+                        if (selectionContainer == null) {
+                            return false;
+                        }
+                        double opacity = selectionContainer.getOpacity();
+                        return opacity > 0.05 && opacity < 0.95;
+                    },
+                    () -> {
+                        M3ListItem home = new M3ListItem("Home");
+                        M3ListItem archive = new M3ListItem("Archive");
+                        M3NavigationDrawer drawer = navigationDrawer(home, archive);
+                        Pane root = new Pane(drawer);
+                        Scene scene = new Scene(root, 360.0, 160.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        drawer.resize(360.0, 160.0);
+                        root.layout();
+
+                        Label headline = listItemHeadlineLabel(archive);
+                        assertFalse(headline.getFont().getStyle().contains("Bold"),
+                                () -> "unselected drawer label style=" + headline.getFont().getStyle());
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        archiveReference.set(archive);
+                        headlineReference.set(headline);
+                        selectionContainerReference.set(
+                                lookupRegion(archive, ".m3-list-item-selection-container")
+                        );
+                        drawer.select(archive);
+                    },
+                    () -> {
+                        Pane root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3ListItem archive = Objects.requireNonNull(archiveReference.get(), "archive");
+                        Label headline = Objects.requireNonNull(headlineReference.get(), "headline");
+                        Region selectionContainer = Objects.requireNonNull(
+                                selectionContainerReference.get(),
+                                "selection container"
+                        );
+                        root.applyCss();
+                        assertBetween(selectionContainer.getOpacity(), 0.0, 1.0, "selection container opacity");
+                        assertTrue(headline.getFont().getStyle().contains("Bold"),
+                                () -> "intermediate selected drawer label style=" + headline.getFont().getStyle());
+                        assertNull(archive.lookup(".m3-list-item-headline-emphasis"));
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Pane root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionScheme(root);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
         }
     }
 

@@ -274,6 +274,7 @@ public final class M3ComponentTokenCssCompiler {
         appendListSectionHeaderRule(builder, tokens.listItem());
         appendNavigationDrawerRule(builder, tokens.navigationDrawer());
         appendNavigationDrawerItemRule(builder, tokens.navigationDrawer());
+        appendNavigationDrawerSelectedHeadlineRule(builder);
         appendNavigationDrawerGroupChildItemRule(
                 builder,
                 ".m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child",
@@ -3197,6 +3198,16 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-m3-horizontal-padding", pixels(tokens.itemHorizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", pixels(tokens.itemVerticalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", pixels(tokens.itemContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends the navigation drawer selected-headline typography rule.
+    ///
+    /// @param builder the destination CSS buffer
+    private static void appendNavigationDrawerSelectedHeadlineRule(StringBuilder builder) {
+        beginRule(builder, ".m3-list-item:navigation-drawer:selected .m3-list-item-headline");
+        appendDeclaration(builder, "-m3-typography-font-weight", M3TokenCssCompiler.PROMINENT_FONT_WEIGHT);
+        appendDeclaration(builder, "-fx-font-weight", M3TokenCssCompiler.PROMINENT_FONT_WEIGHT);
         endRule(builder);
     }
 

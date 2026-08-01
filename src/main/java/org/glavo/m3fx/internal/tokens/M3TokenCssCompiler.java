@@ -22,6 +22,9 @@ public final class M3TokenCssCompiler {
     /// The CSS prefix used for Material color roles.
     private static final String MATERIAL_COLOR_PREFIX = "-m3-color";
 
+    /// The CSS font-weight value used by prominent typography variants.
+    static final String PROMINENT_FONT_WEIGHT = "700";
+
     /// Prevents utility class instantiation.
     private M3TokenCssCompiler() {
     }
@@ -167,8 +170,8 @@ public final class M3TokenCssCompiler {
         appendRule(builder, ".m3-body-medium-text", tokens.bodyMedium());
         appendRule(builder, ".m3-body-small-text", tokens.bodySmall());
         builder.append(".m3-prominent-text {\n");
-        appendDeclaration(builder, "-m3-typography-font-weight", "700");
-        appendDeclaration(builder, "-fx-font-weight", "700");
+        appendDeclaration(builder, "-m3-typography-font-weight", PROMINENT_FONT_WEIGHT);
+        appendDeclaration(builder, "-fx-font-weight", PROMINENT_FONT_WEIGHT);
         builder.append("}\n\n");
     }
 

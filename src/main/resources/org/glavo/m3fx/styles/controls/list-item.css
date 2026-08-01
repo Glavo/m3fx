@@ -115,6 +115,11 @@
     -m3-list-item-state-layer-color: -m3-color-on-secondary-container;
 }
 
+.m3-list-item:navigation-drawer:selected .m3-list-item-headline {
+    -m3-typography-font-weight: 700;
+    -fx-font-weight: 700;
+}
+
 .m3-list-item:navigation-drawer .m3-ripple,
 .m3-list-item:navigation-drawer:pressed .m3-state-layer,
 .m3-list-item:navigation-drawer:armed .m3-state-layer {

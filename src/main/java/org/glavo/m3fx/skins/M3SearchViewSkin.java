@@ -4,9 +4,14 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.Bounds;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SearchViewStyle;
@@ -28,6 +33,12 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     /// The internal vertical container.
     private final VBox container = new VBox();
 
+    /// The search result surface owned by the skinned control.
+    private final VBox resultsContainer;
+
+    /// The retained clip that confines interactions to the contained result surface shape.
+    private final Rectangle resultsClip = new Rectangle();
+
     /// The separator shown between the search header and results in divided views.
     private final Region divider = new Region();
 
@@ -37,7 +48,18 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
 
     /// Updates divider participation when the visual treatment changes.
     private final ChangeListener<M3SearchViewStyle> styleListener =
-            (observable, oldValue, newValue) -> updateDividerVisibility();
+            (observable, oldValue, newValue) -> {
+                updateDividerVisibility();
+                updateResultsClip();
+            };
+
+    /// Updates clip dimensions when the result surface bounds change.
+    private final ChangeListener<Bounds> resultsBoundsListener =
+            (observable, oldValue, newValue) -> updateResultsClipGeometry();
+
+    /// Updates clip radii when CSS changes the result surface background shape.
+    private final ChangeListener<Background> resultsBackgroundListener =
+            (observable, oldValue, newValue) -> updateResultsClipGeometry();
 
     /// Creates a search view skin.
     ///
@@ -46,14 +68,19 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     /// @param resultsContainer the result container owned by the control
     public M3SearchViewSkin(M3SearchView control, M3SearchBar searchBar, VBox resultsContainer) {
         super(control);
+        this.resultsContainer = resultsContainer;
         container.setManaged(false);
         container.getStyleClass().add(CONTENT_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        resultsClip.setMouseTransparent(true);
         divider.getStyleClass().add(DIVIDER_STYLE_CLASS);
         divider.setMouseTransparent(true);
         control.activeProperty().addListener(activeListener);
         control.viewStyleProperty().addListener(styleListener);
+        resultsContainer.layoutBoundsProperty().addListener(resultsBoundsListener);
+        resultsContainer.backgroundProperty().addListener(resultsBackgroundListener);
         updateDividerVisibility();
+        updateResultsClip();
         container.getChildren().setAll(searchBar, divider, resultsContainer);
         getChildren().setAll(container);
     }
@@ -64,7 +91,10 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
         M3SearchView control = getSkinnable();
         control.activeProperty().removeListener(activeListener);
         control.viewStyleProperty().removeListener(styleListener);
+        resultsContainer.layoutBoundsProperty().removeListener(resultsBoundsListener);
+        resultsContainer.backgroundProperty().removeListener(resultsBackgroundListener);
         container.nodeOrientationProperty().unbind();
+        resultsContainer.setClip(null);
         container.getChildren().clear();
         getChildren().remove(container);
         super.dispose();
@@ -154,5 +184,43 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
         boolean visible = control.isActive() && control.getViewStyle() == M3SearchViewStyle.DIVIDED;
         divider.setVisible(visible);
         divider.setManaged(visible);
+    }
+
+    /// Clips contained results while leaving the search-view elevation shadow outside the clip hierarchy.
+    private void updateResultsClip() {
+        boolean contained = getSkinnable().getViewStyle() == M3SearchViewStyle.CONTAINED;
+        resultsContainer.setClip(contained ? resultsClip : null);
+        updateResultsClipGeometry();
+        getSkinnable().requestLayout();
+    }
+
+    /// Synchronizes the retained clip with the CSS-resolved result surface bounds and shape.
+    private void updateResultsClipGeometry() {
+        double width = resultsContainer.getLayoutBounds().getWidth();
+        double height = resultsContainer.getLayoutBounds().getHeight();
+        resultsClip.setX(0.0);
+        resultsClip.setY(0.0);
+        resultsClip.setWidth(width);
+        resultsClip.setHeight(height);
+
+        Background background = resultsContainer.getBackground();
+        if (background == null || background.getFills().isEmpty()) {
+            resultsClip.setArcWidth(0.0);
+            resultsClip.setArcHeight(0.0);
+            return;
+        }
+
+        BackgroundFill fill = background.getFills().get(0);
+        CornerRadii radii = fill.getRadii();
+        double horizontalRadius = radii.getTopLeftHorizontalRadius();
+        double verticalRadius = radii.getTopLeftVerticalRadius();
+        if (radii.isTopLeftHorizontalRadiusAsPercentage()) {
+            horizontalRadius *= width;
+        }
+        if (radii.isTopLeftVerticalRadiusAsPercentage()) {
+            verticalRadius *= height;
+        }
+        resultsClip.setArcWidth(Math.min(width, Math.max(0.0, horizontalRadius * 2.0)));
+        resultsClip.setArcHeight(Math.min(height, Math.max(0.0, verticalRadius * 2.0)));
     }
 }

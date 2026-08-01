@@ -28,25 +28,25 @@ final class ChipsDemoPage extends DemoPageSupport {
     /// Creates the chip component page.
     Node createContent() {
         M3AssistChip assistDirections = new M3AssistChip("Directions");
-        assistDirections.setGraphic(createNavigationIcon("navigation"));
+        assistDirections.setGraphic(createChipIcon("navigation"));
         M3AssistChip assistCalendar = new M3AssistChip("Add to calendar");
-        assistCalendar.setGraphic(createNavigationIcon("calendar"));
+        assistCalendar.setGraphic(createChipIcon("calendar"));
         assistCalendar.setChipStyle(M3ChipStyle.ELEVATED);
         M3AssistChip assistDisabled = new M3AssistChip("Disabled");
         assistDisabled.setDisable(true);
 
         M3FilterChip filterAll = new M3FilterChip("All");
         filterAll.setSelected(true);
-        filterAll.setGraphic(createNavigationIcon("check"));
+        filterAll.setGraphic(createChipIcon("check"));
         M3FilterChip filterNearby = new M3FilterChip("Nearby");
         M3FilterChip filterOpen = new M3FilterChip("Open now");
         filterOpen.setSelected(true);
-        filterOpen.setGraphic(createNavigationIcon("check"));
+        filterOpen.setGraphic(createChipIcon("check"));
         M3ChipGroup filters = createChipGroup(filterAll, filterNearby, filterOpen);
         filters.setPrefWrapLength(420.0);
 
         M3InputChip inputPerson = new M3InputChip("Alex Morgan");
-        inputPerson.setGraphic(createNavigationIcon("person"));
+        inputPerson.setGraphic(createChipIcon("person"));
         M3IconButton removePerson = new M3IconButton(
                 createIconViewport(DemoIcons.onSurfaceVariant("close"), 18.0)
         );
@@ -58,7 +58,7 @@ final class ChipsDemoPage extends DemoPageSupport {
 
         M3InputChip inputTeam = new M3InputChip("Design team");
         inputTeam.setSelected(true);
-        inputTeam.setGraphic(createNavigationIcon("group"));
+        inputTeam.setGraphic(createChipIcon("group"));
         M3IconButton removeTeam = new M3IconButton(
                 createIconViewport(DemoIcons.onSurfaceVariant("close"), 18.0)
         );
@@ -80,7 +80,7 @@ final class ChipsDemoPage extends DemoPageSupport {
 
         M3SuggestionChip suggestionReply = new M3SuggestionChip("Reply");
         M3SuggestionChip suggestionRemind = new M3SuggestionChip("Remind me");
-        suggestionRemind.setGraphic(createNavigationIcon("schedule"));
+        suggestionRemind.setGraphic(createChipIcon("schedule"));
         M3SuggestionChip suggestionElevated = new M3SuggestionChip("View details");
         suggestionElevated.setChipStyle(M3ChipStyle.ELEVATED);
 
@@ -97,5 +97,10 @@ final class ChipsDemoPage extends DemoPageSupport {
         M3ChipGroup group = new M3ChipGroup();
         group.getItems().addAll(chips);
         return group;
+    }
+
+    /// Creates an 18 dp icon viewport for a regular chip icon slot.
+    private static Node createChipIcon(String iconName) {
+        return createIconViewport(DemoIcons.onSurfaceVariant(iconName), 18.0, "demo-chip-icon");
     }
 }

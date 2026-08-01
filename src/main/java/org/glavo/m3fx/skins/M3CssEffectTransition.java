@@ -4,7 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.css.StyleOrigin;
@@ -28,15 +27,23 @@ import org.jetbrains.annotations.Nullable;
 /// effect set at user origin remains under application control.
 @NotNullByDefault
 final class M3CssEffectTransition {
+    /// The pseudo-class used by JavaFX while the owner is hovered.
+    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
+
+    /// The pseudo-class used by JavaFX while the owner is pressed.
+    private static final PseudoClass PRESSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("pressed");
+
+    /// The pseudo-class used by JavaFX while the owner is focused.
+    private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
+
+    /// The pseudo-class used by JavaFX while the owner is disabled.
+    private static final PseudoClass DISABLED_PSEUDO_CLASS = PseudoClass.getPseudoClass("disabled");
+
     /// The pseudo-class used by controls that expose an explicit armed state.
     private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
 
     /// The pseudo-class used while a draggable component is represented as dragged.
     private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
-
-    /// Handles owner interaction state changes.
-    private final ChangeListener<Boolean> interactionStateListener =
-            (observable, oldValue, newValue) -> animateEffectFromCss();
 
     /// The reusable animation for drop shadow transitions.
     private final ShadowTransition animation = new ShadowTransition();
@@ -53,11 +60,19 @@ final class M3CssEffectTransition {
     /// The node that receives the animated effect.
     private final Node target;
 
-    /// Handles interaction pseudo-classes that do not have a dedicated JavaFX observable property.
+    /// Handles interaction pseudo-classes after their CSS state has been committed by JavaFX.
     private final SetChangeListener<PseudoClass> pseudoClassStateListener = change -> {
         @Nullable PseudoClass added = change.getElementAdded();
         @Nullable PseudoClass removed = change.getElementRemoved();
-        if (M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(added)
+        if (HOVER_PSEUDO_CLASS.equals(added)
+                || HOVER_PSEUDO_CLASS.equals(removed)
+                || PRESSED_PSEUDO_CLASS.equals(added)
+                || PRESSED_PSEUDO_CLASS.equals(removed)
+                || FOCUSED_PSEUDO_CLASS.equals(added)
+                || FOCUSED_PSEUDO_CLASS.equals(removed)
+                || DISABLED_PSEUDO_CLASS.equals(added)
+                || DISABLED_PSEUDO_CLASS.equals(removed)
+                || M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(added)
                 || M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(removed)
                 || ARMED_PSEUDO_CLASS.equals(added)
                 || ARMED_PSEUDO_CLASS.equals(removed)
@@ -81,18 +96,10 @@ final class M3CssEffectTransition {
     /// This method is intended to be paired with one later call to [#uninstall()].
     void install() {
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
-        owner.hoverProperty().addListener(interactionStateListener);
-        owner.focusedProperty().addListener(interactionStateListener);
-        owner.pressedProperty().addListener(interactionStateListener);
-        owner.disabledProperty().addListener(interactionStateListener);
     }
 
     /// Uninstalls interaction listeners, stops active animation, and applies the exact target effect.
     void uninstall() {
-        owner.hoverProperty().removeListener(interactionStateListener);
-        owner.focusedProperty().removeListener(interactionStateListener);
-        owner.pressedProperty().removeListener(interactionStateListener);
-        owner.disabledProperty().removeListener(interactionStateListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
         animation.stop();
         settleAnimation();

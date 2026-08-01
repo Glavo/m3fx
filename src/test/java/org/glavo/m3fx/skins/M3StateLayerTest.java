@@ -210,13 +210,14 @@ final class M3StateLayerTest {
             M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
                 owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-                stateLayer.animateOverlayOpacityFromOwnerState();
                 stateLayer.playRipple(20.0, 20.0);
+                stateLayer.animateOverlayOpacityFromOwnerState();
 
                 Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
                 Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-                assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
+                assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
                 assertTrue(stateLayer.isRippleAnimationRunning());
+                assertEquals(0.0, overlay.getOpacity(), 0.0001);
 
                 stage.hide();
 
@@ -270,6 +271,41 @@ final class M3StateLayerTest {
 
             owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
             assertEquals(0.23, overlay.getOpacity(), 0.0001);
+        });
+    }
+
+    /// Verifies that a pressed ripple uses one token-controlled feedback layer instead of stacking two opacities.
+    @Test
+    void pressedRippleUsesThemeOpacityWithoutStackingThePersistentOverlay() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add(BUTTON_BASE_STYLE_CLASS);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            M3Theme baseTheme = M3Theme.defaultTheme();
+            M3Theme tokenTheme = M3Theme.fromTokenSet(
+                    M3TokenSet.builder(baseTheme.tokens())
+                            .stateLayerTokens(M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
+                                    .pressedOpacity(0.23)
+                                    .build())
+                            .build()
+            );
+
+            M3ThemeManager.install(scene, tokenTheme);
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+            stateLayer.playRipple(20.0, 20.0);
+
+            Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            assertEquals(0.23, ripple.getOpacity(), 0.0001);
+
+            stateLayer.cancelRipple();
+            stateLayer.uninstallStateTransitions();
         });
     }
 
@@ -574,14 +610,14 @@ final class M3StateLayerTest {
                         Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
                         double releaseOpacity = ripple.getOpacity();
 
-                        assertTrue(releaseOpacity > 0.1);
+                        assertTrue(releaseOpacity >= 0.099);
                         assertEquals(1.0, ripple.getScaleX(), 0.001);
                         assertEquals(1.0, ripple.getScaleY(), 0.001);
 
                         releaseOpacityReference.set(releaseOpacity);
                         stateLayer.releaseRipple();
 
-                        assertTrue(ripple.getOpacity() > 0.1);
+                        assertTrue(ripple.getOpacity() >= 0.099);
                         assertTrue(stateLayer.isRippleAnimationRunning());
                     }
             );
@@ -642,7 +678,7 @@ final class M3StateLayerTest {
                         startOpacityReference.set(ripple.getOpacity());
                         stateLayer.releaseRipple();
 
-                        assertTrue(ripple.getOpacity() > 0.1);
+                        assertTrue(ripple.getOpacity() >= 0.099);
                         assertTrue(stateLayer.isRippleAnimationRunning());
                     },
                     () -> {
@@ -752,7 +788,7 @@ final class M3StateLayerTest {
     private static boolean rippleReachedExpandedFrame(AtomicReference<@Nullable Region> rippleReference) {
         @Nullable Region ripple = rippleReference.get();
         return ripple != null
-                && ripple.getOpacity() > 0.1
+                && ripple.getOpacity() >= 0.099
                 && ripple.getScaleX() >= 0.999
                 && ripple.getScaleY() >= 0.999;
     }

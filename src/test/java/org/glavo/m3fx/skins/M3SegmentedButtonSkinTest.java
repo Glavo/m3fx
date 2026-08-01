@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,7 +72,16 @@ final class M3SegmentedButtonSkinTest {
             assertEquals(1.0, originalGraphic.getOpacity(), 0.0001);
 
             textOnlyButton.setSelected(true);
+            root.layout();
+            textOnlyButton.layout();
             assertEquals(1.0, selectionIndicator(textOnlyButton).getOpacity(), 0.0001);
+            assertNull(textOnlyButton.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            assertTextOnlyIndicatorRowCentered(textOnlyButton);
+
+            textOnlyButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.layout();
+            textOnlyButton.layout();
+            assertTextOnlyIndicatorRowCentered(textOnlyButton);
 
             button.setSelected(true);
             originalGraphic.applyCss();
@@ -280,6 +291,26 @@ final class M3SegmentedButtonSkinTest {
                 Region.class,
                 button.lookup("." + "m3-segmented-button-selection-indicator")
         );
+    }
+
+    /// Verifies the selected check and label form one direction-aware centered row.
+    private static void assertTextOnlyIndicatorRowCentered(M3SegmentedButton button) {
+        Region indicator = selectionIndicator(button);
+        Text label = assertInstanceOf(Text.class, button.lookup(".text"));
+        Bounds buttonBounds = button.localToScene(button.getBoundsInLocal());
+        Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+        Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+        double rowMinX = Math.min(indicatorBounds.getMinX(), labelBounds.getMinX());
+        double rowMaxX = Math.max(indicatorBounds.getMaxX(), labelBounds.getMaxX());
+        double gap = button.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                ? indicatorBounds.getMinX() - labelBounds.getMaxX()
+                : labelBounds.getMinX() - indicatorBounds.getMaxX();
+
+        assertEquals(buttonBounds.getCenterX(), (rowMinX + rowMaxX) / 2.0, 0.75,
+                () -> "button=" + button.getWidth() + ", indicator=" + indicatorBounds + ", label=" + labelBounds
+                        + ", translate=" + label.getTranslateX());
+        assertEquals(8.0, gap, 1.1,
+                () -> "indicator=" + indicatorBounds + ", label=" + labelBounds);
     }
 
     /// Verifies that skin state changes did not alter application-owned graphic state.

@@ -1625,18 +1625,33 @@ public class M3Tooltip extends PopupControl {
             double anchorY;
             if (rich) {
                 boolean rightToLeft = node.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-                anchorX = rightToLeft
+                double preferredSideX = rightToLeft
                         ? ownerBounds.getMinX() - popupWidth - gap
                         : ownerBounds.getMaxX() + gap;
-                if (anchorX < visualBounds.getMinX() + edgeMargin
-                        || anchorX + popupWidth > visualBounds.getMaxX() - edgeMargin) {
-                    anchorX = rightToLeft
-                            ? ownerBounds.getMaxX() + gap
-                            : ownerBounds.getMinX() - popupWidth - gap;
-                }
-                anchorY = ownerBounds.getMaxY() + gap;
-                if (anchorY + popupHeight > visualBounds.getMaxY() - edgeMargin) {
-                    anchorY = ownerBounds.getMinY() - popupHeight - gap;
+                double alternateSideX = rightToLeft
+                        ? ownerBounds.getMaxX() + gap
+                        : ownerBounds.getMinX() - popupWidth - gap;
+                boolean preferredSideFits = fitsHorizontally(
+                        preferredSideX,
+                        popupWidth,
+                        visualBounds,
+                        edgeMargin
+                );
+                boolean alternateSideFits = fitsHorizontally(
+                        alternateSideX,
+                        popupWidth,
+                        visualBounds,
+                        edgeMargin
+                );
+                if (preferredSideFits || alternateSideFits) {
+                    anchorX = preferredSideFits ? preferredSideX : alternateSideX;
+                    anchorY = ownerBounds.getMinY() + (ownerBounds.getHeight() - popupHeight) / 2.0;
+                } else {
+                    anchorX = ownerBounds.getMinX() + (ownerBounds.getWidth() - popupWidth) / 2.0;
+                    anchorY = ownerBounds.getMaxY() + gap;
+                    if (anchorY + popupHeight > visualBounds.getMaxY() - edgeMargin) {
+                        anchorY = ownerBounds.getMinY() - popupHeight - gap;
+                    }
                 }
             } else {
                 anchorX = ownerBounds.getMinX() + (ownerBounds.getWidth() - popupWidth) / 2.0;
@@ -1664,6 +1679,17 @@ public class M3Tooltip extends PopupControl {
             }
             tooltip.setAnchorX(anchorX);
             tooltip.setAnchorY(anchorY);
+        }
+
+        /// Returns whether a popup at the requested x coordinate fits inside the horizontal visual bounds.
+        private static boolean fitsHorizontally(
+                double anchorX,
+                double popupWidth,
+                Rectangle2D visualBounds,
+                double edgeMargin
+        ) {
+            return anchorX >= visualBounds.getMinX() + edgeMargin
+                    && anchorX + popupWidth <= visualBounds.getMaxX() - edgeMargin;
         }
 
         /// Schedules automatic hiding for finite show durations.

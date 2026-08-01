@@ -84,9 +84,6 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The class applied to keyboard focus indicator rings.
     static final String FOCUS_INDICATOR_STYLE_CLASS = "m3-focus-indicator";
 
-    /// The opacity used by the animated ripple at the start of a press.
-    private static final double RIPPLE_START_OPACITY = 0.18;
-
     /// The path element index occupied by the top-right clip corner.
     private static final int CLIP_TOP_RIGHT_CORNER_INDEX = 2;
 
@@ -509,14 +506,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
     void playRipple(double x, double y) {
         if (!interactionFeedbackEnabled || modalInteractionBlocked) {
-            clearRipple();
+            clearRippleAndSynchronizeOwnerState();
             return;
         }
         Region ripple = ensureRipple();
         Node owner = animationOwner();
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             stopRippleAnimation();
-            clearRipple();
+            clearRippleAndSynchronizeOwnerState();
             return;
         }
 
@@ -527,14 +524,17 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
 
         double diameter = rippleDiameter(x, y, width, height);
+        double rippleOpacity = stateLayerTokens(owner).pressedOpacity();
         RippleTransition rippleAnimation = ensureRippleAnimation(ripple);
         rippleAnimation.stop();
         ripple.resizeRelocate(x - diameter / 2.0, y - diameter / 2.0, diameter, diameter);
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
-        ripple.setOpacity(RIPPLE_START_OPACITY);
+        ripple.setOpacity(rippleOpacity);
+        stopStateOpacityAnimation();
+        overlay.setOpacity(resolvedOverlayOpacity(owner));
         M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
-        rippleAnimation.configureExpansion(rippleSpec);
+        rippleAnimation.configureExpansion(rippleSpec, rippleOpacity);
         startMotionObservation();
         rippleAnimation.playFromStart();
     }
@@ -547,7 +547,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Releases the active ripple and fades it out.
     void releaseRipple() {
         if (!interactionFeedbackEnabled || modalInteractionBlocked) {
-            clearRipple();
+            clearRippleAndSynchronizeOwnerState();
             return;
         }
         Region ripple = this.ripple;
@@ -557,7 +557,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         Node owner = animationOwner();
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             stopRippleAnimation();
-            clearRipple();
+            clearRippleAndSynchronizeOwnerState();
             return;
         }
 
@@ -695,6 +695,15 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         ripple.setScaleY(0.0);
     }
 
+    /// Clears transient ripple feedback and immediately restores the owner's persistent interaction state.
+    private void clearRippleAndSynchronizeOwnerState() {
+        clearRipple();
+        Node owner = stateOwner;
+        if (owner != null) {
+            synchronizeOwnerStateOpacity(owner);
+        }
+    }
+
     /// Applies focus-indicator opacity while excluding fully transparent rings from visual bounds and rendering.
     private void setFocusIndicatorOpacity(double opacity) {
         Region indicator = focusIndicator;
@@ -797,6 +806,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Stops motion observation after a lazily created transition completes.
     private void handleAnimationFinished(ActionEvent event) {
+        if (event.getSource() == rippleAnimation && !hasVisibleRipple()) {
+            animateOverlayOpacityFromOwnerState();
+        }
         stopMotionObservationIfIdle();
     }
 
@@ -836,7 +848,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             RippleTransition rippleAnimation = this.rippleAnimation;
             if (rippleAnimation != null && rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
-                clearRipple();
+                clearRippleAndSynchronizeOwnerState();
             }
             stopMotionObservationIfIdle();
             return;
@@ -955,6 +967,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = 0.0;
         } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
+        } else if (hasVisibleRipple()) {
+            interactionOpacity = 0.0;
         } else if (isPressedLike(owner)) {
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
@@ -967,6 +981,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = 0.0;
         }
         return compositeOpacity(restingOverlayOpacity, interactionOpacity);
+    }
+
+    /// Returns whether the transient ripple currently represents pressed-state feedback.
+    private boolean hasVisibleRipple() {
+        Region ripple = this.ripple;
+        return ripple != null && ripple.getOpacity() > 0.0;
     }
 
     /// Alpha-composites an interaction state layer over a persistent state layer of the same color.
@@ -1126,14 +1146,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
 
         /// Configures press expansion while retaining a constant visible opacity.
-        private void configureExpansion(M3MotionSpec expansionSpec) {
+        private void configureExpansion(M3MotionSpec expansionSpec, double opacity) {
             stop();
             Duration duration = expansionSpec.duration();
             setCycleDuration(duration);
             startScaleX = 0.0;
             startScaleY = 0.0;
-            startOpacity = RIPPLE_START_OPACITY;
-            targetOpacity = RIPPLE_START_OPACITY;
+            startOpacity = opacity;
+            targetOpacity = opacity;
             expansionDurationMillis = duration.toMillis();
             totalDurationMillis = expansionDurationMillis;
             expansionInterpolator = expansionSpec.interpolator();

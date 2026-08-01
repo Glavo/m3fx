@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.css.StyleOrigin;
 import javafx.css.StyleableProperty;
+import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
@@ -16,6 +17,9 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,6 +56,37 @@ final class M3CssEffectTransitionTest {
 
             DropShadow animated = assertInstanceOf(DropShadow.class, target.getEffect());
             assertEquals(0.0, animated.getRadius(), 0.0001);
+            assertTrue(transition.isRunning());
+
+            transition.uninstall();
+        });
+    }
+
+    /// Verifies that hover transitions resolve CSS after the hover pseudo-class is present.
+    @Test
+    void hoverPseudoClassStartsOneContinuousShadowTransition() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("effect-owner");
+            Region target = new Region();
+            target.getStyleClass().add("effect-target");
+            owner.getChildren().add(target);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            String stylesheet = ".effect-owner .effect-target { -fx-effect: null; }"
+                    + ".effect-owner:hover .effect-target {"
+                    + " -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3); }";
+            scene.getStylesheets().add("data:text/css;charset=UTF-8;base64,"
+                    + Base64.getEncoder().encodeToString(stylesheet.getBytes(StandardCharsets.UTF_8)));
+            M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
+
+            owner.applyCss();
+            assertNull(target.getEffect());
+            transition.install();
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+
+            DropShadow animated = assertInstanceOf(DropShadow.class, target.getEffect());
+            assertEquals(0.0, animated.getRadius(), 0.0001);
+            assertNull(animated.getInput());
             assertTrue(transition.isRunning());
 
             transition.uninstall();

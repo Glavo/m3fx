@@ -342,7 +342,7 @@ final class MotionDemoPage extends DemoPageSupport {
         );
         configureResponsiveWidth(adaptiveExample, 560.0);
 
-        return createGallery(
+        VBox gallery = createGallery(
                 createFullWidthShowcaseGroup("Interruptible Value", valueExample),
                 createFullWidthShowcaseGroup("Coordinated State Transition", stateExample),
                 createFullWidthShowcaseGroup("Seekable State Transition", seekExample),
@@ -351,6 +351,8 @@ final class MotionDemoPage extends DemoPageSupport {
                 createFullWidthShowcaseGroup("Existing Layout Container", layoutExample),
                 createFullWidthShowcaseGroup("Adaptive Pane Topology", adaptiveExample)
         );
+        gallery.getStyleClass().add("demo-motion-gallery");
+        return gallery;
     }
 
     /// Configures a direction-aware shared-axis transform for one content replacement.

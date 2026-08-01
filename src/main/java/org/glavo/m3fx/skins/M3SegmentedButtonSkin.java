@@ -46,10 +46,6 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The built-in selected-state check indicator style class.
     private static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
 
-    /// The backing layer that visually covers an application graphic in the selected state.
-    private static final String SELECTION_INDICATOR_BACKDROP_STYLE_CLASS =
-            "m3-segmented-button-selection-indicator-backdrop";
-
     /// Marks an application graphic that is currently replaced by the built-in selected-state check.
     private static final PseudoClass GRAPHIC_REPLACED_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("m3-segmented-button-graphic-replaced");
@@ -69,6 +65,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// The Material spacing between an icon and label.
     private static final double INDICATOR_GAP = 8.0;
+
+    /// Half of the width reserved for the selected-state indicator and its label gap.
+    private static final double INDICATOR_SLOT_TRANSLATE = (INDICATOR_SIZE + INDICATOR_GAP) / 2.0;
 
     /// The selected container background layer.
     private final Region selectionContainer = new Region();
@@ -128,11 +127,9 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         getChildren().add(0, selectionContainer);
 
         selectionIndicator.getStyleClass().add(SELECTION_INDICATOR_STYLE_CLASS);
-        Region selectionIndicatorBackdrop = new Region();
         Region selectionIndicatorMark = new Region();
-        selectionIndicatorBackdrop.getStyleClass().add(SELECTION_INDICATOR_BACKDROP_STYLE_CLASS);
         selectionIndicatorMark.getStyleClass().add(SELECTION_INDICATOR_MARK_STYLE_CLASS);
-        selectionIndicator.getChildren().setAll(selectionIndicatorBackdrop, selectionIndicatorMark);
+        selectionIndicator.getChildren().setAll(selectionIndicatorMark);
         selectionIndicator.setManaged(false);
         selectionIndicator.setMouseTransparent(true);
         selectionIndicator.setViewOrder(-1.0);
@@ -231,9 +228,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
             return;
         }
 
-        Bounds labelBounds = label.getBoundsInParent();
-        double iconX = snapPositionX(labelBounds.getMinX() - INDICATOR_GAP - INDICATOR_SIZE);
-        selectionIndicator.resizeRelocate(iconX, iconY, INDICATOR_SIZE, INDICATOR_SIZE);
+        double labelWidth = label.getLayoutBounds().getWidth();
+        double rowWidth = INDICATOR_SIZE + INDICATOR_GAP + labelWidth;
+        double rowX = (controlWidth - rowWidth) / 2.0;
+        selectionIndicator.resizeRelocate(snapPositionX(rowX), iconY, INDICATOR_SIZE, INDICATOR_SIZE);
     }
 
     /// Returns the label text node installed by the labeled skin foundation.
@@ -432,7 +430,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
             return;
         }
 
-        double targetTranslateX = indicatorVisible ? (INDICATOR_SIZE + INDICATOR_GAP) / 2.0 : 0.0;
+        double targetTranslateX = indicatorVisible ? INDICATOR_SLOT_TRANSLATE : 0.0;
         M3NodeTransition animation = labelPositionAnimation;
         if (animation == null) {
             animation = new M3NodeTransition(label);
@@ -455,7 +453,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         @Nullable Text label = labelTextNode();
         M3SegmentedButton button = getSkinnable();
         if (label != null && button.getGraphic() == null && !button.getText().isEmpty()) {
-            label.setTranslateX(indicatorVisible ? (INDICATOR_SIZE + INDICATOR_GAP) / 2.0 : 0.0);
+            label.setTranslateX(indicatorVisible ? INDICATOR_SLOT_TRANSLATE : 0.0);
         }
     }
 

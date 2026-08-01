@@ -504,6 +504,9 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-toolbar-item-slot-size: 49px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-drawer .m3-list-item"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
+                ".m3-list-item:navigation-drawer:selected .m3-list-item-headline"
+        ));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-list-section-header"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-switch"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-chip-icon-size: 18px"));

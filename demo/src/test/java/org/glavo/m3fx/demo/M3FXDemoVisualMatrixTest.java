@@ -12540,6 +12540,15 @@ final class M3FXDemoVisualMatrixTest {
                 "Chip responsibilities should include meaningful leading icons");
         assertEquals(3, chips.stream().filter(chip -> chip.getTrailingGraphic() != null).count(),
                 "Input chip trailing action count");
+        chips.stream()
+                .filter(M3InputChip.class::isInstance)
+                .map(M3Chip::getGraphic)
+                .filter(Objects::nonNull)
+                .forEach(graphic -> {
+                    Bounds bounds = graphic.getLayoutBounds();
+                    assertEquals(18.0, bounds.getWidth(), 0.5, "Input chip leading icon width");
+                    assertEquals(18.0, bounds.getHeight(), 0.5, "Input chip leading icon height");
+                });
         for (M3Chip chip : chips) {
             AccessibleRole expectedRole = chip instanceof M3SelectableChip
                     ? AccessibleRole.TOGGLE_BUTTON
@@ -13031,6 +13040,16 @@ final class M3FXDemoVisualMatrixTest {
                 "Motion page should expose the seekable transition range");
         assertTrue(sliders.stream().anyMatch(slider -> slider.getMin() == 0.2 && slider.getMax() == 0.8),
                 "Motion page should expose the adaptive split-position range");
+        Node motionGallery = requireVisibleStyledDescendant(page, "demo-motion-gallery", "Motion gallery");
+        M3Theme motionTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Motion page theme");
+        Color onSurface = motionTheme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color onSurfaceVariant = motionTheme.colorScheme().getColor(
+                org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT
+        );
+        for (Label label : visibleNodesOfType(motionGallery, Label.class)) {
+            Color expected = label.getStyleClass().contains("demo-group-title") ? onSurface : onSurfaceVariant;
+            assertEquals(expected, label.getTextFill(), () -> "Motion label contrast color: " + label.getText());
+        }
     }
 
     /// Verifies the real Navigation Drawer demo page drawer and grouped destination states.
@@ -20098,6 +20117,9 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(Math.hypot(horizontalGap, verticalGap) <= 12.0,
                 () -> "Tooltip popup is too far from its owner: ownerBounds=" + ownerBounds
                         + ", popupBounds=" + popupBounds);
+        assertTrue(horizontalGap <= 0.5 || verticalGap <= 0.5,
+                () -> "Tooltip popup should align beside or above its owner instead of diagonally: ownerBounds="
+                        + ownerBounds + ", popupBounds=" + popupBounds);
         assertTrue(popupBounds.getWidth() <= 420.0 && popupBounds.getHeight() <= 220.0,
                 () -> "Tooltip popup is not compact: popupBounds=" + popupBounds);
     }

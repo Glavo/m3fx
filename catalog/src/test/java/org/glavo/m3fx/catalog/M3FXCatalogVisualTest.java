@@ -777,15 +777,16 @@ final class M3FXCatalogVisualTest {
             assertEquals(18.0, dayGraphic.getLayoutBounds().getWidth(), 0.01);
             assertEquals(18.0, weekGraphic.getLayoutBounds().getWidth(), 0.01);
             assertEquals(0.0, weekGraphic.getOpacity(), 0.0001);
-            Region weekBackdrop = assertInstanceOf(
+            assertNull(week.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            Region weekMark = assertInstanceOf(
                     Region.class,
                     Objects.requireNonNull(
-                            week.lookup(".m3-segmented-button-selection-indicator-backdrop"),
-                            "Week selection indicator backdrop"
+                            week.lookup(".m3-segmented-button-selection-indicator-mark"),
+                            "Week selection indicator mark"
                     )
             );
-            assertEquals(18.0, weekBackdrop.getWidth(), 0.01);
-            assertFalse(weekBackdrop.getBackground().getFills().isEmpty());
+            assertEquals(18.0, weekMark.getWidth(), 0.01);
+            assertFalse(weekMark.getBackground().getFills().isEmpty());
 
             day.fire();
             layout(scene);
@@ -804,15 +805,16 @@ final class M3FXCatalogVisualTest {
             assertEquals(dayGraphicCenterBefore, sceneCenterX(dayIndicator), 0.01);
             assertEquals(0.0, dayGraphic.getOpacity(), 0.0001);
             assertEquals(1.0, weekGraphic.getOpacity(), 0.0001);
-            Region dayBackdrop = assertInstanceOf(
+            assertNull(day.lookup(".m3-segmented-button-selection-indicator-backdrop"));
+            Region dayMark = assertInstanceOf(
                     Region.class,
                     Objects.requireNonNull(
-                            day.lookup(".m3-segmented-button-selection-indicator-backdrop"),
-                            "Day selection indicator backdrop"
+                            day.lookup(".m3-segmented-button-selection-indicator-mark"),
+                            "Day selection indicator mark"
                     )
             );
-            assertEquals(18.0, dayBackdrop.getWidth(), 0.01);
-            assertFalse(dayBackdrop.getBackground().getFills().isEmpty());
+            assertEquals(18.0, dayMark.getWidth(), 0.01);
+            assertFalse(dayMark.getBackground().getFills().isEmpty());
         });
     }
 

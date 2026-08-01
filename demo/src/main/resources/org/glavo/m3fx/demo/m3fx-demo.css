@@ -171,6 +171,18 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
+.demo-motion-gallery .label {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-motion-gallery .demo-group-title {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-chip .demo-chip-icon .demo-vector-icon {
+    -fx-fill: -m3-chip-leading-icon-color;
+}
+
 .demo-flow {
     -fx-padding: 18px;
     -fx-background-color: -m3-color-surface-container-low;
