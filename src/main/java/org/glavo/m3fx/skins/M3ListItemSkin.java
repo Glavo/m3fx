@@ -54,7 +54,8 @@ import org.jetbrains.annotations.Nullable;
 ///
 /// The skin lays out the item's text and optional leading and trailing slots, presents selected and interaction
 /// feedback, and implements pointer and keyboard activation. Menu-item subclasses additionally receive grouped
-/// corner treatment and persistent active feedback while a submenu is showing.
+/// corner treatment and persistent active feedback while a submenu is showing. Navigation-drawer group headers
+/// receive hover-level feedback while one of their child destinations is selected.
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The pseudo-class applied to the first item in a visible menu group.
@@ -83,6 +84,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The pseudo-class applied to list items while they belong to a navigation drawer.
     private static final PseudoClass NAVIGATION_DRAWER_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("navigation-drawer");
+
+    /// The pseudo-class applied to a navigation-drawer group header while one of its children is selected.
+    private static final PseudoClass CHILD_SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("child-selected");
 
     /// The style class applied to menu item selected-container nodes.
     private static final String MENU_ITEM_SELECTION_CONTAINER_STYLE_CLASS = "m3-menu-item-selection-container";
@@ -222,6 +226,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         @Nullable PseudoClass changed = change.wasAdded() ? change.getElementAdded() : change.getElementRemoved();
         if (changed == NAVIGATION_DRAWER_PSEUDO_CLASS) {
             updateTypographyRoleStyleClasses();
+            updatePersistentStateLayer();
+        }
+        if (changed == CHILD_SELECTED_PSEUDO_CLASS) {
+            updatePersistentStateLayer();
         }
         if (changed == FIRST_MENU_ITEM_PSEUDO_CLASS
                 || changed == LAST_MENU_ITEM_PSEUDO_CLASS
@@ -263,7 +271,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
     /// Updates persistent active feedback while a submenu remains open.
     private final ChangeListener<Boolean> subMenuShowingListener =
-            (observable, oldValue, newValue) -> updateSubMenuActiveState();
+            (observable, oldValue, newValue) -> updatePersistentStateLayer();
 
     /// Whether a primary mouse press currently owns the active ripple.
     private boolean mousePressed;
@@ -333,6 +341,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         textBox.setAlignment(Pos.CENTER_LEFT);
         trailingBox.setAlignment(Pos.CENTER_RIGHT);
 
+        // Resolve semantic resting feedback before installing transient-state transitions so a pre-existing active
+        // state is synchronized immediately instead of starting an animation before the control can receive pulses.
+        updatePersistentStateLayer();
         stateLayer.installStateTransitions(control);
         control.headlineColorProperty().addListener(textColorInvalidation);
         control.supportingColorProperty().addListener(textColorInvalidation);
@@ -371,7 +382,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         updateObservedScene(null, control.getScene());
         if (control instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().addListener(subMenuShowingListener);
-            updateSubMenuActiveState();
         }
     }
 
@@ -903,10 +913,14 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         stateLayer.setContentPseudoClass(VIBRANT_PSEUDO_CLASS, vibrant);
     }
 
-    /// Applies the menu active-state opacity while a submenu remains visible.
-    private void updateSubMenuActiveState() {
+    /// Applies hover-level opacity for persistent active and parent-of-selection states.
+    private void updatePersistentStateLayer() {
         M3ListItemBase item = getSkinnable();
-        if (!(item instanceof M3SubMenuItem subMenuItem) || !subMenuItem.isSubMenuShowing()) {
+        boolean childSelectionState = item.getPseudoClassStates().contains(NAVIGATION_DRAWER_PSEUDO_CLASS)
+                && item.getPseudoClassStates().contains(CHILD_SELECTED_PSEUDO_CLASS);
+        boolean persistentState = childSelectionState
+                || item instanceof M3SubMenuItem subMenuItem && subMenuItem.isSubMenuShowing();
+        if (!persistentState) {
             stateLayer.setRestingOverlayOpacity(0.0);
             return;
         }

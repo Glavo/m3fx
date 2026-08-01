@@ -102,6 +102,9 @@ public final class M3NavigationDrawer extends Control {
     private static final PseudoClass NAVIGATION_DRAWER_ITEM_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("navigation-drawer");
 
+    /// The pseudo-class applied to a group header while one of its child destinations is selected.
+    private static final PseudoClass CHILD_SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("child-selected");
+
     /// The default spacing between top-level drawer items.
     private static final double DEFAULT_ITEM_SPACING = 0.0;
 
@@ -1000,6 +1003,7 @@ public final class M3NavigationDrawer extends Control {
         group.getItems().removeListener(groupItemsListener);
         group.expandedProperty().removeListener(groupExpandedInvalidation);
 
+        group.getHeaderItem().pseudoClassStateChanged(CHILD_SELECTED_PSEUDO_CLASS, false);
         uninstallItem(group.getHeaderItem());
         group.getHeaderItem().setSelected(false);
         for (M3ListItem item : group.getItems()) {
@@ -1185,11 +1189,25 @@ public final class M3NavigationDrawer extends Control {
         }
         selectedItemsScratch.clear();
 
-        selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
+        @Nullable M3ListItem currentSelectedItem = selectedItems.isEmpty() ? null : selectedItems.get(0);
+        selectedItem.set(currentSelectedItem);
+        updateGroupHeaderChildSelectedStates(currentSelectedItem);
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
+        }
+    }
+
+    /// Updates persistent hover-level feedback on headers whose child destination is selected.
+    ///
+    /// @param currentSelectedItem the selected drawer item, or `null` when selection is empty
+    private void updateGroupHeaderChildSelectedStates(@Nullable M3ListItem currentSelectedItem) {
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationDrawerGroup group) {
+                boolean childSelected = currentSelectedItem != null && group.getItems().contains(currentSelectedItem);
+                group.getHeaderItem().pseudoClassStateChanged(CHILD_SELECTED_PSEUDO_CLASS, childSelected);
+            }
         }
     }
 

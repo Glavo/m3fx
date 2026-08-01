@@ -29550,8 +29550,13 @@ final class M3ControlContractMatrixTest {
             assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
 
             WritableImage image = snapshotImageOnFxThread(root);
+            M3ListItem header = group.getHeaderItem();
+            Color beforeHeaderLayer = snapshotNodePixel(image, header, -4.0, header.getHeight() / 2.0);
+            Color insideHeaderLayer = snapshotNodePixel(image, header, 12.0, header.getHeight() / 2.0);
             Color beforeChildPill = snapshotNodePixel(image, bottomSheets, -4.0, bottomSheets.getHeight() / 2.0);
             Color insideChildPill = snapshotNodePixel(image, bottomSheets, 12.0, bottomSheets.getHeight() / 2.0);
+            assertTrue(colorDistance(beforeHeaderLayer, insideHeaderLayer) > 0.01);
+            assertFalse(listItemHeadlineLabel(header).getFont().getStyle().contains("Bold"));
             assertTrue(colorDistance(beforeChildPill, insideChildPill) > 0.01);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
@@ -32136,6 +32141,60 @@ final class M3ControlContractMatrixTest {
             assertTrue(archiveLabel.getStyleClass().contains("m3-body-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-label-large-text"));
             assertFalse(archiveLabel.getStyleClass().contains("m3-prominent-text"));
+        } finally {
+            M3MotionSettings.setReducedMotionRequested(drawer, false);
+        }
+    }
+
+    /// Verifies that a selected child gives its group header hover-level feedback without selected typography.
+    @Test
+    void navigationDrawerGroupHeaderReflectsSelectedChildWithoutTypographyEmphasis() {
+        M3ListItem overview = new M3ListItem("Overview");
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
+        M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
+        group.getItems().add(bottomSheets);
+        group.setExpanded(true);
+        M3NavigationDrawer drawer = navigationDrawer(overview, group);
+        Pane root = new Pane(drawer);
+        Scene scene = new Scene(root, 360.0, 180.0);
+        M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
+        PseudoClass childSelected = PseudoClass.getPseudoClass("child-selected");
+
+        M3ThemeManager.install(scene, theme);
+        M3MotionSettings.setReducedMotionRequested(drawer, true);
+        try {
+            root.applyCss();
+            drawer.resize(360.0, 180.0);
+            drawer.layout();
+
+            M3ListItem header = group.getHeaderItem();
+            Label headline = listItemHeadlineLabel(header);
+            Region stateLayer = lookupRegion(header, ".m3-state-layer");
+            var restingFont = headline.getFont();
+            assertFalse(header.getPseudoClassStates().contains(childSelected));
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+
+            drawer.select(bottomSheets);
+            root.applyCss();
+
+            assertTrue(header.getPseudoClassStates().contains(childSelected));
+            assertFalse(header.isSelected());
+            assertEquals(theme.tokens().stateLayerTokens().hoverOpacity(), stateLayer.getOpacity(), 0.0001);
+            assertRegionFill(stateLayer, theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE));
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                    headline.getTextFill()
+            );
+            assertEquals(restingFont, headline.getFont());
+            assertFalse(headline.getFont().getStyle().contains("Bold"),
+                    () -> "parent-of-selection drawer label style=" + headline.getFont().getStyle());
+
+            drawer.select(overview);
+            root.applyCss();
+
+            assertFalse(header.getPseudoClassStates().contains(childSelected));
+            assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
+            assertEquals(restingFont, headline.getFont());
         } finally {
             M3MotionSettings.setReducedMotionRequested(drawer, false);
         }

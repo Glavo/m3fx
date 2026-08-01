@@ -101,6 +101,7 @@
 }
 
 .m3-list-item:navigation-drawer:hover,
+.m3-list-item:navigation-drawer:child-selected,
 .m3-list-item:navigation-drawer:focus-visible,
 .m3-list-item:navigation-drawer:pressed,
 .m3-list-item:navigation-drawer:armed {
@@ -133,6 +134,8 @@
 
 .m3-list-item:navigation-drawer:hover .m3-list-item-leading .m3-icon-graphic,
 .m3-list-item:navigation-drawer:hover .m3-list-item-trailing .m3-icon-graphic,
+.m3-list-item:navigation-drawer:child-selected .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:child-selected .m3-list-item-trailing .m3-icon-graphic,
 .m3-list-item:navigation-drawer:focus-visible .m3-list-item-leading .m3-icon-graphic,
 .m3-list-item:navigation-drawer:focus-visible .m3-list-item-trailing .m3-icon-graphic,
 .m3-list-item:navigation-drawer:pressed .m3-list-item-leading .m3-icon-graphic,
