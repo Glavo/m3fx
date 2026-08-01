@@ -392,7 +392,6 @@ public final class M3FXDemoApp extends Application {
         animationsSwitch.setOnAction(event -> {
             animationsEnabled = animationsSwitch.isSelected();
             applyMotionSettings();
-            refreshCurrentPage();
         });
 
         M3Switch directionSwitch = new M3Switch("Right-to-left layout");

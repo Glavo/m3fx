@@ -3,12 +3,16 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ScrollPane;
+import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -24,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies page viewport ownership during animated Demo navigation.
+/// Verifies page viewport ownership during Demo navigation and presentation changes.
 @NotNullByDefault
 @Tier2Test
 final class M3FXDemoPageTransitionTest {
@@ -80,6 +84,63 @@ final class M3FXDemoPageTransitionTest {
                 assertFalse(appBar.isScrolledUnder());
                 assertFalse(M3ScrollPane.isSmoothScrollingEnabled(outgoing));
                 assertTrue(M3ScrollPane.isSmoothScrollingEnabled(incoming));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that changing the animation preference updates motion in place without recreating the active page.
+    @Test
+    void animationPreferencePreservesCurrentPageViewport() {
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp application = new M3FXDemoApp();
+            try {
+                application.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+                Scene scene = Objects.requireNonNull(application.activeScene(), "scene");
+                application.showPageByTitle("App Bars");
+                layout(scene);
+
+                M3AnimatedContent host = pageHost(scene);
+                ScrollPane viewport = currentPageScrollPane(host);
+                Node pageContent = Objects.requireNonNull(viewport.getContent(), "page content");
+                viewport.setVvalue(0.75);
+                layout(scene);
+                assertEquals(0.75, viewport.getVvalue(), 0.001);
+
+                M3IconButton settingsButton = assertInstanceOf(
+                        M3IconButton.class,
+                        scene.getRoot().lookup(".demo-settings-button"),
+                        "Demo settings button"
+                );
+                settingsButton.fire();
+                layout(scene);
+
+                M3Switch animationsSwitch = assertInstanceOf(
+                        M3Switch.class,
+                        scene.getRoot().lookup(".demo-animations-switch"),
+                        "Demo animations switch"
+                );
+                assertTrue(animationsSwitch.isSelected());
+
+                animationsSwitch.fire();
+                layout(scene);
+                assertFalse(animationsSwitch.isSelected());
+                assertTrue(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                assertSame(viewport, currentPageScrollPane(host));
+                assertSame(pageContent, viewport.getContent());
+                assertEquals(0.75, viewport.getVvalue(), 0.001);
+
+                animationsSwitch.fire();
+                layout(scene);
+                assertTrue(animationsSwitch.isSelected());
+                assertFalse(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                assertSame(viewport, currentPageScrollPane(host));
+                assertSame(pageContent, viewport.getContent());
+                assertEquals(0.75, viewport.getVvalue(), 0.001);
             } finally {
                 stage.close();
             }
