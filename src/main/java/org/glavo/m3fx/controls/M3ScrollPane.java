@@ -50,7 +50,8 @@ import java.util.Objects;
 /// owners nested inside the pane keep their own input. Installation is idempotent and remains attached until
 /// [#disableSmoothScrolling(ScrollPane)] is called or the scroll pane becomes unreachable. An accepted movement is
 /// applied synchronously while the pane has no scene or its associated window is hidden, because no rendered pulse
-/// is available to advance the transition.
+/// is available to advance the transition. Values written by smooth wheel handling remain within each axis's
+/// configured minimum and maximum, including while a spatial easing curve overshoots its target.
 ///
 /// See [Material Design scrolling behavior](https://m3.material.io/).
 @NotNullByDefault
@@ -389,6 +390,8 @@ public final class M3ScrollPane extends ScrollPane {
 
         /// Starts an animation toward the accumulated target values.
         private void animateToTarget() {
+            targetHValue = clamp(targetHValue, scrollPane.getHmin(), scrollPane.getHmax());
+            targetVValue = clamp(targetVValue, scrollPane.getVmin(), scrollPane.getVmax());
             if (isPresentationUnavailable() || animationsDisabled()) {
                 animation.stop();
                 scrollPane.setHvalue(targetHValue);
@@ -541,24 +544,36 @@ public final class M3ScrollPane extends ScrollPane {
             stop();
             setCycleDuration(spec.duration());
             setInterpolator(spec.interpolator());
-            this.startHValue = startHValue;
-            this.targetHValue = targetHValue;
-            this.startVValue = startVValue;
-            this.targetVValue = targetVValue;
+            this.startHValue = clamp(startHValue, scrollPane.getHmin(), scrollPane.getHmax());
+            this.targetHValue = clamp(targetHValue, scrollPane.getHmin(), scrollPane.getHmax());
+            this.startVValue = clamp(startVValue, scrollPane.getVmin(), scrollPane.getVmax());
+            this.targetVValue = clamp(targetVValue, scrollPane.getVmin(), scrollPane.getVmax());
         }
 
         /// Stops this transition and applies its configured final scroll values synchronously.
         private void finish() {
             stop();
-            scrollPane.setHvalue(targetHValue);
-            scrollPane.setVvalue(targetVValue);
+            scrollPane.setHvalue(clamp(targetHValue, scrollPane.getHmin(), scrollPane.getHmax()));
+            scrollPane.setVvalue(clamp(targetVValue, scrollPane.getVmin(), scrollPane.getVmax()));
         }
 
         /// Interpolates both normalized scroll values for the current animation pulse.
         @Override
         protected void interpolate(double fraction) {
-            scrollPane.setHvalue(M3ScrollPane.interpolate(startHValue, targetHValue, fraction));
-            scrollPane.setVvalue(M3ScrollPane.interpolate(startVValue, targetVValue, fraction));
+            scrollPane.setHvalue(interpolateScrollValue(
+                    startHValue,
+                    targetHValue,
+                    fraction,
+                    scrollPane.getHmin(),
+                    scrollPane.getHmax()
+            ));
+            scrollPane.setVvalue(interpolateScrollValue(
+                    startVValue,
+                    targetVValue,
+                    fraction,
+                    scrollPane.getVmin(),
+                    scrollPane.getVmax()
+            ));
         }
     }
 
@@ -629,9 +644,9 @@ public final class M3ScrollPane extends ScrollPane {
         return minValue + pixels / scrollablePixels * (maxValue - minValue);
     }
 
-    /// Returns a value clamped into the supplied range.
+    /// Returns a value clamped into the supplied range, resolving `NaN` to the minimum.
     private static double clamp(double value, double minValue, double maxValue) {
-        if (value <= minValue) {
+        if (Double.isNaN(value) || value <= minValue) {
             return minValue;
         }
         return Math.min(value, maxValue);
@@ -640,6 +655,17 @@ public final class M3ScrollPane extends ScrollPane {
     /// Returns whether two scroll values are effectively equal.
     private static boolean close(double first, double second) {
         return Math.abs(first - second) <= EPSILON;
+    }
+
+    /// Interpolates one scroll value and clips spatial overshoot to the configured axis range.
+    static double interpolateScrollValue(
+            double startValue,
+            double targetValue,
+            double fraction,
+            double minValue,
+            double maxValue
+    ) {
+        return clamp(interpolate(startValue, targetValue, fraction), minValue, maxValue);
     }
 
     /// Interpolates linearly between two scalar values.

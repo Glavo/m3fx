@@ -23,17 +23,21 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -286,6 +290,127 @@ final class M3ScrollPaneTest {
                                 content,
                                 scrollEvent(scrollPane, 0.0, -80.0)
                         ));
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable ScrollPane scrollPane = scrollPaneReference.get();
+                if (scrollPane != null) {
+                    M3ScrollPane.disableSmoothScrolling(scrollPane);
+                    M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that an overshooting spatial fraction is clipped at either end of a scroll axis.
+    @Test
+    void scrollPaneInterpolationClipsSpatialOvershootAtAxisBounds() {
+        double overshootingFraction = M3MotionScheme.expressive()
+                .defaultSpatial()
+                .interpolator()
+                .interpolate(0.0, 1.0, 0.6);
+
+        assertTrue(overshootingFraction > 1.0, () -> "fraction=" + overshootingFraction);
+        assertEquals(1.0, M3ScrollPane.interpolateScrollValue(
+                0.0,
+                1.0,
+                overshootingFraction,
+                0.0,
+                1.0
+        ));
+        assertEquals(0.0, M3ScrollPane.interpolateScrollValue(
+                1.0,
+                0.0,
+                overshootingFraction,
+                0.0,
+                1.0
+        ));
+        assertEquals(0.0, M3ScrollPane.interpolateScrollValue(
+                Double.NaN,
+                1.0,
+                0.5,
+                0.0,
+                1.0
+        ));
+    }
+
+    /// Verifies that spatial easing never exposes scroll values beyond either configured axis range.
+    @Test
+    void scrollPaneSmoothScrollingKeepsObservableValuesWithinAxisRanges() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable ScrollPane> scrollPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> invalidHValueReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> invalidVValueReference = new AtomicReference<>();
+        AtomicLong verificationDeadlineNanos = new AtomicLong();
+
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> System.nanoTime() >= verificationDeadlineNanos.get(),
+                    1,
+                    () -> {
+                        Region content = new Region();
+                        content.setPrefSize(480.0, 480.0);
+                        ScrollPane scrollPane = new ScrollPane(content);
+                        scrollPane.setPrefSize(160.0, 120.0);
+                        StackPane root = new StackPane(scrollPane);
+                        Scene scene = new Scene(root, 180.0, 140.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                                Color.web("#6750A4"),
+                                M3Profile.EXPRESSIVE_2025,
+                                Brightness.LIGHT
+                        ));
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(180.0, 140.0);
+                        root.layout();
+
+                        scrollPane.hvalueProperty().addListener((observable, oldValue, newValue) -> {
+                            double value = newValue.doubleValue();
+                            if (!Double.isFinite(value)
+                                    || value < scrollPane.getHmin()
+                                    || value > scrollPane.getHmax()) {
+                                invalidHValueReference.compareAndSet(null, value);
+                            }
+                        });
+                        scrollPane.vvalueProperty().addListener((observable, oldValue, newValue) -> {
+                            double value = newValue.doubleValue();
+                            if (!Double.isFinite(value)
+                                    || value < scrollPane.getVmin()
+                                    || value > scrollPane.getVmax()) {
+                                invalidVValueReference.compareAndSet(null, value);
+                            }
+                        });
+                        M3ScrollPane.enableSmoothScrolling(scrollPane);
+                        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+                        stageReference.set(stage);
+                        scrollPaneReference.set(scrollPane);
+                        verificationDeadlineNanos.set(System.nanoTime() + (long) (
+                                (M3MotionScheme.expressive().defaultSpatial().duration().toMillis() + 150.0)
+                                        * 1_000_000.0
+                        ));
+
+                        ScrollEvent event = scrollEvent(scrollPane, -10_000.0, -10_000.0);
+                        scrollPane.fireEvent(event);
+                        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+                        assertEquals(scrollPane.getHmin(), scrollPane.getHvalue(), 0.0001);
+                        assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+                    },
+                    () -> {
+                        ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
+                        assertNull(invalidHValueReference.get(),
+                                () -> "out-of-range hvalue=" + invalidHValueReference.get());
+                        assertNull(invalidVValueReference.get(),
+                                () -> "out-of-range vvalue=" + invalidVValueReference.get());
+                        assertEquals(scrollPane.getHmax(), scrollPane.getHvalue(), 0.0001);
+                        assertEquals(scrollPane.getVmax(), scrollPane.getVvalue(), 0.0001);
                     }
             );
         } finally {
