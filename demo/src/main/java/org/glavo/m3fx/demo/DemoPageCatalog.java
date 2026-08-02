@@ -97,6 +97,7 @@ final class DemoPageCatalog {
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, (new IconsDemoPage(context))::createContent),
                 new DemoPage("Color Pickers", "Color pickers", ADDITIONAL_DEMOS_GROUP, "Composable color areas, sliders, wheels, fields, and palettes", DemoMaterialDocs.COLOR_PICKERS, "Spectrum docs", (new ColorPickersDemoPage(context))::createContent),
                 new DemoPage("Drop Zones", "Drop zones", ADDITIONAL_DEMOS_GROUP, "File drop targets with empty, filled, and unavailable states", DemoMaterialDocs.DROP_ZONES, "Spectrum docs", (new DropZonesDemoPage(context))::createContent),
+                new DemoPage("Status Lights", "Status lights", ADDITIONAL_DEMOS_GROUP, "Semantic and categorical status indicators with descriptive labels", DemoMaterialDocs.STATUS_LIGHTS, "Spectrum docs", (new StatusLightsDemoPage(context))::createContent),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", DemoMaterialDocs.AVATARS, (new AvatarsDemoPage(context))::createContent),
                 new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", DemoMaterialDocs.SURFACES, (new SurfacesDemoPage(context))::createContent),
                 new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", DemoMaterialDocs.SCRIMS, (new ScrimsDemoPage(context))::createContent)

@@ -162,6 +162,9 @@ import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SliderSize;
+import org.glavo.m3fx.controls.M3StatusLight;
+import org.glavo.m3fx.controls.M3StatusLightSize;
+import org.glavo.m3fx.controls.M3StatusLightVariant;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
@@ -268,6 +271,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Chips", M3FXDemoVisualMatrixTest::assertChipsPageVisualState),
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
+            Map.entry("Status Lights", M3FXDemoVisualMatrixTest::assertStatusLightsPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
             Map.entry("Dialogs", M3FXDemoVisualMatrixTest::assertDialogsPageVisualState),
@@ -331,6 +335,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Icons", "Additional demos"),
             Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Drop Zones", "Additional demos"),
+            Map.entry("Status Lights", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
             Map.entry("Scrims", "Additional demos")
@@ -1379,7 +1384,7 @@ final class M3FXDemoVisualMatrixTest {
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        String expectedLabel = Set.of("Color Pickers", "Drop Zones").contains(title)
+        String expectedLabel = Set.of("Color Pickers", "Drop Zones", "Status Lights").contains(title)
                 ? "Spectrum docs"
                 : "Material docs";
         assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
@@ -12031,10 +12036,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(11, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(12, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(49, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(50, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -16606,6 +16611,75 @@ final class M3FXDemoVisualMatrixTest {
             assertFalse(dropZone.getBorder().getStrokes().isEmpty(),
                     "drop zone should render a visible container border");
             assertNodeSnapshotHasOpaquePixels(dropZone, "drop zone demo state");
+        }
+    }
+
+    /// Verifies the real Status Lights demo page semantic, size, category, and unavailable states.
+    private static void assertStatusLightsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Status Lights");
+        assertCurrentPageTitle(scene, "Status Lights");
+        assertVisibleText(root, "Semantic Variants", "Status Lights");
+        assertVisibleText(root, "Sizes", "Status Lights");
+        assertVisibleText(root, "Category and Availability", "Status Lights");
+        assertVisibleText(root, "Service healthy", "Status Lights");
+        assertVisibleText(root, "Build failed", "Status Lights");
+        assertVisibleText(root, "Synchronization unavailable", "Status Lights");
+
+        List<M3StatusLight> statusLights = visibleNodesOfType(page, M3StatusLight.class);
+        assertEquals(11, statusLights.size(),
+                () -> "Status Lights page should render eleven status lights, found " + statusLights.size());
+        assertEquals(3, statusLights.stream()
+                .filter(light -> light.getVariant() == M3StatusLightVariant.NEUTRAL)
+                .count(), "Status Lights page neutral samples");
+        assertEquals(5, statusLights.stream()
+                .filter(light -> light.getVariant() == M3StatusLightVariant.POSITIVE)
+                .count(), "Status Lights page positive samples");
+        assertEquals(1, statusLights.stream()
+                .filter(light -> light.getVariant() == M3StatusLightVariant.NEGATIVE)
+                .count(), "Status Lights page negative samples");
+        assertEquals(1, statusLights.stream()
+                .filter(light -> light.getVariant() == M3StatusLightVariant.NOTICE)
+                .count(), "Status Lights page notice samples");
+        assertEquals(1, statusLights.stream()
+                .filter(light -> light.getVariant() == M3StatusLightVariant.INFO)
+                .count(), "Status Lights page informational samples");
+        for (M3StatusLightSize size : M3StatusLightSize.values()) {
+            assertTrue(statusLights.stream().anyMatch(light -> light.getSize() == size),
+                    () -> "Status Lights page should include the " + size + " size role");
+        }
+        assertEquals(1, statusLights.stream().filter(M3StatusLight::isDisabled).count(),
+                "Status Lights page should render exactly one unavailable status");
+        assertTrue(statusLights.stream().anyMatch(light -> Color.web("#76558E").equals(light.getIndicatorColor())),
+                "Status Lights page should render one application-defined category color");
+        assertTrue(statusLights.stream().allMatch(light -> light.getAccessibleRole() == AccessibleRole.TEXT),
+                "Every status light should expose passive text semantics");
+        assertTrue(statusLights.stream().allMatch(light -> light.getAccessibleText() != null
+                        && !light.getAccessibleText().isBlank()),
+                "Every status light should expose its descriptive label to accessibility APIs");
+        assertEquals(5, visibleNodesWithStyle(page, "demo-status-light-semantic").size(),
+                "Status Lights page should identify five semantic samples");
+        assertEquals(4, visibleNodesWithStyle(page, "demo-status-light-size").size(),
+                "Status Lights page should identify four size samples");
+        assertEquals(1, visibleNodesWithStyle(page, "demo-status-light-category").size(),
+                "Status Lights page should identify one category sample");
+        assertEquals(1, visibleNodesWithStyle(page, "demo-status-light-disabled").size(),
+                "Status Lights page should identify one unavailable sample");
+        for (M3StatusLight statusLight : statusLights) {
+            Region indicator = assertInstanceOf(
+                    Region.class,
+                    statusLight.lookup(".m3-status-light-indicator"),
+                    "status-light indicator"
+            );
+            Label label = assertInstanceOf(
+                    Label.class,
+                    statusLight.lookup(".m3-status-light-label"),
+                    "status-light label"
+            );
+            assertNotNull(indicator.getBackground(), "status-light indicator background");
+            assertFalse(indicator.getBackground().getFills().isEmpty(), "status-light indicator fill");
+            assertEquals(statusLight.getText(), label.getText(), "status-light rendered label");
+            assertNodeSnapshotHasOpaquePixels(statusLight, "status-light demo state");
         }
     }
 

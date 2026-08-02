@@ -81,6 +81,10 @@ final class DemoMaterialDocs {
     static final String DROP_ZONES =
             "https://opensource.adobe.com/spectrum-web-components/components/dropzone/";
 
+    /// The Spectrum Web Components status-light documentation URL.
+    static final String STATUS_LIGHTS =
+            "https://opensource.adobe.com/spectrum-web-components/components/status-light/";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 

@@ -200,7 +200,8 @@ abstract class DemoPageSupport {
             return "palette";
         } else if (normalized.contains("drop")) {
             return "upload";
-        } else if (normalized.contains("snackbar")
+        } else if (normalized.contains("status")
+                || normalized.contains("snackbar")
                 || normalized.contains("banner")
                 || normalized.contains("tooltip")) {
             return "info";

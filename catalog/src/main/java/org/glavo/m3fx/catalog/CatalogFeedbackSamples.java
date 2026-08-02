@@ -18,6 +18,9 @@ import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3StatusLight;
+import org.glavo.m3fx.controls.M3StatusLightSize;
+import org.glavo.m3fx.controls.M3StatusLightVariant;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3Tooltip;
@@ -125,6 +128,66 @@ final class CatalogFeedbackSamples {
         overlay.setMaxWidth(520.0);
         overlay.showSnackbar(snackbar);
         return overlay;
+    }
+
+    /// Creates the complete semantic status-light set.
+    ///
+    /// @return the vertically arranged semantic status lights
+    static Node semanticStatusLights() {
+        return new VBox(
+                10.0,
+                statusLight("Queued", M3StatusLightVariant.NEUTRAL, M3StatusLightSize.MEDIUM, false),
+                statusLight("Service healthy", M3StatusLightVariant.POSITIVE, M3StatusLightSize.MEDIUM, false),
+                statusLight("Build failed", M3StatusLightVariant.NEGATIVE, M3StatusLightSize.MEDIUM, false),
+                statusLight("Review required", M3StatusLightVariant.NOTICE, M3StatusLightSize.MEDIUM, false),
+                statusLight("Update available", M3StatusLightVariant.INFO, M3StatusLightSize.MEDIUM, false)
+        );
+    }
+
+    /// Creates one status light for every supported size role.
+    ///
+    /// @return the vertically arranged status-light size scale
+    static Node sizedStatusLights() {
+        return new VBox(
+                10.0,
+                statusLight("Small", M3StatusLightVariant.POSITIVE, M3StatusLightSize.SMALL, false),
+                statusLight("Medium", M3StatusLightVariant.POSITIVE, M3StatusLightSize.MEDIUM, false),
+                statusLight("Large", M3StatusLightVariant.POSITIVE, M3StatusLightSize.LARGE, false),
+                statusLight("Extra large", M3StatusLightVariant.POSITIVE, M3StatusLightSize.EXTRA_LARGE, false)
+        );
+    }
+
+    /// Creates a status light using an application-defined category color.
+    ///
+    /// @return the categorically colored status light
+    static Node categoryStatusLight() {
+        M3StatusLight statusLight = statusLight(
+                "Design review",
+                M3StatusLightVariant.NEUTRAL,
+                M3StatusLightSize.MEDIUM,
+                false
+        );
+        statusLight.setIndicatorColor(Color.web("#76558E"));
+        return statusLight;
+    }
+
+    /// Creates one configured status light.
+    ///
+    /// @param text the descriptive status text
+    /// @param variant the semantic status variant
+    /// @param size the nominal status-light size
+    /// @param disabled whether the status is unavailable
+    /// @return the configured status light
+    static M3StatusLight statusLight(
+            String text,
+            M3StatusLightVariant variant,
+            M3StatusLightSize size,
+            boolean disabled
+    ) {
+        M3StatusLight statusLight = new M3StatusLight(text, variant);
+        statusLight.setSize(size);
+        statusLight.setDisable(disabled);
+        return statusLight;
     }
 
     /// Creates a plain tooltip anchor.

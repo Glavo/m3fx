@@ -6,6 +6,8 @@ package org.glavo.m3fx.catalog;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
+import org.glavo.m3fx.controls.M3StatusLightSize;
+import org.glavo.m3fx.controls.M3StatusLightVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
@@ -55,6 +57,14 @@ final class CatalogFeedbackComponents {
                         "snackbar",
                         "M3Snackbar",
                         snackbarExamples()
+                ),
+                CatalogComponents.extensionComponent(
+                        "Status lights",
+                        "Status lights pair a semantic or categorical color indicator with descriptive text.",
+                        CatalogIcons.STATUS_LIGHT,
+                        "https://opensource.adobe.com/spectrum-web-components/components/status-light/",
+                        "M3StatusLight",
+                        statusLightExamples()
                 ),
                 CatalogComponents.component(
                         "Tooltips",
@@ -241,6 +251,43 @@ final class CatalogFeedbackComponents {
                         "An interactive local overlay that can enqueue follow-up messages.",
                         false,
                         CatalogSamples::snackbars
+                )
+        };
+    }
+
+    /// Creates semantic, size, custom-color, and disabled status-light examples.
+    ///
+    /// @return the complete status-light example array
+    private static CatalogExample[] statusLightExamples() {
+        return new CatalogExample[]{
+                CatalogComponents.example(
+                        "Semantic variants",
+                        "Neutral, positive, negative, notice, and informational states with explicit labels.",
+                        false,
+                        CatalogFeedbackSamples::semanticStatusLights
+                ),
+                CatalogComponents.example(
+                        "Size scale",
+                        "Status lights across the small through extra-large size roles.",
+                        false,
+                        CatalogFeedbackSamples::sizedStatusLights
+                ),
+                CatalogComponents.example(
+                        "Category color",
+                        "A non-semantic category using an explicit indicator color and descriptive label.",
+                        false,
+                        CatalogFeedbackSamples::categoryStatusLight
+                ),
+                CatalogComponents.example(
+                        "Disabled status",
+                        "An unavailable status retained for layout continuity.",
+                        false,
+                        () -> CatalogFeedbackSamples.statusLight(
+                                "Synchronization unavailable",
+                                M3StatusLightVariant.NEUTRAL,
+                                M3StatusLightSize.MEDIUM,
+                                true
+                        )
                 )
         };
     }

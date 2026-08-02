@@ -1,0 +1,54 @@
+.m3-status-light {
+    -m3-status-light-positive-color: rgb(56, 106, 32);
+    -m3-status-light-notice-color: rgb(121, 89, 0);
+    -m3-indicator-color: -m3-color-outline;
+}
+
+.m3-dark .m3-status-light {
+    -m3-status-light-positive-color: rgb(156, 214, 125);
+    -m3-status-light-notice-color: rgb(248, 189, 72);
+}
+
+.m3-status-light.m3-neutral-status-light {
+    -m3-indicator-color: -m3-color-outline;
+}
+
+.m3-status-light.m3-positive-status-light {
+    -m3-indicator-color: -m3-status-light-positive-color;
+}
+
+.m3-status-light.m3-negative-status-light {
+    -m3-indicator-color: -m3-color-error;
+}
+
+.m3-status-light.m3-notice-status-light {
+    -m3-indicator-color: -m3-status-light-notice-color;
+}
+
+.m3-status-light.m3-info-status-light {
+    -m3-indicator-color: -m3-color-primary;
+}
+
+.m3-status-light-label {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-status-light.m3-small-status-light .m3-status-light-label {
+    -fx-font-size: 12px;
+}
+
+.m3-status-light.m3-medium-status-light .m3-status-light-label {
+    -fx-font-size: 14px;
+}
+
+.m3-status-light.m3-large-status-light .m3-status-light-label {
+    -fx-font-size: 16px;
+}
+
+.m3-status-light.m3-extra-large-status-light .m3-status-light-label {
+    -fx-font-size: 18px;
+}
+
+.m3-status-light:disabled {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
