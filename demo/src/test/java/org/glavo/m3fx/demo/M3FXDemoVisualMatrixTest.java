@@ -102,6 +102,7 @@ import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogHandle;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3DropZone;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
@@ -266,6 +267,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Checkboxes", M3FXDemoVisualMatrixTest::assertCheckboxesPageVisualState),
             Map.entry("Chips", M3FXDemoVisualMatrixTest::assertChipsPageVisualState),
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
+            Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
             Map.entry("Dialogs", M3FXDemoVisualMatrixTest::assertDialogsPageVisualState),
@@ -328,6 +330,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
             Map.entry("Color Pickers", "Additional demos"),
+            Map.entry("Drop Zones", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
             Map.entry("Scrims", "Additional demos")
@@ -1376,7 +1379,9 @@ final class M3FXDemoVisualMatrixTest {
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        String expectedLabel = "Color Pickers".equals(title) ? "Spectrum docs" : "Material docs";
+        String expectedLabel = Set.of("Color Pickers", "Drop Zones").contains(title)
+                ? "Spectrum docs"
+                : "Material docs";
         assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
         assertTrue(docsButton.isVisible(), title + " docs link visible");
         assertTrue(docsButton.isManaged(), title + " docs link managed");
@@ -12026,10 +12031,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(10, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(11, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(48, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(49, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -16562,6 +16567,45 @@ final class M3FXDemoVisualMatrixTest {
                     () -> "vertical divider should span the demo sample height: " + dividerBounds);
             assertTrue(dividerBounds.getWidth() >= 0.5 && dividerBounds.getWidth() <= 6.0,
                     () -> "vertical divider should stay visually thin: " + dividerBounds);
+        }
+    }
+
+    /// Verifies the real Drop Zones demo page empty, filled, and disabled states.
+    private static void assertDropZonesPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Drop Zones");
+        assertCurrentPageTitle(scene, "Drop Zones");
+        assertVisibleText(root, "States", "Drop Zones");
+        assertVisibleText(root, "Unavailable", "Drop Zones");
+        assertVisibleText(root, "Drop a launcher profile here", "Drop Zones");
+        assertVisibleText(root, "Launcher profile imported", "Drop Zones");
+        assertVisibleText(root, "Drop zone unavailable", "Drop Zones");
+
+        List<M3DropZone> dropZones = visibleNodesOfType(page, M3DropZone.class);
+        assertEquals(3, dropZones.size(),
+                () -> "Drop Zones page should render three drop zones, found " + dropZones.size());
+        assertEquals(1, dropZones.stream().filter(M3DropZone::isFilled).count(),
+                "Drop Zones page should render exactly one filled zone");
+        assertEquals(1, dropZones.stream().filter(M3DropZone::isDisabled).count(),
+                "Drop Zones page should render exactly one disabled zone");
+        assertTrue(dropZones.stream().allMatch(zone -> zone.getAcceptancePredicate() != null),
+                "Every demo drop zone should define an explicit file acceptance predicate");
+        assertTrue(dropZones.stream().allMatch(zone -> zone.getOnDragDropped() != null),
+                "Every demo drop zone should complete accepted drop events");
+        assertEquals(1, visibleNodesWithStyle(page, "demo-drop-zone-empty").size(),
+                "Drop Zones page should identify one empty state");
+        assertEquals(1, visibleNodesWithStyle(page, "demo-drop-zone-filled").size(),
+                "Drop Zones page should identify one filled state");
+        assertEquals(1, visibleNodesWithStyle(page, "demo-drop-zone-disabled").size(),
+                "Drop Zones page should identify one disabled state");
+        for (M3DropZone dropZone : dropZones) {
+            Bounds bounds = dropZone.localToScene(dropZone.getBoundsInLocal());
+            assertTrue(bounds.getWidth() >= 240.0 && bounds.getHeight() >= 160.0,
+                    () -> "drop zone should preserve its minimum target bounds: " + bounds);
+            assertNotNull(dropZone.getBorder(), "drop zone should resolve its outlined container border");
+            assertFalse(dropZone.getBorder().getStrokes().isEmpty(),
+                    "drop zone should render a visible container border");
+            assertNodeSnapshotHasOpaquePixels(dropZone, "drop zone demo state");
         }
     }
 

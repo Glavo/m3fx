@@ -198,6 +198,8 @@ abstract class DemoPageSupport {
             return "tune";
         } else if (normalized.contains("color")) {
             return "palette";
+        } else if (normalized.contains("drop")) {
+            return "upload";
         } else if (normalized.contains("snackbar")
                 || normalized.contains("banner")
                 || normalized.contains("tooltip")) {

@@ -77,6 +77,10 @@ final class DemoMaterialDocs {
     /// The Spectrum composable color-control documentation used for color-picker behavior.
     static final String COLOR_PICKERS = "https://react-spectrum.adobe.com/ColorArea";
 
+    /// The Spectrum Web Components drop-zone documentation URL.
+    static final String DROP_ZONES =
+            "https://opensource.adobe.com/spectrum-web-components/components/dropzone/";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 
