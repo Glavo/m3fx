@@ -159,9 +159,9 @@ public class M3CardSkin extends SkinBase<M3Card> {
         card.disabledProperty().removeListener(disabledListener);
         card.focusedProperty().removeListener(focusedListener);
         card.sceneProperty().removeListener(sceneInvalidation);
-        card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        card.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
-        card.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
+        card.removeEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.removeEventFilter(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        card.removeEventFilter(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         card.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         card.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         container.getChildren().clear();
@@ -223,11 +223,13 @@ public class M3CardSkin extends SkinBase<M3Card> {
         ));
     }
 
-    /// Installs feedback handlers for pointer and keyboard interactions.
+    /// Installs pointer filters and keyboard handlers for card interactions.
     private void installInteractionHandlers(M3Card card) {
-        card.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        card.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
-        card.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
+        // Passive Control skins may consume pointer events before they bubble; target filtering keeps
+        // nested actions intact.
+        card.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        card.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         card.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         card.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
     }

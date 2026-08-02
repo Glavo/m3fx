@@ -5939,15 +5939,18 @@ final class M3ControlContractMatrixTest {
         assertTrue(ripple.getOpacity() > 0.0, "actionable cards should expose bounded ripple feedback");
     }
 
-    /// Verifies that card skins route surface and keyboard activation to the card action.
+    /// Verifies that card skins route passive surface content and keyboard activation without stealing nested actions.
     @Test
     void cardSkinRoutesSurfaceAndKeyboardActions() {
         Label passiveContent = new Label("Open project");
+        M3Text passiveM3Text = new M3Text("Open details", M3TextRole.BODY_MEDIUM);
         M3Button nestedAction = new M3Button("Nested action");
-        VBox content = new VBox(passiveContent, nestedAction);
+        VBox content = new VBox(passiveContent, passiveM3Text, nestedAction);
         M3Card card = new M3Card(content);
         AtomicInteger actionCount = new AtomicInteger();
+        AtomicInteger nestedActionCount = new AtomicInteger();
         card.setOnAction(event -> actionCount.incrementAndGet());
+        nestedAction.setOnAction(event -> nestedActionCount.incrementAndGet());
         Pane root = new Pane(card);
         Scene scene = new Scene(root, 220.0, 120.0);
 
@@ -5970,6 +5973,23 @@ final class M3ControlContractMatrixTest {
                 4.0,
                 false
         ));
+        Node renderedText = Objects.requireNonNull(passiveM3Text.lookup(".text"), "rendered M3 text");
+        renderedText.fireEvent(primaryMouseEvent(
+                renderedText,
+                MouseEvent.MOUSE_PRESSED,
+                1.0,
+                1.0,
+                true
+        ));
+        assertTrue(card.getPseudoClassStates().contains(PseudoClass.getPseudoClass("armed")));
+        renderedText.fireEvent(primaryMouseEvent(
+                renderedText,
+                MouseEvent.MOUSE_RELEASED,
+                1.0,
+                1.0,
+                false
+        ));
+        assertFalse(card.getPseudoClassStates().contains(PseudoClass.getPseudoClass("armed")));
         nestedAction.fireEvent(primaryMouseEvent(
                 nestedAction,
                 MouseEvent.MOUSE_PRESSED,
@@ -5986,7 +6006,8 @@ final class M3ControlContractMatrixTest {
         ));
         card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
 
-        assertEquals(2, actionCount.get());
+        assertEquals(3, actionCount.get());
+        assertEquals(1, nestedActionCount.get());
 
         card.setDisable(true);
         card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
@@ -5994,7 +6015,8 @@ final class M3ControlContractMatrixTest {
         card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
         card.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
 
-        assertEquals(2, actionCount.get());
+        assertEquals(3, actionCount.get());
+        assertEquals(1, nestedActionCount.get());
     }
 
     /// Verifies that card variants apply Material state elevation and outline treatments.
