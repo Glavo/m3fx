@@ -5,6 +5,7 @@ package org.glavo.m3fx.catalog;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
@@ -13,6 +14,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
@@ -580,6 +582,22 @@ final class M3FXCatalogVisualTest {
             M3SearchBar search = assertInstanceOf(
                     M3SearchBar.class,
                     Objects.requireNonNull(sidebar.lookup(".catalog-sidebar-search"), "sidebar component search")
+            );
+            assertEquals(new Insets(0.0, 12.0, 0.0, 12.0), search.getPadding());
+            assertEquals(new Insets(8.0, 0.0, 0.0, 0.0), VBox.getMargin(search));
+            assertEquals(48.0, search.getHeight(), 0.5);
+            assertNull(search.getEffect(), "the drawer search must not render as a floating surface");
+            Bounds searchBounds = search.localToScene(search.getBoundsInLocal());
+            Node searchContent = Objects.requireNonNull(
+                    search.lookup(".m3-search-bar-content"),
+                    "search bar content"
+            );
+            Bounds contentBounds = searchContent.localToScene(searchContent.getBoundsInLocal());
+            assertEquals(
+                    searchBounds.getCenterY(),
+                    contentBounds.getCenterY(),
+                    0.5,
+                    "search content must remain vertically centered"
             );
             Set<Node> originalItems = Set.copyOf(sidebar.lookupAll(".catalog-sidebar-component"));
             M3ListItem buttonsItem = listItemNamed(sidebar, ".catalog-sidebar-component", "Buttons");

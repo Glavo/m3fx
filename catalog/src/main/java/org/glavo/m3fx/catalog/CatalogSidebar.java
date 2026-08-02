@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -98,6 +99,7 @@ final class CatalogSidebar extends StackPane {
         componentSearch.getStyleClass().add("catalog-sidebar-search");
         componentSearch.setAccessibleText("Search Catalog components");
         componentSearch.setMaxWidth(Double.MAX_VALUE);
+        VBox.setMargin(componentSearch, new Insets(8.0, 0.0, 0.0, 0.0));
         componentSearch.textProperty().addListener(observable -> updateItems());
         VBox header = new VBox(4.0, title, summary, componentSearch);
         header.getStyleClass().add("catalog-sidebar-header");

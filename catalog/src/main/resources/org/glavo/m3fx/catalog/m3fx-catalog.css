@@ -55,8 +55,17 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.catalog-sidebar-search {
-    -fx-padding: 8px 0 0 0;
+.m3-search-bar.catalog-sidebar-search {
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-max-height: 48px;
+    -fx-background-radius: 24px;
+    -fx-padding: 0 12px;
+    -fx-effect: null;
+}
+
+.m3-search-bar.catalog-sidebar-search .m3-search-bar-content {
+    -fx-spacing: 12px;
 }
 
 .catalog-sidebar-section-title {
