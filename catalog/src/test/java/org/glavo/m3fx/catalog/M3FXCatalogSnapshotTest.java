@@ -3,12 +3,14 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.ScrollEvent;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
@@ -17,11 +19,14 @@ import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
+import org.glavo.m3fx.controls.M3OverscrollEffect;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -222,6 +227,7 @@ final class M3FXCatalogSnapshotTest {
                     writeFirstExampleSnapshot(scene, app, "Scrims", "scrims.png");
                     writeFirstExampleSnapshot(scene, app, "Settings", "settings.png");
                     writeFirstExampleSnapshot(scene, app, "Surfaces", "surfaces.png");
+                    writeScrollStretchSnapshot(scene, app);
 
                     app.navigate(new CatalogRoute.Component(buttons));
                     M3IconToggleButton favoriteAction = assertInstanceOf(
@@ -424,6 +430,74 @@ final class M3FXCatalogSnapshotTest {
         CatalogComponent component = componentNamed(app, componentName);
         app.navigate(new CatalogRoute.Example(component, exampleNamed(component, exampleName)));
         writeSnapshot(scene, fileName);
+    }
+
+    /// Opens a scroll-pane example, applies a retained direct pull, and captures its visible stretch.
+    ///
+    /// @param scene the showing Catalog scene
+    /// @param app the running Catalog application
+    private static void writeScrollStretchSnapshot(Scene scene, M3FXCatalogApp app) {
+        CatalogComponent component = componentNamed(app, "Scroll panes");
+        app.navigate(new CatalogRoute.Example(
+                component,
+                exampleNamed(component, "Default vertical stretch")
+        ));
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+
+        M3ScrollPane specimen = scene.getRoot().lookupAll(".m3-scroll-pane").stream()
+                .filter(M3ScrollPane.class::isInstance)
+                .map(M3ScrollPane.class::cast)
+                .filter(scrollPane -> scrollPane.getContent() instanceof M3ListPane)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing scroll-pane Catalog specimen"));
+        Node content = Objects.requireNonNull(specimen.getContent(), "scroll content");
+        content.fireEvent(directScrollEvent(content, ScrollEvent.SCROLL_STARTED, 0.0));
+        ScrollEvent pull = directScrollEvent(content, ScrollEvent.SCROLL, 96.0);
+        M3OverscrollEffect effect = Objects.requireNonNull(specimen.getOverscrollEffect(), "overscrollEffect");
+        content.fireEvent(pull);
+        assertTrue(effect.isInProgress());
+
+        writeSnapshot(scene, "scroll-pane-stretch.png");
+        content.fireEvent(directScrollEvent(content, ScrollEvent.SCROLL_FINISHED, 0.0));
+    }
+
+    /// Creates a direct vertical scroll event for a retained overscroll snapshot.
+    ///
+    /// @param target the event target
+    /// @param eventType the scroll lifecycle event type
+    /// @param deltaY the vertical pixel delta
+    /// @return the direct scroll event
+    private static ScrollEvent directScrollEvent(
+            Node target,
+            EventType<ScrollEvent> eventType,
+            double deltaY
+    ) {
+        return new ScrollEvent(
+                target,
+                target,
+                eventType,
+                40.0,
+                40.0,
+                40.0,
+                40.0,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                0.0,
+                deltaY,
+                0.0,
+                deltaY,
+                ScrollEvent.HorizontalTextScrollUnits.NONE,
+                0.0,
+                ScrollEvent.VerticalTextScrollUnits.NONE,
+                0.0,
+                1,
+                null
+        );
     }
 
     /// Finds a registered component by its display name.

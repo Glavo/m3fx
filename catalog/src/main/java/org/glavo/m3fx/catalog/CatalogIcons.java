@@ -113,6 +113,10 @@ final class CatalogIcons {
     static final String SURFACE =
             "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 4h10v10H7z";
 
+    /// The scroll-pane icon path.
+    static final String SCROLL_PANE =
+            "M3 3h16v18H3zm2 2v14h12V5zm4 2h6v2H9zm-2 4h8v2H7zm2 4h6v2H9zM20 5h2v4h-2zm0 6h2v8h-2z";
+
     /// The connected button-group icon path.
     static final String BUTTON_GROUP =
             "M3 7h18v10H3zm2 2v6h4V9zm6 0v6h4V9zm6 0v6h2V9z";

@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.css.PseudoClass;
+import javafx.event.EventType;
+import javafx.geometry.Bounds;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -21,6 +23,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionScheme;
@@ -39,12 +43,14 @@ import org.junit.jupiter.api.Test;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.DoubleUnaryOperator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies M3 scroll-pane defaults, styling, and smooth scrolling behavior.
@@ -71,9 +77,45 @@ final class M3ScrollPaneTest {
         assertNull(explicitlyEmpty.getContent());
         assertTrue(empty.getStyleClass().contains("m3-scroll-pane"));
         assertTrue(M3ScrollPane.isSmoothScrollingEnabled(empty));
+        assertInstanceOf(M3StretchOverscrollEffect.class, empty.getOverscrollEffect());
         assertSame(content, populated.getContent());
         assertTrue(populated.getStyleClass().contains("m3-scroll-pane"));
         assertTrue(M3ScrollPane.isSmoothScrollingEnabled(populated));
+        assertInstanceOf(M3StretchOverscrollEffect.class, populated.getOverscrollEffect());
+    }
+
+    /// Verifies that effect instances are pane-owned and replacement detaches the previous effect.
+    @Test
+    void materialScrollPaneOwnsItsOverscrollEffect() {
+        M3ScrollPane firstPane = new M3ScrollPane();
+        M3ScrollPane secondPane = new M3ScrollPane();
+        M3StretchOverscrollEffect sharedEffect = new M3StretchOverscrollEffect();
+
+        firstPane.setOverscrollEffect(sharedEffect);
+
+        assertSame(sharedEffect, firstPane.getOverscrollEffect());
+        assertThrows(IllegalStateException.class, () -> secondPane.setOverscrollEffect(sharedEffect));
+        assertInstanceOf(M3StretchOverscrollEffect.class, secondPane.getOverscrollEffect());
+
+        firstPane.setOverscrollEffect(null);
+        secondPane.setOverscrollEffect(sharedEffect);
+        assertSame(sharedEffect, secondPane.getOverscrollEffect());
+    }
+
+    /// Verifies stretch configuration rejects values that cannot produce a finite restrained effect.
+    @Test
+    void stretchOverscrollValidatesConfiguration() {
+        M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
+
+        effect.setMaximumStretch(0.2);
+        effect.setResistance(0.8);
+
+        assertEquals(0.2, effect.getMaximumStretch());
+        assertEquals(0.8, effect.getResistance());
+        assertThrows(IllegalArgumentException.class, () -> effect.setMaximumStretch(0.0));
+        assertThrows(IllegalArgumentException.class, () -> effect.setMaximumStretch(0.6));
+        assertThrows(IllegalArgumentException.class, () -> effect.setResistance(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> effect.setResistance(-1.0));
     }
 
     /// Verifies that the static behavior API remains authoritative for Material scroll panes.
@@ -86,6 +128,231 @@ final class M3ScrollPaneTest {
 
         M3ScrollPane.enableSmoothScrolling(scrollPane);
         assertTrue(M3ScrollPane.isSmoothScrollingEnabled(scrollPane));
+    }
+
+    /// Verifies direct manipulation stretches at a boundary and consumes opposite input before scrolling.
+    @Test
+    void stretchOverscrollRelaxesBeforeBoundedScrolling() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        scrollPane.setPannable(true);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+
+        Bounds initialViewportBounds = scrollPane.getViewportBounds();
+        Bounds initialContentLayoutBounds = content.getLayoutBounds();
+        M3StretchOverscrollEffect effect = assertInstanceOf(
+                M3StretchOverscrollEffect.class,
+                scrollPane.getOverscrollEffect()
+        );
+
+        ScrollEvent pullEvent = scrollEvent(scrollPane, 0.0, 80.0, true);
+        scrollPane.fireEvent(pullEvent);
+
+        Scale scale = assertInstanceOf(
+                Scale.class,
+                content.getTransforms().get(content.getTransforms().size() - 1)
+        );
+        double initialScaleY = scale.getY();
+        assertTrue(effect.isInProgress());
+        assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+        assertTrue(initialScaleY > 1.0 && initialScaleY <= 1.0 + effect.getMaximumStretch());
+        assertEquals(content.getLayoutBounds().getMinY(), scale.getPivotY(), 0.0001);
+        assertEquals(initialViewportBounds, scrollPane.getViewportBounds());
+        assertEquals(initialContentLayoutBounds, content.getLayoutBounds());
+
+        ScrollEvent partialRelaxation = scrollEvent(scrollPane, 0.0, -40.0, true);
+        scrollPane.fireEvent(partialRelaxation);
+
+        assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+        assertTrue(scale.getY() > 1.0 && scale.getY() < initialScaleY);
+
+        ScrollEvent relaxAndScroll = scrollEvent(scrollPane, 0.0, -80.0, true);
+        scrollPane.fireEvent(relaxAndScroll);
+
+        assertTrue(scrollPane.getVvalue() > scrollPane.getVmin());
+        assertFalse(effect.isInProgress());
+        assertFalse(content.getTransforms().contains(scale));
+    }
+
+    /// Verifies simultaneous pulls remain bounded and anchor at both maximum content edges.
+    @Test
+    void stretchOverscrollAnchorsBidirectionalPullAtMaximumEdges() {
+        Region content = new Region();
+        content.setPrefSize(480.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        scrollPane.setHvalue(scrollPane.getHmax());
+        scrollPane.setVvalue(scrollPane.getVmax());
+
+        scrollPane.fireEvent(scrollEvent(scrollPane, -60.0, -80.0, true));
+
+        M3StretchOverscrollEffect effect = assertInstanceOf(
+                M3StretchOverscrollEffect.class,
+                scrollPane.getOverscrollEffect()
+        );
+        Scale scale = assertInstanceOf(
+                Scale.class,
+                content.getTransforms().get(content.getTransforms().size() - 1)
+        );
+        Bounds contentBounds = content.getLayoutBounds();
+        assertTrue(effect.isInProgress());
+        assertEquals(scrollPane.getHmax(), scrollPane.getHvalue(), 0.0001);
+        assertEquals(scrollPane.getVmax(), scrollPane.getVvalue(), 0.0001);
+        assertTrue(scale.getX() > 1.0 && scale.getX() <= 1.0 + effect.getMaximumStretch());
+        assertTrue(scale.getY() > 1.0 && scale.getY() <= 1.0 + effect.getMaximumStretch());
+        assertEquals(contentBounds.getMaxX(), scale.getPivotX(), 0.0001);
+        assertEquals(contentBounds.getMaxY(), scale.getPivotY(), 0.0001);
+
+        scrollPane.setOverscrollEffect(null);
+        assertFalse(content.getTransforms().contains(scale));
+    }
+
+    /// Verifies gesture completion releases stretch synchronously when reduced motion is requested.
+    @Test
+    void stretchOverscrollReleasesAtGestureEndWithReducedMotion() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
+        try {
+            scrollPane.fireEvent(scrollEvent(
+                    scrollPane,
+                    ScrollEvent.SCROLL_STARTED,
+                    0.0,
+                    0.0,
+                    true
+            ));
+            scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+            M3StretchOverscrollEffect effect = assertInstanceOf(
+                    M3StretchOverscrollEffect.class,
+                    scrollPane.getOverscrollEffect()
+            );
+            assertTrue(effect.isInProgress());
+            assertFalse(content.getTransforms().isEmpty());
+
+            scrollPane.fireEvent(scrollEvent(
+                    scrollPane,
+                    ScrollEvent.SCROLL_FINISHED,
+                    0.0,
+                    0.0,
+                    true
+            ));
+
+            assertFalse(effect.isInProgress());
+            assertTrue(content.getTransforms().isEmpty());
+            assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+        } finally {
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+        }
+    }
+
+    /// Verifies a retained direct-manipulation pull is removed when its window stops rendering.
+    @Test
+    void stretchOverscrollSettlesWhenWindowHides() {
+        FxTestUtils.runOnFxThread(() -> {
+            Region content = new Region();
+            content.setPrefSize(160.0, 480.0);
+            M3ScrollPane scrollPane = new M3ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                scrollPane.fireEvent(scrollEvent(
+                        scrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+                M3StretchOverscrollEffect effect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        scrollPane.getOverscrollEffect()
+                );
+                assertTrue(effect.isInProgress());
+                assertFalse(content.getTransforms().isEmpty());
+
+                stage.hide();
+
+                assertFalse(effect.isInProgress());
+                assertTrue(content.getTransforms().isEmpty());
+                assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+
+                ScrollEvent wheelEvent = scrollEvent(scrollPane, 0.0, -80.0);
+                scrollPane.fireEvent(wheelEvent);
+                assertTrue(wheelEvent.isConsumed());
+                assertTrue(scrollPane.getVvalue() > scrollPane.getVmin());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies active rendering follows content replacement without disturbing authored transforms.
+    @Test
+    void stretchOverscrollPreservesAuthoredTransformsAndFollowsContentReplacement() {
+        Region originalContent = new Region();
+        originalContent.setPrefSize(160.0, 480.0);
+        Rotate authoredTransform = new Rotate(4.0);
+        originalContent.getTransforms().add(authoredTransform);
+        M3ScrollPane scrollPane = new M3ScrollPane(originalContent);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        new Scene(root, 180.0, 140.0);
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+
+        scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+
+        assertEquals(2, originalContent.getTransforms().size());
+        assertSame(authoredTransform, originalContent.getTransforms().get(0));
+        Scale effectTransform = assertInstanceOf(Scale.class, originalContent.getTransforms().get(1));
+
+        Region replacementContent = new Region();
+        replacementContent.setPrefSize(160.0, 480.0);
+        scrollPane.setContent(replacementContent);
+
+        assertEquals(1, originalContent.getTransforms().size());
+        assertSame(authoredTransform, originalContent.getTransforms().get(0));
+        assertEquals(1, replacementContent.getTransforms().size());
+        assertSame(effectTransform, replacementContent.getTransforms().get(0));
+
+        scrollPane.setOverscrollEffect(null);
+
+        assertTrue(replacementContent.getTransforms().isEmpty());
+        assertSame(authoredTransform, originalContent.getTransforms().get(0));
     }
 
     /// Verifies uninstalled smooth-scroll queries and cleanup do not allocate a node properties map.
@@ -1076,6 +1343,394 @@ final class M3ScrollPaneTest {
         }));
     }
 
+    /// Verifies a nested M3 scroll pane receives direct overscroll without activating its outer owner.
+    @Test
+    void nestedMaterialScrollPaneOwnsDirectOverscroll() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            M3ScrollPane innerScrollPane = new M3ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            innerScrollPane.setPannable(true);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox outerContent = new VBox(innerScrollPane, filler);
+            M3ScrollPane outerScrollPane = new M3ScrollPane(outerContent);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                ScrollEvent event = scrollEvent(innerScrollPane, 0.0, 80.0, true);
+                innerScrollPane.fireEvent(event);
+
+                M3StretchOverscrollEffect innerEffect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        innerScrollPane.getOverscrollEffect()
+                );
+                M3StretchOverscrollEffect outerEffect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        outerScrollPane.getOverscrollEffect()
+                );
+                assertTrue(innerEffect.isInProgress());
+                assertFalse(outerEffect.isInProgress());
+                assertEquals(innerScrollPane.getVmin(), innerScrollPane.getVvalue(), 0.0001);
+                assertEquals(outerScrollPane.getVmin(), outerScrollPane.getVvalue(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies disabling overscroll preserves direct bounded scrolling on an M3 scroll pane.
+    @Test
+    void materialScrollPaneWithoutOverscrollRetainsDirectScrolling() {
+        Region content = new Region();
+        content.setPrefSize(180.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(220.0, 140.0);
+        scrollPane.setOverscrollEffect(null);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 260.0, 180.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, -80.0, true));
+
+        assertTrue(scrollPane.getVvalue() > scrollPane.getVmin());
+        assertNull(scrollPane.getOverscrollEffect());
+    }
+
+    /// Verifies a nested M3 scroll pane retains direct bounded scrolling when its edge effect is disabled.
+    @Test
+    void nestedMaterialScrollPaneWithoutOverscrollOwnsDirectScrolling() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            M3ScrollPane innerScrollPane = new M3ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            innerScrollPane.setOverscrollEffect(null);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox outerContent = new VBox(innerScrollPane, filler);
+            M3ScrollPane outerScrollPane = new M3ScrollPane(outerContent);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                innerScrollPane.fireEvent(scrollEvent(innerScrollPane, 0.0, -80.0, true));
+
+                assertTrue(innerScrollPane.getVvalue() > innerScrollPane.getVmin());
+                assertEquals(outerScrollPane.getVmin(), outerScrollPane.getVvalue(), 0.0001);
+                M3StretchOverscrollEffect outerEffect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        outerScrollPane.getOverscrollEffect()
+                );
+                assertFalse(outerEffect.isInProgress());
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies unconsumed direct movement continues from an inner edge to the nearest outer M3 scroll pane.
+    @Test
+    void nestedMaterialScrollPanePassesUnconsumedDirectMovementToOuterOwner() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            M3ScrollPane innerScrollPane = new M3ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            innerScrollPane.setOverscrollEffect(null);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox outerContent = new VBox(innerScrollPane, filler);
+            M3ScrollPane outerScrollPane = new M3ScrollPane(outerContent);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                innerScrollPane.setVvalue(innerScrollPane.getVmax());
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                innerScrollPane.fireEvent(scrollEvent(innerScrollPane, 0.0, -80.0, true));
+
+                assertEquals(innerScrollPane.getVmax(), innerScrollPane.getVvalue(), 0.0001);
+                assertTrue(outerScrollPane.getVvalue() > outerScrollPane.getVmin());
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies unconsumed direct movement may activate the nearest outer M3 edge effect.
+    @Test
+    void nestedMaterialScrollPanePassesUnconsumedDirectMovementToOuterOverscroll() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            M3ScrollPane innerScrollPane = new M3ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            innerScrollPane.setOverscrollEffect(null);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox outerContent = new VBox(innerScrollPane, filler);
+            M3ScrollPane outerScrollPane = new M3ScrollPane(outerContent);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                innerScrollPane.setVvalue(innerScrollPane.getVmax());
+                outerScrollPane.setVvalue(outerScrollPane.getVmax());
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, true);
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                innerScrollPane.fireEvent(scrollEvent(innerScrollPane, 0.0, -80.0, true));
+
+                M3StretchOverscrollEffect outerEffect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        outerScrollPane.getOverscrollEffect()
+                );
+                assertEquals(innerScrollPane.getVmax(), innerScrollPane.getVvalue(), 0.0001);
+                assertEquals(outerScrollPane.getVmax(), outerScrollPane.getVvalue(), 0.0001);
+                assertTrue(outerEffect.isInProgress());
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_FINISHED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+
+                assertFalse(outerEffect.isInProgress());
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, false);
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies an outer M3 owner receives only the direct delta left after the inner pane reaches its edge.
+    @Test
+    void nestedMaterialScrollPanePassesOnlyRemainingDirectMovementToOuterOwner() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            M3ScrollPane innerScrollPane = new M3ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            innerScrollPane.setOverscrollEffect(null);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox outerContent = new VBox(innerScrollPane, filler);
+            M3ScrollPane outerScrollPane = new M3ScrollPane(outerContent);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                double innerScrollablePixels = Math.max(
+                        innerContent.getBoundsInLocal().getHeight(),
+                        innerContent.prefHeight(-1.0)
+                ) - innerScrollPane.getViewportBounds().getHeight();
+                double innerValueRange = innerScrollPane.getVmax() - innerScrollPane.getVmin();
+                innerScrollPane.setVvalue(
+                        innerScrollPane.getVmax() - 20.0 / innerScrollablePixels * innerValueRange
+                );
+                double expectedOuterValue = expectedScrollPaneVerticalTargetValue(
+                        outerScrollPane,
+                        outerContent,
+                        -60.0
+                );
+
+                innerScrollPane.fireEvent(scrollEvent(
+                        innerScrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                innerScrollPane.fireEvent(scrollEvent(innerScrollPane, 0.0, -80.0, true));
+
+                assertEquals(innerScrollPane.getVmax(), innerScrollPane.getVvalue(), 0.0001);
+                assertEquals(expectedOuterValue, outerScrollPane.getVvalue(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies direct overscroll remains available when smooth handling is re-enabled after skin creation.
+    @Test
+    void materialScrollPaneReenablePreservesDirectOverscroll() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Region content = new Region();
+            content.setPrefSize(180.0, 480.0);
+            M3ScrollPane scrollPane = new M3ScrollPane(content);
+            scrollPane.setPrefSize(220.0, 140.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 260.0, 180.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ScrollPane.disableSmoothScrolling(scrollPane);
+                M3ScrollPane.enableSmoothScrolling(scrollPane);
+                scrollPane.fireEvent(scrollEvent(
+                        scrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+
+                M3StretchOverscrollEffect effect = assertInstanceOf(
+                        M3StretchOverscrollEffect.class,
+                        scrollPane.getOverscrollEffect()
+                );
+                assertTrue(effect.isInProgress());
+                assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies scene-level direct routing does not offer an unconsumed event twice to a custom effect.
+    @Test
+    void directScrollDispatcherInvokesCustomEffectOnce() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            AtomicLong applications = new AtomicLong();
+            M3OverscrollEffect effect = new M3OverscrollEffect() {
+                @Override
+                protected double onApplyToScroll(
+                        Orientation orientation,
+                        double delta,
+                        ScrollEvent event,
+                        DoubleUnaryOperator performScroll
+                ) {
+                    applications.incrementAndGet();
+                    performScroll.applyAsDouble(delta);
+                    return 0.0;
+                }
+
+                @Override
+                protected void onRelease() {
+                }
+
+                @Override
+                public boolean isInProgress() {
+                    return false;
+                }
+            };
+            Region content = new Region();
+            content.setPrefSize(180.0, 480.0);
+            M3ScrollPane scrollPane = new M3ScrollPane(content);
+            scrollPane.setPrefSize(220.0, 140.0);
+            scrollPane.setOverscrollEffect(effect);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 260.0, 180.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                scrollPane.fireEvent(scrollEvent(
+                        scrollPane,
+                        ScrollEvent.SCROLL_STARTED,
+                        0.0,
+                        0.0,
+                        true
+                ));
+                scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+
+                assertEquals(1L, applications.get());
+                assertEquals(scrollPane.getVmin(), scrollPane.getVvalue(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        }));
+    }
+
     /// Verifies that direct touch scroll events are left to JavaFX's native panning behavior.
     @Test
     void scrollPaneSmoothScrollingIgnoresDirectScrollEvents() {
@@ -1235,6 +1890,28 @@ final class M3ScrollPaneTest {
         return scrollEvent(target, deltaX, deltaY, direct, false);
     }
 
+    /// Creates a scroll lifecycle event with pixel deltas.
+    private static ScrollEvent scrollEvent(
+            Node target,
+            EventType<ScrollEvent> eventType,
+            double deltaX,
+            double deltaY,
+            boolean direct
+    ) {
+        return scrollEvent(
+                target,
+                eventType,
+                deltaX,
+                deltaY,
+                direct,
+                false,
+                ScrollEvent.HorizontalTextScrollUnits.NONE,
+                0.0,
+                ScrollEvent.VerticalTextScrollUnits.NONE,
+                0.0
+        );
+    }
+
     /// Creates a scroll event for scroll behavior tests.
     private static ScrollEvent scrollEvent(
             Node target,
@@ -1268,10 +1945,37 @@ final class M3ScrollPaneTest {
             ScrollEvent.VerticalTextScrollUnits verticalUnits,
             double textDeltaY
     ) {
+        return scrollEvent(
+                target,
+                ScrollEvent.SCROLL,
+                deltaX,
+                deltaY,
+                direct,
+                shiftDown,
+                horizontalUnits,
+                textDeltaX,
+                verticalUnits,
+                textDeltaY
+        );
+    }
+
+    /// Creates a scroll event with an explicit lifecycle type and platform text-scroll units.
+    private static ScrollEvent scrollEvent(
+            Node target,
+            EventType<ScrollEvent> eventType,
+            double deltaX,
+            double deltaY,
+            boolean direct,
+            boolean shiftDown,
+            ScrollEvent.HorizontalTextScrollUnits horizontalUnits,
+            double textDeltaX,
+            ScrollEvent.VerticalTextScrollUnits verticalUnits,
+            double textDeltaY
+    ) {
         return new ScrollEvent(
                 target,
                 target,
-                ScrollEvent.SCROLL,
+                eventType,
                 40.0,
                 40.0,
                 40.0,
@@ -1290,7 +1994,7 @@ final class M3ScrollPaneTest {
                 textDeltaX,
                 verticalUnits,
                 textDeltaY,
-                0,
+                direct ? 1 : 0,
                 null
         );
     }

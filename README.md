@@ -453,13 +453,25 @@ projectCard.setOnAction(event -> openProject());
 
 Leave `onAction` unset when a card contains independent buttons or links. This keeps the card passive and lets its descendants own pointer and keyboard actions.
 
-Use `M3ScrollPane` for a new viewport that should receive Material scrollbar styling and smooth wheel motion by default:
+Use `M3ScrollPane` for a new viewport that should receive Material scrollbar styling, smooth wheel motion, and
+bounded stretch overscroll by default:
 
 ```java
 M3ScrollPane viewport = new M3ScrollPane(content);
 ```
 
-Existing application-owned JavaFX scroll panes can opt into the same behaviors independently:
+The logical `hvalue` and `vvalue` remain within their JavaFX ranges. The default `M3StretchOverscrollEffect` renders
+unconsumed edge input separately and can be configured or removed:
+
+```java
+M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
+effect.setMaximumStretch(0.14);
+effect.setResistance(0.45);
+viewport.setOverscrollEffect(effect);
+// viewport.setOverscrollEffect(null);
+```
+
+Existing application-owned JavaFX scroll panes can opt into Material styling and smooth wheel motion independently:
 
 ```java
 ScrollPane viewport = new ScrollPane(content);
@@ -481,6 +493,7 @@ Implemented component families include:
 - Text fields, password fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
 - Checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
 - Lists, setting rows, virtualized list views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
+- Scroll panes with smooth bounded movement and configurable stretch overscroll effects.
 - Adaptive breakpoints and scaffolds with bars, navigation regions, logical rails, and one- to three-pane layouts.
 
 Text-input controls retain JavaFX text-input behavior for editing, selection, clipboard, IME, and multiline input.
@@ -501,9 +514,9 @@ guidance, M3FX API documentation, and source. A 360dp standard navigation drawer
 directory at expanded widths and becomes a scrim-backed modal drawer on smaller windows. Drawer destinations remain
 persistent across route changes so selection does not rebuild the navigation tree or disturb its scroll position.
 Route replacement uses directional Material motion, and every Catalog viewport enables smooth wheel scrolling. The
-registry contains 47 component families and 319 independent examples covering variants, sizes, shapes, states,
+registry contains 48 component families and 323 independent examples covering variants, sizes, shapes, states,
 responsive layouts, and Material Expressive treatments. It includes the adaptive scaffold and the M3FX extension
-families for avatars, banners, color pickers, forms, icons, scrims, settings, and surfaces. Theme and display
+families for avatars, banners, color pickers, forms, icons, scrims, scroll panes, settings, and surfaces. Theme and display
 controls live in a modal bottom sheet:
 
 ```shell

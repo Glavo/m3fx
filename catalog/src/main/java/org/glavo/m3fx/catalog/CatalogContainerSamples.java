@@ -42,6 +42,7 @@ import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
+import org.glavo.m3fx.controls.M3StretchOverscrollEffect;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextField;
@@ -411,6 +412,48 @@ final class CatalogContainerSamples {
                 new M3Button("Apply", M3ButtonVariant.FILLED)
         );
         return sheet;
+    }
+
+    /// Creates an interactive scroll-pane specimen with optional two-axis content and stretch configuration.
+    ///
+    /// @param bidirectional whether content exceeds the viewport on both axes
+    /// @param overscrollEnabled whether an overscroll effect is installed
+    /// @param pronouncedStretch whether the stretch uses a stronger custom configuration
+    /// @return the configured scroll pane
+    static Node scrollPane(
+            boolean bidirectional,
+            boolean overscrollEnabled,
+            boolean pronouncedStretch
+    ) {
+        M3ListPane list = new M3ListPane();
+        list.setSelectionMode(M3SelectionMode.NONE);
+        for (int index = 1; index <= 12; index++) {
+            M3ListItem item = new M3ListItem("Scrollable item " + index);
+            item.setSupportingText(index == 1
+                    ? "Continue past an edge to inspect the stretch response"
+                    : "Bounded content remains aligned with the native viewport");
+            item.setLeading(CatalogSamples.icon(index % 2 == 0 ? CatalogIcons.FAVORITE : CatalogIcons.TOUCH_APP));
+            list.getItems().add(item);
+        }
+        if (bidirectional) {
+            list.setMinWidth(640.0);
+            list.setPrefWidth(640.0);
+        }
+
+        M3ScrollPane scrollPane = new M3ScrollPane(list);
+        scrollPane.setFitToWidth(!bidirectional);
+        scrollPane.setPannable(true);
+        scrollPane.setPrefSize(420.0, 280.0);
+        scrollPane.setMaxSize(420.0, 280.0);
+        if (!overscrollEnabled) {
+            scrollPane.setOverscrollEffect(null);
+        } else if (pronouncedStretch) {
+            M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
+            effect.setMaximumStretch(0.16);
+            effect.setResistance(0.38);
+            scrollPane.setOverscrollEffect(effect);
+        }
+        return scrollPane;
     }
 
     /// Creates one surface color and elevation combination.

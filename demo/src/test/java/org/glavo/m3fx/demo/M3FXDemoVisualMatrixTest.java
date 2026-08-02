@@ -336,6 +336,9 @@ final class M3FXDemoVisualMatrixTest {
     /// Scroll positions used to sample long demo pages beyond their first visible viewport.
     private static final @Unmodifiable List<Double> DEMO_PAGE_SCROLL_VISUAL_POSITIONS = List.of(0.0, 0.5, 1.0);
 
+    /// Normalized tolerance for pixel-preserving ScrollPaneSkin corrections after final viewport rounding.
+    private static final double DEMO_PAGE_SCROLL_POSITION_TOLERANCE = 0.002;
+
     /// Ordered snapshot filename fragment groups for focused visual report sections.
     private static final @Unmodifiable List<Map.Entry<String, @Unmodifiable List<String>>> FOCUSED_VISUAL_SNAPSHOT_GROUPS =
             List.of(
@@ -4443,11 +4446,18 @@ final class M3FXDemoVisualMatrixTest {
                     FxTestUtils.runOnFxThreadWhenStable(
                             () -> {
                                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                                ScrollPane scrollPane = demoPageScrollPane(scene);
-                                return Math.abs(scrollPane.getVvalue() - scrollPosition) <= 0.001;
+                                return driveDemoPageScrollPosition(scene, scrollPosition);
                             },
                             SETTLED_STATE_PULSES,
-                            () -> "Timed out waiting for `" + pageTitle + "` scroll position " + scrollPosition,
+                            () -> {
+                                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                                ScrollPane scrollPane = demoPageScrollPane(scene);
+                                @Nullable Node content = scrollPane.getContent();
+                                return "Timed out waiting for `" + pageTitle + "` scroll position " + scrollPosition
+                                        + ": actual=" + scrollPane.getVvalue()
+                                        + ", viewport=" + scrollPane.getViewportBounds()
+                                        + ", content=" + (content == null ? "null" : content.getLayoutBounds());
+                            },
                             () -> {
                                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                                 ScrollPane scrollPane = demoPageScrollPane(scene);
@@ -8398,10 +8408,27 @@ final class M3FXDemoVisualMatrixTest {
         scrollPane.setHvalue(0.0);
     }
 
+    /// Drives the current demo page to one normalized scroll position while its content geometry settles.
+    ///
+    /// @param scene          the active demo scene
+    /// @param scrollPosition the requested normalized vertical position
+    /// @return `true` when both axes currently match their requested values
+    private static boolean driveDemoPageScrollPosition(Scene scene, double scrollPosition) {
+        ScrollPane scrollPane = demoPageScrollPane(scene);
+        boolean settled = Math.abs(scrollPane.getVvalue() - scrollPosition)
+                <= DEMO_PAGE_SCROLL_POSITION_TOLERANCE
+                && Math.abs(scrollPane.getHvalue()) <= DEMO_PAGE_SCROLL_POSITION_TOLERANCE;
+        if (!settled) {
+            scrollPane.setHvalue(0.0);
+            scrollPane.setVvalue(scrollPosition);
+        }
+        return settled;
+    }
+
     /// Verifies one demo page after the requested scroll position has settled across real JavaFX pulses.
     private static void assertDemoPageScrollPosition(Scene scene, String pageTitle, double scrollPosition) {
         ScrollPane scrollPane = demoPageScrollPane(scene);
-        assertEquals(scrollPosition, scrollPane.getVvalue(), 0.001,
+        assertEquals(scrollPosition, scrollPane.getVvalue(), DEMO_PAGE_SCROLL_POSITION_TOLERANCE,
                 () -> pageTitle + " visual capture did not reach requested scroll position");
 
         if (scrollPosition >= 1.0 && pageTitle.equals("Sliders")) {

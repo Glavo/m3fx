@@ -548,6 +548,39 @@ final class CatalogContainerComponents {
                                 () -> CatalogContainerSamples.scrim(true)
                         )
                 ),
+                CatalogComponents.extensionComponent(
+                        "Scroll panes",
+                        "Scroll panes keep logical values bounded while smooth input and edge effects "
+                                + "decorate movement.",
+                        CatalogIcons.SCROLL_PANE,
+                        "https://developer.android.com/develop/ui/compose/touch-input/scroll",
+                        "M3ScrollPane",
+                        CatalogComponents.example(
+                                "Default vertical stretch",
+                                "A vertically bounded pane using the default resistant edge stretch.",
+                                false,
+                                () -> CatalogContainerSamples.scrollPane(false, true, false)
+                        ),
+                        CatalogComponents.example(
+                                "Bidirectional stretch",
+                                "Content larger on both axes with independently anchored horizontal and vertical "
+                                        + "stretch.",
+                                false,
+                                () -> CatalogContainerSamples.scrollPane(true, true, false)
+                        ),
+                        CatalogComponents.example(
+                                "Pronounced custom stretch",
+                                "A custom effect with a larger maximum and lower pull resistance.",
+                                true,
+                                () -> CatalogContainerSamples.scrollPane(false, true, true)
+                        ),
+                        CatalogComponents.example(
+                                "Overscroll disabled",
+                                "The same bounded scrolling behavior with the optional edge effect removed.",
+                                false,
+                                () -> CatalogContainerSamples.scrollPane(false, false, false)
+                        )
+                ),
                 CatalogComponents.component(
                         "Side sheets",
                         "Side sheets present supplementary content from a side edge without replacing the page.",
