@@ -4,6 +4,7 @@
 package org.glavo.m3fx.catalog;
 
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -26,6 +27,7 @@ import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3DropZone;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
@@ -326,6 +328,45 @@ final class CatalogContainerSamples {
                 divider,
                 new M3Text("After", M3TextRole.BODY_MEDIUM)
         );
+    }
+
+    /// Creates an interactive file drop zone in an empty, filled, or disabled state.
+    ///
+    /// @param filled whether the sample begins with imported content
+    /// @param disabled whether drag and keyboard interaction is disabled
+    /// @return the configured drop zone
+    static Node dropZone(boolean filled, boolean disabled) {
+        M3Text title = new M3Text(
+                filled ? "Launcher profile imported" : "Drop a launcher profile here",
+                M3TextRole.TITLE_MEDIUM
+        );
+        M3Text supporting = new M3Text(
+                filled ? "profile.json is ready to use" : "JSON files up to 10 MB",
+                M3TextRole.BODY_MEDIUM
+        );
+        M3Button browse = new M3Button("Choose file", M3ButtonVariant.TONAL);
+        browse.setOnAction(event -> supporting.setText("A file chooser would open in the host application"));
+
+        VBox message = new VBox(10.0, CatalogSamples.icon(CatalogIcons.DROP_ZONE), title, supporting, browse);
+        message.setAlignment(Pos.CENTER);
+
+        M3DropZone dropZone = new M3DropZone(message);
+        dropZone.setAcceptancePredicate(event -> event.getDragboard().hasFiles());
+        dropZone.setFilled(filled);
+        dropZone.setDisable(disabled);
+        dropZone.setPrefWidth(480.0);
+        dropZone.setMaxWidth(480.0);
+        dropZone.setOnDragDropped(event -> {
+            int fileCount = event.getDragboard().getFiles().size();
+            boolean accepted = fileCount > 0;
+            if (accepted) {
+                title.setText(fileCount == 1 ? "1 file imported" : fileCount + " files imported");
+                supporting.setText("Drop completed successfully");
+                dropZone.setFilled(true);
+            }
+            event.setDropCompleted(accepted);
+        });
+        return dropZone;
     }
 
     /// Creates a list focused on one row-line count and leading slot.

@@ -451,6 +451,31 @@ final class CatalogContainerComponents {
                                 CatalogContainerSamples::verticalDivider
                         )
                 ),
+                CatalogComponents.extensionComponent(
+                        "Drop zones",
+                        "Drop zones accept files or other dragged content within a clearly designated target.",
+                        CatalogIcons.DROP_ZONE,
+                        "https://opensource.adobe.com/spectrum-web-components/components/dropzone/",
+                        "M3DropZone",
+                        CatalogComponents.example(
+                                "File drop zone",
+                                "An interactive target that accepts files dragged from the desktop.",
+                                false,
+                                () -> CatalogContainerSamples.dropZone(false, false)
+                        ),
+                        CatalogComponents.example(
+                                "Filled drop zone",
+                                "A target presenting content from an earlier successful import.",
+                                false,
+                                () -> CatalogContainerSamples.dropZone(true, false)
+                        ),
+                        CatalogComponents.example(
+                                "Disabled drop zone",
+                                "A target that rejects drag gestures while its workflow is unavailable.",
+                                false,
+                                () -> CatalogContainerSamples.dropZone(false, true)
+                        )
+                ),
                 CatalogComponents.component(
                         "Lists",
                         "Lists present vertically arranged rows of related content and actions.",

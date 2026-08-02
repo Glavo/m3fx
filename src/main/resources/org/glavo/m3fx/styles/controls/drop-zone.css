@@ -1,0 +1,30 @@
+.m3-drop-zone {
+    -m3-container-min-width: 240px;
+    -m3-container-min-height: 160px;
+    -m3-content-padding: 24px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 16px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-radius: 16px;
+    -fx-border-style: segments(6px, 4px) centered;
+    -fx-border-width: 1px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-drop-zone:filled {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-style: solid;
+}
+
+.m3-drop-zone:drag-active {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-border-color: -m3-color-primary;
+    -fx-border-style: solid;
+    -fx-border-width: 2px;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-drop-zone:disabled {
+    -fx-opacity: 0.38;
+}

@@ -90,6 +90,7 @@ final class M3ControlAccessibilityTest {
         assertEquals("12+", badge.getAccessibleText());
         assertEquals(AccessibleRole.NODE, new M3Divider().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3Surface().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3DropZone().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormSection().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormRow().getAccessibleRole());
@@ -238,6 +239,7 @@ final class M3ControlAccessibilityTest {
                 new M3Badge(),
                 new M3Divider(),
                 new M3Surface(),
+                new M3DropZone(),
                 new M3FormPane(),
                 new M3FormSection(),
                 new M3FormRow(),

@@ -103,6 +103,11 @@ final class CatalogIcons {
     /// The divider icon path.
     static final String DIVIDER = "M3 11h18v2H3z";
 
+    /// The drop-zone icon path.
+    static final String DROP_ZONE =
+            "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+                    + "M11 16h2v-5.2l2.1 2.1 1.4-1.4L12 7l-4.5 4.5 1.4 1.4 2.1-2.1z";
+
     /// The side-sheet icon path.
     static final String SIDE_SHEET = "M3 3h18v18H3zm2 2v14h8V5zm10 0v14h4V5z";
 
