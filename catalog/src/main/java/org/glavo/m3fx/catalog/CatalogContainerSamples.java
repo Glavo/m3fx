@@ -34,6 +34,7 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationRail;
+import org.glavo.m3fx.controls.M3OverscrollInputMode;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SelectionMode;
@@ -55,6 +56,7 @@ import org.glavo.m3fx.layout.M3Breakpoint;
 import org.glavo.m3fx.layout.M3NavigationLayout;
 import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// Creates focused samples for structural, surface, and adaptive-layout Catalog entries.
 @NotNullByDefault
@@ -417,20 +419,30 @@ final class CatalogContainerSamples {
     /// Creates an interactive scroll-pane specimen with optional two-axis content and stretch configuration.
     ///
     /// @param bidirectional whether content exceeds the viewport on both axes
-    /// @param overscrollEnabled whether an overscroll effect is installed
+    /// @param overscrollInputMode the accepted overscroll inputs, or `null` to remove the effect
     /// @param pronouncedStretch whether the stretch uses a stronger custom configuration
     /// @return the configured scroll pane
     static Node scrollPane(
             boolean bidirectional,
-            boolean overscrollEnabled,
+            @Nullable M3OverscrollInputMode overscrollInputMode,
             boolean pronouncedStretch
     ) {
+        String edgeGuidance;
+        if (overscrollInputMode == null) {
+            edgeGuidance = "Edge input remains bounded without a stretch effect";
+        } else {
+            edgeGuidance = switch (overscrollInputMode) {
+                case DIRECT -> "Use direct touch input and continue past an edge";
+                case CONTINUOUS -> "Use touch or a continuous precision gesture past an edge";
+                case ALL -> "Mouse-wheel input also stretches after reaching an edge";
+            };
+        }
         M3ListPane list = new M3ListPane();
         list.setSelectionMode(M3SelectionMode.NONE);
         for (int index = 1; index <= 12; index++) {
             M3ListItem item = new M3ListItem("Scrollable item " + index);
             item.setSupportingText(index == 1
-                    ? "Continue past an edge to inspect the stretch response"
+                    ? edgeGuidance
                     : "Bounded content remains aligned with the native viewport");
             item.setLeading(CatalogSamples.icon(index % 2 == 0 ? CatalogIcons.FAVORITE : CatalogIcons.TOUCH_APP));
             list.getItems().add(item);
@@ -445,13 +457,16 @@ final class CatalogContainerSamples {
         scrollPane.setPannable(true);
         scrollPane.setPrefSize(420.0, 280.0);
         scrollPane.setMaxSize(420.0, 280.0);
-        if (!overscrollEnabled) {
+        if (overscrollInputMode == null) {
             scrollPane.setOverscrollEffect(null);
-        } else if (pronouncedStretch) {
-            M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
-            effect.setMaximumStretch(0.16);
-            effect.setResistance(0.38);
-            scrollPane.setOverscrollEffect(effect);
+        } else {
+            scrollPane.setOverscrollInputMode(overscrollInputMode);
+            if (pronouncedStretch) {
+                M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
+                effect.setMaximumStretch(0.16);
+                effect.setResistance(0.38);
+                scrollPane.setOverscrollEffect(effect);
+            }
         }
         return scrollPane;
     }

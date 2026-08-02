@@ -19,7 +19,8 @@ import java.util.function.DoubleUnaryOperator;
 /// produce its visual response. The callback must be invoked exactly once. Logical scroll values remain owned by
 /// the callback and are not permitted to leave their configured ranges.
 ///
-/// An effect instance is stateful and may be attached to only one [M3ScrollPane] at a time. Setting the pane's
+/// An effect instance is stateful and may be attached to only one [M3ScrollPane] at a time. The owning pane's
+/// [M3ScrollPane#overscrollInputModeProperty()] determines which inputs reach the effect. Setting
 /// [M3ScrollPane#overscrollEffectProperty()] to `null` disables overscroll. Implementations must release rendering
 /// resources and remove changes made to the scene graph when detached.
 ///

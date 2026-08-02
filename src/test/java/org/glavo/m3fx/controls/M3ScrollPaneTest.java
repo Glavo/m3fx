@@ -77,11 +77,30 @@ final class M3ScrollPaneTest {
         assertNull(explicitlyEmpty.getContent());
         assertTrue(empty.getStyleClass().contains("m3-scroll-pane"));
         assertTrue(M3ScrollPane.isSmoothScrollingEnabled(empty));
+        assertEquals(M3OverscrollInputMode.CONTINUOUS, empty.getOverscrollInputMode());
         assertInstanceOf(M3StretchOverscrollEffect.class, empty.getOverscrollEffect());
         assertSame(content, populated.getContent());
         assertTrue(populated.getStyleClass().contains("m3-scroll-pane"));
         assertTrue(M3ScrollPane.isSmoothScrollingEnabled(populated));
+        assertEquals(M3OverscrollInputMode.CONTINUOUS, populated.getOverscrollInputMode());
         assertInstanceOf(M3StretchOverscrollEffect.class, populated.getOverscrollEffect());
+    }
+
+    /// Verifies JavaFX-style configuration of the inputs eligible for overscroll decoration.
+    @Test
+    void materialScrollPaneConfiguresOverscrollInputMode() {
+        M3ScrollPane scrollPane = new M3ScrollPane();
+
+        scrollPane.setOverscrollInputMode(M3OverscrollInputMode.DIRECT);
+
+        assertEquals(M3OverscrollInputMode.DIRECT, scrollPane.getOverscrollInputMode());
+        assertSame(scrollPane, scrollPane.overscrollInputModeProperty().getBean());
+        assertEquals("overscrollInputMode", scrollPane.overscrollInputModeProperty().getName());
+
+        scrollPane.overscrollInputModeProperty().set(null);
+
+        assertEquals(M3OverscrollInputMode.CONTINUOUS, scrollPane.getOverscrollInputMode());
+        assertThrows(NullPointerException.class, () -> scrollPane.setOverscrollInputMode(null));
     }
 
     /// Verifies that effect instances are pane-owned and replacement detaches the previous effect.
@@ -116,6 +135,125 @@ final class M3ScrollPaneTest {
         assertThrows(IllegalArgumentException.class, () -> effect.setMaximumStretch(0.6));
         assertThrows(IllegalArgumentException.class, () -> effect.setResistance(Double.NaN));
         assertThrows(IllegalArgumentException.class, () -> effect.setResistance(-1.0));
+    }
+
+    /// Verifies the default mode excludes isolated wheel input but retains lifecycle-delimited indirect gestures.
+    @Test
+    void defaultOverscrollAcceptsContinuousInputInsteadOfDiscreteWheelInput() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3StretchOverscrollEffect effect = assertInstanceOf(
+                M3StretchOverscrollEffect.class,
+                scrollPane.getOverscrollEffect()
+        );
+
+        ScrollEvent wheelEvent = scrollEvent(scrollPane, 0.0, 80.0, false);
+        scrollPane.fireEvent(wheelEvent);
+
+        assertFalse(wheelEvent.isConsumed());
+        assertFalse(effect.isInProgress());
+        assertTrue(content.getTransforms().isEmpty());
+
+        scrollPane.fireEvent(scrollEvent(
+                scrollPane,
+                ScrollEvent.SCROLL_STARTED,
+                0.0,
+                0.0,
+                false
+        ));
+        ScrollEvent continuousEvent = scrollEvent(scrollPane, 0.0, 80.0, false);
+        scrollPane.fireEvent(continuousEvent);
+
+        assertTrue(continuousEvent.isConsumed());
+        assertTrue(effect.isInProgress());
+        assertFalse(content.getTransforms().isEmpty());
+
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
+        try {
+            scrollPane.setOverscrollInputMode(M3OverscrollInputMode.DIRECT);
+            assertFalse(effect.isInProgress());
+            assertTrue(content.getTransforms().isEmpty());
+        } finally {
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+        }
+        scrollPane.setOverscrollEffect(null);
+    }
+
+    /// Verifies direct-only and all-input modes route the documented event categories.
+    @Test
+    void overscrollInputModesSelectEligibleEvents() {
+        AtomicLong applications = new AtomicLong();
+        M3OverscrollEffect effect = new M3OverscrollEffect() {
+            /// Records one decorated operation and consumes its complete delta.
+            @Override
+            protected double onApplyToScroll(
+                    Orientation orientation,
+                    double delta,
+                    ScrollEvent event,
+                    DoubleUnaryOperator performScroll
+            ) {
+                applications.incrementAndGet();
+                performScroll.applyAsDouble(delta);
+                return delta;
+            }
+
+            /// Retains no state between operations.
+            @Override
+            protected void onRelease() {
+            }
+
+            /// Returns `false` because this recording effect has no visual state.
+            @Override
+            public boolean isInProgress() {
+                return false;
+            }
+        };
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        M3ScrollPane scrollPane = new M3ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        scrollPane.setOverscrollEffect(effect);
+        scrollPane.setOverscrollInputMode(M3OverscrollInputMode.DIRECT);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+
+        scrollPane.fireEvent(scrollEvent(
+                scrollPane,
+                ScrollEvent.SCROLL_STARTED,
+                0.0,
+                0.0,
+                false
+        ));
+        scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, false));
+        scrollPane.fireEvent(scrollEvent(
+                scrollPane,
+                ScrollEvent.SCROLL_FINISHED,
+                0.0,
+                0.0,
+                false
+        ));
+        assertEquals(0L, applications.get());
+
+        scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, true));
+        assertEquals(1L, applications.get());
+
+        scrollPane.setOverscrollInputMode(M3OverscrollInputMode.ALL);
+        scrollPane.fireEvent(scrollEvent(scrollPane, 0.0, 80.0, false));
+        assertEquals(2L, applications.get());
     }
 
     /// Verifies that the static behavior API remains authoritative for Material scroll panes.

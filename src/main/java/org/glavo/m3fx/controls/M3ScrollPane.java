@@ -39,7 +39,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
-/// A JavaFX scroll pane with Material styling, smooth wheel motion, and stretch overscroll enabled by default.
+/// A JavaFX scroll pane with Material styling, smooth wheel motion, and continuous-input stretch overscroll enabled
+/// by default.
 ///
 /// This control retains the complete [ScrollPane] content, viewport, layout, and scrolling API. Construction applies
 /// the M3FX scroll stylesheet and installs decorated scroll handling. Fit policies, scrollbar policies, pannability,
@@ -60,7 +61,9 @@ import java.util.function.DoubleUnaryOperator;
 /// An accepted movement is applied synchronously while the pane has no scene or its associated window is hidden,
 /// because no rendered pulse is available to advance the transition. Values written by scroll handling remain
 /// within each axis's configured minimum and maximum, including while a spatial easing curve overshoots its target.
-/// Set [#setOverscrollEffect(M3OverscrollEffect)] to `null` to disable the edge effect without changing styling.
+/// The default [M3OverscrollInputMode#CONTINUOUS] mode excludes isolated indirect wheel events while retaining direct
+/// manipulation and lifecycle-delimited indirect gestures. Set [#setOverscrollEffect(M3OverscrollEffect)] to `null`
+/// to disable the edge effect without changing styling or bounded scrolling.
 ///
 /// See [Material Design scrolling behavior](https://m3.material.io/).
 @NotNullByDefault
@@ -85,6 +88,9 @@ public final class M3ScrollPane extends ScrollPane {
     /// The style class that enables Material styling for a standalone JavaFX [ScrollBar].
     private static final String SCROLL_BAR_STYLE_CLASS = "m3-scroll-bar";
 
+    /// The default set of user inputs eligible for overscroll decoration.
+    private static final M3OverscrollInputMode DEFAULT_OVERSCROLL_INPUT_MODE = M3OverscrollInputMode.CONTINUOUS;
+
     /// The effect attached to this pane and used by the installed scroll input behavior.
     private @Nullable M3OverscrollEffect attachedOverscrollEffect;
 
@@ -94,13 +100,16 @@ public final class M3ScrollPane extends ScrollPane {
     /// The lazily created property that configures the effect decorating bounded user scrolling.
     private @Nullable ObjectProperty<@Nullable M3OverscrollEffect> overscrollEffect;
 
-    /// Creates an empty Material scroll pane with smooth wheel motion and stretch overscroll enabled.
+    /// The lazily created property that selects which inputs may use the configured overscroll effect.
+    private @Nullable ObjectProperty<M3OverscrollInputMode> overscrollInputMode;
+
+    /// Creates an empty Material scroll pane with smooth wheel motion and continuous-input stretch overscroll enabled.
     public M3ScrollPane() {
         initialize();
     }
 
-    /// Creates a Material scroll pane containing the supplied node with smooth wheel motion and stretch overscroll
-    /// enabled.
+    /// Creates a Material scroll pane containing the supplied node with smooth wheel motion and continuous-input
+    /// stretch overscroll enabled.
     ///
     /// @param content the initial content, or `null` for no content
     public M3ScrollPane(@Nullable Node content) {
@@ -112,6 +121,77 @@ public final class M3ScrollPane extends ScrollPane {
     private void initialize() {
         style(this);
         enableSmoothScrolling(this);
+    }
+
+    /// Returns which user scroll inputs may use the configured overscroll effect.
+    ///
+    /// @return the overscroll input mode
+    public M3OverscrollInputMode getOverscrollInputMode() {
+        @Nullable ObjectProperty<M3OverscrollInputMode> property = overscrollInputMode;
+        return property == null
+                ? DEFAULT_OVERSCROLL_INPUT_MODE
+                : Objects.requireNonNullElse(property.get(), DEFAULT_OVERSCROLL_INPUT_MODE);
+    }
+
+    /// Sets which user scroll inputs may use the configured overscroll effect.
+    ///
+    /// Changing the mode releases an effect already in progress. Setting the mode does not install an effect when
+    /// [#getOverscrollEffect()] is `null` and does not change bounded scrolling.
+    ///
+    /// @param mode the overscroll input mode
+    /// @throws NullPointerException if `mode` is `null`
+    public void setOverscrollInputMode(M3OverscrollInputMode mode) {
+        M3OverscrollInputMode checkedMode = Objects.requireNonNull(mode, "mode");
+        @Nullable ObjectProperty<M3OverscrollInputMode> property = overscrollInputMode;
+        if (property == null && checkedMode == DEFAULT_OVERSCROLL_INPUT_MODE) {
+            return;
+        }
+        overscrollInputModeProperty().set(checkedMode);
+    }
+
+    /// Returns the property selecting which user scroll inputs may use the configured overscroll effect.
+    ///
+    /// The property is writable and bindable. Its default value is [M3OverscrollInputMode#CONTINUOUS]. A direct
+    /// `null` assignment restores that default; bound values must be non-null.
+    ///
+    /// @return the overscroll input-mode property
+    public ObjectProperty<M3OverscrollInputMode> overscrollInputModeProperty() {
+        @Nullable ObjectProperty<M3OverscrollInputMode> property = overscrollInputMode;
+        if (property == null) {
+            property = new ObjectPropertyBase<>(DEFAULT_OVERSCROLL_INPUT_MODE) {
+                /// Applies input-policy changes and restores the default after a direct `null` assignment.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_OVERSCROLL_INPUT_MODE);
+                        return;
+                    }
+                    releaseOverscrollAfterInputModeChange();
+                }
+
+                /// Returns the scroll pane that owns this property.
+                @Override
+                public Object getBean() {
+                    return M3ScrollPane.this;
+                }
+
+                /// Returns the JavaFX property name.
+                @Override
+                public String getName() {
+                    return "overscrollInputMode";
+                }
+            };
+            overscrollInputMode = property;
+        }
+        return property;
+    }
+
+    /// Releases transient overscroll after the accepted input set changes.
+    private void releaseOverscrollAfterInputModeChange() {
+        @Nullable SmoothScrollState state = smoothScrollState(this);
+        if (state != null) {
+            state.releaseOverscrollAfterInputModeChange();
+        }
     }
 
     /// Returns the effect that decorates bounded user scrolling.
@@ -874,7 +954,7 @@ public final class M3ScrollPane extends ScrollPane {
             lastRemainingHorizontalDelta = horizontalDelta;
             lastRemainingVerticalDelta = verticalDelta;
             lastScrollConsumed = false;
-            @Nullable M3OverscrollEffect effect = scrollOverscrollEffect();
+            @Nullable M3OverscrollEffect effect = scrollOverscrollEffect(event);
             if (event.isDirect() && effect == null && !(scrollPane instanceof M3ScrollPane)) {
                 return;
             }
@@ -1116,13 +1196,24 @@ public final class M3ScrollPane extends ScrollPane {
                     : null;
         }
 
-        /// Returns the effect for user scrolling, creating the default on first input.
+        /// Returns the effect for an eligible user scroll event, creating the default on first accepted input.
         ///
+        /// @param event the event requesting overscroll decoration
         /// @return the active effect, or `null` for an ordinary JavaFX scroll pane or a disabled effect
-        private @Nullable M3OverscrollEffect scrollOverscrollEffect() {
-            return scrollPane instanceof M3ScrollPane materialScrollPane
-                    ? materialScrollPane.resolveOverscrollEffect()
-                    : null;
+        private @Nullable M3OverscrollEffect scrollOverscrollEffect(ScrollEvent event) {
+            if (!(scrollPane instanceof M3ScrollPane materialScrollPane)
+                    || !materialScrollPane.getOverscrollInputMode().accepts(event.isDirect(), scrollGestureActive)) {
+                return null;
+            }
+            return materialScrollPane.resolveOverscrollEffect();
+        }
+
+        /// Releases transient overscroll after this pane's accepted input set changes.
+        private void releaseOverscrollAfterInputModeChange() {
+            @Nullable M3OverscrollEffect effect = attachedOverscrollEffect();
+            if (effect != null) {
+                effect.release();
+            }
         }
 
         /// Applies changed animation settings to the current smooth scroll operation.

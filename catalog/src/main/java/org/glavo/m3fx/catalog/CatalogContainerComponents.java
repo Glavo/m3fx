@@ -9,6 +9,7 @@ import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListStyle;
+import org.glavo.m3fx.controls.M3OverscrollInputMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
@@ -557,28 +558,60 @@ final class CatalogContainerComponents {
                         "M3ScrollPane",
                         CatalogComponents.example(
                                 "Default vertical stretch",
-                                "A vertically bounded pane using the default resistant edge stretch.",
+                                "The default resistant stretch for direct and lifecycle-delimited continuous input.",
                                 false,
-                                () -> CatalogContainerSamples.scrollPane(false, true, false)
+                                () -> CatalogContainerSamples.scrollPane(
+                                        false,
+                                        M3OverscrollInputMode.CONTINUOUS,
+                                        false
+                                )
                         ),
                         CatalogComponents.example(
                                 "Bidirectional stretch",
                                 "Content larger on both axes with independently anchored horizontal and vertical "
                                         + "stretch.",
                                 false,
-                                () -> CatalogContainerSamples.scrollPane(true, true, false)
+                                () -> CatalogContainerSamples.scrollPane(
+                                        true,
+                                        M3OverscrollInputMode.CONTINUOUS,
+                                        false
+                                )
                         ),
                         CatalogComponents.example(
                                 "Pronounced custom stretch",
                                 "A custom effect with a larger maximum and lower pull resistance.",
                                 true,
-                                () -> CatalogContainerSamples.scrollPane(false, true, true)
+                                () -> CatalogContainerSamples.scrollPane(
+                                        false,
+                                        M3OverscrollInputMode.CONTINUOUS,
+                                        true
+                                )
+                        ),
+                        CatalogComponents.example(
+                                "Direct-input stretch",
+                                "An edge effect restricted to JavaFX direct manipulation, normally touchscreen input.",
+                                false,
+                                () -> CatalogContainerSamples.scrollPane(
+                                        false,
+                                        M3OverscrollInputMode.DIRECT,
+                                        false
+                                )
+                        ),
+                        CatalogComponents.example(
+                                "Wheel-inclusive stretch",
+                                "All-input mode also decorates isolated mouse-wheel events for desktop inspection.",
+                                false,
+                                () -> CatalogContainerSamples.scrollPane(
+                                        false,
+                                        M3OverscrollInputMode.ALL,
+                                        false
+                                )
                         ),
                         CatalogComponents.example(
                                 "Overscroll disabled",
                                 "The same bounded scrolling behavior with the optional edge effect removed.",
                                 false,
-                                () -> CatalogContainerSamples.scrollPane(false, false, false)
+                                () -> CatalogContainerSamples.scrollPane(false, null, false)
                         )
                 ),
                 CatalogComponents.component(

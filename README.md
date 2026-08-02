@@ -454,20 +454,23 @@ projectCard.setOnAction(event -> openProject());
 Leave `onAction` unset when a card contains independent buttons or links. This keeps the card passive and lets its descendants own pointer and keyboard actions.
 
 Use `M3ScrollPane` for a new viewport that should receive Material scrollbar styling, smooth wheel motion, and
-bounded stretch overscroll by default:
+bounded stretch overscroll for continuous manipulation by default:
 
 ```java
 M3ScrollPane viewport = new M3ScrollPane(content);
 ```
 
-The logical `hvalue` and `vvalue` remain within their JavaFX ranges. The default `M3StretchOverscrollEffect` renders
-unconsumed edge input separately and can be configured or removed:
+The logical `hvalue` and `vvalue` remain within their JavaFX ranges. The default `CONTINUOUS` input mode applies the
+`M3StretchOverscrollEffect` to direct touch and lifecycle-delimited indirect gestures while leaving isolated mouse
+wheel input bounded. The input mode and effect can be configured independently:
 
 ```java
 M3StretchOverscrollEffect effect = new M3StretchOverscrollEffect();
 effect.setMaximumStretch(0.14);
 effect.setResistance(0.45);
+viewport.setOverscrollInputMode(M3OverscrollInputMode.DIRECT); // Direct manipulation only
 viewport.setOverscrollEffect(effect);
+// viewport.setOverscrollInputMode(M3OverscrollInputMode.ALL); // Include isolated wheel input
 // viewport.setOverscrollEffect(null);
 ```
 
