@@ -85,6 +85,10 @@ final class DemoMaterialDocs {
     static final String DROP_ZONES =
             "https://opensource.adobe.com/spectrum-web-components/components/dropzone/";
 
+    /// The Spectrum Web Components meter documentation URL.
+    static final String METERS =
+            "https://opensource.adobe.com/spectrum-web-components/components/meter/";
+
     /// The Spectrum Web Components status-light documentation URL.
     static final String STATUS_LIGHTS =
             "https://opensource.adobe.com/spectrum-web-components/components/status-light/";

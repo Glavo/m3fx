@@ -12,6 +12,9 @@ import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
+import org.glavo.m3fx.controls.M3Meter;
+import org.glavo.m3fx.controls.M3MeterSize;
+import org.glavo.m3fx.controls.M3MeterVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
@@ -28,7 +31,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Locale;
 
-/// Creates focused icon, progress, snackbar, tooltip, and typography samples.
+/// Creates focused icon, meter, progress, snackbar, tooltip, and typography samples.
 @NotNullByDefault
 final class CatalogFeedbackSamples {
     /// Prevents instantiation of this factory class.
@@ -169,6 +172,80 @@ final class CatalogFeedbackSamples {
         );
         statusLight.setIndicatorColor(Color.web("#76558E"));
         return statusLight;
+    }
+
+    /// Creates one meter for every supported semantic variant.
+    ///
+    /// @return the vertically arranged semantic meter set
+    static Node semanticMeters() {
+        return new VBox(
+                16.0,
+                meter("Tutorials completed", 0.50, "4 of 8", M3MeterVariant.INFORMATIVE,
+                        M3MeterSize.LARGE, false),
+                meter("Storage remaining", 0.72, "72%", M3MeterVariant.POSITIVE,
+                        M3MeterSize.LARGE, false),
+                meter("Storage used", 0.80, "80%", M3MeterVariant.NOTICE,
+                        M3MeterSize.LARGE, false),
+                meter("Storage used", 0.94, "94%", M3MeterVariant.NEGATIVE,
+                        M3MeterSize.LARGE, false)
+        );
+    }
+
+    /// Creates one meter for each supported size.
+    ///
+    /// @return the vertically arranged meter size scale
+    static Node sizedMeters() {
+        return new VBox(
+                16.0,
+                meter("Large meter", 0.62, "62%", M3MeterVariant.INFORMATIVE,
+                        M3MeterSize.LARGE, false),
+                meter("Small meter", 0.62, "62%", M3MeterVariant.INFORMATIVE,
+                        M3MeterSize.SMALL, false)
+        );
+    }
+
+    /// Creates a constrained meter with a wrapping descriptive label.
+    ///
+    /// @return the configured constrained meter
+    static Node wrappedMeter() {
+        M3Meter meter = meter(
+                "Tutorials completed across this learning pathway",
+                0.25,
+                "2 of 8",
+                M3MeterVariant.POSITIVE,
+                M3MeterSize.LARGE,
+                false
+        );
+        meter.setPrefWidth(176.0);
+        meter.setMaxWidth(176.0);
+        return meter;
+    }
+
+    /// Creates one configured meter sample.
+    ///
+    /// @param label the measured quantity label
+    /// @param value the normalized measured value
+    /// @param valueText the displayed value text
+    /// @param variant the semantic variant
+    /// @param size the visual size
+    /// @param sideLabel whether labels appear beside the track
+    /// @return the configured meter
+    static M3Meter meter(
+            String label,
+            double value,
+            String valueText,
+            M3MeterVariant variant,
+            M3MeterSize size,
+            boolean sideLabel
+    ) {
+        M3Meter meter = new M3Meter(label, value);
+        meter.setValueText(valueText);
+        meter.setVariant(variant);
+        meter.setSize(size);
+        meter.setSideLabel(sideLabel);
+        meter.setPrefWidth(sideLabel ? 360.0 : 240.0);
+        meter.setMaxWidth(sideLabel ? 420.0 : 320.0);
+        return meter;
     }
 
     /// Creates one configured status light.
