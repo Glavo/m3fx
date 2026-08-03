@@ -13,8 +13,7 @@ import org.glavo.m3fx.controls.M3OverscrollInputMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
-import org.glavo.m3fx.controls.M3TreeViewSize;
-import org.glavo.m3fx.controls.M3TreeViewStyle;
+import org.glavo.m3fx.controls.M3TreeViewSelectionStyle;
 import org.glavo.m3fx.layout.M3Breakpoint;
 import org.glavo.m3fx.layout.M3NavigationLayout;
 import org.glavo.m3fx.layout.M3PaneLayout;
@@ -559,51 +558,51 @@ final class CatalogContainerComponents {
                 ),
                 CatalogComponents.extensionComponent(
                         "Tree views",
-                        "Tree views present expandable nested hierarchies with virtualized Material rows.",
+                        "Tree views present expandable hierarchies using virtualized Material list rows.",
                         CatalogIcons.TREE_VIEW,
-                        "https://spectrum.adobe.com/page/tree-view/",
+                        "https://react-spectrum.adobe.com/TreeView",
                         "M3TreeView",
                         CatalogComponents.example(
-                                "Standard hierarchy",
-                                "An expandable hierarchy using continuous Material rows.",
+                                "Material hierarchy",
+                                "An expandable hierarchy with Material list height, colors, and interaction states.",
                                 false,
                                 () -> CatalogContainerSamples.treeView(
-                                        M3TreeViewSize.MEDIUM,
-                                        M3TreeViewStyle.STANDARD,
+                                        M3TreeViewSelectionStyle.HIGHLIGHT,
                                         false,
-                                        false
+                                        false,
+                                        true
                                 )
                         ),
                         CatalogComponents.example(
                                 "Graphic items",
-                                "Tree items with graphics supplied by the JavaFX hierarchy model.",
+                                "Context icons supplied by the JavaFX hierarchy model.",
                                 false,
                                 () -> CatalogContainerSamples.treeView(
-                                        M3TreeViewSize.MEDIUM,
-                                        M3TreeViewStyle.STANDARD,
+                                        M3TreeViewSelectionStyle.HIGHLIGHT,
                                         true,
-                                        false
+                                        false,
+                                        true
                                 )
                         ),
                         CatalogComponents.example(
-                                "Detached hierarchy",
-                                "Inset contained rows make neighboring hierarchy items visually distinct.",
+                                "Hidden root",
+                                "A hierarchy whose structural root is not presented as a selectable row.",
                                 false,
                                 () -> CatalogContainerSamples.treeView(
-                                        M3TreeViewSize.MEDIUM,
-                                        M3TreeViewStyle.DETACHED,
+                                        M3TreeViewSelectionStyle.HIGHLIGHT,
+                                        false,
                                         false,
                                         false
                                 )
                         ),
                         CatalogComponents.example(
-                                "Multiple selection",
-                                "Large rows with JavaFX multiple selection enabled.",
+                                "Checkbox selection",
+                                "Material checkboxes make multiple selection explicit for bulk operations.",
                                 false,
                                 () -> CatalogContainerSamples.treeView(
-                                        M3TreeViewSize.LARGE,
-                                        M3TreeViewStyle.STANDARD,
-                                        false,
+                                        M3TreeViewSelectionStyle.CHECKBOX,
+                                        true,
+                                        true,
                                         true
                                 )
                         )

@@ -15,20 +15,21 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Presents a virtualized, expandable hierarchy with Material Design 3 styling.
+/// Presents a virtualized, expandable hierarchy using Material Design 3 list-row conventions.
 ///
-/// Material Design 3 does not define a tree-view component. This M3FX extension adapts the hierarchy and density
-/// options of Adobe Spectrum tree views to Material color, shape, type, and interaction roles. The inherited
-/// [TreeView] model remains authoritative: [TreeItem] owns hierarchy and expansion state, and the inherited focus,
-/// selection, editing, scrolling, accessibility, and keyboard contracts are unchanged.
+/// Material Design 3 does not define a tree-view component. This extension therefore derives its visual contract
+/// from Material lists: one-line rows use the Material list height, selection uses Material color roles, and hover,
+/// focus, disabled, and pointer feedback use the same state vocabulary as other M3FX collection controls. Adobe
+/// Spectrum 2 informs only tree-specific capabilities such as expandable hierarchy, optional item graphics,
+/// highlight or checkbox selection presentation, and full-text help for truncated labels.
 ///
-/// A new tree view uses the [medium][M3TreeViewSize#MEDIUM] size, the
-/// [standard][M3TreeViewStyle#STANDARD] containment style, and [M3TreeCell] as its cell factory. Applications may
-/// replace the inherited cell factory to render richer rows. The inherited selection model initially uses single
-/// selection and may be changed to multiple selection through [javafx.scene.control.MultipleSelectionModel]. An
-/// explicit inherited `fixedCellSize` value or an author stylesheet may override the nominal size-role row height.
+/// The inherited [TreeView] model remains authoritative. [TreeItem] owns hierarchy and expansion state, while the
+/// inherited selection, focus, editing, scrolling, accessibility, and keyboard contracts remain available. A new
+/// tree view uses [highlight selection][M3TreeViewSelectionStyle#HIGHLIGHT] and creates [M3TreeCell] instances.
+/// Applications may replace the cell factory for richer rows. An explicit inherited `fixedCellSize` value or an
+/// author stylesheet may override the default Material one-line row height.
 ///
-/// See [Spectrum tree views](https://spectrum.adobe.com/page/tree-view/).
+/// See [Spectrum 2 TreeView](https://react-spectrum.adobe.com/TreeView).
 ///
 /// @param <T> the value type stored by tree items
 @NotNullByDefault
@@ -36,39 +37,21 @@ public final class M3TreeView<T> extends TreeView<T> {
     /// The default root style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-tree-view";
 
-    /// The nominal row size.
+    /// The way selected tree items are presented.
     ///
-    /// A direct `null` assignment restores [M3TreeViewSize#MEDIUM]. Bound values must be non-null.
+    /// A direct `null` assignment restores [M3TreeViewSelectionStyle#HIGHLIGHT]. Bound values must be non-null.
     ///
-    /// @defaultValue [M3TreeViewSize#MEDIUM]
-    private final ObjectProperty<M3TreeViewSize> size =
-            new SimpleObjectProperty<>(this, "size", M3TreeViewSize.MEDIUM) {
-                /// Restores the default or updates size styling after assignment.
+    /// @defaultValue [M3TreeViewSelectionStyle#HIGHLIGHT]
+    private final ObjectProperty<M3TreeViewSelectionStyle> selectionStyle =
+            new SimpleObjectProperty<>(this, "selectionStyle", M3TreeViewSelectionStyle.HIGHLIGHT) {
+                /// Restores the default or updates selection styling after assignment.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3TreeViewSize.MEDIUM);
+                        set(M3TreeViewSelectionStyle.HIGHLIGHT);
                         return;
                     }
-                    updateSizeStyle();
-                }
-            };
-
-    /// The row containment style.
-    ///
-    /// A direct `null` assignment restores [M3TreeViewStyle#STANDARD]. Bound values must be non-null.
-    ///
-    /// @defaultValue [M3TreeViewStyle#STANDARD]
-    private final ObjectProperty<M3TreeViewStyle> treeStyle =
-            new SimpleObjectProperty<>(this, "treeStyle", M3TreeViewStyle.STANDARD) {
-                /// Restores the default or updates containment styling after assignment.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(M3TreeViewStyle.STANDARD);
-                        return;
-                    }
-                    updateTreeStyle();
+                    updateSelectionStyle();
                 }
             };
 
@@ -87,54 +70,32 @@ public final class M3TreeView<T> extends TreeView<T> {
         initialize();
     }
 
-    /// Returns the nominal row size.
+    /// Returns the way selected tree items are presented.
     ///
-    /// @return the non-null size role
-    public M3TreeViewSize getSize() {
-        return size.get();
+    /// @return the non-null selection style
+    public M3TreeViewSelectionStyle getSelectionStyle() {
+        return selectionStyle.get();
     }
 
-    /// Sets the nominal row size.
+    /// Sets the way selected tree items are presented.
     ///
-    /// @param size the size role
-    /// @throws NullPointerException if `size` is `null`
-    public void setSize(M3TreeViewSize size) {
-        this.size.set(Objects.requireNonNull(size, "size"));
+    /// Checkbox presentation is most useful with the inherited selection model configured for multiple selection.
+    /// This method changes presentation only and does not change the selection mode or selected items.
+    ///
+    /// @param selectionStyle the selection style
+    /// @throws NullPointerException if `selectionStyle` is `null`
+    public void setSelectionStyle(M3TreeViewSelectionStyle selectionStyle) {
+        this.selectionStyle.set(Objects.requireNonNull(selectionStyle, "selectionStyle"));
     }
 
-    /// Returns the property containing the nominal row size.
+    /// Returns the property containing the selection presentation.
     ///
-    /// A direct `null` assignment restores [M3TreeViewSize#MEDIUM]. A unidirectional binding must supply non-null
-    /// values.
+    /// A direct `null` assignment restores [M3TreeViewSelectionStyle#HIGHLIGHT]. A unidirectional binding must
+    /// supply non-null values. Changing the property does not change the inherited selection mode or selected items.
     ///
-    /// @return the size property
-    public ObjectProperty<M3TreeViewSize> sizeProperty() {
-        return size;
-    }
-
-    /// Returns the row containment style.
-    ///
-    /// @return the non-null containment style
-    public M3TreeViewStyle getTreeStyle() {
-        return treeStyle.get();
-    }
-
-    /// Sets the row containment style.
-    ///
-    /// @param treeStyle the containment style
-    /// @throws NullPointerException if `treeStyle` is `null`
-    public void setTreeStyle(M3TreeViewStyle treeStyle) {
-        this.treeStyle.set(Objects.requireNonNull(treeStyle, "treeStyle"));
-    }
-
-    /// Returns the property containing the row containment style.
-    ///
-    /// A direct `null` assignment restores [M3TreeViewStyle#STANDARD]. A unidirectional binding must supply non-null
-    /// values.
-    ///
-    /// @return the containment-style property
-    public ObjectProperty<M3TreeViewStyle> treeStyleProperty() {
-        return treeStyle;
+    /// @return the selection-style property
+    public ObjectProperty<M3TreeViewSelectionStyle> selectionStyleProperty() {
+        return selectionStyle;
     }
 
     /// Returns the user-agent stylesheet for Material tree views.
@@ -150,30 +111,16 @@ public final class M3TreeView<T> extends TreeView<T> {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TREE_VIEW);
         setCellFactory(treeView -> new M3TreeCell<>());
-        updateSizeStyle();
-        updateTreeStyle();
+        updateSelectionStyle();
     }
 
-    /// Applies the style class for the current size role.
-    private void updateSizeStyle() {
+    /// Applies the style class for the current selection presentation.
+    private void updateSelectionStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().styleClass(),
-                M3TreeViewSize.SMALL.styleClass(),
-                M3TreeViewSize.MEDIUM.styleClass(),
-                M3TreeViewSize.LARGE.styleClass(),
-                M3TreeViewSize.EXTRA_LARGE.styleClass()
-        );
-        requestLayout();
-    }
-
-    /// Applies the style class for the current containment style.
-    private void updateTreeStyle() {
-        M3ControlStyles.replaceVariant(
-                this,
-                getTreeStyle().styleClass(),
-                M3TreeViewStyle.STANDARD.styleClass(),
-                M3TreeViewStyle.DETACHED.styleClass()
+                getSelectionStyle().styleClass(),
+                M3TreeViewSelectionStyle.HIGHLIGHT.styleClass(),
+                M3TreeViewSelectionStyle.CHECKBOX.styleClass()
         );
         requestLayout();
     }

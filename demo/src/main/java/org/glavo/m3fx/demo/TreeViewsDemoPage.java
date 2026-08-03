@@ -7,12 +7,10 @@ import javafx.scene.Node;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeItem;
 import org.glavo.m3fx.controls.M3TreeView;
-import org.glavo.m3fx.controls.M3TreeViewSize;
-import org.glavo.m3fx.controls.M3TreeViewStyle;
+import org.glavo.m3fx.controls.M3TreeViewSelectionStyle;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.List;
-import java.util.Locale;
 
 /// Builds the Tree Views extension showcase page.
 @NotNullByDefault
@@ -28,50 +26,49 @@ final class TreeViewsDemoPage extends DemoPageSupport {
     ///
     /// @return the complete tree-view showcase
     Node createContent() {
-        M3TreeView<String> standard = createHierarchy(
-                "demo-tree-view-standard",
-                M3TreeViewStyle.STANDARD,
-                false,
-                false
-        );
-        M3TreeView<String> detached = createHierarchy(
-                "demo-tree-view-detached",
-                M3TreeViewStyle.DETACHED,
+        M3TreeView<String> hierarchy = createHierarchy(
+                "demo-tree-view-highlight",
+                M3TreeViewSelectionStyle.HIGHLIGHT,
                 true,
-                false
+                false,
+                true
         );
-        M3TreeView<String> multiple = createHierarchy(
-                "demo-tree-view-multiple",
-                M3TreeViewStyle.STANDARD,
+        M3TreeView<String> checkboxSelection = createHierarchy(
+                "demo-tree-view-checkbox",
+                M3TreeViewSelectionStyle.CHECKBOX,
+                true,
                 true,
                 true
         );
+        M3TreeView<String> hiddenRoot = createHierarchy(
+                "demo-tree-view-hidden-root",
+                M3TreeViewSelectionStyle.HIGHLIGHT,
+                false,
+                false,
+                false
+        );
 
         return createGallery(
-                createShowcaseGroup("Hierarchy", standard, detached),
-                createFullWidthShowcaseGroup("Multiple Selection", multiple),
-                createShowcaseGroup(
-                        "Size Scale",
-                        createSizeSample(M3TreeViewSize.SMALL),
-                        createSizeSample(M3TreeViewSize.MEDIUM),
-                        createSizeSample(M3TreeViewSize.LARGE),
-                        createSizeSample(M3TreeViewSize.EXTRA_LARGE)
-                )
+                createFullWidthShowcaseGroup("Material Hierarchy", hierarchy),
+                createFullWidthShowcaseGroup("Checkbox Selection", checkboxSelection),
+                createFullWidthShowcaseGroup("Hidden Root", hiddenRoot)
         );
     }
 
     /// Creates one representative expandable project hierarchy.
     ///
     /// @param styleClass the demo style class identifying the sample role
-    /// @param treeStyle the row containment style
+    /// @param selectionStyle the selected-item presentation
     /// @param graphics whether items display vector graphics
     /// @param multipleSelection whether multiple selection is enabled and demonstrated
+    /// @param showRoot whether the root is presented as a row
     /// @return the configured tree view
     private static M3TreeView<String> createHierarchy(
             String styleClass,
-            M3TreeViewStyle treeStyle,
+            M3TreeViewSelectionStyle selectionStyle,
             boolean graphics,
-            boolean multipleSelection
+            boolean multipleSelection,
+            boolean showRoot
     ) {
         TreeItem<String> workspace = treeItem("M3FX workspace", graphics, "work");
         TreeItem<String> sources = treeItem("Source packages", graphics, "folder");
@@ -96,45 +93,21 @@ final class TreeViewsDemoPage extends DemoPageSupport {
         ));
         workspace.setExpanded(true);
         sources.setExpanded(true);
-        documentation.setExpanded(true);
 
         M3TreeView<String> treeView = new M3TreeView<>(workspace);
         treeView.getStyleClass().addAll("demo-tree-view", styleClass);
-        treeView.setTreeStyle(treeStyle);
-        treeView.setPrefHeight(360.0);
-        configureResponsiveWidth(treeView, 400.0);
-        treeView.setMaxWidth(400.0);
+        treeView.setSelectionStyle(selectionStyle);
+        treeView.setShowRoot(showRoot);
+        treeView.setPrefHeight(showRoot ? 392.0 : 336.0);
+        treeView.setMaxHeight(showRoot ? 392.0 : 336.0);
+        configureResponsiveWidth(treeView, 560.0);
+        treeView.setMaxWidth(560.0);
         if (multipleSelection) {
             treeView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             treeView.getSelectionModel().selectIndices(1, 3, 6);
         } else {
-            treeView.getSelectionModel().select(2);
+            treeView.getSelectionModel().select(showRoot ? 2 : 1);
         }
-        return treeView;
-    }
-
-    /// Creates a shallow tree that demonstrates one row-size role.
-    ///
-    /// @param size the row-size role
-    /// @return the configured size sample
-    private static M3TreeView<String> createSizeSample(M3TreeViewSize size) {
-        TreeItem<String> hiddenRoot = new TreeItem<>(size.name());
-        hiddenRoot.getChildren().addAll(List.of(
-                new TreeItem<>(size.name().replace('_', ' ') + " rows"),
-                new TreeItem<>((int) size.getRowHeight() + " logical pixels")
-        ));
-        hiddenRoot.setExpanded(true);
-
-        M3TreeView<String> treeView = new M3TreeView<>(hiddenRoot);
-        treeView.getStyleClass().addAll(
-                "demo-tree-view",
-                "demo-tree-view-size-" + size.name().toLowerCase(Locale.ROOT)
-        );
-        treeView.setShowRoot(false);
-        treeView.setSize(size);
-        treeView.setPrefHeight(size.getRowHeight() * 2.0 + 2.0);
-        treeView.setMaxHeight(size.getRowHeight() * 2.0 + 2.0);
-        configureResponsiveWidth(treeView, 260.0);
         return treeView;
     }
 

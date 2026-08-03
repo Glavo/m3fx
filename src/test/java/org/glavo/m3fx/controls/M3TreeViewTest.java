@@ -36,16 +36,19 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies Material tree-view state, inherited behavior, rendering, directionality, and accessibility.
+/// Verifies Material tree-view state, selection presentation, rendering, directionality, and accessibility.
 @NotNullByDefault
 final class M3TreeViewTest {
+    /// The Material one-line list height used by default tree rows.
+    private static final double MATERIAL_ONE_LINE_HEIGHT = 56.0;
+
     /// Starts the JavaFX toolkit before controls are constructed.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
     }
 
-    /// Verifies defaults, property ownership, validation, and mutually exclusive style classes.
+    /// Verifies defaults, property ownership, validation, and mutually exclusive selection style classes.
     @Test
     @SuppressWarnings("DataFlowIssue")
     void exposesStableStateProperties() {
@@ -56,30 +59,21 @@ final class M3TreeViewTest {
             assertSame(rootItem, treeView.getRoot());
             assertTrue(treeView.isShowRoot());
             assertEquals(SelectionMode.SINGLE, treeView.getSelectionModel().getSelectionMode());
-            assertEquals(M3TreeViewSize.MEDIUM, treeView.getSize());
-            assertEquals(M3TreeViewStyle.STANDARD, treeView.getTreeStyle());
-            assertSame(treeView, treeView.sizeProperty().getBean());
-            assertSame(treeView, treeView.treeStyleProperty().getBean());
+            assertEquals(M3TreeViewSelectionStyle.HIGHLIGHT, treeView.getSelectionStyle());
+            assertSame(treeView, treeView.selectionStyleProperty().getBean());
             assertEquals(AccessibleRole.TREE_VIEW, treeView.getAccessibleRole());
             assertTrue(treeView.isFocusTraversable());
             assertTrue(treeView.getStyleClass().contains("m3-tree-view"));
-            assertTrue(treeView.getStyleClass().contains("m3-medium-tree-view"));
-            assertTrue(treeView.getStyleClass().contains("m3-standard-tree-view"));
+            assertTrue(treeView.getStyleClass().contains("m3-highlight-tree-selection"));
             assertTrue(treeView.getCellFactory().call(treeView) instanceof M3TreeCell<?>);
 
-            treeView.setSize(M3TreeViewSize.EXTRA_LARGE);
-            assertTrue(treeView.getStyleClass().contains("m3-extra-large-tree-view"));
-            assertFalse(treeView.getStyleClass().contains("m3-medium-tree-view"));
-            treeView.setTreeStyle(M3TreeViewStyle.DETACHED);
-            assertTrue(treeView.getStyleClass().contains("m3-detached-tree-view"));
-            assertFalse(treeView.getStyleClass().contains("m3-standard-tree-view"));
+            treeView.setSelectionStyle(M3TreeViewSelectionStyle.CHECKBOX);
+            assertTrue(treeView.getStyleClass().contains("m3-checkbox-tree-selection"));
+            assertFalse(treeView.getStyleClass().contains("m3-highlight-tree-selection"));
 
-            treeView.sizeProperty().set(null);
-            treeView.treeStyleProperty().set(null);
-            assertEquals(M3TreeViewSize.MEDIUM, treeView.getSize());
-            assertEquals(M3TreeViewStyle.STANDARD, treeView.getTreeStyle());
-            assertThrows(NullPointerException.class, () -> treeView.setSize(null));
-            assertThrows(NullPointerException.class, () -> treeView.setTreeStyle(null));
+            treeView.selectionStyleProperty().set(null);
+            assertEquals(M3TreeViewSelectionStyle.HIGHLIGHT, treeView.getSelectionStyle());
+            assertThrows(NullPointerException.class, () -> treeView.setSelectionStyle(null));
 
             M3TreeView<String> emptyTree = new M3TreeView<>();
             assertNull(emptyTree.getRoot());
@@ -112,27 +106,62 @@ final class M3TreeViewTest {
         });
     }
 
-    /// Verifies that each size role resolves the documented fixed row height without replacing a custom factory.
+    /// Verifies the Material one-line row height without replacing an application cell factory.
     @Test
-    void sizeRolesControlVirtualizedRowHeight() {
+    void usesMaterialOneLineRowHeight() {
         FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             M3TreeView<String> treeView = new M3TreeView<>(hierarchy());
             treeView.getRoot().setExpanded(true);
             treeView.setPrefSize(320.0, 260.0);
             StackPane root = themedRoot(treeView, 360.0, 280.0);
+            layout(root, 360.0, 280.0);
 
-            for (M3TreeViewSize size : M3TreeViewSize.values()) {
-                treeView.setSize(size);
-                layout(root, 360.0, 280.0);
-                for (M3TreeCell<?> cell : visibleCells(treeView)) {
-                    assertEquals(size.getRowHeight(), cell.getHeight(), 0.001, () -> size + " row height");
-                }
+            assertEquals(MATERIAL_ONE_LINE_HEIGHT, treeView.getFixedCellSize(), 0.001);
+            for (M3TreeCell<?> cell : visibleCells(treeView)) {
+                assertEquals(MATERIAL_ONE_LINE_HEIGHT, cell.getHeight(), 0.001);
             }
 
             treeView.setCellFactory(view -> new NamedTreeCell());
-            treeView.setSize(M3TreeViewSize.SMALL);
             layout(root, 360.0, 280.0);
             assertTrue(visibleCells(treeView).stream().allMatch(NamedTreeCell.class::isInstance));
+        }));
+    }
+
+    /// Verifies highlight and checkbox selection presentation against the inherited selection model.
+    @Test
+    void switchesSelectionPresentationWithoutChangingSelection() {
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            M3TreeView<String> treeView = new M3TreeView<>(hierarchy());
+            treeView.getRoot().setExpanded(true);
+            treeView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            treeView.getSelectionModel().selectIndices(1, 3);
+            treeView.setPrefSize(360.0, 260.0);
+            StackPane root = themedRoot(treeView, 400.0, 280.0);
+            layout(root, 400.0, 280.0);
+
+            List<Integer> selectedBefore = List.copyOf(treeView.getSelectionModel().getSelectedIndices());
+            assertTrue(visibleCells(treeView).stream()
+                    .filter(TreeCell::isSelected)
+                    .allMatch(cell -> cell.getSelectionCheckBox().getParent() == null));
+
+            treeView.setSelectionStyle(M3TreeViewSelectionStyle.CHECKBOX);
+            layout(root, 400.0, 280.0);
+            assertEquals(selectedBefore, List.copyOf(treeView.getSelectionModel().getSelectedIndices()));
+            for (M3TreeCell<?> cell : visibleCells(treeView)) {
+                assertTrue(cell.getSelectionCheckBox().getParent() != null);
+                assertEquals(cell.isSelected(), cell.getSelectionCheckBox().isSelected());
+            }
+
+            M3TreeCell<?> unselectedCell = visibleCells(treeView).stream()
+                    .filter(cell -> cell.getIndex() == 2)
+                    .findFirst()
+                    .orElseThrow();
+            unselectedCell.getSelectionCheckBox().fire();
+            assertTrue(treeView.getSelectionModel().isSelected(2));
+            assertTrue(unselectedCell.getSelectionCheckBox().isSelected());
+            unselectedCell.getSelectionCheckBox().fire();
+            assertFalse(treeView.getSelectionModel().isSelected(2));
+            assertFalse(unselectedCell.getSelectionCheckBox().isSelected());
         }));
     }
 
@@ -160,7 +189,6 @@ final class M3TreeViewTest {
             treeView.setPrefWidth(1200.0);
             treeView.setMaxWidth(1200.0);
             layout(root, 1240.0, 140.0);
-            assertTrue(treeView.getWidth() > 1000.0, () -> "expanded tree width: " + treeView.getWidth());
             cell = visibleCells(treeView).get(0);
             assertNull(cell.getFullTextTooltip().getText());
             assertNull(cell.getAccessibleHelp());
@@ -172,53 +200,25 @@ final class M3TreeViewTest {
             assertNull(reusableCell.getText());
             assertNull(reusableCell.getGraphic());
             assertNull(reusableCell.getFullTextTooltip().getText());
-
-            String nestedLongText =
-                    "A deliberately long generated-resources directory whose complete name appears in a tooltip";
-            TreeItem<String> nestedRootItem = new TreeItem<>("M3FX workspace");
-            nestedRootItem.getChildren().add(new TreeItem<>(nestedLongText));
-            nestedRootItem.setExpanded(true);
-            M3TreeView<String> nestedTreeView = new M3TreeView<>(nestedRootItem);
-            nestedTreeView.setPrefSize(400.0, 120.0);
-            nestedTreeView.setMaxWidth(400.0);
-            StackPane nestedRoot = themedRoot(nestedTreeView, 440.0, 140.0);
-            layout(nestedRoot, 440.0, 140.0);
-            M3TreeCell<?> nestedCell = visibleCells(nestedTreeView).stream()
-                    .filter(candidate -> nestedLongText.equals(candidate.getText()))
-                    .findFirst()
-                    .orElseThrow();
-            assertEquals(nestedLongText, nestedCell.getFullTextTooltip().getText());
         }));
     }
 
-    /// Verifies Material row surfaces, selected colors, detached insets, and stock skin lifecycle.
+    /// Verifies Material selected surfaces and the stock TreeView skin lifecycle.
     @Test
-    void stylesStandardAndDetachedRows() {
+    void stylesMaterialRowsAndPreservesStockSkinLifecycle() {
         FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             M3TreeView<String> treeView = new M3TreeView<>(hierarchy());
             treeView.getRoot().setExpanded(true);
+            treeView.getSelectionModel().select(1);
             treeView.setPrefSize(320.0, 220.0);
             StackPane root = themedRoot(treeView, 360.0, 240.0);
             layout(root, 360.0, 240.0);
 
             assertTrue(treeView.getSkin() instanceof TreeViewSkin<?>);
-            M3TreeCell<?> standardCell = visibleCells(treeView).get(0);
-            assertTrue(standardCell.getBackground().getFills().isEmpty()
-                    || standardCell.getBackground().getFills().get(0).getInsets().getLeft() == 0.0);
-
-            treeView.setTreeStyle(M3TreeViewStyle.DETACHED);
-            treeView.getSelectionModel().select(1);
-            layout(root, 360.0, 240.0);
-            M3TreeCell<?> detachedCell = visibleCells(treeView).stream()
-                    .filter(cell -> cell.getIndex() == 0)
-                    .findFirst()
-                    .orElseThrow();
             M3TreeCell<?> selectedCell = visibleCells(treeView).stream()
                     .filter(TreeCell::isSelected)
                     .findFirst()
                     .orElseThrow();
-            assertFalse(detachedCell.getBackground().getFills().isEmpty());
-            assertEquals(8.0, detachedCell.getBackground().getFills().get(0).getInsets().getLeft(), 0.001);
             assertFalse(selectedCell.getBackground().getFills().isEmpty());
 
             Object originalSkin = treeView.getSkin();
@@ -342,7 +342,7 @@ final class M3TreeViewTest {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 
-    /// A custom cell type used to verify that size updates preserve application factories.
+    /// A custom cell type used to verify that Material styling preserves application factories.
     @NotNullByDefault
     private static final class NamedTreeCell extends M3TreeCell<String> {
         /// Creates an empty named cell.

@@ -56,8 +56,7 @@ import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TreeView;
-import org.glavo.m3fx.controls.M3TreeViewSize;
-import org.glavo.m3fx.controls.M3TreeViewStyle;
+import org.glavo.m3fx.controls.M3TreeViewSelectionStyle;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.layout.M3Breakpoint;
 import org.glavo.m3fx.layout.M3NavigationLayout;
@@ -428,16 +427,16 @@ final class CatalogContainerSamples {
 
     /// Creates an expandable tree-view sample.
     ///
-    /// @param size the tree row size
-    /// @param style the row containment style
+    /// @param selectionStyle the selected-item presentation
     /// @param graphics whether tree items include graphics
     /// @param multipleSelection whether multiple selection is enabled and demonstrated
+    /// @param showRoot whether the hierarchy root is rendered as a row
     /// @return the configured tree view
     static Node treeView(
-            M3TreeViewSize size,
-            M3TreeViewStyle style,
+            M3TreeViewSelectionStyle selectionStyle,
             boolean graphics,
-            boolean multipleSelection
+            boolean multipleSelection,
+            boolean showRoot
     ) {
         TreeItem<String> workspace = treeItem("Workspace", graphics, CatalogIcons.SURFACE);
         TreeItem<String> applications = treeItem("Applications", graphics, CatalogIcons.ADAPTIVE);
@@ -454,9 +453,9 @@ final class CatalogContainerSamples {
         applications.setExpanded(true);
 
         M3TreeView<String> treeView = new M3TreeView<>(workspace);
-        treeView.setSize(size);
-        treeView.setTreeStyle(style);
-        treeView.setPrefHeight(280.0);
+        treeView.setSelectionStyle(selectionStyle);
+        treeView.setShowRoot(showRoot);
+        treeView.setPrefHeight(336.0);
         if (multipleSelection) {
             treeView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             treeView.getSelectionModel().selectIndices(1, 3);

@@ -194,8 +194,7 @@ import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3TreeCell;
 import org.glavo.m3fx.controls.M3TreeView;
-import org.glavo.m3fx.controls.M3TreeViewSize;
-import org.glavo.m3fx.controls.M3TreeViewStyle;
+import org.glavo.m3fx.controls.M3TreeViewSelectionStyle;
 import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.theme.M3Theme;
@@ -16763,56 +16762,49 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies the real Tree Views demo page hierarchy, containment, selection, size, and tooltip states.
+    /// Verifies the real Tree Views demo page hierarchy, Material rows, selection styles, and tooltip states.
     private static void assertTreeViewsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Tree Views");
         assertCurrentPageTitle(scene, "Tree Views");
-        assertVisibleText(root, "Hierarchy", "Tree Views");
-        assertVisibleText(root, "Multiple Selection", "Tree Views");
-        assertVisibleText(root, "Size Scale", "Tree Views");
+        assertVisibleText(root, "Material Hierarchy", "Tree Views");
+        assertVisibleText(root, "Checkbox Selection", "Tree Views");
+        assertVisibleText(root, "Hidden Root", "Tree Views");
         assertVisibleText(root, "M3FX workspace", "Tree Views");
         assertVisibleText(root, "Source packages", "Tree Views");
 
         List<M3TreeView<?>> treeViews = visibleTreeViews(page);
-        assertEquals(7, treeViews.size(),
-                () -> "Tree Views page should render seven trees, found " + treeViews.size());
-        M3TreeView<?> standard = treeViewWithStyle(page, "demo-tree-view-standard");
-        M3TreeView<?> detached = treeViewWithStyle(page, "demo-tree-view-detached");
-        M3TreeView<?> multiple = treeViewWithStyle(page, "demo-tree-view-multiple");
-        assertEquals(M3TreeViewStyle.STANDARD, standard.getTreeStyle());
-        assertEquals(M3TreeViewStyle.DETACHED, detached.getTreeStyle());
-        assertEquals(3, multiple.getSelectionModel().getSelectedIndices().size(),
-                "multiple-selection tree selected rows");
-
-        for (M3TreeViewSize size : M3TreeViewSize.values()) {
-            M3TreeView<?> sizeSample = treeViewWithStyle(
-                    page,
-                    "demo-tree-view-size-" + size.name().toLowerCase(Locale.ROOT)
-            );
-            assertEquals(size, sizeSample.getSize(), () -> size + " demo tree size role");
-        }
+        assertEquals(3, treeViews.size(),
+                () -> "Tree Views page should render three trees, found " + treeViews.size());
+        M3TreeView<?> highlight = treeViewWithStyle(page, "demo-tree-view-highlight");
+        M3TreeView<?> checkbox = treeViewWithStyle(page, "demo-tree-view-checkbox");
+        M3TreeView<?> hiddenRoot = treeViewWithStyle(page, "demo-tree-view-hidden-root");
+        assertEquals(M3TreeViewSelectionStyle.HIGHLIGHT, highlight.getSelectionStyle());
+        assertEquals(M3TreeViewSelectionStyle.CHECKBOX, checkbox.getSelectionStyle());
+        assertEquals(M3TreeViewSelectionStyle.HIGHLIGHT, hiddenRoot.getSelectionStyle());
+        assertFalse(hiddenRoot.isShowRoot(), "hidden-root sample should omit its structural root row");
+        assertEquals(3, checkbox.getSelectionModel().getSelectedIndices().size(),
+                "checkbox-selection tree selected rows");
 
         for (M3TreeView<?> treeView : treeViews) {
             assertEquals(AccessibleRole.TREE_VIEW, treeView.getAccessibleRole());
-            assertEquals(treeView.getSize().getRowHeight(), treeView.getFixedCellSize(), CONTROL_EDGE_TOLERANCE,
-                    () -> treeView.getSize() + " fixed tree row height");
+            assertEquals(56.0, treeView.getFixedCellSize(), CONTROL_EDGE_TOLERANCE,
+                    "Material one-line tree row height");
             List<M3TreeCell<?>> cells = materializedTreeCells(treeView);
             assertFalse(cells.isEmpty(), () -> "tree should materialize visible rows: " + treeView.getStyleClass());
             for (M3TreeCell<?> cell : cells) {
                 assertEquals(AccessibleRole.TREE_ITEM, cell.getAccessibleRole());
-                assertEquals(treeView.getSize().getRowHeight(), cell.getHeight(), CONTROL_EDGE_TOLERANCE,
-                        () -> "tree cell height for " + treeView.getSize());
+                assertEquals(56.0, cell.getHeight(), CONTROL_EDGE_TOLERANCE, "Material tree cell height");
             }
         }
 
-        M3TreeCell<?> detachedCell = materializedTreeCells(detached).get(0);
-        assertNotNull(detachedCell.getBackground(), "detached tree cell background");
-        assertFalse(detachedCell.getBackground().getFills().isEmpty(), "detached tree cell fill");
-        assertEquals(8.0, detachedCell.getBackground().getFills().get(0).getInsets().getLeft(),
-                CONTROL_EDGE_TOLERANCE, "detached tree cell horizontal inset");
+        List<M3TreeCell<?>> checkboxCells = materializedTreeCells(checkbox);
+        assertTrue(checkboxCells.stream().allMatch(cell -> cell.getSelectionCheckBox().getParent() != null),
+                "checkbox-selection rows should render Material checkboxes");
+        assertEquals(3, checkboxCells.stream().filter(cell -> cell.getSelectionCheckBox().isSelected()).count(),
+                "selected checkbox indicators");
 
-        M3TreeCell<?> truncatedCell = materializedTreeCells(standard).stream()
+        M3TreeCell<?> truncatedCell = materializedTreeCells(highlight).stream()
                 .filter(cell -> cell.getText() != null && cell.getText().startsWith("A deliberately long"))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("long tree-view label was not materialized"));
