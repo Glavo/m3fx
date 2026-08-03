@@ -18,6 +18,7 @@ import javafx.scene.control.skin.TreeViewSkin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.transform.Translate;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
@@ -292,12 +293,18 @@ final class M3TreeViewTest {
     /// Verifies that expanding a tree branch produces a real intermediate Material rotation frame.
     @Test
     void animatesDisclosureRotationBetweenCollapsedAndExpandedStates() throws InterruptedException {
-        AtomicReference<@Nullable Node> arrowReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TreeView<String>> treeReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> branchReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhen(
                 () -> {
-                    @Nullable Node arrow = arrowReference.get();
+                    @Nullable Node arrow = visibleDisclosureArrow(treeReference.get(), branchReference.get());
                     return arrow != null && arrow.getRotate() > -89.0 && arrow.getRotate() < -1.0;
+                },
+                () -> {
+                    @Nullable Node arrow = visibleDisclosureArrow(treeReference.get(), branchReference.get());
+                    return "Timed out waiting for disclosure rotation; current rotation="
+                            + (arrow == null ? "unavailable" : arrow.getRotate());
                 },
                 () -> {
                     M3MotionSettings.setGlobalReducedMotionRequested(false);
@@ -315,12 +322,131 @@ final class M3TreeViewTest {
                     M3TreeCell<?> branchCell = visibleCells(treeView).get(1);
                     Node arrow = branchCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
                     assertEquals(-90.0, arrow.getRotate(), 0.001);
-                    arrowReference.set(arrow);
+                    treeReference.set(treeView);
+                    branchReference.set(branchItem);
                     branchItem.setExpanded(true);
                 },
                 () -> {
-                    Node arrow = java.util.Objects.requireNonNull(arrowReference.get(), "disclosure arrow");
+                    Node arrow = java.util.Objects.requireNonNull(
+                            visibleDisclosureArrow(treeReference.get(), branchReference.get()),
+                            "disclosure arrow"
+                    );
                     assertTrue(arrow.getRotate() > -89.0 && arrow.getRotate() < -1.0);
+                }
+        );
+    }
+
+    /// Verifies that expansion moves newly revealed descendants without overlapping following rows.
+    @Test
+    void animatesRowsWhileExpandingABranch() throws InterruptedException {
+        AtomicReference<@Nullable M3TreeView<String>> treeReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> nestedReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> siblingReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3TreeView<String> treeView = treeReference.get();
+                    @Nullable TreeItem<String> nestedItem = nestedReference.get();
+                    @Nullable TreeItem<String> siblingItem = siblingReference.get();
+                    if (treeView == null || nestedItem == null || siblingItem == null) {
+                        return false;
+                    }
+                    treeView.getParent().layout();
+                    @Nullable M3TreeCell<?> nestedCell = visibleCell(treeView, nestedItem);
+                    @Nullable M3TreeCell<?> siblingCell = visibleCell(treeView, siblingItem);
+                    return hasActiveRowMotion(nestedCell, -1.0)
+                            && siblingCell != null
+                            && hasMotionStyle(siblingCell)
+                            && Math.abs(rowMotionOffset(siblingCell)) <= 0.001;
+                },
+                () -> {
+                    M3MotionSettings.setGlobalReducedMotionRequested(false);
+                    TreeItem<String> rootItem = new TreeItem<>("Workspace");
+                    TreeItem<String> branchItem = new TreeItem<>("Branch");
+                    TreeItem<String> nestedItem = new TreeItem<>("Nested");
+                    TreeItem<String> siblingItem = new TreeItem<>("Sibling");
+                    branchItem.getChildren().add(nestedItem);
+                    rootItem.getChildren().addAll(List.of(branchItem, siblingItem));
+                    rootItem.setExpanded(true);
+
+                    M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+                    treeView.setPrefSize(360.0, 240.0);
+                    StackPane root = themedRoot(treeView, 400.0, 260.0);
+                    layout(root, 400.0, 260.0);
+                    treeReference.set(treeView);
+                    nestedReference.set(nestedItem);
+                    siblingReference.set(siblingItem);
+                    branchItem.setExpanded(true);
+                },
+                () -> {
+                    M3TreeView<String> treeView = java.util.Objects.requireNonNull(treeReference.get(), "tree view");
+                    M3TreeCell<?> nestedCell = java.util.Objects.requireNonNull(
+                            visibleCell(treeView, java.util.Objects.requireNonNull(nestedReference.get(), "nested item")),
+                            "nested cell"
+                    );
+                    M3TreeCell<?> siblingCell = java.util.Objects.requireNonNull(
+                            visibleCell(treeView, java.util.Objects.requireNonNull(siblingReference.get(), "sibling item")),
+                            "sibling cell"
+                    );
+                    assertTrue(rowMotionOffset(nestedCell) < -1.0);
+                    assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
+                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    assertFalse(hasMotionStyle(nestedCell));
+                    assertFalse(hasMotionStyle(siblingCell));
+                    assertEquals(0.0, rowMotionOffset(nestedCell), 0.001);
+                    assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
+                }
+        );
+    }
+
+    /// Verifies that collapse animates following rows upward without leaving a reused-cell motion surface.
+    @Test
+    void animatesRowsWhileCollapsingABranch() throws InterruptedException {
+        AtomicReference<@Nullable M3TreeView<String>> treeReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> siblingReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3TreeView<String> treeView = treeReference.get();
+                    @Nullable TreeItem<String> siblingItem = siblingReference.get();
+                    if (treeView == null || siblingItem == null) {
+                        return false;
+                    }
+                    treeView.getParent().layout();
+                    return hasActiveRowMotion(visibleCell(treeView, siblingItem), 1.0);
+                },
+                () -> {
+                    M3MotionSettings.setGlobalReducedMotionRequested(false);
+                    TreeItem<String> rootItem = new TreeItem<>("Workspace");
+                    TreeItem<String> branchItem = new TreeItem<>("Branch");
+                    TreeItem<String> siblingItem = new TreeItem<>("Sibling");
+                    branchItem.getChildren().addAll(List.of(
+                            new TreeItem<>("Nested one"),
+                            new TreeItem<>("Nested two")
+                    ));
+                    branchItem.setExpanded(true);
+                    rootItem.getChildren().addAll(List.of(branchItem, siblingItem));
+                    rootItem.setExpanded(true);
+
+                    M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+                    treeView.setPrefSize(360.0, 300.0);
+                    StackPane root = themedRoot(treeView, 400.0, 320.0);
+                    layout(root, 400.0, 320.0);
+                    treeReference.set(treeView);
+                    siblingReference.set(siblingItem);
+                    branchItem.setExpanded(false);
+                },
+                () -> {
+                    M3TreeView<String> treeView = java.util.Objects.requireNonNull(treeReference.get(), "tree view");
+                    M3TreeCell<?> siblingCell = java.util.Objects.requireNonNull(
+                            visibleCell(treeView, java.util.Objects.requireNonNull(siblingReference.get(), "sibling item")),
+                            "sibling cell"
+                    );
+                    assertTrue(rowMotionOffset(siblingCell) > 1.0);
+                    assertTrue(hasMotionStyle(siblingCell));
+                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    assertFalse(hasMotionStyle(siblingCell));
+                    assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
                 }
         );
     }
@@ -417,6 +543,74 @@ final class M3TreeViewTest {
         }
         cells.sort(Comparator.comparingInt(TreeCell::getIndex));
         return List.copyOf(cells);
+    }
+
+    /// Returns the currently visible cell representing an item by identity.
+    ///
+    /// @param treeView the owning tree view
+    /// @param item     the logical item to locate
+    /// @return the materialized cell, or `null` when the item is outside the viewport
+    private static @Nullable M3TreeCell<?> visibleCell(M3TreeView<?> treeView, TreeItem<?> item) {
+        for (M3TreeCell<?> cell : visibleCells(treeView)) {
+            if (cell.getTreeItem() == item) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the disclosure arrow for a currently visible logical item.
+    ///
+    /// @param treeView the owning tree view, or `null`
+    /// @param item     the logical item, or `null`
+    /// @return the disclosure arrow, or `null` when the item is not materialized
+    private static @Nullable Node visibleDisclosureArrow(
+            @Nullable M3TreeView<?> treeView,
+            @Nullable TreeItem<?> item
+    ) {
+        if (treeView == null || item == null) {
+            return null;
+        }
+        @Nullable M3TreeCell<?> cell = visibleCell(treeView, item);
+        return cell == null ? null : cell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
+    }
+
+    /// Returns whether a cell carries the temporary branch-motion style and exceeds a signed offset threshold.
+    ///
+    /// @param cell               the cell to inspect, or `null`
+    /// @param signedMinMagnitude a positive threshold for downward motion or a negative threshold for upward motion
+    /// @return `true` when the expected intermediate motion frame is present
+    private static boolean hasActiveRowMotion(
+            @Nullable M3TreeCell<?> cell,
+            double signedMinMagnitude
+    ) {
+        if (cell == null || !hasMotionStyle(cell)) {
+            return false;
+        }
+        double offset = rowMotionOffset(cell);
+        return signedMinMagnitude < 0.0 ? offset < signedMinMagnitude : offset > signedMinMagnitude;
+    }
+
+    /// Returns whether a cell carries the temporary branch-motion style class.
+    ///
+    /// @param cell the cell to inspect
+    /// @return `true` while branch motion owns the cell's transient presentation
+    private static boolean hasMotionStyle(M3TreeCell<?> cell) {
+        return cell.getStyleClass().contains("m3-tree-row-motion");
+    }
+
+    /// Returns the largest vertical translation currently applied to a row by absolute magnitude.
+    ///
+    /// @param cell the cell to inspect
+    /// @return the signed vertical translation, or zero when no translation is present
+    private static double rowMotionOffset(M3TreeCell<?> cell) {
+        double result = 0.0;
+        for (javafx.scene.transform.Transform transform : cell.getTransforms()) {
+            if (transform instanceof Translate translation && Math.abs(translation.getY()) > Math.abs(result)) {
+                result = translation.getY();
+            }
+        }
+        return result;
     }
 
     /// Returns a node's horizontal center in scene coordinates.
