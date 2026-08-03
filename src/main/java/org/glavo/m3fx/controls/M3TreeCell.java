@@ -43,6 +43,9 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// The default cell style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-tree-cell";
 
+    /// The style class used when a checkbox is the row's only leading graphic.
+    private static final String CHECKBOX_ONLY_STYLE_CLASS = "m3-tree-cell-checkbox-only";
+
     /// The retained tooltip used only while the label is visually truncated.
     private final M3Tooltip fullTextTooltip = new M3Tooltip();
 
@@ -240,6 +243,7 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// Rebuilds the leading content for the current tree item and selection style.
     private void refreshPresentation() {
         checkboxGraphic.getChildren().clear();
+        setCheckboxOnlyStyle(false);
         if (isEmpty()) {
             setGraphic(null);
             return;
@@ -251,6 +255,8 @@ public class M3TreeCell<T> extends TreeCell<T> {
             checkboxGraphic.getChildren().add(selectionCheckBox);
             if (itemGraphic != null) {
                 checkboxGraphic.getChildren().add(itemGraphic);
+            } else {
+                setCheckboxOnlyStyle(true);
             }
             setGraphic(checkboxGraphic);
         } else {
@@ -262,8 +268,22 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// Clears item-dependent graphic state when this cell becomes empty.
     private void clearGraphic() {
         checkboxGraphic.getChildren().clear();
+        setCheckboxOnlyStyle(false);
         selectionCheckBox.setSelected(false);
         setGraphic(null);
+    }
+
+    /// Applies the spacing variant used when no item graphic follows the selection checkbox.
+    ///
+    /// @param active whether the checkbox is the only leading graphic
+    private void setCheckboxOnlyStyle(boolean active) {
+        if (active) {
+            if (!getStyleClass().contains(CHECKBOX_ONLY_STYLE_CLASS)) {
+                getStyleClass().add(CHECKBOX_ONLY_STYLE_CLASS);
+            }
+        } else {
+            getStyleClass().remove(CHECKBOX_ONLY_STYLE_CLASS);
+        }
     }
 
     /// Returns whether the owning Material tree uses checkbox selection presentation.

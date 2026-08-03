@@ -20,6 +20,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// A base skin for Material Design 3 selection controls.
 ///
@@ -39,6 +40,9 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
     /// The label that mirrors the skinnable control's labeled content.
     private final Label label = new Label();
+
+    /// Removes the label from layout while the control has neither text nor a graphic.
+    private final InvalidationListener labelContentInvalidation = observable -> updateLabelPresence();
 
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -98,6 +102,9 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
+        control.textProperty().addListener(labelContentInvalidation);
+        control.graphicProperty().addListener(labelContentInvalidation);
+        updateLabelPresence();
         stateLayer.installStateTransitions(control);
         indicatorSlot.getChildren().add(stateLayer);
         container.getChildren().addAll(indicatorSlot, label);
@@ -119,6 +126,8 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         control.sceneProperty().removeListener(sceneInvalidation);
         container.alignmentProperty().unbind();
         container.nodeOrientationProperty().unbind();
+        control.textProperty().removeListener(labelContentInvalidation);
+        control.graphicProperty().removeListener(labelContentInvalidation);
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
@@ -321,6 +330,15 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         label.wrapTextProperty().bind(control.wrapTextProperty());
         label.underlineProperty().bind(control.underlineProperty());
         label.mnemonicParsingProperty().bind(control.mnemonicParsingProperty());
+    }
+
+    /// Includes the mirrored label in layout only while it has renderable content.
+    private void updateLabelPresence() {
+        C control = getSkinnable();
+        @Nullable String text = control.getText();
+        boolean present = (text != null && !text.isEmpty()) || control.getGraphic() != null;
+        label.setManaged(present);
+        label.setVisible(present);
     }
 
     /// Unbinds mirrored label properties from the skinnable control.

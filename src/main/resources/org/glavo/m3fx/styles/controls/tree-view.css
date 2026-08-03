@@ -55,7 +55,12 @@
 
 .m3-tree-cell-leading {
     -fx-alignment: center-left;
-    -fx-spacing: 8px;
+    /* Offset the checkbox touch-target inset while retaining its full interaction bounds. */
+    -fx-spacing: -7px;
+}
+
+.m3-tree-view.m3-checkbox-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell.m3-tree-cell-checkbox-only {
+    -fx-graphic-text-gap: -7px;
 }
 
 .m3-tree-selection-checkbox {

@@ -19,6 +19,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import javafx.scene.transform.Translate;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -171,6 +172,41 @@ final class M3TreeViewTest {
             unselectedCell.getSelectionCheckBox().fire();
             assertFalse(treeView.getSelectionModel().isSelected(2));
             assertFalse(unselectedCell.getSelectionCheckBox().isSelected());
+        }));
+    }
+
+    /// Verifies that checkbox touch-target insets do not inflate the visible spacing between row content.
+    @Test
+    void usesCompactVisualSpacingForCheckboxRows() {
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
+            Rectangle graphic = new Rectangle(24.0, 24.0);
+            TreeItem<String> rootItem = new TreeItem<>("Root", graphic);
+            rootItem.getChildren().add(new TreeItem<>("Child"));
+            rootItem.setExpanded(true);
+
+            M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+            treeView.setSelectionStyle(M3TreeViewSelectionStyle.CHECKBOX);
+            treeView.setPrefSize(360.0, 180.0);
+            StackPane root = themedRoot(treeView, 400.0, 200.0);
+            layout(root, 400.0, 200.0);
+            // The first pass materializes cells; the second resolves their item-dependent spacing style.
+            layout(root, 400.0, 200.0);
+
+            M3TreeCell<?> rootCell = visibleCells(treeView).get(0);
+            Node rootBox = rootCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
+            Node rootText = renderedText(rootCell);
+            assertEquals(8.0, minX(graphic) - maxX(rootBox), 0.75,
+                    "checkbox-to-item-graphic visual gap");
+            assertEquals(8.0, minX(rootText) - maxX(graphic), 0.75,
+                    "item-graphic-to-text visual gap");
+
+            M3TreeCell<?> childCell = visibleCells(treeView).get(1);
+            assertTrue(childCell.getStyleClass().contains("m3-tree-cell-checkbox-only"),
+                    "graphic-free checkbox row spacing style");
+            Node childBox = childCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
+            Node childText = renderedText(childCell);
+            assertEquals(8.0, minX(childText) - maxX(childBox), 0.75,
+                    "checkbox-to-text visual gap");
         }));
     }
 
@@ -649,6 +685,28 @@ final class M3TreeViewTest {
     /// @return the scene-coordinate minimum x value
     private static double minX(Node node) {
         return node.localToScene(node.getBoundsInLocal()).getMinX();
+    }
+
+    /// Returns a node's trailing horizontal edge in scene coordinates.
+    ///
+    /// @param node the node to measure
+    /// @return the scene-coordinate maximum x value
+    private static double maxX(Node node) {
+        return node.localToScene(node.getBoundsInLocal()).getMaxX();
+    }
+
+    /// Returns the JavaFX text node that renders a materialized cell's label.
+    ///
+    /// @param cell the cell whose rendered label should be found
+    /// @return the text node whose value matches the cell text
+    /// @throws AssertionError if the rendered label is not present
+    private static Text renderedText(M3TreeCell<?> cell) {
+        for (Node node : cell.lookupAll(".text")) {
+            if (node instanceof Text text && java.util.Objects.equals(cell.getText(), text.getText())) {
+                return text;
+            }
+        }
+        throw new AssertionError("rendered tree-cell text was not found: " + cell.getText());
     }
 
     /// Creates an unmodified key-pressed event.
