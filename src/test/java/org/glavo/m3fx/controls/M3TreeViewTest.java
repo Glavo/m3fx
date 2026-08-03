@@ -22,6 +22,7 @@ import javafx.scene.transform.Translate;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
+import org.glavo.m3fx.skins.M3TreeCellSkin;
 import org.glavo.m3fx.skins.M3TreeViewSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -224,6 +225,10 @@ final class M3TreeViewTest {
             layout(root, 360.0, 240.0);
 
             assertTrue(treeView.getSkin() instanceof M3TreeViewSkin<?>);
+            assertTrue(visibleCells(treeView).stream()
+                    .allMatch(cell -> cell.getSkin() instanceof M3TreeCellSkin<?>));
+            assertTrue(visibleCells(treeView).stream()
+                    .allMatch(cell -> cell.lookup(".m3-state-layer-container") != null));
             List<ScrollBar> scrollBars = treeView.lookupAll(".scroll-bar").stream()
                     .filter(ScrollBar.class::isInstance)
                     .map(ScrollBar.class::cast)
@@ -354,10 +359,10 @@ final class M3TreeViewTest {
                     treeView.getParent().layout();
                     @Nullable M3TreeCell<?> nestedCell = visibleCell(treeView, nestedItem);
                     @Nullable M3TreeCell<?> siblingCell = visibleCell(treeView, siblingItem);
-                    return hasActiveRowMotion(nestedCell, -1.0)
-                            && siblingCell != null
-                            && hasMotionStyle(siblingCell)
-                            && Math.abs(rowMotionOffset(siblingCell)) <= 0.001;
+                    return nestedCell != null
+                            && nestedCell.getStyleClass().contains("m3-tree-entering-row")
+                            && nestedCell.getOpacity() <= 0.001
+                            && hasActiveRowMotion(siblingCell, -1.0);
                 },
                 () -> {
                     M3MotionSettings.setGlobalReducedMotionRequested(false);
@@ -388,11 +393,14 @@ final class M3TreeViewTest {
                             visibleCell(treeView, java.util.Objects.requireNonNull(siblingReference.get(), "sibling item")),
                             "sibling cell"
                     );
-                    assertTrue(rowMotionOffset(nestedCell) < -1.0);
-                    assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
+                    assertTrue(nestedCell.getStyleClass().contains("m3-tree-entering-row"));
+                    assertEquals(0.0, nestedCell.getOpacity(), 0.001);
+                    assertTrue(rowMotionOffset(siblingCell) < -1.0);
                     M3MotionSettings.setReducedMotionRequested(treeView, true);
                     assertFalse(hasMotionStyle(nestedCell));
                     assertFalse(hasMotionStyle(siblingCell));
+                    assertFalse(nestedCell.getStyleClass().contains("m3-tree-entering-row"));
+                    assertEquals(1.0, nestedCell.getOpacity(), 0.001);
                     assertEquals(0.0, rowMotionOffset(nestedCell), 0.001);
                     assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
                 }

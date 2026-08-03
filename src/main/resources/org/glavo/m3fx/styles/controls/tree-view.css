@@ -25,9 +25,9 @@
     -fx-font-weight: 400;
 }
 
-.m3-tree-view > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:hover,
-.m3-tree-view:focused > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:focused {
-    -fx-background-color: -m3-color-surface-container-high;
+.m3-tree-cell .m3-state-layer,
+.m3-tree-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .m3-tree-view.m3-highlight-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:selected {
@@ -39,14 +39,18 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-tree-view > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell.m3-tree-row-motion:hover,
-.m3-tree-view:focused > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell.m3-tree-row-motion:focused {
-    -fx-background-color: transparent;
-    -fx-effect: null;
+.m3-tree-view.m3-highlight-tree-selection .m3-tree-cell:selected .m3-state-layer,
+.m3-tree-view.m3-highlight-tree-selection .m3-tree-cell:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
 }
 
-.m3-tree-view.m3-highlight-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell.m3-tree-row-motion:selected {
-    -fx-background-color: -m3-color-secondary-container;
+.m3-tree-cell.m3-tree-row-motion .m3-state-layer,
+.m3-tree-cell.m3-tree-row-motion .m3-ripple {
+    -fx-background-color: transparent;
+}
+
+.m3-tree-cell.m3-tree-entering-row {
+    -fx-opacity: 0;
 }
 
 .m3-tree-view > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:disabled {

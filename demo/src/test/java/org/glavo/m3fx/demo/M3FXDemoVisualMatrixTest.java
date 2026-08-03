@@ -1084,6 +1084,7 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3TreeView<?>> treeReference = new AtomicReference<>();
         AtomicReference<@Nullable TreeItem<?>> branchReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TreeCell<?>> interactionCellReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
@@ -1114,12 +1115,52 @@ final class M3FXDemoVisualMatrixTest {
             treeView.applyCss();
 
             M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            firePrimaryMouseEvent(followingCell, MouseEvent.MOUSE_PRESSED, true);
             stageReference.set(stage);
             treeReference.set(treeView);
             branchReference.set(branchItem);
+            interactionCellReference.set(followingCell);
         });
 
         try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TreeCell<?> cell = interactionCellReference.get();
+                        @Nullable Node ripple = cell == null ? null : cell.lookup(".m3-ripple");
+                        return ripple != null && ripple.getScaleX() > 0.05 && ripple.getScaleX() < 0.95;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        M3TreeCell<?> cell = Objects.requireNonNull(interactionCellReference.get(), "interaction cell");
+                        Node layer = Objects.requireNonNull(
+                                cell.lookup(".m3-state-layer-container"),
+                                "tree row state layer"
+                        );
+                        Node ripple = Objects.requireNonNull(cell.lookup(".m3-ripple"), "tree row ripple");
+                        assertEquals(cell.getWidth(), layer.getLayoutBounds().getWidth(), CONTROL_EDGE_TOLERANCE);
+                        assertEquals(cell.getHeight(), layer.getLayoutBounds().getHeight(), CONTROL_EDGE_TOLERANCE);
+                        assertTrue(ripple.getScaleX() > 0.05 && ripple.getScaleX() < 0.95,
+                                "tree row should render an intermediate bounded ripple");
+                        writeInteractionSnapshot(
+                                Objects.requireNonNull(treeReference.get(), "tree view").snapshot(null, null),
+                                "tree-view",
+                                "pressed"
+                        );
+                        firePrimaryMouseEvent(cell, MouseEvent.MOUSE_RELEASED, false);
+                        M3MotionSettings.setReducedMotionRequested(cell, true);
+                        M3MotionSettings.setReducedMotionRequested(cell, false);
+                        M3TreeView<?> treeView = Objects.requireNonNull(treeReference.get(), "tree view");
+                        TreeItem<?> branchItem = Objects.requireNonNull(branchReference.get(), "tree branch");
+                        int branchRow = materializedTreeCells(treeView).stream()
+                                .filter(candidate -> candidate.getTreeItem() == branchItem)
+                                .mapToInt(M3TreeCell::getIndex)
+                                .findFirst()
+                                .orElseThrow(() -> new AssertionError("tree branch row was not materialized"));
+                        treeView.getSelectionModel().select(branchRow);
+                    }
+            );
+
             FxTestUtils.runOnFxThreadWhen(
                     () -> hasActiveTreeRowMotion(treeReference.get()),
                     () -> Objects.requireNonNull(branchReference.get(), "tree branch").setExpanded(true),
@@ -16930,7 +16971,7 @@ final class M3FXDemoVisualMatrixTest {
         return List.copyOf(cells);
     }
 
-    /// Returns whether any materialized row has a non-zero private branch-motion translation.
+    /// Returns whether any materialized row has reached a visibly intermediate branch-motion translation.
     ///
     /// @param treeView the tree view to inspect, or `null`
     /// @return `true` when an intermediate row-motion frame is present
@@ -16944,7 +16985,8 @@ final class M3FXDemoVisualMatrixTest {
             }
             for (javafx.scene.transform.Transform transform : cell.getTransforms()) {
                 if (transform instanceof javafx.scene.transform.Translate translation
-                        && Math.abs(translation.getY()) > CONTROL_EDGE_TOLERANCE) {
+                        && Math.abs(translation.getY()) >= 24.0
+                        && Math.abs(translation.getY()) <= 144.0) {
                     return true;
                 }
             }

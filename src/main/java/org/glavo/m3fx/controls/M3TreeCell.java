@@ -13,6 +13,7 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.FocusModel;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.Skin;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -21,6 +22,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
+import org.glavo.m3fx.skins.M3TreeCellSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,6 +116,14 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// @return the retained selection checkbox
     public M3CheckBox getSelectionCheckBox() {
         return selectionCheckBox;
+    }
+
+    /// Creates the Material tree-cell skin with bounded state-layer and ripple feedback.
+    ///
+    /// @return a new Material tree-cell skin
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3TreeCellSkin<>(this);
     }
 
     /// Updates this cell for a virtualized tree item.

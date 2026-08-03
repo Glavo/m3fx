@@ -8,10 +8,17 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.skin.TreeViewSkin;
 import javafx.scene.control.skin.VirtualFlow;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Translate;
 import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3TreeView;
@@ -23,13 +30,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Objects;
 
 /// The default virtualized skin for [M3TreeView].
 ///
 /// The skin preserves JavaFX tree navigation and virtualization while applying the same standalone Material
-/// scrollbar styling used by [M3ListViewSkin]. Cells newly revealed by expansion enter from the branch edge;
-/// collapsing a branch animates the following visible rows from their preceding positions. The motion is applied
-/// through private transforms, so application-owned translation properties remain unchanged.
+/// scrollbar styling used by [M3ListViewSkin]. Branch changes use a clipped, translated, and faded subtree viewport
+/// synchronized with following-row movement, matching expandable navigation drawer groups. Snapshot presentation
+/// keeps exiting virtualized rows visible until their clipped region closes without delaying the public expanded
+/// state. Following-row motion uses private transforms, so application-owned translation properties remain unchanged.
 ///
 /// @param <T> the tree-item value type
 @NotNullByDefault
@@ -37,8 +46,11 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// The temporary style class applied while virtualized rows are being reassigned for branch motion.
     private static final String ROW_MOTION_STYLE_CLASS = "m3-tree-row-motion";
 
-    /// The maximum vertical entry offset for a newly revealed row, in logical pixels.
-    private static final double REVEALED_ROW_OFFSET = 12.0;
+    /// The temporary style class that hides real entering rows behind the clipped snapshot viewport.
+    private static final String ENTERING_ROW_STYLE_CLASS = "m3-tree-entering-row";
+
+    /// The vertical content offset shared with expandable navigation drawer groups, in logical pixels.
+    private static final double SUBTREE_CONTENT_OFFSET = -6.0;
 
     /// The minimum position difference that warrants a rendered transform, in logical pixels.
     private static final double POSITION_VISIBILITY_THRESHOLD = 0.5;
@@ -66,6 +78,42 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// Cells carrying the temporary motion style, including cells without a position delta.
     private final ArrayList<TreeCell<T>> styledMotionCells = new ArrayList<>();
 
+    /// Real expanded rows hidden while their clipped snapshots are being revealed.
+    private final ArrayList<TreeCell<T>> hiddenEnteringCells = new ArrayList<>();
+
+    /// The last stable mapping from reusable cells to the logical items whose pixels they render.
+    private final IdentityHashMap<TreeCell<T>, TreeItem<T>> renderedCellItems = new IdentityHashMap<>();
+
+    /// The unmanaged overlay that presents clipped subtree snapshots above the virtual flow.
+    private final Pane rowMotionOverlay = new Pane();
+
+    /// The snapshot container translated and faded with the subtree reveal progress.
+    private final Pane rowMotionContent = new Pane();
+
+    /// The rectangular reveal clip whose height tracks the subtree's visible fraction.
+    private final Rectangle rowMotionClip = new Rectangle();
+
+    /// Whether the active row motion reveals rather than removes a subtree.
+    private boolean rowMotionExpanding;
+
+    /// The overlay-local top edge of the animated subtree viewport.
+    private double rowMotionSubtreeTop;
+
+    /// The fully expanded height represented by the animated subtree viewport.
+    private double rowMotionSubtreeHeight;
+
+    /// The latest content-area x coordinate supplied by the inherited skin layout.
+    private double contentX;
+
+    /// The latest content-area y coordinate supplied by the inherited skin layout.
+    private double contentY;
+
+    /// The latest content-area width supplied by the inherited skin layout.
+    private double contentWidth;
+
+    /// The latest content-area height supplied by the inherited skin layout.
+    private double contentHeight;
+
     /// Receives expanded-count events from the current root and all of its descendants.
     private final EventHandler<TreeItem.TreeModificationEvent<T>> expandedItemCountListener =
             this::handleExpandedItemCountChange;
@@ -85,6 +133,17 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// @param control the skinned Material tree view
     public M3TreeViewSkin(M3TreeView<T> control) {
         super(control);
+        rowMotionOverlay.setManaged(false);
+        rowMotionOverlay.setMouseTransparent(true);
+        rowMotionOverlay.setVisible(false);
+        rowMotionOverlay.getStyleClass().add("m3-tree-subtree-motion-overlay");
+        rowMotionContent.setManaged(false);
+        rowMotionContent.setMouseTransparent(true);
+        rowMotionContent.getStyleClass().add("m3-tree-subtree-motion-content");
+        rowMotionOverlay.setClip(rowMotionClip);
+        rowMotionOverlay.getChildren().add(rowMotionContent);
+        getChildren().add(rowMotionOverlay);
+        materialFlow().setLayoutCompletion(this::updateRenderedCellItemsIfSynchronized);
         rowMotionAnimation.setOnFinished(event -> clearRowMotion());
         control.rootProperty().addListener(rootListener);
         updateObservedRoot(null, control.getRoot());
@@ -98,11 +157,16 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         }
         disposed = true;
         pendingRowMotion = null;
+        renderedCellItems.clear();
         M3TreeView<T> control = materialTreeView();
         control.rootProperty().removeListener(rootListener);
         updateObservedRoot(control.getRoot(), null);
         rowMotionAnimation.setOnFinished(null);
         clearRowMotion();
+        rowMotionOverlay.setClip(null);
+        rowMotionOverlay.getChildren().clear();
+        getChildren().remove(rowMotionOverlay);
+        materialFlow().setLayoutCompletion(null);
         super.dispose();
     }
 
@@ -123,12 +187,32 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         super.layoutChildren(x, y, width, height);
+        contentX = x;
+        contentY = y;
+        contentWidth = width;
+        contentHeight = height;
+        rowMotionOverlay.resizeRelocate(x, y, width, height);
+        rowMotionContent.resizeRelocate(0.0, 0.0, width, height);
+        rowMotionOverlay.toFront();
         @Nullable PendingRowMotion<T> pending = pendingRowMotion;
         if (pending == null) {
+            updateRenderedCellItemsIfSynchronized();
+            updateRowMotionProgress();
+            return;
+        }
+        if (pending.expanding() && !areMaterializedItemsSynchronized()) {
+            getVirtualFlow().requestLayout();
+            getSkinnable().requestLayout();
             return;
         }
         pendingRowMotion = null;
-        prepareRowMotion(pending.precedingPositions(), pending.changedBranch(), pending.expanding());
+        prepareRowMotion(
+                pending.precedingPositions(),
+                pending.changedBranch(),
+                pending.expanding(),
+                pending.collapsingSnapshots()
+        );
+        updateRenderedCellItemsIfSynchronized();
     }
 
     /// Moves expanded-count observation from one root hierarchy to another.
@@ -137,10 +221,13 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// @param newRoot the root to observe, or `null`
     private void updateObservedRoot(@Nullable TreeItem<T> oldRoot, @Nullable TreeItem<T> newRoot) {
         if (oldRoot != null) {
-            oldRoot.removeEventHandler(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
+            oldRoot.removeEventFilter(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
+        }
+        if (oldRoot != newRoot) {
+            renderedCellItems.clear();
         }
         if (newRoot != null && !disposed) {
-            newRoot.addEventHandler(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
+            newRoot.addEventFilter(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
         }
     }
 
@@ -152,10 +239,19 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
             return;
         }
 
-        IdentityHashMap<TreeItem<T>, Double> precedingPositions = captureRenderedRowPositions();
         clearRowMotion();
+        IdentityHashMap<TreeItem<T>, Double> precedingPositions = captureRenderedRowPositions();
         markVisibleCellsForMotion();
-        pendingRowMotion = new PendingRowMotion<>(precedingPositions, event.getTreeItem(), event.wasExpanded());
+        TreeItem<T> changedBranch = event.getTreeItem();
+        List<RowSnapshot> collapsingSnapshots = event.wasCollapsed()
+                ? captureDescendantSnapshots(changedBranch)
+                : List.of();
+        pendingRowMotion = new PendingRowMotion<>(
+                precedingPositions,
+                changedBranch,
+                event.wasExpanded(),
+                collapsingSnapshots
+        );
         getSkinnable().requestLayout();
     }
 
@@ -165,7 +261,7 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     private IdentityHashMap<TreeItem<T>, Double> captureRenderedRowPositions() {
         IdentityHashMap<TreeItem<T>, Double> positions = new IdentityHashMap<>();
         for (TreeCell<T> cell : materializedCells()) {
-            @Nullable TreeItem<T> item = cell.getTreeItem();
+            @Nullable TreeItem<T> item = renderedCellItems.get(cell);
             if (isRenderedCell(cell, item)) {
                 positions.put(item, sceneTop(cell));
             }
@@ -181,7 +277,8 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     private void prepareRowMotion(
             IdentityHashMap<TreeItem<T>, Double> precedingPositions,
             TreeItem<T> changedBranch,
-            boolean expanding
+            boolean expanding,
+            List<RowSnapshot> collapsingSnapshots
     ) {
         if (disposed) {
             return;
@@ -190,6 +287,7 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         markVisibleCellsForMotion();
 
         ArrayList<RowPlacement<T>> placements = new ArrayList<>();
+        ArrayList<TreeCell<T>> enteringCells = new ArrayList<>();
         for (TreeCell<T> cell : materializedCells()) {
             @Nullable TreeItem<T> item = cell.getTreeItem();
             if (!isRenderedCell(cell, item)) {
@@ -197,38 +295,47 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
             }
 
             @Nullable Double precedingPosition = precedingPositions.get(item);
-            double initialOffset;
             if (precedingPosition != null) {
-                if (expanding) {
+                double initialOffset = precedingPosition - sceneTop(cell);
+                if (Math.abs(initialOffset) <= POSITION_VISIBILITY_THRESHOLD) {
                     continue;
                 }
-                initialOffset = precedingPosition - sceneTop(cell);
+                Translate translation = new Translate(0.0, initialOffset);
+                cell.getTransforms().add(0, translation);
+                placements.add(new RowPlacement<>(cell, item, translation, initialOffset));
             } else if (expanding && isDescendantOf(item, changedBranch)) {
-                initialOffset = -Math.min(REVEALED_ROW_OFFSET, cell.getHeight() * 0.25);
-            } else {
-                continue;
+                enteringCells.add(cell);
             }
-
-            if (Math.abs(initialOffset) <= POSITION_VISIBILITY_THRESHOLD) {
-                continue;
-            }
-            Translate translation = new Translate(0.0, initialOffset);
-            cell.getTransforms().add(0, translation);
-            placements.add(new RowPlacement<>(cell, item, translation, initialOffset));
         }
 
-        if (placements.isEmpty()) {
+        List<RowSnapshot> snapshots = expanding
+                ? captureSnapshots(enteringCells)
+                : collapsingSnapshots;
+        double subtreeHeight = subtreeHeight(placements, snapshots);
+        @Nullable Double branchBottom = branchBottom(changedBranch);
+        if (subtreeHeight <= POSITION_VISIBILITY_THRESHOLD || branchBottom == null) {
             clearRowMotion();
             return;
         }
+
         rowPlacements.addAll(placements);
+        if (expanding) {
+            hideEnteringCells(enteringCells);
+        }
+        installRowMotionSnapshots(snapshots);
+        rowMotionExpanding = expanding;
+        rowMotionSubtreeTop = branchBottom;
+        rowMotionSubtreeHeight = subtreeHeight;
+        rowMotionOverlay.setVisible(!snapshots.isEmpty());
         rowMotionProgress.set(0.0);
+        updateRowMotionProgress();
         rowMotionAnimation.configure(M3Animation.defaultSpatial(control), 1.0);
         M3Animation.playFromStart(control, rowMotionAnimation);
     }
 
     /// Applies normalized progress to every private row transform.
     private void updateRowMotionProgress() {
+        double progress = rowMotionProgress.get();
         double remaining = 1.0 - rowMotionProgress.get();
         for (int index = 0; index < rowPlacements.size(); index++) {
             RowPlacement<T> placement = rowPlacements.get(index);
@@ -238,6 +345,22 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
                 placement.translation().setY(0.0);
             }
         }
+
+        if (!rowMotionOverlay.isVisible()) {
+            return;
+        }
+        double visibleFraction = rowMotionExpanding ? progress : remaining;
+        rowMotionClip.setX(0.0);
+        rowMotionClip.setY(rowMotionSubtreeTop);
+        rowMotionClip.setWidth(contentWidth);
+        rowMotionClip.setHeight(Math.min(
+                Math.max(0.0, contentHeight - rowMotionSubtreeTop),
+                rowMotionSubtreeHeight * visibleFraction
+        ));
+        rowMotionContent.setOpacity(visibleFraction);
+        rowMotionContent.setTranslateY(rowMotionExpanding
+                ? SUBTREE_CONTENT_OFFSET * remaining
+                : SUBTREE_CONTENT_OFFSET * progress);
     }
 
     /// Stops active motion and removes every transform and temporary style owned by this skin.
@@ -249,9 +372,23 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         }
         rowPlacements.clear();
         for (int index = 0; index < styledMotionCells.size(); index++) {
-            styledMotionCells.get(index).getStyleClass().remove(ROW_MOTION_STYLE_CLASS);
+            TreeCell<T> cell = styledMotionCells.get(index);
+            cell.getStyleClass().remove(ROW_MOTION_STYLE_CLASS);
+            cell.applyCss();
         }
         styledMotionCells.clear();
+        for (int index = 0; index < hiddenEnteringCells.size(); index++) {
+            TreeCell<T> cell = hiddenEnteringCells.get(index);
+            cell.getStyleClass().remove(ENTERING_ROW_STYLE_CLASS);
+            cell.applyCss();
+        }
+        hiddenEnteringCells.clear();
+        rowMotionOverlay.setVisible(false);
+        rowMotionContent.getChildren().clear();
+        rowMotionContent.setOpacity(1.0);
+        rowMotionContent.setTranslateY(0.0);
+        rowMotionClip.setHeight(0.0);
+        rowMotionSubtreeHeight = 0.0;
     }
 
     /// Marks every currently rendered cell so stale hover and focus surfaces cannot flash during reuse.
@@ -262,17 +399,160 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
                 continue;
             }
             cell.getStyleClass().add(ROW_MOTION_STYLE_CLASS);
+            cell.applyCss();
             styledMotionCells.add(cell);
         }
+    }
+
+    /// Captures the currently rendered descendants of a branch before collapse removes their virtual cells.
+    ///
+    /// @param branch the collapsing branch
+    /// @return immutable snapshot descriptors ordered by virtual-flow cell order
+    private List<RowSnapshot> captureDescendantSnapshots(TreeItem<T> branch) {
+        ArrayList<TreeCell<T>> descendants = new ArrayList<>();
+        for (TreeCell<T> cell : materializedCells()) {
+            @Nullable TreeItem<T> item = renderedCellItems.get(cell);
+            if (isRenderedCell(cell, item) && isDescendantOf(item, branch)) {
+                descendants.add(cell);
+            }
+        }
+        return captureSnapshots(descendants);
+    }
+
+    /// Captures transparent images and scene positions for rendered cells.
+    ///
+    /// @param cells the cells to capture
+    /// @return immutable snapshot descriptors
+    private static List<RowSnapshot> captureSnapshots(List<? extends TreeCell<?>> cells) {
+        if (cells.isEmpty()) {
+            return List.of();
+        }
+        SnapshotParameters parameters = new SnapshotParameters();
+        parameters.setFill(Color.TRANSPARENT);
+        ArrayList<RowSnapshot> snapshots = new ArrayList<>(cells.size());
+        for (TreeCell<?> cell : cells) {
+            cell.applyCss();
+            cell.layout();
+            Bounds bounds = cell.localToScene(cell.getBoundsInLocal());
+            WritableImage image = cell.snapshot(parameters, null);
+            snapshots.add(new RowSnapshot(image, bounds.getMinX(), bounds.getMinY()));
+        }
+        return List.copyOf(snapshots);
+    }
+
+    /// Hides real entering rows after their snapshots have been captured.
+    ///
+    /// @param cells the entering rows to hide until animation completion
+    private void hideEnteringCells(List<TreeCell<T>> cells) {
+        for (TreeCell<T> cell : cells) {
+            if (!cell.getStyleClass().contains(ENTERING_ROW_STYLE_CLASS)) {
+                cell.getStyleClass().add(ENTERING_ROW_STYLE_CLASS);
+                cell.applyCss();
+            }
+            hiddenEnteringCells.add(cell);
+        }
+    }
+
+    /// Mounts row snapshot images at their current tree-local positions.
+    ///
+    /// @param snapshots the row snapshot descriptors to present
+    private void installRowMotionSnapshots(List<RowSnapshot> snapshots) {
+        M3TreeView<T> control = materialTreeView();
+        ArrayList<ImageView> views = new ArrayList<>(snapshots.size());
+        for (RowSnapshot snapshot : snapshots) {
+            Point2D local = control.sceneToLocal(snapshot.sceneX(), snapshot.sceneY());
+            ImageView view = new ImageView(snapshot.image());
+            view.setManaged(false);
+            view.setMouseTransparent(true);
+            view.relocate(local.getX() - contentX, local.getY() - contentY);
+            views.add(view);
+        }
+        rowMotionContent.getChildren().setAll(views);
+    }
+
+    /// Returns the expanded subtree height represented by row deltas or visible snapshots.
+    ///
+    /// @param placements following-row placements that encode the full structural delta
+    /// @param snapshots  visible subtree snapshots used when no following row is materialized
+    /// @return a non-negative subtree height in logical pixels
+    private static double subtreeHeight(List<? extends RowPlacement<?>> placements, List<RowSnapshot> snapshots) {
+        double height = 0.0;
+        for (RowPlacement<?> placement : placements) {
+            height = Math.max(height, Math.abs(placement.initialOffset()));
+        }
+        if (height > POSITION_VISIBILITY_THRESHOLD || snapshots.isEmpty()) {
+            return height;
+        }
+        double minimumY = Double.POSITIVE_INFINITY;
+        double maximumY = Double.NEGATIVE_INFINITY;
+        for (RowSnapshot snapshot : snapshots) {
+            minimumY = Math.min(minimumY, snapshot.sceneY());
+            maximumY = Math.max(maximumY, snapshot.sceneY() + snapshot.image().getHeight());
+        }
+        return Math.max(0.0, maximumY - minimumY);
+    }
+
+    /// Returns the changed branch row's bottom edge in overlay-local coordinates.
+    ///
+    /// @param branch the changed branch
+    /// @return the local bottom edge, or `null` when the branch row is outside the viewport
+    private @Nullable Double branchBottom(TreeItem<T> branch) {
+        M3TreeView<T> control = materialTreeView();
+        for (TreeCell<T> cell : materializedCells()) {
+            if (cell.getTreeItem() != branch || !isRenderedCell(cell, branch)) {
+                continue;
+            }
+            Bounds bounds = cell.localToScene(cell.getBoundsInLocal());
+            Point2D local = control.sceneToLocal(bounds.getMinX(), bounds.getMaxY());
+            return local.getY() - contentY;
+        }
+        return null;
     }
 
     /// Returns the active cells currently owned by the Material virtual flow.
     ///
     /// @return a stable copy of the flow's active-cell list
     private List<TreeCell<T>> materializedCells() {
+        return materialFlow().materializedCells();
+    }
+
+    /// Returns the Material virtual-flow subtype created by this skin.
+    ///
+    /// @return the Material tree virtual flow
+    private TreeViewVirtualFlow<T> materialFlow() {
         @SuppressWarnings("unchecked")
         TreeViewVirtualFlow<T> flow = (TreeViewVirtualFlow<T>) getVirtualFlow();
-        return flow.materializedCells();
+        return flow;
+    }
+
+    /// Returns whether every rendered cell's value has caught up with its logical tree item after flow reuse.
+    ///
+    /// JavaFX may expose the new [TreeCell#getTreeItem()] before invoking the cell's item update in the same pulse.
+    /// Snapshot-based expansion waits for both channels to agree so old row pixels cannot enter the overlay.
+    ///
+    /// @return `true` when materialized cell values represent their current logical items
+    private boolean areMaterializedItemsSynchronized() {
+        for (TreeCell<T> cell : materializedCells()) {
+            @Nullable TreeItem<T> item = cell.getTreeItem();
+            if (isRenderedCell(cell, item) && !Objects.equals(cell.getItem(), item.getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// Refreshes the stable rendered-item cache only after cell values match their current logical assignments.
+    private void updateRenderedCellItemsIfSynchronized() {
+        if (!areMaterializedItemsSynchronized()) {
+            return;
+        }
+        renderedCellItems.clear();
+        for (TreeCell<T> cell : materializedCells()) {
+            @Nullable TreeItem<T> item = cell.getTreeItem();
+            if (isRenderedCell(cell, item)) {
+                renderedCellItems.put(cell, item);
+            }
+        }
     }
 
     /// Returns the Material subtype supplied to this skin's constructor.
@@ -338,22 +618,57 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// @param precedingPositions positions captured before the change, keyed by logical-item identity
     /// @param changedBranch      the branch whose expanded state changed
     /// @param expanding          whether the change reveals descendants
+    /// @param collapsingSnapshots snapshots of descendants removed by a collapse
     /// @param <T>                the tree-item value type
     @NotNullByDefault
     private record PendingRowMotion<T>(
             IdentityHashMap<TreeItem<T>, Double> precedingPositions,
             TreeItem<T> changedBranch,
-            boolean expanding
+            boolean expanding,
+            List<RowSnapshot> collapsingSnapshots
+    ) {
+    }
+
+    /// Stores one transparent row image and its scene-coordinate origin.
+    ///
+    /// @param image  the captured row pixels
+    /// @param sceneX the snapshot's scene-coordinate x origin
+    /// @param sceneY the snapshot's scene-coordinate y origin
+    @NotNullByDefault
+    private record RowSnapshot(
+            WritableImage image,
+            double sceneX,
+            double sceneY
     ) {
     }
 
     /// A virtual flow that exposes its protected scrollbars and active cells to the enclosing skin.
     @NotNullByDefault
     private static final class TreeViewVirtualFlow<T> extends VirtualFlow<TreeCell<T>> {
+        /// The callback invoked after active cells finish a virtual-flow layout, or `null`.
+        private @Nullable Runnable layoutCompletion;
+
         /// Creates a flow and applies the shared standalone scrollbar style.
         private TreeViewVirtualFlow() {
             M3ScrollPane.style(getHbar());
             M3ScrollPane.style(getVbar());
+        }
+
+        /// Runs the inherited virtual layout and then reports stable cell assignments to the enclosing skin.
+        @Override
+        protected void layoutChildren() {
+            super.layoutChildren();
+            @Nullable Runnable completion = layoutCompletion;
+            if (completion != null) {
+                completion.run();
+            }
+        }
+
+        /// Replaces the callback invoked after virtual-flow layout.
+        ///
+        /// @param completion the callback, or `null` during disposal
+        private void setLayoutCompletion(@Nullable Runnable completion) {
+            layoutCompletion = completion;
         }
 
         /// Returns a stable copy of the cells currently maintained in the flow sheet.
