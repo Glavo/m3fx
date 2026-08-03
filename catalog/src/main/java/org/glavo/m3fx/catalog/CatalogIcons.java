@@ -218,9 +218,6 @@ final class CatalogIcons {
     static final String LOADING =
             "M12 2V0L8 4l4 4V6a6 6 0 0 1 5.7 8H20A8 8 0 0 0 12 2zm0 16a6 6 0 0 1-5.7-8H4a8 8 0 0 0 8 12v2l4-4-4-4z";
 
-    /// The meter icon path.
-    static final String METER = "M3 8h18v8H3zm2 2v4h14v-4zm0 0h9v4H5z";
-
     /// The progress indicator icon path.
     static final String PROGRESS =
             "M12 2a10 10 0 1 1-7.1 2.9L6.3 6.3A8 8 0 1 0 12 4zm-1 1h2v9h-2z";

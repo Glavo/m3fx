@@ -75,7 +75,6 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressBar().getAccessibleRole());
         assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressIndicator().getAccessibleRole());
         assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3LoadingIndicator().getAccessibleRole());
-        assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3Meter().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT_FIELD, new M3TextField().getAccessibleRole());
         assertEquals(AccessibleRole.PASSWORD_FIELD, new M3PasswordField().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT_AREA, new M3TextArea().getAccessibleRole());
@@ -246,7 +245,6 @@ final class M3ControlAccessibilityTest {
                 new M3DropZone(),
                 new M3StatusLight(),
                 new M3Breadcrumbs(),
-                new M3Meter(),
                 new M3FormPane(),
                 new M3FormSection(),
                 new M3FormRow(),

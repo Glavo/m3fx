@@ -180,9 +180,7 @@ abstract class DemoPageSupport {
             return "check";
         } else if (normalized.contains("navigation")) {
             return "home";
-        } else if (normalized.contains("loading")
-                || normalized.contains("progress")
-                || normalized.contains("meter")) {
+        } else if (normalized.contains("loading") || normalized.contains("progress")) {
             return "schedule";
         } else if (normalized.contains("date") || normalized.contains("time")) {
             return "calendar";

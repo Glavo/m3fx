@@ -145,9 +145,6 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
-import org.glavo.m3fx.controls.M3Meter;
-import org.glavo.m3fx.controls.M3MeterSize;
-import org.glavo.m3fx.controls.M3MeterVariant;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3RangeSlider;
@@ -277,7 +274,6 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Breadcrumbs", M3FXDemoVisualMatrixTest::assertBreadcrumbsPageVisualState),
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
-            Map.entry("Meters", M3FXDemoVisualMatrixTest::assertMetersPageVisualState),
             Map.entry("Status Lights", M3FXDemoVisualMatrixTest::assertStatusLightsPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
@@ -343,7 +339,6 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Breadcrumbs", "Additional demos"),
             Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Drop Zones", "Additional demos"),
-            Map.entry("Meters", "Additional demos"),
             Map.entry("Status Lights", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
@@ -1393,8 +1388,7 @@ final class M3FXDemoVisualMatrixTest {
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        String expectedLabel = Set.of("Breadcrumbs", "Color Pickers", "Drop Zones", "Meters", "Status Lights")
-                .contains(title)
+        String expectedLabel = Set.of("Breadcrumbs", "Color Pickers", "Drop Zones", "Status Lights").contains(title)
                 ? "Spectrum docs"
                 : "Material docs";
         assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
@@ -12046,10 +12040,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(14, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(13, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(52, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(51, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -16685,86 +16679,6 @@ final class M3FXDemoVisualMatrixTest {
                     "drop zone should render a visible container border");
             assertNodeSnapshotHasOpaquePixels(dropZone, "drop zone demo state");
         }
-    }
-
-    /// Verifies the real Meters demo page semantic, size, placement, wrapping, and fill states.
-    private static void assertMetersPageVisualState(Scene scene) {
-        Parent root = scene.getRoot();
-        Node page = currentDemoPage(scene, "Meters");
-        assertCurrentPageTitle(scene, "Meters");
-        assertVisibleText(root, "Semantic Variants", "Meters");
-        assertVisibleText(root, "Sizes", "Meters");
-        assertVisibleText(root, "Label Placement", "Meters");
-        assertVisibleText(root, "Text Overflow", "Meters");
-        assertVisibleText(root, "Tutorials completed", "Meters");
-        assertVisibleText(root, "Storage used", "Meters");
-
-        List<M3Meter> meters = visibleNodesOfType(page, M3Meter.class);
-        assertEquals(9, meters.size(), () -> "Meters page should render nine meters, found " + meters.size());
-        assertEquals(5, meters.stream()
-                .filter(meter -> meter.getVariant() == M3MeterVariant.INFORMATIVE)
-                .count(), "Meters page informative samples");
-        assertEquals(2, meters.stream()
-                .filter(meter -> meter.getVariant() == M3MeterVariant.POSITIVE)
-                .count(), "Meters page positive samples");
-        assertEquals(1, meters.stream()
-                .filter(meter -> meter.getVariant() == M3MeterVariant.NOTICE)
-                .count(), "Meters page notice samples");
-        assertEquals(1, meters.stream()
-                .filter(meter -> meter.getVariant() == M3MeterVariant.NEGATIVE)
-                .count(), "Meters page negative samples");
-        assertEquals(8, meters.stream().filter(meter -> meter.getSize() == M3MeterSize.LARGE).count(),
-                "Meters page large samples");
-        assertEquals(1, meters.stream().filter(meter -> meter.getSize() == M3MeterSize.SMALL).count(),
-                "Meters page small samples");
-        assertEquals(1, meters.stream().filter(M3Meter::isSideLabel).count(),
-                "Meters page side-label samples");
-        assertTrue(meters.stream().allMatch(meter -> meter.getAccessibleRole() == AccessibleRole.PROGRESS_INDICATOR),
-                "Every meter should expose numeric progress semantics");
-        assertTrue(meters.stream().allMatch(meter -> meter.getAccessibleText() != null
-                        && !meter.getAccessibleText().isBlank()),
-                "Every meter should expose its measured quantity to accessibility APIs");
-        assertTrue(meters.stream().allMatch(meter -> meter.getValueText() != null
-                        && !meter.getValueText().isBlank()),
-                "Every meter sample should expose visible value text");
-        assertEquals(4, visibleNodesWithStyle(page, "demo-meter-semantic").size(),
-                "Meters page should identify four semantic samples");
-        assertEquals(2, visibleNodesWithStyle(page, "demo-meter-size").size(),
-                "Meters page should identify two size samples");
-        assertEquals(1, visibleNodesWithStyle(page, "demo-meter-top-label").size(),
-                "Meters page should identify one top-label sample");
-        assertEquals(1, visibleNodesWithStyle(page, "demo-meter-side-label").size(),
-                "Meters page should identify one side-label sample");
-        assertEquals(1, visibleNodesWithStyle(page, "demo-meter-wrapped").size(),
-                "Meters page should identify one wrapped-label sample");
-
-        for (M3Meter meter : meters) {
-            Region track = assertInstanceOf(Region.class, meter.lookup(".m3-meter-track"), "meter track");
-            Region fill = assertInstanceOf(Region.class, meter.lookup(".m3-meter-fill"), "meter fill");
-            Label label = assertInstanceOf(Label.class, meter.lookup(".m3-meter-label"), "meter label");
-            Label valueLabel = assertInstanceOf(
-                    Label.class,
-                    meter.lookup(".m3-meter-value-label"),
-                    "meter value label"
-            );
-            assertEquals(meter.getLabel(), label.getText(), "meter rendered label");
-            assertEquals(meter.getValueText(), valueLabel.getText(), "meter rendered value text");
-            assertEquals(meter.getSize().getTrackThickness(), track.getHeight(), CONTROL_EDGE_TOLERANCE,
-                    "meter track thickness");
-            assertEquals(track.getWidth() * meter.getEffectiveValue(), fill.getWidth(), CONTROL_EDGE_TOLERANCE,
-                    "meter fill extent");
-            assertNotNull(track.getBackground(), "meter track background");
-            assertNotNull(fill.getBackground(), "meter fill background");
-            assertNodeSnapshotHasOpaquePixels(meter, "meter demo state");
-        }
-
-        M3Meter wrapped = meters.stream()
-                .filter(meter -> meter.getStyleClass().contains("demo-meter-wrapped"))
-                .findFirst()
-                .orElseThrow();
-        Label wrappedLabel = assertInstanceOf(Label.class, wrapped.lookup(".m3-meter-label"));
-        assertTrue(wrappedLabel.getHeight() > wrappedLabel.getFont().getSize() * 1.5,
-                "Constrained meter label should wrap to multiple lines");
     }
 
     /// Verifies the real Status Lights demo page semantic, size, category, and unavailable states.

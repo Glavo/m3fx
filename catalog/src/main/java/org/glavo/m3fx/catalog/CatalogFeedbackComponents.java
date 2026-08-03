@@ -6,8 +6,6 @@ package org.glavo.m3fx.catalog;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
-import org.glavo.m3fx.controls.M3MeterSize;
-import org.glavo.m3fx.controls.M3MeterVariant;
 import org.glavo.m3fx.controls.M3StatusLightSize;
 import org.glavo.m3fx.controls.M3StatusLightVariant;
 import org.glavo.m3fx.controls.M3TextRole;
@@ -43,14 +41,6 @@ final class CatalogFeedbackComponents {
                         "loading-indicator",
                         "M3LoadingIndicator",
                         loadingExamples()
-                ),
-                CatalogComponents.extensionComponent(
-                        "Meters",
-                        "Meters represent a user-determined quantity or achievement with optional semantic meaning.",
-                        CatalogIcons.METER,
-                        "https://opensource.adobe.com/spectrum-web-components/components/meter/",
-                        "M3Meter",
-                        meterExamples()
                 ),
                 CatalogComponents.component(
                         "Progress indicators",
@@ -223,45 +213,6 @@ final class CatalogFeedbackComponents {
                         true,
                         true,
                         true
-                )
-        };
-    }
-
-    /// Creates semantic, size, placement, and wrapping meter examples.
-    ///
-    /// @return the complete meter example array
-    private static CatalogExample[] meterExamples() {
-        return new CatalogExample[]{
-                CatalogComponents.example(
-                        "Semantic variants",
-                        "Informative, positive, notice, and negative quantities with explicit value text.",
-                        false,
-                        CatalogFeedbackSamples::semanticMeters
-                ),
-                CatalogComponents.example(
-                        "Size scale",
-                        "Large and small meters for standard and confined layouts.",
-                        false,
-                        CatalogFeedbackSamples::sizedMeters
-                ),
-                CatalogComponents.example(
-                        "Side labels",
-                        "A meter with its descriptive and value labels positioned beside the track.",
-                        false,
-                        () -> CatalogFeedbackSamples.meter(
-                                "Storage space",
-                                0.68,
-                                "68%",
-                                M3MeterVariant.INFORMATIVE,
-                                M3MeterSize.LARGE,
-                                true
-                        )
-                ),
-                CatalogComponents.example(
-                        "Wrapped label",
-                        "A constrained meter whose descriptive label wraps while the value remains intact.",
-                        false,
-                        CatalogFeedbackSamples::wrappedMeter
                 )
         };
     }
