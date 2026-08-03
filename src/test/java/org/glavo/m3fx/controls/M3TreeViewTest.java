@@ -267,10 +267,14 @@ final class M3TreeViewTest {
             M3TreeCell<?> leafCell = cells.get(2);
             Node rootDisclosure = rootCell.getDisclosureNode();
             Node branchDisclosure = branchCell.getDisclosureNode();
+            Node rootArrow = rootDisclosure.lookup(".m3-disclosure-icon-shape");
+            Node branchArrow = branchDisclosure.lookup(".m3-disclosure-icon-shape");
 
             assertEquals(40.0, rootDisclosure.getLayoutBounds().getWidth(), 0.001);
             assertEquals(40.0, branchDisclosure.getLayoutBounds().getWidth(), 0.001);
             assertEquals(24.0, centerX(branchDisclosure) - centerX(rootDisclosure), 0.001);
+            assertEquals(centerY(rootCell), centerY(rootArrow), 0.001);
+            assertEquals(centerY(branchCell), centerY(branchArrow), 0.001);
             assertEquals(minX(branchCell.lookup(".text")), minX(leafCell.lookup(".text")), 0.001);
 
             Node branchIndicator = branchDisclosure.lookup(".m3-disclosure-icon");
@@ -422,6 +426,14 @@ final class M3TreeViewTest {
     private static double centerX(Node node) {
         Bounds bounds = node.localToScene(node.getBoundsInLocal());
         return bounds.getCenterX();
+    }
+
+    /// Returns a node's vertical center in scene coordinates.
+    ///
+    /// @param node the node to measure
+    /// @return the scene-coordinate center y value
+    private static double centerY(Node node) {
+        return node.localToScene(node.getBoundsInLocal()).getCenterY();
     }
 
     /// Returns a node's leading horizontal edge in scene coordinates.
