@@ -67,6 +67,8 @@ import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.controls.M3BreadcrumbItem;
+import org.glavo.m3fx.controls.M3Breadcrumbs;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
@@ -269,6 +271,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Carousel", M3FXDemoVisualMatrixTest::assertCarouselPageVisualState),
             Map.entry("Checkboxes", M3FXDemoVisualMatrixTest::assertCheckboxesPageVisualState),
             Map.entry("Chips", M3FXDemoVisualMatrixTest::assertChipsPageVisualState),
+            Map.entry("Breadcrumbs", M3FXDemoVisualMatrixTest::assertBreadcrumbsPageVisualState),
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
             Map.entry("Status Lights", M3FXDemoVisualMatrixTest::assertStatusLightsPageVisualState),
@@ -333,6 +336,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Motion", "Additional demos"),
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
+            Map.entry("Breadcrumbs", "Additional demos"),
             Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Drop Zones", "Additional demos"),
             Map.entry("Status Lights", "Additional demos"),
@@ -1384,7 +1388,7 @@ final class M3FXDemoVisualMatrixTest {
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        String expectedLabel = Set.of("Color Pickers", "Drop Zones", "Status Lights").contains(title)
+        String expectedLabel = Set.of("Breadcrumbs", "Color Pickers", "Drop Zones", "Status Lights").contains(title)
                 ? "Spectrum docs"
                 : "Material docs";
         assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
@@ -12036,10 +12040,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(12, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(13, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(50, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(51, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -16572,6 +16576,69 @@ final class M3FXDemoVisualMatrixTest {
                     () -> "vertical divider should span the demo sample height: " + dividerBounds);
             assertTrue(dividerBounds.getWidth() >= 0.5 && dividerBounds.getWidth() <= 6.0,
                     () -> "vertical divider should stay visually thin: " + dividerBounds);
+        }
+    }
+
+    /// Verifies the real Breadcrumbs demo page default, compact, overflow, and root-context states.
+    private static void assertBreadcrumbsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Breadcrumbs");
+        assertCurrentPageTitle(scene, "Breadcrumbs");
+        assertVisibleText(root, "Default and Compact", "Breadcrumbs");
+        assertVisibleText(root, "Overflow", "Breadcrumbs");
+        assertVisibleText(root, "Root Context", "Breadcrumbs");
+        assertVisibleText(root, "Home", "Breadcrumbs");
+        assertVisibleText(root, "M3FX", "Breadcrumbs");
+        assertVisibleText(root, "On this device", "Breadcrumbs");
+
+        List<M3Breadcrumbs> breadcrumbs = visibleNodesOfType(page, M3Breadcrumbs.class);
+        assertEquals(4, breadcrumbs.size(),
+                () -> "Breadcrumbs page should render four breadcrumb paths, found " + breadcrumbs.size());
+        M3Breadcrumbs defaults = assertInstanceOf(
+                M3Breadcrumbs.class,
+                requireVisibleStyledDescendant(page, "demo-breadcrumbs-default", "default breadcrumbs")
+        );
+        M3Breadcrumbs compact = assertInstanceOf(
+                M3Breadcrumbs.class,
+                requireVisibleStyledDescendant(page, "demo-breadcrumbs-compact", "compact breadcrumbs")
+        );
+        M3Breadcrumbs overflow = assertInstanceOf(
+                M3Breadcrumbs.class,
+                requireVisibleStyledDescendant(page, "demo-breadcrumbs-overflow", "overflow breadcrumbs")
+        );
+        M3Breadcrumbs rootContext = assertInstanceOf(
+                M3Breadcrumbs.class,
+                requireVisibleStyledDescendant(page, "demo-breadcrumbs-root", "root-context breadcrumbs")
+        );
+
+        assertEquals(3, defaults.getItems().size(), "default breadcrumb depth");
+        assertFalse(defaults.isCompact(), "default breadcrumbs should use regular metrics");
+        assertNull(defaults.lookup(".m3-breadcrumb-overflow"), "default breadcrumbs should not overflow");
+        assertTrue(compact.isCompact(), "compact breadcrumbs state");
+        assertEquals(32.0, compact.getHeight(), 0.5, "compact breadcrumbs height");
+        assertEquals(40.0, defaults.getHeight(), 0.5, "default breadcrumbs height");
+        assertEquals(6, overflow.getItems().size(), "overflow breadcrumb depth");
+        assertNotNull(overflow.lookup(".m3-breadcrumb-overflow"), "deep breadcrumbs overflow control");
+        assertFalse(overflow.isKeepRootVisible(), "ordinary overflow should collapse its root");
+        assertEquals(6, rootContext.getItems().size(), "root-context breadcrumb depth");
+        assertTrue(rootContext.isKeepRootVisible(), "root-context breadcrumbs policy");
+        assertNotNull(rootContext.lookup(".m3-breadcrumb-overflow"), "root-context overflow control");
+        assertNotNull(rootContext.getItems().get(0).getParent(), "root-context first item should remain visible");
+
+        for (M3Breadcrumbs path : breadcrumbs) {
+            assertEquals(AccessibleRole.TOOL_BAR, path.getAccessibleRole(), "breadcrumbs accessibility role");
+            assertFalse(path.isFocusTraversable(), "breadcrumbs container focus traversal");
+            assertFalse(path.getItems().isEmpty(), "demo breadcrumb hierarchy");
+            assertEquals(1, path.getItems().stream().filter(M3BreadcrumbItem::isCurrent).count(),
+                    "breadcrumb current-location count");
+            M3BreadcrumbItem current = path.getItems().get(path.getItems().size() - 1);
+            assertTrue(current.isCurrent(), "final breadcrumb should be current");
+            assertEquals(AccessibleRole.HYPERLINK, current.getAccessibleRole(), "breadcrumb item role");
+            assertTrue(path.getItems().stream().allMatch(item -> item.getOnAction() != null),
+                    "every demo breadcrumb item should navigate");
+            assertFalse(path.lookupAll(".m3-breadcrumb-separator").isEmpty(),
+                    "breadcrumb hierarchy should render separators");
+            assertNodeSnapshotHasOpaquePixels(current, "current breadcrumb item");
         }
     }
 

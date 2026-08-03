@@ -26,6 +26,14 @@ final class CatalogNavigationComponents {
     /// @return the immutable descriptor list
     static @Unmodifiable List<CatalogComponent> create() {
         return List.of(
+                CatalogComponents.extensionComponent(
+                        "Breadcrumbs",
+                        "Breadcrumbs show hierarchy and navigational context for the current location.",
+                        CatalogIcons.BREADCRUMBS,
+                        "https://opensource.adobe.com/spectrum-web-components/components/breadcrumbs/",
+                        "M3Breadcrumbs",
+                        breadcrumbExamples()
+                ),
                 CatalogComponents.component(
                         "Navigation bar",
                         "Navigation bars switch among primary destinations in compact windows.",
@@ -67,6 +75,38 @@ final class CatalogNavigationComponents {
                         topAppBarExamples()
                 )
         );
+    }
+
+    /// Creates default, overflow, root-context, and compact breadcrumb examples.
+    ///
+    /// @return the complete breadcrumbs example array
+    private static CatalogExample[] breadcrumbExamples() {
+        return new CatalogExample[]{
+                CatalogComponents.example(
+                        "Default breadcrumbs",
+                        "A three-level hierarchy displayed inline in reading order.",
+                        false,
+                        () -> CatalogNavigationSamples.breadcrumbs(3, false, false)
+                ),
+                CatalogComponents.example(
+                        "Overflow breadcrumbs",
+                        "A deep hierarchy whose earlier levels collapse into an accessible menu.",
+                        false,
+                        () -> CatalogNavigationSamples.breadcrumbs(6, false, false)
+                ),
+                CatalogComponents.example(
+                        "Root context",
+                        "An overflowing hierarchy that preserves its root item when space permits.",
+                        false,
+                        () -> CatalogNavigationSamples.breadcrumbs(6, true, false)
+                ),
+                CatalogComponents.example(
+                        "Compact breadcrumbs",
+                        "A compact hierarchy using reduced vertical metrics.",
+                        false,
+                        () -> CatalogNavigationSamples.breadcrumbs(4, false, true)
+                )
+        };
     }
 
     /// Creates compact, medium, and destination-count navigation bar examples.

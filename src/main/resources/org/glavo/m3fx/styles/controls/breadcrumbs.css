@@ -1,0 +1,115 @@
+.m3-breadcrumbs-row {
+    -fx-alignment: center-left;
+}
+
+.m3-breadcrumb-item,
+.m3-breadcrumb-item:hover,
+.m3-breadcrumb-item:focused,
+.m3-breadcrumb-item:armed,
+.m3-breadcrumb-item:pressed {
+    -fx-min-width: 0px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-width: 240px;
+    -fx-max-height: 40px;
+    -fx-padding: 0px 6px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+}
+
+.m3-breadcrumb-item:current,
+.m3-breadcrumb-item:current:hover,
+.m3-breadcrumb-item:current:focused,
+.m3-breadcrumb-item:current:armed,
+.m3-breadcrumb-item:current:pressed {
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-weight: 600;
+}
+
+.m3-breadcrumb-item .m3-state-layer,
+.m3-breadcrumb-item .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
+.m3-breadcrumb-item:disabled {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-breadcrumb-separator {
+    -fx-min-width: 20px;
+    -fx-pref-width: 20px;
+    -fx-max-width: 20px;
+    -fx-alignment: center;
+    -fx-text-fill: -m3-color-outline;
+    -fx-font-size: 18px;
+}
+
+.m3-button-base.m3-text-button.m3-breadcrumb-overflow,
+.m3-button-base.m3-text-button.m3-breadcrumb-overflow:hover,
+.m3-button-base.m3-text-button.m3-breadcrumb-overflow:focused,
+.m3-button-base.m3-text-button.m3-breadcrumb-overflow:armed,
+.m3-button-base.m3-text-button.m3-breadcrumb-overflow:pressed {
+    -m3-container-height: 40px;
+    -m3-horizontal-padding: 8px;
+    -m3-container-color: transparent;
+    -m3-content-color: -m3-color-on-surface-variant;
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+    -fx-padding: 0px 8px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+}
+
+.m3-breadcrumb-overflow .m3-state-layer,
+.m3-breadcrumb-overflow .m3-ripple {
+    -fx-background-color: -m3-color-on-surface-variant;
+}
+
+.m3-breadcrumbs:compact .m3-breadcrumb-item,
+.m3-breadcrumbs:compact .m3-breadcrumb-item:hover,
+.m3-breadcrumbs:compact .m3-breadcrumb-item:focused,
+.m3-breadcrumbs:compact .m3-breadcrumb-item:armed,
+.m3-breadcrumbs:compact .m3-breadcrumb-item:pressed {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 0px 4px;
+    -fx-font-size: 12px;
+}
+
+.m3-breadcrumbs:compact .m3-breadcrumb-separator {
+    -fx-min-width: 16px;
+    -fx-pref-width: 16px;
+    -fx-max-width: 16px;
+    -fx-font-size: 16px;
+}
+
+.m3-breadcrumbs:compact .m3-button-base.m3-text-button.m3-breadcrumb-overflow,
+.m3-breadcrumbs:compact .m3-button-base.m3-text-button.m3-breadcrumb-overflow:hover,
+.m3-breadcrumbs:compact .m3-button-base.m3-text-button.m3-breadcrumb-overflow:focused,
+.m3-breadcrumbs:compact .m3-button-base.m3-text-button.m3-breadcrumb-overflow:armed,
+.m3-breadcrumbs:compact .m3-button-base.m3-text-button.m3-breadcrumb-overflow:pressed {
+    -m3-container-height: 32px;
+    -m3-horizontal-padding: 6px;
+    -fx-min-width: 32px;
+    -fx-pref-width: 32px;
+    -fx-max-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 0px 6px;
+    -fx-font-size: 16px;
+}

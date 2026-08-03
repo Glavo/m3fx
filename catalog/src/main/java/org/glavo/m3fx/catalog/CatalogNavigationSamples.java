@@ -9,6 +9,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.controls.M3BreadcrumbItem;
+import org.glavo.m3fx.controls.M3Breadcrumbs;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -36,6 +38,27 @@ import org.jetbrains.annotations.NotNullByDefault;
 final class CatalogNavigationSamples {
     /// Prevents instantiation of this factory class.
     private CatalogNavigationSamples() {
+    }
+
+    /// Creates a breadcrumb hierarchy with optional root preservation and compact metrics.
+    ///
+    /// @param itemCount the hierarchy depth from three through six
+    /// @param keepRootVisible whether overflow should preserve the root item
+    /// @param compact whether compact vertical metrics are used
+    /// @return the configured breadcrumbs control
+    /// @throws IllegalArgumentException if `itemCount` is outside the range from three through six
+    static Node breadcrumbs(int itemCount, boolean keepRootVisible, boolean compact) {
+        String[] labels = {"Home", "Projects", "Libraries", "JavaFX", "Controls", "M3FX"};
+        if (itemCount < 3 || itemCount > labels.length) {
+            throw new IllegalArgumentException("itemCount must be from 3 through 6: " + itemCount);
+        }
+        M3Breadcrumbs breadcrumbs = new M3Breadcrumbs();
+        for (int index = 0; index < itemCount; index++) {
+            breadcrumbs.getItems().add(new M3BreadcrumbItem(labels[index]));
+        }
+        breadcrumbs.setKeepRootVisible(keepRootVisible);
+        breadcrumbs.setCompact(compact);
+        return CatalogSamples.configureResponsiveWidth(breadcrumbs, 620.0);
     }
 
     /// Creates a navigation bar with a requested destination count and item layout.

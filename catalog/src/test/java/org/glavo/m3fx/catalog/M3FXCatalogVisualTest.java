@@ -187,7 +187,7 @@ final class M3FXCatalogVisualTest {
     ///
     /// @param components the Catalog registry
     private static void assertRegistry(List<CatalogComponent> components) {
-        assertEquals(50, components.size());
+        assertEquals(51, components.size());
         Set<String> names = new HashSet<>();
         String previous = "";
         int totalExamples = 0;
@@ -209,7 +209,7 @@ final class M3FXCatalogVisualTest {
             totalExamples += component.examples().size();
             previous = component.name();
         }
-        assertEquals(332, totalExamples);
+        assertEquals(336, totalExamples);
         assertEquals(
                 Set.of(
                         "Adaptive",
@@ -218,6 +218,7 @@ final class M3FXCatalogVisualTest {
                         "Banners",
                         "Bottom app bars",
                         "Bottom sheets",
+                        "Breadcrumbs",
                         "Button groups",
                         "Buttons",
                         "Cards",
@@ -266,6 +267,7 @@ final class M3FXCatalogVisualTest {
                 names
         );
         assertEquals(7, componentNamed(components, "Adaptive").examples().size());
+        assertEquals(4, componentNamed(components, "Breadcrumbs").examples().size());
         assertEquals(17, componentNamed(components, "Buttons").examples().size());
         assertEquals(16, componentNamed(components, "Chips").examples().size());
         assertEquals(7, componentNamed(components, "Date pickers").examples().size());

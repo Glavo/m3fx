@@ -196,6 +196,8 @@ abstract class DemoPageSupport {
             return "image";
         } else if (normalized.contains("slider")) {
             return "tune";
+        } else if (normalized.contains("breadcrumb")) {
+            return "chevron-right";
         } else if (normalized.contains("color")) {
             return "palette";
         } else if (normalized.contains("drop")) {

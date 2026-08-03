@@ -74,6 +74,10 @@ final class DemoMaterialDocs {
     /// The chips component documentation URL.
     static final String CHIPS = componentUrl("chips");
 
+    /// The Spectrum Web Components breadcrumbs documentation URL.
+    static final String BREADCRUMBS =
+            "https://opensource.adobe.com/spectrum-web-components/components/breadcrumbs/";
+
     /// The Spectrum composable color-control documentation used for color-picker behavior.
     static final String COLOR_PICKERS = "https://react-spectrum.adobe.com/ColorArea";
 

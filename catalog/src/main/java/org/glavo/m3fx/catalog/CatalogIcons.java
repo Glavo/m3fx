@@ -84,6 +84,10 @@ final class CatalogIcons {
     static final String BANNER =
             "M3 4h18v16H3zm2 2v12h14V6zm2 2h2v2H7zm4 0h6v2h-6zm-4 4h10v2H7z";
 
+    /// The breadcrumbs hierarchy icon path.
+    static final String BREADCRUMBS =
+            "M3 7h5v3H3zm7 0 3 3-3 3zm5 3h6v3h-6zM3 14h8v3H3zm10 0 3 3-3 3zm5 3h3v3h-3z";
+
     /// The bottom sheet icon path.
     static final String BOTTOM_SHEET = "M4 3h16v18H4zm2 2v4h12V5zm0 6v8h12v-8z";
 
