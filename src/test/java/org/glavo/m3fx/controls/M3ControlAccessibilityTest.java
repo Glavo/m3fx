@@ -94,6 +94,8 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.TEXT, new M3StatusLight("Ready").getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3Breadcrumbs().getAccessibleRole());
         assertEquals(AccessibleRole.HYPERLINK, new M3BreadcrumbItem("Projects").getAccessibleRole());
+        assertEquals(AccessibleRole.TREE_VIEW, new M3TreeView<>().getAccessibleRole());
+        assertEquals(AccessibleRole.TREE_ITEM, new M3TreeCell<>().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormSection().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormRow().getAccessibleRole());
@@ -209,6 +211,7 @@ final class M3ControlAccessibilityTest {
                 new M3SelectSettingItem<String>(),
                 new M3ExpandableSettingItem(),
                 new M3ListView<>(),
+                new M3TreeView<>(),
                 new M3AssistChip(),
                 new M3IconToggleButton(),
                 new M3SegmentedButton(),

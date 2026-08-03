@@ -129,7 +129,10 @@ final class ProjectContractTest {
             Set.of("M3DisclosureIcon");
 
     /// Public cell types that form part of a control's customization API.
-    private static final @Unmodifiable Set<String> ALLOWED_PUBLIC_CONTROL_CELL_TYPES = Set.of("M3ListCell");
+    private static final @Unmodifiable Set<String> ALLOWED_PUBLIC_CONTROL_CELL_TYPES = Set.of(
+            "M3ListCell",
+            "M3TreeCell"
+    );
 
     /// Concrete controls that intentionally remain subclassable extension points.
     private static final @Unmodifiable Set<String> ALLOWED_OPEN_CONCRETE_CONTROLS = Set.of(
@@ -137,7 +140,8 @@ final class ProjectContractTest {
             "org.glavo.m3fx.controls.M3DialogPane",
             "org.glavo.m3fx.controls.M3ListCell",
             "org.glavo.m3fx.controls.M3Text",
-            "org.glavo.m3fx.controls.M3Tooltip"
+            "org.glavo.m3fx.controls.M3Tooltip",
+            "org.glavo.m3fx.controls.M3TreeCell"
     );
 
     /// Reviewed static adapter families exposed by concrete controls for existing JavaFX instances.
@@ -495,7 +499,9 @@ final class ProjectContractTest {
             "TextArea",
             "TextField",
             "ToggleButton",
-            "Tooltip"
+            "Tooltip",
+            "TreeCell",
+            "TreeView"
     );
 
     /// Public controls that intentionally retain a concrete JavaFX control implementation.
@@ -503,7 +509,9 @@ final class ProjectContractTest {
             "M3PasswordField", "PasswordField",
             "M3ScrollPane", "ScrollPane",
             "M3TextArea", "TextArea",
-            "M3TextField", "TextField"
+            "M3TextField", "TextField",
+            "M3TreeCell", "TreeCell",
+            "M3TreeView", "TreeView"
     );
 
     /// Direct concrete JavaFX superclass exceptions intentionally kept in the exported controls package.
@@ -514,7 +522,9 @@ final class ProjectContractTest {
                     "org.glavo.m3fx.controls.M3ScrollPane", "javafx.scene.control.ScrollPane",
                     "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
                     "org.glavo.m3fx.controls.M3TextField", "javafx.scene.control.TextField",
-                    "org.glavo.m3fx.controls.M3Tooltip", "javafx.scene.control.PopupControl"
+                    "org.glavo.m3fx.controls.M3Tooltip", "javafx.scene.control.PopupControl",
+                    "org.glavo.m3fx.controls.M3TreeCell", "javafx.scene.control.TreeCell",
+                    "org.glavo.m3fx.controls.M3TreeView", "javafx.scene.control.TreeView"
             );
 
     /// Concrete JavaFX skins that M3FX skins must not inherit from directly.

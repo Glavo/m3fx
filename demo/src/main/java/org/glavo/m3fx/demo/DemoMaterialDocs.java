@@ -89,6 +89,9 @@ final class DemoMaterialDocs {
     static final String STATUS_LIGHTS =
             "https://opensource.adobe.com/spectrum-web-components/components/status-light/";
 
+    /// The Adobe Spectrum tree-view documentation URL.
+    static final String TREE_VIEWS = "https://spectrum.adobe.com/page/tree-view/";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 

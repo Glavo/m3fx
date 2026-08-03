@@ -6,6 +6,8 @@ package org.glavo.m3fx.catalog;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TreeItem;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -53,12 +55,17 @@ import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.controls.M3TreeView;
+import org.glavo.m3fx.controls.M3TreeViewSize;
+import org.glavo.m3fx.controls.M3TreeViewStyle;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.layout.M3Breakpoint;
 import org.glavo.m3fx.layout.M3NavigationLayout;
 import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /// Creates focused samples for structural, surface, and adaptive-layout Catalog entries.
 @NotNullByDefault
@@ -417,6 +424,56 @@ final class CatalogContainerSamples {
             list.select(drafts);
         }
         return CatalogSamples.configureResponsiveWidth(list, 520.0);
+    }
+
+    /// Creates an expandable tree-view sample.
+    ///
+    /// @param size the tree row size
+    /// @param style the row containment style
+    /// @param graphics whether tree items include graphics
+    /// @param multipleSelection whether multiple selection is enabled and demonstrated
+    /// @return the configured tree view
+    static Node treeView(
+            M3TreeViewSize size,
+            M3TreeViewStyle style,
+            boolean graphics,
+            boolean multipleSelection
+    ) {
+        TreeItem<String> workspace = treeItem("Workspace", graphics, CatalogIcons.SURFACE);
+        TreeItem<String> applications = treeItem("Applications", graphics, CatalogIcons.ADAPTIVE);
+        applications.getChildren().addAll(List.of(
+                treeItem("Catalog", graphics, CatalogIcons.LIST),
+                treeItem("Demo", graphics, CatalogIcons.TOUCH_APP)
+        ));
+        workspace.getChildren().addAll(List.of(
+                applications,
+                treeItem("Libraries", graphics, CatalogIcons.CARD),
+                treeItem("Documentation", graphics, CatalogIcons.TYPOGRAPHY)
+        ));
+        workspace.setExpanded(true);
+        applications.setExpanded(true);
+
+        M3TreeView<String> treeView = new M3TreeView<>(workspace);
+        treeView.setSize(size);
+        treeView.setTreeStyle(style);
+        treeView.setPrefHeight(280.0);
+        if (multipleSelection) {
+            treeView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            treeView.getSelectionModel().selectIndices(1, 3);
+        } else {
+            treeView.getSelectionModel().select(2);
+        }
+        return CatalogSamples.configureResponsiveWidth(treeView, 480.0);
+    }
+
+    /// Creates a tree item with an optional catalog graphic.
+    ///
+    /// @param text the item text
+    /// @param graphic whether to create a graphic
+    /// @param iconPath the catalog icon path used when graphics are enabled
+    /// @return the tree item
+    private static TreeItem<String> treeItem(String text, boolean graphic, String iconPath) {
+        return new TreeItem<>(text, graphic ? CatalogSamples.icon(iconPath) : null);
     }
 
     /// Creates a plain or actionable scrim inside a bounded preview.

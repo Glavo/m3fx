@@ -104,6 +104,10 @@ final class CatalogIcons {
     static final String LIST =
             "M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zM4 17h2v2H4zm4 0h12v2H8z";
 
+    /// The hierarchical tree-view icon path.
+    static final String TREE_VIEW =
+            "M3 3h7v5H3zm11 7h7v5h-7zm0 8h7v3h-7zM6 8v8h6v2H4V8zm6 4h2v2h-2z";
+
     /// The divider icon path.
     static final String DIVIDER = "M3 11h18v2H3z";
 

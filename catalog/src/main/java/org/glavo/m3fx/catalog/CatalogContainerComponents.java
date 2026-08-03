@@ -13,6 +13,8 @@ import org.glavo.m3fx.controls.M3OverscrollInputMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
+import org.glavo.m3fx.controls.M3TreeViewSize;
+import org.glavo.m3fx.controls.M3TreeViewStyle;
 import org.glavo.m3fx.layout.M3Breakpoint;
 import org.glavo.m3fx.layout.M3NavigationLayout;
 import org.glavo.m3fx.layout.M3PaneLayout;
@@ -553,6 +555,57 @@ final class CatalogContainerComponents {
                                 "Contained list rows separated by the Material segmented gap.",
                                 true,
                                 () -> CatalogContainerSamples.list(M3ListStyle.SEGMENTED, false, true)
+                        )
+                ),
+                CatalogComponents.extensionComponent(
+                        "Tree views",
+                        "Tree views present expandable nested hierarchies with virtualized Material rows.",
+                        CatalogIcons.TREE_VIEW,
+                        "https://spectrum.adobe.com/page/tree-view/",
+                        "M3TreeView",
+                        CatalogComponents.example(
+                                "Standard hierarchy",
+                                "An expandable hierarchy using continuous Material rows.",
+                                false,
+                                () -> CatalogContainerSamples.treeView(
+                                        M3TreeViewSize.MEDIUM,
+                                        M3TreeViewStyle.STANDARD,
+                                        false,
+                                        false
+                                )
+                        ),
+                        CatalogComponents.example(
+                                "Graphic items",
+                                "Tree items with graphics supplied by the JavaFX hierarchy model.",
+                                false,
+                                () -> CatalogContainerSamples.treeView(
+                                        M3TreeViewSize.MEDIUM,
+                                        M3TreeViewStyle.STANDARD,
+                                        true,
+                                        false
+                                )
+                        ),
+                        CatalogComponents.example(
+                                "Detached hierarchy",
+                                "Inset contained rows make neighboring hierarchy items visually distinct.",
+                                false,
+                                () -> CatalogContainerSamples.treeView(
+                                        M3TreeViewSize.MEDIUM,
+                                        M3TreeViewStyle.DETACHED,
+                                        false,
+                                        false
+                                )
+                        ),
+                        CatalogComponents.example(
+                                "Multiple selection",
+                                "Large rows with JavaFX multiple selection enabled.",
+                                false,
+                                () -> CatalogContainerSamples.treeView(
+                                        M3TreeViewSize.LARGE,
+                                        M3TreeViewStyle.STANDARD,
+                                        false,
+                                        true
+                                )
                         )
                 ),
                 CatalogComponents.extensionComponent(

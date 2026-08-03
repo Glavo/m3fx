@@ -192,6 +192,10 @@ import org.glavo.m3fx.controls.M3ToolbarColorStyle;
 import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
+import org.glavo.m3fx.controls.M3TreeCell;
+import org.glavo.m3fx.controls.M3TreeView;
+import org.glavo.m3fx.controls.M3TreeViewSize;
+import org.glavo.m3fx.controls.M3TreeViewStyle;
 import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.internal.M3ModalInteraction;
 import org.glavo.m3fx.theme.M3Theme;
@@ -275,6 +279,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
             Map.entry("Status Lights", M3FXDemoVisualMatrixTest::assertStatusLightsPageVisualState),
+            Map.entry("Tree Views", M3FXDemoVisualMatrixTest::assertTreeViewsPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
             Map.entry("Dialogs", M3FXDemoVisualMatrixTest::assertDialogsPageVisualState),
@@ -340,6 +345,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Drop Zones", "Additional demos"),
             Map.entry("Status Lights", "Additional demos"),
+            Map.entry("Tree Views", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
             Map.entry("Scrims", "Additional demos")
@@ -422,6 +428,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Icon Buttons", 30),
             Map.entry("Icons", 12),
             Map.entry("Lists", 8),
+            Map.entry("Tree Views", 10),
             Map.entry("Menus", 10),
             Map.entry("Navigation", 8),
             Map.entry("Navigation Drawer", 12),
@@ -1388,7 +1395,13 @@ final class M3FXDemoVisualMatrixTest {
                 title + " docs link"
         );
         M3Button docsButton = assertInstanceOf(M3Button.class, docsLink, title + " docs link control");
-        String expectedLabel = Set.of("Breadcrumbs", "Color Pickers", "Drop Zones", "Status Lights").contains(title)
+        String expectedLabel = Set.of(
+                "Breadcrumbs",
+                "Color Pickers",
+                "Drop Zones",
+                "Status Lights",
+                "Tree Views"
+        ).contains(title)
                 ? "Spectrum docs"
                 : "Material docs";
         assertEquals(expectedLabel, docsButton.getText(), title + " docs link text");
@@ -12040,10 +12053,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(13, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(14, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(51, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(52, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -16748,6 +16761,96 @@ final class M3FXDemoVisualMatrixTest {
             assertEquals(statusLight.getText(), label.getText(), "status-light rendered label");
             assertNodeSnapshotHasOpaquePixels(statusLight, "status-light demo state");
         }
+    }
+
+    /// Verifies the real Tree Views demo page hierarchy, containment, selection, size, and tooltip states.
+    private static void assertTreeViewsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Tree Views");
+        assertCurrentPageTitle(scene, "Tree Views");
+        assertVisibleText(root, "Hierarchy", "Tree Views");
+        assertVisibleText(root, "Multiple Selection", "Tree Views");
+        assertVisibleText(root, "Size Scale", "Tree Views");
+        assertVisibleText(root, "M3FX workspace", "Tree Views");
+        assertVisibleText(root, "Source packages", "Tree Views");
+
+        List<M3TreeView<?>> treeViews = visibleTreeViews(page);
+        assertEquals(7, treeViews.size(),
+                () -> "Tree Views page should render seven trees, found " + treeViews.size());
+        M3TreeView<?> standard = treeViewWithStyle(page, "demo-tree-view-standard");
+        M3TreeView<?> detached = treeViewWithStyle(page, "demo-tree-view-detached");
+        M3TreeView<?> multiple = treeViewWithStyle(page, "demo-tree-view-multiple");
+        assertEquals(M3TreeViewStyle.STANDARD, standard.getTreeStyle());
+        assertEquals(M3TreeViewStyle.DETACHED, detached.getTreeStyle());
+        assertEquals(3, multiple.getSelectionModel().getSelectedIndices().size(),
+                "multiple-selection tree selected rows");
+
+        for (M3TreeViewSize size : M3TreeViewSize.values()) {
+            M3TreeView<?> sizeSample = treeViewWithStyle(
+                    page,
+                    "demo-tree-view-size-" + size.name().toLowerCase(Locale.ROOT)
+            );
+            assertEquals(size, sizeSample.getSize(), () -> size + " demo tree size role");
+        }
+
+        for (M3TreeView<?> treeView : treeViews) {
+            assertEquals(AccessibleRole.TREE_VIEW, treeView.getAccessibleRole());
+            assertEquals(treeView.getSize().getRowHeight(), treeView.getFixedCellSize(), CONTROL_EDGE_TOLERANCE,
+                    () -> treeView.getSize() + " fixed tree row height");
+            List<M3TreeCell<?>> cells = materializedTreeCells(treeView);
+            assertFalse(cells.isEmpty(), () -> "tree should materialize visible rows: " + treeView.getStyleClass());
+            for (M3TreeCell<?> cell : cells) {
+                assertEquals(AccessibleRole.TREE_ITEM, cell.getAccessibleRole());
+                assertEquals(treeView.getSize().getRowHeight(), cell.getHeight(), CONTROL_EDGE_TOLERANCE,
+                        () -> "tree cell height for " + treeView.getSize());
+            }
+        }
+
+        M3TreeCell<?> detachedCell = materializedTreeCells(detached).get(0);
+        assertNotNull(detachedCell.getBackground(), "detached tree cell background");
+        assertFalse(detachedCell.getBackground().getFills().isEmpty(), "detached tree cell fill");
+        assertEquals(8.0, detachedCell.getBackground().getFills().get(0).getInsets().getLeft(),
+                CONTROL_EDGE_TOLERANCE, "detached tree cell horizontal inset");
+
+        M3TreeCell<?> truncatedCell = materializedTreeCells(standard).stream()
+                .filter(cell -> cell.getText() != null && cell.getText().startsWith("A deliberately long"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("long tree-view label was not materialized"));
+        truncatedCell.requestLayout();
+        truncatedCell.layout();
+        assertEquals(truncatedCell.getText(), truncatedCell.getFullTextTooltip().getText(),
+                "truncated tree label full-text tooltip");
+        assertEquals(truncatedCell.getText(), truncatedCell.getAccessibleHelp(),
+                "truncated tree label accessible help");
+    }
+
+    /// Returns the visible Material tree views under a demo page.
+    private static List<M3TreeView<?>> visibleTreeViews(Node page) {
+        ArrayList<M3TreeView<?>> treeViews = new ArrayList<>();
+        for (Node node : page.lookupAll(".m3-tree-view")) {
+            if (node instanceof M3TreeView<?> treeView && node.isVisible() && hasRenderableBounds(node)) {
+                treeViews.add(treeView);
+            }
+        }
+        return List.copyOf(treeViews);
+    }
+
+    /// Returns the visible Material tree view identified by a demo style class.
+    private static M3TreeView<?> treeViewWithStyle(Node page, String styleClass) {
+        Node node = Objects.requireNonNull(page.lookup("." + styleClass), styleClass + " tree view");
+        return assertInstanceOf(M3TreeView.class, node, styleClass + " control type");
+    }
+
+    /// Returns non-empty materialized cells ordered by their visible tree row index.
+    private static List<M3TreeCell<?>> materializedTreeCells(M3TreeView<?> treeView) {
+        ArrayList<M3TreeCell<?>> cells = new ArrayList<>();
+        for (Node node : treeView.lookupAll(".m3-tree-cell")) {
+            if (node instanceof M3TreeCell<?> cell && !cell.isEmpty() && hasRenderableBounds(cell)) {
+                cells.add(cell);
+            }
+        }
+        cells.sort(Comparator.comparingInt(M3TreeCell::getIndex));
+        return List.copyOf(cells);
     }
 
     /// Verifies the real Surfaces demo page color-container variants and elevation states.
