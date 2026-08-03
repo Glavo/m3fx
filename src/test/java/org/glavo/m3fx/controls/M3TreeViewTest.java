@@ -18,6 +18,7 @@ import javafx.scene.control.skin.TreeViewSkin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Translate;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -360,8 +361,9 @@ final class M3TreeViewTest {
                     @Nullable M3TreeCell<?> nestedCell = visibleCell(treeView, nestedItem);
                     @Nullable M3TreeCell<?> siblingCell = visibleCell(treeView, siblingItem);
                     return nestedCell != null
-                            && nestedCell.getStyleClass().contains("m3-tree-entering-row")
-                            && nestedCell.getOpacity() <= 0.001
+                            && nestedCell.getClip() instanceof Rectangle clip
+                            && clip.getHeight() > 0.5
+                            && clip.getHeight() < nestedCell.getHeight() - 0.5
                             && hasActiveRowMotion(siblingCell, -1.0);
                 },
                 () -> {
@@ -393,13 +395,16 @@ final class M3TreeViewTest {
                             visibleCell(treeView, java.util.Objects.requireNonNull(siblingReference.get(), "sibling item")),
                             "sibling cell"
                     );
-                    assertTrue(nestedCell.getStyleClass().contains("m3-tree-entering-row"));
-                    assertEquals(0.0, nestedCell.getOpacity(), 0.001);
+                    Rectangle clip = (Rectangle) java.util.Objects.requireNonNull(
+                            nestedCell.getClip(),
+                            "nested row reveal clip"
+                    );
+                    assertTrue(clip.getHeight() > 0.5 && clip.getHeight() < nestedCell.getHeight() - 0.5);
                     assertTrue(rowMotionOffset(siblingCell) < -1.0);
                     M3MotionSettings.setReducedMotionRequested(treeView, true);
                     assertFalse(hasMotionStyle(nestedCell));
                     assertFalse(hasMotionStyle(siblingCell));
-                    assertFalse(nestedCell.getStyleClass().contains("m3-tree-entering-row"));
+                    assertNull(nestedCell.getClip());
                     assertEquals(1.0, nestedCell.getOpacity(), 0.001);
                     assertEquals(0.0, rowMotionOffset(nestedCell), 0.001);
                     assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
