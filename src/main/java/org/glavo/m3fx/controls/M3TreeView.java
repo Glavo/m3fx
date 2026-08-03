@@ -6,10 +6,12 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.AccessibleRole;
+import javafx.scene.control.Skin;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3TreeViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,6 +106,14 @@ public final class M3TreeView<T> extends TreeView<T> {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("tree-view.css");
+    }
+
+    /// Creates the default Material tree-view skin.
+    ///
+    /// @return a skin that preserves JavaFX tree behavior and styles its virtualized scrollbars
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3TreeViewSkin<>(this);
     }
 
     /// Initializes styling, accessibility, and the default cell factory.

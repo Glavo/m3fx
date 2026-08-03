@@ -10,6 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.MultipleSelectionModel;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
@@ -18,15 +19,20 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3TooltipRegistry;
+import org.glavo.m3fx.skins.M3TreeViewSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -185,6 +191,7 @@ final class M3TreeViewTest {
             assertEquals(AccessibleRole.TREE_ITEM, cell.getAccessibleRole());
             assertEquals(longText, cell.getFullTextTooltip().getText());
             assertEquals(longText, cell.getAccessibleHelp());
+            assertTrue(M3TooltipRegistry.installation(cell) != null);
 
             treeView.setPrefWidth(1200.0);
             treeView.setMaxWidth(1200.0);
@@ -192,6 +199,7 @@ final class M3TreeViewTest {
             cell = visibleCells(treeView).get(0);
             assertNull(cell.getFullTextTooltip().getText());
             assertNull(cell.getAccessibleHelp());
+            assertNull(M3TooltipRegistry.installation(cell));
 
             M3TreeCell<String> reusableCell = new M3TreeCell<>();
             reusableCell.updateItem("Visible", false);
@@ -203,7 +211,7 @@ final class M3TreeViewTest {
         }));
     }
 
-    /// Verifies Material selected surfaces and the stock TreeView skin lifecycle.
+    /// Verifies Material selected surfaces, shared scrollbar styling, and the TreeView skin lifecycle.
     @Test
     void stylesMaterialRowsAndPreservesStockSkinLifecycle() {
         FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
@@ -214,7 +222,14 @@ final class M3TreeViewTest {
             StackPane root = themedRoot(treeView, 360.0, 240.0);
             layout(root, 360.0, 240.0);
 
-            assertTrue(treeView.getSkin() instanceof TreeViewSkin<?>);
+            assertTrue(treeView.getSkin() instanceof M3TreeViewSkin<?>);
+            List<ScrollBar> scrollBars = treeView.lookupAll(".scroll-bar").stream()
+                    .filter(ScrollBar.class::isInstance)
+                    .map(ScrollBar.class::cast)
+                    .toList();
+            assertEquals(2, scrollBars.size());
+            assertTrue(scrollBars.stream()
+                    .allMatch(scrollBar -> scrollBar.getStyleClass().contains("m3-scroll-bar")));
             M3TreeCell<?> selectedCell = visibleCells(treeView).stream()
                     .filter(TreeCell::isSelected)
                     .findFirst()
@@ -229,6 +244,81 @@ final class M3TreeViewTest {
             assertSame(replacementSkin, treeView.getSkin());
             assertEquals(1, treeView.lookupAll(".virtual-flow").size());
         }));
+    }
+
+    /// Verifies fixed disclosure columns, Material indicator state, and sibling content alignment.
+    @Test
+    void alignsAndAnimatesMaterialDisclosureIndicators() {
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            TreeItem<String> rootItem = new TreeItem<>("Workspace");
+            TreeItem<String> branchItem = new TreeItem<>("Branch");
+            branchItem.getChildren().add(new TreeItem<>("Nested"));
+            rootItem.getChildren().addAll(List.of(branchItem, new TreeItem<>("Leaf")));
+            rootItem.setExpanded(true);
+
+            M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+            treeView.setPrefSize(360.0, 220.0);
+            StackPane root = themedRoot(treeView, 400.0, 240.0);
+            layout(root, 400.0, 240.0);
+
+            List<M3TreeCell<?>> cells = visibleCells(treeView);
+            M3TreeCell<?> rootCell = cells.get(0);
+            M3TreeCell<?> branchCell = cells.get(1);
+            M3TreeCell<?> leafCell = cells.get(2);
+            Node rootDisclosure = rootCell.getDisclosureNode();
+            Node branchDisclosure = branchCell.getDisclosureNode();
+
+            assertEquals(40.0, rootDisclosure.getLayoutBounds().getWidth(), 0.001);
+            assertEquals(40.0, branchDisclosure.getLayoutBounds().getWidth(), 0.001);
+            assertEquals(24.0, centerX(branchDisclosure) - centerX(rootDisclosure), 0.001);
+            assertEquals(minX(branchCell.lookup(".text")), minX(leafCell.lookup(".text")), 0.001);
+
+            Node branchIndicator = branchDisclosure.lookup(".m3-disclosure-icon");
+            assertTrue(branchIndicator != null);
+            assertFalse(branchIndicator.getPseudoClassStates().contains(
+                    javafx.css.PseudoClass.getPseudoClass("expanded")
+            ));
+            branchItem.setExpanded(true);
+            assertTrue(branchIndicator.getPseudoClassStates().contains(
+                    javafx.css.PseudoClass.getPseudoClass("expanded")
+            ));
+        }));
+    }
+
+    /// Verifies that expanding a tree branch produces a real intermediate Material rotation frame.
+    @Test
+    void animatesDisclosureRotationBetweenCollapsedAndExpandedStates() throws InterruptedException {
+        AtomicReference<@Nullable Node> arrowReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> {
+                    @Nullable Node arrow = arrowReference.get();
+                    return arrow != null && arrow.getRotate() > -89.0 && arrow.getRotate() < -1.0;
+                },
+                () -> {
+                    M3MotionSettings.setGlobalReducedMotionRequested(false);
+                    TreeItem<String> rootItem = new TreeItem<>("Workspace");
+                    TreeItem<String> branchItem = new TreeItem<>("Branch");
+                    branchItem.getChildren().add(new TreeItem<>("Nested"));
+                    rootItem.getChildren().add(branchItem);
+                    rootItem.setExpanded(true);
+
+                    M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+                    treeView.setPrefSize(360.0, 180.0);
+                    StackPane root = themedRoot(treeView, 400.0, 200.0);
+                    layout(root, 400.0, 200.0);
+
+                    M3TreeCell<?> branchCell = visibleCells(treeView).get(1);
+                    Node arrow = branchCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
+                    assertEquals(-90.0, arrow.getRotate(), 0.001);
+                    arrowReference.set(arrow);
+                    branchItem.setExpanded(true);
+                },
+                () -> {
+                    Node arrow = java.util.Objects.requireNonNull(arrowReference.get(), "disclosure arrow");
+                    assertTrue(arrow.getRotate() > -89.0 && arrow.getRotate() < -1.0);
+                }
+        );
     }
 
     /// Verifies stock arrow-key expansion and that the disclosure affordance follows logical leading in RTL.
@@ -253,14 +343,14 @@ final class M3TreeViewTest {
             assertFalse(rootItem.isExpanded());
 
             M3TreeCell<?> rootCell = visibleCells(treeView).get(0);
-            Node disclosure = rootCell.lookup(".tree-disclosure-node");
+            Node disclosure = rootCell.getDisclosureNode();
             Node text = rootCell.lookup(".text");
             assertTrue(centerX(disclosure) < centerX(text));
 
             treeView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             layout(root, 360.0, 200.0);
             rootCell = visibleCells(treeView).get(0);
-            disclosure = rootCell.lookup(".tree-disclosure-node");
+            disclosure = rootCell.getDisclosureNode();
             text = rootCell.lookup(".text");
             assertTrue(centerX(disclosure) > centerX(text));
 
@@ -332,6 +422,14 @@ final class M3TreeViewTest {
     private static double centerX(Node node) {
         Bounds bounds = node.localToScene(node.getBoundsInLocal());
         return bounds.getCenterX();
+    }
+
+    /// Returns a node's leading horizontal edge in scene coordinates.
+    ///
+    /// @param node the node to measure
+    /// @return the scene-coordinate minimum x value
+    private static double minX(Node node) {
+        return node.localToScene(node.getBoundsInLocal()).getMinX();
     }
 
     /// Creates an unmodified key-pressed event.

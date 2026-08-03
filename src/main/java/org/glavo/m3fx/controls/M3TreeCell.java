@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.WeakChangeListener;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
@@ -16,8 +17,10 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +44,12 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// The retained tooltip used only while the label is visually truncated.
     private final M3Tooltip fullTextTooltip = new M3Tooltip();
 
+    /// The animated Material indicator that mirrors the current tree item's expanded state.
+    private final M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
+
+    /// The fixed-width leading slot that aligns disclosure indicators across hierarchy levels.
+    private final StackPane disclosureNode = new StackPane(disclosureIcon);
+
     /// The retained checkbox used by checkbox-selection trees.
     private final M3CheckBox selectionCheckBox = new M3CheckBox();
 
@@ -49,6 +58,13 @@ public class M3TreeCell<T> extends TreeCell<T> {
 
     /// The complete text assigned during the latest non-empty item update.
     private @Nullable String fullText;
+
+    /// Whether the retained full-text tooltip is currently installed on this reusable cell.
+    private boolean fullTextTooltipInstalled;
+
+    /// Rebinds disclosure state when virtualization assigns a different tree item to this cell.
+    private final ChangeListener<@Nullable TreeItem<T>> treeItemListener =
+            (observable, oldItem, newItem) -> updateTreeItem(oldItem, newItem);
 
     /// Refreshes the cell when the owning Material tree changes its selection presentation.
     private final ChangeListener<M3TreeViewSelectionStyle> selectionStyleListener =
@@ -65,19 +81,25 @@ public class M3TreeCell<T> extends TreeCell<T> {
         setContentDisplay(ContentDisplay.LEFT);
         setTextOverrun(OverrunStyle.ELLIPSIS);
         setPrefWidth(0.0);
+        disclosureNode.getStyleClass().add("m3-tree-disclosure");
+        disclosureNode.setAlignment(Pos.CENTER);
+        disclosureIcon.setMouseTransparent(true);
+        setDisclosureNode(disclosureNode);
         checkboxGraphic.getStyleClass().add("m3-tree-cell-leading");
         selectionCheckBox.getStyleClass().add("m3-tree-selection-checkbox");
         selectionCheckBox.setFocusTraversable(false);
         selectionCheckBox.setOnAction(this::handleSelectionCheckBoxAction);
         selectedProperty().addListener((observable, oldValue, newValue) -> refreshSelectionIndicator());
         treeViewProperty().addListener((observable, oldValue, newValue) -> updateTreeView(oldValue, newValue));
-        M3Tooltip.install(this, fullTextTooltip);
+        treeItemProperty().addListener(treeItemListener);
+        updateTreeItem(null, getTreeItem());
     }
 
     /// Returns the retained tooltip that exposes truncated text.
     ///
-    /// Its text is `null` when the current label fits. Applications may configure timing and placement but should not
-    /// replace its text, which is maintained during cell layout and reuse.
+    /// The tooltip is installed on this cell only while the current label is truncated, and its text is `null`
+    /// otherwise. Applications may configure timing and placement but should not replace its text, which is
+    /// maintained during cell layout and reuse.
     ///
     /// @return the retained full-text tooltip
     public M3Tooltip getFullTextTooltip() {
@@ -108,14 +130,14 @@ public class M3TreeCell<T> extends TreeCell<T> {
             fullText = null;
             setText(null);
             clearGraphic();
-            fullTextTooltip.setText(null);
+            setFullTextTooltipText(null);
             return;
         }
 
         fullText = item == null ? "" : String.valueOf(item);
         setText(fullText);
         refreshPresentation();
-        fullTextTooltip.setText(null);
+        setFullTextTooltipText(null);
     }
 
     /// Lays out the cell and updates full-text help from the text rendered by the JavaFX labeled skin.
@@ -129,7 +151,7 @@ public class M3TreeCell<T> extends TreeCell<T> {
     private void updateFullTextTooltip() {
         @Nullable String completeText = fullText;
         if (completeText == null || completeText.isEmpty()) {
-            fullTextTooltip.setText(null);
+            setFullTextTooltipText(null);
             return;
         }
 
@@ -140,12 +162,28 @@ public class M3TreeCell<T> extends TreeCell<T> {
             }
             String renderedValue = renderedText.getText();
             if (completeText.equals(renderedValue)) {
-                fullTextTooltip.setText(null);
+                setFullTextTooltipText(null);
                 return;
             }
             truncated |= isEllipsizedRendering(completeText, renderedValue);
         }
-        fullTextTooltip.setText(truncated ? completeText : null);
+        setFullTextTooltipText(truncated ? completeText : null);
+    }
+
+    /// Installs or removes full-text help as truncation begins or ends.
+    ///
+    /// @param text the complete truncated text, or `null` when no tooltip is needed
+    private void setFullTextTooltipText(@Nullable String text) {
+        fullTextTooltip.setText(text);
+        if (text != null) {
+            if (!fullTextTooltipInstalled) {
+                M3Tooltip.install(this, fullTextTooltip);
+                fullTextTooltipInstalled = true;
+            }
+        } else if (fullTextTooltipInstalled) {
+            M3Tooltip.uninstall(this, fullTextTooltip);
+            fullTextTooltipInstalled = false;
+        }
     }
 
     /// Returns whether a rendered value is an ellipsized prefix of the complete label.
@@ -160,6 +198,22 @@ public class M3TreeCell<T> extends TreeCell<T> {
         }
         String prefix = renderedText.substring(0, renderedText.length() - suffixLength);
         return !prefix.isEmpty() && completeText.startsWith(prefix);
+    }
+
+    /// Binds the retained Material disclosure indicator to the assigned tree item.
+    ///
+    /// @param oldItem the previously assigned tree item, or `null`
+    /// @param newItem the newly assigned tree item, or `null`
+    private void updateTreeItem(@Nullable TreeItem<T> oldItem, @Nullable TreeItem<T> newItem) {
+        if (oldItem != null && disclosureIcon.expandedProperty().isBound()) {
+            disclosureIcon.expandedProperty().unbind();
+        }
+        if (newItem == null) {
+            disclosureIcon.setExpanded(false);
+        } else {
+            disclosureIcon.expandedProperty().bind(newItem.expandedProperty());
+        }
+        refreshPresentation();
     }
 
     /// Rebinds the selection-style listener after this virtualized cell moves between tree views.

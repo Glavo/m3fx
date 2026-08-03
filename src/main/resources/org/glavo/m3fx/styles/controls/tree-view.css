@@ -17,7 +17,9 @@
     -fx-border-width: 0;
     -fx-content-display: left;
     -fx-graphic-text-gap: 8px;
+    -fx-indent: 24px;
     -fx-padding: 0 16px 0 8px;
+    -m3-disclosure-icon-color: -m3-color-on-surface-variant;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
     -fx-font-weight: 400;
@@ -50,83 +52,21 @@
     -fx-padding: 0;
 }
 
-.m3-tree-view .m3-tree-cell > .tree-disclosure-node {
-    -fx-padding: 11px 9px;
+.m3-tree-view .m3-tree-cell > .m3-tree-disclosure {
+    -fx-alignment: center;
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+    -fx-padding: 0;
 }
 
-.m3-tree-view .m3-tree-cell > .tree-disclosure-node > .arrow {
-    -fx-background-color: -m3-color-on-surface-variant;
-    -fx-padding: 5px 3px;
-    -fx-shape: "M 0 0 L 6 5 L 0 10 Z";
-}
-
-.m3-tree-view.m3-highlight-tree-selection .m3-tree-cell:selected > .tree-disclosure-node > .arrow {
-    -fx-background-color: -m3-color-on-secondary-container;
+.m3-tree-view.m3-highlight-tree-selection .m3-tree-cell:selected {
+    -m3-disclosure-icon-color: -m3-color-on-secondary-container;
 }
 
 .m3-tree-view > .virtual-flow > .corner {
     -fx-background-color: transparent;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar,
-.m3-tree-view > .virtual-flow > .scroll-bar:focused {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-padding: 3px;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:vertical {
-    -fx-pref-width: 16px;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:horizontal {
-    -fx-pref-height: 16px;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar > .track,
-.m3-tree-view > .virtual-flow > .scroll-bar > .track-background {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-background-radius: 999px;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar > .thumb {
-    -fx-background-color: -monet-surface-tint;
-    -fx-background-insets: 0;
-    -fx-background-radius: 999px;
-    -fx-opacity: 0.48;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:hover > .thumb,
-.m3-tree-view > .virtual-flow > .scroll-bar > .thumb:hover {
-    -fx-opacity: 0.64;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:pressed > .thumb,
-.m3-tree-view > .virtual-flow > .scroll-bar > .thumb:pressed {
-    -fx-opacity: 0.78;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar > .increment-button,
-.m3-tree-view > .virtual-flow > .scroll-bar > .decrement-button {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-padding: 0;
-    -fx-opacity: 0;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:vertical > .increment-button,
-.m3-tree-view > .virtual-flow > .scroll-bar:vertical > .decrement-button {
-    -fx-pref-height: 0;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar:horizontal > .increment-button,
-.m3-tree-view > .virtual-flow > .scroll-bar:horizontal > .decrement-button {
-    -fx-pref-width: 0;
-}
-
-.m3-tree-view > .virtual-flow > .scroll-bar > .increment-button > .increment-arrow,
-.m3-tree-view > .virtual-flow > .scroll-bar > .decrement-button > .decrement-arrow {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
 }
