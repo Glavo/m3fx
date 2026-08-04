@@ -25,6 +25,8 @@ import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TreeItem;
@@ -178,6 +180,8 @@ import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
 import org.glavo.m3fx.controls.M3TabBarLayout;
 import org.glavo.m3fx.controls.M3TabBarVariant;
+import org.glavo.m3fx.controls.M3TableRow;
+import org.glavo.m3fx.controls.M3TableView;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -279,6 +283,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Color Pickers", M3FXDemoVisualMatrixTest::assertColorPickersPageVisualState),
             Map.entry("Drop Zones", M3FXDemoVisualMatrixTest::assertDropZonesPageVisualState),
             Map.entry("Status Lights", M3FXDemoVisualMatrixTest::assertStatusLightsPageVisualState),
+            Map.entry("Table Views", M3FXDemoVisualMatrixTest::assertTableViewsPageVisualState),
             Map.entry("Tree Views", M3FXDemoVisualMatrixTest::assertTreeViewsPageVisualState),
             Map.entry("Date Pickers", M3FXDemoVisualMatrixTest::assertDatePickersPageVisualState),
             Map.entry("Time Pickers", M3FXDemoVisualMatrixTest::assertTimePickersPageVisualState),
@@ -345,6 +350,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Color Pickers", "Additional demos"),
             Map.entry("Drop Zones", "Additional demos"),
             Map.entry("Status Lights", "Additional demos"),
+            Map.entry("Table Views", "Additional demos"),
             Map.entry("Tree Views", "Additional demos"),
             Map.entry("Avatars", "Additional demos"),
             Map.entry("Surfaces", "Additional demos"),
@@ -1078,6 +1084,44 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
+    /// Captures and verifies the real Table Views demo in a stable baseline presentation.
+    @Test
+    void tableViewPageRendersMaterialRowsHeadersAndEmptyState() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                app.showPageByTitle("Table Views");
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                applySceneCssAndLayout(scene);
+                resetDemoPageScroll(scene);
+                applySceneCssAndLayout(scene);
+                assertTableViewsPageVisualState(scene);
+                WritableImage image = snapshot(scene);
+                writeVisualSnapshot(
+                        image,
+                        VISUAL_REPORT_DIRECTORY.resolve("interaction-table-view.png")
+                );
+                assertSnapshotHasVisibleContent(image, "Table Views interaction snapshot");
+                stageReference.set(stage);
+            }));
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies visible expansion and collapse row motion in the real Tree Views demo without a reused hover flash.
     @Test
     void treeViewBranchChangesRenderIntermediateRowMotion() throws InterruptedException {
@@ -1699,6 +1743,7 @@ final class M3FXDemoVisualMatrixTest {
                 "Color Pickers",
                 "Drop Zones",
                 "Status Lights",
+                "Table Views",
                 "Tree Views"
         ).contains(title)
                 ? "Spectrum docs"
@@ -12352,10 +12397,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(14, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(15, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(52, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(53, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -17060,6 +17105,80 @@ final class M3FXDemoVisualMatrixTest {
             assertEquals(statusLight.getText(), label.getText(), "status-light rendered label");
             assertNodeSnapshotHasOpaquePixels(statusLight, "status-light demo state");
         }
+    }
+
+    /// Verifies the real Table Views demo page columns, sorting, selection, density, and empty state.
+    private static void assertTableViewsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Table Views");
+        assertCurrentPageTitle(scene, "Table Views");
+        assertVisibleText(root, "Sortable and Resizable", "Table Views");
+        assertVisibleText(root, "Compact Rows", "Table Views");
+        assertVisibleText(root, "Empty State", "Table Views");
+        assertVisibleText(root, "Project", "Table Views");
+        assertVisibleText(root, "Status", "Table Views");
+
+        List<M3TableView<?>> tableViews = visibleTableViews(page);
+        assertEquals(3, tableViews.size(),
+                () -> "Table Views page should render three tables, found " + tableViews.size());
+        M3TableView<?> sortable = assertInstanceOf(
+                M3TableView.class,
+                firstVisibleNodeWithStyle(page, "demo-table-view-sortable"),
+                "sortable table"
+        );
+        M3TableView<?> compact = assertInstanceOf(
+                M3TableView.class,
+                firstVisibleNodeWithStyle(page, "demo-table-view-compact"),
+                "compact table"
+        );
+        M3TableView<?> empty = assertInstanceOf(
+                M3TableView.class,
+                firstVisibleNodeWithStyle(page, "demo-table-view-empty"),
+                "empty table"
+        );
+
+        assertEquals(4, sortable.getColumns().size());
+        assertEquals(1, sortable.getSortOrder().size());
+        assertEquals("updated", sortable.getSortOrder().get(0).getId());
+        assertEquals(TableColumn.SortType.DESCENDING, sortable.getSortOrder().get(0).getSortType());
+        assertEquals(2, sortable.getSelectionModel().getSelectedIndices().size());
+        assertEquals(48.0, compact.getFixedCellSize(), 0.001);
+        assertTrue(empty.getItems().isEmpty());
+        assertNotNull(empty.getPlaceholder());
+        assertTrue(empty.getPlaceholder().isVisible());
+
+        for (M3TableView<?> tableView : tableViews) {
+            assertEquals(4, tableView.getColumns().size());
+            assertTrue(tableView.getSkin() instanceof org.glavo.m3fx.skins.M3TableViewSkin<?>);
+            assertTrue(tableView.lookupAll(".scroll-bar").stream()
+                    .allMatch(scrollBar -> scrollBar.getStyleClass().contains("m3-scroll-bar")));
+            assertNodeSnapshotHasOpaquePixels(tableView, "table-view demo state");
+        }
+
+        ArrayList<M3TableRow<?>> materializedRows = new ArrayList<>();
+        for (Node node : sortable.lookupAll(".m3-table-row")) {
+            if (node instanceof M3TableRow<?> row && !row.isEmpty() && row.isVisible()) {
+                materializedRows.add(row);
+            }
+        }
+        assertFalse(materializedRows.isEmpty());
+        assertTrue(materializedRows.stream().allMatch(row -> row.getHeight() > 0.0));
+        assertTrue(materializedRows.stream().filter(TableRow::isSelected)
+                .allMatch(row -> !row.getBackground().getFills().isEmpty()));
+    }
+
+    /// Returns the visible Material tables under one rendered demo page.
+    ///
+    /// @param page the rendered page
+    /// @return the visible Material tables
+    private static List<M3TableView<?>> visibleTableViews(Node page) {
+        ArrayList<M3TableView<?>> tableViews = new ArrayList<>();
+        for (Node node : page.lookupAll(".m3-table-view")) {
+            if (node instanceof M3TableView<?> tableView && node.isVisible() && hasRenderableBounds(node)) {
+                tableViews.add(tableView);
+            }
+        }
+        return List.copyOf(tableViews);
     }
 
     /// Verifies the real Tree Views demo page hierarchy, Material rows, selection styles, and tooltip states.

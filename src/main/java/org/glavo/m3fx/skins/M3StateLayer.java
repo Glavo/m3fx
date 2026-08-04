@@ -1339,6 +1339,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 || owner.getStyleClass().contains("m3-menu-item")
                 || owner.getStyleClass().contains("m3-navigation-item")
                 || owner.getStyleClass().contains("m3-tree-cell")
+                || owner.getStyleClass().contains("m3-table-row")
                 || owner.getStyleClass().contains("m3-tab");
     }
 

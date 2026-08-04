@@ -92,6 +92,9 @@ final class DemoMaterialDocs {
     /// The Adobe Spectrum tree-view documentation URL.
     static final String TREE_VIEWS = "https://react-spectrum.adobe.com/TreeView";
 
+    /// The Adobe Spectrum table-view documentation URL.
+    static final String TABLE_VIEWS = "https://react-spectrum.adobe.com/TableView";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 

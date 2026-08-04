@@ -187,6 +187,7 @@ abstract class DemoPageSupport {
         } else if (normalized.contains("dialog") || normalized.contains("sheet")) {
             return "info";
         } else if (normalized.contains("list")
+                || normalized.contains("table")
                 || normalized.contains("surface")
                 || normalized.contains("badge")) {
             return "label";

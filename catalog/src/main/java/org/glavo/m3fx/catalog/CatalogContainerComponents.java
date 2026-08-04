@@ -557,6 +557,37 @@ final class CatalogContainerComponents {
                         )
                 ),
                 CatalogComponents.extensionComponent(
+                        "Table views",
+                        "Table views organize virtualized data into sortable and resizable columns.",
+                        CatalogIcons.TABLE_VIEW,
+                        "https://react-spectrum.adobe.com/TableView",
+                        "M3TableView",
+                        CatalogComponents.example(
+                                "Sortable table",
+                                "A project table sorted by its numeric issue column.",
+                                false,
+                                () -> CatalogContainerSamples.tableView(true, false, false, false)
+                        ),
+                        CatalogComponents.example(
+                                "Multiple selection",
+                                "Material row highlighting follows the inherited multiple-selection model.",
+                                false,
+                                () -> CatalogContainerSamples.tableView(false, true, false, false)
+                        ),
+                        CatalogComponents.example(
+                                "Compact rows",
+                                "An explicit fixed-cell size provides a denser desktop presentation.",
+                                false,
+                                () -> CatalogContainerSamples.tableView(false, false, true, false)
+                        ),
+                        CatalogComponents.example(
+                                "Empty state",
+                                "A table placeholder communicates that no rows match the current query.",
+                                false,
+                                () -> CatalogContainerSamples.tableView(false, false, false, true)
+                        )
+                ),
+                CatalogComponents.extensionComponent(
                         "Tree views",
                         "Tree views present expandable hierarchies using virtualized Material list rows.",
                         CatalogIcons.TREE_VIEW,

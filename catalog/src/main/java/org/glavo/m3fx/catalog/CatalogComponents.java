@@ -166,7 +166,7 @@ final class CatalogComponents {
     ///
     /// @return the immutable component registry
     private static @Unmodifiable List<CatalogComponent> createComponents() {
-        ArrayList<CatalogComponent> components = new ArrayList<>(48);
+        ArrayList<CatalogComponent> components = new ArrayList<>(53);
         components.addAll(CatalogContainerComponents.create());
         components.addAll(CatalogActionComponents.create());
         components.addAll(CatalogInputComponents.create());

@@ -3,10 +3,13 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TreeItem;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -49,6 +52,7 @@ import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3StretchOverscrollEffect;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3TableView;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
@@ -465,6 +469,70 @@ final class CatalogContainerSamples {
         return CatalogSamples.configureResponsiveWidth(treeView, 480.0);
     }
 
+    /// Creates a sortable, selectable, compact, or empty table-view sample.
+    ///
+    /// Exactly one specialized presentation flag should normally be true. When every flag is false, the returned
+    /// table uses the default Material row geometry with no initial selection or sort order.
+    ///
+    /// @param sorted whether the issue column initially sorts rows in descending order
+    /// @param multipleSelection whether two rows are initially selected through the multiple-selection model
+    /// @param compact whether the table uses an explicit 48-pixel fixed row height
+    /// @param empty whether the table starts without rows and presents a placeholder
+    /// @return the configured table view
+    static Node tableView(boolean sorted, boolean multipleSelection, boolean compact, boolean empty) {
+        M3TableView<ProjectStatus> tableView = new M3TableView<>();
+
+        TableColumn<ProjectStatus, String> project = new TableColumn<>("Project");
+        project.setMinWidth(150.0);
+        project.setPrefWidth(200.0);
+        project.setCellValueFactory(features -> new ReadOnlyStringWrapper(features.getValue().project()));
+
+        TableColumn<ProjectStatus, String> status = new TableColumn<>("Status");
+        status.setMinWidth(100.0);
+        status.setPrefWidth(132.0);
+        status.setCellValueFactory(features -> new ReadOnlyStringWrapper(features.getValue().status()));
+
+        TableColumn<ProjectStatus, Number> issues = new TableColumn<>("Issues");
+        issues.setId("issues");
+        issues.setMinWidth(88.0);
+        issues.setPrefWidth(104.0);
+        issues.setCellValueFactory(features -> new ReadOnlyIntegerWrapper(features.getValue().openIssues()));
+
+        tableView.getColumns().addAll(List.of(project, status, issues));
+        if (!empty) {
+            tableView.getItems().setAll(projectRows());
+        } else {
+            tableView.setPlaceholder(new M3Text("No matching projects", M3TextRole.BODY_MEDIUM));
+        }
+        if (sorted) {
+            issues.setSortType(TableColumn.SortType.DESCENDING);
+            tableView.getSortOrder().add(issues);
+            tableView.sort();
+        }
+        if (multipleSelection) {
+            tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            tableView.getSelectionModel().selectIndices(1, 3);
+        }
+        if (compact) {
+            tableView.setFixedCellSize(48.0);
+        }
+        tableView.setPrefHeight(empty ? 224.0 : compact ? 296.0 : 336.0);
+        return CatalogSamples.configureResponsiveWidth(tableView, 520.0);
+    }
+
+    /// Returns deterministic project rows used by Catalog table examples.
+    ///
+    /// @return the immutable project rows
+    private static List<ProjectStatus> projectRows() {
+        return List.of(
+                new ProjectStatus("M3FX", "Active", 14),
+                new ProjectStatus("MonetFX", "Stable", 3),
+                new ProjectStatus("HMCL", "Active", 27),
+                new ProjectStatus("TUIFX", "Planning", 8),
+                new ProjectStatus("Javif", "Active", 19)
+        );
+    }
+
     /// Creates a tree item with an optional catalog graphic.
     ///
     /// @param text the item text
@@ -473,6 +541,15 @@ final class CatalogContainerSamples {
     /// @return the tree item
     private static TreeItem<String> treeItem(String text, boolean graphic, String iconPath) {
         return new TreeItem<>(text, graphic ? CatalogSamples.icon(iconPath) : null);
+    }
+
+    /// One immutable row displayed by Catalog table examples.
+    ///
+    /// @param project the project name
+    /// @param status the current project status
+    /// @param openIssues the number of open issues
+    @NotNullByDefault
+    private record ProjectStatus(String project, String status, int openIssues) {
     }
 
     /// Creates a plain or actionable scrim inside a bounded preview.

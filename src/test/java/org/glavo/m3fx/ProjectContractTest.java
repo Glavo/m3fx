@@ -139,6 +139,7 @@ final class ProjectContractTest {
             "org.glavo.m3fx.controls.M3Dialog",
             "org.glavo.m3fx.controls.M3DialogPane",
             "org.glavo.m3fx.controls.M3ListCell",
+            "org.glavo.m3fx.controls.M3TableRow",
             "org.glavo.m3fx.controls.M3Text",
             "org.glavo.m3fx.controls.M3Tooltip",
             "org.glavo.m3fx.controls.M3TreeCell"
@@ -469,7 +470,9 @@ final class ProjectContractTest {
             "PasswordField",
             "TextArea",
             "ScrollPane",
-            "IndexedCell"
+            "IndexedCell",
+            "TableRow",
+            "TableView"
     );
 
     /// JavaFX control bases whose roots support `-fx-alignment` directly.
@@ -478,7 +481,8 @@ final class ProjectContractTest {
             "Labeled",
             "TextField",
             "PasswordField",
-            "IndexedCell"
+            "IndexedCell",
+            "TableRow"
     );
 
     /// Concrete JavaFX controls that M3FX controls must not inherit from directly.
@@ -500,6 +504,8 @@ final class ProjectContractTest {
             "TextField",
             "ToggleButton",
             "Tooltip",
+            "TableRow",
+            "TableView",
             "TreeCell",
             "TreeView"
     );
@@ -510,6 +516,8 @@ final class ProjectContractTest {
             "M3ScrollPane", "ScrollPane",
             "M3TextArea", "TextArea",
             "M3TextField", "TextField",
+            "M3TableRow", "TableRow",
+            "M3TableView", "TableView",
             "M3TreeCell", "TreeCell",
             "M3TreeView", "TreeView"
     );
@@ -523,6 +531,8 @@ final class ProjectContractTest {
                     "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
                     "org.glavo.m3fx.controls.M3TextField", "javafx.scene.control.TextField",
                     "org.glavo.m3fx.controls.M3Tooltip", "javafx.scene.control.PopupControl",
+                    "org.glavo.m3fx.controls.M3TableRow", "javafx.scene.control.TableRow",
+                    "org.glavo.m3fx.controls.M3TableView", "javafx.scene.control.TableView",
                     "org.glavo.m3fx.controls.M3TreeCell", "javafx.scene.control.TreeCell",
                     "org.glavo.m3fx.controls.M3TreeView", "javafx.scene.control.TreeView"
             );
