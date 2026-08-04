@@ -36,6 +36,7 @@
 }
 
 .m3-tree-view.m3-checkbox-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:selected {
+    -fx-background-color: transparent;
     -fx-text-fill: -m3-color-on-surface;
 }
 

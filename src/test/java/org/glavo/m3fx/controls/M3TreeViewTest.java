@@ -18,6 +18,7 @@ import javafx.scene.control.skin.TreeViewSkin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Translate;
@@ -194,7 +195,10 @@ final class M3TreeViewTest {
 
             M3TreeCell<?> rootCell = visibleCells(treeView).get(0);
             Node rootBox = rootCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
+            Node rootArrow = rootCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
             Node rootText = renderedText(rootCell);
+            assertEquals(8.0, minX(rootBox) - maxX(rootArrow), 0.75,
+                    "disclosure-to-checkbox visual gap");
             assertEquals(8.0, minX(graphic) - maxX(rootBox), 0.75,
                     "checkbox-to-item-graphic visual gap");
             assertEquals(8.0, minX(rootText) - maxX(graphic), 0.75,
@@ -207,6 +211,20 @@ final class M3TreeViewTest {
             Node childText = renderedText(childCell);
             assertEquals(8.0, minX(childText) - maxX(childBox), 0.75,
                     "checkbox-to-text visual gap");
+
+            treeView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            layout(root, 400.0, 200.0);
+            layout(root, 400.0, 200.0);
+            rootCell = visibleCells(treeView).get(0);
+            rootBox = rootCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
+            rootArrow = rootCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
+            rootText = renderedText(rootCell);
+            assertEquals(8.0, minX(rootArrow) - maxX(rootBox), 0.75,
+                    "right-to-left disclosure-to-checkbox visual gap");
+            assertEquals(8.0, minX(rootBox) - maxX(graphic), 0.75,
+                    "right-to-left checkbox-to-item-graphic visual gap");
+            assertEquals(8.0, minX(graphic) - maxX(rootText), 0.75,
+                    "right-to-left item-graphic-to-text visual gap");
         }));
     }
 
@@ -444,6 +462,79 @@ final class M3TreeViewTest {
                     assertEquals(1.0, nestedCell.getOpacity(), 0.001);
                     assertEquals(0.0, rowMotionOffset(nestedCell), 0.001);
                     assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
+                }
+        );
+    }
+
+    /// Verifies that a selected final branch animates its descendants below the parent without a following row.
+    @Test
+    void animatesRowsWhenExpandingFinalCheckboxBranch() throws InterruptedException {
+        AtomicReference<@Nullable M3TreeView<String>> treeReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> branchReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<String>> nestedReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3TreeView<String> treeView = treeReference.get();
+                    @Nullable TreeItem<String> nestedItem = nestedReference.get();
+                    if (treeView == null || nestedItem == null) {
+                        return false;
+                    }
+                    treeView.getParent().layout();
+                    @Nullable M3TreeCell<?> nestedCell = visibleCell(treeView, nestedItem);
+                    return nestedCell != null
+                            && nestedCell.getClip() instanceof Rectangle clip
+                            && clip.getHeight() > 0.5
+                            && clip.getHeight() < nestedCell.getHeight() - 0.5;
+                },
+                () -> {
+                    M3MotionSettings.setGlobalReducedMotionRequested(false);
+                    TreeItem<String> rootItem = new TreeItem<>("Workspace");
+                    TreeItem<String> branchItem = new TreeItem<>("Documentation");
+                    TreeItem<String> nestedItem = new TreeItem<>("API contracts");
+                    branchItem.getChildren().addAll(List.of(nestedItem, new TreeItem<>("Design guidance")));
+                    rootItem.getChildren().add(branchItem);
+                    rootItem.setExpanded(true);
+
+                    M3TreeView<String> treeView = new M3TreeView<>(rootItem);
+                    treeView.setSelectionStyle(M3TreeViewSelectionStyle.CHECKBOX);
+                    treeView.setPrefSize(360.0, 240.0);
+                    StackPane root = themedRoot(treeView, 400.0, 260.0);
+                    layout(root, 400.0, 260.0);
+                    treeView.getSelectionModel().select(1);
+                    treeReference.set(treeView);
+                    branchReference.set(branchItem);
+                    nestedReference.set(nestedItem);
+                    branchItem.setExpanded(true);
+                },
+                () -> {
+                    M3TreeView<String> treeView = java.util.Objects.requireNonNull(
+                            treeReference.get(),
+                            "tree view"
+                    );
+                    M3TreeCell<?> branchCell = java.util.Objects.requireNonNull(
+                            visibleCell(treeView, java.util.Objects.requireNonNull(branchReference.get(), "branch")),
+                            "branch cell"
+                    );
+                    M3TreeCell<?> nestedCell = java.util.Objects.requireNonNull(
+                            visibleCell(treeView, java.util.Objects.requireNonNull(nestedReference.get(), "nested item")),
+                            "nested cell"
+                    );
+                    Rectangle clip = (Rectangle) java.util.Objects.requireNonNull(
+                            nestedCell.getClip(),
+                            "nested row reveal clip"
+                    );
+                    Bounds visibleClip = nestedCell.localToScene(clip.getBoundsInParent());
+                    assertTrue(visibleClip.getMinY() >= maxY(branchCell) - 0.75,
+                            "revealed descendants must remain below the selected parent row");
+                    assertEquals(0.0, rowMotionOffset(nestedCell), 0.001,
+                            "entering row content should remain at its final position");
+                    assertTrue(branchCell.getBackground() == null
+                                    || branchCell.getBackground().getFills().stream().allMatch(fill ->
+                                    fill.getFill() instanceof Color color && color.getOpacity() <= 0.001),
+                            "checkbox selection should not render a row background");
+                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    assertNull(nestedCell.getClip());
                 }
         );
     }
@@ -693,6 +784,14 @@ final class M3TreeViewTest {
     /// @return the scene-coordinate maximum x value
     private static double maxX(Node node) {
         return node.localToScene(node.getBoundsInLocal()).getMaxX();
+    }
+
+    /// Returns a node's bottom edge in scene coordinates.
+    ///
+    /// @param node the node to measure
+    /// @return the scene-coordinate maximum y value
+    private static double maxY(Node node) {
+        return node.localToScene(node.getBoundsInLocal()).getMaxY();
     }
 
     /// Returns the JavaFX text node that renders a materialized cell's label.

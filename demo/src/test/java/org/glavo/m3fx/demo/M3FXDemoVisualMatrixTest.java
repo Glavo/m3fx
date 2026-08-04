@@ -1203,6 +1203,102 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
+    /// Verifies checkbox-tree collapse, transparent selection, and following-subtree row separation in the demo.
+    @Test
+    void checkboxTreeBranchMotionKeepsRowsSeparated() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TreeView<?>> treeReference = new AtomicReference<>();
+        AtomicReference<@Nullable TreeItem<?>> branchReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            app.showPageByTitle("Tree Views");
+            applySceneCssAndLayout(scene);
+            M3TreeView<?> treeView = treeViewWithStyle(
+                    currentDemoPage(scene, "Tree Views"),
+                    "demo-tree-view-checkbox"
+            );
+            TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
+            TreeItem<?> collapsingBranch = rootItem.getChildren().get(1);
+            TreeItem<?> selectedBranch = rootItem.getChildren().get(2);
+            selectedBranch.setExpanded(true);
+            applySceneCssAndLayout(scene);
+            int branchRow = materializedTreeCells(treeView).stream()
+                    .filter(cell -> cell.getTreeItem() == selectedBranch)
+                    .mapToInt(M3TreeCell::getIndex)
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("checkbox tree selected branch row was not materialized"));
+            treeView.getSelectionModel().select(branchRow);
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+
+            stageReference.set(stage);
+            treeReference.set(treeView);
+            branchReference.set(collapsingBranch);
+        });
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> hasActiveTreeRowMotion(treeReference.get()),
+                    () -> {
+                        M3TreeView<?> treeView = Objects.requireNonNull(treeReference.get(), "tree view");
+                        M3MotionSettings.setReducedMotionRequested(treeView, false);
+                        Objects.requireNonNull(branchReference.get(), "tree branch").setExpanded(false);
+                    },
+                    () -> {
+                        M3TreeView<?> treeView = Objects.requireNonNull(treeReference.get(), "tree view");
+                        TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
+                        TreeItem<?> selectedBranch = rootItem.getChildren().get(2);
+                        M3TreeCell<?> selectedBranchCell = materializedTreeCells(treeView).stream()
+                                .filter(cell -> cell.getTreeItem() == selectedBranch)
+                                .findFirst()
+                                .orElseThrow(() -> new AssertionError(
+                                        "checkbox tree selected branch cell was not materialized"
+                                ));
+                        TreeItem<?> firstChild = selectedBranch.getChildren().get(0);
+                        M3TreeCell<?> childCell = materializedTreeCells(treeView).stream()
+                                .filter(cell -> cell.getTreeItem() == firstChild)
+                                .findFirst()
+                                .orElseThrow(() -> new AssertionError("checkbox tree child cell was not materialized"));
+                        Bounds selectedBranchBounds = selectedBranchCell.localToScene(
+                                selectedBranchCell.getBoundsInLocal()
+                        );
+                        Bounds childBounds = childCell.localToScene(childCell.getBoundsInLocal());
+                        assertEquals(
+                                selectedBranchBounds.getMaxY(),
+                                childBounds.getMinY(),
+                                CONTROL_EDGE_TOLERANCE,
+                                "moving checkbox-tree descendants should remain below their parent"
+                        );
+                        assertTreeCellHasTransparentBackground(
+                                selectedBranchCell,
+                                "checkbox-tree selected branch"
+                        );
+                        writeAnimationSnapshot(
+                                treeView.snapshot(null, null),
+                                "tree-view-checkbox",
+                                "collapsing"
+                        );
+                        M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    }
+            );
+
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that reduced-motion navigation settles when a destination expands the next collapsed group.
     @Test
     void reducedMotionSidebarRevealSettlesAcrossGroupBoundary() throws InterruptedException {
@@ -16983,6 +17079,11 @@ final class M3FXDemoVisualMatrixTest {
             if (!cell.getStyleClass().contains("m3-tree-row-motion")) {
                 continue;
             }
+            if (cell.getClip() instanceof Rectangle clip
+                    && clip.getHeight() > CONTROL_EDGE_TOLERANCE
+                    && clip.getHeight() < cell.getHeight() - CONTROL_EDGE_TOLERANCE) {
+                return true;
+            }
             for (javafx.scene.transform.Transform transform : cell.getTransforms()) {
                 if (transform instanceof javafx.scene.transform.Translate translation
                         && Math.abs(translation.getY()) >= 24.0
@@ -17020,6 +17121,19 @@ final class M3FXDemoVisualMatrixTest {
                             fill.getFill() instanceof Color color && color.getOpacity() <= 0.001),
                     () -> "tree motion row should not render a transient surface: " + cell.getText());
         }
+    }
+
+    /// Verifies that a tree cell resolves no visible background surface.
+    ///
+    /// @param cell        the cell to inspect
+    /// @param description the assertion description
+    private static void assertTreeCellHasTransparentBackground(M3TreeCell<?> cell, String description) {
+        if (cell.getBackground() == null) {
+            return;
+        }
+        assertTrue(cell.getBackground().getFills().stream().allMatch(fill ->
+                        fill.getFill() instanceof Color color && color.getOpacity() <= 0.001),
+                () -> description + " should not render a background surface");
     }
 
     /// Verifies the real Surfaces demo page color-container variants and elevation states.

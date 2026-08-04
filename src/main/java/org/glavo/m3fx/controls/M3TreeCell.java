@@ -46,6 +46,9 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// The style class used when a checkbox is the row's only leading graphic.
     private static final String CHECKBOX_ONLY_STYLE_CLASS = "m3-tree-cell-checkbox-only";
 
+    /// The horizontal overlap that removes the disclosure and checkbox touch-target insets from visual spacing.
+    private static final double CHECKBOX_DISCLOSURE_OVERLAP = 25.0;
+
     /// The retained tooltip used only while the label is visually truncated.
     private final M3Tooltip fullTextTooltip = new M3Tooltip();
 
@@ -59,7 +62,7 @@ public class M3TreeCell<T> extends TreeCell<T> {
     private final M3CheckBox selectionCheckBox = new M3CheckBox();
 
     /// The leading content that combines checkbox selection with an optional item graphic.
-    private final HBox checkboxGraphic = new HBox();
+    private final CheckboxLeadingBox checkboxGraphic = new CheckboxLeadingBox();
 
     /// The complete text assigned during the latest non-empty item update.
     private @Nullable String fullText;
@@ -326,5 +329,38 @@ public class M3TreeCell<T> extends TreeCell<T> {
         }
         treeView.requestFocus();
         event.consume();
+    }
+
+    /// Reports compact leading width while allowing the checkbox touch target to overlap the disclosure slot.
+    @NotNullByDefault
+    private static final class CheckboxLeadingBox extends HBox {
+        /// Creates an empty compact leading-content container.
+        private CheckboxLeadingBox() {
+        }
+
+        /// Returns the minimum width after removing redundant disclosure and checkbox target insets.
+        ///
+        /// @param height the available height
+        /// @return the compact minimum width
+        @Override
+        protected double computeMinWidth(double height) {
+            return Math.max(0.0, super.computeMinWidth(height) - CHECKBOX_DISCLOSURE_OVERLAP);
+        }
+
+        /// Returns the preferred width after removing redundant disclosure and checkbox target insets.
+        ///
+        /// @param height the available height
+        /// @return the compact preferred width
+        @Override
+        protected double computePrefWidth(double height) {
+            return Math.max(0.0, super.computePrefWidth(height) - CHECKBOX_DISCLOSURE_OVERLAP);
+        }
+
+        /// Lays out leading controls and shifts their visuals into the retained disclosure target.
+        @Override
+        protected void layoutChildren() {
+            super.layoutChildren();
+            setTranslateX(-CHECKBOX_DISCLOSURE_OVERLAP);
+        }
     }
 }
