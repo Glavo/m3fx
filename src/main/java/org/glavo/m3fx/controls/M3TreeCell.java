@@ -117,7 +117,8 @@ public class M3TreeCell<T> extends TreeCell<T> {
     /// Returns the retained Material checkbox used by checkbox-selection trees.
     ///
     /// The checkbox is not part of the cell graphic while the owning tree uses highlight selection. Its selected
-    /// state is controlled by the tree selection model.
+    /// state is controlled by the tree selection model. The retained checkbox is not a separate scene traversal
+    /// stop; the owning tree holds keyboard focus and toggles the focused row with Space.
     ///
     /// @return the retained selection checkbox
     public M3CheckBox getSelectionCheckBox() {

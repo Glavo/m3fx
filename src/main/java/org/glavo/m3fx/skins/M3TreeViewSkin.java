@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
@@ -11,6 +12,7 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.control.FocusModel;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.skin.TreeViewSkin;
@@ -23,8 +25,10 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import org.glavo.m3fx.controls.M3ScrollPane;
+import org.glavo.m3fx.controls.M3TreeCell;
 import org.glavo.m3fx.controls.M3TreeView;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.animation.M3DoubleTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -121,6 +125,23 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     private final ChangeListener<@Nullable TreeItem<T>> rootListener =
             (observable, oldRoot, newRoot) -> updateObservedRoot(oldRoot, newRoot);
 
+    /// Tracks keyboard-visible focus on the composite tree for its logical focused row.
+    private final M3FocusVisibleTracker focusVisibleTracker =
+            new M3FocusVisibleTracker(getSkinnable(), this::refreshFocusedCellFeedback, null);
+
+    /// Refreshes logical row focus when the tree's focus eligibility changes.
+    private final InvalidationListener focusEligibilityListener = observable -> {
+        focusVisibleTracker.refresh();
+        refreshFocusedCellFeedback();
+    };
+
+    /// Refreshes logical row focus when the focused visible index changes.
+    private final InvalidationListener focusedIndexListener = observable -> refreshFocusedCellFeedback();
+
+    /// Moves focused-index observation when an application replaces the inherited focus model.
+    private final ChangeListener<@Nullable FocusModel<TreeItem<T>>> focusModelListener =
+            (observable, oldModel, newModel) -> updateObservedFocusModel(oldModel, newModel);
+
     /// The branch change waiting for the virtual flow's next normal layout pass, or `null`.
     private @Nullable PendingRowMotion<T> pendingRowMotion;
 
@@ -142,9 +163,14 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         rowMotionOverlay.setClip(rowMotionClip);
         rowMotionOverlay.getChildren().add(rowMotionContent);
         getChildren().add(rowMotionOverlay);
-        materialFlow().setLayoutCompletion(this::updateRenderedCellItemsIfSynchronized);
+        materialFlow().setLayoutCompletion(this::handleVirtualFlowLayoutCompleted);
         rowMotionAnimation.setOnFinished(event -> clearRowMotion());
         control.rootProperty().addListener(rootListener);
+        control.focusedProperty().addListener(focusEligibilityListener);
+        control.disabledProperty().addListener(focusEligibilityListener);
+        control.focusModelProperty().addListener(focusModelListener);
+        updateObservedFocusModel(null, control.getFocusModel());
+        focusVisibleTracker.install();
         updateObservedRoot(null, control.getRoot());
     }
 
@@ -159,6 +185,11 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         renderedCellItems.clear();
         M3TreeView<T> control = materialTreeView();
         control.rootProperty().removeListener(rootListener);
+        control.focusedProperty().removeListener(focusEligibilityListener);
+        control.disabledProperty().removeListener(focusEligibilityListener);
+        control.focusModelProperty().removeListener(focusModelListener);
+        updateObservedFocusModel(control.getFocusModel(), null);
+        focusVisibleTracker.uninstall();
         updateObservedRoot(control.getRoot(), null);
         rowMotionAnimation.setOnFinished(null);
         clearRowMotion();
@@ -167,6 +198,50 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         getChildren().remove(rowMotionOverlay);
         materialFlow().setLayoutCompletion(null);
         super.dispose();
+    }
+
+    /// Refreshes stable row mappings and logical focus after one virtual-flow layout.
+    private void handleVirtualFlowLayoutCompleted() {
+        updateRenderedCellItemsIfSynchronized();
+        refreshFocusedCellFeedback();
+    }
+
+    /// Moves focused-index observation between inherited focus-model instances.
+    ///
+    /// @param oldModel the previously observed focus model, or `null`
+    /// @param newModel the focus model to observe, or `null`
+    private void updateObservedFocusModel(
+            @Nullable FocusModel<TreeItem<T>> oldModel,
+            @Nullable FocusModel<TreeItem<T>> newModel
+    ) {
+        if (oldModel != null) {
+            oldModel.focusedIndexProperty().removeListener(focusedIndexListener);
+        }
+        if (newModel != null && !disposed) {
+            newModel.focusedIndexProperty().addListener(focusedIndexListener);
+        }
+        refreshFocusedCellFeedback();
+    }
+
+    /// Delegates composite keyboard focus to the currently focused materialized row.
+    private void refreshFocusedCellFeedback() {
+        if (disposed) {
+            return;
+        }
+
+        M3TreeView<T> treeView = materialTreeView();
+        @Nullable FocusModel<TreeItem<T>> focusModel = treeView.getFocusModel();
+        int focusedIndex = focusModel == null ? -1 : focusModel.getFocusedIndex();
+        boolean focusVisible = treeView.isFocused()
+                && !treeView.isDisabled()
+                && treeView.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS);
+        for (TreeCell<T> cell : materialFlow().materializedCells()) {
+            if (cell instanceof M3TreeCell<?> && cell.getSkin() instanceof M3TreeCellSkin<?> materialSkin) {
+                boolean cellFocusVisible = focusVisible && !cell.isEmpty() && cell.getIndex() == focusedIndex;
+                cell.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, cellFocusVisible);
+                materialSkin.setLogicalFocusVisible(cellFocusVisible);
+            }
+        }
     }
 
     /// Creates the virtual flow whose scrollbars use the shared Material scroll contract.
@@ -196,6 +271,7 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
         @Nullable PendingRowMotion<T> pending = pendingRowMotion;
         if (pending == null) {
             updateRenderedCellItemsIfSynchronized();
+            refreshFocusedCellFeedback();
             updateRowMotionProgress();
             return;
         }

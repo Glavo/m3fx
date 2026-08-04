@@ -82,6 +82,7 @@ public final class M3TreeCellSkin<T> extends TreeCellSkin<T> {
         control.disabledProperty().removeListener(disabledListener);
         control.sceneProperty().removeListener(sceneListener);
         resetInteractionState();
+        stateLayer.setDelegatedFocusVisible(false);
         stateLayer.uninstallStateTransitions();
         getChildren().remove(stateLayer);
         super.dispose();
@@ -215,6 +216,13 @@ public final class M3TreeCellSkin<T> extends TreeCellSkin<T> {
         mousePressed = false;
         spaceKeyPressed = false;
         stateLayer.cancelRipple();
+    }
+
+    /// Updates keyboard-visible focus delegated by the owning virtualized tree view.
+    ///
+    /// @param focusVisible whether this row is the tree's current keyboard-focused row
+    void setLogicalFocusVisible(boolean focusVisible) {
+        stateLayer.setDelegatedFocusVisible(focusVisible);
     }
 
     /// Returns the Material subtype supplied to this skin's constructor.
