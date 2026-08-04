@@ -30,8 +30,20 @@
     -fx-background-color: -m3-color-on-surface;
 }
 
+/* The Material state layer owns focus feedback; suppress Modena's focused-cell background stack. */
+.m3-tree-view:focused > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:filled:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
 .m3-tree-view.m3-highlight-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:selected {
     -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-tree-view.m3-highlight-tree-selection:focused > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell:filled:selected:focused {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 

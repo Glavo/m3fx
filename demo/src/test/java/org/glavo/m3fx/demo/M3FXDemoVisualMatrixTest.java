@@ -1299,6 +1299,84 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
+    /// Verifies the real checkbox-tree demo renders one bounded Material row focus indicator without stock focus.
+    @Test
+    void checkboxTreeKeyboardFocusStaysInsideFocusedRow() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+                Stage stage = new Stage();
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                stageReference.set(stage);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                app.showPageByTitle("Tree Views");
+                applySceneCssAndLayout(scene);
+                M3TreeView<?> treeView = treeViewWithStyle(
+                        currentDemoPage(scene, "Tree Views"),
+                        "demo-tree-view-checkbox"
+                );
+                treeView.getFocusModel().focus(2);
+                treeView.requestFocus();
+                ScrollPane pageViewport = Objects.requireNonNull(
+                        nearestAncestorOfType(treeView, ScrollPane.class),
+                        "Tree Views page viewport"
+                );
+                pageViewport.setVvalue(0.25);
+                treeView.fireEvent(new KeyEvent(
+                        KeyEvent.KEY_PRESSED,
+                        "",
+                        "",
+                        KeyCode.F1,
+                        false,
+                        false,
+                        false,
+                        false
+                ));
+                applySceneCssAndLayout(scene);
+
+                assertTrue(treeView.isFocused(), "checkbox tree should own scene keyboard focus");
+                M3TreeCell<?> focusedCell = materializedTreeCells(treeView).stream()
+                        .filter(cell -> cell.getIndex() == 2)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("focused checkbox-tree row was not materialized"));
+                assertTreeCellHasTransparentBackground(focusedCell, "focused checkbox-tree row");
+                Node focusIndicator = Objects.requireNonNull(
+                        focusedCell.lookup(".m3-focus-indicator"),
+                        "focused checkbox-tree row indicator"
+                );
+                assertEquals(0.0, focusIndicator.getLayoutX(), CONTROL_EDGE_TOLERANCE);
+                assertEquals(0.0, focusIndicator.getLayoutY(), CONTROL_EDGE_TOLERANCE);
+                assertEquals(
+                        focusedCell.getWidth(),
+                        focusIndicator.getLayoutBounds().getWidth(),
+                        CONTROL_EDGE_TOLERANCE
+                );
+                assertEquals(
+                        focusedCell.getHeight(),
+                        focusIndicator.getLayoutBounds().getHeight(),
+                        CONTROL_EDGE_TOLERANCE
+                );
+                writeInteractionSnapshot(
+                        snapshot(scene),
+                        "tree-view-checkbox",
+                        "keyboard-focus"
+                );
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that reduced-motion navigation settles when a destination expands the next collapsed group.
     @Test
     void reducedMotionSidebarRevealSettlesAcrossGroupBoundary() throws InterruptedException {

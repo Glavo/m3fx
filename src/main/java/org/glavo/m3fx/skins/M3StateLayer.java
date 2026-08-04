@@ -1330,11 +1330,15 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 + "-fx-border-radius: " + radii + ";");
     }
 
-    /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.
+    /// Returns whether the owner uses an inner focus indicator that remains inside an adjacent-item container.
+    ///
+    /// @param owner the state owner
+    /// @return `true` when the focus indicator must remain inside the owner bounds
     private static boolean usesInnerFocusIndicatorOffset(Node owner) {
         return owner.getStyleClass().contains("m3-list-item")
                 || owner.getStyleClass().contains("m3-menu-item")
                 || owner.getStyleClass().contains("m3-navigation-item")
+                || owner.getStyleClass().contains("m3-tree-cell")
                 || owner.getStyleClass().contains("m3-tab");
     }
 

@@ -13,6 +13,7 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
@@ -205,6 +206,14 @@ final class M3TreeViewFocusTraversalTest {
                 "focused tree row indicator"
         );
         assertEquals(1.0, focusIndicator.getOpacity(), 0.001);
+        assertEquals(0.0, focusIndicator.getLayoutX(), 0.001);
+        assertEquals(0.0, focusIndicator.getLayoutY(), 0.001);
+        assertEquals(focusedCell.getWidth(), focusIndicator.getLayoutBounds().getWidth(), 0.001);
+        assertEquals(focusedCell.getHeight(), focusIndicator.getLayoutBounds().getHeight(), 0.001);
+        assertTrue(focusedCell.getBackground() == null
+                        || focusedCell.getBackground().getFills().stream().allMatch(fill ->
+                        fill.getFill() instanceof Color color && color.getOpacity() <= 0.001),
+                "checkbox focused row should not retain the stock JavaFX focus background");
     }
 
     /// Creates an unmodified Tab or Shift+Tab key-pressed event.
