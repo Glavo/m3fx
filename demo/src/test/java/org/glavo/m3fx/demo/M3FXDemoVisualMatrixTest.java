@@ -1110,6 +1110,84 @@ final class M3FXDemoVisualMatrixTest {
                         VISUAL_REPORT_DIRECTORY.resolve("interaction-table-view.png")
                 );
                 assertSnapshotHasVisibleContent(image, "Table Views interaction snapshot");
+
+                M3TableView<?> sortable = assertInstanceOf(
+                        M3TableView.class,
+                        firstVisibleNodeWithStyle(currentDemoPage(scene, "Table Views"), "demo-table-view-sortable"),
+                        "sortable table"
+                );
+                Node draggedColumnHeader = sortable.lookupAll(".column-header").stream()
+                        .filter(node -> node.getStyleClass().contains("table-column"))
+                        .filter(Node::isVisible)
+                        .max(Comparator.comparingDouble(node -> node.localToScene(node.getBoundsInLocal()).getMaxX()))
+                        .orElseThrow(() -> new AssertionError("sortable table has no visible leaf header"));
+                double headerY = draggedColumnHeader.getBoundsInLocal().getHeight() / 2.0;
+                firePrimaryMouseEventAt(
+                        draggedColumnHeader,
+                        MouseEvent.MOUSE_PRESSED,
+                        draggedColumnHeader.getBoundsInLocal().getWidth() / 2.0,
+                        headerY,
+                        true
+                );
+                try {
+                    firePrimaryMouseEventAt(
+                            draggedColumnHeader,
+                            MouseEvent.MOUSE_DRAGGED,
+                            -48.0,
+                            headerY,
+                            true
+                    );
+                    applySceneCssAndLayout(scene);
+
+                    Region dragHeader = assertInstanceOf(
+                            Region.class,
+                            sortable.lookup(".column-drag-header"),
+                            "column drag header"
+                    );
+                    Region columnOverlay = assertInstanceOf(
+                            Region.class,
+                            sortable.lookup(".column-overlay"),
+                            "column drag overlay"
+                    );
+                    assertTrue(dragHeader.isVisible(), "column drag header should be visible while reordering");
+                    assertTrue(hasRenderableBounds(dragHeader),
+                            () -> "column drag header should have renderable bounds: " + dragHeader.getBoundsInParent());
+                    assertEquals(1.0, dragHeader.getOpacity(), 0.001,
+                            "column drag header should remain opaque over its source label");
+                    assertNotNull(dragHeader.getBackground());
+                    Color dragFill = assertInstanceOf(
+                            Color.class,
+                            dragHeader.getBackground().getFills().get(0).getFill(),
+                            "column drag header fill"
+                    );
+                    assertEquals(1.0, dragFill.getOpacity(), 0.001,
+                            "column drag header fill should prevent source-label bleed-through");
+                    assertTrue(columnOverlay.isVisible(), "dragged column overlay should be visible while reordering");
+                    assertTrue(hasRenderableBounds(columnOverlay),
+                            () -> "dragged column overlay should have renderable bounds: "
+                                    + columnOverlay.getBoundsInParent());
+                    assertTrue(columnOverlay.getOpacity() > 0.0 && columnOverlay.getOpacity() <= 0.2,
+                            "dragged column overlay should use Material dragged-state opacity");
+                    assertNotNull(columnOverlay.getBackground());
+                    Color overlayFill = assertInstanceOf(
+                            Color.class,
+                            columnOverlay.getBackground().getFills().get(0).getFill(),
+                            "column drag overlay fill"
+                    );
+                    assertNotEquals(Color.DARKGRAY, overlayFill,
+                            "column drag overlay should not leak the Modena dark-gray fill");
+
+                    WritableImage dragHeaderImage = dragHeader.snapshot(null, null);
+                    assertSnapshotHasVisibleContent(dragHeaderImage, "Table Views column-drag header snapshot");
+                } finally {
+                    firePrimaryMouseEventAt(
+                            draggedColumnHeader,
+                            MouseEvent.MOUSE_RELEASED,
+                            -48.0,
+                            headerY,
+                            false
+                    );
+                }
                 stageReference.set(stage);
             }));
         } finally {
@@ -21949,6 +22027,23 @@ final class M3FXDemoVisualMatrixTest {
         Bounds bounds = node.getBoundsInLocal();
         double x = bounds.getMinX() + bounds.getWidth() / 2.0;
         double y = bounds.getMinY() + bounds.getHeight() / 2.0;
+        node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
+    }
+
+    /// Fires a primary-button mouse event at one explicit local point.
+    ///
+    /// @param node the event target
+    /// @param eventType the mouse-event type
+    /// @param x the local x coordinate
+    /// @param y the local y coordinate
+    /// @param primaryButtonDown whether the primary button is down
+    private static void firePrimaryMouseEventAt(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
         node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
     }
 

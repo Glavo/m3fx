@@ -14,6 +14,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.skin.TableViewSkin;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3TableRowSkin;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -131,6 +133,20 @@ final class M3TableViewTest {
                             .map(header -> header.getStyleClass() + "="
                                     + header.getBoundsInParent().getHeight())
                             .toList());
+
+            Region dragHeader = (Region) tableView.lookup(".column-drag-header");
+            assertNotNull(dragHeader);
+            assertEquals(1.0, dragHeader.getOpacity(), 0.001);
+            assertNotNull(dragHeader.getBackground());
+            assertFalse(dragHeader.getBackground().getFills().isEmpty());
+            assertNotNull(dragHeader.getBorder());
+            assertFalse(dragHeader.getBorder().getStrokes().isEmpty());
+
+            Region columnOverlay = (Region) tableView.lookup(".column-overlay");
+            assertNotNull(columnOverlay);
+            assertTrue(columnOverlay.getOpacity() > 0.0 && columnOverlay.getOpacity() <= 0.2);
+            assertNotNull(columnOverlay.getBackground());
+            assertFalse(columnOverlay.getBackground().getFills().isEmpty());
 
             List<ScrollBar> scrollBars = tableView.lookupAll(".scroll-bar").stream()
                     .filter(ScrollBar.class::isInstance)

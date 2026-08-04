@@ -117,6 +117,34 @@
     -fx-padding: 0 0 0 1px;
 }
 
+.m3-table-view .column-drag-header {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+    -fx-border-color: -m3-color-primary;
+    -fx-border-radius: 4px;
+    -fx-border-width: 2px;
+    -fx-opacity: 1;
+    -fx-padding: 0;
+}
+
+.m3-table-view .column-drag-header > .label {
+    -fx-alignment: center-left;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-padding: 0 16px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-table-view .column-drag-header .arrow {
+    -fx-background-color: -m3-color-on-surface-variant;
+}
+
+.m3-table-view .column-overlay {
+    -fx-background-color: -m3-color-primary;
+    -fx-opacity: -m3-state-dragged-opacity;
+}
+
 .m3-table-view > .virtual-flow > .corner,
 .m3-table-view > .virtual-flow > .clipped-container > .sheet > .m3-table-row:empty .table-cell {
     -fx-background-color: transparent;

@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.event.EventType;
+import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -12,6 +14,9 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -151,6 +156,41 @@ final class M3TableViewFocusTraversalTest {
         });
     }
 
+    /// Verifies a pointer press on a column header clears keyboard-only row focus feedback before reordering.
+    @Test
+    void headerPointerPressClearsRowFocusIndicator() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button before = new M3Button("Before");
+            M3TableView<String> tableView = table();
+            tableView.getSelectionModel().select(1);
+            VBox root = new VBox(before, tableView);
+            show(root);
+
+            before.requestFocus();
+            before.fireEvent(tabKeyEvent(false));
+            M3TableRow<?> focusedRow = visibleRows(tableView).stream()
+                    .filter(row -> row.getIndex() == 1)
+                    .findFirst()
+                    .orElseThrow();
+            Node focusIndicator = Objects.requireNonNull(
+                    focusedRow.lookup(".m3-focus-indicator"),
+                    "focused table row indicator"
+            );
+            assertEquals(1.0, focusIndicator.getOpacity(), 0.001);
+
+            Node columnHeader = tableView.lookupAll(".column-header").stream()
+                    .filter(node -> node.getStyleClass().contains("table-column"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("table column header is not materialized"));
+            double x = columnHeader.getBoundsInLocal().getWidth() / 2.0;
+            double y = columnHeader.getBoundsInLocal().getHeight() / 2.0;
+            columnHeader.fireEvent(primaryMouseEvent(columnHeader, MouseEvent.MOUSE_PRESSED, x, y, true));
+
+            assertEquals(0.0, focusIndicator.getOpacity(), 0.001);
+            columnHeader.fireEvent(primaryMouseEvent(columnHeader, MouseEvent.MOUSE_RELEASED, x, y, false));
+        });
+    }
+
     /// Creates a representative single-column table with every row materialized.
     ///
     /// @return the configured table
@@ -261,6 +301,47 @@ final class M3TableViewFocusTraversalTest {
                 false,
                 false,
                 false
+        );
+    }
+
+    /// Creates a primary-button mouse event at one local point of a node.
+    ///
+    /// @param node the event target
+    /// @param eventType the mouse-event type
+    /// @param x the local x coordinate
+    /// @param y the local y coordinate
+    /// @param primaryButtonDown whether the primary button is down
+    /// @return the mouse event
+    private static MouseEvent primaryMouseEvent(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
+        Point2D scenePoint = node.localToScene(x, y);
+        Point2D screenPoint = node.localToScreen(x, y);
+        double screenX = screenPoint == null ? scenePoint.getX() : screenPoint.getX();
+        double screenY = screenPoint == null ? scenePoint.getY() : screenPoint.getY();
+        return new MouseEvent(
+                eventType,
+                x,
+                y,
+                screenX,
+                screenY,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                primaryButtonDown,
+                false,
+                false,
+                false,
+                false,
+                false,
+                new PickResult(node, scenePoint.getX(), scenePoint.getY())
         );
     }
 }
