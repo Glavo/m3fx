@@ -143,6 +143,8 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3NavigationRailVariant;
+import org.glavo.m3fx.controls.M3NumberField;
+import org.glavo.m3fx.controls.M3NumberFieldCommitBehavior;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3PickerField;
@@ -311,6 +313,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Banners", M3FXDemoVisualMatrixTest::assertBannersPageVisualState),
             Map.entry("Forms", M3FXDemoVisualMatrixTest::assertFormsPageVisualState),
             Map.entry("Motion", M3FXDemoVisualMatrixTest::assertMotionPageVisualState),
+            Map.entry("Number Fields", M3FXDemoVisualMatrixTest::assertNumberFieldsPageVisualState),
             Map.entry("Typography", M3FXDemoVisualMatrixTest::assertTypographyPageVisualState),
             Map.entry("Icons", M3FXDemoVisualMatrixTest::assertIconsPageVisualState),
             Map.entry("Avatars", M3FXDemoVisualMatrixTest::assertAvatarsPageVisualState),
@@ -344,6 +347,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Forms", "Additional demos"),
             Map.entry("Settings", "Additional demos"),
             Map.entry("Motion", "Additional demos"),
+            Map.entry("Number Fields", "Additional demos"),
             Map.entry("Typography", "Additional demos"),
             Map.entry("Icons", "Additional demos"),
             Map.entry("Breadcrumbs", "Additional demos"),
@@ -367,6 +371,7 @@ final class M3FXDemoVisualMatrixTest {
     private static final @Unmodifiable List<Map.Entry<String, @Unmodifiable List<String>>> FOCUSED_VISUAL_SNAPSHOT_GROUPS =
             List.of(
                     Map.entry("Text inputs", List.of(
+                            "demo-number-fields",
                             "demo-text-fields",
                             "demo-rtl-text-fields",
                             "interaction-text-",
@@ -1820,6 +1825,7 @@ final class M3FXDemoVisualMatrixTest {
                 "Breadcrumbs",
                 "Color Pickers",
                 "Drop Zones",
+                "Number Fields",
                 "Status Lights",
                 "Table Views",
                 "Tree Views"
@@ -12475,10 +12481,10 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(lists.stream().allMatch(list -> list.getListStyle() == M3ListStyle.SEGMENTED),
                 "overview destinations should use segmented list treatment");
         assertEquals(38, lists.get(0).getItems().size(), "Material component destinations");
-        assertEquals(15, lists.get(1).getItems().size(), "M3FX extension destinations");
+        assertEquals(16, lists.get(1).getItems().size(), "M3FX extension destinations");
 
         List<M3ListItem> items = visibleNodesOfType(page, M3ListItem.class);
-        assertEquals(53, items.size(), () -> "Components Overview should represent every destination: " + items);
+        assertEquals(54, items.size(), () -> "Components Overview should represent every destination: " + items);
         assertTrue(items.stream().allMatch(item -> !item.getSupportingText().isBlank()),
                 "overview list items should expose supporting descriptions");
         assertTrue(items.stream().allMatch(item -> item.getOnAction() != null),
@@ -14703,6 +14709,39 @@ final class M3FXDemoVisualMatrixTest {
                 "Text Fields page should render a disabled outlined field");
         assertTextInputDemoVariantAndStateContracts(layouts);
         assertTextInputDemoGeometryContracts(scene, layouts);
+    }
+
+    /// Verifies the Number Fields extension page value scales, commit policies, formatting, and unavailable states.
+    private static void assertNumberFieldsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Number Fields");
+        assertCurrentPageTitle(scene, "Number Fields");
+        assertVisibleText(root, "Snap Commit", "Number Fields");
+        assertVisibleText(root, "Validate Commit", "Number Fields");
+        assertVisibleText(root, "Localized And Compact", "Number Fields");
+        assertVisibleText(root, "Unavailable", "Number Fields");
+
+        List<M3NumberField> fields = visibleNodesOfType(page, M3NumberField.class);
+        assertEquals(6, fields.size(), () -> "Number Fields page should render six fields: " + fields);
+        assertTrue(fields.stream().allMatch(field -> field.getSkin() instanceof org.glavo.m3fx.skins.M3NumberFieldSkin),
+                "Number Fields page should install the Material number-field skin");
+        assertTrue(fields.stream().anyMatch(field -> field.getVariant() == M3TextInputVariant.FILLED),
+                "Number Fields page should render a filled field");
+        assertTrue(fields.stream().anyMatch(field -> field.getVariant() == M3TextInputVariant.OUTLINED),
+                "Number Fields page should render an outlined field");
+        assertTrue(fields.stream().anyMatch(field ->
+                        field.getCommitBehavior() == M3NumberFieldCommitBehavior.VALIDATE),
+                "Number Fields page should render validate commit behavior");
+        assertTrue(fields.stream().anyMatch(M3NumberField::isHideStepper),
+                "Number Fields page should render a hidden-stepper field");
+        assertTrue(fields.stream().anyMatch(M3NumberField::isDisabled),
+                "Number Fields page should render a disabled field");
+        assertTrue(fields.stream().anyMatch(field -> !field.isEditable()),
+                "Number Fields page should render a read-only field");
+        assertTrue(fields.stream().anyMatch(field -> field.getText().contains("%")),
+                "Number Fields page should render localized percent text");
+        assertEquals(10, visibleNodesWithStyle(page, "m3-number-field-step-button").size(),
+                "five visible steppers should expose ten step buttons");
     }
 
     /// Verifies the real Toolbars demo page variants, orientation, and item-slot geometry.

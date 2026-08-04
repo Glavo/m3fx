@@ -493,7 +493,7 @@ Implemented component families include:
 
 - App bars, bottom app bars, toolbars, banners, cards, surfaces, sheets, scrims, dialogs, snackbars, tooltips, badges, avatars, dividers, and typography primitives.
 - Buttons, icon buttons, floating action buttons, split buttons, button groups, segmented buttons, tabs, chips, and icon toggle groups.
-- Text fields, password fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
+- Text fields, password fields, number fields, text areas, text input layouts, form rows, form sections, form panes, form validators, and validation summaries.
 - Checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
 - Lists, setting rows, virtualized list views, table views, tree views, list items, navigation bars, navigation rails, navigation drawers, menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, picker fields, and carousels.
 - Scroll panes with smooth bounded movement and configurable stretch overscroll effects.
@@ -517,10 +517,10 @@ guidance, M3FX API documentation, and source. A 360dp standard navigation drawer
 directory at expanded widths and becomes a scrim-backed modal drawer on smaller windows. Drawer destinations remain
 persistent across route changes so selection does not rebuild the navigation tree or disturb its scroll position.
 Route replacement uses directional Material motion, and every Catalog viewport enables smooth wheel scrolling. The
-registry contains 53 component families and 344 independent examples covering variants, sizes, shapes, states,
+registry contains 54 component families and 350 independent examples covering variants, sizes, shapes, states,
 responsive layouts, and Material Expressive treatments. It includes the adaptive scaffold and the M3FX extension
-families for avatars, banners, color pickers, forms, icons, scrims, scroll panes, settings, surfaces, table views, and
-tree views. Theme and display
+families for avatars, banners, color pickers, forms, icons, number fields, scrims, scroll panes, settings, surfaces,
+table views, and tree views. Theme and display
 controls live in a modal bottom sheet:
 
 ```shell

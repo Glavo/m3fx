@@ -1,0 +1,20 @@
+.m3-number-field {
+    -fx-background-color: transparent;
+}
+
+.m3-number-field-stepper {
+    -fx-alignment: center;
+    -fx-spacing: 0;
+}
+
+.m3-number-field-step-button {
+    -m3-container-height: 40px;
+    -m3-container-width: 40px;
+    -m3-container-shape: 999px;
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+}

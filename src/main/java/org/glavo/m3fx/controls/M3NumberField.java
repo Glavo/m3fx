@@ -1,0 +1,1297 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.event.ActionEvent;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
+import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.HBox;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3NumberFieldSkin;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+
+import java.text.NumberFormat;
+import java.text.ParsePosition;
+import java.util.Locale;
+import java.util.Objects;
+
+/// A localized numeric text field with range-aware increment and decrement actions.
+///
+/// The committed [#valueProperty()] is separate from the raw [#textProperty()]. User edits may therefore be empty,
+/// incomplete, or invalid without changing the committed value. Pressing Enter, leaving the editor, using a step
+/// action, or calling [#commitEditorText()] attempts to commit the current text. Empty text clears the value.
+///
+/// [M3NumberFieldCommitBehavior#SNAP] clamps parsed text to the configured range and snaps it to the nearest step.
+/// [M3NumberFieldCommitBehavior#VALIDATE] instead rejects values that are outside the range or are not aligned to a
+/// step, leaving both the text and previous committed value unchanged. Step values are anchored at [#getMin()] when
+/// a non-default minimum is configured and at zero otherwise.
+///
+/// Parsing and display use [#formatterProperty()]. The initial formatter is a number formatter for the default
+/// format locale at construction time. The decrement and increment buttons can be hidden without disabling keyboard,
+/// scrolling, or accessibility actions.
+///
+/// ```java
+/// M3NumberField quantity = new M3NumberField(0.0, 100.0, 12.0);
+/// quantity.setLabelText("Quantity");
+/// quantity.setStep(2.0);
+/// quantity.setCommitBehavior(M3NumberFieldCommitBehavior.VALIDATE);
+/// ```
+///
+/// See [Adobe Spectrum 2 NumberField](https://react-spectrum.adobe.com/NumberField) and
+/// [Material Design text fields](https://m3.material.io/components/text-fields/overview).
+@NotNullByDefault
+public final class M3NumberField extends javafx.scene.control.Control {
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-number-field";
+
+    /// The style class applied to the horizontal stepper container.
+    private static final String STEPPER_STYLE_CLASS = "m3-number-field-stepper";
+
+    /// The style class applied to each step button.
+    private static final String STEP_BUTTON_STYLE_CLASS = "m3-number-field-step-button";
+
+    /// The style class applied to the decrement button.
+    private static final String DECREMENT_BUTTON_STYLE_CLASS = "m3-number-field-decrement-button";
+
+    /// The style class applied to the increment button.
+    private static final String INCREMENT_BUTTON_STYLE_CLASS = "m3-number-field-increment-button";
+
+    /// The unconstrained minimum sentinel.
+    private static final double DEFAULT_MIN = -Double.MAX_VALUE;
+
+    /// The unconstrained maximum sentinel.
+    private static final double DEFAULT_MAX = Double.MAX_VALUE;
+
+    /// The initial step size.
+    private static final double DEFAULT_STEP = 1.0;
+
+    /// The multiplier used for block accessibility actions.
+    private static final int BLOCK_STEP_COUNT = 10;
+
+    /// The optional accessibility attribute for a formatted value string.
+    private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
+            M3Accessible.attribute("VALUE_STRING");
+
+    /// The editable text field containing raw numeric text.
+    private final M3TextField editor = new M3TextField();
+
+    /// The Material input layout containing the editor and adornments.
+    private final M3TextInputLayout inputLayout = new M3TextInputLayout(editor);
+
+    /// The button that decreases the committed value by one step.
+    private final M3IconButton decrementButton = new M3IconButton(new M3InternalIcon(
+            M3InternalIcon.Glyph.REMOVE,
+            M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+    ));
+
+    /// The button that increases the committed value by one step.
+    private final M3IconButton incrementButton = new M3IconButton(new M3InternalIcon(
+            M3InternalIcon.Glyph.ADD,
+            M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+    ));
+
+    /// The trailing container retaining both step buttons.
+    private final HBox stepper = new HBox(decrementButton, incrementButton);
+
+    /// Whether editor text is currently being rewritten from a committed value.
+    private boolean updatingEditorText;
+
+    /// Creates an empty number field with an unrestricted range and a step of one.
+    public M3NumberField() {
+        initialize();
+    }
+
+    /// Creates a number field with an initial committed value.
+    ///
+    /// @param value the initial finite value
+    /// @throws IllegalArgumentException if `value` is not finite
+    public M3NumberField(double value) {
+        this();
+        setValue(value);
+    }
+
+    /// Creates a number field with an inclusive range and initial committed value.
+    ///
+    /// @param min   the finite inclusive minimum
+    /// @param max   the finite inclusive maximum
+    /// @param value the initial finite value
+    /// @throws IllegalArgumentException if a parameter is not finite or `min` is greater than `max`
+    public M3NumberField(double min, double max, double value) {
+        this();
+        setMin(min);
+        setMax(max);
+        setValue(value);
+    }
+
+    /// The committed numeric value, or `null` when the field is empty.
+    ///
+    /// Direct assignments preserve finite values exactly; the range and step govern user commits and adjustment
+    /// actions. A binding source must supply finite values; invalid bound values do not rewrite editor text.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Double> value = new SimpleObjectProperty<>(this, "value") {
+        /// Validates direct assignments before storing them.
+        @Override
+        public void set(@Nullable Double newValue) {
+            super.set(newValue == null ? null : requireFinite(newValue, "value"));
+        }
+
+        /// Synchronizes editor text and accessibility state after a valid value change.
+        @Override
+        protected void invalidated() {
+            @Nullable Double currentValue = get();
+            if (isBound() && currentValue != null && !Double.isFinite(currentValue)) {
+                updateStepperState();
+                return;
+            }
+            updateEditorFromValue();
+            updateStepperState();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+            M3Accessible.notifyAttribute(M3NumberField.this, VALUE_STRING_ATTRIBUTE);
+        }
+    };
+
+    /// Returns the committed value, or `null` when the field is empty.
+    ///
+    /// @return the committed value, or `null`
+    public @Nullable Double getValue() {
+        return value.get();
+    }
+
+    /// Sets the committed value exactly, or clears the field when `null` is supplied.
+    ///
+    /// @param value the finite value to commit, or `null` to clear the field
+    /// @throws IllegalArgumentException if `value` is not finite
+    public void setValue(@Nullable Double value) {
+        this.value.set(value);
+    }
+
+    /// Returns the observable, bindable committed-value property.
+    ///
+    /// @return the committed-value property
+    public ObjectProperty<@Nullable Double> valueProperty() {
+        return value;
+    }
+
+    /// The non-null raw editor text.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Rejects null editor text.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
+    /// Returns the current raw editor text.
+    ///
+    /// @return the raw editor text
+    public String getText() {
+        return text.get();
+    }
+
+    /// Sets raw editor text without committing it.
+    ///
+    /// @param text the raw editor text
+    /// @throws NullPointerException if `text` is `null`
+    public void setText(String text) {
+        this.text.set(text);
+    }
+
+    /// Returns the observable, bindable raw editor-text property.
+    ///
+    /// @return the raw editor-text property
+    public StringProperty textProperty() {
+        return text;
+    }
+
+    /// The inclusive minimum accepted by the field.
+    ///
+    /// @defaultValue `-Double.MAX_VALUE`
+    private final DoubleProperty min = new SimpleDoubleProperty(this, "min", DEFAULT_MIN) {
+        /// Validates minimum assignments.
+        @Override
+        public void set(double newValue) {
+            requireFinite(newValue, "min");
+            if (newValue > getMax()) {
+                throw new IllegalArgumentException("min must be less than or equal to max");
+            }
+            super.set(newValue);
+        }
+
+        /// Refreshes adjustment state after the minimum changes.
+        @Override
+        protected void invalidated() {
+            updateStepperState();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.MIN_VALUE);
+        }
+    };
+
+    /// Returns the inclusive minimum value.
+    ///
+    /// @return the inclusive minimum value
+    public double getMin() {
+        return min.get();
+    }
+
+    /// Sets the inclusive minimum value.
+    ///
+    /// @param min the finite inclusive minimum
+    /// @throws IllegalArgumentException if `min` is not finite or is greater than [#getMax()]
+    public void setMin(double min) {
+        this.min.set(min);
+    }
+
+    /// Returns the observable, bindable minimum-value property.
+    ///
+    /// @return the minimum-value property
+    public DoubleProperty minProperty() {
+        return min;
+    }
+
+    /// The inclusive maximum accepted by the field.
+    ///
+    /// @defaultValue `Double.MAX_VALUE`
+    private final DoubleProperty max = new SimpleDoubleProperty(this, "max", DEFAULT_MAX) {
+        /// Validates maximum assignments.
+        @Override
+        public void set(double newValue) {
+            requireFinite(newValue, "max");
+            if (newValue < getMin()) {
+                throw new IllegalArgumentException("max must be greater than or equal to min");
+            }
+            super.set(newValue);
+        }
+
+        /// Refreshes adjustment state after the maximum changes.
+        @Override
+        protected void invalidated() {
+            updateStepperState();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.MAX_VALUE);
+        }
+    };
+
+    /// Returns the inclusive maximum value.
+    ///
+    /// @return the inclusive maximum value
+    public double getMax() {
+        return max.get();
+    }
+
+    /// Sets the inclusive maximum value.
+    ///
+    /// @param max the finite inclusive maximum
+    /// @throws IllegalArgumentException if `max` is not finite or is less than [#getMin()]
+    public void setMax(double max) {
+        this.max.set(max);
+    }
+
+    /// Returns the observable, bindable maximum-value property.
+    ///
+    /// @return the maximum-value property
+    public DoubleProperty maxProperty() {
+        return max;
+    }
+
+    /// The positive amount used by one increment or decrement.
+    ///
+    /// @defaultValue `1.0`
+    private final DoubleProperty step = new SimpleDoubleProperty(this, "step", DEFAULT_STEP) {
+        /// Validates step assignments.
+        @Override
+        public void set(double newValue) {
+            requireFinite(newValue, "step");
+            if (newValue <= 0.0) {
+                throw new IllegalArgumentException("step must be greater than zero");
+            }
+            super.set(newValue);
+        }
+
+        /// Refreshes adjustment state after the step changes.
+        @Override
+        protected void invalidated() {
+            updateStepperState();
+        }
+    };
+
+    /// Returns the positive step size.
+    ///
+    /// @return the positive step size
+    public double getStep() {
+        return step.get();
+    }
+
+    /// Sets the positive step size.
+    ///
+    /// @param step the finite positive step size
+    /// @throws IllegalArgumentException if `step` is not finite or is not positive
+    public void setStep(double step) {
+        this.step.set(step);
+    }
+
+    /// Returns the observable, bindable step-size property.
+    ///
+    /// @return the step-size property
+    public DoubleProperty stepProperty() {
+        return step;
+    }
+
+    /// The formatter used to parse and display numeric values.
+    ///
+    /// @defaultValue a number formatter for the default format locale at construction time
+    private final ObjectProperty<NumberFormat> formatter = new SimpleObjectProperty<>(
+            this,
+            "formatter",
+            NumberFormat.getNumberInstance(Locale.getDefault(Locale.Category.FORMAT))
+    ) {
+        /// Rejects null formatters.
+        @Override
+        public void set(NumberFormat newValue) {
+            super.set(Objects.requireNonNull(newValue, "formatter"));
+        }
+
+        /// Rewrites committed value text after the formatter changes.
+        @Override
+        protected void invalidated() {
+            updateEditorFromValue();
+            M3Accessible.notifyAttribute(M3NumberField.this, VALUE_STRING_ATTRIBUTE);
+        }
+    };
+
+    /// Returns the formatter used for parsing and display.
+    ///
+    /// @return the active formatter
+    public NumberFormat getFormatter() {
+        return formatter.get();
+    }
+
+    /// Sets the formatter used for parsing and display.
+    ///
+    /// The formatter is retained and used on the JavaFX Application Thread. Mutating it does not invalidate this
+    /// property; call this method again to refresh displayed text.
+    ///
+    /// @param formatter the non-null formatter
+    /// @throws NullPointerException if `formatter` is `null`
+    public void setFormatter(NumberFormat formatter) {
+        NumberFormat checkedFormatter = Objects.requireNonNull(formatter, "formatter");
+        if (!this.formatter.isBound() && this.formatter.get() == checkedFormatter) {
+            updateEditorFromValue();
+            M3Accessible.notifyAttribute(this, VALUE_STRING_ATTRIBUTE);
+            return;
+        }
+        this.formatter.set(checkedFormatter);
+    }
+
+    /// Returns the observable, bindable formatter property.
+    ///
+    /// @return the formatter property
+    public ObjectProperty<NumberFormat> formatterProperty() {
+        return formatter;
+    }
+
+    /// The behavior used to commit parsed text.
+    ///
+    /// @defaultValue [M3NumberFieldCommitBehavior#SNAP]
+    private final ObjectProperty<M3NumberFieldCommitBehavior> commitBehavior = new SimpleObjectProperty<>(
+            this,
+            "commitBehavior",
+            M3NumberFieldCommitBehavior.SNAP
+    ) {
+        /// Rejects null commit behavior values.
+        @Override
+        public void set(M3NumberFieldCommitBehavior newValue) {
+            super.set(Objects.requireNonNull(newValue, "commitBehavior"));
+        }
+    };
+
+    /// Returns the behavior used when parsed text is outside the value scale.
+    ///
+    /// @return the active commit behavior
+    public M3NumberFieldCommitBehavior getCommitBehavior() {
+        return commitBehavior.get();
+    }
+
+    /// Sets the behavior used when parsed text is outside the value scale.
+    ///
+    /// @param commitBehavior the non-null commit behavior
+    /// @throws NullPointerException if `commitBehavior` is `null`
+    public void setCommitBehavior(M3NumberFieldCommitBehavior commitBehavior) {
+        this.commitBehavior.set(commitBehavior);
+    }
+
+    /// Returns the observable, bindable commit-behavior property.
+    ///
+    /// @return the commit-behavior property
+    public ObjectProperty<M3NumberFieldCommitBehavior> commitBehaviorProperty() {
+        return commitBehavior;
+    }
+
+    /// Whether the trailing step buttons are hidden.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty hideStepper = new SimpleBooleanProperty(this, "hideStepper") {
+        /// Installs or removes the stepper adornment.
+        @Override
+        protected void invalidated() {
+            updateStepperVisibility();
+        }
+    };
+
+    /// Returns whether the trailing step buttons are hidden.
+    ///
+    /// @return `true` when the step buttons are hidden
+    public boolean isHideStepper() {
+        return hideStepper.get();
+    }
+
+    /// Shows or hides the trailing step buttons.
+    ///
+    /// @param hideStepper whether the step buttons are hidden
+    public void setHideStepper(boolean hideStepper) {
+        this.hideStepper.set(hideStepper);
+    }
+
+    /// Returns the observable, bindable stepper-visibility property.
+    ///
+    /// @return the stepper-visibility property
+    public BooleanProperty hideStepperProperty() {
+        return hideStepper;
+    }
+
+    /// Whether focused mouse-wheel scrolling is prevented from changing the value.
+    ///
+    /// @defaultValue `false`
+    private final BooleanProperty wheelDisabled = new SimpleBooleanProperty(this, "wheelDisabled");
+
+    /// Returns whether mouse-wheel value changes are disabled.
+    ///
+    /// @return `true` when mouse-wheel value changes are disabled
+    public boolean isWheelDisabled() {
+        return wheelDisabled.get();
+    }
+
+    /// Enables or disables mouse-wheel value changes while the editor is focused.
+    ///
+    /// @param wheelDisabled whether mouse-wheel value changes are disabled
+    public void setWheelDisabled(boolean wheelDisabled) {
+        this.wheelDisabled.set(wheelDisabled);
+    }
+
+    /// Returns the observable, bindable wheel-disable property.
+    ///
+    /// @return the wheel-disable property
+    public BooleanProperty wheelDisabledProperty() {
+        return wheelDisabled;
+    }
+
+    /// Whether users may edit text or change the value through step actions.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty editable = new SimpleBooleanProperty(this, "editable", true) {
+        /// Refreshes step availability after the editable state changes.
+        @Override
+        protected void invalidated() {
+            updateStepperState();
+        }
+    };
+
+    /// Returns whether users may edit or step the value.
+    ///
+    /// @return `true` when the field is editable
+    public boolean isEditable() {
+        return editable.get();
+    }
+
+    /// Sets whether users may edit or step the value.
+    ///
+    /// @param editable whether the field is editable
+    public void setEditable(boolean editable) {
+        this.editable.set(editable);
+    }
+
+    /// Returns the observable, bindable editable property.
+    ///
+    /// @return the editable property
+    public BooleanProperty editableProperty() {
+        return editable;
+    }
+
+    /// The optional non-interactive prefix displayed before editor text.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Node> prefix = new SimpleObjectProperty<>(this, "prefix");
+
+    /// Returns the prefix node, or `null` when no prefix is displayed.
+    ///
+    /// @return the prefix node, or `null`
+    public @Nullable Node getPrefix() {
+        return prefix.get();
+    }
+
+    /// Sets the non-interactive prefix displayed before editor text.
+    ///
+    /// The node becomes part of this field's scene graph and is subject to the JavaFX single-parent rule.
+    ///
+    /// @param prefix the prefix node, or `null` to remove it
+    public void setPrefix(@Nullable Node prefix) {
+        this.prefix.set(prefix);
+    }
+
+    /// Returns the observable, bindable prefix-node property.
+    ///
+    /// @return the prefix-node property
+    public ObjectProperty<@Nullable Node> prefixProperty() {
+        return prefix;
+    }
+
+    /// The visual variant used by the internal text field.
+    ///
+    /// @defaultValue [M3TextInputVariant#FILLED]
+    private final ObjectProperty<M3TextInputVariant> variant = new SimpleObjectProperty<>(
+            this,
+            "variant",
+            M3TextInputVariant.FILLED
+    ) {
+        /// Rejects null text input variants.
+        @Override
+        public void set(M3TextInputVariant newValue) {
+            super.set(Objects.requireNonNull(newValue, "variant"));
+        }
+    };
+
+    /// Returns the visual text input variant.
+    ///
+    /// @return the visual text input variant
+    public M3TextInputVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the visual text input variant.
+    ///
+    /// @param variant the non-null variant
+    /// @throws NullPointerException if `variant` is `null`
+    public void setVariant(M3TextInputVariant variant) {
+        this.variant.set(variant);
+    }
+
+    /// Returns the observable, bindable text input variant property.
+    ///
+    /// @return the text input variant property
+    public ObjectProperty<M3TextInputVariant> variantProperty() {
+        return variant;
+    }
+
+    /// The non-null placeholder displayed while the editor is empty.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
+        /// Rejects null placeholder text.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "promptText"));
+        }
+    };
+
+    /// Returns the editor placeholder text.
+    ///
+    /// @return the placeholder text
+    public String getPromptText() {
+        return promptText.get();
+    }
+
+    /// Sets the editor placeholder text.
+    ///
+    /// @param promptText the non-null placeholder text
+    /// @throws NullPointerException if `promptText` is `null`
+    public void setPromptText(String promptText) {
+        this.promptText.set(promptText);
+    }
+
+    /// Returns the observable, bindable placeholder-text property.
+    ///
+    /// @return the placeholder-text property
+    public StringProperty promptTextProperty() {
+        return promptText;
+    }
+
+    /// The non-null floating label text.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty labelText = nonNullStringProperty("labelText");
+
+    /// Returns the floating label text.
+    ///
+    /// @return the floating label text
+    public String getLabelText() {
+        return labelText.get();
+    }
+
+    /// Sets the floating label text.
+    ///
+    /// @param labelText the non-null label text
+    /// @throws NullPointerException if `labelText` is `null`
+    public void setLabelText(String labelText) {
+        this.labelText.set(labelText);
+    }
+
+    /// Returns the observable, bindable floating-label property.
+    ///
+    /// @return the floating-label property
+    public StringProperty labelTextProperty() {
+        return labelText;
+    }
+
+    /// The non-null supporting text shown when no error is active.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty supportingText = nonNullStringProperty("supportingText");
+
+    /// Returns the supporting text.
+    ///
+    /// @return the supporting text
+    public String getSupportingText() {
+        return supportingText.get();
+    }
+
+    /// Sets the supporting text.
+    ///
+    /// @param supportingText the non-null supporting text
+    /// @throws NullPointerException if `supportingText` is `null`
+    public void setSupportingText(String supportingText) {
+        this.supportingText.set(supportingText);
+    }
+
+    /// Returns the observable, bindable supporting-text property.
+    ///
+    /// @return the supporting-text property
+    public StringProperty supportingTextProperty() {
+        return supportingText;
+    }
+
+    /// The non-null error text currently displayed by the field.
+    ///
+    /// Failed commits replace this value with a configured generated message. Subsequent user edits clear generated
+    /// messages while preserving unrelated application-provided error text.
+    ///
+    /// @defaultValue `""`
+    private final StringProperty errorText = nonNullStringProperty("errorText");
+
+    /// Returns the current error text.
+    ///
+    /// @return the current error text
+    public String getErrorText() {
+        return errorText.get();
+    }
+
+    /// Sets the current error text.
+    ///
+    /// @param errorText the non-null error text, or an empty string to clear the error state
+    /// @throws NullPointerException if `errorText` is `null`
+    public void setErrorText(String errorText) {
+        this.errorText.set(errorText);
+    }
+
+    /// Returns the observable, bindable current-error-text property.
+    ///
+    /// @return the current-error-text property
+    public StringProperty errorTextProperty() {
+        return errorText;
+    }
+
+    /// The message shown when non-empty editor text cannot be parsed completely.
+    ///
+    /// @defaultValue `"Enter a valid number"`
+    private final StringProperty invalidTextErrorText =
+            nonNullStringProperty("invalidTextErrorText", "Enter a valid number");
+
+    /// Returns the message used for unparseable text.
+    ///
+    /// @return the unparseable-text message
+    public String getInvalidTextErrorText() {
+        return invalidTextErrorText.get();
+    }
+
+    /// Sets the message used for unparseable text.
+    ///
+    /// @param invalidTextErrorText the non-null message
+    /// @throws NullPointerException if `invalidTextErrorText` is `null`
+    public void setInvalidTextErrorText(String invalidTextErrorText) {
+        this.invalidTextErrorText.set(invalidTextErrorText);
+    }
+
+    /// Returns the observable, bindable unparseable-text message property.
+    ///
+    /// @return the unparseable-text message property
+    public StringProperty invalidTextErrorTextProperty() {
+        return invalidTextErrorText;
+    }
+
+    /// The message shown when validate commits reject range or step alignment.
+    ///
+    /// @defaultValue `"Enter a value in the allowed range and step"`
+    private final StringProperty rangeErrorText =
+            nonNullStringProperty("rangeErrorText", "Enter a value in the allowed range and step");
+
+    /// Returns the message used for range and step errors.
+    ///
+    /// @return the range and step error message
+    public String getRangeErrorText() {
+        return rangeErrorText.get();
+    }
+
+    /// Sets the message used for range and step errors.
+    ///
+    /// @param rangeErrorText the non-null message
+    /// @throws NullPointerException if `rangeErrorText` is `null`
+    public void setRangeErrorText(String rangeErrorText) {
+        this.rangeErrorText.set(rangeErrorText);
+    }
+
+    /// Returns the observable, bindable range and step error-message property.
+    ///
+    /// @return the range and step error-message property
+    public StringProperty rangeErrorTextProperty() {
+        return rangeErrorText;
+    }
+
+    /// The non-null accessible label for the decrement button.
+    ///
+    /// @defaultValue `"Decrement"`
+    private final StringProperty decrementAccessibleText =
+            nonNullStringProperty("decrementAccessibleText", "Decrement");
+
+    /// Returns the decrement button's accessible text.
+    ///
+    /// @return the decrement button's accessible text
+    public String getDecrementAccessibleText() {
+        return decrementAccessibleText.get();
+    }
+
+    /// Sets the decrement button's accessible text.
+    ///
+    /// @param decrementAccessibleText the non-null accessible text
+    /// @throws NullPointerException if `decrementAccessibleText` is `null`
+    public void setDecrementAccessibleText(String decrementAccessibleText) {
+        this.decrementAccessibleText.set(decrementAccessibleText);
+    }
+
+    /// Returns the observable, bindable decrement-button accessible-text property.
+    ///
+    /// @return the decrement-button accessible-text property
+    public StringProperty decrementAccessibleTextProperty() {
+        return decrementAccessibleText;
+    }
+
+    /// The non-null accessible label for the increment button.
+    ///
+    /// @defaultValue `"Increment"`
+    private final StringProperty incrementAccessibleText =
+            nonNullStringProperty("incrementAccessibleText", "Increment");
+
+    /// Returns the increment button's accessible text.
+    ///
+    /// @return the increment button's accessible text
+    public String getIncrementAccessibleText() {
+        return incrementAccessibleText.get();
+    }
+
+    /// Sets the increment button's accessible text.
+    ///
+    /// @param incrementAccessibleText the non-null accessible text
+    /// @throws NullPointerException if `incrementAccessibleText` is `null`
+    public void setIncrementAccessibleText(String incrementAccessibleText) {
+        this.incrementAccessibleText.set(incrementAccessibleText);
+    }
+
+    /// Returns the observable, bindable increment-button accessible-text property.
+    ///
+    /// @return the increment-button accessible-text property
+    public StringProperty incrementAccessibleTextProperty() {
+        return incrementAccessibleText;
+    }
+
+    /// Returns the live internal text editor.
+    ///
+    /// The field owns this editor. Its text, prompt text, variant, editable state, error presentation, disabled state,
+    /// and layout are managed by the number field and must not be rebound independently.
+    ///
+    /// @return the internal text editor
+    public M3TextField getEditor() {
+        return editor;
+    }
+
+    /// Parses and commits the current editor text.
+    ///
+    /// Leading and trailing whitespace is ignored. Empty text clears the committed value. Parsing must consume the
+    /// complete trimmed string and produce a finite number. A successful commit reformats editor text. A failed
+    /// commit leaves the previous value and raw text unchanged and displays a generated error message.
+    ///
+    /// @return `true` when the text was committed successfully
+    public boolean commitEditorText() {
+        String editorText = editor.getText() == null ? "" : editor.getText().trim();
+        if (editorText.isEmpty()) {
+            setValue(null);
+            inputLayout.setErrorText("");
+            return true;
+        }
+
+        @Nullable Double parsedValue = parse(editorText);
+        if (parsedValue == null) {
+            inputLayout.setErrorText(getInvalidTextErrorText());
+            return false;
+        }
+
+        if (getCommitBehavior() == M3NumberFieldCommitBehavior.VALIDATE
+                && (!isWithinRange(parsedValue) || !isOnStep(parsedValue))) {
+            inputLayout.setErrorText(getRangeErrorText());
+            return false;
+        }
+
+        setValue(getCommitBehavior() == M3NumberFieldCommitBehavior.SNAP
+                ? normalizeForSnap(parsedValue)
+                : parsedValue);
+        updateEditorFromValue();
+        inputLayout.setErrorText("");
+        return true;
+    }
+
+    /// Increases the committed value by one step.
+    public void increment() {
+        increment(1);
+    }
+
+    /// Increases the committed value by a number of steps.
+    ///
+    /// Pending editor text is committed first. If it cannot be committed, the value is not changed. When the field
+    /// is empty, stepping begins at zero before range clamping and step snapping.
+    ///
+    /// @param steps the non-negative number of steps
+    /// @throws IllegalArgumentException if `steps` is negative
+    public void increment(int steps) {
+        if (steps < 0) {
+            throw new IllegalArgumentException("steps must not be negative");
+        }
+        stepBy(steps);
+    }
+
+    /// Decreases the committed value by one step.
+    public void decrement() {
+        decrement(1);
+    }
+
+    /// Decreases the committed value by a number of steps.
+    ///
+    /// Pending editor text is committed first. If it cannot be committed, the value is not changed. When the field
+    /// is empty, stepping begins at zero before range clamping and step snapping.
+    ///
+    /// @param steps the non-negative number of steps
+    /// @throws IllegalArgumentException if `steps` is negative
+    public void decrement(int steps) {
+        if (steps < 0) {
+            throw new IllegalArgumentException("steps must not be negative");
+        }
+        stepBy(-steps);
+    }
+
+    /// Adjusts the committed value to the nearest in-range step.
+    ///
+    /// This programmatic operation does not parse pending editor text.
+    ///
+    /// @param value the finite target value
+    /// @throws IllegalArgumentException if `value` is not finite
+    public void adjustValue(double value) {
+        setValue(normalizeForSnap(requireFinite(value, "value")));
+    }
+
+    /// Returns accessibility attributes for the numeric value and internal editor.
+    ///
+    /// @param attribute  the requested attribute
+    /// @param parameters optional attribute parameters
+    /// @return the requested value, or `null` when unavailable
+    /// @throws NullPointerException if `attribute` is `null`
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        if (attribute == VALUE_STRING_ATTRIBUTE) {
+            return formattedValue();
+        }
+        return switch (attribute) {
+            case FOCUS_NODE -> editor;
+            case ITEM_AT_INDEX -> accessibleItem(parameters);
+            case MIN_VALUE -> getMin();
+            case MAX_VALUE -> getMax();
+            case VALUE -> getValue();
+            case TEXT -> editor.getText();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes focus, value assignment, and step accessibility actions.
+    ///
+    /// @param action     the requested action
+    /// @param parameters optional action parameters
+    /// @throws NullPointerException if `action` is `null`
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        if (isDisabled() || !isEditable()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
+        switch (action) {
+            case REQUEST_FOCUS -> focusEditor();
+            case INCREMENT -> increment();
+            case DECREMENT -> decrement();
+            case BLOCK_INCREMENT -> increment(BLOCK_STEP_COUNT);
+            case BLOCK_DECREMENT -> decrement(BLOCK_STEP_COUNT);
+            case SET_VALUE -> setAccessibleValue(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
+    /// Creates the default number-field skin.
+    ///
+    /// @return a new Material number-field skin
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3NumberFieldSkin(this);
+    }
+
+    /// Returns the user-agent stylesheet for number fields.
+    ///
+    /// @return the number-field stylesheet URL
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("number-field.css");
+    }
+
+    /// Adds style identity, property wiring, actions, and input handlers.
+    private void initialize() {
+        M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.SPINNER);
+        setFocusTraversable(false);
+        M3Accessible.installAccessibleActionRoute(this, this::focusEditor, null);
+
+        M3ControlStyles.add(stepper, STEPPER_STYLE_CLASS);
+        M3ControlStyles.add(decrementButton, STEP_BUTTON_STYLE_CLASS);
+        M3ControlStyles.add(decrementButton, DECREMENT_BUTTON_STYLE_CLASS);
+        M3ControlStyles.add(incrementButton, STEP_BUTTON_STYLE_CLASS);
+        M3ControlStyles.add(incrementButton, INCREMENT_BUTTON_STYLE_CLASS);
+
+        editor.textProperty().bindBidirectional(text);
+        editor.promptTextProperty().bindBidirectional(promptText);
+        editor.variantProperty().bindBidirectional(variant);
+        editor.editableProperty().bind(editable);
+        inputLayout.labelTextProperty().bindBidirectional(labelText);
+        inputLayout.supportingTextProperty().bindBidirectional(supportingText);
+        inputLayout.errorTextProperty().bindBidirectional(errorText);
+        inputLayout.leadingProperty().bind(prefix);
+        inputLayout.disableProperty().bind(disabledProperty());
+        inputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        decrementButton.accessibleTextProperty().bind(decrementAccessibleText);
+        incrementButton.accessibleTextProperty().bind(incrementAccessibleText);
+
+        decrementButton.setOnAction(event -> decrement());
+        incrementButton.setOnAction(event -> increment());
+        editor.addEventHandler(ActionEvent.ACTION, this::handleEditorAction);
+        editor.addEventHandler(KeyEvent.KEY_PRESSED, this::handleEditorKeyPressed);
+        editor.addEventFilter(ScrollEvent.SCROLL, this::handleEditorScroll);
+        editor.focusedProperty().addListener((observable, oldValue, focused) -> {
+            if (!focused) {
+                commitEditorText();
+            }
+        });
+        editor.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!updatingEditorText) {
+                clearGeneratedErrorText();
+            }
+        });
+        disabledProperty().addListener(observable -> updateStepperState());
+
+        updateStepperVisibility();
+        updateStepperState();
+    }
+
+    /// Handles Enter commits from the internal editor.
+    ///
+    /// @param event the editor action event
+    private void handleEditorAction(ActionEvent event) {
+        commitEditorText();
+        event.consume();
+    }
+
+    /// Handles keyboard stepping and cancellation from the internal editor.
+    ///
+    /// @param event the key event
+    private void handleEditorKeyPressed(KeyEvent event) {
+        if (!isEditable() || isDisabled()) {
+            return;
+        }
+        switch (event.getCode()) {
+            case UP -> {
+                increment();
+                event.consume();
+            }
+            case DOWN -> {
+                decrement();
+                event.consume();
+            }
+            case PAGE_UP -> {
+                increment(BLOCK_STEP_COUNT);
+                event.consume();
+            }
+            case PAGE_DOWN -> {
+                decrement(BLOCK_STEP_COUNT);
+                event.consume();
+            }
+            case ESCAPE -> {
+                updateEditorFromValue();
+                inputLayout.setErrorText("");
+                event.consume();
+            }
+            default -> {
+            }
+        }
+    }
+
+    /// Handles focused mouse-wheel stepping.
+    ///
+    /// @param event the scroll event
+    private void handleEditorScroll(ScrollEvent event) {
+        if (isWheelDisabled() || !isEditable() || isDisabled() || !editor.isFocused()) {
+            return;
+        }
+        if (event.getDeltaY() > 0.0) {
+            increment();
+            event.consume();
+        } else if (event.getDeltaY() < 0.0) {
+            decrement();
+            event.consume();
+        }
+    }
+
+    /// Applies a signed number of steps after committing pending text.
+    ///
+    /// @param steps the signed step count
+    private void stepBy(int steps) {
+        if (steps == Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("step count magnitude is too large");
+        }
+        if (steps == 0 || !isEditable() || isDisabled() || !commitEditorText()) {
+            return;
+        }
+        @Nullable Double currentValue = getValue();
+        double base = currentValue == null ? 0.0 : currentValue;
+        double delta = getStep() * steps;
+        double target = base + delta;
+        if (!Double.isFinite(target)) {
+            target = steps > 0 ? getMax() : getMin();
+        }
+        adjustValue(target);
+    }
+
+    /// Parses a complete finite numeric string with the active formatter.
+    ///
+    /// @param text the non-empty trimmed text
+    /// @return the parsed finite value, or `null` when parsing fails or leaves trailing input
+    private @Nullable Double parse(String text) {
+        ParsePosition position = new ParsePosition(0);
+        @Nullable Number parsed = getFormatter().parse(text, position);
+        if (parsed == null || position.getIndex() != text.length()) {
+            return null;
+        }
+        double value = parsed.doubleValue();
+        return Double.isFinite(value) ? value : null;
+    }
+
+    /// Returns whether a value lies inside the inclusive range.
+    ///
+    /// @param value the finite value to test
+    /// @return `true` when the value is inside the inclusive range
+    private boolean isWithinRange(double value) {
+        return value >= getMin() && value <= getMax();
+    }
+
+    /// Returns whether a value is aligned to the configured step anchor within floating-point tolerance.
+    ///
+    /// @param value the finite value to test
+    /// @return `true` when the value is aligned to a step
+    private boolean isOnStep(double value) {
+        double snapped = snapToStep(value);
+        double tolerance = Math.max(Math.ulp(value) * 8.0, getStep() * 1.0e-10);
+        return Math.abs(snapped - value) <= tolerance;
+    }
+
+    /// Clamps and snaps a finite value to the active value scale.
+    ///
+    /// @param value the finite value to normalize
+    /// @return the normalized value
+    private double normalizeForSnap(double value) {
+        double clamped = Math.max(getMin(), Math.min(getMax(), value));
+        double snapped = snapToStep(clamped);
+        double normalized = snapped;
+        double anchor = stepAnchor();
+        if (normalized < getMin()) {
+            normalized = anchor + Math.ceil((getMin() - anchor) / getStep()) * getStep();
+        } else if (normalized > getMax()) {
+            normalized = anchor + Math.floor((getMax() - anchor) / getStep()) * getStep();
+        }
+        if (!Double.isFinite(normalized) || normalized < getMin() || normalized > getMax()) {
+            normalized = clamped;
+        }
+        return normalized == 0.0 ? 0.0 : normalized;
+    }
+
+    /// Snaps a finite value to the nearest step without applying range bounds.
+    ///
+    /// @param value the finite value to snap
+    /// @return the snapped value, or the original value if arithmetic overflows
+    private double snapToStep(double value) {
+        double anchor = stepAnchor();
+        double units = (value - anchor) / getStep();
+        if (!Double.isFinite(units)) {
+            return value;
+        }
+        double snapped = anchor + Math.rint(units) * getStep();
+        return Double.isFinite(snapped) ? snapped : value;
+    }
+
+    /// Returns the step anchor derived from the configured minimum.
+    ///
+    /// @return the configured minimum, or zero when the range is unrestricted below
+    private double stepAnchor() {
+        return getMin() == DEFAULT_MIN ? 0.0 : getMin();
+    }
+
+    /// Rewrites editor text from the committed value and active formatter.
+    private void updateEditorFromValue() {
+        @Nullable Double currentValue = getValue();
+        String formatted = currentValue == null ? "" : getFormatter().format(currentValue);
+        updatingEditorText = true;
+        try {
+            editor.setText(formatted);
+        } finally {
+            updatingEditorText = false;
+        }
+    }
+
+    /// Returns the formatted committed value for accessibility clients.
+    ///
+    /// @return the formatted committed value, or an empty string
+    private String formattedValue() {
+        @Nullable Double currentValue = getValue();
+        return currentValue == null ? "" : getFormatter().format(currentValue);
+    }
+
+    /// Shows or removes the trailing stepper according to [#hideStepperProperty()].
+    private void updateStepperVisibility() {
+        inputLayout.setTrailing(isHideStepper() ? null : stepper);
+    }
+
+    /// Updates local button disable states from editability and range endpoints.
+    private void updateStepperState() {
+        boolean unavailable = isDisabled() || !isEditable();
+        @Nullable Double currentValue = getValue();
+        decrementButton.setDisable(unavailable || currentValue != null && currentValue <= getMin());
+        incrementButton.setDisable(unavailable || currentValue != null && currentValue >= getMax());
+    }
+
+    /// Clears an error message generated by a previous failed numeric commit.
+    private void clearGeneratedErrorText() {
+        String currentError = inputLayout.getErrorText();
+        if (currentError.equals(getInvalidTextErrorText()) || currentError.equals(getRangeErrorText())) {
+            inputLayout.setErrorText("");
+        }
+    }
+
+    /// Requests focus for the internal editor through the direct accessibility route.
+    ///
+    /// @return `true` when the editor accepted the focus request
+    private boolean focusEditor() {
+        return M3Accessible.showDirectItem(this, editor);
+    }
+
+    /// Returns the internal node requested by an accessibility index.
+    ///
+    /// @param parameters the accessibility index parameters
+    /// @return the input layout for index zero, or `null`
+    private @Nullable Node accessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return parameters.length > 0 && parameters[0] instanceof Number number && number.intValue() == 0
+                ? inputLayout
+                : null;
+    }
+
+    /// Applies the first finite numeric accessibility parameter.
+    ///
+    /// @param parameters the accessibility parameters
+    private void setAccessibleValue(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (parameter instanceof Number number && Double.isFinite(number.doubleValue())) {
+                adjustValue(number.doubleValue());
+                return;
+            }
+        }
+    }
+
+    /// Creates a non-null string property with an empty initial value.
+    ///
+    /// @param name the property name
+    /// @return the new property
+    private StringProperty nonNullStringProperty(String name) {
+        return nonNullStringProperty(name, "");
+    }
+
+    /// Creates a non-null string property.
+    ///
+    /// @param name         the property name
+    /// @param initialValue the initial property value
+    /// @return the new property
+    private StringProperty nonNullStringProperty(String name, String initialValue) {
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(initialValue, "initialValue");
+        return new SimpleStringProperty(this, name, initialValue) {
+            /// Rejects null string values.
+            @Override
+            public void set(String newValue) {
+                super.set(Objects.requireNonNull(newValue, name));
+            }
+        };
+    }
+
+    /// Returns a finite value or throws for an invalid numeric configuration.
+    ///
+    /// @param value the value to validate
+    /// @param name  the parameter or property name
+    /// @return the validated finite value
+    /// @throws IllegalArgumentException if `value` is not finite
+    private static double requireFinite(double value, String name) {
+        Objects.requireNonNull(name, "name");
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(name + " must be finite");
+        }
+        return value;
+    }
+}

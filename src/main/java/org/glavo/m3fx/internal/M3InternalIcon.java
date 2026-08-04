@@ -167,6 +167,9 @@ public final class M3InternalIcon extends StackPane {
         /// A plus icon used by add and default FAB-menu affordances.
         ADD("M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"),
 
+        /// A minus icon used by decrement affordances.
+        REMOVE("M5 11h14v2H5z"),
+
         /// A close icon used by clear actions.
         CLOSE("M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"),
 

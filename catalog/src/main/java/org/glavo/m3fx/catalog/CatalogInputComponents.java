@@ -5,6 +5,7 @@ package org.glavo.m3fx.catalog;
 
 import org.glavo.m3fx.controls.M3ChipStyle;
 import org.glavo.m3fx.controls.M3ColorPlane;
+import org.glavo.m3fx.controls.M3NumberFieldCommitBehavior;
 import org.glavo.m3fx.controls.M3SearchViewLayout;
 import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3SelectionMode;
@@ -66,6 +67,14 @@ final class CatalogInputComponents {
                         "https://m3.material.io/components/text-fields/overview",
                         "M3FormPane",
                         formExamples()
+                ),
+                CatalogComponents.extensionComponent(
+                        "Number fields",
+                        "Number fields edit localized numeric values with range-aware step actions and commit policies.",
+                        CatalogIcons.TEXT_FIELD,
+                        "https://react-spectrum.adobe.com/NumberField",
+                        "M3NumberField",
+                        numberFieldExamples()
                 ),
                 CatalogComponents.component(
                         "Radio buttons",
@@ -690,6 +699,98 @@ final class CatalogInputComponents {
                         "Disabled switches in their off and on states.",
                         false,
                         () -> CatalogInputSamples.switches(true, true)
+                )
+        };
+    }
+
+    /// Creates number-field examples across variants, commit policies, formatting, adornments, and states.
+    ///
+    /// @return the complete number-field example array
+    private static CatalogExample[] numberFieldExamples() {
+        return new CatalogExample[]{
+                CatalogComponents.example(
+                        "Filled snap field",
+                        "A filled number field that clamps and snaps committed text.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.FILLED,
+                                M3NumberFieldCommitBehavior.SNAP,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                        )
+                ),
+                CatalogComponents.example(
+                        "Outlined validate field",
+                        "An outlined field that rejects values between configured steps.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.OUTLINED,
+                                M3NumberFieldCommitBehavior.VALIDATE,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                        )
+                ),
+                CatalogComponents.example(
+                        "Validation error",
+                        "A validate field preserving an off-step edit and its error message.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.OUTLINED,
+                                M3NumberFieldCommitBehavior.VALIDATE,
+                                false,
+                                false,
+                                false,
+                                false,
+                                true
+                        )
+                ),
+                CatalogComponents.example(
+                        "Localized percent",
+                        "A compact field formatted as a locale-aware percentage.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.FILLED,
+                                M3NumberFieldCommitBehavior.SNAP,
+                                true,
+                                false,
+                                true,
+                                false,
+                                false
+                        )
+                ),
+                CatalogComponents.example(
+                        "Prefix",
+                        "A number field with a non-interactive leading prefix.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.FILLED,
+                                M3NumberFieldCommitBehavior.SNAP,
+                                false,
+                                true,
+                                false,
+                                false,
+                                false
+                        )
+                ),
+                CatalogComponents.example(
+                        "Disabled",
+                        "A disabled number field with unavailable editing and step actions.",
+                        false,
+                        () -> CatalogInputSamples.numberField(
+                                M3TextInputVariant.OUTLINED,
+                                M3NumberFieldCommitBehavior.SNAP,
+                                false,
+                                false,
+                                false,
+                                true,
+                                false
+                        )
                 )
         };
     }

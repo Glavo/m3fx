@@ -224,6 +224,7 @@ final class M3FXCatalogSnapshotTest {
                     writeFirstExampleSnapshot(scene, app, "Color pickers", "color-picker.png");
                     writeFirstExampleSnapshot(scene, app, "Forms", "forms.png");
                     writeFirstExampleSnapshot(scene, app, "Icons", "icons.png");
+                    writeFirstExampleSnapshot(scene, app, "Number fields", "number-fields.png");
                     writeFirstExampleSnapshot(scene, app, "Scrims", "scrims.png");
                     writeFirstExampleSnapshot(scene, app, "Settings", "settings.png");
                     writeFirstExampleSnapshot(scene, app, "Surfaces", "surfaces.png");

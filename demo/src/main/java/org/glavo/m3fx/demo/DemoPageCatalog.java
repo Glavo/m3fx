@@ -93,6 +93,7 @@ final class DemoPageCatalog {
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, (new BannersDemoPage(context))::createContent),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", DemoMaterialDocs.FORMS, (new FormsDemoPage(context))::createContent),
                 new DemoPage("Motion", "Motion", ADDITIONAL_DEMOS_GROUP, "Typed state, retained content, and interruptible layout motion", DemoMaterialDocs.MOTION, (new MotionDemoPage(context))::createContent),
+                new DemoPage("Number Fields", "Number fields", ADDITIONAL_DEMOS_GROUP, "Localized numeric input with range, step, prefix, and commit policies", DemoMaterialDocs.NUMBER_FIELDS, "Spectrum docs", (new NumberFieldsDemoPage(context))::createContent),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", DemoMaterialDocs.TYPOGRAPHY, (new TypographyDemoPage(context))::createContent),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, (new IconsDemoPage(context))::createContent),
                 new DemoPage("Breadcrumbs", "Breadcrumbs", ADDITIONAL_DEMOS_GROUP, "Hierarchical navigation with compact and responsive overflow treatments", DemoMaterialDocs.BREADCRUMBS, "Spectrum docs", (new BreadcrumbsDemoPage(context))::createContent),

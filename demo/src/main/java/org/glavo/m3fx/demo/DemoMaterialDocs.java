@@ -95,6 +95,9 @@ final class DemoMaterialDocs {
     /// The Adobe Spectrum table-view documentation URL.
     static final String TABLE_VIEWS = "https://react-spectrum.adobe.com/TableView";
 
+    /// The Adobe Spectrum 2 number-field documentation URL.
+    static final String NUMBER_FIELDS = "https://react-spectrum.adobe.com/NumberField";
+
     /// The date pickers component documentation URL.
     static final String DATE_PICKERS = componentUrl("date-pickers");
 

@@ -5,6 +5,7 @@ package org.glavo.m3fx.catalog;
 
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.VBox;
@@ -41,6 +42,8 @@ import org.glavo.m3fx.controls.M3HslColor;
 import org.glavo.m3fx.controls.M3InputChip;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListStyle;
+import org.glavo.m3fx.controls.M3NumberField;
+import org.glavo.m3fx.controls.M3NumberFieldCommitBehavior;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
@@ -74,7 +77,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /// Creates focused selection, color, date, form, and text-input samples for Catalog routes.
@@ -597,6 +602,50 @@ final class CatalogInputSamples {
         off.setDisable(disabled);
         on.setDisable(disabled);
         return CatalogSamples.column(off, on);
+    }
+
+    /// Creates a number-field scenario.
+    ///
+    /// @param variant       the filled or outlined input variant
+    /// @param commitBehavior the snap or validate commit policy
+    /// @param localized     whether percent formatting is used
+    /// @param prefix        whether a prefix node is installed
+    /// @param hideStepper   whether increment and decrement buttons are hidden
+    /// @param disabled      whether the field is disabled
+    /// @param error         whether the initial text fails validation
+    /// @return the configured number field
+    static Node numberField(
+            M3TextInputVariant variant,
+            M3NumberFieldCommitBehavior commitBehavior,
+            boolean localized,
+            boolean prefix,
+            boolean hideStepper,
+            boolean disabled,
+            boolean error
+    ) {
+        M3NumberField field = new M3NumberField(localized ? 0.375 : 8.0);
+        field.setVariant(variant);
+        field.setCommitBehavior(commitBehavior);
+        field.setLabelText(localized ? "Completion" : "Amount");
+        field.setSupportingText(commitBehavior == M3NumberFieldCommitBehavior.VALIDATE
+                ? "Valid values begin at 2 and advance by 3"
+                : "Range and step actions share one value scale");
+        field.setMin(localized ? 0.0 : 2.0);
+        field.setMax(localized ? 1.0 : 20.0);
+        field.setStep(localized ? 0.05 : 3.0);
+        field.setFormatter(localized
+                ? NumberFormat.getPercentInstance(Locale.US)
+                : NumberFormat.getNumberInstance(Locale.US));
+        if (prefix) {
+            field.setPrefix(new Label("W"));
+        }
+        field.setHideStepper(hideStepper);
+        field.setDisable(disabled);
+        if (error) {
+            field.setText("9");
+            field.commitEditorText();
+        }
+        return CatalogSamples.configureResponsiveWidth(field, 360.0);
     }
 
     /// Creates a text field, password field, or text area scenario.
