@@ -172,18 +172,10 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         presets.addListener(presetsListener);
     }
 
-    /// Refreshes preset state and clears the selected time when picker bounds exclude it.
+    /// Refreshes preset and field validation state after picker bounds change.
     private void handleSelectableBoundsChanged() {
         updatePresetContent();
-        clearValueIfOutOfBounds();
-    }
-
-    /// Clears the selected time when current bounds exclude it.
-    private void clearValueIfOutOfBounds() {
-        @Nullable LocalTime value = getValue();
-        if (value != null && getPicker().isTimeDisabled(value)) {
-            setValue(null);
-        }
+        selectableRangeChanged();
     }
 
     /// Rebuilds popup content from the current preset list.

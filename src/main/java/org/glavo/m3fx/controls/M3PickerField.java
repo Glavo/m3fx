@@ -9,11 +9,13 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -57,6 +59,11 @@ import java.util.Objects;
 /// [#showingProperty()] is read-only and remains `true` until a requested hide has completed. Showing and hiding are
 /// non-blocking.
 ///
+/// Parse and selectable-range errors are validator-produced state exposed through
+/// [#validationErrorTextProperty()]. They remain independent of application-supplied [#errorTextProperty()] and are
+/// refreshed while validation is active. As an [M3FormInput], a picker field can be registered directly with
+/// [M3FormValidator] and presented by [M3ValidationSummary].
+///
 /// ```java
 /// M3DatePickerField field = new M3DatePickerField();
 /// field.setLabelText("Start date");
@@ -72,7 +79,7 @@ import java.util.Objects;
 /// @param <T> the value type edited by the field
 /// @param <P> the popup picker control type
 @NotNullByDefault
-public abstract sealed class M3PickerField<T, P extends Control> extends Control
+public abstract sealed class M3PickerField<T, P extends Control> extends Control implements M3FormInput
         permits M3DatePickerField, M3TimePickerField {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-picker-field";
@@ -119,8 +126,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Whether value listeners are currently synchronizing the field and picker.
     private boolean synchronizingValue;
 
-    /// Whether the editor text is currently being rewritten from a selected value.
-    private boolean updatingEditorText;
+    /// The last normalized in-range value reflected by the editor and picker.
+    private @Nullable T lastDisplayedValue;
+
+    /// Whether the committed-value property currently has a unidirectional binding.
+    private final ReadOnlyBooleanWrapper valueBound = new ReadOnlyBooleanWrapper(this, "valueBound");
 
     /// Creates a picker field around the supplied popup picker.
     ///
@@ -172,12 +182,34 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// A `null` value represents an empty field. Direct non-null assignments are normalized to the precision
     /// supported by the concrete picker and must fall within its selectable range. A binding source must already
-    /// provide normalized values in that range. Changing the value rewrites [#textProperty()] using the current
-    /// formatter and synchronizes the popup picker.
+    /// provide normalized values in that range. A unidirectional binding makes editor commits, popup selection, and
+    /// value-oriented accessibility actions read-only. A bound value that violates the contract remains observable
+    /// from this property, while the editor and picker retain their last valid value and generated validation reports
+    /// the violation. Valid changes rewrite [#textProperty()] using the current formatter and synchronize the popup
+    /// picker.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
+                /// Installs a unidirectional value binding and makes picker interactions read-only.
+                @Override
+                public void bind(ObservableValue<? extends @Nullable T> observable) {
+                    super.bind(Objects.requireNonNull(observable, "observable"));
+                    valueBound.set(true);
+                    updateBoundState();
+                }
+
+                /// Removes a unidirectional value binding and restores picker interactions.
+                @Override
+                public void unbind() {
+                    boolean wasBound = isBound();
+                    super.unbind();
+                    if (wasBound) {
+                        valueBound.set(false);
+                        updateBoundState();
+                    }
+                }
+
                 /// Normalizes and validates values assigned through the property.
                 @Override
                 public void set(@Nullable T newValue) {
@@ -191,9 +223,15 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 protected void invalidated() {
                     @Nullable T selectedValue = get();
                     if (isBound() && selectedValue != null) {
-                        T normalizedValue = normalizeValue(selectedValue);
-                        if (!Objects.equals(normalizedValue, selectedValue)
-                                || isPickerValueDisabled(selectedValue)) {
+                        try {
+                            T normalizedValue = normalizeValue(selectedValue);
+                            if (!Objects.equals(normalizedValue, selectedValue)
+                                    || isPickerValueDisabled(selectedValue)) {
+                                inputLayout.validate();
+                                return;
+                            }
+                        } catch (DateTimeException | IllegalArgumentException e) {
+                            inputLayout.validate();
                             return;
                         }
                     }
@@ -202,6 +240,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
             };
 
     /// Returns the selected value, or `null` when the field is empty.
+    ///
+    /// A misbehaving unidirectional binding may expose an unnormalized or out-of-range value even though direct
+    /// assignments reject or normalize such values.
     ///
     /// @return the selected value, or `null` when the field is empty
     public final @Nullable T getValue() {
@@ -212,6 +253,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// @param value the selected value, or `null` to clear the field
     /// @throws IllegalArgumentException if `value` is outside the concrete picker's selectable range
+    /// @throws RuntimeException if [#valueProperty()] is unidirectionally bound
     public final void setValue(@Nullable T value) {
         this.value.set(value);
     }
@@ -220,7 +262,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// The property is `null` by default. Direct non-null assignments are normalized and validated by the concrete
     /// picker. A binding source must supply values that are already normalized and within the current selectable
-    /// range. Valid changes rewrite editor text and synchronize the popup picker.
+    /// range. A unidirectional binding makes user value changes read-only. Invalid bound values retain the last valid
+    /// editor and picker presentation and activate generated validation; valid changes rewrite editor text and
+    /// synchronize the popup picker.
     ///
     /// @return the committed-value property
     public final ObjectProperty<@Nullable T> valueProperty() {
@@ -476,6 +520,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Returns the label text displayed by the wrapped input layout.
     ///
     /// @return the label text displayed by the wrapped input layout
+    @Override
     public final String getLabelText() {
         return labelText.get();
     }
@@ -494,6 +539,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// bidirectionally synchronized with the wrapped input layout.
     ///
     /// @return the floating-label property
+    @Override
     public final StringProperty labelTextProperty() {
         return labelText;
     }
@@ -536,10 +582,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return supportingText;
     }
 
-    /// The non-null error message currently displayed by the field.
+    /// The non-null explicit error message supplied by the application.
     ///
-    /// An empty string clears the error presentation. A failed [#commitEditorText()] replaces this value with either
-    /// [#getInvalidTextErrorText()] or [#getRangeErrorText()]; subsequent user edits clear such generated messages.
+    /// An empty string clears the explicit error presentation. Parse and range errors are reported independently
+    /// through [#validationErrorTextProperty()] and never replace this value. Explicit error text takes precedence
+    /// when both sources are non-empty.
     ///
     /// @defaultValue `""`
     private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
@@ -550,29 +597,65 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Returns the current error text shown by the wrapped input layout.
+    /// Returns the explicit application error text.
     ///
-    /// @return the current error text shown by the wrapped input layout
+    /// @return the explicit application error text
     public final String getErrorText() {
         return errorText.get();
     }
 
-    /// Sets the current error text shown by the wrapped input layout.
+    /// Sets the explicit application error text.
     ///
-    /// @param errorText the current error text shown by the wrapped input layout
+    /// @param errorText the non-null application error text, or an empty string to clear it
     /// @throws NullPointerException if `errorText` is `null`
     public final void setErrorText(String errorText) {
         this.errorText.set(errorText);
     }
 
-    /// Returns the observable, bindable non-null current-error-text property.
+    /// Returns the observable, bindable explicit-error-text property.
     ///
-    /// The property is the empty string by default, which clears error presentation, and rejects `null`. It is
-    /// bidirectionally synchronized with the wrapped input layout and may be replaced by a failed text commit.
+    /// The property is the empty string by default, which clears explicit error presentation, and rejects `null`.
+    /// It is bidirectionally synchronized with the wrapped input layout.
     ///
     /// @return the current-error-text property
     public final StringProperty errorTextProperty() {
         return errorText;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final String getValidationErrorText() {
+        return inputLayout.getValidationErrorText();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final ReadOnlyStringProperty validationErrorTextProperty() {
+        return inputLayout.validationErrorTextProperty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final boolean isValidationActive() {
+        return inputLayout.isValidationActive();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final ReadOnlyBooleanProperty validationActiveProperty() {
+        return inputLayout.validationActiveProperty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final void clearValidation() {
+        inputLayout.clearValidation();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final boolean isValidationError() {
+        return inputLayout.isValidationError();
     }
 
     /// The non-null message used when editor text cannot be parsed.
@@ -605,7 +688,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Returns the observable, bindable non-null parse-error-message property.
     ///
     /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
-    /// copied to [#errorTextProperty()] when editor text cannot be parsed.
+    /// published through [#validationErrorTextProperty()] when editor text cannot be parsed.
     ///
     /// @return the parse-error-message property
     public final StringProperty invalidTextErrorTextProperty() {
@@ -642,7 +725,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Returns the observable, bindable non-null range-error-message property.
     ///
     /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
-    /// copied to [#errorTextProperty()] when parsed editor text is outside the selectable range.
+    /// published through [#validationErrorTextProperty()] when parsed editor text is outside the selectable range.
     ///
     /// @return the range-error-message property
     public final StringProperty rangeErrorTextProperty() {
@@ -695,6 +778,24 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return editor;
     }
 
+    /// {@inheritDoc}
+    @Override
+    public final Node getValidationNode() {
+        return this;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final Node getValidationFocusTarget() {
+        return editor;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public final ObservableValue<? extends @Nullable Node> validationFocusTargetProperty() {
+        return inputLayout.inputProperty();
+    }
+
     /// Returns the Material text input layout used by this picker field.
     ///
     /// @return the Material text input layout used by this picker field
@@ -716,40 +817,54 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// Leading and trailing whitespace is ignored. Empty text clears the selected value. Valid text is normalized,
     /// checked against the concrete picker's selectable range, assigned to [valueProperty], and reformatted for
-    /// display. Invalid text leaves the previous value unchanged and displays the configured parse or range error.
+    /// display. Invalid text leaves the previous value unchanged and publishes the configured parse or range error
+    /// through [#validationErrorTextProperty()] without changing [#errorTextProperty()]. A unidirectionally bound
+    /// value is read-only: the editor display is restored and this method returns `false`.
     ///
     /// @return `true` when the editor text was committed as a valid value
     public final boolean commitEditorText() {
+        if (value.isBound()) {
+            updateEditorFromValue();
+            return false;
+        }
+        if (!inputLayout.validate()) {
+            return false;
+        }
+
         String text = editor.getText() == null ? "" : editor.getText().trim();
         if (text.isEmpty()) {
             setValue(null);
-            inputLayout.setErrorText("");
             return true;
         }
 
-        try {
-            T parsedValue = normalizeValue(parseValue(text, getFormatter()));
-            if (isPickerValueDisabled(parsedValue)) {
-                inputLayout.setErrorText(getRangeErrorText());
-                return false;
-            }
+        T parsedValue = normalizeValue(parseValue(text, getFormatter()));
+        setValue(parsedValue);
+        return true;
+    }
 
-            setValue(parsedValue);
-            inputLayout.setErrorText("");
-            return true;
-        } catch (DateTimeException | IllegalArgumentException e) {
-            inputLayout.setErrorText(getInvalidTextErrorText());
-            return false;
+    /// Runs picker validation and commits valid editor text when the value is writable.
+    ///
+    /// A bound value is not written; its last valid formatted display is restored before the bound state is
+    /// validated. For an unbound value this method has the same commit semantics as [#commitEditorText()].
+    ///
+    /// @return `true` when the current picker-field state is valid
+    @Override
+    public final boolean validate() {
+        if (value.isBound()) {
+            updateEditorFromValue();
+            return inputLayout.validate();
         }
+        return commitEditorText();
     }
 
     /// Shows the picker popup when this field has a reachable owner window.
     ///
-    /// The call is non-blocking. It has no effect if the popup is already showing, this field is not effectively
-    /// reachable, or popup placement cannot be resolved. Focus remains managed by the current field and picker
-    /// interaction rather than being requested unconditionally by this method.
+    /// The call is non-blocking. It has no effect if the value is unidirectionally bound, the popup is already
+    /// showing, this field is not effectively reachable, or popup placement cannot be resolved. Focus remains
+    /// managed by the current field and picker interaction rather than being requested unconditionally by this
+    /// method.
     public final void showPicker() {
-        if (!M3Accessible.canReach(this) || isShowing() || !M3PopupWindows.canShow(this)) {
+        if (value.isBound() || !M3Accessible.canReach(this) || isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
@@ -908,9 +1023,12 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 this::handlesAccessibleShowTarget);
 
         inputLayout.setTrailing(openButton);
+        inputLayout.setValidator((input, editorText) -> pickerValidationError(editorText));
         inputLayout.disableProperty().bind(disabledProperty());
         inputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        editor.editableProperty().bind(valueBound.not());
+        openButton.disableProperty().bind(valueBound);
         openButton.setAccessibleText(openButtonAccessibleText);
         openButton.setOnAction(event -> togglePicker());
 
@@ -922,11 +1040,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 commitEditorText();
             }
         });
-        editor.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!updatingEditorText) {
-                clearGeneratedErrorText();
-            }
-        });
+        invalidTextErrorText.addListener(observable -> refreshActiveValidation());
+        rangeErrorText.addListener(observable -> refreshActiveValidation());
+        updateBoundState();
     }
 
     /// Hides the popup if its owner field can no longer be reached from its scene.
@@ -1005,6 +1121,16 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
             return;
         }
 
+        if (value.isBound()) {
+            synchronizingValue = true;
+            try {
+                setPickerValue(validPickerPresentationValue());
+            } finally {
+                synchronizingValue = false;
+            }
+            return;
+        }
+
         setValue(newValue);
         if (isShowing()) {
             hidePicker(true);
@@ -1017,7 +1143,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         try {
             setPickerValue(newValue);
             updateEditorFromValue();
-            clearGeneratedErrorText();
+            inputLayout.clearValidation();
         } finally {
             synchronizingValue = false;
         }
@@ -1029,12 +1155,71 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Updates editor text from the currently selected value.
     private void updateEditorFromValue() {
-        updatingEditorText = true;
+        @Nullable T selectedValue = validDisplayedValue();
+        editor.setText(selectedValue == null ? "" : formatValue(selectedValue, getFormatter()));
+    }
+
+    /// Returns the bound or direct value when it satisfies the field's normalization and range contract.
+    ///
+    /// @return the valid value to present, or `null` when the current value is empty or invalid
+    private @Nullable T validDisplayedValue() {
+        @Nullable T selectedValue = getValue();
+        if (selectedValue == null) {
+            lastDisplayedValue = null;
+            return null;
+        }
         try {
-            @Nullable T selectedValue = getValue();
-            editor.setText(selectedValue == null ? "" : formatValue(selectedValue, getFormatter()));
-        } finally {
-            updatingEditorText = false;
+            T normalizedValue = normalizeValue(selectedValue);
+            if (Objects.equals(normalizedValue, selectedValue) && !isPickerValueDisabled(selectedValue)) {
+                lastDisplayedValue = selectedValue;
+                return selectedValue;
+            }
+        } catch (DateTimeException | IllegalArgumentException e) {
+            // Retain the last valid presentation when a binding source violates the value contract.
+        }
+        return lastDisplayedValue;
+    }
+
+    /// Returns the displayed value when it remains valid for the picker's current selectable range.
+    ///
+    /// @return the value that may be restored into the picker, or `null` when none is currently selectable
+    private @Nullable T validPickerPresentationValue() {
+        @Nullable T displayedValue = validDisplayedValue();
+        if (displayedValue == null) {
+            return null;
+        }
+        try {
+            T normalizedValue = normalizeValue(displayedValue);
+            return Objects.equals(normalizedValue, displayedValue) && !isPickerValueDisabled(displayedValue)
+                    ? displayedValue
+                    : null;
+        } catch (DateTimeException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /// Reconciles field state after the concrete picker's selectable range changes.
+    ///
+    /// An unbound value excluded by the new range is cleared. A bound value remains observable and activates
+    /// generated validation because the field cannot write the binding source.
+    final void selectableRangeChanged() {
+        @Nullable T selectedValue = getValue();
+        if (value.isBound()) {
+            if (boundValueValidationError() != null) {
+                inputLayout.validate();
+            } else {
+                refreshActiveValidation();
+            }
+            synchronizingValue = true;
+            try {
+                setPickerValue(validPickerPresentationValue());
+            } finally {
+                synchronizingValue = false;
+            }
+        } else if (selectedValue != null && isPickerValueDisabled(selectedValue)) {
+            setValue(null);
+        } else {
+            refreshActiveValidation();
         }
     }
 
@@ -1165,7 +1350,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Forwards value-oriented accessibility actions to the picker.
     private void forwardPickerAccessibleAction(AccessibleAction action, Object... parameters) {
-        picker.executeAccessibleAction(action, parameters);
+        if (!value.isBound()) {
+            picker.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Focuses the preferred node inside the popup picker.
@@ -1210,11 +1397,61 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     }
 
-    /// Clears generated parse or range errors after user edits.
-    private void clearGeneratedErrorText() {
-        String errorText = inputLayout.getErrorText();
-        if (errorText.equals(getInvalidTextErrorText()) || errorText.equals(getRangeErrorText())) {
-            inputLayout.setErrorText("");
+    /// Returns a generated error for the current raw editor text and bound value state.
+    ///
+    /// @param editorText the non-null raw editor text supplied by the input layout
+    /// @return the generated error text, or `null` when the current state is valid
+    private @Nullable String pickerValidationError(String editorText) {
+        if (value.isBound()) {
+            @Nullable String boundError = boundValueValidationError();
+            if (boundError != null) {
+                return boundError;
+            }
+        }
+
+        String trimmedText = editorText.trim();
+        if (trimmedText.isEmpty()) {
+            return null;
+        }
+        try {
+            T parsedValue = normalizeValue(parseValue(trimmedText, getFormatter()));
+            return isPickerValueDisabled(parsedValue) ? getRangeErrorText() : null;
+        } catch (DateTimeException | IllegalArgumentException e) {
+            return getInvalidTextErrorText();
+        }
+    }
+
+    /// Returns a generated error for a bound value that violates normalization or range requirements.
+    ///
+    /// @return the generated bound-value error, or `null` when the bound value is valid or empty
+    private @Nullable String boundValueValidationError() {
+        @Nullable T boundValue = getValue();
+        if (boundValue == null) {
+            return null;
+        }
+        try {
+            T normalizedValue = normalizeValue(boundValue);
+            if (!Objects.equals(normalizedValue, boundValue)) {
+                return getInvalidTextErrorText();
+            }
+            return isPickerValueDisabled(boundValue) ? getRangeErrorText() : null;
+        } catch (DateTimeException | IllegalArgumentException e) {
+            return getInvalidTextErrorText();
+        }
+    }
+
+    /// Re-runs picker validation after generated error-message configuration changes.
+    private void refreshActiveValidation() {
+        if (inputLayout.isValidationActive()) {
+            inputLayout.validate();
+        }
+    }
+
+    /// Applies read-only interaction state after the value binding changes.
+    private void updateBoundState() {
+        if (value.isBound()) {
+            hidePicker(false);
+            updateEditorFromValue();
         }
     }
 

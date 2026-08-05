@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventType;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -22,6 +24,7 @@ import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
@@ -68,7 +71,7 @@ final class M3PickerFieldTest {
         field.getEditor().setText("2026-05-25");
         assertFalse(field.commitEditorText());
         assertEquals(LocalDate.of(2026, 5, 21), field.getValue());
-        assertEquals(field.getRangeErrorText(), field.getErrorText());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
 
         field.getPicker().setValue(LocalDate.of(2026, 5, 22));
         assertEquals(LocalDate.of(2026, 5, 22), field.getValue());
@@ -181,11 +184,133 @@ final class M3PickerFieldTest {
         field.getEditor().setText("18:00");
         assertFalse(field.commitEditorText());
         assertEquals(LocalTime.of(11, 45), field.getValue());
-        assertEquals(field.getRangeErrorText(), field.getErrorText());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
 
         field.getEditor().setText("not a time");
         assertFalse(field.commitEditorText());
-        assertEquals(field.getInvalidTextErrorText(), field.getErrorText());
+        assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
+    }
+
+    /// Verifies that application errors and generated picker validation have independent ownership.
+    @Test
+    void pickerFieldsPreserveExplicitErrorsAcrossValidation() {
+        M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+        field.setErrorText("Server rejected this date");
+
+        field.getEditor().setText("not a date");
+        assertFalse(field.commitEditorText());
+        assertEquals("Server rejected this date", field.getErrorText());
+        assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
+        assertTrue(field.isValidationActive());
+
+        field.setInvalidTextErrorText("Use ISO date format");
+        assertEquals("Use ISO date format", field.getValidationErrorText());
+
+        field.getEditor().setText("2026-05-21");
+        assertTrue(field.commitEditorText());
+        assertEquals(LocalDate.of(2026, 5, 21), field.getValue());
+        assertEquals("Server rejected this date", field.getErrorText());
+        assertEquals("", field.getValidationErrorText());
+
+        field.setErrorText(field.getRangeErrorText());
+        field.clearValidation();
+        assertEquals(field.getRangeErrorText(), field.getErrorText());
+        assertFalse(field.isValidationActive());
+        assertFalse(field.isValidationError());
+    }
+
+    /// Verifies that unidirectionally bound picker values are read-only and retain the last valid presentation.
+    @Test
+    void boundPickerFieldValuesAreReadOnly() {
+        M3TimePickerField field = new M3TimePickerField();
+        field.getPicker().setMinTime(LocalTime.of(9, 0));
+        field.getPicker().setMaxTime(LocalTime.of(17, 30));
+        ObjectProperty<@Nullable LocalTime> source =
+                new SimpleObjectProperty<>(LocalTime.of(12, 30));
+        field.valueProperty().bind(source);
+
+        assertFalse(field.getEditor().isEditable());
+        assertEquals("12:30", field.getEditor().getText());
+        field.getEditor().setText("14:00");
+        assertFalse(field.commitEditorText());
+        assertEquals(LocalTime.of(12, 30), field.getValue());
+        assertEquals("12:30", field.getEditor().getText());
+
+        field.getPicker().setValue(LocalTime.of(15, 0));
+        assertEquals(LocalTime.of(12, 30), field.getValue());
+        assertEquals(LocalTime.of(12, 30), field.getPicker().getValue());
+        field.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalTime.of(12, 30), field.getValue());
+
+        source.set(LocalTime.of(18, 0));
+        assertEquals(LocalTime.of(18, 0), field.getValue());
+        assertEquals("12:30", field.getEditor().getText());
+        assertEquals(LocalTime.of(12, 30), field.getPicker().getValue());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+
+        source.set(LocalTime.of(13, 45));
+        assertEquals("13:45", field.getEditor().getText());
+        assertEquals(LocalTime.of(13, 45), field.getPicker().getValue());
+        assertEquals("", field.getValidationErrorText());
+
+        field.getPicker().setMaxTime(LocalTime.of(13, 0));
+        assertEquals(LocalTime.of(13, 45), field.getValue());
+        assertEquals("13:45", field.getEditor().getText());
+        assertNull(field.getPicker().getValue());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+
+        field.getPicker().setMaxTime(LocalTime.of(17, 30));
+        assertEquals(LocalTime.of(13, 45), field.getPicker().getValue());
+        assertEquals("", field.getValidationErrorText());
+
+        field.valueProperty().unbind();
+        assertTrue(field.getEditor().isEditable());
+    }
+
+    /// Verifies mixed Date/Time picker validation order, summary accessibility, and focus routing.
+    @Test
+    void pickerFieldsParticipateInFormValidation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            dateField.setLabelText("Start date");
+            dateField.getEditor().setText("invalid");
+
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+            timeField.setLabelText("Start time");
+            timeField.getPicker().setMinTime(LocalTime.of(9, 0));
+            timeField.getPicker().setMaxTime(LocalTime.of(17, 30));
+            timeField.getEditor().setText("18:00");
+
+            M3FormValidator validator = new M3FormValidator(dateField, timeField);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(summary, dateField, timeField);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 360.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+
+            try {
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(validator.validate());
+                assertEquals(List.of(dateField, timeField), validator.getInvalidInputs());
+                assertSame(dateField, validator.getFirstInvalidInput());
+                assertSame(dateField, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertTrue(summary.focusInput(dateField));
+                assertTrue(dateField.getEditor().isFocused());
+
+                dateField.getEditor().setText("2026-05-21");
+                timeField.getEditor().setText("11:45");
+                assertTrue(validator.validate());
+                assertEquals(LocalDate.of(2026, 5, 21), dateField.getValue());
+                assertEquals(LocalTime.of(11, 45), timeField.getValue());
+                assertTrue(validator.getInvalidInputs().isEmpty());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that time picker field presets render next to the picker and update the field value.

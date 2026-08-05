@@ -186,18 +186,10 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         presets.addListener(presetsListener);
     }
 
-    /// Refreshes preset state and clears the selected date when picker bounds exclude it.
+    /// Refreshes preset and field validation state after picker bounds change.
     private void handleSelectableBoundsChanged() {
         updatePresetContent();
-        clearValueIfOutOfBounds();
-    }
-
-    /// Clears the selected date when current bounds exclude it.
-    private void clearValueIfOutOfBounds() {
-        @Nullable LocalDate value = getValue();
-        if (value != null && getPicker().isDateDisabled(value)) {
-            setValue(null);
-        }
+        selectableRangeChanged();
     }
 
     /// Rebuilds popup content from the current preset list.
