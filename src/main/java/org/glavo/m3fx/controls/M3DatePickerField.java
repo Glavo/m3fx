@@ -139,7 +139,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     /// Creates the default Material Design 3 picker field skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3PickerFieldSkin<>(this);
+        return new M3PickerFieldSkin<>(this, getInputLayout());
     }
 
     /// Parses one editor date string.

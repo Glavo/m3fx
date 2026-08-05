@@ -3,12 +3,13 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.Control;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.Objects;
 
 /// The default Material Design 3 skin for [M3PickerField].
 ///
@@ -24,17 +25,14 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
 
     /// Creates a picker field skin.
     ///
-    /// @param control the skinned picker field
+    /// @param control     the skinned picker field
+    /// @param inputLayout the field-owned input layout to present
     /// @throws IllegalArgumentException if `control` is `null`
-    /// @throws IllegalStateException    if the picker field does not expose its input layout
-    public M3PickerFieldSkin(M3PickerField<T, P> control) {
+    /// @throws NullPointerException     if `inputLayout` is `null`
+    public M3PickerFieldSkin(M3PickerField<T, P> control, M3TextInputLayout inputLayout) {
         super(control);
-        Object item = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);
-        if (!(item instanceof M3TextInputLayout layout)) {
-            throw new IllegalStateException("picker field input layout is unavailable");
-        }
-        inputLayout = layout;
-        getChildren().setAll(inputLayout);
+        this.inputLayout = Objects.requireNonNull(inputLayout, "inputLayout");
+        getChildren().setAll(this.inputLayout);
     }
 
     /// Removes child references before disposal.

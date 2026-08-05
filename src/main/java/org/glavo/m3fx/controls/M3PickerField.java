@@ -817,7 +817,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return switch (attribute) {
             case EXPANDED -> isShowing();
             case FOCUS_NODE -> focusNode();
-            case ITEM_AT_INDEX -> accessibleItem(parameters);
             case SELECTED_ITEMS -> selectedItems();
             case SUBMENU -> picker;
             case TEXT -> editor.getText();
@@ -1050,16 +1049,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     private List<T> selectedItems() {
         @Nullable T selectedValue = getValue();
         return selectedValue == null ? List.of() : List.of(selectedValue);
-    }
-
-    /// Returns the indexed accessibility child used by skins and assistive clients.
-    ///
-    /// @param parameters the accessibility index parameters
-    /// @return the indexed child, or `null` when the parameters do not address a child
-    private @Nullable Node accessibleItem(Object... parameters) {
-        return parameters.length == 1 && parameters[0] instanceof Integer index && index == 0
-                ? inputLayout
-                : null;
     }
 
     /// Returns the current keyboard focus node for accessibility clients.

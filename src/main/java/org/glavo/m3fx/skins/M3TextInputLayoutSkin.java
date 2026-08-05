@@ -953,10 +953,10 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
         double inputLeading = leading;
         double inputTrailing = trailing;
         if (needsRightToLeftTrailingTextReservation(input)) {
-            inputLeading = Math.max(inputLeading, ADORNED_HORIZONTAL_PADDING);
+            inputLeading = Math.max(inputLeading, adornmentWidth(trailingSlot));
             inputTrailing = inputTrailingInset(basePadding);
         } else if (needsRightToLeftFilledLeadingTextReservation(input)) {
-            inputTrailing = Math.max(inputTrailing, ADORNED_HORIZONTAL_PADDING);
+            inputTrailing = Math.max(inputTrailing, adornmentWidth(leadingSlot));
         }
 
         double top = labelVisible
@@ -1029,7 +1029,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     /// @return the logical leading inset
     private double resolvedInputLeadingInset(Insets basePadding) {
         double base = inputLeadingInset(basePadding);
-        return getSkinnable().getLeading() == null ? base : Math.max(base, ADORNED_HORIZONTAL_PADDING);
+        return getSkinnable().getLeading() == null ? base : Math.max(base, adornmentWidth(leadingSlot));
     }
 
     /// Returns the resolved logical trailing input inset.
@@ -1038,7 +1038,44 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     /// @return the logical trailing inset
     private double resolvedInputTrailingInset(Insets basePadding) {
         double base = inputTrailingInset(basePadding);
-        return effectiveTrailing() == null ? base : Math.max(base, ADORNED_HORIZONTAL_PADDING);
+        return effectiveTrailing() == null ? base : Math.max(base, adornmentWidth(trailingSlot));
+    }
+
+    /// Returns the width reserved for one populated adornment slot.
+    ///
+    /// The standard slot remains at least 48 logical pixels wide. Wider composite adornments retain their preferred
+    /// width so they stay inside the input container and do not overlap editable text.
+    ///
+    /// @param slot the populated adornment slot
+    /// @return the logical width reserved for the slot
+    private double adornmentWidth(StackPane slot) {
+        if (slot.getChildren().isEmpty()) {
+            return ADORNED_HORIZONTAL_PADDING;
+        }
+        Node content = slot.getChildren().get(0);
+        double preferredWidth = content.prefWidth(-1.0);
+        if (!Double.isFinite(preferredWidth) || preferredWidth < 0.0) {
+            preferredWidth = content.getLayoutBounds().getWidth();
+        }
+        return snapSizeX(Math.max(ADORNED_HORIZONTAL_PADDING, preferredWidth));
+    }
+
+    /// Lays out one adornment slot at its resolved logical edge.
+    ///
+    /// @param slot    the populated adornment slot
+    /// @param leading whether the slot occupies the logical leading edge
+    private void layoutAdornmentSlot(StackPane slot, boolean leading) {
+        if (!slot.isManaged()) {
+            return;
+        }
+        double slotWidth = Math.min(inputContainer.getWidth(), adornmentWidth(slot));
+        double slotX = leading ? 0.0 : inputContainer.getWidth() - slotWidth;
+        slot.resizeRelocate(
+                snapPositionX(slotX),
+                0.0,
+                snapSizeX(slotWidth),
+                snapSizeY(inputContainer.getHeight())
+        );
     }
 
     /// Returns whether an outlined RTL field needs a leading-only translation correction.
@@ -1153,11 +1190,11 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
         @Nullable Insets basePadding = installedInputBasePadding;
         double leadingInset = basePadding == null
                 ? (getSkinnable().getLeading() == null
-                ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING)
+                ? TEXT_HORIZONTAL_PADDING : adornmentWidth(leadingSlot))
                 : resolvedInputLeadingInset(basePadding);
         double trailingInset = basePadding == null
                 ? (effectiveTrailing() == null
-                ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING)
+                ? TEXT_HORIZONTAL_PADDING : adornmentWidth(trailingSlot))
                 : resolvedInputTrailingInset(basePadding);
         double availableWidth = Math.max(0.0, width - leadingInset - trailingInset);
         expandedLabelScale = resolvedExpandedLabelScale();
@@ -1598,7 +1635,10 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
         /// Lays out stable children and refreshes endpoint geometry.
         @Override
         protected void layoutChildren() {
+            updateInputPadding();
             super.layoutChildren();
+            layoutAdornmentSlot(leadingSlot, true);
+            layoutAdornmentSlot(trailingSlot, false);
             layoutOutlineGeometry(getWidth(), getHeight());
             layoutLabelGeometry(getWidth(), getHeight());
         }

@@ -364,8 +364,14 @@ final class M3PickerFieldTest {
             assertTrue(dateField.getInputLayout().getStyleClass().contains("m3-text-input-layout"));
             assertTrue(timeField.getInputLayout().getStyleClass().contains("m3-text-input-layout"));
 
-            FxTestUtils.replaceSkin(dateField, M3PickerFieldSkin::new);
-            FxTestUtils.replaceSkin(timeField, M3PickerFieldSkin::new);
+            FxTestUtils.replaceSkin(
+                    dateField,
+                    control -> new M3PickerFieldSkin<>(control, control.getInputLayout())
+            );
+            FxTestUtils.replaceSkin(
+                    timeField,
+                    control -> new M3PickerFieldSkin<>(control, control.getInputLayout())
+            );
             root.applyCss();
             root.layout();
 

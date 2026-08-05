@@ -3,11 +3,12 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3NumberField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.Objects;
 
 /// The default Material Design 3 skin for [M3NumberField].
 ///
@@ -19,17 +20,14 @@ public final class M3NumberFieldSkin extends SkinBase<M3NumberField> {
 
     /// Creates a number field skin.
     ///
-    /// @param control the skinned number field
+    /// @param control     the skinned number field
+    /// @param inputLayout the field-owned input layout to present
     /// @throws IllegalArgumentException if `control` is `null`
-    /// @throws IllegalStateException    if the number field does not expose its input layout
-    public M3NumberFieldSkin(M3NumberField control) {
+    /// @throws NullPointerException     if `inputLayout` is `null`
+    public M3NumberFieldSkin(M3NumberField control, M3TextInputLayout inputLayout) {
         super(control);
-        Object item = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);
-        if (!(item instanceof M3TextInputLayout layout)) {
-            throw new IllegalStateException("number field input layout is unavailable");
-        }
-        inputLayout = layout;
-        getChildren().setAll(inputLayout);
+        this.inputLayout = Objects.requireNonNull(inputLayout, "inputLayout");
+        getChildren().setAll(this.inputLayout);
     }
 
     /// Removes child references before disposal.

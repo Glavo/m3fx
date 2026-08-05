@@ -3,14 +3,19 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -112,8 +117,11 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// The trailing container retaining both step buttons.
     private final HBox stepper = new HBox(decrementButton, incrementButton);
 
-    /// Whether editor text is currently being rewritten from a committed value.
-    private boolean updatingEditorText;
+    /// The last finite committed value reflected by the editor and accessibility attributes.
+    private @Nullable Double lastDisplayedValue;
+
+    /// Whether the committed-value property currently has a unidirectional binding.
+    private final ReadOnlyBooleanWrapper valueBound = new ReadOnlyBooleanWrapper(this, "valueBound");
 
     /// Creates an empty number field with an unrestricted range and a step of one.
     public M3NumberField() {
@@ -145,10 +153,31 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// The committed numeric value, or `null` when the field is empty.
     ///
     /// Direct assignments preserve finite values exactly; the range and step govern user commits and adjustment
-    /// actions. A binding source must supply finite values; invalid bound values do not rewrite editor text.
+    /// actions. A unidirectional binding makes user commits and adjustment actions read-only. Its source must supply
+    /// `null` or finite values. A non-finite bound value remains observable from this property, but does not replace
+    /// the last finite editor or accessibility value and activates generated validation error state.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Double> value = new SimpleObjectProperty<>(this, "value") {
+        /// Installs a unidirectional value binding and updates user-action availability.
+        @Override
+        public void bind(ObservableValue<? extends @Nullable Double> observable) {
+            super.bind(Objects.requireNonNull(observable, "observable"));
+            valueBound.set(true);
+            updateStepperState();
+        }
+
+        /// Removes a unidirectional value binding and restores user-action availability.
+        @Override
+        public void unbind() {
+            boolean wasBound = isBound();
+            super.unbind();
+            if (wasBound) {
+                valueBound.set(false);
+                updateStepperState();
+            }
+        }
+
         /// Validates direct assignments before storing them.
         @Override
         public void set(@Nullable Double newValue) {
@@ -159,11 +188,16 @@ public final class M3NumberField extends javafx.scene.control.Control {
         @Override
         protected void invalidated() {
             @Nullable Double currentValue = get();
-            if (isBound() && currentValue != null && !Double.isFinite(currentValue)) {
+            if (currentValue != null && !Double.isFinite(currentValue)) {
+                inputLayout.validate();
                 updateStepperState();
+                notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                M3Accessible.notifyAttribute(M3NumberField.this, VALUE_STRING_ATTRIBUTE);
                 return;
             }
+            lastDisplayedValue = currentValue;
             updateEditorFromValue();
+            inputLayout.clearValidation();
             updateStepperState();
             notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
             M3Accessible.notifyAttribute(M3NumberField.this, VALUE_STRING_ATTRIBUTE);
@@ -171,6 +205,8 @@ public final class M3NumberField extends javafx.scene.control.Control {
     };
 
     /// Returns the committed value, or `null` when the field is empty.
+    ///
+    /// A misbehaving unidirectional binding may expose a non-finite value even though direct assignments reject it.
     ///
     /// @return the committed value, or `null`
     public @Nullable Double getValue() {
@@ -181,11 +217,15 @@ public final class M3NumberField extends javafx.scene.control.Control {
     ///
     /// @param value the finite value to commit, or `null` to clear the field
     /// @throws IllegalArgumentException if `value` is not finite
+    /// @throws RuntimeException if [#valueProperty()] is unidirectionally bound
     public void setValue(@Nullable Double value) {
         this.value.set(value);
     }
 
     /// Returns the observable, bindable committed-value property.
+    ///
+    /// A unidirectional binding makes the field read-only for commits, stepping, adjustment methods, and value
+    /// accessibility actions. Binding sources must provide `null` or finite values.
     ///
     /// @return the committed-value property
     public ObjectProperty<@Nullable Double> valueProperty() {
@@ -243,6 +283,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
         @Override
         protected void invalidated() {
             updateStepperState();
+            refreshActiveValidation();
             notifyAccessibleAttributeChanged(AccessibleAttribute.MIN_VALUE);
         }
     };
@@ -287,6 +328,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
         @Override
         protected void invalidated() {
             updateStepperState();
+            refreshActiveValidation();
             notifyAccessibleAttributeChanged(AccessibleAttribute.MAX_VALUE);
         }
     };
@@ -331,6 +373,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
         @Override
         protected void invalidated() {
             updateStepperState();
+            refreshActiveValidation();
         }
     };
 
@@ -421,6 +464,12 @@ public final class M3NumberField extends javafx.scene.control.Control {
         @Override
         public void set(M3NumberFieldCommitBehavior newValue) {
             super.set(Objects.requireNonNull(newValue, "commitBehavior"));
+        }
+
+        /// Refreshes active validation when the commit policy changes.
+        @Override
+        protected void invalidated() {
+            refreshActiveValidation();
         }
     };
 
@@ -688,22 +737,22 @@ public final class M3NumberField extends javafx.scene.control.Control {
         return supportingText;
     }
 
-    /// The non-null error text currently displayed by the field.
+    /// The non-null explicit error text supplied by the application.
     ///
-    /// Failed commits replace this value with a configured generated message. Subsequent user edits clear generated
-    /// messages while preserving unrelated application-provided error text.
+    /// Numeric parsing and range errors are reported separately through [#validationErrorTextProperty()] and never
+    /// replace this value. Explicit error text takes precedence when both sources are non-empty.
     ///
     /// @defaultValue `""`
     private final StringProperty errorText = nonNullStringProperty("errorText");
 
-    /// Returns the current error text.
+    /// Returns the explicit application error text.
     ///
-    /// @return the current error text
+    /// @return the explicit application error text
     public String getErrorText() {
         return errorText.get();
     }
 
-    /// Sets the current error text.
+    /// Sets the explicit application error text.
     ///
     /// @param errorText the non-null error text, or an empty string to clear the error state
     /// @throws NullPointerException if `errorText` is `null`
@@ -711,11 +760,47 @@ public final class M3NumberField extends javafx.scene.control.Control {
         this.errorText.set(errorText);
     }
 
-    /// Returns the observable, bindable current-error-text property.
+    /// Returns the observable, bindable explicit-error-text property.
     ///
-    /// @return the current-error-text property
+    /// @return the explicit-error-text property
     public StringProperty errorTextProperty() {
         return errorText;
+    }
+
+    /// Returns the current error text produced by numeric validation.
+    ///
+    /// @return the generated validation error, or an empty string when validation succeeds or is inactive
+    public String getValidationErrorText() {
+        return inputLayout.getValidationErrorText();
+    }
+
+    /// Returns the observable read-only numeric-validation-error property.
+    ///
+    /// The property is independent of [#errorTextProperty()]. It becomes non-empty after a failed commit and is
+    /// refreshed as active editor text, range, step, or commit behavior changes.
+    ///
+    /// @return the read-only numeric-validation-error property
+    public ReadOnlyStringProperty validationErrorTextProperty() {
+        return inputLayout.validationErrorTextProperty();
+    }
+
+    /// Returns whether numeric validation has been activated.
+    ///
+    /// @return `true` after validation has run and before it is cleared
+    public boolean isValidationActive() {
+        return inputLayout.isValidationActive();
+    }
+
+    /// Returns the observable read-only validation-active property.
+    ///
+    /// @return the read-only validation-active property
+    public ReadOnlyBooleanProperty validationActiveProperty() {
+        return inputLayout.validationActiveProperty();
+    }
+
+    /// Clears generated numeric validation without changing explicit application error text.
+    public void clearValidation() {
+        inputLayout.clearValidation();
     }
 
     /// The message shown when non-empty editor text cannot be parsed completely.
@@ -840,30 +925,39 @@ public final class M3NumberField extends javafx.scene.control.Control {
         return editor;
     }
 
+    /// Returns the field-owned text input layout for default-skin construction.
+    ///
+    /// @return the field-owned text input layout
+    final M3TextInputLayout getInputLayout() {
+        return inputLayout;
+    }
+
     /// Parses and commits the current editor text.
     ///
     /// Leading and trailing whitespace is ignored. Empty text clears the committed value. Parsing must consume the
     /// complete trimmed string and produce a finite number. A successful commit reformats editor text. A failed
-    /// commit leaves the previous value and raw text unchanged and displays a generated error message.
+    /// commit leaves the previous value and raw text unchanged and displays a generated error message without
+    /// changing [#errorTextProperty()]. If [#valueProperty()] is unidirectionally bound, the editor is restored from
+    /// the last finite bound display and this method returns `false` without attempting to write the binding target.
     ///
     /// @return `true` when the text was committed successfully
     public boolean commitEditorText() {
+        if (value.isBound()) {
+            updateEditorFromValue();
+            return false;
+        }
+        if (!inputLayout.validate()) {
+            return false;
+        }
+
         String editorText = editor.getText() == null ? "" : editor.getText().trim();
         if (editorText.isEmpty()) {
             setValue(null);
-            inputLayout.setErrorText("");
             return true;
         }
 
         @Nullable Double parsedValue = parse(editorText);
         if (parsedValue == null) {
-            inputLayout.setErrorText(getInvalidTextErrorText());
-            return false;
-        }
-
-        if (getCommitBehavior() == M3NumberFieldCommitBehavior.VALIDATE
-                && (!isWithinRange(parsedValue) || !isOnStep(parsedValue))) {
-            inputLayout.setErrorText(getRangeErrorText());
             return false;
         }
 
@@ -871,7 +965,6 @@ public final class M3NumberField extends javafx.scene.control.Control {
                 ? normalizeForSnap(parsedValue)
                 : parsedValue);
         updateEditorFromValue();
-        inputLayout.setErrorText("");
         return true;
     }
 
@@ -882,8 +975,9 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Increases the committed value by a number of steps.
     ///
-    /// Pending editor text is committed first. If it cannot be committed, the value is not changed. When the field
-    /// is empty, stepping begins at zero before range clamping and step snapping.
+    /// For a positive count, pending editor text is committed first. If it cannot be committed or the value property
+    /// is unidirectionally bound, the value is not changed. When the field is empty, stepping begins at zero before
+    /// range clamping and step snapping. A zero count is a no-op and does not commit pending text.
     ///
     /// @param steps the non-negative number of steps
     /// @throws IllegalArgumentException if `steps` is negative
@@ -901,8 +995,9 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Decreases the committed value by a number of steps.
     ///
-    /// Pending editor text is committed first. If it cannot be committed, the value is not changed. When the field
-    /// is empty, stepping begins at zero before range clamping and step snapping.
+    /// For a positive count, pending editor text is committed first. If it cannot be committed or the value property
+    /// is unidirectionally bound, the value is not changed. When the field is empty, stepping begins at zero before
+    /// range clamping and step snapping. A zero count is a no-op and does not commit pending text.
     ///
     /// @param steps the non-negative number of steps
     /// @throws IllegalArgumentException if `steps` is negative
@@ -915,12 +1010,16 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Adjusts the committed value to the nearest in-range step.
     ///
-    /// This programmatic operation does not parse pending editor text.
+    /// This programmatic operation does not parse pending editor text. It has no effect while [#valueProperty()] is
+    /// unidirectionally bound.
     ///
     /// @param value the finite target value
     /// @throws IllegalArgumentException if `value` is not finite
     public void adjustValue(double value) {
-        setValue(normalizeForSnap(requireFinite(value, "value")));
+        double finiteValue = requireFinite(value, "value");
+        if (!this.value.isBound()) {
+            setValue(normalizeForSnap(finiteValue));
+        }
     }
 
     /// Returns accessibility attributes for the numeric value and internal editor.
@@ -937,10 +1036,9 @@ public final class M3NumberField extends javafx.scene.control.Control {
         }
         return switch (attribute) {
             case FOCUS_NODE -> editor;
-            case ITEM_AT_INDEX -> accessibleItem(parameters);
             case MIN_VALUE -> getMin();
             case MAX_VALUE -> getMax();
-            case VALUE -> getValue();
+            case VALUE -> displayedValue();
             case TEXT -> editor.getText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -975,7 +1073,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// @return a new Material number-field skin
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3NumberFieldSkin(this);
+        return new M3NumberFieldSkin(this, inputLayout);
     }
 
     /// Returns the user-agent stylesheet for number fields.
@@ -1002,10 +1100,15 @@ public final class M3NumberField extends javafx.scene.control.Control {
         editor.textProperty().bindBidirectional(text);
         editor.promptTextProperty().bindBidirectional(promptText);
         editor.variantProperty().bindBidirectional(variant);
-        editor.editableProperty().bind(editable);
+        editor.editableProperty().bind(Bindings.createBooleanBinding(
+                () -> isEditable() && !valueBound.get(),
+                editable,
+                valueBound
+        ));
         inputLayout.labelTextProperty().bindBidirectional(labelText);
         inputLayout.supportingTextProperty().bindBidirectional(supportingText);
         inputLayout.errorTextProperty().bindBidirectional(errorText);
+        inputLayout.setValidator((input, editorText) -> numericValidationError(editorText));
         inputLayout.leadingProperty().bind(prefix);
         inputLayout.disableProperty().bind(disabledProperty());
         inputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
@@ -1022,11 +1125,8 @@ public final class M3NumberField extends javafx.scene.control.Control {
                 commitEditorText();
             }
         });
-        editor.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!updatingEditorText) {
-                clearGeneratedErrorText();
-            }
-        });
+        invalidTextErrorText.addListener(observable -> refreshActiveValidation());
+        rangeErrorText.addListener(observable -> refreshActiveValidation());
         disabledProperty().addListener(observable -> updateStepperState());
 
         updateStepperVisibility();
@@ -1067,7 +1167,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
             }
             case ESCAPE -> {
                 updateEditorFromValue();
-                inputLayout.setErrorText("");
+                inputLayout.clearValidation();
                 event.consume();
             }
             default -> {
@@ -1098,7 +1198,10 @@ public final class M3NumberField extends javafx.scene.control.Control {
         if (steps == Integer.MIN_VALUE) {
             throw new IllegalArgumentException("step count magnitude is too large");
         }
-        if (steps == 0 || !isEditable() || isDisabled() || !commitEditorText()) {
+        if (steps == 0 || !isEditable() || isDisabled() || value.isBound()) {
+            return;
+        }
+        if (!editorTextRepresentsDisplayedValue() && !commitEditorText()) {
             return;
         }
         @Nullable Double currentValue = getValue();
@@ -1109,6 +1212,14 @@ public final class M3NumberField extends javafx.scene.control.Control {
             target = steps > 0 ? getMax() : getMin();
         }
         adjustValue(target);
+    }
+
+    /// Returns whether raw editor text is the current formatted committed value.
+    ///
+    /// @return `true` when stepping can use the committed value without parsing pending text
+    private boolean editorTextRepresentsDisplayedValue() {
+        @Nullable String editorText = editor.getText();
+        return formattedValue().equals(editorText == null ? "" : editorText);
     }
 
     /// Parses a complete finite numeric string with the active formatter.
@@ -1123,6 +1234,37 @@ public final class M3NumberField extends javafx.scene.control.Control {
         }
         double value = parsed.doubleValue();
         return Double.isFinite(value) ? value : null;
+    }
+
+    /// Returns a generated error for the current raw editor text.
+    ///
+    /// @param editorText the non-null raw editor text supplied by the input layout
+    /// @return the generated error text, or `null` when the text is valid
+    private @Nullable String numericValidationError(String editorText) {
+        @Nullable Double currentValue = getValue();
+        if (value.isBound() && currentValue != null && !Double.isFinite(currentValue)) {
+            return getInvalidTextErrorText();
+        }
+
+        String trimmedText = editorText.trim();
+        if (trimmedText.isEmpty()) {
+            return null;
+        }
+        @Nullable Double parsedValue = parse(trimmedText);
+        if (parsedValue == null) {
+            return getInvalidTextErrorText();
+        }
+        return getCommitBehavior() == M3NumberFieldCommitBehavior.VALIDATE
+                && (!isWithinRange(parsedValue) || !isOnStep(parsedValue))
+                ? getRangeErrorText()
+                : null;
+    }
+
+    /// Re-runs numeric validation when it is already active.
+    private void refreshActiveValidation() {
+        if (inputLayout.isValidationActive()) {
+            inputLayout.validate();
+        }
     }
 
     /// Returns whether a value lies inside the inclusive range.
@@ -1186,22 +1328,25 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Rewrites editor text from the committed value and active formatter.
     private void updateEditorFromValue() {
-        @Nullable Double currentValue = getValue();
+        @Nullable Double currentValue = displayedValue();
         String formatted = currentValue == null ? "" : getFormatter().format(currentValue);
-        updatingEditorText = true;
-        try {
-            editor.setText(formatted);
-        } finally {
-            updatingEditorText = false;
-        }
+        editor.setText(formatted);
     }
 
     /// Returns the formatted committed value for accessibility clients.
     ///
     /// @return the formatted committed value, or an empty string
     private String formattedValue() {
-        @Nullable Double currentValue = getValue();
+        @Nullable Double currentValue = displayedValue();
         return currentValue == null ? "" : getFormatter().format(currentValue);
+    }
+
+    /// Returns the last finite value represented by the editor.
+    ///
+    /// @return the displayed finite value, or `null` when the displayed field is empty
+    private @Nullable Double displayedValue() {
+        @Nullable Double currentValue = getValue();
+        return currentValue == null || Double.isFinite(currentValue) ? currentValue : lastDisplayedValue;
     }
 
     /// Shows or removes the trailing stepper according to [#hideStepperProperty()].
@@ -1211,18 +1356,14 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Updates local button disable states from editability and range endpoints.
     private void updateStepperState() {
-        boolean unavailable = isDisabled() || !isEditable();
+        boolean unavailable = isDisabled() || !isEditable() || value.isBound();
         @Nullable Double currentValue = getValue();
+        if (currentValue != null && !Double.isFinite(currentValue)) {
+            unavailable = true;
+            currentValue = null;
+        }
         decrementButton.setDisable(unavailable || currentValue != null && currentValue <= getMin());
         incrementButton.setDisable(unavailable || currentValue != null && currentValue >= getMax());
-    }
-
-    /// Clears an error message generated by a previous failed numeric commit.
-    private void clearGeneratedErrorText() {
-        String currentError = inputLayout.getErrorText();
-        if (currentError.equals(getInvalidTextErrorText()) || currentError.equals(getRangeErrorText())) {
-            inputLayout.setErrorText("");
-        }
     }
 
     /// Requests focus for the internal editor through the direct accessibility route.
@@ -1230,17 +1371,6 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// @return `true` when the editor accepted the focus request
     private boolean focusEditor() {
         return M3Accessible.showDirectItem(this, editor);
-    }
-
-    /// Returns the internal node requested by an accessibility index.
-    ///
-    /// @param parameters the accessibility index parameters
-    /// @return the input layout for index zero, or `null`
-    private @Nullable Node accessibleItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        return parameters.length > 0 && parameters[0] instanceof Number number && number.intValue() == 0
-                ? inputLayout
-                : null;
     }
 
     /// Applies the first finite numeric accessibility parameter.

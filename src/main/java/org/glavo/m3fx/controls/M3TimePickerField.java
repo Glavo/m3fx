@@ -125,7 +125,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     /// Creates the default Material Design 3 picker field skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3PickerFieldSkin<>(this);
+        return new M3PickerFieldSkin<>(this, getInputLayout());
     }
 
     /// Parses one editor time string.

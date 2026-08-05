@@ -3,7 +3,11 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventType;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -23,6 +27,8 @@ import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3ComponentTokens;
+import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -126,16 +132,121 @@ final class M3NumberFieldTest {
         assertFalse(field.commitEditorText());
         assertEquals(8.0, field.getValue());
         assertEquals("9", field.getText());
-        assertEquals(field.getRangeErrorText(), field.getErrorText());
+        assertEquals("", field.getErrorText());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+        assertTrue(field.isValidationActive());
 
         field.setText("not a number");
         assertEquals("", field.getErrorText());
+        assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
         assertFalse(field.commitEditorText());
         assertEquals(8.0, field.getValue());
-        assertEquals(field.getInvalidTextErrorText(), field.getErrorText());
+        assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
 
         field.setText("5 trailing");
         assertFalse(field.commitEditorText());
+        assertEquals(8.0, field.getValue());
+    }
+
+    /// Verifies that application errors and generated numeric validation have independent ownership.
+    @Test
+    void preservesExplicitErrorsAcrossValidationAndSuccessfulCommits() {
+        M3NumberField field = decimalField(0.0, 10.0, 4.0, 2.0);
+        field.setCommitBehavior(M3NumberFieldCommitBehavior.VALIDATE);
+        field.setErrorText("Server rejected this value");
+
+        field.setText("5");
+        assertFalse(field.commitEditorText());
+        assertEquals("Server rejected this value", field.getErrorText());
+        assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+
+        field.setText("6");
+        assertTrue(field.commitEditorText());
+        assertEquals(6.0, field.getValue());
+        assertEquals("Server rejected this value", field.getErrorText());
+        assertEquals("", field.getValidationErrorText());
+
+        field.setErrorText(field.getInvalidTextErrorText());
+        field.setText("invalid");
+        assertFalse(field.commitEditorText());
+        field.setText("8");
+        field.clearValidation();
+        assertEquals(field.getInvalidTextErrorText(), field.getErrorText());
+        assertEquals("", field.getValidationErrorText());
+    }
+
+    /// Verifies that control actions never write a unidirectionally bound committed-value property.
+    @Test
+    void treatsUnidirectionallyBoundValuesAsReadOnly() {
+        M3NumberField field = decimalField(0.0, 10.0, 4.0, 2.0);
+        ObjectProperty<@Nullable Double> source = new SimpleObjectProperty<>(4.0);
+        field.valueProperty().bind(source);
+
+        assertFalse(field.getEditor().isEditable());
+        field.setText("8");
+        assertFalse(field.commitEditorText());
+        assertEquals(4.0, field.getValue());
+        assertEquals("4", field.getText());
+
+        field.increment();
+        field.decrement();
+        field.adjustValue(10.0);
+        field.executeAccessibleAction(AccessibleAction.SET_VALUE, 8.0);
+        assertEquals(4.0, field.getValue());
+
+        source.set(8.0);
+        assertEquals("8", field.getText());
+        assertEquals(8.0, field.queryAccessibleAttribute(AccessibleAttribute.VALUE));
+
+        source.set(Double.NaN);
+        assertTrue(Double.isNaN(field.getValue()));
+        assertEquals("8", field.getText());
+        assertEquals(8.0, field.queryAccessibleAttribute(AccessibleAttribute.VALUE));
+        assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
+
+        source.set(6.0);
+        assertEquals("6", field.getText());
+        assertEquals("", field.getValidationErrorText());
+
+        field.valueProperty().unbind();
+        assertTrue(field.getEditor().isEditable());
+        field.increment();
+        assertEquals(8.0, field.getValue());
+    }
+
+    /// Verifies zero-count and empty-value stepping without committing unrelated raw text.
+    @Test
+    void definesZeroCountAndEmptyValueStepping() {
+        M3NumberField field = decimalField(2.0, 10.0, 5.0, 3.0);
+        field.setText("pending");
+
+        field.increment(0);
+        field.decrement(0);
+        assertEquals(5.0, field.getValue());
+        assertEquals("pending", field.getText());
+        assertFalse(field.isValidationActive());
+
+        field.setValue(null);
+        field.increment();
+        assertEquals(2.0, field.getValue());
+
+        field.setValue(null);
+        field.decrement();
+        assertEquals(2.0, field.getValue());
+    }
+
+    /// Verifies that stepping normalizes exact programmatic values outside the configured value scale.
+    @Test
+    void stepsFromProgrammaticValuesOutsideTheValueScale() {
+        M3NumberField field = decimalField(2.0, 11.0, 5.0, 3.0);
+        field.setCommitBehavior(M3NumberFieldCommitBehavior.VALIDATE);
+
+        field.setValue(100.0);
+        field.decrement();
+        assertEquals(11.0, field.getValue());
+
+        field.setValue(6.0);
+        field.increment();
         assertEquals(8.0, field.getValue());
     }
 
@@ -203,7 +314,8 @@ final class M3NumberFieldTest {
             field.setSupportingText("Pixels");
             field.setPrefix(new Label("W"));
             field.setPrefWidth(360.0);
-            StackPane root = themedRoot(field, 420.0, 140.0);
+            M3Theme theme = iconButtonMetricTheme(34.0, 36.0, 17.0);
+            StackPane root = themedRoot(field, 420.0, 140.0, theme);
             layout(root, 420.0, 140.0);
 
             assertInstanceOf(M3NumberFieldSkin.class, field.getSkin());
@@ -213,12 +325,33 @@ final class M3NumberFieldTest {
             assertTrue(field.getWidth() > 0.0);
             assertTrue(field.getHeight() > 0.0);
 
+            M3TextInputLayout inputLayout = field.getInputLayout();
+            javafx.scene.layout.HBox stepper = assertInstanceOf(
+                    javafx.scene.layout.HBox.class,
+                    inputLayout.getTrailing()
+            );
+            M3IconButton decrementButton = assertInstanceOf(M3IconButton.class, stepper.getChildren().get(0));
+            M3IconButton incrementButton = assertInstanceOf(M3IconButton.class, stepper.getChildren().get(1));
+            assertEquals(34.0, decrementButton.getContainerHeight(), 0.0001);
+            assertEquals(36.0, decrementButton.getContainerWidth(), 0.0001);
+            assertEquals(17.0, decrementButton.getContainerShape(), 0.0001);
+            assertTrue(decrementButton.getWidth() >= 48.0);
+            assertTrue(incrementButton.getWidth() >= 48.0);
+            assertTrue(
+                    decrementButton.getBoundsInParent().getMaxX()
+                            <= incrementButton.getBoundsInParent().getMinX()
+            );
+            Bounds stepperBounds = inputLayout.sceneToLocal(stepper.localToScene(stepper.getBoundsInLocal()));
+            assertTrue(stepperBounds.getMinX() >= 0.0, stepperBounds::toString);
+            assertTrue(stepperBounds.getMaxX() <= inputLayout.getWidth(), stepperBounds::toString);
+            assertTrue(field.getEditor().getPadding().getRight() >= stepperBounds.getWidth());
+
             field.setHideStepper(true);
             layout(root, 420.0, 140.0);
             assertTrue(field.lookupAll(".m3-number-field-stepper").isEmpty());
 
             field.setHideStepper(false);
-            FxTestUtils.replaceSkin(field, M3NumberFieldSkin::new);
+            FxTestUtils.replaceSkin(field, control -> new M3NumberFieldSkin(control, control.getInputLayout()));
             layout(root, 420.0, 140.0);
             assertInstanceOf(M3NumberFieldSkin.class, field.getSkin());
             assertEquals(2, field.lookupAll(".m3-number-field-step-button").size());
@@ -298,6 +431,14 @@ final class M3NumberFieldTest {
                 root.applyCss();
                 root.layout();
 
+                for (M3NumberField field : new M3NumberField[]{filled, outlined, invalid}) {
+                    for (Node node : field.lookupAll(".m3-number-field-step-button")) {
+                        M3IconButton button = assertInstanceOf(M3IconButton.class, node);
+                        assertTrue(button.getWidth() >= button.getContainerWidth());
+                        assertTrue(button.getHeight() >= button.getContainerHeight());
+                    }
+                }
+
                 WritableImage image = snapshotImageOnFxThread(root);
                 assertSnapshotHasColorVariety(image, 6);
                 writeVisualSnapshot(image, Path.of(
@@ -333,10 +474,62 @@ final class M3NumberFieldTest {
     /// @param height the root height
     /// @return the themed root
     private static StackPane themedRoot(M3NumberField field, double width, double height) {
+        return themedRoot(field, width, height, M3Theme.defaultTheme());
+    }
+
+    /// Creates a themed detached root containing one number field.
+    ///
+    /// @param field  the number field
+    /// @param width  the root width
+    /// @param height the root height
+    /// @param theme  the theme installed on the root
+    /// @return the themed root
+    private static StackPane themedRoot(M3NumberField field, double width, double height, M3Theme theme) {
         StackPane root = new StackPane(field);
-        M3ThemeManager.install(root, M3Theme.defaultTheme());
+        M3ThemeManager.install(root, theme);
         new Scene(root, width, height);
         return root;
+    }
+
+    /// Creates a theme whose small icon-button metrics differ from the baseline NumberField CSS values.
+    ///
+    /// @param height the small icon-button visual container height
+    /// @param width  the small icon-button default visual container width
+    /// @param shape  the small round icon-button resting shape
+    /// @return the customized theme
+    private static M3Theme iconButtonMetricTheme(double height, double width, double shape) {
+        M3Theme baseTheme = M3Theme.defaultTheme();
+        M3ComponentTokens baseComponents = baseTheme.tokens().componentTokens();
+        M3ComponentTokens.IconButtonTokens baseIconButtons = baseComponents.iconButton();
+        M3ComponentTokens.IconButtonSizeTokens baseSmall = baseIconButtons.small();
+        M3ComponentTokens.IconButtonSizeTokens customSmall = new M3ComponentTokens.IconButtonSizeTokens(
+                height,
+                baseSmall.iconSize(),
+                baseSmall.narrowWidth(),
+                width,
+                baseSmall.wideWidth(),
+                shape,
+                baseSmall.squareContainerShape(),
+                baseSmall.pressedRoundContainerShape(),
+                baseSmall.pressedSquareContainerShape(),
+                baseSmall.selectedRoundContainerShape(),
+                baseSmall.selectedSquareContainerShape(),
+                baseSmall.outlineWidth()
+        );
+        M3ComponentTokens.IconButtonTokens customIconButtons = new M3ComponentTokens.IconButtonTokens(
+                baseIconButtons.extraSmall(),
+                customSmall,
+                baseIconButtons.medium(),
+                baseIconButtons.large(),
+                baseIconButtons.extraLarge()
+        );
+        M3ComponentTokens customComponents = M3ComponentTokens.builder(baseComponents)
+                .iconButton(customIconButtons)
+                .build();
+        M3TokenSet customTokens = M3TokenSet.builder(baseTheme.tokens())
+                .componentTokens(customComponents)
+                .build();
+        return M3Theme.fromTokenSet(customTokens);
     }
 
     /// Applies CSS and lays out a root at a stable size.
