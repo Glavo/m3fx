@@ -22,7 +22,6 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import javafx.scene.control.TextInputControl;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -39,7 +38,7 @@ import java.util.Set;
 /// Displays the invalid fields reported by an [M3FormValidator].
 ///
 /// `M3ValidationSummary` observes an [M3FormValidator] and renders a compact list of invalid
-/// [M3TextInputLayout] controls. It can show an empty valid state, include field labels and error text, and move
+/// [M3FormInput] controls. It can show an empty valid state, include field labels and error text, and move
 /// focus to the related field when an invalid entry is activated.
 ///
 /// The summary observes the form validator but does not initiate validation. Application code normally validates
@@ -65,13 +64,13 @@ public final class M3ValidationSummary extends Control {
     private static final PseudoClass EMPTY_PSEUDO_CLASS = PseudoClass.getPseudoClass("empty");
 
     /// Updates summary state when the validator invalid input list changes.
-    private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> {
+    private final ListChangeListener<M3FormInput> invalidInputsListener = change -> {
         updateReachabilityObservers();
         updateSummaryState();
     };
 
     /// Weak invalid-input listener that avoids retaining the summary through a long-lived validator.
-    private final WeakListChangeListener<M3TextInputLayout> weakInvalidInputsListener =
+    private final WeakListChangeListener<M3FormInput> weakInvalidInputsListener =
             new WeakListChangeListener<>(invalidInputsListener);
 
     /// Updates summary state when an observed node changes visibility or disabled state.
@@ -94,7 +93,7 @@ public final class M3ValidationSummary extends Control {
     /// Nodes in current summary and invalid input ancestry chains observed for row visibility changes.
     private final Set<Node> observedReachabilityNodes = Collections.newSetFromMap(new IdentityHashMap<>());
 
-    /// Notifies accessibility clients when focus moves between invalid input layouts.
+    /// Notifies accessibility clients when focus moves between invalid inputs.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
@@ -115,7 +114,7 @@ public final class M3ValidationSummary extends Control {
         setValidator(Objects.requireNonNull(validator, "validator"));
     }
 
-    /// The form validator that supplies invalid input layouts.
+    /// The form validator that supplies invalid inputs.
     ///
     /// The default is `null`. Replacing the value detaches observation from the previous validator and immediately
     /// reflects the replacement's current invalid-input list. It does not run validation.
@@ -252,7 +251,7 @@ public final class M3ValidationSummary extends Control {
         return showWhenValid;
     }
 
-    /// The number of invalid input layouts that currently have a visible and enabled ancestor chain.
+    /// The number of invalid inputs that currently have a visible and enabled semantic-node ancestor chain.
     private final ReadOnlyIntegerWrapper visibleInvalidInputCount =
             new ReadOnlyIntegerWrapper(this, "visibleInvalidInputCount");
 
@@ -297,7 +296,7 @@ public final class M3ValidationSummary extends Control {
     ///
     /// @param index the zero-based index in the validator's complete invalid-input list
     /// @return the invalid input, or `null` when no validator is installed or the index is outside the list
-    public final @Nullable M3TextInputLayout getInvalidInput(int index) {
+    public final @Nullable M3FormInput getInvalidInput(int index) {
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null || index < 0 || index >= validator.getInvalidInputs().size()) {
             return null;
@@ -311,10 +310,10 @@ public final class M3ValidationSummary extends Control {
     /// does not have to share a scene with the summary, which allows standalone summaries and form previews to render
     /// validation results before the corresponding fields are attached to the same scene.
     ///
-    /// @param input the invalid input layout to test
+    /// @param input the invalid input to test
     /// @return `true` when the input should be rendered by this summary
     /// @throws NullPointerException if `input` is `null`
-    public final boolean isInvalidInputShown(M3TextInputLayout input) {
+    public final boolean isInvalidInputShown(M3FormInput input) {
         return isShownInvalidInput(Objects.requireNonNull(input, "input"));
     }
 
@@ -323,22 +322,22 @@ public final class M3ValidationSummary extends Control {
     /// A reachable invalid input is shown by this summary and can be reached from the current scene when the summary is
     /// attached to one.
     ///
-    /// @param input the invalid input layout to test
+    /// @param input the invalid input to test
     /// @return `true` when the input is reachable from this summary
     /// @throws NullPointerException if `input` is `null`
-    public final boolean isInvalidInputReachable(M3TextInputLayout input) {
+    public final boolean isInvalidInputReachable(M3FormInput input) {
         return isAccessibleInvalidInput(Objects.requireNonNull(input, "input"));
     }
 
-    /// Requests focus for one invalid input layout if it belongs to the current validator.
+    /// Requests focus for one invalid input if it belongs to the current validator.
     ///
     /// The input is revealed through its containing controls before focus is requested.
     ///
     /// @param input the invalid input to reveal and focus
     /// @return `true` when the input was reachable and focus was requested; otherwise `false`
     /// @throws NullPointerException if `input` is `null`
-    public final boolean focusInput(M3TextInputLayout input) {
-        M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
+    public final boolean focusInput(M3FormInput input) {
+        M3FormInput validatedInput = Objects.requireNonNull(input, "input");
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null || !isAccessibleInvalidInput(validatedInput)) {
             return false;
@@ -373,7 +372,7 @@ public final class M3ValidationSummary extends Control {
         return switch (attribute) {
             case TEXT -> accessibleText();
             case ITEM_COUNT -> reachableInvalidInputCount();
-            case ITEM_AT_INDEX -> accessibleInvalidInputAt(M3Accessible.indexParameter(parameters));
+            case ITEM_AT_INDEX -> accessibleInvalidInputNodeAt(M3Accessible.indexParameter(parameters));
             case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -433,8 +432,8 @@ public final class M3ValidationSummary extends Control {
             return;
         }
 
-        for (M3TextInputLayout input : validator.getInvalidInputs()) {
-            observeReachabilityChain(input);
+        for (M3FormInput input : validator.getInvalidInputs()) {
+            observeReachabilityChain(input.getValidationNode());
         }
     }
 
@@ -497,12 +496,13 @@ public final class M3ValidationSummary extends Control {
             return null;
         }
 
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (!isAccessibleInvalidInput(invalidInput)) {
                 continue;
             }
-            if (M3Accessible.containsNode(invalidInput, focusOwner)) {
-                @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(invalidInput);
+            Node validationNode = invalidInput.getValidationNode();
+            if (M3Accessible.containsNode(validationNode, focusOwner)) {
+                @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(validationNode);
                 return focusTarget == null ? invalidFocusNode(invalidInput) : focusTarget;
             }
         }
@@ -511,11 +511,12 @@ public final class M3ValidationSummary extends Control {
 
     /// Returns an active popup or overlay focus target exposed by a reachable invalid input.
     private @Nullable Node activeInvalidInputExternalFocusTarget(M3FormValidator validator) {
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (!isAccessibleInvalidInput(invalidInput)) {
                 continue;
             }
-            @Nullable Node focusTarget = M3Accessible.activeExternalFocusTarget(this, invalidInput);
+            @Nullable Node focusTarget =
+                    M3Accessible.activeExternalFocusTarget(this, invalidInput.getValidationNode());
             if (focusTarget != null) {
                 return focusTarget;
             }
@@ -530,7 +531,7 @@ public final class M3ValidationSummary extends Control {
             return null;
         }
 
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             @Nullable Node focusNode = invalidFocusNode(invalidInput);
             if (focusNode != null) {
                 return focusNode;
@@ -539,14 +540,15 @@ public final class M3ValidationSummary extends Control {
         return null;
     }
 
-    /// Returns the preferred focus target for one invalid input layout.
-    private @Nullable Node invalidFocusNode(M3TextInputLayout invalidInput) {
+    /// Returns the preferred focus target for one invalid input.
+    private @Nullable Node invalidFocusNode(M3FormInput invalidInput) {
         if (!isAccessibleInvalidInput(invalidInput)) {
             return null;
         }
-        @Nullable TextInputControl textInput = invalidInput.getInput();
-        @Nullable Node textInputFocusTarget = M3Accessible.focusTarget(textInput);
-        return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.focusTarget(invalidInput);
+        @Nullable Node preferredTarget = M3Accessible.focusTarget(invalidInput.getValidationFocusTarget());
+        return preferredTarget != null
+                ? preferredTarget
+                : M3Accessible.focusTarget(invalidInput.getValidationNode());
     }
 
     /// Requests focus for the current accessible invalid input target.
@@ -571,7 +573,7 @@ public final class M3ValidationSummary extends Control {
             return focusAccessibleNode();
         }
 
-        @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
+        @Nullable M3FormInput input = accessibleActionInput(parameters);
         if (input == null) {
             return false;
         }
@@ -580,7 +582,7 @@ public final class M3ValidationSummary extends Control {
             return focusInput(input);
         }
 
-        if (M3Accessible.showAccessibleActionTarget(this, input, parameters)) {
+        if (M3Accessible.showAccessibleActionTarget(this, input.getValidationNode(), parameters)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -588,7 +590,7 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns the invalid input referenced by accessibility action parameters.
-    private @Nullable M3TextInputLayout accessibleActionInput(Object... parameters) {
+    private @Nullable M3FormInput accessibleActionInput(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
             return firstAccessibleInvalidInput();
@@ -597,7 +599,7 @@ public final class M3ValidationSummary extends Control {
             return accessibleInvalidInputAt(M3Accessible.indexParameter(parameters));
         }
         for (Object parameter : parameters) {
-            @Nullable M3TextInputLayout input = accessibleActionInput(parameter);
+            @Nullable M3FormInput input = accessibleActionInput(parameter);
             if (input != null) {
                 return input;
             }
@@ -606,23 +608,23 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns the invalid input referenced by one accessibility action parameter.
-    private @Nullable M3TextInputLayout accessibleActionInput(@Nullable Object parameter) {
+    private @Nullable M3FormInput accessibleActionInput(@Nullable Object parameter) {
         if (parameter instanceof Number number) {
             return accessibleInvalidInputAt(number.intValue());
         }
-        if (parameter instanceof M3TextInputLayout input && isAccessibleInvalidInput(input)) {
+        if (parameter instanceof M3FormInput input && isAccessibleInvalidInput(input)) {
             return input;
         }
         if (parameter instanceof Node node) {
             return invalidInputContaining(node);
         }
-        @Nullable M3TextInputLayout exposingInput = invalidInputExposing(parameter);
+        @Nullable M3FormInput exposingInput = invalidInputExposing(parameter);
         if (exposingInput != null) {
             return exposingInput;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
-                @Nullable M3TextInputLayout input = accessibleActionInput(value);
+                @Nullable M3FormInput input = accessibleActionInput(value);
                 if (input != null) {
                     return input;
                 }
@@ -631,7 +633,7 @@ public final class M3ValidationSummary extends Control {
         }
         if (parameter instanceof Object[] values) {
             for (Object value : values) {
-                @Nullable M3TextInputLayout input = accessibleActionInput(value);
+                @Nullable M3FormInput input = accessibleActionInput(value);
                 if (input != null) {
                     return input;
                 }
@@ -641,7 +643,7 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns whether the supplied input is in the current invalid input list.
-    private boolean containsInvalidInput(M3TextInputLayout input) {
+    private boolean containsInvalidInput(M3FormInput input) {
         @Nullable M3FormValidator validator = getValidator();
         return validator != null && validator.getInvalidInputs().contains(input);
     }
@@ -654,7 +656,7 @@ public final class M3ValidationSummary extends Control {
         }
 
         int count = 0;
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (isShownInvalidInput(invalidInput)) {
                 count++;
             }
@@ -670,7 +672,7 @@ public final class M3ValidationSummary extends Control {
         }
 
         int count = 0;
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (isAccessibleInvalidInput(invalidInput)) {
                 count++;
             }
@@ -679,7 +681,7 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns one accessibility-reachable invalid input by visible invalid-input index.
-    private @Nullable M3TextInputLayout accessibleInvalidInputAt(int index) {
+    private @Nullable M3FormInput accessibleInvalidInputAt(int index) {
         if (index < 0) {
             return null;
         }
@@ -689,7 +691,7 @@ public final class M3ValidationSummary extends Control {
         }
 
         int reachableIndex = 0;
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (!isAccessibleInvalidInput(invalidInput)) {
                 continue;
             }
@@ -701,14 +703,20 @@ public final class M3ValidationSummary extends Control {
         return null;
     }
 
+    /// Returns the semantic node for one accessibility-reachable invalid input.
+    private @Nullable Node accessibleInvalidInputNodeAt(int index) {
+        @Nullable M3FormInput input = accessibleInvalidInputAt(index);
+        return input == null ? null : input.getValidationNode();
+    }
+
     /// Returns the first invalid input currently exposed to accessibility clients.
-    private @Nullable M3TextInputLayout firstAccessibleInvalidInput() {
+    private @Nullable M3FormInput firstAccessibleInvalidInput() {
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null || !M3Accessible.isEffectivelyReachable(this)) {
             return null;
         }
 
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (isAccessibleInvalidInput(invalidInput)) {
                 return invalidInput;
             }
@@ -717,33 +725,34 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns whether one invalid input belongs to this summary and has a visible ancestor chain.
-    private boolean isShownInvalidInput(M3TextInputLayout input) {
+    private boolean isShownInvalidInput(M3FormInput input) {
         return containsInvalidInput(input)
                 && M3Accessible.isEffectivelyReachable(this)
-                && M3Accessible.isEffectivelyReachable(input);
+                && M3Accessible.isEffectivelyReachable(input.getValidationNode());
     }
 
     /// Returns whether one invalid input belongs to this summary and has a reachable ancestor chain.
-    private boolean isAccessibleInvalidInput(M3TextInputLayout input) {
+    private boolean isAccessibleInvalidInput(M3FormInput input) {
         return isShownInvalidInput(input)
-                && (getScene() == null || M3Accessible.canReach(input));
+                && (getScene() == null || M3Accessible.canReach(input.getValidationNode()));
     }
 
     /// Returns the invalid input that owns or contains the supplied node.
-    private @Nullable M3TextInputLayout invalidInputContaining(Node node) {
+    private @Nullable M3FormInput invalidInputContaining(Node node) {
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null) {
             return null;
         }
 
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (!isAccessibleInvalidInput(invalidInput)) {
                 continue;
             }
-            if (node == invalidInput
-                    || node == invalidInput.getInput()
-                    || M3Accessible.containsNode(invalidInput, node)
-                    || M3Accessible.containsAccessibleActionTarget(invalidInput, node)) {
+            Node validationNode = invalidInput.getValidationNode();
+            if (node == validationNode
+                    || node == invalidInput.getValidationFocusTarget()
+                    || M3Accessible.containsNode(validationNode, node)
+                    || M3Accessible.containsAccessibleActionTarget(validationNode, node)) {
                 return invalidInput;
             }
         }
@@ -751,7 +760,7 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns the invalid input whose accessibility tree exposes the supplied action parameter.
-    private @Nullable M3TextInputLayout invalidInputExposing(@Nullable Object parameter) {
+    private @Nullable M3FormInput invalidInputExposing(@Nullable Object parameter) {
         if (parameter == null) {
             return null;
         }
@@ -760,11 +769,11 @@ public final class M3ValidationSummary extends Control {
             return null;
         }
 
-        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+        for (M3FormInput invalidInput : validator.getInvalidInputs()) {
             if (!isAccessibleInvalidInput(invalidInput)) {
                 continue;
             }
-            if (M3Accessible.containsAccessibleActionTarget(invalidInput, parameter)) {
+            if (M3Accessible.containsAccessibleActionTarget(invalidInput.getValidationNode(), parameter)) {
                 return invalidInput;
             }
         }
@@ -772,7 +781,7 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns whether action parameters directly reference the invalid input itself.
-    private static boolean isDirectInvalidInputRequest(M3TextInputLayout input, Object... parameters) {
+    private static boolean isDirectInvalidInputRequest(M3FormInput input, Object... parameters) {
         for (Object parameter : parameters) {
             if (isDirectInvalidInputRequest(input, parameter)) {
                 return true;
@@ -782,8 +791,8 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns whether one action parameter directly references the invalid input itself.
-    private static boolean isDirectInvalidInputRequest(M3TextInputLayout input, @Nullable Object parameter) {
-        if (parameter == input) {
+    private static boolean isDirectInvalidInputRequest(M3FormInput input, @Nullable Object parameter) {
+        if (parameter == input || parameter == input.getValidationNode()) {
             return true;
         }
         if (parameter instanceof Iterable<?> values) {

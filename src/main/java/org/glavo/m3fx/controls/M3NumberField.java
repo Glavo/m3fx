@@ -48,7 +48,7 @@ import java.util.Objects;
 /// [M3NumberFieldCommitBehavior#SNAP] clamps parsed text to the configured range and snaps it to the nearest step.
 /// [M3NumberFieldCommitBehavior#VALIDATE] instead rejects values that are outside the range or are not aligned to a
 /// step, leaving both the text and previous committed value unchanged. Step values are anchored at [#getMin()] when
-/// a non-default minimum is configured and at zero otherwise.
+/// the minimum is finite and at zero when the range is unbounded below.
 ///
 /// Parsing and display use [#formatterProperty()]. The initial formatter is a number formatter for the default
 /// format locale at construction time. The decrement and increment buttons can be hidden without disabling keyboard,
@@ -64,7 +64,7 @@ import java.util.Objects;
 /// See [Adobe Spectrum 2 NumberField](https://react-spectrum.adobe.com/NumberField) and
 /// [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
-public final class M3NumberField extends javafx.scene.control.Control {
+public final class M3NumberField extends javafx.scene.control.Control implements M3FormInput {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-number-field";
 
@@ -80,11 +80,11 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// The style class applied to the increment button.
     private static final String INCREMENT_BUTTON_STYLE_CLASS = "m3-number-field-increment-button";
 
-    /// The unconstrained minimum sentinel.
-    private static final double DEFAULT_MIN = -Double.MAX_VALUE;
+    /// The default unbounded minimum.
+    private static final double DEFAULT_MIN = Double.NEGATIVE_INFINITY;
 
-    /// The unconstrained maximum sentinel.
-    private static final double DEFAULT_MAX = Double.MAX_VALUE;
+    /// The default unbounded maximum.
+    private static final double DEFAULT_MAX = Double.POSITIVE_INFINITY;
 
     /// The initial step size.
     private static final double DEFAULT_STEP = 1.0;
@@ -139,10 +139,11 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Creates a number field with an inclusive range and initial committed value.
     ///
-    /// @param min   the finite inclusive minimum
-    /// @param max   the finite inclusive maximum
+    /// @param min   the inclusive minimum, which may be negative infinity for no lower bound
+    /// @param max   the inclusive maximum, which may be positive infinity for no upper bound
     /// @param value the initial finite value
-    /// @throws IllegalArgumentException if a parameter is not finite or `min` is greater than `max`
+    /// @throws IllegalArgumentException if `value` is not finite, an endpoint is invalid, or `min` is greater than
+    ///                                  `max`
     public M3NumberField(double min, double max, double value) {
         this();
         setMin(min);
@@ -267,12 +268,12 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// The inclusive minimum accepted by the field.
     ///
-    /// @defaultValue `-Double.MAX_VALUE`
+    /// @defaultValue `Double.NEGATIVE_INFINITY`
     private final DoubleProperty min = new SimpleDoubleProperty(this, "min", DEFAULT_MIN) {
         /// Validates minimum assignments.
         @Override
         public void set(double newValue) {
-            requireFinite(newValue, "min");
+            requireMinimum(newValue);
             if (newValue > getMax()) {
                 throw new IllegalArgumentException("min must be less than or equal to max");
             }
@@ -290,20 +291,22 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Returns the inclusive minimum value.
     ///
-    /// @return the inclusive minimum value
+    /// @return the inclusive minimum value, or negative infinity when the field has no lower bound
     public double getMin() {
         return min.get();
     }
 
     /// Sets the inclusive minimum value.
     ///
-    /// @param min the finite inclusive minimum
-    /// @throws IllegalArgumentException if `min` is not finite or is greater than [#getMax()]
+    /// @param min the inclusive minimum, or negative infinity for no lower bound
+    /// @throws IllegalArgumentException if `min` is NaN, positive infinity, or greater than [#getMax()]
     public void setMin(double min) {
         this.min.set(min);
     }
 
     /// Returns the observable, bindable minimum-value property.
+    ///
+    /// Negative infinity represents an unbounded lower side; other values must be finite.
     ///
     /// @return the minimum-value property
     public DoubleProperty minProperty() {
@@ -312,12 +315,12 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// The inclusive maximum accepted by the field.
     ///
-    /// @defaultValue `Double.MAX_VALUE`
+    /// @defaultValue `Double.POSITIVE_INFINITY`
     private final DoubleProperty max = new SimpleDoubleProperty(this, "max", DEFAULT_MAX) {
         /// Validates maximum assignments.
         @Override
         public void set(double newValue) {
-            requireFinite(newValue, "max");
+            requireMaximum(newValue);
             if (newValue < getMin()) {
                 throw new IllegalArgumentException("max must be greater than or equal to min");
             }
@@ -335,20 +338,22 @@ public final class M3NumberField extends javafx.scene.control.Control {
 
     /// Returns the inclusive maximum value.
     ///
-    /// @return the inclusive maximum value
+    /// @return the inclusive maximum value, or positive infinity when the field has no upper bound
     public double getMax() {
         return max.get();
     }
 
     /// Sets the inclusive maximum value.
     ///
-    /// @param max the finite inclusive maximum
-    /// @throws IllegalArgumentException if `max` is not finite or is less than [#getMin()]
+    /// @param max the inclusive maximum, or positive infinity for no upper bound
+    /// @throws IllegalArgumentException if `max` is NaN, negative infinity, or less than [#getMin()]
     public void setMax(double max) {
         this.max.set(max);
     }
 
     /// Returns the observable, bindable maximum-value property.
+    ///
+    /// Positive infinity represents an unbounded upper side; other values must be finite.
     ///
     /// @return the maximum-value property
     public DoubleProperty maxProperty() {
@@ -691,6 +696,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// Returns the floating label text.
     ///
     /// @return the floating label text
+    @Override
     public String getLabelText() {
         return labelText.get();
     }
@@ -706,6 +712,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// Returns the observable, bindable floating-label property.
     ///
     /// @return the floating-label property
+    @Override
     public StringProperty labelTextProperty() {
         return labelText;
     }
@@ -770,6 +777,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// Returns the current error text produced by numeric validation.
     ///
     /// @return the generated validation error, or an empty string when validation succeeds or is inactive
+    @Override
     public String getValidationErrorText() {
         return inputLayout.getValidationErrorText();
     }
@@ -780,6 +788,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// refreshed as active editor text, range, step, or commit behavior changes.
     ///
     /// @return the read-only numeric-validation-error property
+    @Override
     public ReadOnlyStringProperty validationErrorTextProperty() {
         return inputLayout.validationErrorTextProperty();
     }
@@ -787,6 +796,7 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// Returns whether numeric validation has been activated.
     ///
     /// @return `true` after validation has run and before it is cleared
+    @Override
     public boolean isValidationActive() {
         return inputLayout.isValidationActive();
     }
@@ -794,13 +804,21 @@ public final class M3NumberField extends javafx.scene.control.Control {
     /// Returns the observable read-only validation-active property.
     ///
     /// @return the read-only validation-active property
+    @Override
     public ReadOnlyBooleanProperty validationActiveProperty() {
         return inputLayout.validationActiveProperty();
     }
 
     /// Clears generated numeric validation without changing explicit application error text.
+    @Override
     public void clearValidation() {
         inputLayout.clearValidation();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public boolean isValidationError() {
+        return inputLayout.isValidationError();
     }
 
     /// The message shown when non-empty editor text cannot be parsed completely.
@@ -925,6 +943,24 @@ public final class M3NumberField extends javafx.scene.control.Control {
         return editor;
     }
 
+    /// {@inheritDoc}
+    @Override
+    public Node getValidationNode() {
+        return this;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public Node getValidationFocusTarget() {
+        return editor;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public ObservableValue<? extends @Nullable Node> validationFocusTargetProperty() {
+        return inputLayout.inputProperty();
+    }
+
     /// Returns the field-owned text input layout for default-skin construction.
     ///
     /// @return the field-owned text input layout
@@ -966,6 +1002,21 @@ public final class M3NumberField extends javafx.scene.control.Control {
                 : parsedValue);
         updateEditorFromValue();
         return true;
+    }
+
+    /// Runs numeric validation and commits valid editor text when the value is writable.
+    ///
+    /// A bound value is not written; its formatted display is restored before the current numeric state is
+    /// validated. For an unbound value this method has the same commit semantics as [#commitEditorText()].
+    ///
+    /// @return `true` when the current numeric state is valid
+    @Override
+    public boolean validate() {
+        if (value.isBound()) {
+            updateEditorFromValue();
+            return inputLayout.validate();
+        }
+        return commitEditorText();
     }
 
     /// Increases the committed value by one step.
@@ -1036,8 +1087,8 @@ public final class M3NumberField extends javafx.scene.control.Control {
         }
         return switch (attribute) {
             case FOCUS_NODE -> editor;
-            case MIN_VALUE -> getMin();
-            case MAX_VALUE -> getMax();
+            case MIN_VALUE -> accessibleBound(getMin());
+            case MAX_VALUE -> accessibleBound(getMax());
             case VALUE -> displayedValue();
             case TEXT -> editor.getText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -1209,7 +1260,9 @@ public final class M3NumberField extends javafx.scene.control.Control {
         double delta = getStep() * steps;
         double target = base + delta;
         if (!Double.isFinite(target)) {
-            target = steps > 0 ? getMax() : getMin();
+            target = steps > 0
+                    ? finiteUpperAdjustmentLimit()
+                    : finiteLowerAdjustmentLimit();
         }
         adjustValue(target);
     }
@@ -1323,7 +1376,21 @@ public final class M3NumberField extends javafx.scene.control.Control {
     ///
     /// @return the configured minimum, or zero when the range is unrestricted below
     private double stepAnchor() {
-        return getMin() == DEFAULT_MIN ? 0.0 : getMin();
+        return Double.isFinite(getMin()) ? getMin() : 0.0;
+    }
+
+    /// Returns the finite upper target used when positive step arithmetic overflows.
+    ///
+    /// @return the finite maximum, or the largest finite double for an unbounded maximum
+    private double finiteUpperAdjustmentLimit() {
+        return Double.isFinite(getMax()) ? getMax() : Double.MAX_VALUE;
+    }
+
+    /// Returns the finite lower target used when negative step arithmetic overflows.
+    ///
+    /// @return the finite minimum, or the smallest finite double for an unbounded minimum
+    private double finiteLowerAdjustmentLimit() {
+        return Double.isFinite(getMin()) ? getMin() : -Double.MAX_VALUE;
     }
 
     /// Rewrites editor text from the committed value and active formatter.
@@ -1386,6 +1453,14 @@ public final class M3NumberField extends javafx.scene.control.Control {
         }
     }
 
+    /// Returns a finite accessibility endpoint or `null` for an unbounded side.
+    ///
+    /// @param bound the configured range endpoint
+    /// @return the finite endpoint, or `null` when the side is unbounded
+    private static @Nullable Double accessibleBound(double bound) {
+        return Double.isFinite(bound) ? bound : null;
+    }
+
     /// Creates a non-null string property with an empty initial value.
     ///
     /// @param name the property name
@@ -1421,6 +1496,30 @@ public final class M3NumberField extends javafx.scene.control.Control {
         Objects.requireNonNull(name, "name");
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(name + " must be finite");
+        }
+        return value;
+    }
+
+    /// Returns a valid lower endpoint or throws for an unusable minimum.
+    ///
+    /// @param value the lower endpoint to validate
+    /// @return the validated endpoint
+    /// @throws IllegalArgumentException if `value` is NaN or positive infinity
+    private static double requireMinimum(double value) {
+        if (Double.isNaN(value) || value == Double.POSITIVE_INFINITY) {
+            throw new IllegalArgumentException("min must be finite or negative infinity");
+        }
+        return value;
+    }
+
+    /// Returns a valid upper endpoint or throws for an unusable maximum.
+    ///
+    /// @param value the upper endpoint to validate
+    /// @return the validated endpoint
+    /// @throws IllegalArgumentException if `value` is NaN or negative infinity
+    private static double requireMaximum(double value) {
+        if (Double.isNaN(value) || value == Double.NEGATIVE_INFINITY) {
+            throw new IllegalArgumentException("max must be finite or positive infinity");
         }
         return value;
     }

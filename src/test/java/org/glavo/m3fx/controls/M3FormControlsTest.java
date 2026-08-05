@@ -354,6 +354,73 @@ final class M3FormControlsTest {
         });
     }
 
+    /// Verifies validation order, aggregate state, summary presentation, and focus across heterogeneous inputs.
+    @Test
+    void formValidatorCoordinatesMixedFormInputs() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NumberField quantity = new M3NumberField(4.0);
+            quantity.setMin(0.0);
+            quantity.setMax(10.0);
+            quantity.setStep(2.0);
+            quantity.setCommitBehavior(M3NumberFieldCommitBehavior.VALIDATE);
+            quantity.setPromptText("Quantity");
+            quantity.setText("5");
+
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField);
+            nameLayout.setLabelText("Name");
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3FormValidator validator = new M3FormValidator(quantity, nameLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(summary, quantity, nameLayout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 320.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+
+            try {
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(List.of(quantity, nameLayout), validator.getInputs());
+                assertFalse(validator.validate());
+                assertEquals(List.of(quantity, nameLayout), validator.getInvalidInputs());
+                assertSame(quantity, validator.getFirstInvalidInput());
+                assertSame(quantity, summary.getInvalidInput(0));
+                assertSame(quantity, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+
+                root.applyCss();
+                root.layout();
+                Node firstRow = firstValidationSummaryItem(summary);
+                Label firstLabel = assertInstanceOf(
+                        Label.class,
+                        firstRow.lookup(".m3-validation-summary-item-label")
+                );
+                assertEquals("Quantity", firstLabel.getText());
+                quantity.setPromptText("Item count");
+                root.applyCss();
+                root.layout();
+                assertSame(firstRow, firstValidationSummaryItem(summary));
+                assertEquals("Item count", firstLabel.getText());
+                assertTrue(summary.focusInput(quantity));
+                assertTrue(quantity.getEditor().isFocused());
+
+                quantity.setText("6");
+                assertEquals(List.of(nameLayout), validator.getInvalidInputs());
+                nameField.setText("M3FX");
+
+                assertTrue(validator.validate());
+                assertEquals(6.0, quantity.getValue());
+                assertTrue(validator.getInvalidInputs().isEmpty());
+                assertTrue(validator.isValid());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that form validators can reveal the first invalid input through an owner scroll pane.
     @Test
     void formValidatorOwnerFocusRevealsInvalidInput() {
@@ -507,7 +574,7 @@ final class M3FormControlsTest {
             layout.setValidator((input, text) -> text.length() < 3 ? "Enter " + (3 - text.length()) + " more" : null);
             M3FormValidator validator = new M3FormValidator(layout);
             AtomicInteger changeCount = new AtomicInteger();
-            validator.getInvalidInputs().addListener((ListChangeListener<M3TextInputLayout>) change ->
+            validator.getInvalidInputs().addListener((ListChangeListener<M3FormInput>) change ->
                     changeCount.incrementAndGet());
 
             assertFalse(validator.validate());
@@ -540,7 +607,7 @@ final class M3FormControlsTest {
 
             M3FormValidator validator = new M3FormValidator();
             AtomicInteger invalidListChanges = new AtomicInteger();
-            validator.getInvalidInputs().addListener((ListChangeListener<M3TextInputLayout>) change ->
+            validator.getInvalidInputs().addListener((ListChangeListener<M3FormInput>) change ->
                     invalidListChanges.incrementAndGet());
 
             validator.getInputs().addAll(first, second, third);

@@ -68,8 +68,10 @@ final class M3NumberFieldTest {
         assertEquals(AccessibleRole.SPINNER, field.getAccessibleRole());
         assertEquals(12.5, field.getValue());
         assertFalse(field.getText().isEmpty());
-        assertEquals(-Double.MAX_VALUE, field.getMin());
-        assertEquals(Double.MAX_VALUE, field.getMax());
+        assertEquals(Double.NEGATIVE_INFINITY, field.getMin());
+        assertEquals(Double.POSITIVE_INFINITY, field.getMax());
+        assertNull(field.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+        assertNull(field.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
         assertEquals(1.0, field.getStep());
         assertEquals(M3NumberFieldCommitBehavior.SNAP, field.getCommitBehavior());
         assertFalse(field.isHideStepper());
@@ -83,8 +85,12 @@ final class M3NumberFieldTest {
         assertEquals("", field.getText());
 
         assertThrows(IllegalArgumentException.class, () -> field.setValue(Double.NaN));
-        assertThrows(IllegalArgumentException.class, () -> field.setMin(Double.NEGATIVE_INFINITY));
-        assertThrows(IllegalArgumentException.class, () -> field.setMax(Double.POSITIVE_INFINITY));
+        field.setMin(Double.NEGATIVE_INFINITY);
+        field.setMax(Double.POSITIVE_INFINITY);
+        assertThrows(IllegalArgumentException.class, () -> field.setMin(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> field.setMin(Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class, () -> field.setMax(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> field.setMax(Double.NEGATIVE_INFINITY));
         assertThrows(IllegalArgumentException.class, () -> field.setStep(0.0));
         assertThrows(IllegalArgumentException.class, () -> field.increment(-1));
         assertThrows(IllegalArgumentException.class, () -> field.decrement(-1));
@@ -248,6 +254,22 @@ final class M3NumberFieldTest {
         field.setValue(6.0);
         field.increment();
         assertEquals(8.0, field.getValue());
+    }
+
+    /// Verifies that unbounded ranges retain finite values when step arithmetic overflows.
+    @Test
+    void saturatesOverflowingStepsAtFiniteDoubleLimits() {
+        M3NumberField field = new M3NumberField(Double.MAX_VALUE);
+        field.setStep(Double.MAX_VALUE);
+
+        field.increment();
+        assertEquals(Double.MAX_VALUE, field.getValue());
+        assertTrue(Double.isFinite(field.getValue()));
+
+        field.setValue(-Double.MAX_VALUE);
+        field.decrement();
+        assertEquals(-Double.MAX_VALUE, field.getValue());
+        assertTrue(Double.isFinite(field.getValue()));
     }
 
     /// Verifies localized grouping and decimal separators through a locale-specific formatter.

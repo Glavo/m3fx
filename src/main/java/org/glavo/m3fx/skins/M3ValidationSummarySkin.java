@@ -37,7 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.glavo.m3fx.controls.M3FormValidator;
-import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.controls.M3FormInput;
 import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -100,10 +100,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     };
 
     /// Updates skin content when the validator invalid input list changes.
-    private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> updateContent();
+    private final ListChangeListener<M3FormInput> invalidInputsListener = change -> updateContent();
 
     /// Weak invalid-input listener that prevents a validator from retaining a detached summary skin.
-    private final WeakListChangeListener<M3TextInputLayout> weakInvalidInputsListener =
+    private final WeakListChangeListener<M3FormInput> weakInvalidInputsListener =
             new WeakListChangeListener<>(invalidInputsListener);
 
     /// Updates only the rendered row whose label, error, wrapped input, or prompt changed.
@@ -113,20 +113,20 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private final WeakInvalidationListener weakInvalidInputContentListener =
             new WeakInvalidationListener(invalidInputContentListener);
 
-    /// Invalid input layouts currently observed for row text changes.
-    private final Set<M3TextInputLayout> observedInvalidInputs = Collections.newSetFromMap(new IdentityHashMap<>());
+    /// Invalid inputs currently observed for row text changes.
+    private final Set<M3FormInput> observedInvalidInputs = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /// Wrapped text inputs currently observed for prompt fallback changes.
-    private final Map<M3TextInputLayout, TextInputControl> observedInvalidInputControls = new IdentityHashMap<>();
+    private final Map<M3FormInput, TextInputControl> observedInvalidInputControls = new IdentityHashMap<>();
 
-    /// Cached rendered item rows keyed by invalid input layout identity.
-    private final Map<M3TextInputLayout, ValidationItemRow> itemRows = new IdentityHashMap<>();
+    /// Cached rendered item rows keyed by invalid input identity.
+    private final Map<M3FormInput, ValidationItemRow> itemRows = new IdentityHashMap<>();
 
     /// Reusable invalid input list populated during one content update.
-    private final ArrayList<M3TextInputLayout> invalidInputsScratch = new ArrayList<>();
+    private final ArrayList<M3FormInput> invalidInputsScratch = new ArrayList<>();
 
     /// Reusable identity set used while reconciling observed inputs and rendered rows.
-    private final Set<M3TextInputLayout> invalidInputSetScratch =
+    private final Set<M3FormInput> invalidInputSetScratch =
             Collections.newSetFromMap(new IdentityHashMap<>());
 
     /// Reusable ordered row list used while reconciling the item container.
@@ -293,12 +293,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         invalidInputsScratch.clear();
         int invalidInputCount = control.getInvalidInputCount();
         for (int index = 0; index < invalidInputCount; index++) {
-            @Nullable M3TextInputLayout input = control.getInvalidInput(index);
+            @Nullable M3FormInput input = control.getInvalidInput(index);
             if (input != null && control.isInvalidInputShown(input)) {
                 invalidInputsScratch.add(input);
             }
         }
-        List<M3TextInputLayout> invalidInputs = invalidInputsScratch;
+        List<M3FormInput> invalidInputs = invalidInputsScratch;
         updateObservedInvalidInputs(invalidInputs);
         if (invalidInputs.isEmpty()) {
             clearInvalidItemRows();
@@ -313,18 +313,18 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Updates listeners for invalid input row text and fallback prompt changes.
-    private void updateObservedInvalidInputs(List<M3TextInputLayout> invalidInputs) {
+    private void updateObservedInvalidInputs(List<M3FormInput> invalidInputs) {
         invalidInputSetScratch.clear();
         invalidInputSetScratch.addAll(invalidInputs);
 
-        Iterator<M3TextInputLayout> iterator = observedInvalidInputs.iterator();
+        Iterator<M3FormInput> iterator = observedInvalidInputs.iterator();
         while (iterator.hasNext()) {
-            M3TextInputLayout input = iterator.next();
+            M3FormInput input = iterator.next();
             if (!invalidInputSetScratch.contains(input)) {
                 iterator.remove();
                 input.labelTextProperty().removeListener(weakInvalidInputContentListener);
                 input.validationErrorTextProperty().removeListener(weakInvalidInputContentListener);
-                input.inputProperty().removeListener(weakInvalidInputContentListener);
+                input.validationFocusTargetProperty().removeListener(weakInvalidInputContentListener);
                 @Nullable TextInputControl textInput = observedInvalidInputControls.remove(input);
                 if (textInput != null) {
                     textInput.promptTextProperty().removeListener(weakInvalidInputContentListener);
@@ -332,11 +332,11 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             }
         }
 
-        for (M3TextInputLayout input : invalidInputs) {
+        for (M3FormInput input : invalidInputs) {
             if (observedInvalidInputs.add(input)) {
                 input.labelTextProperty().addListener(weakInvalidInputContentListener);
                 input.validationErrorTextProperty().addListener(weakInvalidInputContentListener);
-                input.inputProperty().addListener(weakInvalidInputContentListener);
+                input.validationFocusTargetProperty().addListener(weakInvalidInputContentListener);
             }
             updateObservedInvalidInputControl(input);
         }
@@ -344,9 +344,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Updates the prompt listener for the wrapped input used as row-label fallback text.
-    private void updateObservedInvalidInputControl(M3TextInputLayout input) {
+    private void updateObservedInvalidInputControl(M3FormInput input) {
         @Nullable TextInputControl oldInput = observedInvalidInputControls.get(input);
-        @Nullable TextInputControl newInput = input.getInput();
+        @Nullable Node focusTarget = input.getValidationFocusTarget();
+        @Nullable TextInputControl newInput = focusTarget instanceof TextInputControl textInput ? textInput : null;
         if (oldInput == newInput) {
             return;
         }
@@ -362,12 +363,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
     /// Updates one cached row after an observed invalid-input content property changes.
     private void updateInvalidInputContent(Observable observable) {
-        @Nullable M3TextInputLayout input = invalidInputForObservable(observable);
+        @Nullable M3FormInput input = invalidInputForObservable(observable);
         if (input == null) {
             updateContent();
             return;
         }
-        if (observable == input.inputProperty()) {
+        if (observable == input.validationFocusTargetProperty()) {
             updateObservedInvalidInputControl(input);
         }
 
@@ -379,16 +380,16 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Returns the observed invalid input that owns one changed property.
-    private @Nullable M3TextInputLayout invalidInputForObservable(Observable observable) {
+    private @Nullable M3FormInput invalidInputForObservable(Observable observable) {
         if (!(observable instanceof ReadOnlyProperty<?> property)) {
             return null;
         }
         Object bean = property.getBean();
-        if (bean instanceof M3TextInputLayout input && observedInvalidInputs.contains(input)) {
+        if (bean instanceof M3FormInput input && observedInvalidInputs.contains(input)) {
             return input;
         }
         if (bean instanceof TextInputControl textInput) {
-            for (Map.Entry<M3TextInputLayout, TextInputControl> entry : observedInvalidInputControls.entrySet()) {
+            for (Map.Entry<M3FormInput, TextInputControl> entry : observedInvalidInputControls.entrySet()) {
                 if (entry.getValue() == textInput) {
                     return entry.getKey();
                 }
@@ -408,12 +409,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Updates rendered invalid item rows while preserving existing row nodes when possible.
-    private void updateInvalidItemRows(List<M3TextInputLayout> invalidInputs) {
+    private void updateInvalidItemRows(List<M3FormInput> invalidInputs) {
         invalidInputSetScratch.clear();
         invalidInputSetScratch.addAll(invalidInputs);
-        Iterator<Map.Entry<M3TextInputLayout, ValidationItemRow>> iterator = itemRows.entrySet().iterator();
+        Iterator<Map.Entry<M3FormInput, ValidationItemRow>> iterator = itemRows.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<M3TextInputLayout, ValidationItemRow> entry = iterator.next();
+            Map.Entry<M3FormInput, ValidationItemRow> entry = iterator.next();
             if (!invalidInputSetScratch.contains(entry.getKey())) {
                 entry.getValue().dispose();
                 iterator.remove();
@@ -422,7 +423,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         itemRowsScratch.clear();
         itemRowsScratch.ensureCapacity(invalidInputs.size());
-        for (M3TextInputLayout input : invalidInputs) {
+        for (M3FormInput input : invalidInputs) {
             ValidationItemRow row = itemRows.get(input);
             if (row == null) {
                 row = createItem(input);
@@ -464,7 +465,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Updates text and orientation-sensitive alignment for one cached invalid item row.
-    private void updateItem(ValidationItemRow item, M3TextInputLayout input) {
+    private void updateItem(ValidationItemRow item, M3FormInput input) {
         String labelText = itemLabel(input);
         String errorText = itemError(input);
         String accessibleText = labelText + ": " + errorText;
@@ -500,7 +501,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Creates one clickable invalid input item row.
-    private ValidationItemRow createItem(M3TextInputLayout input) {
+    private ValidationItemRow createItem(M3FormInput input) {
         return new ValidationItemRow(input);
     }
 
@@ -530,7 +531,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Handles activation and in-summary keyboard traversal for one invalid item row.
-    private void handleItemKeyPressed(ValidationItemRow item, M3TextInputLayout input, KeyEvent event) {
+    private void handleItemKeyPressed(ValidationItemRow item, M3FormInput input, KeyEvent event) {
         if (item.isDisabled()) {
             return;
         }
@@ -604,13 +605,14 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Returns the field label shown for one invalid input item.
-    private static String itemLabel(M3TextInputLayout input) {
+    private static String itemLabel(M3FormInput input) {
         String label = input.getLabelText();
         if (!label.isBlank()) {
             return label;
         }
 
-        @Nullable TextInputControl textInput = input.getInput();
+        @Nullable Node focusTarget = input.getValidationFocusTarget();
+        @Nullable TextInputControl textInput = focusTarget instanceof TextInputControl target ? target : null;
         if (textInput != null && !textInput.getPromptText().isBlank()) {
             return textInput.getPromptText();
         }
@@ -618,7 +620,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Returns the error text shown for one invalid input item.
-    private static String itemError(M3TextInputLayout input) {
+    private static String itemError(M3FormInput input) {
         String errorText = input.getValidationErrorText();
         return errorText.isBlank() ? "Invalid value" : errorText;
     }
@@ -627,7 +629,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     @NotNullByDefault
     private final class ValidationItemRow extends StackPane implements EventHandler<Event>, InvalidationListener {
         /// The invalid input represented by this row.
-        private final M3TextInputLayout input;
+        private final M3FormInput input;
 
         /// The bounded interaction state layer.
         private final M3StateLayer stateLayer = new M3StateLayer();
@@ -647,7 +649,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         /// Creates one reusable validation row for an invalid input.
         ///
         /// @param input the invalid input represented by this row
-        private ValidationItemRow(M3TextInputLayout input) {
+        private ValidationItemRow(M3FormInput input) {
             this.input = input;
             getStyleClass().add(ITEM_STYLE_CLASS);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);

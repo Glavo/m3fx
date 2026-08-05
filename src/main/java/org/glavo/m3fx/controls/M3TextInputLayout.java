@@ -16,6 +16,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -67,7 +68,7 @@ import java.util.Objects;
 /// boolean valid = emailLayout.validate();
 /// ```
 @NotNullByDefault
-public final class M3TextInputLayout extends Control {
+public final class M3TextInputLayout extends Control implements M3FormInput {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-text-input-layout";
 
@@ -225,6 +226,24 @@ public final class M3TextInputLayout extends Control {
         return input;
     }
 
+    /// {@inheritDoc}
+    @Override
+    public Node getValidationNode() {
+        return this;
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public @Nullable Node getValidationFocusTarget() {
+        return getInput();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public ObservableValue<? extends @Nullable Node> validationFocusTargetProperty() {
+        return inputProperty();
+    }
+
     /// The field label displayed inside or above the wrapped input.
     ///
     /// The value cannot be `null`; blank text suppresses the label.
@@ -248,6 +267,7 @@ public final class M3TextInputLayout extends Control {
     /// Returns the label text displayed inside or above the input.
     ///
     /// @return the label text; never `null`
+    @Override
     public final String getLabelText() {
         return labelText.get();
     }
@@ -265,6 +285,7 @@ public final class M3TextInputLayout extends Control {
     /// The returned property is observable and bindable. Its default value is `""`.
     ///
     /// @return the `labelText` property
+    @Override
     public final StringProperty labelTextProperty() {
         return labelText;
     }
@@ -508,6 +529,7 @@ public final class M3TextInputLayout extends Control {
     /// Returns the last error text produced by the validator.
     ///
     /// @return the current validator-produced error text, or an empty string when validation succeeds or is inactive
+    @Override
     public final String getValidationErrorText() {
         return validationErrorText.get();
     }
@@ -529,6 +551,7 @@ public final class M3TextInputLayout extends Control {
     /// The returned property is observable and read-only. Its default value is `""`.
     ///
     /// @return the `validationErrorText` property
+    @Override
     public final ReadOnlyStringProperty validationErrorTextProperty() {
         return validationErrorText.getReadOnlyProperty();
     }
@@ -540,6 +563,7 @@ public final class M3TextInputLayout extends Control {
     /// Returns whether validation has been explicitly run or activated by focus loss.
     ///
     /// @return whether validator output currently participates in the visual error state
+    @Override
     public final boolean isValidationActive() {
         return validationActive.get();
     }
@@ -549,6 +573,7 @@ public final class M3TextInputLayout extends Control {
     /// The returned property is observable and read-only. Its default value is `false`.
     ///
     /// @return the `validationActive` property
+    @Override
     public final ReadOnlyBooleanProperty validationActiveProperty() {
         return validationActive.getReadOnlyProperty();
     }
@@ -831,6 +856,7 @@ public final class M3TextInputLayout extends Control {
     /// exceptions are propagated to the caller.
     ///
     /// @return `true` when every configured validator accepts the current value; otherwise `false`
+    @Override
     public final boolean validate() {
         validationActive.set(true);
         return updateValidation();
@@ -839,6 +865,7 @@ public final class M3TextInputLayout extends Control {
     /// Clears validator-produced error state without changing configured validators or explicit error text.
     ///
     /// Validation becomes inactive until [#validate()] or a configured focus-loss trigger activates it again.
+    @Override
     public final void clearValidation() {
         validationActive.set(false);
         if (setValidationErrorText("")) {
@@ -849,6 +876,7 @@ public final class M3TextInputLayout extends Control {
     /// Returns whether the configured validator currently contributes an error.
     ///
     /// @return whether active validator output is non-empty
+    @Override
     public final boolean isValidationError() {
         return !getValidationErrorText().isEmpty();
     }
