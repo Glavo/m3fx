@@ -421,7 +421,20 @@ public final class M3FXDemoApp extends Application {
                 createSettingsGroup("Behavior", animationsSwitch, directionSwitch, brightnessSwitch)
         );
         content.getStyleClass().add("demo-settings-content");
-        return content;
+        content.setMinWidth(0.0);
+        // Preserve the complete settings layout so the viewport, rather than the VBox, owns vertical overflow.
+        content.setMinHeight(Region.USE_PREF_SIZE);
+        content.setMaxWidth(Double.MAX_VALUE);
+
+        M3ScrollPane viewport = new M3ScrollPane(content);
+        viewport.getStyleClass().add("demo-settings-scroll-pane");
+        viewport.setFitToWidth(true);
+        viewport.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        viewport.setMinWidth(0.0);
+        viewport.setMinHeight(0.0);
+        viewport.setMaxWidth(Double.MAX_VALUE);
+        viewport.setMaxHeight(Double.MAX_VALUE);
+        return viewport;
     }
 
     /// Applies a density option selected in the settings dialog.

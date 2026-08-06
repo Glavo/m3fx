@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
@@ -10,16 +11,20 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,6 +150,90 @@ final class M3FXDemoPageTransitionTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that a short Demo window scrolls settings content while retaining the dialog action row.
+    @Test
+    void settingsDialogKeepsActionsVisibleInShortWindows() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp application = new M3FXDemoApp();
+            application.start(stage);
+            stage.setWidth(400.0);
+            stage.setHeight(580.0);
+            stageReference.set(stage);
+            sceneReference.set(Objects.requireNonNull(application.activeScene(), "scene"));
+        });
+
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                layout(scene);
+
+                M3IconButton settingsButton = assertInstanceOf(
+                        M3IconButton.class,
+                        scene.getRoot().lookup(".demo-settings-button"),
+                        "Demo settings button"
+                );
+                settingsButton.fire();
+                layout(scene);
+
+                M3DialogPane dialogPane = assertInstanceOf(
+                        M3DialogPane.class,
+                        scene.getRoot().lookup(".m3-dialog-pane"),
+                        "Demo settings dialog"
+                );
+                M3ScrollPane settingsViewport = assertInstanceOf(
+                        M3ScrollPane.class,
+                        scene.getRoot().lookup(".demo-settings-scroll-pane"),
+                        "Demo settings viewport"
+                );
+                Node settingsContent = Objects.requireNonNull(settingsViewport.getContent(), "settings content");
+                Node viewport = Objects.requireNonNull(settingsViewport.lookup(".viewport"), "scroll viewport");
+                M3Button done = assertInstanceOf(M3Button.class, dialogPane.getActions().get(0), "Done action");
+
+                Bounds paneBounds = dialogPane.localToScene(dialogPane.getBoundsInLocal());
+                Bounds doneBounds = done.localToScene(done.getBoundsInLocal());
+                assertTrue(paneBounds.contains(doneBounds), "Done action must remain inside the dialog surface");
+                assertTrue(
+                        settingsContent.getBoundsInParent().getHeight() > viewport.getBoundsInParent().getHeight(),
+                        () -> "Short windows must constrain settings to a scrollable viewport: content="
+                                + settingsContent.getBoundsInParent().getHeight()
+                                + ", viewport=" + viewport.getBoundsInParent().getHeight()
+                                + ", scrollPane=" + settingsViewport.getHeight()
+                );
+
+                settingsViewport.setVvalue(settingsViewport.getVmax());
+                layout(scene);
+                M3Switch darkTheme = assertInstanceOf(
+                        M3Switch.class,
+                        settingsContent.lookup(".demo-brightness-switch"),
+                        "Dark theme switch"
+                );
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                Bounds darkThemeBounds = darkTheme.localToScene(darkTheme.getBoundsInLocal());
+                assertTrue(
+                        darkThemeBounds.getMinY() >= viewportBounds.getMinY() - 1.0
+                                && darkThemeBounds.getMaxY() <= viewportBounds.getMaxY() + 1.0,
+                        () -> "Dark theme switch must scroll fully into view: switch=" + darkThemeBounds
+                                + ", viewport=" + viewportBounds
+                );
+                assertTrue(
+                        paneBounds.contains(done.localToScene(done.getBoundsInLocal())),
+                        "Scrolling settings must not move the Done action"
+                );
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Applies CSS and performs one synchronous scene layout pass.
