@@ -93,10 +93,14 @@ final class M3CompositeControlApiTest {
             assertOwnedBy(field, field.endVariantProperty());
             assertOwnedBy(field, field.startErrorTextProperty());
             assertOwnedBy(field, field.endErrorTextProperty());
+            assertOwnedBy(field, field.labelTextProperty());
+            assertOwnedBy(field, field.validationErrorTextProperty());
+            assertOwnedBy(field, field.validationActiveProperty());
             assertOwnedBy(field, field.startLabelTextProperty());
             assertOwnedBy(field, field.endLabelTextProperty());
             assertOwnedBy(field, field.startSupportingTextProperty());
             assertOwnedBy(field, field.endSupportingTextProperty());
+            assertOwnedBy(field, field.validationFocusTargetProperty());
 
             field.setStartText("2026-07-16");
             field.setEndText("2026-07-18");

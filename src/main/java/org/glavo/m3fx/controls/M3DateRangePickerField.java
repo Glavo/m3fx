@@ -9,9 +9,12 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -58,9 +61,11 @@ import java.util.Objects;
 ///
 /// The field maintains nullable start and end values and their independently editable text. A start without an end
 /// is an in-progress range; an end without a start is not permitted. [#selectionProperty()] publishes one immutable
-/// snapshot after each complete field mutation, so observers do not need to combine two endpoint notifications.
+/// snapshot after each valid complete field mutation, so observers do not need to combine two endpoint notifications.
 /// Raw editor text does not replace the selected endpoints until [commitEditorText()] succeeds. A failed commit
-/// preserves the previous range and updates the relevant error text.
+/// preserves the previous range and publishes validator-produced errors independently of application-supplied
+/// start and end error text. As an [M3FormInput], the complete range field can be registered directly with
+/// [M3FormValidator] and presented by [M3ValidationSummary].
 ///
 /// The owned [picker][#getPicker()] is synchronized with committed endpoints. Completing a range in the calendar
 /// updates both editors and closes the popup. The popup can be opened from either trailing button, Down, or F4 and
@@ -81,7 +86,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DateRangePickerField extends javafx.scene.control.Control {
+public final class M3DateRangePickerField extends javafx.scene.control.Control implements M3FormInput {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker-field";
 
@@ -131,12 +136,32 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The selected start date, or `null` when the range is empty.
     ///
     /// The default value is `null`. Direct assignments are validated against the picker's inclusive bounds and
-    /// current end date. Clearing the start also clears a non-null, unbound end and updates both editors. A binding
-    /// source must preserve the complete range invariant on every update.
+    /// current end date. Clearing the start also clears a non-null, unbound end and updates both editors. A
+    /// unidirectional binding makes both endpoint editors, popup selection, presets, and value-oriented accessibility
+    /// actions read-only. A bound range that violates ordering or selectable bounds remains observable from the
+    /// endpoint properties while the editors and picker retain their last valid presentation and generated
+    /// validation reports the violation.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> startDate =
             new SimpleObjectProperty<>(this, "startDate") {
+                /// Installs a unidirectional start-date binding and makes field interactions read-only.
+                @Override
+                public void bind(ObservableValue<? extends @Nullable LocalDate> observable) {
+                    super.bind(Objects.requireNonNull(observable, "observable"));
+                    updateBoundState();
+                }
+
+                /// Removes a unidirectional start-date binding and restores a valid writable range state.
+                @Override
+                public void unbind() {
+                    boolean wasBound = isBound();
+                    super.unbind();
+                    if (wasBound) {
+                        updateBoundState();
+                    }
+                }
+
                 /// Validates direct property writes before applying them.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
@@ -161,6 +186,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 @Override
                 protected void invalidated() {
                     if (!applyingRange && isBound() && !isFieldRangeValid()) {
+                        handleInvalidBoundRange();
                         return;
                     }
                     if (!applyingRange && get() == null && getEndDate() != null) {
@@ -181,7 +207,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @param startDate the selected start date, or `null` to clear the range
     /// @throws IllegalArgumentException if `startDate` is outside the current picker bounds or after the current end
-    /// @throws RuntimeException         if `startDate` is `null` while a non-null end-date property is bound
+    /// @throws RuntimeException         if the start-date property is bound, or if `startDate` is `null` while a
+    ///         non-null end-date property is bound
     public void setStartDate(@Nullable LocalDate startDate) {
         this.startDate.set(startDate);
     }
@@ -189,10 +216,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the observable property that stores the selected range start.
     ///
     /// The property can be observed and bound, and its default value is `null`. Direct assignments are validated
-    /// against the picker bounds and current end; changes synchronize the editors and popup picker. A binding source
-    /// must remain within the picker bounds, must not move after the current end, and must not become `null` while the
-    /// end is non-null. When both endpoints are bound, set or clear the start source before setting an end, and clear
-    /// the end source before clearing the start source so every notification preserves a valid range.
+    /// against the picker bounds and current end; valid changes synchronize the editors and popup picker. A bound
+    /// source value is valid only when it remains within the picker bounds, does not move after the current end, and
+    /// does not become `null` while the end is non-null. Invalid bound values remain observable but activate generated
+    /// validation and do not replace the last valid editor or picker presentation. When both endpoints are bound,
+    /// update sources in an order that preserves a valid range when intermediate validation errors are undesirable.
+    /// Removing the final endpoint binding restores the last valid range if the retained bound value is invalid.
     ///
     /// @return the selected start-date property
     public ObjectProperty<@Nullable LocalDate> startDateProperty() {
@@ -202,11 +231,30 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The selected end date, or `null` while the range is empty or incomplete.
     ///
     /// The default value is `null`. A non-null end requires a non-null start, must not precede it, and must be within
-    /// the picker's inclusive bounds. Assignments update both editors.
+    /// the picker's inclusive bounds. Direct assignments update both editors. A unidirectional binding makes the
+    /// complete field read-only to user range changes; invalid bound values retain the last valid presentation and
+    /// activate generated validation.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> endDate =
             new SimpleObjectProperty<>(this, "endDate") {
+                /// Installs a unidirectional end-date binding and makes field interactions read-only.
+                @Override
+                public void bind(ObservableValue<? extends @Nullable LocalDate> observable) {
+                    super.bind(Objects.requireNonNull(observable, "observable"));
+                    updateBoundState();
+                }
+
+                /// Removes a unidirectional end-date binding and restores a valid writable range state.
+                @Override
+                public void unbind() {
+                    boolean wasBound = isBound();
+                    super.unbind();
+                    if (wasBound) {
+                        updateBoundState();
+                    }
+                }
+
                 /// Validates direct property writes before applying them.
                 @Override
                 public void set(@Nullable LocalDate newValue) {
@@ -229,6 +277,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 @Override
                 protected void invalidated() {
                     if (!applyingRange && isBound() && !isFieldRangeValid()) {
+                        handleInvalidBoundRange();
                         return;
                     }
                     markRangeChanged();
@@ -247,6 +296,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// @param endDate the selected end date, or `null` to clear the range end
     /// @throws IllegalArgumentException if `endDate` is outside the current picker bounds, no start is selected, or
     ///         it precedes the current start
+    /// @throws RuntimeException if the end-date property is bound
     public void setEndDate(@Nullable LocalDate endDate) {
         this.endDate.set(endDate);
     }
@@ -254,9 +304,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the observable property that stores the selected range end.
     ///
     /// The property can be observed and bound, and its default value is `null`. Direct non-null assignments require
-    /// a selected start, must not precede it, and must satisfy the picker bounds. A binding source has the same
-    /// requirements on every update. When both endpoints are bound, update the sources in an order that preserves
-    /// those invariants after each individual notification.
+    /// a selected start, must not precede it, and must satisfy the picker bounds. A bound source value is valid under
+    /// the same conditions; violations remain observable but are not presented as selected values. When both
+    /// endpoints are bound, update sources in an order that preserves a valid range when intermediate validation
+    /// errors are undesirable. Removing the final endpoint binding restores the last valid range if the retained
+    /// bound value is invalid.
     ///
     /// @return the selected end-date property
     public ObjectProperty<@Nullable LocalDate> endDateProperty() {
@@ -342,7 +394,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the observable property that stores the parse error message.
     ///
     /// The property can be observed and bound. Its default value is `Enter a valid date`, and values must be
-    /// non-null.
+    /// non-null. Changing it refreshes [#validationErrorTextProperty()] while validation is active.
     ///
     /// @return the invalid-text error property
     public StringProperty invalidTextErrorTextProperty() {
@@ -381,7 +433,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the observable property that stores the range error message.
     ///
     /// The property can be observed and bound. Its default value is
-    /// `Date range is outside the selectable range`, and values must be non-null.
+    /// `Date range is outside the selectable range`, and values must be non-null. Changing it refreshes
+    /// [#validationErrorTextProperty()] while validation is active.
     ///
     /// @return the range error property
     public StringProperty rangeErrorTextProperty() {
@@ -550,10 +603,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return endVariant;
     }
 
-    /// The error text currently displayed by the start-date input.
+    /// The explicit application error text displayed by the start-date input.
     ///
-    /// The default value is empty. Validation may replace it with one of the configured generated error messages.
-    /// `null` is not permitted.
+    /// The default value is empty. Generated validation is stored independently by the start input layout and never
+    /// replaces this value. `null` is not permitted.
     ///
     /// @defaultValue `""`
     private final StringProperty startErrorText = new SimpleStringProperty(this, "startErrorText", "") {
@@ -564,35 +617,35 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Returns the current error text shown for the start-date editor.
+    /// Returns the explicit application error text for the start-date editor.
     ///
-    /// @return the current error text shown for the start-date editor
+    /// @return the explicit start-date error text
     public String getStartErrorText() {
         return startErrorText.get();
     }
 
-    /// Sets the current error text shown for the start-date editor.
+    /// Sets the explicit application error text for the start-date editor.
     ///
-    /// @param errorText the current error text shown for the start-date editor
+    /// @param errorText the explicit start-date error text, or an empty string to clear it
     /// @throws NullPointerException if `errorText` is `null`
     public void setStartErrorText(String errorText) {
         startErrorText.set(errorText);
     }
 
-    /// Returns the observable property that stores the displayed start-editor error.
+    /// Returns the observable property that stores the explicit start-editor error.
     ///
-    /// The property can be observed and bound. Its default value is the empty string, values must be non-null, and
-    /// validation may replace the value with a generated error message.
+    /// The property can be observed and bound. Its default value is the empty string and values must be non-null.
+    /// Generated validation is exposed separately through [#validationErrorTextProperty()].
     ///
     /// @return the displayed start-editor error property
     public StringProperty startErrorTextProperty() {
         return startErrorText;
     }
 
-    /// The error text currently displayed by the end-date input.
+    /// The explicit application error text displayed by the end-date input.
     ///
-    /// The default value is empty. Validation may replace it with one of the configured generated error messages.
-    /// `null` is not permitted.
+    /// The default value is empty. Generated validation is stored independently by the end input layout and never
+    /// replaces this value. `null` is not permitted.
     ///
     /// @defaultValue `""`
     private final StringProperty endErrorText = new SimpleStringProperty(this, "endErrorText", "") {
@@ -603,29 +656,69 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Returns the current error text shown for the end-date editor.
+    /// Returns the explicit application error text for the end-date editor.
     ///
-    /// @return the current error text shown for the end-date editor
+    /// @return the explicit end-date error text
     public String getEndErrorText() {
         return endErrorText.get();
     }
 
-    /// Sets the current error text shown for the end-date editor.
+    /// Sets the explicit application error text for the end-date editor.
     ///
-    /// @param errorText the current error text shown for the end-date editor
+    /// @param errorText the explicit end-date error text, or an empty string to clear it
     /// @throws NullPointerException if `errorText` is `null`
     public void setEndErrorText(String errorText) {
         endErrorText.set(errorText);
     }
 
-    /// Returns the observable property that stores the displayed end-editor error.
+    /// Returns the observable property that stores the explicit end-editor error.
     ///
-    /// The property can be observed and bound. Its default value is the empty string, values must be non-null, and
-    /// validation may replace the value with a generated error message.
+    /// The property can be observed and bound. Its default value is the empty string and values must be non-null.
+    /// Generated validation is exposed separately through [#validationErrorTextProperty()].
     ///
     /// @return the displayed end-editor error property
     public StringProperty endErrorTextProperty() {
         return endErrorText;
+    }
+
+    /// The label used to identify the complete range in form-validation presentation.
+    ///
+    /// This label is not rendered by either endpoint input layout. Their visible labels remain controlled by
+    /// [#startLabelTextProperty()] and [#endLabelTextProperty()].
+    ///
+    /// @defaultValue `Date range`
+    private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "Date range") {
+        /// Keeps the composite validation label non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "labelText"));
+        }
+    };
+
+    /// Returns the label used for form-validation presentation.
+    ///
+    /// @return the non-null composite validation label
+    @Override
+    public String getLabelText() {
+        return labelText.get();
+    }
+
+    /// Sets the label used for form-validation presentation.
+    ///
+    /// @param labelText the non-null composite validation label
+    /// @throws NullPointerException if `labelText` is `null`
+    public void setLabelText(String labelText) {
+        this.labelText.set(labelText);
+    }
+
+    /// Returns the observable, bindable composite validation-label property.
+    ///
+    /// The property is independent of both visible endpoint labels and rejects `null`.
+    ///
+    /// @return the composite validation-label property
+    @Override
+    public StringProperty labelTextProperty() {
+        return labelText;
     }
 
     /// The label text displayed by the start-date input.
@@ -804,6 +897,21 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The Material text input layout wrapping the end editor.
     private final M3TextInputLayout endInputLayout = new M3TextInputLayout(endEditor);
 
+    /// The first generated error contributed by either endpoint input layout.
+    private final ReadOnlyStringWrapper validationErrorText =
+            new ReadOnlyStringWrapper(this, "validationErrorText", "");
+
+    /// Whether generated validation is active for at least one endpoint input layout.
+    private final ReadOnlyBooleanWrapper validationActive =
+            new ReadOnlyBooleanWrapper(this, "validationActive");
+
+    /// The endpoint editor that should receive focus for the current generated validation failure.
+    private final ReadOnlyObjectWrapper<Node> validationFocusTarget =
+            new ReadOnlyObjectWrapper<>(this, "validationFocusTarget", startEditor);
+
+    /// Whether at least one endpoint property currently has a unidirectional binding.
+    private final ReadOnlyBooleanWrapper rangeBound = new ReadOnlyBooleanWrapper(this, "rangeBound");
+
     /// The date range picker owned by this field and displayed in its popup.
     private final M3DateRangePicker picker = new M3DateRangePicker();
 
@@ -852,6 +960,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The atomic empty, in-progress, or complete field selection snapshot.
     private final ReadOnlyObjectWrapper<M3DateRangeSelection> selection =
             new ReadOnlyObjectWrapper<>(this, "selection", M3DateRangeSelection.EMPTY);
+
+    /// The last selectable field range reflected by the editors and popup picker.
+    private M3DateRangeSelection lastDisplayedSelection = M3DateRangeSelection.EMPTY;
 
     /// The nesting depth of endpoint mutations contributing to one atomic selection notification.
     private int rangeMutationDepth;
@@ -918,6 +1029,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// @param range the inclusive date range to select
     /// @throws NullPointerException     if `range` is `null`
     /// @throws IllegalArgumentException if either endpoint is outside the current picker bounds
+    /// @throws RuntimeException         if either endpoint property is bound
     public void setRange(M3DateRange range) {
         M3DateRange validatedRange = Objects.requireNonNull(range, "range");
         setRange(validatedRange.startDate(), validatedRange.endDate());
@@ -926,11 +1038,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Clears both selected range endpoints and editor texts.
     ///
     /// Calling this method while the range is empty has no effect on the selected state.
+    ///
+    /// @throws RuntimeException if either endpoint property is bound
     public void clearRange() {
         setRange(null, null);
     }
 
     /// Returns whether both range endpoints are selected.
+    ///
+    /// Invalid bound endpoint values do not replace the last valid selection snapshot used by this result.
     ///
     /// @return `true` when both range endpoints are selected
     public boolean isRangeComplete() {
@@ -939,12 +1055,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Returns the selected range, or `null` when the range is incomplete.
     ///
+    /// Invalid bound endpoint values do not replace the last valid range returned by this method.
+    ///
     /// @return the selected range, or `null` when the range is incomplete
     public @Nullable M3DateRange getRange() {
         return getSelection().toRange();
     }
 
     /// Returns the atomic empty, in-progress, or complete selection snapshot.
+    ///
+    /// A bound endpoint change that violates ordering or selectable bounds does not replace this last valid snapshot.
     ///
     /// @return the current immutable selection snapshot
     public M3DateRangeSelection getSelection() {
@@ -956,6 +1076,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The property initially contains [M3DateRangeSelection#EMPTY]. A direct endpoint change publishes after its
     /// validation and any dependent endpoint clearing complete. [#setRange(LocalDate, LocalDate)] and a committed
     /// editor pair publish once after both endpoint properties have been assigned and owned views are synchronized.
+    /// Invalid bound endpoint changes activate validation without publishing a new snapshot.
     ///
     /// @return the read-only atomic selection property
     public ReadOnlyObjectProperty<M3DateRangeSelection> selectionProperty() {
@@ -966,6 +1087,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @param preset the date range preset to apply
     private void applyPreset(M3DateRangePreset preset) {
+        if (isRangeBound()) {
+            return;
+        }
         M3DateRange range = Objects.requireNonNull(preset, "preset").range();
         setRange(range);
         picker.showMonth(YearMonth.from(range.startDate()));
@@ -1002,6 +1126,63 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return endInputLayout;
     }
 
+    /// {@inheritDoc}
+    @Override
+    public String getValidationErrorText() {
+        return validationErrorText.get();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public ReadOnlyStringProperty validationErrorTextProperty() {
+        return validationErrorText.getReadOnlyProperty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public boolean isValidationActive() {
+        return validationActive.get();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public ReadOnlyBooleanProperty validationActiveProperty() {
+        return validationActive.getReadOnlyProperty();
+    }
+
+    /// Clears generated validation from both endpoint inputs without changing explicit application errors.
+    @Override
+    public void clearValidation() {
+        startInputLayout.clearValidation();
+        endInputLayout.clearValidation();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public boolean isValidationError() {
+        return !getValidationErrorText().isEmpty();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public Node getValidationNode() {
+        return this;
+    }
+
+    /// Returns the editor associated with the first current generated error, or the start editor when valid.
+    ///
+    /// @return the preferred endpoint editor
+    @Override
+    public Node getValidationFocusTarget() {
+        return validationFocusTarget.get();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public ReadOnlyObjectProperty<Node> validationFocusTargetProperty() {
+        return validationFocusTarget.getReadOnlyProperty();
+    }
+
     /// Returns the date range picker owned by this field and displayed in its popup.
     ///
     /// @return the popup date range picker control
@@ -1020,41 +1201,51 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// Leading and trailing whitespace is ignored and an empty editor commits a `null` endpoint. If parsing,
     /// ordering, or picker-bound validation fails, the previous committed range is preserved and the relevant
-    /// error text is updated.
+    /// generated validation is updated without changing either explicit application error. If an endpoint property
+    /// is unidirectionally bound, the last valid editor presentation is restored and this method returns `false`.
     ///
     /// @return `true` if both texts were committed, or `false` if validation failed
     public boolean commitEditorText() {
-        clearGeneratedErrorText();
-        @Nullable LocalDate parsedStart = parseEditorDate(startEditor, startInputLayout);
-        @Nullable LocalDate parsedEnd = parseEditorDate(endEditor, endInputLayout);
-        if (!startInputLayout.getErrorText().isEmpty() || !endInputLayout.getErrorText().isEmpty()) {
+        if (isRangeBound()) {
+            updateEditorsFromRange();
             return false;
         }
-        if (parsedStart == null && parsedEnd != null) {
-            startInputLayout.setErrorText(getInvalidTextErrorText());
-            return false;
-        }
-        if (parsedStart != null && parsedEnd != null && parsedStart.isAfter(parsedEnd)) {
-            updateRangeErrors();
-            return false;
-        }
-        if (parsedStart != null && picker.isDateDisabled(parsedStart)
-                || parsedEnd != null && picker.isDateDisabled(parsedEnd)) {
-            updateRangeErrors();
+        if (!validateEditors()) {
             return false;
         }
 
+        @Nullable LocalDate parsedStart = parseEditorText(startEditor.getText());
+        @Nullable LocalDate parsedEnd = parseEditorText(endEditor.getText());
+
         setRange(parsedStart, parsedEnd);
-        clearGeneratedErrorText();
+        updateEditorsFromRange();
+        clearValidation();
         return true;
+    }
+
+    /// Runs composite range validation and commits valid editor text when both endpoints are writable.
+    ///
+    /// Bound endpoint values are not written. Their last valid formatted presentation is restored before current
+    /// committed state is validated. For an unbound range this method has the same commit semantics as
+    /// [#commitEditorText()].
+    ///
+    /// @return `true` when the current composite range state is valid
+    @Override
+    public boolean validate() {
+        if (isRangeBound()) {
+            updateEditorsFromRange();
+            return validateEditors();
+        }
+        return commitEditorText();
     }
 
     /// Shows the picker popup when this field is reachable from a visible window.
     ///
-    /// Calling this method while the popup is showing, or while it cannot be positioned relative to this field,
-    /// has no effect. On success [showingProperty()] becomes `true` before the enter transition begins.
+    /// Calling this method while an endpoint property is unidirectionally bound, while the popup is showing, or
+    /// while it cannot be positioned relative to this field has no effect. On success [showingProperty()] becomes
+    /// `true` before the enter transition begins.
     public void showPicker() {
-        if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
+        if (isRangeBound() || !M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
@@ -1171,6 +1362,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endEditor.variantProperty().bindBidirectional(endVariant);
         startInputLayout.errorTextProperty().bindBidirectional(startErrorText);
         endInputLayout.errorTextProperty().bindBidirectional(endErrorText);
+        startInputLayout.setValidator((input, text) -> endpointValidationError(true));
+        endInputLayout.setValidator((input, text) -> endpointValidationError(false));
+        startInputLayout.setValidateOnFocusLost(false);
+        endInputLayout.setValidateOnFocusLost(false);
+        startInputLayout.setValidateOnTextChange(false);
+        endInputLayout.setValidateOnTextChange(false);
         startInputLayout.labelTextProperty().bindBidirectional(startLabelText);
         endInputLayout.labelTextProperty().bindBidirectional(endLabelText);
         startInputLayout.supportingTextProperty().bindBidirectional(startSupportingText);
@@ -1183,6 +1380,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         setEndLabelText("End date");
         startInputLayout.setTrailing(startOpenButton);
         endInputLayout.setTrailing(endOpenButton);
+        startEditor.editableProperty().bind(rangeBound.not());
+        endEditor.editableProperty().bind(rangeBound.not());
+        startOpenButton.disableProperty().bind(rangeBound);
+        endOpenButton.disableProperty().bind(rangeBound);
         startInputLayout.disableProperty().bind(disabledProperty());
         endInputLayout.disableProperty().bind(disabledProperty());
         startInputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
@@ -1232,6 +1433,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
+        invalidTextErrorText.addListener(observable -> refreshActiveValidation());
+        rangeErrorText.addListener(observable -> refreshActiveValidation());
+        startInputLayout.validationErrorTextProperty().addListener(observable -> updateCompositeValidationState());
+        endInputLayout.validationErrorTextProperty().addListener(observable -> updateCompositeValidationState());
+        startInputLayout.validationActiveProperty().addListener(observable -> updateCompositeValidationState());
+        endInputLayout.validationActiveProperty().addListener(observable -> updateCompositeValidationState());
+        updateCompositeValidationState();
+        updateBoundState();
     }
 
     /// Hides the popup if its owner field can no longer be reached from its scene.
@@ -1322,7 +1531,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns whether a preset cannot be selected with the current date bounds.
     private boolean isPresetDisabled(M3DateRangePreset preset) {
         M3DateRange range = preset.range();
-        return picker.isDateDisabled(range.startDate()) || picker.isDateDisabled(range.endDate());
+        return isRangeBound()
+                || picker.isDateDisabled(range.startDate())
+                || picker.isDateDisabled(range.endDate());
     }
 
     /// Commits editor text after focus leaves both range editors.
@@ -1333,16 +1544,20 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         notifyFocusNodeChanged();
     }
 
-    /// Clears generated error text after user edits.
+    /// Refreshes active composite validation after user edits.
     private void handleEditorTextChanged() {
-        if (!updatingEditorText) {
-            clearGeneratedErrorText();
+        if (!updatingEditorText && isValidationActive()) {
+            validateEditors();
         }
     }
 
     /// Synchronizes field state from one atomic popup picker selection.
     private void syncRangeFromPicker(M3DateRangeSelection pickerSelection) {
         if (synchronizingPicker) {
+            return;
+        }
+        if (isRangeBound()) {
+            syncPickerFromPresentation();
             return;
         }
         synchronizingFromPicker = true;
@@ -1389,15 +1604,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Synchronizes dependent state after either field endpoint changes.
     private void handleFieldRangeChanged() {
         updateEditorsFromRange();
-        clearGeneratedErrorText();
+        clearValidation();
 
         if (!synchronizingFromPicker) {
-            synchronizingPicker = true;
-            try {
-                picker.setRange(getStartDate(), getEndDate());
-            } finally {
-                synchronizingPicker = false;
-            }
+            syncPickerFromPresentation();
         }
 
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -1415,14 +1625,44 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 && (end == null || !picker.isDateDisabled(end));
     }
 
-    /// Updates editor text from the current selected range.
+    /// Returns the current valid range presentation or the last one accepted by the field.
+    ///
+    /// @return the immutable range selection to display
+    private M3DateRangeSelection displayedSelection() {
+        if (isFieldRangeValid()) {
+            lastDisplayedSelection = M3DateRangeSelection.of(getStartDate(), getEndDate());
+        }
+        return lastDisplayedSelection;
+    }
+
+    /// Updates editor text from the current valid or last accepted range.
     private void updateEditorsFromRange() {
+        M3DateRangeSelection displayedSelection = displayedSelection();
         updatingEditorText = true;
         try {
-            startEditor.setText(formatNullableDate(getStartDate()));
-            endEditor.setText(formatNullableDate(getEndDate()));
+            startEditor.setText(formatNullableDate(displayedSelection.startDate()));
+            endEditor.setText(formatNullableDate(displayedSelection.endDate()));
         } finally {
             updatingEditorText = false;
+        }
+    }
+
+    /// Synchronizes the popup picker with the current selectable presentation.
+    private void syncPickerFromPresentation() {
+        M3DateRangeSelection displayedSelection = displayedSelection();
+        @Nullable LocalDate displayedStart = displayedSelection.startDate();
+        @Nullable LocalDate displayedEnd = displayedSelection.endDate();
+        if (displayedStart != null && picker.isDateDisabled(displayedStart)
+                || displayedEnd != null && picker.isDateDisabled(displayedEnd)) {
+            displayedStart = null;
+            displayedEnd = null;
+        }
+
+        synchronizingPicker = true;
+        try {
+            picker.setRange(displayedStart, displayedEnd);
+        } finally {
+            synchronizingPicker = false;
         }
     }
 
@@ -1431,21 +1671,118 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return date == null ? "" : getFormatter().format(date);
     }
 
-    /// Parses one editor text value and updates parse error state.
-    private @Nullable LocalDate parseEditorDate(M3TextField editor, M3TextInputLayout inputLayout) {
-        String text = editor.getText() == null ? "" : editor.getText().trim();
-        if (text.isEmpty()) {
-            inputLayout.setErrorText("");
-            return null;
+    /// Parses one nullable editor string without changing validation state.
+    ///
+    /// @param text the raw editor text, or `null` for empty text
+    /// @return the parsed date, or `null` for empty text
+    private @Nullable LocalDate parseEditorText(@Nullable String text) {
+        String trimmedText = text == null ? "" : text.trim();
+        return trimmedText.isEmpty() ? null : LocalDate.from(getFormatter().parse(trimmedText));
+    }
+
+    /// Returns the generated validation error for one endpoint of the current composite range state.
+    ///
+    /// @param startEndpoint whether to return the start endpoint's error
+    /// @return the generated endpoint error, or `null` when that endpoint is valid
+    private @Nullable String endpointValidationError(boolean startEndpoint) {
+        @Nullable LocalDate parsedStart;
+        @Nullable LocalDate parsedEnd;
+        boolean invalidStart = false;
+        boolean invalidEnd = false;
+
+        if (isRangeBound()) {
+            parsedStart = getStartDate();
+            parsedEnd = getEndDate();
+        } else {
+            try {
+                parsedStart = parseEditorText(startEditor.getText());
+            } catch (DateTimeException | IllegalArgumentException e) {
+                parsedStart = null;
+                invalidStart = true;
+            }
+            try {
+                parsedEnd = parseEditorText(endEditor.getText());
+            } catch (DateTimeException | IllegalArgumentException e) {
+                parsedEnd = null;
+                invalidEnd = true;
+            }
         }
 
-        try {
-            inputLayout.setErrorText("");
-            return LocalDate.from(getFormatter().parse(text));
-        } catch (DateTimeException | IllegalArgumentException e) {
-            inputLayout.setErrorText(getInvalidTextErrorText());
-            return null;
+        if (invalidStart || invalidEnd) {
+            return startEndpoint
+                    ? invalidStart ? getInvalidTextErrorText() : null
+                    : invalidEnd ? getInvalidTextErrorText() : null;
         }
+        if (parsedStart == null && parsedEnd != null) {
+            return startEndpoint ? getInvalidTextErrorText() : null;
+        }
+
+        boolean rangeInvalid = parsedStart != null && parsedEnd != null && parsedStart.isAfter(parsedEnd)
+                || parsedStart != null && picker.isDateDisabled(parsedStart)
+                || parsedEnd != null && picker.isDateDisabled(parsedEnd);
+        @Nullable LocalDate endpoint = startEndpoint ? parsedStart : parsedEnd;
+        return rangeInvalid && endpoint != null ? getRangeErrorText() : null;
+    }
+
+    /// Activates validation for both endpoint layouts and returns their aggregate validity.
+    ///
+    /// @return `true` when both endpoint layouts accept the current composite state
+    private boolean validateEditors() {
+        boolean startValid = startInputLayout.validate();
+        boolean endValid = endInputLayout.validate();
+        return startValid && endValid;
+    }
+
+    /// Re-runs both endpoint validators when composite validation is already active.
+    private void refreshActiveValidation() {
+        if (isValidationActive()) {
+            validateEditors();
+        }
+    }
+
+    /// Publishes aggregate validation text, activation, and focus routing from both endpoint layouts.
+    private void updateCompositeValidationState() {
+        String startError = startInputLayout.getValidationErrorText();
+        String endError = endInputLayout.getValidationErrorText();
+        validationErrorText.set(startError.isEmpty() ? endError : startError);
+        validationActive.set(startInputLayout.isValidationActive() || endInputLayout.isValidationActive());
+        validationFocusTarget.set(startError.isEmpty() && !endError.isEmpty() ? endEditor : startEditor);
+    }
+
+    /// Handles a binding source that violates endpoint ordering or picker-bound requirements.
+    private void handleInvalidBoundRange() {
+        updateEditorsFromRange();
+        validateEditors();
+        syncPickerFromPresentation();
+    }
+
+    /// Returns whether either endpoint property has a unidirectional binding.
+    ///
+    /// @return `true` when field interactions must not write range endpoints
+    private boolean isRangeBound() {
+        return startDate.isBound() || endDate.isBound();
+    }
+
+    /// Applies read-only presentation and popup state after endpoint binding changes.
+    private void updateBoundState() {
+        boolean bound = isRangeBound();
+        rangeBound.set(bound);
+        if (bound) {
+            hidePicker(false);
+        }
+        updatePresetContent();
+        if (!bound && !isFieldRangeValid()) {
+            M3DateRangeSelection displayedSelection = lastDisplayedSelection;
+            setRange(displayedSelection.startDate(), displayedSelection.endDate());
+            return;
+        }
+        updateEditorsFromRange();
+        if (bound && !isFieldRangeValid()) {
+            validateEditors();
+        } else {
+            refreshActiveValidation();
+        }
+        syncPickerFromPresentation();
     }
 
     /// Validates that one date is selectable.
@@ -1465,40 +1802,18 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     }
 
-    /// Refreshes preset state and clears the selected range when picker bounds exclude it.
+    /// Refreshes preset and field validation state after picker bounds change.
     private void handleSelectableBoundsChanged() {
         updatePresetContent();
-        clearRangeIfOutOfBounds();
-    }
-
-    /// Clears selected endpoints when current bounds exclude either endpoint.
-    private void clearRangeIfOutOfBounds() {
-        @Nullable LocalDate start = getStartDate();
-        @Nullable LocalDate end = getEndDate();
-        if (start != null && picker.isDateDisabled(start) || end != null && picker.isDateDisabled(end)) {
+        if (isRangeBound()) {
+            if (!isFieldRangeValid() || isValidationActive()) {
+                validateEditors();
+            }
+            syncPickerFromPresentation();
+        } else if (!isFieldRangeValid()) {
             clearRange();
-        }
-    }
-
-    /// Applies range error text to the editors that currently contain dates.
-    private void updateRangeErrors() {
-        startInputLayout.setErrorText(getRangeErrorText());
-        if (!endEditor.getText().isBlank()) {
-            endInputLayout.setErrorText(getRangeErrorText());
-        }
-    }
-
-    /// Clears generated parse or range errors.
-    private void clearGeneratedErrorText() {
-        clearGeneratedErrorText(startInputLayout);
-        clearGeneratedErrorText(endInputLayout);
-    }
-
-    /// Clears generated parse or range errors from one layout.
-    private void clearGeneratedErrorText(M3TextInputLayout inputLayout) {
-        String errorText = inputLayout.getErrorText();
-        if (errorText.equals(getInvalidTextErrorText()) || errorText.equals(getRangeErrorText())) {
-            inputLayout.setErrorText("");
+        } else {
+            refreshActiveValidation();
         }
     }
 
@@ -1652,7 +1967,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Forwards an accessibility action to the popup range picker.
     private void forwardPickerAccessibleAction(AccessibleAction action, Object... parameters) {
-        picker.executeAccessibleAction(action, parameters);
+        if (!isRangeBound()) {
+            picker.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Focuses the preferred node inside the popup picker.

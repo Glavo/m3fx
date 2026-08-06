@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventType;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
@@ -14,6 +16,7 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
@@ -22,6 +25,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +73,13 @@ final class M3DateRangePickerFieldTest {
             assertEquals(LocalDate.of(2026, 5, 25), field.getEndDate());
             assertEquals(LocalDate.of(2026, 5, 19), field.getPicker().getStartDate());
             assertEquals(LocalDate.of(2026, 5, 25), field.getPicker().getEndDate());
+
+            field.getStartEditor().setText(" 2026-05-19 ");
+            field.getEndEditor().setText(" 2026-05-25 ");
+            assertTrue(field.commitEditorText());
+            assertEquals("2026-05-19", field.getStartEditor().getText());
+            assertEquals("2026-05-25", field.getEndEditor().getText());
+            assertFalse(field.isValidationActive());
         });
     }
 
@@ -87,21 +98,172 @@ final class M3DateRangePickerFieldTest {
             field.getStartEditor().setText("");
             field.getEndEditor().setText("2026-05-20");
             assertFalse(field.commitEditorText());
-            assertEquals(field.getInvalidTextErrorText(), field.getStartInputLayout().getErrorText());
+            assertEquals(field.getInvalidTextErrorText(), field.getStartInputLayout().getValidationErrorText());
 
             field.getStartEditor().setText("2026-05-25");
             field.getEndEditor().setText("2026-05-20");
             assertFalse(field.commitEditorText());
-            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
-            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
+            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getValidationErrorText());
+            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getValidationErrorText());
 
             field.getPicker().setMinDate(LocalDate.of(2026, 5, 10));
             field.getPicker().setMaxDate(LocalDate.of(2026, 5, 24));
             field.getStartEditor().setText("2026-05-20");
             field.getEndEditor().setText("2026-05-25");
             assertFalse(field.commitEditorText());
-            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
-            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
+            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getValidationErrorText());
+            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getValidationErrorText());
+        });
+    }
+
+    /// Verifies that endpoint application errors remain independent from generated range validation.
+    @Test
+    void dateRangePickerFieldPreservesExplicitErrorsAcrossValidation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
+            field.setStartErrorText("Server rejected the start date");
+            field.setEndErrorText("Server rejected the end date");
+
+            field.getStartEditor().setText("invalid start");
+            field.getEndEditor().setText("invalid end");
+            assertFalse(field.commitEditorText());
+            assertEquals("Server rejected the start date", field.getStartErrorText());
+            assertEquals("Server rejected the end date", field.getEndErrorText());
+            assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
+            assertEquals(field.getInvalidTextErrorText(), field.getStartInputLayout().getValidationErrorText());
+            assertEquals(field.getInvalidTextErrorText(), field.getEndInputLayout().getValidationErrorText());
+
+            field.setInvalidTextErrorText("Use ISO date format");
+            assertEquals("Use ISO date format", field.getValidationErrorText());
+            assertEquals("Use ISO date format", field.getStartInputLayout().getValidationErrorText());
+            assertEquals("Use ISO date format", field.getEndInputLayout().getValidationErrorText());
+
+            field.getStartEditor().setText("2026-05-19");
+            field.getEndEditor().setText("2026-05-23");
+            assertTrue(field.commitEditorText());
+            assertEquals("Server rejected the start date", field.getStartErrorText());
+            assertEquals("Server rejected the end date", field.getEndErrorText());
+            assertEquals("", field.getValidationErrorText());
+
+            field.setStartErrorText(field.getRangeErrorText());
+            field.clearValidation();
+            assertEquals(field.getRangeErrorText(), field.getStartErrorText());
+            assertFalse(field.isValidationActive());
+            assertFalse(field.isValidationError());
+        });
+    }
+
+    /// Verifies that endpoint bindings make composite user interactions read-only and retain valid presentation.
+    @Test
+    void boundDateRangePickerFieldIsReadOnly() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate start = LocalDate.of(2026, 7, 10);
+            LocalDate end = LocalDate.of(2026, 7, 15);
+            ObjectProperty<@Nullable LocalDate> startSource = new SimpleObjectProperty<>(start);
+            ObjectProperty<@Nullable LocalDate> endSource = new SimpleObjectProperty<>(end);
+            M3DateRangePickerField field = new M3DateRangePickerField();
+            field.startDateProperty().bind(startSource);
+            field.endDateProperty().bind(endSource);
+
+            assertFalse(field.getStartEditor().isEditable());
+            assertFalse(field.getEndEditor().isEditable());
+            assertTrue(field.getStartInputLayout().getTrailing().isDisabled());
+            assertTrue(field.getEndInputLayout().getTrailing().isDisabled());
+
+            field.getStartEditor().setText("2026-07-11");
+            field.getEndEditor().setText("2026-07-16");
+            assertFalse(field.commitEditorText());
+            assertEquals("2026-07-10", field.getStartEditor().getText());
+            assertEquals("2026-07-15", field.getEndEditor().getText());
+
+            field.getPicker().setRange(start.plusDays(1), end.plusDays(1));
+            assertEquals(start, field.getPicker().getStartDate());
+            assertEquals(end, field.getPicker().getEndDate());
+            field.executeAccessibleAction(
+                    AccessibleAction.SET_SELECTED_ITEMS,
+                    List.of(start.plusDays(1), end.plusDays(1))
+            );
+            assertEquals(start, field.getStartDate());
+            assertEquals(end, field.getEndDate());
+
+            endSource.set(start.minusDays(1));
+            assertEquals(start.minusDays(1), field.getEndDate());
+            assertEquals("2026-07-10", field.getStartEditor().getText());
+            assertEquals("2026-07-15", field.getEndEditor().getText());
+            assertEquals(start, field.getPicker().getStartDate());
+            assertEquals(end, field.getPicker().getEndDate());
+            assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+
+            endSource.set(end);
+            assertEquals("", field.getValidationErrorText());
+            field.getPicker().setMinDate(start.plusDays(1));
+            assertEquals(start, field.getStartDate());
+            assertEquals(end, field.getEndDate());
+            assertEquals("2026-07-10", field.getStartEditor().getText());
+            assertEquals("2026-07-15", field.getEndEditor().getText());
+            assertNull(field.getPicker().getStartDate());
+            assertNull(field.getPicker().getEndDate());
+            assertEquals(field.getRangeErrorText(), field.getValidationErrorText());
+
+            field.getPicker().setMinDate(start.minusDays(1));
+            assertEquals(start, field.getPicker().getStartDate());
+            assertEquals(end, field.getPicker().getEndDate());
+            assertEquals("", field.getValidationErrorText());
+
+            endSource.set(start.minusDays(1));
+            assertEquals(start.minusDays(1), field.getEndDate());
+            field.startDateProperty().unbind();
+            field.endDateProperty().unbind();
+            assertEquals(start, field.getStartDate());
+            assertEquals(end, field.getEndDate());
+            assertTrue(field.getStartEditor().isEditable());
+            assertTrue(field.getEndEditor().isEditable());
+        });
+    }
+
+    /// Verifies composite form validation, summary presentation, and endpoint-specific focus routing.
+    @Test
+    void dateRangePickerFieldParticipatesInFormValidation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
+            field.setLabelText("Travel dates");
+            field.getEndEditor().setText("invalid");
+            M3FormValidator validator = new M3FormValidator(field);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(summary, field);
+            Scene scene = new Scene(root, 720.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(validator.validate());
+                assertEquals(List.of(field), validator.getInvalidInputs());
+                assertSame(field, validator.getFirstInvalidInput());
+                assertEquals(field.getInvalidTextErrorText(), field.getValidationErrorText());
+                assertSame(field.getEndEditor(), field.getValidationFocusTarget());
+                assertSame(field, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertTrue(summary.focusInput(field));
+                assertTrue(field.getEndEditor().isFocused());
+
+                field.getEndEditor().setText("2026-05-23");
+                assertTrue(validator.validate());
+                assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
+                assertEquals(LocalDate.of(2026, 5, 23), field.getEndDate());
+                assertTrue(validator.getInvalidInputs().isEmpty());
+            } finally {
+                stage.close();
+            }
         });
     }
 
