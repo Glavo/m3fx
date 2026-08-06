@@ -1,7 +1,7 @@
 /* HMCL MD3 demo chrome only.
  * List geometry and body type come from HMCLDemoTheme tokens; avoid re-stating density here. */
 
-/* Transparent stage / wallpaper host */
+/* Transparent stage / window chrome host */
 .m3-root,
 .m3-overlay-pane,
 .hmcl-demo-shell,
@@ -82,7 +82,7 @@
     -fx-fill: -m3-color-on-surface-variant;
 }
 
-/* Adaptive scaffold sits over the wallpaper host; keep chrome soft on home. */
+/* Adaptive scaffold keeps page chrome soft; surface fill lives on the window parent. */
 .hmcl-adaptive-scaffold,
 .hmcl-adaptive-scaffold > .m3-scaffold-main,
 .hmcl-route-host,

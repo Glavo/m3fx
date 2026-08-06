@@ -43,7 +43,7 @@ final class HMCLSettingsView extends BorderPane {
         /// General launcher preferences.
         GENERAL,
 
-        /// Theme and wallpaper preferences.
+        /// Theme and appearance preferences.
         APPEARANCE,
 
         /// Download source and concurrency.
@@ -99,17 +99,6 @@ final class HMCLSettingsView extends BorderPane {
                     HMCLDemoState.Brightness.DARK
             );
 
-    /// Wallpaper presets.
-    private static final List<HMCLDemoState.Wallpaper> WALLPAPER_OPTIONS =
-            List.of(
-                    HMCLDemoState.Wallpaper.MEADOW,
-                    HMCLDemoState.Wallpaper.CAVES,
-                    HMCLDemoState.Wallpaper.SUNSET
-            );
-
-    /// Background image load policies.
-    private static final List<String> BACKGROUND_LOAD_OPTIONS = List.of("eager", "lazy");
-
     /// Font family ids.
     private static final List<String> FONT_FAMILY_OPTIONS = List.of("system", "sans", "serif");
 
@@ -158,9 +147,6 @@ final class HMCLSettingsView extends BorderPane {
 
     /// The active section.
     private Section section = Section.GENERAL;
-
-    /// Background image load policy: `eager` or `lazy`.
-    private String backgroundLoadPolicy = "eager";
 
     /// UI font family id: `system`, `sans`, or `serif`.
     private String fontFamily = "system";
@@ -541,28 +527,6 @@ final class HMCLSettingsView extends BorderPane {
                 }
         );
 
-        M3SelectSettingItem<HMCLDemoState.Wallpaper> wallpaper = selectSetting(
-                "settings.appearance.wallpaper",
-                WALLPAPER_OPTIONS,
-                state.getWallpaper(),
-                this::wallpaperLabel,
-                value -> {
-                    state.setWallpaper(value);
-                    saved();
-                }
-        );
-
-        M3SelectSettingItem<String> loadPolicy = selectSetting(
-                "settings.appearance.background_load",
-                BACKGROUND_LOAD_OPTIONS,
-                backgroundLoadPolicy,
-                this::backgroundLoadLabel,
-                value -> {
-                    backgroundLoadPolicy = value;
-                    saved();
-                }
-        );
-
         M3SwitchSettingItem animation = switchSetting(
                 "settings.appearance.animation",
                 "settings.appearance.animation.support",
@@ -624,7 +588,6 @@ final class HMCLSettingsView extends BorderPane {
                 sectionBlock(strings.get("settings.appearance.section.theme"), theme, colorStyle, expressive),
                 sectionBlock(strings.get("settings.appearance.section.appearance"),
                         brightness, titleBar, windowTransparent, opacity),
-                sectionBlock(strings.get("settings.appearance.section.background"), wallpaper, loadPolicy),
                 sectionBlock(strings.get("settings.appearance.section.animation"), animation),
                 sectionBlock(strings.get("settings.appearance.section.fonts"),
                         fontFamilyItem, fontSizeItem, antialias)
@@ -1026,28 +989,6 @@ final class HMCLSettingsView extends BorderPane {
             case LIGHT -> "settings.brightness.light";
             case DARK -> "settings.brightness.dark";
         });
-    }
-
-    /// Returns the localized wallpaper label.
-    ///
-    /// @param wallpaper the wallpaper
-    /// @return the label
-    private String wallpaperLabel(HMCLDemoState.Wallpaper wallpaper) {
-        return strings.get(switch (wallpaper) {
-            case MEADOW -> "settings.wallpaper.meadow";
-            case CAVES -> "settings.wallpaper.caves";
-            case SUNSET -> "settings.wallpaper.sunset";
-        });
-    }
-
-    /// Returns the localized background-load-policy label.
-    ///
-    /// @param policy the policy id
-    /// @return the label
-    private String backgroundLoadLabel(String policy) {
-        return "lazy".equals(policy)
-                ? strings.get("settings.background_load.lazy")
-                : strings.get("settings.background_load.eager");
     }
 
     /// Returns the localized font-family label.

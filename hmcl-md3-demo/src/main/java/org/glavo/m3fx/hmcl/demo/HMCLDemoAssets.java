@@ -42,7 +42,7 @@ final class HMCLDemoAssets {
 
     /// Loads a generated image.
     ///
-    /// Images load on the calling thread so wallpaper and avatar pixels are available for the first layout and
+    /// Images load on the calling thread so avatar and brand pixels are available for the first layout and
     /// snapshot pass. Background loading left home chrome blank until a later pulse.
     ///
     /// @param relativePath the generated image path

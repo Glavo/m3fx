@@ -16,15 +16,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundImage;
-import javafx.scene.layout.BackgroundPosition;
-import javafx.scene.layout.BackgroundRepeat;
-import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -107,9 +101,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
     /// The deterministic application state.
     private final HMCLDemoState state;
-
-    /// Wallpaper region behind the decorator frame.
-    private final Region wallpaper = new Region();
 
     /// Animated page host in the scaffold main pane.
     private final M3AnimatedContent pageHost = new M3AnimatedContent();
@@ -230,10 +221,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         setPrefSize(prefWindowWidth(), prefWindowHeight());
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        wallpaper.getStyleClass().add("hmcl-window-wallpaper");
-        wallpaper.setMouseTransparent(true);
-        HMCLDemoUi.fill(wallpaper);
-
         StackPane parent = HMCLDemoUi.fill(new StackPane());
         parent.getStyleClass().add("hmcl-window-parent");
         Rectangle clip = new Rectangle();
@@ -249,7 +236,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
 
         // Title is scaffold topBar so the rail is laid out strictly below it (never overlapping).
         scaffold.getStyleClass().add("hmcl-window-frame");
-        parent.getChildren().setAll(wallpaper, scaffold);
+        parent.getChildren().setAll(scaffold);
 
         StackPane body = HMCLDemoUi.fill(new StackPane(parent));
         body.getStyleClass().add("hmcl-window-body");
@@ -257,7 +244,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         getChildren().setAll(body);
         StackPane.setAlignment(body, Pos.CENTER);
 
-        state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
         state.animationDisabledProperty().addListener((observable, oldValue, newValue) -> {
             if (Boolean.TRUE.equals(newValue)) {
                 stopNavigationSplitAnimation();
@@ -265,7 +251,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         });
         strings.localeProperty().addListener((observable, oldLocale, newLocale) -> refreshLocale());
         installWindowResizeSupport();
-        updateWallpaper();
         showRoute(currentRoute, TransitionKind.IMMEDIATE);
     }
 
@@ -365,7 +350,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             return;
         }
         backStack.clear();
-        // Returning to the wallpaper home uses the soft navigation reverse, not a full shared-axis pan.
+        // Returning to the home page uses the soft navigation reverse, not a full shared-axis pan.
         showRoute(new HMCLDemoRoute.Home(), TransitionKind.NAVIGATION_BACK);
     }
 
@@ -901,23 +886,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
             return strings.get("multiplayer.title");
         }
         return strings.get("app.title");
-    }
-
-    /// Updates the decorator wallpaper image without letting image metrics affect layout.
-    private void updateWallpaper() {
-        String path = switch (state.getWallpaper()) {
-            case MEADOW -> "img/wallpapers/2021-08-26.jpg";
-            case CAVES -> "img/wallpapers/2016-02-25.jpg";
-            case SUNSET -> "img/wallpapers/2015-06-22.jpg";
-        };
-        Image image = HMCLDemoAssets.image(path);
-        wallpaper.setBackground(new Background(new BackgroundImage(
-                image,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundPosition.CENTER,
-                new BackgroundSize(1.0, 1.0, true, true, false, true)
-        )));
     }
 
     /// Captures the pointer offset used by title-bar window dragging.

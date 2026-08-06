@@ -187,10 +187,6 @@ public final class HMCLDemoState {
     private final ObjectProperty<Brightness> brightness =
             new SimpleObjectProperty<>(this, "brightness", Brightness.LIGHT);
 
-    /// The home wallpaper selection.
-    private final ObjectProperty<Wallpaper> wallpaper =
-            new SimpleObjectProperty<>(this, "wallpaper", Wallpaper.MEADOW);
-
     /// The active download installation title, or `null` when idle.
     private final ObjectProperty<@Nullable String> installingTitle =
             new SimpleObjectProperty<>(this, "installingTitle");
@@ -258,7 +254,7 @@ public final class HMCLDemoState {
     private final BooleanProperty disableAprilFools =
             new SimpleBooleanProperty(this, "disableAprilFools", false);
 
-    /// Whether the title bar is transparent over the wallpaper.
+    /// Whether the title bar is transparent.
     private final BooleanProperty titleBarTransparent =
             new SimpleBooleanProperty(this, "titleBarTransparent", false);
 
@@ -1325,27 +1321,6 @@ public final class HMCLDemoState {
         return brightness;
     }
 
-    /// Returns the selected wallpaper.
-    ///
-    /// @return the wallpaper
-    public Wallpaper getWallpaper() {
-        return wallpaper.get();
-    }
-
-    /// Sets the selected wallpaper.
-    ///
-    /// @param value the wallpaper
-    public void setWallpaper(Wallpaper value) {
-        wallpaper.set(value);
-    }
-
-    /// Returns the wallpaper property.
-    ///
-    /// @return the property
-    public ObjectProperty<Wallpaper> wallpaperProperty() {
-        return wallpaper;
-    }
-
     /// Returns the runtime language.
     ///
     /// @return the locale
@@ -2340,18 +2315,5 @@ public final class HMCLDemoState {
 
         /// Forces a dark color scheme.
         DARK
-    }
-
-    /// Identifies one generated demo wallpaper.
-    @NotNullByDefault
-    public enum Wallpaper {
-        /// A bright green landscape treatment.
-        MEADOW,
-
-        /// A cool dark cave treatment.
-        CAVES,
-
-        /// A warm orange sunset treatment.
-        SUNSET
     }
 }

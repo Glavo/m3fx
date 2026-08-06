@@ -111,6 +111,7 @@ val extractHmclAssets = tasks.register<Sync>("extractHmclAssets") {
             "*/HMCLCore/src/main/resources/assets/img/skin/**",
             "*/LICENSE"
         )
+        exclude("**/wallpapers/**")
         eachFile {
             val normalizedPath = path.replace('\\', '/')
             val hmclImageMarker = "/HMCL/src/main/resources/assets/img/"

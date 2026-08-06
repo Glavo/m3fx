@@ -24,9 +24,8 @@ import org.jetbrains.annotations.Nullable;
 
 /// HMCL home page modeled on `MainPage` content.
 ///
-/// Primary destinations live on the shell adaptive navigation rail or bar. This page only owns the wallpaper-facing
-/// launch surface, a compact announcement card, and small account/instance shortcuts that must not stretch to fill
-/// the window.
+/// Primary destinations live on the shell adaptive navigation rail or bar. This page only owns the launch surface,
+/// a compact announcement card, and small account/instance shortcuts that must not stretch to fill the window.
 @NotNullByDefault
 final class HMCLHomeView extends BorderPane {
     /// The localization source used by this page.
@@ -68,7 +67,7 @@ final class HMCLHomeView extends BorderPane {
     /// Graphic stack for the launch button.
     private final VBox launchGraphic = new VBox(1.0);
 
-    /// Creates the wallpaper-first home page.
+    /// Creates the home page.
     ///
     /// @param controller the application controller
     HMCLHomeView(HMCLDemoController controller) {
