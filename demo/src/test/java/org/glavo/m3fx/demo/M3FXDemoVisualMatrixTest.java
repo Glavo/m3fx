@@ -89,6 +89,9 @@ import org.glavo.m3fx.controls.M3ColorField;
 import org.glavo.m3fx.controls.M3ColorPicker;
 import org.glavo.m3fx.controls.M3ColorSlider;
 import org.glavo.m3fx.controls.M3ColorSwatch;
+import org.glavo.m3fx.controls.M3ColorSwatchPicker;
+import org.glavo.m3fx.controls.M3ColorSwatchRounding;
+import org.glavo.m3fx.controls.M3ColorSwatchSize;
 import org.glavo.m3fx.controls.M3ColorWheel;
 import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Chip;
@@ -1037,6 +1040,9 @@ final class M3FXDemoVisualMatrixTest {
     /// The hover pseudo-class used when rendering synthetic interaction snapshots.
     private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
 
+    /// The selected pseudo-class used by single-selection controls.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
+
     /// The style class used by animated Material ripple nodes.
     private static final String RIPPLE_STYLE_CLASS = "m3-ripple";
 
@@ -1057,15 +1063,6 @@ final class M3FXDemoVisualMatrixTest {
 
     /// The long linear motion spec duration used to make animation frames visually observable in tests.
     private static final Duration OBSERVABLE_MOTION_DURATION = Duration.millis(600.0);
-
-    /// The fixed size expected for seed-color icon buttons in the settings dialog.
-    private static final double SETTINGS_SEED_BUTTON_SIZE = 32.0;
-
-    /// The tolerance used when checking settings seed-color button dimensions.
-    private static final double SETTINGS_SEED_BUTTON_SIZE_TOLERANCE = 1.5;
-
-    /// The tolerance used when checking settings seed-color button circular shape tokens.
-    private static final double SETTINGS_SEED_BUTTON_ROUNDNESS_TOLERANCE = 1.0;
 
     /// The report directory used for rendered demo snapshots.
     private static final Path VISUAL_REPORT_DIRECTORY = Path.of(
@@ -1877,11 +1874,12 @@ final class M3FXDemoVisualMatrixTest {
                         "demo-settings-content",
                         "demo settings content"
                 );
-                List<M3IconButton> seedButtons = settingsSeedButtons(settings);
-                assertEquals(5, seedButtons.size(), "demo settings seed button count");
-                for (int index = 0; index < seedButtons.size(); index++) {
-                    clickDemoSettingControl(scene, seedButtons.get(index), "seed color " + index);
+                M3ColorSwatchPicker seedPicker = requireSettingsSeedPicker(settings);
+                assertEquals(5, seedPicker.getItems().size(), "demo settings seed color count");
+                for (int index = 1; index < seedPicker.getItems().size(); index++) {
+                    selectDemoSeedColor(scene, seedPicker, index, "seed color " + index);
                 }
+                selectDemoSeedColor(scene, seedPicker, 0, "seed color 0");
 
                 clickDemoSettingButton(scene, "demo-profile-settings", "Expressive", "profile expressive");
                 assertRootStyleMode(
@@ -1920,7 +1918,7 @@ final class M3FXDemoVisualMatrixTest {
                         "light brightness"
                 );
 
-                assertSettingsSeedButtonsRenderCircular(scene, "after settings changes");
+                assertSettingsSeedSwatchesRenderCircular(scene, "after settings changes");
                 M3Button done = Objects.requireNonNull(
                         firstVisibleButtonWithText(scene.getRoot(), "Done"),
                         "demo settings Done button"
@@ -8530,6 +8528,21 @@ final class M3FXDemoVisualMatrixTest {
         assertDemoSettingsControlGeometry(scene, "after " + description);
     }
 
+    /// Selects one settings seed color and verifies the dialog after theme reapplication.
+    private static void selectDemoSeedColor(
+            Scene scene,
+            M3ColorSwatchPicker picker,
+            int index,
+            String description
+    ) {
+        picker.select(index);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+
+        assertEquals(index, picker.getSelectedIndex(), description + " selected index");
+        assertDemoSettingsControlGeometry(scene, "after " + description);
+    }
+
     /// Verifies the demo root contains the expected theme mode style class and not the opposite mode.
     private static void assertRootStyleMode(Scene scene, String expectedStyleClass, String absentStyleClass, String description) {
         List<String> styleClasses = scene.getRoot().getStyleClass();
@@ -8553,11 +8566,7 @@ final class M3FXDemoVisualMatrixTest {
 
         Node settings = requireVisibleStyledDescendant(root, "demo-settings-content", "demo settings content");
         assertVisibleControlBounds(settings, description + " settings content");
-        List<M3IconButton> seedButtons = settingsSeedButtons(settings);
-        assertEquals(5, seedButtons.size(), description + " seed button count");
-        for (M3IconButton seedButton : seedButtons) {
-            assertSettingsSeedButtonGeometry(seedButton, description);
-        }
+        assertSettingsSeedPickerGeometry(requireSettingsSeedPicker(settings), description);
 
         assertVisibleControlBounds(
                 requireSettingButton(
@@ -8599,15 +8608,22 @@ final class M3FXDemoVisualMatrixTest {
         assertEquals(1, brightnessModeCount, () -> description + " should expose one brightness mode: " + styleClasses);
     }
 
-    /// Returns the visible seed-color buttons in the settings dialog.
-    private static List<M3IconButton> settingsSeedButtons(Node settings) {
-        List<M3IconButton> seedButtons = new ArrayList<>();
-        for (M3IconButton button : visibleNodesOfType(settings, M3IconButton.class)) {
-            if (button.getStyleClass().contains("demo-seed-button")) {
-                seedButtons.add(button);
-            }
-        }
-        return seedButtons;
+    /// Returns the visible seed-color picker in the settings dialog.
+    private static M3ColorSwatchPicker requireSettingsSeedPicker(Node settings) {
+        List<M3ColorSwatchPicker> pickers = visibleNodesOfType(settings, M3ColorSwatchPicker.class).stream()
+                .filter(picker -> picker.getStyleClass().contains("demo-seed-picker"))
+                .toList();
+        assertEquals(1, pickers.size(), "demo settings seed picker count");
+        return pickers.get(0);
+    }
+
+    /// Returns the rendered seed-color cells in visual order.
+    private static List<Node> settingsSeedCells(M3ColorSwatchPicker picker) {
+        ArrayList<Node> cells = new ArrayList<>(picker.lookupAll(".color-swatch-cell"));
+        cells.sort(Comparator
+                .comparingDouble((Node node) -> node.getBoundsInParent().getMinY())
+                .thenComparingDouble(node -> node.getBoundsInParent().getMinX()));
+        return cells;
     }
 
     /// Returns a visible settings button with the requested label.
@@ -8637,41 +8653,69 @@ final class M3FXDemoVisualMatrixTest {
         throw new AssertionError("unreachable");
     }
 
-    /// Verifies one settings seed-color button keeps its fixed square layout and circular token shape.
-    private static void assertSettingsSeedButtonGeometry(M3IconButton button, String description) {
-        Bounds bounds = button.getLayoutBounds();
-        assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getWidth(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
-                () -> description + " seed button width changed: " + bounds);
-        assertEquals(SETTINGS_SEED_BUTTON_SIZE, bounds.getHeight(), SETTINGS_SEED_BUTTON_SIZE_TOLERANCE,
-                () -> description + " seed button height changed: " + bounds);
-        assertTrue(button.getContainerShape() >= Math.min(bounds.getWidth(), bounds.getHeight()) / 2.0
-                        - SETTINGS_SEED_BUTTON_ROUNDNESS_TOLERANCE,
-                () -> description + " seed button container shape is not circular: shape="
-                        + button.getContainerShape() + ", bounds=" + bounds);
-        assertEquals(0.0, button.getHorizontalPadding(), 0.01,
-                () -> description + " seed button horizontal padding should stay zero");
+    /// Verifies the settings seed picker exposes one selected, centered row of circular swatches.
+    private static void assertSettingsSeedPickerGeometry(M3ColorSwatchPicker picker, String description) {
+        assertVisibleControlBounds(picker, description + " seed picker");
+        assertEquals(5, picker.getItems().size(), description + " seed color count");
+        assertEquals(5, picker.getColumnCount(), description + " seed picker column count");
+        assertEquals(M3ColorSwatchSize.SMALL, picker.getSwatchSize(), description + " seed swatch size");
+        assertEquals(M3ColorSwatchRounding.FULL, picker.getRounding(), description + " seed swatch rounding");
+        assertFalse(picker.isAllowEmptySelection(), description + " seed picker should require a selection");
+        assertTrue(picker.getSelectedIndex() >= 0, description + " seed picker should have a selection");
+
+        List<Node> cells = settingsSeedCells(picker);
+        assertEquals(picker.getItems().size(), cells.size(), description + " seed cell count");
+        assertEquals(1L, cells.stream()
+                        .filter(cell -> cell.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS))
+                        .count(),
+                description + " selected seed cell count");
+
+        double expectedSwatchSize = M3ColorSwatchSize.SMALL.getSize();
+        for (Node cell : cells) {
+            M3ColorSwatch swatch = assertInstanceOf(
+                    M3ColorSwatch.class,
+                    cell.lookup(".m3-color-swatch"),
+                    description + " seed cell swatch"
+            );
+            Bounds cellBounds = cell.localToScene(cell.getBoundsInLocal());
+            Bounds swatchLayoutBounds = swatch.getLayoutBounds();
+            Bounds swatchBounds = swatch.localToScene(swatch.getBoundsInLocal());
+            assertEquals(expectedSwatchSize, swatchLayoutBounds.getWidth(), 1.5,
+                    () -> description + " seed swatch width changed: " + swatchLayoutBounds);
+            assertEquals(expectedSwatchSize, swatchLayoutBounds.getHeight(), 1.5,
+                    () -> description + " seed swatch height changed: " + swatchLayoutBounds);
+            assertEquals(cellBounds.getCenterX(), swatchBounds.getCenterX(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " seed swatch is not horizontally centered: cell="
+                            + cellBounds + ", swatch=" + swatchBounds);
+            assertEquals(cellBounds.getCenterY(), swatchBounds.getCenterY(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " seed swatch is not vertically centered: cell="
+                            + cellBounds + ", swatch=" + swatchBounds);
+            assertEquals(M3ColorSwatchRounding.FULL, swatch.getRounding(),
+                    description + " rendered seed swatch rounding");
+        }
     }
 
-    /// Verifies the seed-color buttons render as rounded circles in the final scene snapshot.
-    private static void assertSettingsSeedButtonsRenderCircular(Scene scene, String description) {
+    /// Verifies the seed-color swatches render as circles in the final scene snapshot.
+    private static void assertSettingsSeedSwatchesRenderCircular(Scene scene, String description) {
         WritableImage image = snapshot(scene);
         Node settings = requireVisibleStyledDescendant(
                 scene.getRoot(),
                 "demo-settings-content",
                 "demo settings content"
         );
-        for (M3IconButton button : settingsSeedButtons(settings)) {
-            assertSettingsSeedButtonRenderedCircular(image, button, description);
+        M3ColorSwatchPicker picker = requireSettingsSeedPicker(settings);
+        for (M3ColorSwatch swatch : visibleNodesOfType(picker, M3ColorSwatch.class)) {
+            assertSettingsSeedSwatchRenderedCircular(image, swatch, description);
         }
     }
 
-    /// Verifies that the rendered corners of a seed-color button are outside the colored circular fill.
-    private static void assertSettingsSeedButtonRenderedCircular(
+    /// Verifies that the rendered corners of a seed swatch are outside its colored circular fill.
+    private static void assertSettingsSeedSwatchRenderedCircular(
             WritableImage image,
-            M3IconButton button,
+            M3ColorSwatch swatch,
             String description
     ) {
-        Bounds bounds = button.localToScene(button.getBoundsInLocal());
+        Bounds bounds = swatch.localToScene(swatch.getBoundsInLocal());
         Color center = snapshotColorAt(image, bounds.getCenterX(), bounds.getCenterY());
         Color topLeft = snapshotColorAt(image, bounds.getMinX() + 2.0, bounds.getMinY() + 2.0);
         Color topRight = snapshotColorAt(image, bounds.getMaxX() - 2.0, bounds.getMinY() + 2.0);
@@ -8679,12 +8723,12 @@ final class M3FXDemoVisualMatrixTest {
         Color bottomRight = snapshotColorAt(image, bounds.getMaxX() - 2.0, bounds.getMaxY() - 2.0);
 
         assertTrue(center.getOpacity() > 0.75,
-                () -> description + " seed button center should be opaque: " + center);
+                () -> description + " seed swatch center should be opaque: " + center);
         assertTrue(pixelDistance(center, topLeft) > 0.08
                         && pixelDistance(center, topRight) > 0.08
                         && pixelDistance(center, bottomLeft) > 0.08
                         && pixelDistance(center, bottomRight) > 0.08,
-                () -> description + " seed button corners look filled instead of circular: bounds=" + bounds
+                () -> description + " seed swatch corners look filled instead of circular: bounds=" + bounds
                         + ", center=" + center
                         + ", topLeft=" + topLeft
                         + ", topRight=" + topRight
@@ -11840,9 +11884,6 @@ final class M3FXDemoVisualMatrixTest {
 
     /// Returns whether a fixed target should always expose visible centered glyph content.
     private static boolean shouldRequireCenteredGlyph(Node target) {
-        if (target.getStyleClass().contains("demo-seed-button")) {
-            return false;
-        }
         if (target instanceof M3IconButton || target instanceof M3IconToggleButton) {
             return true;
         }

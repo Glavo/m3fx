@@ -15,7 +15,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -34,6 +33,9 @@ import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3ColorSwatchPicker;
+import org.glavo.m3fx.controls.M3ColorSwatchRounding;
+import org.glavo.m3fx.controls.M3ColorSwatchSize;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3DialogWindow;
@@ -43,6 +45,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3OverlayPane;
+import org.glavo.m3fx.controls.M3RgbColor;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3SegmentedButton;
@@ -79,12 +82,12 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Seed colors shown in the demo settings dialog.
-    private static final @Unmodifiable List<Color> SEED_COLORS = List.of(
-            Color.web("#6750a4"),
-            Color.web("#006a6a"),
-            Color.web("#b3261e"),
-            Color.web("#386a20"),
-            Color.web("#7d5260")
+    private static final @Unmodifiable List<M3RgbColor> SEED_COLORS = List.of(
+            new M3RgbColor(Color.web("#6750a4")),
+            new M3RgbColor(Color.web("#006a6a")),
+            new M3RgbColor(Color.web("#b3261e")),
+            new M3RgbColor(Color.web("#386a20")),
+            new M3RgbColor(Color.web("#7d5260"))
     );
 
     /// The fixed width of the persistent and modal navigation drawer.
@@ -337,19 +340,19 @@ public final class M3FXDemoApp extends Application {
     /// @param root the demo root whose orientation is configured by the direction switch
     /// @return the settings content
     private Node createDemoPreferencesContent(M3OverlayPane root) {
-        HBox seedButtons = new HBox(8.0);
-        seedButtons.getStyleClass().add("demo-seed-buttons");
-        for (Color color : SEED_COLORS) {
-            M3IconButton button = new M3IconButton();
-            button.getStyleClass().add("demo-seed-button");
-            button.setAccessibleText("Use color seed " + toHex(color));
-            button.setStyle("-fx-background-color: " + toHex(color) + ";");
-            button.setOnAction(event -> {
-                seedColor = color;
+        M3ColorSwatchPicker seedPicker = new M3ColorSwatchPicker();
+        seedPicker.getStyleClass().add("demo-seed-picker");
+        seedPicker.getItems().setAll(SEED_COLORS);
+        seedPicker.setColumnCount(SEED_COLORS.size());
+        seedPicker.setSwatchSize(M3ColorSwatchSize.SMALL);
+        seedPicker.setRounding(M3ColorSwatchRounding.FULL);
+        seedPicker.selectColor(new M3RgbColor(seedColor));
+        seedPicker.selectedColorProperty().addListener((observable, oldColor, color) -> {
+            if (color != null) {
+                seedColor = color.toFxColor();
                 applyTheme();
-            });
-            seedButtons.getChildren().add(button);
-        }
+            }
+        });
 
         M3SegmentedButton baseline = new M3SegmentedButton("Standard");
         M3SegmentedButton expressive = new M3SegmentedButton("Expressive");
@@ -415,7 +418,7 @@ public final class M3FXDemoApp extends Application {
 
         VBox content = new VBox(
                 20.0,
-                createSettingsGroup("Color theme", seedButtons),
+                createSettingsGroup("Color theme", seedPicker),
                 createSettingsGroup("Material profile", profileGroup),
                 createSettingsGroup("Density", densityGroup),
                 createSettingsGroup("Behavior", animationsSwitch, directionSwitch, brightnessSwitch)
@@ -1133,21 +1136,6 @@ public final class M3FXDemoApp extends Application {
             throw new IllegalStateException("Missing demo stylesheet resource");
         }
         return url.toExternalForm();
-    }
-
-    /// Converts a color to a hexadecimal CSS value.
-    private static String toHex(Color color) {
-        Objects.requireNonNull(color, "color");
-        return "#"
-                + toHexChannel(color.getRed())
-                + toHexChannel(color.getGreen())
-                + toHexChannel(color.getBlue());
-    }
-
-    /// Converts a color channel to a two-character hexadecimal value.
-    private static String toHexChannel(double value) {
-        String hex = Integer.toHexString((int) Math.round(value * 255.0));
-        return hex.length() == 1 ? "0" + hex : hex;
     }
 
     /// Describes one sidebar group and its drawer controls.
