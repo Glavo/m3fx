@@ -8,12 +8,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
-import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SplitButton;
@@ -24,8 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 /// HMCL home page modeled on `MainPage` content.
 ///
-/// Primary destinations live on the shell adaptive navigation rail or bar. This page only owns the launch surface,
-/// a compact announcement card, and small account/instance shortcuts that must not stretch to fill the window.
+/// Primary destinations live on the shell adaptive navigation rail or bar. This page only owns the launch surface
+/// and small account/instance shortcuts that must not stretch to fill the window.
 @NotNullByDefault
 final class HMCLHomeView extends BorderPane {
     /// The localization source used by this page.
@@ -42,18 +40,6 @@ final class HMCLHomeView extends BorderPane {
 
     private final M3ListItem accountItem = new M3ListItem();
     private final M3ListItem currentInstanceItem = new M3ListItem();
-
-    /// Preview-channel announcement card.
-    private final VBox announcementCard = new VBox(8.0);
-
-    /// Announcement title.
-    private final M3Text announcementTitle = new M3Text("", M3TextRole.TITLE_SMALL);
-
-    /// Announcement body.
-    private final M3Text announcementBody = new M3Text("", M3TextRole.BODY_MEDIUM);
-
-    /// Whether the preview notice remains visible for this session.
-    private boolean announcementVisible = true;
 
     /// Material 3 split launch control (primary action + instance menu).
     private final M3SplitButton launchButton = new M3SplitButton();
@@ -78,15 +64,13 @@ final class HMCLHomeView extends BorderPane {
         getStyleClass().add("hmcl-home-page");
         HMCLDemoUi.fill(this);
         configureShortcuts();
-        configureAnnouncement();
         configureLaunchPane();
 
-        // Top row: shortcuts (left) + announcement (center). Prefer-size children so nothing paints a full-page card.
-        HBox topRow = new HBox(16.0);
+        // Prefer-size shortcuts so nothing paints a full-page card.
+        HBox topRow = new HBox();
         topRow.setAlignment(Pos.TOP_LEFT);
         topRow.setFillHeight(false);
-        topRow.getChildren().setAll(shortcuts, announcementCard);
-        HBox.setHgrow(announcementCard, Priority.ALWAYS);
+        topRow.getChildren().setAll(shortcuts);
 
         HBox bottomRow = new HBox();
         bottomRow.setAlignment(Pos.BOTTOM_RIGHT);
@@ -120,8 +104,6 @@ final class HMCLHomeView extends BorderPane {
 
     /// Updates every static label owned by this page.
     void refreshLocale() {
-        announcementTitle.setText(strings.get("home.preview.title"));
-        announcementBody.setText(strings.get("home.preview.body") + "\n" + strings.get("home.preview.feedback"));
         launchLabel.setText(strings.get("home.launch"));
         launchButton.setAccessibleText(strings.get("home.launch"));
         refreshAccount();
@@ -142,32 +124,6 @@ final class HMCLHomeView extends BorderPane {
         accountItem.setOnAction(event -> controller.openAccounts());
         currentInstanceItem.setOnAction(event -> controller.openSelectedInstance());
         shortcuts.getChildren().setAll(accountItem, currentInstanceItem);
-    }
-
-    /// Builds the preview announcement once.
-    private void configureAnnouncement() {
-        announcementCard.getStyleClass().addAll("hmcl-card", "hmcl-announcement");
-        announcementCard.setMinSize(220.0, Region.USE_PREF_SIZE);
-        announcementCard.setMaxWidth(420.0);
-        announcementCard.setMaxHeight(Region.USE_PREF_SIZE);
-        announcementCard.setPadding(new Insets(16.0, 20.0, 16.0, 20.0));
-        announcementBody.setWrapText(true);
-        announcementBody.setMaxWidth(380.0);
-
-        M3IconButton close = new M3IconButton(HMCLDemoIcons.create(HMCLDemoIcons.CLOSE));
-        close.getStyleClass().add("hmcl-announcement-close");
-        close.setOnAction(event -> {
-            announcementVisible = false;
-            announcementCard.setVisible(false);
-            announcementCard.setManaged(false);
-        });
-        BorderPane header = new BorderPane();
-        header.setLeft(announcementTitle);
-        header.setRight(close);
-        BorderPane.setAlignment(announcementTitle, Pos.CENTER_LEFT);
-        announcementCard.getChildren().setAll(header, announcementBody);
-        announcementCard.setVisible(announcementVisible);
-        announcementCard.setManaged(announcementVisible);
     }
 
     /// Builds the Material 3 split launch control once.

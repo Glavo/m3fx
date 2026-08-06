@@ -132,15 +132,6 @@
     -fx-background-radius: 28px;
 }
 
-.hmcl-card.hmcl-announcement {
-    -fx-background-color: -m3-color-surface-container-high;
-    -fx-background-radius: 16px;
-}
-
-.hmcl-announcement .m3-text {
-    -fx-text-fill: -m3-color-on-surface;
-}
-
 .m3-split-button.hmcl-home-launch .hmcl-launch-label,
 .m3-split-button.hmcl-home-launch .hmcl-launch-instance {
     -fx-text-fill: -m3-color-on-primary;
