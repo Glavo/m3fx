@@ -465,6 +465,44 @@ final class M3SelectionNavigationTest {
         });
     }
 
+    /// Accepts a supplementary Unicode letter as one typed character in every type-ahead container.
+    @Test
+    void typeAheadAcceptsSupplementaryCharacters() {
+        FxTestUtils.runOnFxThread(() -> assertTypeAheadSelects("\uD801\uDC00", "\uD801\uDC28 item"));
+    }
+
+    /// Matches characters whose locale-independent lowercase form contains more than one code point.
+    @Test
+    void typeAheadMatchesExpandingLowercaseCharacters() {
+        FxTestUtils.runOnFxThread(() -> assertTypeAheadSelects("\u0130", "\u0130tem"));
+    }
+
+    /// Verifies the same typed input through all four public container event paths.
+    private static void assertTypeAheadSelects(String character, String headline) {
+        M3ListItem listTarget = new M3ListItem(headline);
+        M3ListPane list = listPane(new M3ListItem("Archive"), listTarget);
+        list.setSelectionMode(M3SelectionMode.SINGLE);
+        M3MenuItem menuTarget = new M3MenuItem(headline);
+        M3Menu menu = new M3Menu(new M3MenuItem("Archive"), menuTarget);
+        menu.setSelectionMode(M3SelectionMode.SINGLE);
+        M3ListItem drawerTarget = new M3ListItem(headline);
+        M3NavigationDrawer drawer = new M3NavigationDrawer();
+        drawer.getItems().addAll(new M3ListItem("Archive"), drawerTarget);
+        M3ListView<String> view = new M3ListView<>();
+        view.getItems().addAll("Archive", headline);
+        view.setSelectionMode(M3SelectionMode.SINGLE);
+        show(new HBox(list, menu, drawer, view));
+
+        list.fireEvent(typedKeyEvent(character));
+        assertSame(listTarget, list.getSelectedItem());
+        menu.fireEvent(typedKeyEvent(character));
+        assertSame(menuTarget, menu.getSelectedItem());
+        drawer.fireEvent(typedKeyEvent(character));
+        assertSame(drawerTarget, drawer.getSelectedItem());
+        view.fireEvent(typedKeyEvent(character));
+        assertEquals(headline, view.getSelectedItem());
+    }
+
     /// Verifies list pane type-ahead focus scrolls the matched item into view.
     @Test
     void listPaneTypeAheadRevealsMatchedTarget() {

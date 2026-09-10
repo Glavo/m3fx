@@ -649,7 +649,8 @@ public final class M3SelectionNavigation {
 
     /// Returns whether text starts with an already normalized type-ahead prefix.
     ///
-    /// Leading whitespace is skipped and case is compared without creating a normalized copy of the candidate text.
+    /// Leading whitespace is skipped. A direct case-insensitive comparison avoids normalizing matching candidates;
+    /// otherwise, the normalized candidate is checked to account for lowercase mappings that expand a character.
     ///
     /// @param text             the candidate item text
     /// @param normalizedPrefix the stripped lower-case prefix
@@ -667,8 +668,18 @@ public final class M3SelectionNavigation {
         while (start < textLength && Character.isWhitespace(text.charAt(start))) {
             start++;
         }
-        return textLength - start >= normalizedPrefix.length()
-                && text.regionMatches(true, start, normalizedPrefix, 0, normalizedPrefix.length());
+        if (textLength - start >= normalizedPrefix.length()
+                && text.regionMatches(true, start, normalizedPrefix, 0, normalizedPrefix.length())) {
+            return true;
+        }
+        // ASCII cannot expand during lowercase conversion, so ordinary misses need no full-string normalization.
+        int end = start + Math.min(textLength - start, normalizedPrefix.length());
+        for (int index = start; index < end; index++) {
+            if (text.charAt(index) > 0x7f) {
+                return normalizeTypeAheadText(text).startsWith(normalizedPrefix);
+            }
+        }
+        return false;
     }
 
     /// Returns the selection target implied by a navigation key.

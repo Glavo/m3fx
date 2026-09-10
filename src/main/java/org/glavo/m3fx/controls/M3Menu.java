@@ -642,22 +642,7 @@ public final class M3Menu extends Control {
     /// Moves focus to the next menu item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (M3KeyEvents.hasShortcutModifier(event)) {
-            return;
-        }
-
-        String character = event.getCharacter();
-        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
-            return;
-        }
-
-        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadState.append(normalizedCharacter);
-        @Nullable M3MenuItem target = typeAheadTarget(typeAheadState.getPrefix());
-        if (target == null && typeAheadState.length() > 1) {
-            typeAheadState.replace(normalizedCharacter);
-            target = typeAheadTarget(typeAheadState.getPrefix());
-        }
+        @Nullable M3MenuItem target = typeAheadState.find(event, this::typeAheadTarget);
         if (target == null) {
             return;
         }

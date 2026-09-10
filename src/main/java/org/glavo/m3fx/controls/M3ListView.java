@@ -1131,23 +1131,8 @@ public final class M3ListView<T> extends Control {
             return;
         }
 
-        if (M3KeyEvents.hasShortcutModifier(event)) {
-            return;
-        }
-
-        String character = event.getCharacter();
-        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
-            return;
-        }
-
-        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadState.append(normalizedCharacter);
-        int target = typeAheadTarget(typeAheadState.getPrefix());
-        if (target < 0 && typeAheadState.length() > 1) {
-            typeAheadState.replace(normalizedCharacter);
-            target = typeAheadTarget(typeAheadState.getPrefix());
-        }
-        if (target < 0) {
+        @Nullable Integer target = typeAheadState.find(event, this::typeAheadTarget);
+        if (target == null) {
             return;
         }
 
@@ -1158,10 +1143,10 @@ public final class M3ListView<T> extends Control {
         event.consume();
     }
 
-    /// Returns the next data item index matching the normalized type-ahead prefix.
-    private int typeAheadTarget(String prefix) {
+    /// Returns the next data item index matching the normalized type-ahead prefix, or `null` when none matches.
+    private @Nullable Integer typeAheadTarget(String prefix) {
         if (prefix.isEmpty() || getItems().isEmpty() || !M3Accessible.isEffectivelyReachable(this)) {
-            return -1;
+            return null;
         }
 
         int itemCount = getItems().size();
@@ -1174,7 +1159,7 @@ public final class M3ListView<T> extends Control {
                 return index;
             }
         }
-        return -1;
+        return null;
     }
 
     /// Moves keyboard focus from a navigation event and selects rows in single-selection mode.

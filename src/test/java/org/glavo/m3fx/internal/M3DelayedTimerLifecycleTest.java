@@ -4,6 +4,8 @@
 package org.glavo.m3fx.internal;
 
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
@@ -275,7 +277,8 @@ final class M3DelayedTimerLifecycleTest {
             tooltipOwnerPropertyCount = tooltipOwner.getProperties().size();
             scenePropertyCount = scene.getProperties().size();
 
-            typeAheadState.append("a");
+            typeAheadState.find(new KeyEvent(
+                    KeyEvent.KEY_TYPED, "a", "", KeyCode.UNDEFINED, false, false, false, false), prefix -> prefix);
             tooltipOwner.fireEvent(mouseEnteredEvent());
         }
 

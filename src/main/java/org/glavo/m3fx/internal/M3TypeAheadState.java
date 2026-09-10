@@ -6,11 +6,13 @@ package org.glavo.m3fx.internal;
 import javafx.animation.PauseTransition;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /// Maintains the transient normalized prefix used by keyboard type-ahead navigation.
 ///
@@ -50,38 +52,52 @@ public final class M3TypeAheadState {
         return prefix;
     }
 
-    /// Returns the number of UTF-16 code units in the current prefix.
+    /// Searches for a target after accepting one printable Unicode code point from a typed key event.
     ///
-    /// @return the current prefix length
-    public int length() {
-        return prefix.length();
-    }
-
-    /// Appends normalized text and restarts the inactivity timer.
+    /// Shortcut-modified events, non-typed events, whitespace, control characters, unpaired surrogates, and input
+    /// containing multiple code points are ignored without changing the prefix or timer. Shift is permitted.
+    /// Accepted input is normalized, appended to the current prefix, and restarts the inactivity timer. The finder
+    /// receives that prefix; if it returns `null` and a previous prefix existed, the new character replaces the
+    /// prefix and the finder is called once more. The last attempted prefix remains active even if no target is
+    /// found or the finder throws. Owner lifecycle changes may clear the prefix and cancel the search.
     ///
-    /// @param text the non-null normalized text to append
-    public void append(String text) {
-        Objects.requireNonNull(text, "text");
-        if (text.isEmpty()) {
-            return;
+    /// This method must run on the JavaFX application thread. It does not consume the event or change focus or
+    /// selection; the caller applies the returned target according to its control's interaction policy.
+    ///
+    /// @param event the key event to inspect
+    /// @param targetFinder finds a target for a normalized prefix, returning `null` when no target matches
+    /// @param <T> the target type
+    /// @return the matching target, or `null` when input is ignored, canceled, or unmatched
+    /// @throws NullPointerException if `event` or `targetFinder` is `null`
+    public <T> @Nullable T find(KeyEvent event, Function<String, @Nullable T> targetFinder) {
+        Objects.requireNonNull(event, "event");
+        Objects.requireNonNull(targetFinder, "targetFinder");
+        if (event.getEventType() != KeyEvent.KEY_TYPED || M3KeyEvents.hasShortcutModifier(event)) {
+            return null;
         }
-        prefix += text;
-        restartResetDelay();
-    }
 
-    /// Replaces the active prefix and restarts the inactivity timer.
-    ///
-    /// Supplying an empty string clears the interaction and releases its active motion observer.
-    ///
-    /// @param text the normalized replacement prefix
-    public void replace(String text) {
-        Objects.requireNonNull(text, "text");
-        if (text.isEmpty()) {
-            clear();
-            return;
+        String character = event.getCharacter();
+        if (character.codePointCount(0, character.length()) != 1 || character.isBlank()) {
+            return null;
         }
-        prefix = text;
+        int codePoint = character.codePointAt(0);
+        if (Character.isISOControl(codePoint)
+                || codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE) {
+            return null;
+        }
+
+        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
+        prefix += normalizedCharacter;
         restartResetDelay();
+        if (prefix.isEmpty()) {
+            return null;
+        }
+        @Nullable T target = targetFinder.apply(prefix);
+        if (target == null && prefix.length() > normalizedCharacter.length()) {
+            prefix = normalizedCharacter;
+            target = targetFinder.apply(prefix);
+        }
+        return target;
     }
 
     /// Clears the prefix, stops its inactivity timer, and releases active motion observation.

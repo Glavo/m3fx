@@ -39,7 +39,6 @@ import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
-import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -651,22 +650,7 @@ public final class M3ListPane extends Control {
             return;
         }
 
-        if (M3KeyEvents.hasShortcutModifier(event)) {
-            return;
-        }
-
-        String character = event.getCharacter();
-        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
-            return;
-        }
-
-        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadState.append(normalizedCharacter);
-        @Nullable M3ListItemBase target = typeAheadTarget(typeAheadState.getPrefix());
-        if (target == null && typeAheadState.length() > 1) {
-            typeAheadState.replace(normalizedCharacter);
-            target = typeAheadTarget(typeAheadState.getPrefix());
-        }
+        @Nullable M3ListItemBase target = typeAheadState.find(event, this::typeAheadTarget);
         if (target == null) {
             return;
         }

@@ -636,22 +636,7 @@ public final class M3NavigationDrawer extends Control {
             return;
         }
 
-        if (M3KeyEvents.hasShortcutModifier(event)) {
-            return;
-        }
-
-        String character = event.getCharacter();
-        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
-            return;
-        }
-
-        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadState.append(normalizedCharacter);
-        @Nullable M3ListItem target = typeAheadTarget(typeAheadState.getPrefix());
-        if (target == null && typeAheadState.length() > 1) {
-            typeAheadState.replace(normalizedCharacter);
-            target = typeAheadTarget(typeAheadState.getPrefix());
-        }
+        @Nullable M3ListItem target = typeAheadState.find(event, this::typeAheadTarget);
         if (target == null) {
             return;
         }
