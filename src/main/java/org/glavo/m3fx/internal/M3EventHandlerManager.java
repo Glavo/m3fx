@@ -4,7 +4,7 @@
 package org.glavo.m3fx.internal;
 
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ObjectPropertyBase;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.Event;
 import javafx.event.EventDispatchChain;
 import javafx.event.EventDispatcher;
@@ -23,6 +23,7 @@ import java.util.Objects;
 /// This manager supplies the public event semantics needed by non-Node event targets without relying on internal
 /// `com.sun.javafx` APIs. Registrations are retained by identity, duplicate registrations for the same phase and
 /// event type are ignored, and event type superclasses participate in both capture and bubble phases.
+/// Filters and handlers share a live registration order; each phase invokes only its own registrations.
 ///
 /// Instances are not thread-safe. Registration and dispatch must be serialized by the owning event target and are
 /// normally performed on the JavaFX application thread.
@@ -56,7 +57,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
     ) {
         requireEventType(eventType);
         Objects.requireNonNull(handler, "handler");
-        getOrCreateBucket(eventType).addHandler(handler);
+        getOrCreateBucket(eventType).add(handler, false);
     }
 
     /// Removes a bubbling-phase handler from an event type.
@@ -75,7 +76,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
         Objects.requireNonNull(handler, "handler");
         @Nullable HandlerBucket<E> bucket = getBucket(eventType);
         if (bucket != null) {
-            bucket.removeHandler(handler);
+            bucket.remove(handler, false);
             removeEmptyBucket(eventType, bucket);
         }
     }
@@ -94,7 +95,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
     ) {
         requireEventType(eventType);
         Objects.requireNonNull(filter, "filter");
-        getOrCreateBucket(eventType).addFilter(filter);
+        getOrCreateBucket(eventType).add(filter, true);
     }
 
     /// Removes a capturing-phase filter from an event type.
@@ -113,7 +114,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
         Objects.requireNonNull(filter, "filter");
         @Nullable HandlerBucket<E> bucket = getBucket(eventType);
         if (bucket != null) {
-            bucket.removeFilter(filter);
+            bucket.remove(filter, true);
             removeEmptyBucket(eventType, bucket);
         }
     }
@@ -191,7 +192,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(tail, "tail");
 
-        Event current = dispatchFilters(event);
+        Event current = dispatchPhase(event, true);
         if (current.isConsumed()) {
             return null;
         }
@@ -201,38 +202,20 @@ public final class M3EventHandlerManager implements EventDispatcher {
             return null;
         }
 
-        current = dispatchHandlers(returned);
+        current = dispatchPhase(returned, false);
         return current.isConsumed() ? null : current;
     }
 
-    /// Dispatches capturing filters from the concrete event type through its supertype chain.
-    private Event dispatchFilters(Event event) {
+    /// Dispatches one phase from the concrete event type through its supertype chain.
+    private Event dispatchPhase(Event event, boolean filter) {
         Event current = event;
         @Nullable EventType<?> eventType = event.getEventType();
         while (eventType != null) {
             @Nullable HandlerBucket<?> bucket = buckets.get(eventType);
             if (bucket != null) {
-                if (bucket.hasFilters()) {
+                if (bucket.hasRegistrations(filter)) {
                     current = fixEventSource(current);
-                    bucket.dispatchFilters(current);
-                }
-                removeEmptyBucket(eventType, bucket);
-            }
-            eventType = eventType.getSuperType();
-        }
-        return current;
-    }
-
-    /// Dispatches bubbling handlers from the concrete event type through its supertype chain.
-    private Event dispatchHandlers(Event event) {
-        Event current = event;
-        @Nullable EventType<?> eventType = event.getEventType();
-        while (eventType != null) {
-            @Nullable HandlerBucket<?> bucket = buckets.get(eventType);
-            if (bucket != null) {
-                if (bucket.hasHandlers()) {
-                    current = fixEventSource(current);
-                    bucket.dispatchHandlers(current);
+                    bucket.dispatch(current, filter);
                 }
                 removeEmptyBucket(eventType, bucket);
             }
@@ -276,76 +259,47 @@ public final class M3EventHandlerManager implements EventDispatcher {
         Objects.requireNonNull(eventType, "eventType");
     }
 
-    /// Stores capture and bubble registrations for one event type.
+    /// Stores one live registration order shared by the capture and bubble phases of an event type.
     @NotNullByDefault
     private static final class HandlerBucket<E extends Event> {
-        /// The first registered capturing filter.
-        private @Nullable HandlerNode<E> firstFilter;
+        /// The first registered filter or handler.
+        private @Nullable HandlerNode<E> first;
 
-        /// The last registered capturing filter.
-        private @Nullable HandlerNode<E> lastFilter;
-
-        /// The first registered bubbling handler.
-        private @Nullable HandlerNode<E> firstHandler;
-
-        /// The last registered bubbling handler.
-        private @Nullable HandlerNode<E> lastHandler;
+        /// The last registered filter or handler.
+        private @Nullable HandlerNode<E> last;
 
         /// The singleton bubbling handler used before its property is requested.
         private @Nullable EventHandler<E> singletonHandler;
 
         /// The lazily created property that takes ownership of the singleton handler value.
-        private @Nullable EventHandlerProperty<E> singletonProperty;
+        private @Nullable ObjectProperty<@Nullable EventHandler<E>> singletonProperty;
 
-        /// Registers one bubbling handler by identity.
-        private void addHandler(EventHandler<? super E> handler) {
-            if (findHandler(handler) != null) {
+        /// Registers one callback by identity within the requested phase.
+        private void add(EventHandler<? super E> handler, boolean filter) {
+            if (find(handler, filter) != null) {
                 return;
             }
-            HandlerNode<E> node = new HandlerNode<>(handler);
-            if (lastHandler == null) {
-                firstHandler = node;
+            HandlerNode<E> node = new HandlerNode<>(handler, filter);
+            if (last == null) {
+                first = node;
             } else {
-                lastHandler.next = node;
-                node.previous = lastHandler;
+                last.next = node;
+                node.previous = last;
             }
-            lastHandler = node;
+            last = node;
         }
 
-        /// Removes one bubbling handler by identity.
-        private void removeHandler(EventHandler<? super E> handler) {
-            @Nullable HandlerNode<E> node = findHandler(handler);
+        /// Removes one callback by identity from the requested phase.
+        private void remove(EventHandler<? super E> handler, boolean filter) {
+            @Nullable HandlerNode<E> node = find(handler, filter);
             if (node != null) {
-                unlinkHandler(node);
-            }
-        }
-
-        /// Registers one capturing filter by identity.
-        private void addFilter(EventHandler<? super E> filter) {
-            if (findFilter(filter) != null) {
-                return;
-            }
-            HandlerNode<E> node = new HandlerNode<>(filter);
-            if (lastFilter == null) {
-                firstFilter = node;
-            } else {
-                lastFilter.next = node;
-                node.previous = lastFilter;
-            }
-            lastFilter = node;
-        }
-
-        /// Removes one capturing filter by identity.
-        private void removeFilter(EventHandler<? super E> filter) {
-            @Nullable HandlerNode<E> node = findFilter(filter);
-            if (node != null) {
-                unlinkFilter(node);
+                unlink(node);
             }
         }
 
         /// Replaces the singleton handler through its direct or property-backed storage.
         private void setSingletonHandler(@Nullable EventHandler<E> handler) {
-            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            @Nullable ObjectProperty<@Nullable EventHandler<E>> property = singletonProperty;
             if (property == null) {
                 singletonHandler = handler;
             } else {
@@ -355,15 +309,15 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Returns the singleton handler without forcing property creation.
         private @Nullable EventHandler<E> getSingletonHandler() {
-            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            @Nullable ObjectProperty<@Nullable EventHandler<E>> property = singletonProperty;
             return property == null ? singletonHandler : property.get();
         }
 
         /// Returns the stable property that owns this bucket's singleton handler.
         private ObjectProperty<@Nullable EventHandler<E>> eventHandlerProperty(Object bean, String name) {
-            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            @Nullable ObjectProperty<@Nullable EventHandler<E>> property = singletonProperty;
             if (property == null) {
-                property = new EventHandlerProperty<>(bean, name, singletonHandler);
+                property = new SimpleObjectProperty<>(bean, name, singletonHandler);
                 singletonHandler = null;
                 singletonProperty = property;
             } else if (!property.getName().equals(name)) {
@@ -374,118 +328,68 @@ public final class M3EventHandlerManager implements EventDispatcher {
             return property;
         }
 
-        /// Returns whether at least one active capturing filter is registered.
-        private boolean hasFilters() {
-            while (firstFilter != null && isDisconnected(firstFilter.handler)) {
-                unlinkFilter(firstFilter);
-            }
-            return firstFilter != null;
-        }
-
-        /// Returns whether at least one active bubbling handler is registered.
-        private boolean hasHandlers() {
-            if (getSingletonHandler() != null) {
+        /// Returns whether the requested phase has an active registration, removing expired weak callbacks.
+        private boolean hasRegistrations(boolean filter) {
+            if (!filter && getSingletonHandler() != null) {
                 return true;
             }
-            while (firstHandler != null && isDisconnected(firstHandler.handler)) {
-                unlinkHandler(firstHandler);
-            }
-            return firstHandler != null;
-        }
-
-        /// Dispatches all capturing filters in registration order.
-        @SuppressWarnings("unchecked")
-        private void dispatchFilters(Event event) {
-            E typedEvent = (E) event;
-            @Nullable HandlerNode<E> node = firstFilter;
+            @Nullable HandlerNode<E> node = first;
             while (node != null) {
                 if (isDisconnected(node.handler)) {
-                    @Nullable HandlerNode<E> next = node.next;
-                    unlinkFilter(node);
-                    node = next;
-                } else {
+                    unlink(node);
+                } else if (node.filter == filter) {
+                    return true;
+                }
+                node = node.next;
+            }
+            return false;
+        }
+
+        /// Traverses the live registration order for one phase, then invokes the singleton during bubbling.
+        @SuppressWarnings("unchecked")
+        private void dispatch(Event event, boolean filter) {
+            E typedEvent = (E) event;
+            @Nullable HandlerNode<E> node = first;
+            while (node != null) {
+                if (isDisconnected(node.handler)) {
+                    unlink(node);
+                } else if (node.filter == filter) {
                     node.handler.handle(typedEvent);
-                    node = node.next;
+                }
+                node = node.next;
+            }
+            if (!filter) {
+                @Nullable EventHandler<E> propertyHandler = getSingletonHandler();
+                if (propertyHandler != null) {
+                    propertyHandler.handle(typedEvent);
                 }
             }
         }
 
-        /// Dispatches registered and singleton bubbling handlers in JavaFX property-handler order.
-        @SuppressWarnings("unchecked")
-        private void dispatchHandlers(Event event) {
-            E typedEvent = (E) event;
-            @Nullable HandlerNode<E> node = firstHandler;
-            while (node != null) {
-                if (isDisconnected(node.handler)) {
-                    @Nullable HandlerNode<E> next = node.next;
-                    unlinkHandler(node);
-                    node = next;
-                } else {
-                    node.handler.handle(typedEvent);
-                    node = node.next;
-                }
-            }
-
-            @Nullable EventHandler<E> propertyHandler = getSingletonHandler();
-            if (propertyHandler != null) {
-                propertyHandler.handle(typedEvent);
-            }
-        }
-
-        /// Unlinks one filter while retaining its next pointer for mutation-safe dispatch.
-        private void unlinkFilter(HandlerNode<E> node) {
+        /// Unlinks a registration while retaining its next pointer for dispatch already visiting that node.
+        private void unlink(HandlerNode<E> node) {
             if (node.previous == null) {
-                firstFilter = node.next;
+                first = node.next;
             } else {
                 node.previous.next = node.next;
             }
             if (node.next == null) {
-                lastFilter = node.previous;
+                last = node.previous;
             } else {
                 node.next.previous = node.previous;
             }
         }
 
-        /// Unlinks one handler while retaining its next pointer for mutation-safe dispatch.
-        private void unlinkHandler(HandlerNode<E> node) {
-            if (node.previous == null) {
-                firstHandler = node.next;
-            } else {
-                node.previous.next = node.next;
-            }
-            if (node.next == null) {
-                lastHandler = node.previous;
-            } else {
-                node.next.previous = node.previous;
-            }
-        }
-
-        /// Finds a live bubbling handler by identity and removes disconnected weak registrations encountered first.
-        private @Nullable HandlerNode<E> findHandler(EventHandler<? super E> handler) {
-            @Nullable HandlerNode<E> node = firstHandler;
+        /// Finds a callback by phase and identity, removing expired weak registrations encountered first.
+        private @Nullable HandlerNode<E> find(EventHandler<? super E> handler, boolean filter) {
+            @Nullable HandlerNode<E> node = first;
             while (node != null) {
-                @Nullable HandlerNode<E> next = node.next;
                 if (isDisconnected(node.handler)) {
-                    unlinkHandler(node);
-                } else if (node.handler == handler) {
+                    unlink(node);
+                } else if (node.filter == filter && node.handler == handler) {
                     return node;
                 }
-                node = next;
-            }
-            return null;
-        }
-
-        /// Finds a live capturing filter by identity and removes disconnected weak registrations encountered first.
-        private @Nullable HandlerNode<E> findFilter(EventHandler<? super E> filter) {
-            @Nullable HandlerNode<E> node = firstFilter;
-            while (node != null) {
-                @Nullable HandlerNode<E> next = node.next;
-                if (isDisconnected(node.handler)) {
-                    unlinkFilter(node);
-                } else if (node.handler == filter) {
-                    return node;
-                }
-                node = next;
+                node = node.next;
             }
             return null;
         }
@@ -495,50 +399,9 @@ public final class M3EventHandlerManager implements EventDispatcher {
             return handler instanceof WeakEventHandler<?> weakHandler && weakHandler.wasGarbageCollected();
         }
 
-        /// Returns whether this bucket retains no filters or handlers.
+        /// Returns whether this bucket retains no registrations or singleton property.
         private boolean isEmpty() {
-            return firstFilter == null
-                    && firstHandler == null
-                    && singletonHandler == null
-                    && singletonProperty == null;
-        }
-    }
-
-    /// A JavaFX property that owns one bucket's singleton handler after explicit property access.
-    @NotNullByDefault
-    private static final class EventHandlerProperty<E extends Event>
-            extends ObjectPropertyBase<@Nullable EventHandler<E>> {
-        /// The property bean exposed to JavaFX bindings and diagnostics.
-        private final Object bean;
-
-        /// The stable JavaFX property name.
-        private final String name;
-
-        /// Creates a property initialized from the bucket's previously direct handler value.
-        private EventHandlerProperty(
-                Object bean,
-                String name,
-                @Nullable EventHandler<E> initialValue
-        ) {
-            super(initialValue);
-            this.bean = bean;
-            this.name = name;
-        }
-
-        /// Returns the event target that owns this property.
-        ///
-        /// @return the non-null event target
-        @Override
-        public Object getBean() {
-            return bean;
-        }
-
-        /// Returns the name supplied when this event-handler property was first requested.
-        ///
-        /// @return the non-null property name
-        @Override
-        public String getName() {
-            return name;
+            return first == null && singletonHandler == null && singletonProperty == null;
         }
     }
 
@@ -548,15 +411,19 @@ public final class M3EventHandlerManager implements EventDispatcher {
         /// The registered handler or filter.
         private final EventHandler<? super E> handler;
 
-        /// The previous registration in the same phase.
+        /// Whether this registration participates in capture rather than bubble dispatch.
+        private final boolean filter;
+
+        /// The previous registration in the shared order.
         private @Nullable HandlerNode<E> previous;
 
-        /// The next registration in the same phase.
+        /// The next registration in the shared order.
         private @Nullable HandlerNode<E> next;
 
         /// Creates one linked registration node.
-        private HandlerNode(EventHandler<? super E> handler) {
+        private HandlerNode(EventHandler<? super E> handler, boolean filter) {
             this.handler = handler;
+            this.filter = filter;
         }
     }
 }
