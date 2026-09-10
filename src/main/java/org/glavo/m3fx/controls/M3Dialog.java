@@ -372,7 +372,7 @@ public class M3Dialog implements EventTarget {
         boolean ownsPresentingState = false;
         boolean presented = false;
         try {
-            if (activeHandle != null || activePresentation != null || presenting) {
+            if (activeHandle != null || activePresentation != null || presenting || closing) {
                 throw new IllegalStateException("dialog is already presented");
             }
             if (dialogPane.getParent() != null) {
@@ -455,7 +455,7 @@ public class M3Dialog implements EventTarget {
     ///
     /// @param handle the presentation issuing the request
     /// @return `true` if this request started an accepted close transition; `false` if the handle is stale, the
-    ///         request was consumed, or this presentation is already closing
+    ///         request was consumed, this presentation ended during the request event, or it is already closing
     /// @throws IllegalStateException if called off the JavaFX Application Thread
     /// @throws NullPointerException  if `handle` is `null`
     final boolean requestClose(M3DialogHandle handle) {
@@ -501,10 +501,11 @@ public class M3Dialog implements EventTarget {
             return false;
         }
 
+        M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
         closeRequestPending = true;
         try {
             M3DialogEvent closeEvent = fireLifecycle(M3DialogEvent.CLOSE_REQUEST, action);
-            if (closeEvent.isConsumed()) {
+            if (closeEvent.isConsumed() || activeHandle != handle) {
                 return false;
             }
 
@@ -513,9 +514,14 @@ public class M3Dialog implements EventTarget {
             try {
                 fireLifecycle(M3DialogEvent.HIDING, action);
             } catch (RuntimeException | Error exception) {
-                closing = false;
-                pendingAction = null;
+                if (activeHandle == handle) {
+                    closing = false;
+                    pendingAction = null;
+                }
                 throw exception;
+            }
+            if (activeHandle != handle) {
+                return true;
             }
 
             if (shouldAnimatePresentation()) {
@@ -525,13 +531,17 @@ public class M3Dialog implements EventTarget {
                 M3DialogPresentation presentation =
                         Objects.requireNonNull(activePresentation, "active dialog presentation");
                 presentation.startBackgroundExit(this::handleBackgroundExitFinished);
-                playExitAnimation();
+                if (activeHandle == handle) {
+                    playExitAnimation();
+                }
             } else {
-                completeHide(action);
+                completeHide(handle, action);
             }
             return true;
         } finally {
-            closeRequestPending = false;
+            if (activeHandle == handle) {
+                closeRequestPending = false;
+            }
         }
     }
 
@@ -627,14 +637,17 @@ public class M3Dialog implements EventTarget {
 
     /// Removes the presentation after the pane and background transitions have settled.
     private void completeHideWhenExitFinished() {
-        if (closing && paneEffectsExitFinished && paneSpatialExitFinished && backgroundExitFinished) {
-            completeHide(pendingAction);
+        @Nullable M3DialogHandle handle = activeHandle;
+        if (handle != null && closing && paneEffectsExitFinished && paneSpatialExitFinished && backgroundExitFinished) {
+            completeHide(handle, pendingAction);
         }
     }
 
-    /// Removes the presentation surface and completes the accepted close lifecycle.
-    private void completeHide(@Nullable M3Button action) {
-        M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
+    /// Removes the expected presentation and completes its close lifecycle, unless it has already ended.
+    private void completeHide(M3DialogHandle handle, @Nullable M3Button action) {
+        if (activeHandle != handle) {
+            return;
+        }
         M3DialogPresentation presentation =
                 Objects.requireNonNull(activePresentation, "active dialog presentation");
         activeHandle = null;
@@ -661,6 +674,7 @@ public class M3Dialog implements EventTarget {
             return;
         }
 
+        M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
         presentationEffectsAnimation.stop();
         presentationSpatialAnimation.stop();
         @Nullable M3Button action = pendingAction;
@@ -679,7 +693,7 @@ public class M3Dialog implements EventTarget {
             }
         }
         try {
-            completeHide(action);
+            completeHide(handle, action);
         } catch (RuntimeException | Error exception) {
             if (failure == null) {
                 failure = exception;

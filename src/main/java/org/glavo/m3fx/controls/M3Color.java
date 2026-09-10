@@ -62,19 +62,28 @@ public sealed interface M3Color permits M3RgbColor, M3HslColor, M3HsbColor {
     /// The conversion preserves alpha and the rendered RGBA color, subject to floating-point precision. Direct
     /// conversion between HSL and HSB preserves hue even when the rendered color is achromatic. Conversion from an
     /// achromatic RGB value assigns a hue of zero degrees because RGB does not represent a latent hue. This method
-    /// may return `this` when `colorSpace` is [#getColorSpace()].
+    /// returns `this` when `colorSpace` is [#getColorSpace()].
     ///
     /// @param colorSpace the non-null target color space
     /// @return an immutable color represented in `colorSpace`
     /// @throws NullPointerException if `colorSpace` is `null`
-    M3Color toColorSpace(M3ColorSpace colorSpace);
+    default M3Color toColorSpace(M3ColorSpace colorSpace) {
+        return switch (colorSpace) {
+            case RGB -> M3ColorMath.toRgb(this);
+            case HSL -> M3ColorMath.toHsl(this);
+            case HSB -> M3ColorMath.toHsb(this);
+        };
+    }
 
     /// Returns the rendered RGBA value as a JavaFX color.
     ///
     /// The returned value does not retain this value's editing color space or any latent channel state.
     ///
     /// @return a non-null JavaFX color with equivalent rendered channels
-    Color toFxColor();
+    default Color toFxColor() {
+        M3RgbColor rgb = M3ColorMath.toRgb(this);
+        return new Color(rgb.red(), rgb.green(), rgb.blue(), rgb.alpha());
+    }
 
     /// Returns whether another value has the same canonical 16-bit RGBA representation.
     ///

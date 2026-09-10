@@ -48,28 +48,28 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     private static final double OPACITY_VISIBILITY_THRESHOLD = 5.0e-4;
 
     /// The stable top-bar container.
-    private final StackPane topBarSlot = createSlot("m3-scaffold-top-bar");
+    private final StackPane topBarSlot = new ScaffoldSlot("m3-scaffold-top-bar");
 
     /// The stable contextual bottom-bar container.
-    private final StackPane bottomBarSlot = createSlot("m3-scaffold-bottom-bar");
+    private final StackPane bottomBarSlot = new ScaffoldSlot("m3-scaffold-bottom-bar");
 
     /// The stable bottom-navigation container.
-    private final StackPane navigationBarSlot = createSlot("m3-scaffold-navigation-bar");
+    private final StackPane navigationBarSlot = new ScaffoldSlot("m3-scaffold-navigation-bar");
 
     /// The stable logical leading navigation-rail container.
-    private final StackPane navigationRailSlot = createSlot("m3-scaffold-navigation-rail");
+    private final StackPane navigationRailSlot = new ScaffoldSlot("m3-scaffold-navigation-rail");
 
     /// The stable logical trailing rail container.
-    private final StackPane trailingRailSlot = createSlot("m3-scaffold-trailing-rail");
+    private final StackPane trailingRailSlot = new ScaffoldSlot("m3-scaffold-trailing-rail");
 
     /// The stable logical leading pane container.
-    private final StackPane leadingPaneSlot = createSlot("m3-scaffold-leading-pane");
+    private final StackPane leadingPaneSlot = new ScaffoldSlot("m3-scaffold-leading-pane");
 
     /// The stable main pane container.
-    private final StackPane mainPaneSlot = createSlot("m3-scaffold-main-pane");
+    private final StackPane mainPaneSlot = new ScaffoldSlot("m3-scaffold-main-pane");
 
     /// The stable logical trailing pane container.
-    private final StackPane trailingPaneSlot = createSlot("m3-scaffold-trailing-pane");
+    private final StackPane trailingPaneSlot = new ScaffoldSlot("m3-scaffold-trailing-pane");
 
     /// Motion state for the top-bar slot.
     private final SlotState topBarState = new SlotState(topBarSlot, MotionEdge.TOP);
@@ -213,14 +213,9 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
             state.dispose();
         }
 
-        clearSlot(topBarSlot);
-        clearSlot(bottomBarSlot);
-        clearSlot(navigationBarSlot);
-        clearSlot(navigationRailSlot);
-        clearSlot(trailingRailSlot);
-        clearSlot(leadingPaneSlot);
-        clearSlot(mainPaneSlot);
-        clearSlot(trailingPaneSlot);
+        for (SlotState state : slotStates) {
+            state.slot.getChildren().clear();
+        }
         getChildren().clear();
         super.dispose();
     }
@@ -377,7 +372,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         double margin = control.getVisiblePaneCount() == 0 ? 0.0 : control.getEffectiveContentMargin() * 2.0;
         double panes = switch (control.getEffectivePaneLayout()) {
             case ADAPTIVE -> 0.0;
-            case SINGLE -> visiblePaneWidth(singlePaneSlot(), minimum);
+            case SINGLE -> visibleWidth(singlePaneSlot(), minimum);
             case SPLIT_LEADING -> pairedPaneWidth(leadingPaneSlot, mainPaneSlot, minimum);
             case SPLIT_TRAILING -> pairedPaneWidth(mainPaneSlot, trailingPaneSlot, minimum);
             case FIXED_LEADING -> fixedPaneWidth(leadingPaneSlot, mainPaneSlot, true, minimum);
@@ -389,9 +384,9 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
 
     /// Returns the width required by two visible flexible panes.
     private double pairedPaneWidth(StackPane first, StackPane second, boolean minimum) {
-        return visiblePaneWidth(first, minimum)
+        return visibleWidth(first, minimum)
                 + getSkinnable().getEffectivePaneSpacing()
-                + visiblePaneWidth(second, minimum);
+                + visibleWidth(second, minimum);
     }
 
     /// Returns the width required by one fixed and one flexible pane.
@@ -400,7 +395,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
                 ? getSkinnable().getEffectiveFixedLeadingPaneWidth()
                 : getSkinnable().getEffectiveFixedTrailingPaneWidth();
         StackPane flexible = leadingFixed ? second : first;
-        return fixed + getSkinnable().getEffectivePaneSpacing() + visiblePaneWidth(flexible, minimum);
+        return fixed + getSkinnable().getEffectivePaneSpacing() + visibleWidth(flexible, minimum);
     }
 
     /// Returns the width required by the three-pane arrangement.
@@ -408,7 +403,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         M3AdaptiveScaffold control = getSkinnable();
         return control.getEffectiveFixedLeadingPaneWidth()
                 + control.getEffectivePaneSpacing()
-                + visiblePaneWidth(mainPaneSlot, minimum)
+                + visibleWidth(mainPaneSlot, minimum)
                 + control.getEffectivePaneSpacing()
                 + control.getEffectiveFixedTrailingPaneWidth();
     }
@@ -907,7 +902,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         if (scene == null) {
             return;
         }
-        Node focusOwner = scene.getFocusOwner();
+        @Nullable Node focusOwner = scene.getFocusOwner();
         if (focusOwner != null) {
             if (!M3FocusTraversal.focusOwnerInside(control, control)) {
                 return;
@@ -933,19 +928,12 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
 
     /// Returns whether the current scene focus owner remains inside an effective slot.
     private boolean focusInsideVisibleSlot() {
-        return visibleSlotContainsFocus(topBarSlot)
-                || visibleSlotContainsFocus(bottomBarSlot)
-                || visibleSlotContainsFocus(navigationBarSlot)
-                || visibleSlotContainsFocus(navigationRailSlot)
-                || visibleSlotContainsFocus(trailingRailSlot)
-                || visibleSlotContainsFocus(leadingPaneSlot)
-                || visibleSlotContainsFocus(mainPaneSlot)
-                || visibleSlotContainsFocus(trailingPaneSlot);
-    }
-
-    /// Returns whether one effective slot contains the current scene focus owner.
-    private boolean visibleSlotContainsFocus(StackPane slot) {
-        return stateFor(slot).targetVisible && M3FocusTraversal.focusOwnerInside(getSkinnable(), slot);
+        for (SlotState state : slotStates) {
+            if (state.targetVisible && M3FocusTraversal.focusOwnerInside(getSkinnable(), state.slot)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Requests focus on the first reachable descendant of one visible slot.
@@ -1002,11 +990,6 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         control.trailingPaneProperty().removeListener(slotListener);
     }
 
-    /// Creates one unmanaged stable slot.
-    private StackPane createSlot(String styleClass) {
-        return new ScaffoldSlot(styleClass);
-    }
-
     /// Installs a node in a stable slot only when the node identity changed.
     private static void synchronizeSlot(StackPane slot, @Nullable Node node) {
         if (installedNode(slot) == node) {
@@ -1024,11 +1007,6 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         return slot.getChildren().isEmpty() ? null : slot.getChildren().get(0);
     }
 
-    /// Removes the node installed in a stable slot.
-    private static void clearSlot(StackPane slot) {
-        slot.getChildren().clear();
-    }
-
     /// Returns a slot's minimum width when it is visible.
     private double visibleMinimumWidth(StackPane slot, double height) {
         return stateFor(slot).targetVisible ? Math.max(0.0, slot.minWidth(height)) : 0.0;
@@ -1041,11 +1019,6 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
         }
         double width = minimum ? slot.minWidth(-1.0) : slot.prefWidth(-1.0);
         return Math.max(0.0, width);
-    }
-
-    /// Returns a pane slot's minimum or preferred width when it is visible.
-    private double visiblePaneWidth(StackPane slot, boolean minimum) {
-        return visibleWidth(slot, minimum);
     }
 
     /// Returns a slot's preferred width when it is visible.
@@ -1068,6 +1041,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Hosts one public scaffold node while forwarding its layout requests through the unmanaged skin layer.
+    @NotNullByDefault
     private final class ScaffoldSlot extends StackPane {
         /// Creates an unmanaged stable slot with the supplied style class.
         ///
@@ -1089,6 +1063,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Identifies the edge used by one slot's enter and exit motion.
+    @NotNullByDefault
     private enum MotionEdge {
         /// No spatial offset; visibility changes use opacity only.
         NONE(0.0, 0.0),
@@ -1122,6 +1097,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Stores the rendered and target geometry for one stable scaffold slot.
+    @NotNullByDefault
     private final class SlotState {
         /// The stable slot container controlled by this state.
         private final StackPane slot;
@@ -1341,6 +1317,7 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Shared finite transition that advances every scaffold geometry channel.
+    @NotNullByDefault
     private final class ScaffoldAnimation extends M3FiniteTransition {
         /// The duration of the longest channel in the current run, in seconds.
         private double runDurationSeconds;

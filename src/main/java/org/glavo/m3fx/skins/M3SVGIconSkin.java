@@ -22,7 +22,8 @@ import org.jetbrains.annotations.Nullable;
 ///
 /// The skin scales the SVG path uniformly from the explicit view box, or from the path bounds when no view box is
 /// supplied, and centers it within the configured logical icon size. Auto-mirrored icons reflect horizontally when
-/// the effective node orientation is right to left. Invalid or empty source geometry is not rendered.
+/// the effective node orientation is right to left. Empty geometry and viewports without a representable mapping
+/// are not rendered.
 @NotNullByDefault
 public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
     /// The SVG path style class.
@@ -190,6 +191,10 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
         }
 
         double scale = Math.min(targetSize / sourceWidth, targetSize / sourceHeight);
+        if (!(scale > 0.0) || !Double.isFinite(scale)) {
+            path.setVisible(false);
+            return;
+        }
         double renderedWidth = sourceWidth * scale;
         double renderedHeight = sourceHeight * scale;
         double targetX = snapPositionX(x + (width - renderedWidth) / 2.0);
@@ -197,14 +202,17 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
         boolean mirror = control.isAutoMirrored()
                 && control.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
 
-        viewportTransform.setMxx(mirror ? -scale : scale);
-        viewportTransform.setMxy(0.0);
-        viewportTransform.setMyx(0.0);
-        viewportTransform.setMyy(scale);
-        viewportTransform.setTx(mirror
-                ? targetX + (sourceX + sourceWidth) * scale
-                : targetX - sourceX * scale);
-        viewportTransform.setTy(targetY - sourceY * scale);
+        // Scale the origin before adding the rendered width so a finite mirrored mapping cannot overflow early.
+        double translateX = mirror
+                ? Math.fma(sourceX, scale, targetX + renderedWidth)
+                : Math.fma(-sourceX, scale, targetX);
+        double translateY = Math.fma(-sourceY, scale, targetY);
+        if (!Double.isFinite(translateX) || !Double.isFinite(translateY)) {
+            path.setVisible(false);
+            return;
+        }
+
+        viewportTransform.setToTransform(mirror ? -scale : scale, 0.0, translateX, 0.0, scale, translateY);
         path.setVisible(true);
         updatePathPaint();
     }
@@ -216,6 +224,7 @@ public final class M3SVGIconSkin extends SkinBase<M3SVGIcon> {
         path.getStyleClass().add(PATH_STYLE_CLASS);
         path.setManaged(false);
         path.setMouseTransparent(true);
+        path.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         path.contentProperty().bind(control.contentProperty());
         path.fillRuleProperty().bind(control.fillRuleProperty());
         path.getTransforms().add(viewportTransform);

@@ -44,14 +44,14 @@ final class M3ButtonTargetLayoutTest {
             root.layout();
 
             assertEquals(32.0, extraSmall.getContainerHeight(), 0.0001);
-            assertEquals(48.0, extraSmall.getPrefHeight(), 0.0001);
-            assertEquals(48.0, extraSmall.getMinWidth(), 0.0001);
+            assertEquals(48.0, extraSmall.prefHeight(-1.0), 0.0001);
+            assertEquals(48.0, extraSmall.minWidth(-1.0), 0.0001);
             assertVisualContainer(extraSmall, extraSmall.getWidth(), 32.0);
             assertBorderInsets(extraSmall, new Insets(8.0, 0.0, 8.0, 0.0));
 
             assertEquals(40.0, small.getContainerHeight(), 0.0001);
-            assertEquals(48.0, small.getPrefHeight(), 0.0001);
-            assertEquals(48.0, small.getMinWidth(), 0.0001);
+            assertEquals(48.0, small.prefHeight(-1.0), 0.0001);
+            assertEquals(48.0, small.minWidth(-1.0), 0.0001);
             assertVisualContainer(small, small.getWidth(), 40.0);
             assertBorderInsets(small, new Insets(4.0, 0.0, 4.0, 0.0));
         });
@@ -74,15 +74,15 @@ final class M3ButtonTargetLayoutTest {
 
             assertEquals(40.0, button.getContainerWidth(), 0.0001);
             assertEquals(40.0, button.getContainerHeight(), 0.0001);
-            assertEquals(48.0, button.getPrefWidth(), 0.0001);
-            assertEquals(48.0, button.getPrefHeight(), 0.0001);
+            assertEquals(48.0, button.prefWidth(-1.0), 0.0001);
+            assertEquals(48.0, button.prefHeight(-1.0), 0.0001);
             assertVisualContainer(button, 40.0, 40.0);
             assertBorderInsets(button, new Insets(4.0));
 
             assertEquals(40.0, toggleButton.getContainerWidth(), 0.0001);
             assertEquals(40.0, toggleButton.getContainerHeight(), 0.0001);
-            assertEquals(48.0, toggleButton.getPrefWidth(), 0.0001);
-            assertEquals(48.0, toggleButton.getPrefHeight(), 0.0001);
+            assertEquals(48.0, toggleButton.prefWidth(-1.0), 0.0001);
+            assertEquals(48.0, toggleButton.prefHeight(-1.0), 0.0001);
             assertVisualContainer(toggleButton, 40.0, 40.0);
             assertBorderInsets(toggleButton, new Insets(4.0));
         });
@@ -105,8 +105,8 @@ final class M3ButtonTargetLayoutTest {
 
             assertEquals(28.0, button.getContainerWidth(), 0.0001);
             assertEquals(32.0, button.getContainerHeight(), 0.0001);
-            assertEquals(48.0, button.getPrefWidth(), 0.0001);
-            assertEquals(48.0, button.getPrefHeight(), 0.0001);
+            assertEquals(48.0, button.prefWidth(-1.0), 0.0001);
+            assertEquals(48.0, button.prefHeight(-1.0), 0.0001);
             assertVisualContainer(button, 28.0, 32.0);
             assertBorderInsets(button, new Insets(8.0, 10.0, 8.0, 10.0));
         });

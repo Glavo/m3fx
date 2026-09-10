@@ -19,7 +19,6 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
-import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -54,6 +53,11 @@ import java.util.Objects;
 ///
 /// A new app bar uses the small variant with empty title and subtitle, no custom title content or navigation node,
 /// and no trailing actions. Flexible collapse progress is zero and scroll-under state is false.
+///
+/// Computed minimum, preferred, and maximum heights use the active variant's container height, including insets.
+/// Flexible variants interpolate between their expanded height and the small container height using collapse
+/// progress. Computed heights are available before skin installation. Explicit height constraints and bindings
+/// remain in effect as the bar changes state; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
@@ -199,7 +203,7 @@ public final class M3TopAppBar extends Control {
             }
             pseudoClassStateChanged(HAS_SUBTITLE_PSEUDO_CLASS, !get().isEmpty());
             updateAccessibleText();
-            updateMetrics();
+            requestLayout();
         }
     };
 
@@ -280,7 +284,7 @@ public final class M3TopAppBar extends Control {
                         return;
                     }
                     updateVariantStyle();
-                    updateMetrics();
+                    requestLayout();
                 }
             };
 
@@ -359,7 +363,7 @@ public final class M3TopAppBar extends Control {
         @Override
         protected void invalidated() {
             pseudoClassStateChanged(COLLAPSED_PSEUDO_CLASS, getCollapseProgress() >= 1.0);
-            updateMetrics();
+            requestLayout();
         }
     };
 
@@ -369,6 +373,9 @@ public final class M3TopAppBar extends Control {
     /// between those endpoints are used during Material spatial motion. Applications may bind this property to a
     /// continuous scroll offset. While the property is unbound, changes to [#scrolledUnderProperty()] transition it
     /// between the two endpoints. Baseline variants ignore this value.
+    ///
+    /// The default skin also synchronizes an unbound value with the current scroll-under state on installation
+    /// and variant changes. Bind the property to retain application-controlled progress across these transitions.
     ///
     /// @return the collapse progress in the closed interval from zero to one
     public final double getCollapseProgress() {
@@ -981,7 +988,7 @@ public final class M3TopAppBar extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
@@ -989,7 +996,7 @@ public final class M3TopAppBar extends Control {
     ///
     /// @return the immutable CSS metadata list for this control
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -1015,7 +1022,7 @@ public final class M3TopAppBar extends Control {
         focusNotifier.start();
         updateAccessibleText();
         updateVariantStyle();
-        updateMetrics();
+        requestLayout();
     }
 
     /// Returns accessibility attributes for the title, subtitle, and action collection.
@@ -1144,8 +1151,15 @@ public final class M3TopAppBar extends Control {
         );
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
+    /// Computes the minimum height from the active variant and collapse state.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred total height from variant tokens, subtitle presence, and collapse progress.
+    @Override
+    protected double computePrefHeight(double width) {
         double expandedHeight = switch (getVariant()) {
             case MEDIUM -> getMediumContainerHeight();
             case LARGE -> getLargeContainerHeight();
@@ -1157,15 +1171,17 @@ public final class M3TopAppBar extends Control {
                     : getLargeFlexibleSubtitleContainerHeight();
             case SMALL, CENTER_ALIGNED -> getContainerHeight();
         };
-        double height = switch (getVariant()) {
+        return switch (getVariant()) {
             case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> expandedHeight
                     + (getContainerHeight() - expandedHeight) * getCollapseProgress();
             case SMALL, CENTER_ALIGNED, MEDIUM, LARGE -> expandedHeight;
         };
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
-        M3Css.setPaddingIfUnbound(this, Insets.EMPTY);
-        requestLayout();
+    }
+
+    /// Computes the maximum height from the active variant and collapse state.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return computePrefHeight(width);
     }
 
     /// Creates a non-negative CSS-backed size token property.
@@ -1179,7 +1195,7 @@ public final class M3TopAppBar extends Control {
                 this,
                 name,
                 cssMetaData,
-                this::updateMetrics
+                this::requestLayout
         );
     }
 

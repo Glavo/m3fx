@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.tokens;
 
+import org.glavo.m3fx.internal.tokens.M3ComponentTokensImpl;
 import org.glavo.m3fx.internal.tokens.M3TokenSetImpl;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -214,7 +215,7 @@ public final class M3TokenSetBuilder {
     /// @return a new immutable token set; never `null`
     public M3TokenSet build() {
         M3ComponentTokens resolvedComponentTokens = componentTokens == null
-                ? M3ComponentTokens.builder(profile, shapeTokens, density).build()
+                ? M3ComponentTokensImpl.defaultsForProfile(profile, shapeTokens, density)
                 : componentTokens;
         return new M3TokenSetImpl(
                 profile,

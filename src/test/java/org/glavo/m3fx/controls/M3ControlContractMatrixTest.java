@@ -2116,7 +2116,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(52.0, button.getContainerHeight(), 0.0001);
         assertEquals(14.0, button.getContainerShape(), 0.0001);
         assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
-        assertEquals(52.0, button.getPrefHeight(), 0.0001);
+        assertEquals(52.0, button.prefHeight(-1.0), 0.0001);
         assertEquals(18.0, button.getPadding().getLeft(), 0.0001);
         assertEquals(18.0, button.getPadding().getRight(), 0.0001);
     }
@@ -2441,7 +2441,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(52.0, button.getContainerHeight(), 0.0001);
         assertEquals(14.0, button.getContainerShape(), 0.0001);
         assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
-        assertEquals(52.0, button.getPrefHeight(), 0.0001);
+        assertEquals(52.0, button.prefHeight(-1.0), 0.0001);
 
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(12.0, textField.getContainerShape(), 0.0001);
@@ -2461,7 +2461,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(38.0, radioButton.getStateLayerSize(), 0.0001);
         assertEquals(22.0, radioButton.getContainerSize(), 0.0001);
         assertEquals(12.0, radioButton.getSelectedDotSize(), 0.0001);
-        assertEquals(52.0, radioButton.getPrefHeight(), 0.0001);
+        assertEquals(52.0, radioButton.prefHeight(-1.0), 0.0001);
 
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
@@ -2887,10 +2887,10 @@ final class M3ControlContractMatrixTest {
         assertEquals(16.0, button.getContainerShape(), 0.0001);
         assertEquals(32.0, button.getIconSize(), 0.0001);
         assertEquals(32.0, icon.getIconSize(), 0.0001);
-        assertEquals(64.0, button.getPrefWidth(), 0.0001);
-        assertEquals(48.0, button.getPrefHeight(), 0.0001);
-        assertEquals(64.0, button.getMaxWidth(), 0.0001);
-        assertEquals(48.0, button.getMaxHeight(), 0.0001);
+        assertEquals(64.0, button.prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, button.prefHeight(-1.0), 0.0001);
+        assertEquals(64.0, button.maxWidth(-1.0), 0.0001);
+        assertEquals(48.0, button.maxHeight(-1.0), 0.0001);
     }
 
     /// Verifies that icon button size, width, and shape roles resolve to Material metrics.
@@ -3984,13 +3984,13 @@ final class M3ControlContractMatrixTest {
         assertEquals(12.0, toolbar.getDockedContentPadding(), 0.0001);
         assertEquals(6.0, toolbar.getItemSpacing(), 0.0001);
         assertEquals(24.0, toolbar.getDockedMaxItemSpacing(), 0.0001);
-        assertEquals(72.0, toolbar.getPrefHeight(), 0.0001);
+        assertEquals(72.0, toolbar.prefHeight(-1.0), 0.0001);
         assertEquals(10.0, toolbar.getPadding().getLeft(), 0.0001);
 
         toolbar.setOrientation(Orientation.VERTICAL);
         applyCss(toolbar);
 
-        assertEquals(80.0, toolbar.getPrefWidth(), 0.0001);
+        assertEquals(80.0, toolbar.prefWidth(-1.0), 0.0001);
     }
 
     /// Verifies that toolbar position variants and color styles update independently.
@@ -4825,7 +4825,7 @@ final class M3ControlContractMatrixTest {
                 splitButtonMenuButton(splitButton).getGraphic()
         );
         assertTrue(menuIndicator.isVertical());
-        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).prefWidth(-1.0), 0.0001);
         assertEquals(0.0, splitButtonMenuButton(splitButton).getHorizontalPadding(), 0.0001);
     }
 
@@ -11211,9 +11211,9 @@ final class M3ControlContractMatrixTest {
         assertEquals(28.0, icon.getIconSize(), 0.0001);
         assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
         assertEquals(28.0, icon.getIconFont().getSize(), 0.0001);
-        assertEquals(42.0, icon.getPrefWidth(), 0.0001);
-        assertEquals(42.0, icon.getPrefHeight(), 0.0001);
-        assertTrue(icon.getPrefHeight() > icon.getIconSize());
+        assertEquals(42.0, icon.prefWidth(-1.0), 0.0001);
+        assertEquals(42.0, icon.prefHeight(-1.0), 0.0001);
+        assertTrue(icon.prefHeight(-1.0) > icon.getIconSize());
     }
 
     /// Verifies that fallback text glyphs keep a padded line box instead of touching clipped edges.
@@ -11232,8 +11232,8 @@ final class M3ControlContractMatrixTest {
             root.layout();
 
             assertEquals(18.0, icon.getIconSize(), 0.0001);
-            assertEquals(27.0, icon.getPrefWidth(), 0.0001);
-            assertEquals(27.0, icon.getPrefHeight(), 0.0001);
+            assertEquals(27.0, icon.prefWidth(-1.0), 0.0001);
+            assertEquals(27.0, icon.prefHeight(-1.0), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, icon, Color.WHITE, 0.05);
@@ -11725,8 +11725,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(12.0, button.getContainerShape(), 0.0001);
         assertEquals(32.0, button.getIconSize(), 0.0001);
         assertEquals(32.0, icon.getIconSize(), 0.0001);
-        assertEquals(64.0, button.getPrefWidth(), 0.0001);
-        assertEquals(48.0, button.getPrefHeight(), 0.0001);
+        assertEquals(64.0, button.prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, button.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that toggle icon button graphics stay centered in their fixed touch target.
@@ -21524,15 +21524,15 @@ final class M3ControlContractMatrixTest {
         assertEquals(19.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(7.0, progressBar.getTrackGap(), 0.0001);
         assertEquals(8.0, progressBar.getStopSize(), 0.0001);
-        assertEquals(12.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(12.0, progressBar.prefHeight(-1.0), 0.0001);
         assertEquals(6.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(80.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
         assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(18.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(5.0, progressIndicator.getTrackGap(), 0.0001);
-        assertEquals(80.0, progressIndicator.getPrefWidth(), 0.0001);
-        assertEquals(80.0, progressIndicator.getPrefHeight(), 0.0001);
+        assertEquals(80.0, progressIndicator.prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, progressIndicator.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that fallback progress and loading indicator tokens match Material Design defaults.
@@ -21551,12 +21551,12 @@ final class M3ControlContractMatrixTest {
         assertEquals(20.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(40.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(48.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
-        assertEquals(40.0, progressIndicator.getPrefWidth(), 0.0001);
-        assertEquals(40.0, progressIndicator.getPrefHeight(), 0.0001);
+        assertEquals(40.0, progressIndicator.prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, progressIndicator.prefHeight(-1.0), 0.0001);
         assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
         assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(48.0, loadingIndicator.getPrefWidth(), 0.0001);
-        assertEquals(48.0, loadingIndicator.getPrefHeight(), 0.0001);
+        assertEquals(48.0, loadingIndicator.prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, loadingIndicator.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that loading indicator token properties are styleable from CSS.
@@ -21570,8 +21570,8 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(72.0, loadingIndicator.getContainerSize(), 0.0001);
         assertEquals(48.0, loadingIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(72.0, loadingIndicator.getPrefWidth(), 0.0001);
-        assertEquals(72.0, loadingIndicator.getPrefHeight(), 0.0001);
+        assertEquals(72.0, loadingIndicator.prefWidth(-1.0), 0.0001);
+        assertEquals(72.0, loadingIndicator.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that the Expressive profile retains Flat progress defaults while publishing Wavy metrics.
@@ -21596,15 +21596,15 @@ final class M3ControlContractMatrixTest {
         assertEquals(20.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(4.0, progressBar.getTrackGap(), 0.0001);
         assertEquals(4.0, progressBar.getStopSize(), 0.0001);
-        assertEquals(4.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(4.0, progressBar.prefHeight(-1.0), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(40.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(48.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
         assertEquals(0.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
-        assertEquals(40.0, progressIndicator.getPrefWidth(), 0.0001);
-        assertEquals(40.0, progressIndicator.getPrefHeight(), 0.0001);
+        assertEquals(40.0, progressIndicator.prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, progressIndicator.prefHeight(-1.0), 0.0001);
         assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
         assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
     }
@@ -26707,8 +26707,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(34.0, item.getIndicatorHeight(), 0.0001);
         assertEquals(17.0, item.getIndicatorShape(), 0.0001);
         assertEquals(6.0, item.getContentSpacing(), 0.0001);
-        assertEquals(92.0, item.getPrefWidth(), 0.0001);
-        assertEquals(84.0, item.getPrefHeight(), 0.0001);
+        assertEquals(92.0, item.prefWidth(-1.0), 0.0001);
+        assertEquals(84.0, item.prefHeight(-1.0), 0.0001);
         assertInstanceOf(M3NavigationItemSkin.class, item.getSkin());
     }
 
@@ -27441,46 +27441,46 @@ final class M3ControlContractMatrixTest {
         assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.styleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
 
         assertEquals(M3TopAppBarVariant.MEDIUM, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.styleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.styleClass()));
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
 
         assertEquals(M3TopAppBarVariant.LARGE, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.styleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.styleClass()));
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM_FLEXIBLE.styleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.styleClass()));
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setSubtitle("Supporting context");
-        assertEquals(136.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(136.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setCollapseProgress(0.5);
-        assertEquals(100.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(100.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setCollapseProgress(0.0);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE_FLEXIBLE);
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE_FLEXIBLE.styleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM_FLEXIBLE.styleClass()));
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setSubtitle("");
-        assertEquals(120.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(120.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setCollapseProgress(1.0);
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.variantProperty().set(null);
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that top app bar token rules apply container metrics.
@@ -27493,7 +27493,7 @@ final class M3ControlContractMatrixTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(64.0, topAppBar.getContainerHeight(), 0.0001);
         assertEquals(112.0, topAppBar.getMediumContainerHeight(), 0.0001);
         assertEquals(152.0, topAppBar.getLargeContainerHeight(), 0.0001);
@@ -27515,10 +27515,10 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.SMALL);
         root.applyCss();
 
@@ -27529,7 +27529,7 @@ final class M3ControlContractMatrixTest {
         ));
         root.applyCss();
 
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(64.0, topAppBar.getContainerHeight(), 0.0001);
         assertEquals(112.0, topAppBar.getMediumContainerHeight(), 0.0001);
         assertEquals(152.0, topAppBar.getLargeContainerHeight(), 0.0001);
@@ -27548,10 +27548,10 @@ final class M3ControlContractMatrixTest {
         assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setActionSpacing(18.0);
         assertEquals(18.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(18.0, actions.getSpacing(), 0.0001);
@@ -27616,7 +27616,7 @@ final class M3ControlContractMatrixTest {
         new Scene(root);
         root.applyCss();
 
-        assertEquals(70.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(70.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(70.0, topAppBar.getContainerHeight(), 0.0001);
         assertEquals(118.0, topAppBar.getMediumContainerHeight(), 0.0001);
         assertEquals(158.0, topAppBar.getLargeContainerHeight(), 0.0001);
@@ -27639,25 +27639,25 @@ final class M3ControlContractMatrixTest {
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(118.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(118.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(158.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(158.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
         root.applyCss();
-        assertEquals(124.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(124.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setSubtitle("Subtitle");
-        assertEquals(144.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(144.0, topAppBar.prefHeight(-1.0), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE_FLEXIBLE);
         root.applyCss();
-        assertEquals(164.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(164.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setSubtitle("");
-        assertEquals(132.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(132.0, topAppBar.prefHeight(-1.0), 0.0001);
 
-        assertEquals(86.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(86.0, bottomAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(86.0, bottomAppBar.getContainerHeight(), 0.0001);
         assertEquals(20.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(14.0, bottomAppBar.getContentSpacing(), 0.0001);
@@ -27916,7 +27916,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
         assertFalse(topAppBar.getPseudoClassStates().contains(collapsed));
         assertEquals(0.0, topAppBar.getCollapseProgress(), 0.0001);
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertNull(topAppBar.getEffect());
 
         topAppBar.setScrolledUnder(true);
@@ -27927,7 +27927,7 @@ final class M3ControlContractMatrixTest {
         assertTrue(topAppBar.getPseudoClassStates().contains(scrolledUnder));
         assertTrue(topAppBar.getPseudoClassStates().contains(collapsed));
         assertEquals(1.0, topAppBar.getCollapseProgress(), 0.0001);
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertDropShadow(topAppBar);
 
         topAppBar.setScrolledUnder(false);
@@ -27937,7 +27937,7 @@ final class M3ControlContractMatrixTest {
         assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
         assertFalse(topAppBar.getPseudoClassStates().contains(collapsed));
         assertEquals(0.0, topAppBar.getCollapseProgress(), 0.0001);
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertNull(topAppBar.getEffect());
     }
 
@@ -28003,7 +28003,7 @@ final class M3ControlContractMatrixTest {
                                 appBar.lookup("." + "m3-top-app-bar-compact-title")
                         );
 
-                        assertEquals(expectedHeight, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(expectedHeight, appBar.prefHeight(-1.0), geometryTolerance);
                         assertEquals(expectedHeight, appBar.getHeight(), geometryTolerance);
                         assertEquals(1.0 - progress, expandedTitle.getOpacity(), 0.02);
                         assertEquals(progress, compactTitle.getOpacity(), 0.02);
@@ -28035,7 +28035,7 @@ final class M3ControlContractMatrixTest {
                         root.applyCss();
                         root.layout();
 
-                        assertEquals(64.0, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(64.0, appBar.prefHeight(-1.0), geometryTolerance);
                         assertEquals(64.0, appBar.getHeight(), geometryTolerance);
                         assertTrue(appBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("collapsed")));
                         assertTopAppBarMaterialSlotGeometry(appBar);
@@ -28080,7 +28080,7 @@ final class M3ControlContractMatrixTest {
                         root.applyCss();
                         root.layout();
 
-                        assertEquals(152.0, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(152.0, appBar.prefHeight(-1.0), geometryTolerance);
                         assertEquals(152.0, appBar.getHeight(), geometryTolerance);
                         assertFalse(appBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("collapsed")));
                         assertTopAppBarMaterialSlotGeometry(appBar);
@@ -28838,7 +28838,7 @@ final class M3ControlContractMatrixTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
@@ -28855,7 +28855,7 @@ final class M3ControlContractMatrixTest {
         ));
         root.applyCss();
 
-        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
@@ -36214,8 +36214,8 @@ final class M3ControlContractMatrixTest {
             assertEquals(999.0, drawerItem.getContainerShape(), 0.0001);
             assertEquals(16.0, drawerItem.getHorizontalPadding(), 0.0001);
             assertEquals(12.0, drawerItem.getContentSpacing(), 0.0001);
-            assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
-            assertEquals(112.0, mediumTopAppBar.getPrefHeight(), 0.0001);
+            assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
+            assertEquals(112.0, mediumTopAppBar.prefHeight(-1.0), 0.0001);
             assertEquals(20.0, mediumTopAppBar.getMediumBottomPadding(), 0.0001);
             assertEquals(Insets.EMPTY, mediumTopAppBar.getPadding());
             assertEquals(64.0, toolbar.getContainerHeight(), 0.0001);
@@ -36224,7 +36224,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(8.0, toolbar.getContentPadding(), 0.0001);
             assertEquals(4.0, toolbar.getItemSpacing(), 0.0001);
             assertEquals(8.0, toolbar.getPadding().getTop(), 0.0001);
-            assertEquals(64.0, toolbar.getPrefHeight(), 0.0001);
+            assertEquals(64.0, toolbar.prefHeight(-1.0), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -44422,7 +44422,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(containerHeight, menuButton.getContainerHeight(), 0.0001);
         assertEquals(actionLeadingSpace, actionButton.getPadding().getLeft(), 0.0001);
         assertEquals(actionTrailingSpace, actionButton.getPadding().getRight(), 0.0001);
-        assertEquals(menuButtonWidth, menuButton.getPrefWidth(), 0.0001);
+        assertEquals(menuButtonWidth, menuButton.prefWidth(-1.0), 0.0001);
         assertEquals(menuIconSize, menuIcon.getIconSize(), 0.0001);
         assertEquals(0.0, menuButton.getHorizontalPadding(), 0.0001);
         assertEquals(spacing, splitButton.getSpacing(), 0.0001);
@@ -44576,8 +44576,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
         assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
         assertEquals(expectedShape, button.getContainerShape(), 0.0001);
-        assertEquals(Math.max(48.0, expectedWidth), button.getPrefWidth(), 0.0001);
-        assertEquals(Math.max(48.0, expectedHeight), button.getPrefHeight(), 0.0001);
+        assertEquals(Math.max(48.0, expectedWidth), button.prefWidth(-1.0), 0.0001);
+        assertEquals(Math.max(48.0, expectedHeight), button.prefHeight(-1.0), 0.0001);
     }
 
     /// Creates a fixed-size SVG icon viewport for visual snapshot fixtures.
@@ -44695,8 +44695,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
         assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
         assertEquals(expectedShape, button.getContainerShape(), 0.0001);
-        assertEquals(Math.max(48.0, expectedWidth), button.getPrefWidth(), 0.0001);
-        assertEquals(Math.max(48.0, expectedHeight), button.getPrefHeight(), 0.0001);
+        assertEquals(Math.max(48.0, expectedWidth), button.prefWidth(-1.0), 0.0001);
+        assertEquals(Math.max(48.0, expectedHeight), button.prefHeight(-1.0), 0.0001);
     }
 
     /// Creates a filter chip with the requested selected state.

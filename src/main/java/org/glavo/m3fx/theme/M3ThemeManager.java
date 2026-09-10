@@ -98,6 +98,10 @@ public final class M3ThemeManager {
     /// scene theme remains visible while the local installation is retained beneath it. The local theme becomes
     /// effective if the scene theme is uninstalled or the scene replaces its root.
     ///
+    /// A matching generated stylesheet already present on `root` retains its position and application ownership.
+    /// While a scene theme controls the same root, the local theme stylesheet is temporarily removed, including
+    /// an application-owned matching stylesheet, and restored when the scene installation releases the root.
+    ///
     /// @param root  the root of the local theme scope
     /// @param theme the Material theme to install
     /// @throws NullPointerException  if `root` or `theme` is `null`
@@ -141,10 +145,11 @@ public final class M3ThemeManager {
 
     /// Removes the directly installed M3FX theme from a parent.
     ///
-    /// This method is idempotent. Theme metadata and semantic style-class membership that existed before the local
-    /// installation are restored, while application-owned inline style remains unchanged. Descendants then resolve
-    /// any theme inherited from an enclosing scope. If a scene installation currently controls the same root, only
-    /// the retained local installation is removed and the scene theme remains visible.
+    /// Theme metadata and semantic style-class membership that existed before the local installation are restored,
+    /// while application-owned inline style remains unchanged. If no local installation exists, direct theme
+    /// metadata and semantic theme classes are cleared. If a scene installation currently controls the same root,
+    /// only the retained local context is removed and the scene theme remains visible. Descendants resolve the
+    /// restored theme context or any theme inherited from an enclosing scope.
     ///
     /// @param root the local theme root from which to remove the theme
     /// @throws NullPointerException if `root` is `null`

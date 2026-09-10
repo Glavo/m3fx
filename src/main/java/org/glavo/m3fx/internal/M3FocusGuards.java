@@ -4,7 +4,6 @@
 package org.glavo.m3fx.internal;
 
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.TextInputControl;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -22,22 +21,21 @@ public final class M3FocusGuards {
     /// Returns whether the current scene focus owner is inside the owner and belongs to a text input control.
     ///
     /// @param owner the component that owns the keyboard handler
-    /// @return `true` when the current focus owner is a nested [TextInputControl]
+    /// @return `true` when the focus owner is inside `owner` and it or an ancestor is a [TextInputControl]
+    /// @throws NullPointerException if `owner` is `null`
     public static boolean focusOwnerInsideTextInput(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable Scene scene = owner.getScene();
         @Nullable Node current = scene == null ? null : scene.getFocusOwner();
-        if (current == null || !containsNode(owner, current)) {
-            return false;
-        }
-
+        boolean insideOwner = false;
+        boolean insideTextInput = false;
         while (current != null) {
-            if (current instanceof TextInputControl) {
+            insideOwner |= current == owner;
+            insideTextInput |= current instanceof TextInputControl;
+            if (insideOwner && insideTextInput) {
                 return true;
             }
-
-            @Nullable Parent parent = current.getParent();
-            current = parent;
+            current = current.getParent();
         }
         return false;
     }
@@ -47,6 +45,7 @@ public final class M3FocusGuards {
     /// @param possibleAncestor the node that may contain the possible descendant
     /// @param possibleDescendant the node that may be contained by the possible ancestor
     /// @return `true` when the possible ancestor is the possible descendant or one of its parents
+    /// @throws NullPointerException if either argument is `null`
     public static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
         Objects.requireNonNull(possibleAncestor, "possibleAncestor");
         Objects.requireNonNull(possibleDescendant, "possibleDescendant");

@@ -49,6 +49,12 @@ import java.util.Objects;
 /// A new toolbar is horizontal, floating, and uses the standard color mapping. Items are owned by the toolbar and
 /// may be changed through the live [#getItems()] list.
 ///
+/// Computed minimum and preferred dimensions use the container-height token for a horizontal toolbar's total
+/// height and the container-width token for a vertical toolbar's total width, including insets. These cross-axis
+/// dimensions are available before skin installation; the default skin computes the main-axis dimensions from
+/// item slots and spacing. Explicit dimensions and bindings remain in effect across orientation and token
+/// changes. Set a dimension to [#USE_COMPUTED_SIZE] to restore its computed value.
+///
 /// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
 @NotNullByDefault
 public final class M3Toolbar extends Control {
@@ -518,7 +524,7 @@ public final class M3Toolbar extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
@@ -526,7 +532,7 @@ public final class M3Toolbar extends Control {
     ///
     /// @return the CSS metadata for this control
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -679,7 +685,31 @@ public final class M3Toolbar extends Control {
         );
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
+    /// Computes minimum width from the vertical container token or horizontal skin content.
+    @Override
+    protected double computeMinWidth(double height) {
+        return getOrientation() == Orientation.VERTICAL ? getContainerWidth() : super.computeMinWidth(height);
+    }
+
+    /// Computes minimum height from the horizontal container token or vertical skin content.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getOrientation() == Orientation.HORIZONTAL ? getContainerHeight() : super.computeMinHeight(width);
+    }
+
+    /// Computes preferred width from the vertical container token or horizontal skin content.
+    @Override
+    protected double computePrefWidth(double height) {
+        return getOrientation() == Orientation.VERTICAL ? getContainerWidth() : super.computePrefWidth(height);
+    }
+
+    /// Computes preferred height from the horizontal container token or vertical skin content.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getOrientation() == Orientation.HORIZONTAL ? getContainerHeight() : super.computePrefHeight(width);
+    }
+
+    /// Updates orientation-dependent padding and requests layout.
     private void updateMetrics() {
         double contentPadding = getContentPadding();
         double mainAxisPadding = getVariant() == M3ToolbarVariant.DOCKED
@@ -688,17 +718,6 @@ public final class M3Toolbar extends Control {
         M3Css.setPaddingIfUnbound(this, getOrientation() == Orientation.HORIZONTAL
                 ? new Insets(contentPadding, mainAxisPadding, contentPadding, mainAxisPadding)
                 : new Insets(mainAxisPadding, contentPadding, mainAxisPadding, contentPadding));
-        if (getOrientation() == Orientation.HORIZONTAL) {
-            M3Css.setMinHeightIfUnbound(this, getContainerHeight());
-            M3Css.setPrefHeightIfUnbound(this, getContainerHeight());
-            M3Css.setMinWidthIfUnbound(this, USE_COMPUTED_SIZE);
-            M3Css.setPrefWidthIfUnbound(this, USE_COMPUTED_SIZE);
-        } else {
-            M3Css.setMinWidthIfUnbound(this, getContainerWidth());
-            M3Css.setPrefWidthIfUnbound(this, getContainerWidth());
-            M3Css.setMinHeightIfUnbound(this, USE_COMPUTED_SIZE);
-            M3Css.setPrefHeightIfUnbound(this, USE_COMPUTED_SIZE);
-        }
         requestLayout();
     }
 

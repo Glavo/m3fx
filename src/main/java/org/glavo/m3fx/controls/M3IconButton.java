@@ -15,6 +15,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +30,10 @@ import java.util.Objects;
 /// role, and a `40.0` logical-pixel visual container. The default control occupies a `48.0` by `48.0`
 /// logical-pixel interaction target, with the visual container centered inside it. Larger visual containers expand
 /// the interaction target as needed.
+///
+/// Computed minimum, preferred, and maximum dimensions use the interaction target size, including insets, even
+/// before skin installation. Explicit dimensions and bindings are preserved when tokens change; set a dimension
+/// to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// The graphic is a JavaFX node and therefore may have only one parent. Supplying `null` leaves the button empty.
 /// Applications should provide accessible text or accessible help when the graphic alone does not convey the
@@ -46,9 +51,6 @@ public final class M3IconButton extends M3ButtonBase {
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
 
-    /// The minimum interaction-target dimension recommended by Material accessibility guidance.
-    private static final double MINIMUM_INTERACTION_TARGET_SIZE = 48.0;
-
     /// Creates an icon button with no graphic and the default icon-button metrics.
     public M3IconButton() {
         this(null);
@@ -61,7 +63,7 @@ public final class M3IconButton extends M3ButtonBase {
         super("", graphic);
         M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
         setVariant(M3ButtonVariant.TEXT);
-        initializeIconMetrics();
+        initializeIconStyles();
     }
 
     /// The semantic width role used with the active button size.
@@ -144,7 +146,7 @@ public final class M3IconButton extends M3ButtonBase {
                     this,
                     "containerWidth",
                     StyleableProperties.CONTAINER_WIDTH,
-                    this::updateIconMetrics
+                    this::requestLayout
             );
         }
         return containerWidth;
@@ -153,36 +155,47 @@ public final class M3IconButton extends M3ButtonBase {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
-    /// Keeps icon buttons sized when container size tokens change.
-    private void initializeIconMetrics() {
-        containerHeightProperty().addListener(observable -> updateIconMetrics());
-        containerWidthProperty().addListener(observable -> updateIconMetrics());
+    /// Initializes icon-specific size, width, and shape style classes.
+    private void initializeIconStyles() {
         sizeProperty().addListener(observable -> updateIconSizeStyle());
         buttonShapeProperty().addListener(observable -> updateIconShapeStyle());
         updateIconSizeStyle();
         updateWidthStyle();
         updateIconShapeStyle();
-        updateIconMetrics();
     }
 
-    /// Applies visual container tokens while preserving the minimum interaction target.
-    private void updateIconMetrics() {
-        double width = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerWidth());
-        double height = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerHeight());
-        M3Css.setMinWidthIfUnbound(this, width);
-        M3Css.setPrefWidthIfUnbound(this, width);
-        M3Css.setMaxWidthIfUnbound(this, width);
-        M3Css.setMaxHeightIfUnbound(this, height);
+    /// Computes minimum width from the visual container and inherited interaction target.
+    @Override
+    protected double computeMinWidth(double height) {
+        return Math.max(super.computeMinWidth(height), getContainerWidth());
+    }
+
+    /// Computes preferred width from the visual container and interaction target.
+    @Override
+    protected double computePrefWidth(double height) {
+        return computeMinWidth(height);
+    }
+
+    /// Computes maximum width from the visual container and interaction target.
+    @Override
+    protected double computeMaxWidth(double height) {
+        return computeMinWidth(height);
+    }
+
+    /// Computes maximum height from the visual container and inherited interaction target.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return computeMinHeight(width);
     }
 
     /// Applies the current width style class.
@@ -255,7 +268,7 @@ public final class M3IconButton extends M3ButtonBase {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =

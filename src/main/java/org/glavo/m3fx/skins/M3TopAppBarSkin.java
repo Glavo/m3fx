@@ -215,18 +215,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         return leftInset + computeContentMinWidth(height) + rightInset;
     }
 
-    /// Computes the minimum height from the current variant and collapse progress.
-    @Override
-    protected double computeMinHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + computeVariantHeight() + bottomInset;
-    }
-
     /// Computes the preferred width required by navigation, title, and action slots.
     @Override
     protected double computePrefWidth(
@@ -239,18 +227,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         return leftInset + computeContentMinWidth(height) + rightInset;
     }
 
-    /// Computes the preferred height from the current variant and collapse progress.
-    @Override
-    protected double computePrefHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + computeVariantHeight() + bottomInset;
-    }
-
     /// Allows a top app bar to fill the available horizontal space.
     @Override
     protected double computeMaxWidth(
@@ -261,18 +237,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
             double leftInset
     ) {
         return Double.MAX_VALUE;
-    }
-
-    /// Restricts maximum height to the active app bar geometry.
-    @Override
-    protected double computeMaxHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + computeVariantHeight() + bottomInset;
     }
 
     /// Lays out the action row, expanded title area, and compact flexible title according to logical direction.
@@ -503,27 +467,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
                 + titleWidth
                 + spacingAfter(navigationWidth)
                 + spacingAfter(actionsWidth);
-    }
-
-    /// Computes the current top app bar height, including flexible subtitle and collapse states.
-    private double computeVariantHeight() {
-        M3TopAppBar control = getSkinnable();
-        double expandedHeight = switch (control.getVariant()) {
-            case MEDIUM -> control.getMediumContainerHeight();
-            case LARGE -> control.getLargeContainerHeight();
-            case MEDIUM_FLEXIBLE -> control.getSubtitle().isEmpty()
-                    ? control.getMediumFlexibleContainerHeight()
-                    : control.getMediumFlexibleSubtitleContainerHeight();
-            case LARGE_FLEXIBLE -> control.getSubtitle().isEmpty()
-                    ? control.getLargeFlexibleContainerHeight()
-                    : control.getLargeFlexibleSubtitleContainerHeight();
-            case SMALL, CENTER_ALIGNED -> control.getContainerHeight();
-        };
-        return switch (control.getVariant()) {
-            case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> expandedHeight
-                    + (control.getContainerHeight() - expandedHeight) * control.getCollapseProgress();
-            case SMALL, CENTER_ALIGNED, MEDIUM, LARGE -> expandedHeight;
-        };
     }
 
     /// Lays out the centered title variant while avoiding overlap with navigation and action slots.

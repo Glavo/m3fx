@@ -50,6 +50,7 @@ final class M3ColorControlsTest {
         };
 
         for (M3Color source : colors) {
+            assertSame(source, source.toColorSpace(source.getColorSpace()));
             for (M3ColorSpace target : M3ColorSpace.values()) {
                 M3Color converted = source.toColorSpace(target);
                 assertEquals(target, converted.getColorSpace());
@@ -71,6 +72,35 @@ final class M3ColorControlsTest {
 
         assertRenderedColorEquals(Color.RED, new M3HsbColor(0.0, 1.0, 1.0).toFxColor());
         assertRenderedColorEquals(Color.color(0.0, 0.5, 0.0), new M3HslColor(120.0, 1.0, 0.25).toFxColor());
+    }
+
+    /// Converts chromatic RGB values near black and white without losing a finite HSL saturation.
+    @Test
+    void rgbToHslHandlesAchromaticBoundaries() {
+        for (M3RgbColor source : List.of(
+                new M3RgbColor(Double.MIN_VALUE, 0.0, 0.0, 0.25),
+                new M3RgbColor(1.0e-20, 0.0, 0.0, 0.25),
+                new M3RgbColor(1.0, Math.nextDown(1.0), Math.nextDown(1.0), 0.25)
+        )) {
+            M3HslColor converted = (M3HslColor) source.toColorSpace(M3ColorSpace.HSL);
+            assertEquals(1.0, converted.saturation());
+            assertEquals(0.0, converted.hue());
+            assertEquals(source.alpha(), converted.alpha());
+            M3RgbColor roundTrip = (M3RgbColor) converted.toColorSpace(M3ColorSpace.RGB);
+            assertEquals(source.red(), roundTrip.red(), Math.ulp(source.red()) * 4.0);
+            assertEquals(source.green(), roundTrip.green(), Math.ulp(source.green()) * 4.0);
+            assertEquals(source.blue(), roundTrip.blue(), Math.ulp(source.blue()) * 4.0);
+        }
+    }
+
+    /// Keeps wrapped hue inside its half-open range even when adding 360 degrees rounds up to the endpoint.
+    @Test
+    void wrappedHueExcludesUpperEndpoint() {
+        assertEquals(0.0, M3ColorMath.wrapHue(-Double.MIN_VALUE));
+        assertEquals(0.0, M3ColorMath.wrapHue(-Math.ulp(360.0) / 4.0));
+        assertEquals(0.0, M3ColorMath.wrapHue(-0.0));
+        assertEquals(0.0, M3ColorMath.wrapHue(360.0));
+        assertEquals(359.0, M3ColorMath.wrapHue(-1.0));
     }
 
     /// Verifies that rendered-color equivalence uses one deterministic, transitive canonical key.

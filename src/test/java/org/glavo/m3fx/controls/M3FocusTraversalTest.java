@@ -497,6 +497,53 @@ final class M3FocusTraversalTest {
         });
     }
 
+    /// Leaves boundary keys unhandled when the owner enables neither navigation axis.
+    @Test
+    void disabledNavigationAxesDoNotHandleBoundaryKeys() {
+        FxTestUtils.runOnFxThread(() -> {
+            FocusRow first = new FocusRow();
+            FocusRow second = new FocusRow();
+            Pane owner = new Pane(first, second);
+            show(owner, 120.0, 80.0);
+            second.requestFocus();
+
+            KeyEvent home = keyEvent(KeyCode.HOME);
+            assertFalse(M3FocusTraversal.handleDirectionalKeyFocus(
+                    owner, home, List.of(first, second), false, false));
+            assertTrue(second.isFocused());
+            assertFalse(home.isConsumed());
+
+            first.requestFocus();
+            KeyEvent end = keyEvent(KeyCode.END);
+            assertFalse(M3FocusTraversal.handleDirectionalKeyFocus(
+                    owner, end, List.of(first, second), false, false));
+            assertTrue(first.isFocused());
+            assertFalse(end.isConsumed());
+        });
+    }
+
+    /// Clamps large page steps to the list boundary without overflowing the current index.
+    @Test
+    void pageDirectionalFocusClampsLargeStep() {
+        FxTestUtils.runOnFxThread(() -> {
+            FocusRow first = new FocusRow();
+            FocusRow second = new FocusRow();
+            FocusRow third = new FocusRow();
+            first.setManaged(false);
+            Pane owner = new Pane(first, second, third);
+            show(owner, 120.0, 80.0);
+            first.resize(10.0, 1.0e-9);
+            second.requestFocus();
+
+            assertTrue(M3FocusTraversal.handleDirectionalKeyFocus(
+                    owner, keyEvent(KeyCode.PAGE_DOWN), List.of(first, second, third), false, true));
+            assertTrue(third.isFocused());
+            assertTrue(M3FocusTraversal.handleDirectionalKeyFocus(
+                    owner, keyEvent(KeyCode.PAGE_UP), List.of(first, second, third), false, true));
+            assertTrue(first.isFocused());
+        });
+    }
+
     /// Verifies failed non-wrapping traversal leaves scroll position and event state unchanged.
     @Test
     void failedDirectionalFocusDoesNotRevealOrConsumeEvent() {

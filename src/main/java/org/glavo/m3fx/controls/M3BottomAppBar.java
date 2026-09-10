@@ -48,6 +48,10 @@ import java.util.Objects;
 /// traversal follows their visual order and the effective node orientation. The no-argument constructor creates
 /// an empty bar with no floating action and end alignment.
 ///
+/// The container-height token supplies the computed minimum, preferred, and maximum total height, including
+/// insets, even before skin installation. Explicit height constraints and bindings remain in effect as tokens
+/// change; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
+///
 /// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault
 public final class M3BottomAppBar extends Control {
@@ -336,13 +340,13 @@ public final class M3BottomAppBar extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -452,12 +456,27 @@ public final class M3BottomAppBar extends Control {
         );
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
+    /// Computes the minimum total height from the container-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes the preferred total height from the container-height token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes the maximum total height from the container-height token.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Updates token-derived padding and requests layout.
     private void updateMetrics() {
-        double height = getContainerHeight();
         double horizontalPadding = getHorizontalPadding();
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, horizontalPadding, 0.0, horizontalPadding));
         requestLayout();
     }

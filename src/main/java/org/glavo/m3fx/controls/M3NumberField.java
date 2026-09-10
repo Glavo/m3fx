@@ -983,17 +983,15 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         String editorText = editor.getText() == null ? "" : editor.getText().trim();
         if (editorText.isEmpty()) {
             setValue(null);
-            return true;
+        } else {
+            @Nullable Double parsedValue = parse(editorText);
+            if (parsedValue == null) {
+                return false;
+            }
+            setValue(getCommitBehavior() == M3NumberFieldCommitBehavior.SNAP
+                    ? normalizeForSnap(parsedValue)
+                    : parsedValue);
         }
-
-        @Nullable Double parsedValue = parse(editorText);
-        if (parsedValue == null) {
-            return false;
-        }
-
-        setValue(getCommitBehavior() == M3NumberFieldCommitBehavior.SNAP
-                ? normalizeForSnap(parsedValue)
-                : parsedValue);
         updateEditorFromValue();
         return true;
     }
@@ -1240,9 +1238,6 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     ///
     /// @param steps the signed step count
     private void stepBy(int steps) {
-        if (steps == Integer.MIN_VALUE) {
-            throw new IllegalArgumentException("step count magnitude is too large");
-        }
         if (steps == 0 || !isEditable() || isDisabled() || value.isBound()) {
             return;
         }
@@ -1251,8 +1246,8 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         }
         @Nullable Double currentValue = getValue();
         double base = currentValue == null ? 0.0 : currentValue;
-        double delta = getStep() * steps;
-        double target = base + delta;
+        // Retain finite results when the step product overflows before cancellation with the base.
+        double target = Math.fma(getStep(), steps, base);
         if (!Double.isFinite(target)) {
             target = steps > 0
                     ? finiteUpperAdjustmentLimit()
@@ -1337,16 +1332,17 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     /// @param value the finite value to normalize
     /// @return the normalized value
     private double normalizeForSnap(double value) {
-        double clamped = Math.max(getMin(), Math.min(getMax(), value));
-        double snapped = snapToStep(clamped);
-        double normalized = snapped;
+        double lower = finiteLowerAdjustmentLimit();
+        double upper = finiteUpperAdjustmentLimit();
+        double clamped = Math.max(lower, Math.min(upper, value));
+        double normalized = snapToStep(clamped);
         double anchor = stepAnchor();
-        if (normalized < getMin()) {
-            normalized = anchor + Math.ceil((getMin() - anchor) / getStep()) * getStep();
-        } else if (normalized > getMax()) {
-            normalized = anchor + Math.floor((getMax() - anchor) / getStep()) * getStep();
+        if (normalized < lower) {
+            normalized = Math.fma(Math.ceil(stepIndex(lower)), getStep(), anchor);
+        } else if (normalized > upper) {
+            normalized = Math.fma(Math.floor(stepIndex(upper)), getStep(), anchor);
         }
-        if (!Double.isFinite(normalized) || normalized < getMin() || normalized > getMax()) {
+        if (!Double.isFinite(normalized) || normalized < lower || normalized > upper) {
             normalized = clamped;
         }
         return normalized == 0.0 ? 0.0 : normalized;
@@ -1355,15 +1351,25 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     /// Snaps a finite value to the nearest step without applying range bounds.
     ///
     /// @param value the finite value to snap
-    /// @return the snapped value, or the original value if arithmetic overflows
+    /// @return the snapped value, possibly infinite, or the original value if its step index is not finite
     private double snapToStep(double value) {
-        double anchor = stepAnchor();
-        double units = (value - anchor) / getStep();
+        double units = stepIndex(value);
         if (!Double.isFinite(units)) {
             return value;
         }
-        double snapped = anchor + Math.rint(units) * getStep();
-        return Double.isFinite(snapped) ? snapped : value;
+        return Math.fma(Math.rint(units), getStep(), stepAnchor());
+    }
+
+    /// Returns the signed step index, scaling before subtraction when the anchor difference overflows.
+    ///
+    /// @param value the finite value to locate on the step scale
+    /// @return the fractional step index, possibly infinite if it exceeds the double range
+    private double stepIndex(double value) {
+        double anchor = stepAnchor();
+        double difference = value - anchor;
+        return Double.isFinite(difference)
+                ? difference / getStep()
+                : value / getStep() - anchor / getStep();
     }
 
     /// Returns the step anchor derived from the configured minimum.
@@ -1373,14 +1379,14 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         return Double.isFinite(getMin()) ? getMin() : 0.0;
     }
 
-    /// Returns the finite upper target used when positive step arithmetic overflows.
+    /// Returns the finite upper endpoint used for stepping and snapping.
     ///
     /// @return the finite maximum, or the largest finite double for an unbounded maximum
     private double finiteUpperAdjustmentLimit() {
         return Double.isFinite(getMax()) ? getMax() : Double.MAX_VALUE;
     }
 
-    /// Returns the finite lower target used when negative step arithmetic overflows.
+    /// Returns the finite lower endpoint used for stepping and snapping.
     ///
     /// @return the finite minimum, or the smallest finite double for an unbounded minimum
     private double finiteLowerAdjustmentLimit() {
@@ -1389,12 +1395,10 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// Rewrites editor text from the committed value and active formatter.
     private void updateEditorFromValue() {
-        @Nullable Double currentValue = displayedValue();
-        String formatted = currentValue == null ? "" : getFormatter().format(currentValue);
-        editor.setText(formatted);
+        editor.setText(formattedValue());
     }
 
-    /// Returns the formatted committed value for accessibility clients.
+    /// Returns the formatted committed value for the editor, step actions, and accessibility clients.
     ///
     /// @return the formatted committed value, or an empty string
     private String formattedValue() {

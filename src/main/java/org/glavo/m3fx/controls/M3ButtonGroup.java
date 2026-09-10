@@ -18,7 +18,6 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
-import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -287,12 +286,10 @@ public final class M3ButtonGroup extends Control {
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
     /// Updates grouped button position style classes when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
+    private final ListChangeListener<ButtonBase> childrenListener = change -> {
         while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof ButtonBase button) {
-                    clearButtonStyle(button);
-                }
+            for (ButtonBase button : change.getRemoved()) {
+                clearButtonStyle(button);
             }
         }
         updateButtonStyles();
@@ -439,42 +436,34 @@ public final class M3ButtonGroup extends Control {
 
     /// Applies first, middle, last, or single button style classes.
     private void updateButtonStyles() {
-        int buttonCount = 0;
-        for (Node child : getItems()) {
-            if (child instanceof ButtonBase) {
-                buttonCount++;
-            }
-        }
-
+        int buttonCount = getItems().size();
         int buttonIndex = 0;
-        for (Node child : getItems()) {
-            if (child instanceof ButtonBase button) {
-                applyButtonSize(button);
-                M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
-                M3ControlStyles.replaceVariant(
-                        button,
-                        sizeStyleClass(getSize()),
-                        sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
-                        sizeStyleClass(M3ButtonSize.SMALL),
-                        sizeStyleClass(M3ButtonSize.MEDIUM),
-                        sizeStyleClass(M3ButtonSize.LARGE),
-                        sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
-                );
-                button.pseudoClassStateChanged(
-                        CONNECTED_GROUP_PSEUDO_CLASS,
-                        getVariant() == M3ButtonGroupVariant.CONNECTED
-                );
-                M3ControlStyles.replaceVariant(
-                        button,
-                        buttonStyleClass(buttonIndex, buttonCount),
-                        SINGLE_BUTTON_STYLE_CLASS,
-                        FIRST_BUTTON_STYLE_CLASS,
-                        MIDDLE_BUTTON_STYLE_CLASS,
-                        LAST_BUTTON_STYLE_CLASS
-                );
-                button.requestLayout();
-                buttonIndex++;
-            }
+        for (ButtonBase button : getItems()) {
+            applyButtonSize(button);
+            M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
+            M3ControlStyles.replaceVariant(
+                    button,
+                    sizeStyleClass(getSize()),
+                    sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                    sizeStyleClass(M3ButtonSize.SMALL),
+                    sizeStyleClass(M3ButtonSize.MEDIUM),
+                    sizeStyleClass(M3ButtonSize.LARGE),
+                    sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
+            );
+            button.pseudoClassStateChanged(
+                    CONNECTED_GROUP_PSEUDO_CLASS,
+                    getVariant() == M3ButtonGroupVariant.CONNECTED
+            );
+            M3ControlStyles.replaceVariant(
+                    button,
+                    buttonStyleClass(buttonIndex, buttonCount),
+                    SINGLE_BUTTON_STYLE_CLASS,
+                    FIRST_BUTTON_STYLE_CLASS,
+                    MIDDLE_BUTTON_STYLE_CLASS,
+                    LAST_BUTTON_STYLE_CLASS
+            );
+            button.requestLayout();
+            buttonIndex++;
         }
     }
 

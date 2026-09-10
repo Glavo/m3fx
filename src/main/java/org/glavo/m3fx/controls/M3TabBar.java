@@ -100,18 +100,14 @@ public final class M3TabBar extends Control {
     };
 
     /// Updates tab selection listeners when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
+    private final ListChangeListener<M3Tab> childrenListener = change -> {
         while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof M3Tab tab) {
-                    uninstallTab(tab);
-                    tab.setSelected(false);
-                }
+            for (M3Tab tab : change.getRemoved()) {
+                uninstallTab(tab);
+                tab.setSelected(false);
             }
-            for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3Tab tab) {
-                    installTab(tab);
-                }
+            for (M3Tab tab : change.getAddedSubList()) {
+                installTab(tab);
             }
         }
         enforceSelectionPolicy();
@@ -331,12 +327,7 @@ public final class M3TabBar extends Control {
     /// @throws IndexOutOfBoundsException if `index` is outside the tab list
     /// @throws IllegalArgumentException  if the indexed tab is not selectable
     public final void selectIndex(int index) {
-        Node child = getTabs().get(index);
-        if (child instanceof M3Tab tab) {
-            select(tab);
-            return;
-        }
-        throw new IllegalArgumentException("child at index is not an M3Tab");
+        select(getTabs().get(index));
     }
 
     /// Selects the first tab when one exists.
@@ -539,10 +530,8 @@ public final class M3TabBar extends Control {
         M3TabBarVariant currentVariant = getVariant();
         boolean secondary = currentVariant == M3TabBarVariant.SECONDARY;
         pseudoClassStateChanged(SECONDARY_PSEUDO_CLASS, secondary);
-        for (Node child : getTabs()) {
-            if (child instanceof M3Tab tab) {
-                tab.updateNavigationVariant(currentVariant);
-            }
+        for (M3Tab tab : getTabs()) {
+            tab.updateNavigationVariant(currentVariant);
         }
     }
 
@@ -624,10 +613,8 @@ public final class M3TabBar extends Control {
     private void selectTab(@Nullable M3Tab tab) {
         updatingSelection = true;
         try {
-            for (Node child : getTabs()) {
-                if (child instanceof M3Tab item) {
-                    item.setSelected(item == tab);
-                }
+            for (M3Tab item : getTabs()) {
+                item.setSelected(item == tab);
             }
         } finally {
             updatingSelection = false;
@@ -638,8 +625,8 @@ public final class M3TabBar extends Control {
     /// Refreshes selected tab state from current child states.
     private void refreshSelectedTabs() {
         selectedTabsScratch.clear();
-        for (Node child : getTabs()) {
-            if (child instanceof M3Tab tab && tab.isSelected()) {
+        for (M3Tab tab : getTabs()) {
+            if (tab.isSelected()) {
                 if (isSelectableTab(tab)) {
                     selectedTabsScratch.add(tab);
                 } else {
@@ -669,9 +656,8 @@ public final class M3TabBar extends Control {
     /// Returns the first selectable tab referenced by accessibility parameters.
     private @Nullable M3Tab firstAccessibleSelectableTab(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getTabs()) {
-            if (child instanceof M3Tab tab
-                    && isSelectableTab(tab)
+        for (M3Tab tab : getTabs()) {
+            if (isSelectableTab(tab)
                     && M3Accessible.containsSelectionTarget(tab, parameters)) {
                 return tab;
             }

@@ -972,6 +972,127 @@ final class M3DialogPresentationTest {
         });
     }
 
+    /// Keeps a replacement presentation open when a close-request callback hides the original host.
+    @Tier2Test
+    @Test
+    void closeRequestHostLossPreservesReplacementPresentation() {
+        assertHostLossPreservesReplacement(false);
+    }
+
+    /// Keeps a replacement presentation open when a hiding callback hides the original host.
+    @Tier2Test
+    @Test
+    void hidingHostLossPreservesReplacementPresentation() {
+        assertHostLossPreservesReplacement(true);
+    }
+
+    /// Reopens the same dialog on another host during forced cleanup and verifies handle isolation.
+    private static void assertHostLossPreservesReplacement(boolean duringHiding) {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage firstStage = new Stage();
+            Stage secondStage = new Stage();
+            M3OverlayPane firstRoot = createOverlayRoot(new StackPane());
+            M3OverlayPane secondRoot = createOverlayRoot(new StackPane());
+            firstStage.setScene(new Scene(firstRoot, 400.0, 240.0));
+            secondStage.setScene(new Scene(secondRoot, 400.0, 240.0));
+            firstStage.show();
+            secondStage.show();
+            M3Dialog dialog = new M3Dialog();
+            AtomicReference<@Nullable M3DialogHandle> replacement = new AtomicReference<>();
+            try {
+                M3DialogHandle original = firstRoot.showDialog(dialog);
+                dialog.setOnHidden(event -> {
+                    if (event.getHandle() == original) {
+                        replacement.set(secondRoot.showDialog(dialog));
+                    }
+                });
+                if (duringHiding) {
+                    dialog.setOnHiding(event -> firstStage.hide());
+                } else {
+                    dialog.setOnCloseRequest(event -> firstStage.hide());
+                }
+
+                assertEquals(duringHiding, original.requestClose());
+
+                M3DialogHandle next = Objects.requireNonNull(replacement.get(), "replacement handle");
+                assertFalse(original.isShowing());
+                assertTrue(next.isShowing());
+                assertSame(secondRoot.getScene(), dialog.getDialogPane().getScene());
+                assertFalse(original.requestClose());
+                secondStage.hide();
+                assertFalse(next.isShowing());
+                assertNull(dialog.getDialogPane().getParent());
+            } finally {
+                dialog.setOnHidden(null);
+                dialog.setOnHiding(null);
+                dialog.setOnCloseRequest(null);
+                secondStage.close();
+                firstStage.close();
+            }
+        });
+    }
+
+    /// Isolates nested host cleanup and rejects reopening until the previous pane is fully released.
+    @Tier2Test
+    @Test
+    void nestedHostLossPreservesReplacementPresentation() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage firstStage = new Stage();
+            Stage secondStage = new Stage();
+            M3OverlayPane firstRoot = createOverlayRoot(new StackPane());
+            M3OverlayPane secondRoot = createOverlayRoot(new StackPane());
+            Scene firstScene = new Scene(firstRoot, 400.0, 240.0);
+            firstStage.setScene(firstScene);
+            secondStage.setScene(new Scene(secondRoot, 400.0, 240.0));
+            firstStage.show();
+            secondStage.show();
+            M3Dialog dialog = new M3Dialog();
+            AtomicReference<@Nullable M3DialogHandle> replacement = new AtomicReference<>();
+            AtomicInteger hidingEvents = new AtomicInteger();
+            AtomicInteger hiddenEvents = new AtomicInteger();
+            AtomicInteger prematurePresentationsRejected = new AtomicInteger();
+            try {
+                M3DialogHandle original = firstRoot.showDialog(dialog);
+                dialog.getDialogPane().parentProperty().addListener((observable, oldParent, newParent) -> {
+                    if (newParent == null && original.isShowing()) {
+                        assertThrows(IllegalStateException.class, () -> secondRoot.showDialog(dialog));
+                        prematurePresentationsRejected.incrementAndGet();
+                    }
+                });
+                dialog.setOnHiding(event -> {
+                    if (event.getHandle() == original) {
+                        hidingEvents.incrementAndGet();
+                        firstScene.setRoot(new StackPane());
+                    }
+                });
+                dialog.setOnHidden(event -> {
+                    if (event.getHandle() == original) {
+                        hiddenEvents.incrementAndGet();
+                        replacement.set(secondRoot.showDialog(dialog));
+                    }
+                });
+
+                firstStage.hide();
+
+                M3DialogHandle next = Objects.requireNonNull(replacement.get(), "replacement handle");
+                assertFalse(original.isShowing());
+                assertTrue(next.isShowing());
+                assertEquals(1, hidingEvents.get());
+                assertEquals(1, hiddenEvents.get());
+                assertEquals(1, prematurePresentationsRejected.get());
+                assertSame(secondRoot.getScene(), dialog.getDialogPane().getScene());
+                secondStage.hide();
+                assertFalse(next.isShowing());
+                assertNull(dialog.getDialogPane().getParent());
+            } finally {
+                dialog.setOnHidden(null);
+                dialog.setOnHiding(null);
+                secondStage.close();
+                firstStage.close();
+            }
+        });
+    }
+
     /// Verifies removing a host from its scene invalidates the active presentation and its retained handle.
     @Test
     void detachingHostForcesPresentationCleanup() {

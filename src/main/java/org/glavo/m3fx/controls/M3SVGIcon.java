@@ -30,6 +30,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SVGIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,6 +48,7 @@ import java.util.Objects;
 /// are convenient for compact path data but cannot preserve transparent padding authored into an SVG document. Set
 /// an explicit view box whenever alignment with the source SVG viewport matters. The path is uniformly scaled with
 /// meet semantics, centered in the control, and never stretched to a different aspect ratio.
+/// A viewport that cannot be mapped with a finite positive scale and finite translation is not rendered.
 ///
 /// This control intentionally models one monochrome path. Its fill follows [#variantProperty()] and the surrounding
 /// component's icon-color token. A non-null [tint][#tintProperty()] takes precedence over both sources. Compose
@@ -428,7 +430,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
@@ -436,8 +438,16 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     ///
     /// @return the immutable CSS metadata list
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Disables automatic JavaFX reflection so the skin controls artwork direction through [#autoMirroredProperty()].
+    ///
+    /// @return `false`
+    @Override
+    public boolean usesMirroring() {
+        return false;
     }
 
     /// Creates the default SVG icon skin.
@@ -559,7 +569,7 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =

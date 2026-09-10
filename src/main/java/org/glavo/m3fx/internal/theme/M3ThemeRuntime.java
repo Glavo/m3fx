@@ -65,8 +65,8 @@ public final class M3ThemeRuntime {
 
     /// Installs a theme on a scene and adds the base M3FX stylesheet.
     ///
-    /// Reinstalling replaces the currently managed theme while preserving the root style that preceded the first
-    /// installation. The installation follows later replacements of the scene root.
+    /// Reinstalling replaces the currently managed theme while retaining the root's previous theme context for
+    /// restoration. The installation follows later replacements of the scene root.
     ///
     /// @param scene the scene that should receive the theme
     /// @param theme the theme to install
@@ -94,14 +94,14 @@ public final class M3ThemeRuntime {
     /// Installs theme tokens on a root node.
     ///
     /// Reinstalling a different theme updates only the generated local stylesheet, managed style classes, and
-    /// metadata. The root's inline style is not changed. Application stylesheets already present on the parent
-    /// remain after the managed stylesheet and may therefore override generated token declarations.
+    /// metadata. The root's inline style is not changed. Newly inserted theme stylesheets precede application
+    /// stylesheets; a matching stylesheet already present on the parent retains its position and ownership.
     ///
-    /// @param root  the root that should receive theme declarations
-    /// @param theme the theme to install
     /// If `root` is also controlled by an active scene installation, the local theme is retained beneath the scene
     /// theme and becomes effective when the scene installation releases that root.
     ///
+    /// @param root  the root that should receive theme declarations
+    /// @param theme the theme to install
     /// @throws NullPointerException if `root` or `theme` is `null`
     public static void install(Parent root, M3Theme theme) {
         Objects.requireNonNull(root, "root");
@@ -174,8 +174,9 @@ public final class M3ThemeRuntime {
 
     /// Removes M3FX theme state and stylesheets from a scene.
     ///
-    /// The root inline style captured by [#install(Scene, M3Theme)] is restored. Calling this method when no managed
-    /// scene installation exists still removes M3FX state directly from the current root.
+    /// The root's previous theme context and suspended local stylesheet are restored. Application-owned inline
+    /// style remains unchanged. Calling this method when no managed scene installation exists still removes M3FX
+    /// state directly from the current root.
     ///
     /// @param scene the scene to uninstall
     /// @throws NullPointerException if `scene` is `null`
@@ -191,13 +192,14 @@ public final class M3ThemeRuntime {
 
     /// Removes M3FX theme tokens from a root node.
     ///
-    /// The method removes the generated local stylesheet, M3FX-managed profile and brightness classes, and theme
-    /// metadata. It does not modify application-owned inline style. Calling it repeatedly has no further effect.
+    /// The method removes the owned generated local stylesheet and restores the semantic classes and theme
+    /// metadata captured before local installation. If no local installation exists, direct theme metadata and
+    /// semantic theme classes are cleared. It does not modify application-owned inline style.
     ///
-    /// @param root the root to uninstall
     /// If `root` is also controlled by an active scene installation, only the retained local theme is removed; the
     /// active scene theme remains applied.
     ///
+    /// @param root the root to uninstall
     /// @throws NullPointerException if `root` is `null`
     public static void uninstall(Parent root) {
         Objects.requireNonNull(root, "root");
@@ -467,15 +469,6 @@ public final class M3ThemeRuntime {
         return value instanceof LocalThemeInstallation installation ? installation : null;
     }
 
-    /// Returns the generated stylesheet associated with a directly installed local theme.
-    ///
-    /// @param root the parent to inspect
-    /// @return the local stylesheet metadata, or `null` when no local installation exists
-    private static @Nullable LocalThemeStylesheet localThemeStylesheet(Parent root) {
-        @Nullable LocalThemeInstallation installation = localThemeInstallation(root);
-        return installation == null ? null : installation.stylesheet();
-    }
-
     /// Removes and returns a local theme installation from a parent.
     ///
     /// @param root the parent whose local installation should be removed
@@ -737,8 +730,8 @@ public final class M3ThemeRuntime {
         /// The direct theme context that existed before the scene override.
         private final ThemeContextSnapshot previousContext;
 
-        /// The local generated stylesheet temporarily suspended by the scene installation.
-        private final @Nullable LocalThemeStylesheet localThemeStylesheet;
+        /// The local generated stylesheet URL to suspend, regardless of who inserted it.
+        private final @Nullable String localThemeStylesheet;
 
         /// The index from which the local generated stylesheet was removed.
         private final int localThemeStylesheetIndex;
@@ -747,9 +740,10 @@ public final class M3ThemeRuntime {
         private RootThemeSnapshot(Parent root) {
             rootReference = new WeakReference<>(root);
             previousContext = ThemeContextSnapshot.capture(root);
-            localThemeStylesheet = M3ThemeRuntime.localThemeStylesheet(root);
-            if (localThemeStylesheet != null && localThemeStylesheet.owned()) {
-                localThemeStylesheetIndex = root.getStylesheets().indexOf(localThemeStylesheet.url());
+            @Nullable LocalThemeInstallation installation = localThemeInstallation(root);
+            localThemeStylesheet = installation == null ? null : installation.stylesheet().url();
+            if (localThemeStylesheet != null) {
+                localThemeStylesheetIndex = root.getStylesheets().indexOf(localThemeStylesheet);
                 if (localThemeStylesheetIndex >= 0) {
                     root.getStylesheets().remove(localThemeStylesheetIndex);
                 }
@@ -771,12 +765,11 @@ public final class M3ThemeRuntime {
             }
             previousContext.restore(root);
             if (localThemeStylesheet != null
-                    && localThemeStylesheet.owned()
                     && localThemeStylesheetIndex >= 0
-                    && !root.getStylesheets().contains(localThemeStylesheet.url())) {
+                    && !root.getStylesheets().contains(localThemeStylesheet)) {
                 root.getStylesheets().add(
                         Math.min(localThemeStylesheetIndex, root.getStylesheets().size()),
-                        localThemeStylesheet.url()
+                        localThemeStylesheet
                 );
             }
         }

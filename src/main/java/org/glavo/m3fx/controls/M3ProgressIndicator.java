@@ -22,6 +22,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,11 @@ import java.util.Objects;
 /// progress when the value is [INDETERMINATE_PROGRESS]. The control exposes token-backed indicator size, track
 /// thickness, active gap, and optional wave properties so the same API can render baseline and expressive
 /// circular progress styles.
+///
+/// The computed minimum and preferred dimensions equal [#getWaveIndicatorSize()] while wave amplitude is
+/// positive, or [#getIndicatorSize()] otherwise. These dimensions include insets and are available before skin
+/// installation. Explicit minimum, preferred, and maximum dimensions and their bindings are preserved when
+/// tokens change. Set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// Use this control when loading feedback needs a compact circular affordance. Indeterminate progress keeps a
 /// basic rotating sweep when reduced motion is requested through [org.glavo.m3fx.animation.M3MotionSettings],
@@ -240,7 +246,7 @@ public final class M3ProgressIndicator extends Control {
                     this,
                     "indicatorSize",
                     StyleableProperties.INDICATOR_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return indicatorSize;
@@ -282,7 +288,7 @@ public final class M3ProgressIndicator extends Control {
                     this,
                     "waveIndicatorSize",
                     StyleableProperties.WAVE_INDICATOR_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return waveIndicatorSize;
@@ -324,7 +330,7 @@ public final class M3ProgressIndicator extends Control {
                     this,
                     "waveAmplitude",
                     StyleableProperties.WAVE_AMPLITUDE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return waveAmplitude;
@@ -422,13 +428,13 @@ public final class M3ProgressIndicator extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for `M3ProgressIndicator`
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -473,15 +479,30 @@ public final class M3ProgressIndicator extends Control {
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = getWaveAmplitude() > 0.0 ? getWaveIndicatorSize() : getIndicatorSize();
-        setMinSize(size, size);
-        setPrefSize(size, size);
-        setMaxSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
+    /// Computes the minimum progress indicator width from its size tokens.
+    @Override
+    protected double computeMinWidth(double height) {
+        return computePrefWidth(height);
+    }
+
+    /// Computes the minimum progress indicator height from its size tokens.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred progress indicator width from its size tokens.
+    @Override
+    protected double computePrefWidth(double height) {
+        return getWaveAmplitude() > 0.0 ? getWaveIndicatorSize() : getIndicatorSize();
+    }
+
+    /// Computes the preferred progress indicator height from its size tokens.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computePrefWidth(width);
     }
 
     /// Normalizes progress values to the supported range.
@@ -596,7 +617,7 @@ public final class M3ProgressIndicator extends Control {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());

@@ -111,30 +111,4 @@ public record M3RgbColor(double red, double green, double blue, double alpha) im
             default -> throw new IllegalArgumentException("RGB does not contain channel " + channel);
         };
     }
-
-    /// Converts this value to the requested color space.
-    ///
-    /// Converting an achromatic RGB value to HSL or HSB assigns a hue of zero degrees.
-    ///
-    /// @param colorSpace the target color space
-    /// @return this value when `colorSpace` is [M3ColorSpace#RGB], otherwise an equivalent immutable color in the
-    ///         requested space
-    /// @throws NullPointerException if `colorSpace` is `null`
-    @Override
-    public M3Color toColorSpace(M3ColorSpace colorSpace) {
-        Objects.requireNonNull(colorSpace, "colorSpace");
-        return switch (colorSpace) {
-            case RGB -> this;
-            case HSL -> M3ColorMath.toHsl(this);
-            case HSB -> M3ColorMath.toHsb(this);
-        };
-    }
-
-    /// Returns a JavaFX color with the same channel values.
-    ///
-    /// @return the equivalent JavaFX color
-    @Override
-    public Color toFxColor() {
-        return new Color(red, green, blue, alpha);
-    }
 }

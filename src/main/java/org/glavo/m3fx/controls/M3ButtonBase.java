@@ -31,6 +31,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +51,12 @@ import java.util.Objects;
 /// New buttons are filled, small, round, focus traversable, mnemonic-parsing, and neither default nor cancel.
 /// Their token-backed geometry and base paints can be changed through styleable properties or CSS. Disabled-state
 /// treatment remains part of the Material token cascade rather than a separate Java property.
+///
+/// The default computed minimum width is `48.0` logical pixels. Computed minimum and preferred total heights
+/// use the greater of `48.0` and the container-height token, including insets; icon buttons also derive their width
+/// from a container token. Explicit layout dimensions and bindings remain in effect when tokens change. Set a
+/// dimension to [#USE_COMPUTED_SIZE] to restore its computed value. Token-derived dimensions are available before
+/// skin installation, while content-dependent measurements are supplied by the skin.
 @NotNullByDefault
 public abstract sealed class M3ButtonBase extends ButtonBase
         permits M3Button, M3IconButton, M3MenuButton {
@@ -743,13 +750,13 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -839,15 +846,30 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         return "m3-button-" + shape.cssSuffix();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
+    /// Computes the default minimum width of the button interaction target.
+    @Override
+    protected double computeMinWidth(double height) {
+        return MINIMUM_INTERACTION_TARGET_SIZE;
+    }
+
+    /// Computes the minimum total height from the visual container and interaction target.
+    @Override
+    protected double computeMinHeight(double width) {
+        return Math.max(getContainerHeight(), MINIMUM_INTERACTION_TARGET_SIZE);
+    }
+
+    /// Computes the preferred total height from the visual container and interaction target.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
+    }
+
+    /// Applies token-derived padding and icon metrics, then requests layout.
     private void updateMetrics() {
-        double height = Math.max(getContainerHeight(), MINIMUM_INTERACTION_TARGET_SIZE);
         double padding = getHorizontalPadding();
-        M3Css.setMinWidthIfUnbound(this, MINIMUM_INTERACTION_TARGET_SIZE);
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
         updateM3IconGraphicSize();
+        requestLayout();
     }
 
     /// Applies the resolved button icon token to a direct M3FX icon graphic.
@@ -987,7 +1009,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());

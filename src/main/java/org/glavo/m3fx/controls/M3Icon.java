@@ -32,6 +32,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,6 +52,11 @@ import java.util.Objects;
 /// control such as [M3IconButton], [M3NavigationItem], or [M3MenuItem] when the icon is interactive. Applications
 /// that use a dedicated symbol font may set [#iconFontFamilyProperty()] on an individual icon or override the
 /// corresponding CSS property for a subtree.
+///
+/// By default, minimum and preferred dimensions use a square line box of `ceil(iconSize * 1.5)` logical pixels,
+/// plus the control's snapped insets. These dimensions are available before skin installation. Explicit layout
+/// constraints and bindings remain in effect when the glyph size changes; set a dimension to
+/// [#USE_COMPUTED_SIZE] to restore its computed value.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -373,7 +379,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
                     StyleableProperties.ICON_SIZE,
                     () -> {
                         updateIconFont();
-                        updateMetrics();
+                        requestLayout();
                     }
             );
         }
@@ -443,7 +449,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
@@ -451,7 +457,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
     ///
     /// @return the immutable CSS metadata list
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -463,6 +469,30 @@ public final class M3Icon extends Control implements M3IconGraphic {
         return new M3IconSkin(this);
     }
 
+    /// Computes the minimum width from the icon line box and horizontal insets.
+    @Override
+    protected double computeMinWidth(double height) {
+        return computePrefWidth(height);
+    }
+
+    /// Computes the minimum height from the icon line box and vertical insets.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred width from the icon line box and horizontal insets.
+    @Override
+    protected double computePrefWidth(double height) {
+        return snappedLeftInset() + Math.ceil(getIconSize() * ICON_LINE_BOX_SCALE) + snappedRightInset();
+    }
+
+    /// Computes the preferred height from the icon line box and vertical insets.
+    @Override
+    protected double computePrefHeight(double width) {
+        return snappedTopInset() + Math.ceil(getIconSize() * ICON_LINE_BOX_SCALE) + snappedBottomInset();
+    }
+
     /// Initializes style classes, accessibility, and resolved token state.
     private void initialize() {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
@@ -472,8 +502,6 @@ public final class M3Icon extends Control implements M3IconGraphic {
         setFocusTraversable(false);
         updateSizeStyle();
         updateVariantStyle();
-        updateIconFont();
-        updateMetrics();
     }
 
     /// Applies the style class for the selected icon size.
@@ -488,7 +516,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
         );
         if (iconSizeValue == null) {
             updateIconFont();
-            updateMetrics();
+            requestLayout();
         }
     }
 
@@ -524,13 +552,6 @@ public final class M3Icon extends Control implements M3IconGraphic {
         return iconFontWeightValue == null
                 ? DEFAULT_ICON_FONT_WEIGHT
                 : Objects.requireNonNullElse(iconFontWeightValue.get(), DEFAULT_ICON_FONT_WEIGHT);
-    }
-
-    /// Applies the effective icon size to the control line box.
-    private void updateMetrics() {
-        double lineBoxSize = Math.ceil(getIconSize() * ICON_LINE_BOX_SCALE);
-        setMinSize(lineBoxSize, lineBoxSize);
-        setPrefSize(lineBoxSize, lineBoxSize);
     }
 
     /// Validates a numeric font weight token.
@@ -660,7 +681,7 @@ public final class M3Icon extends Control implements M3IconGraphic {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =

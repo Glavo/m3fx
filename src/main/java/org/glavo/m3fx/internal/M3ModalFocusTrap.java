@@ -7,10 +7,12 @@ import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,9 +128,15 @@ public final class M3ModalFocusTrap {
 
     /// Synchronizes the installed scene filter with the current active state.
     ///
-    /// This method is intended to be called after [install] whenever the value supplied by `activeSupplier` changes.
+    /// Call this method after [#install()] whenever the value supplied by `activeSupplier` changes. While the trap
+    /// is uninstalled, this method has no effect and does not evaluate the supplier. Uninstalling the trap from the
+    /// supplier prevents the current update from registering a scene filter.
     public void update() {
-        @Nullable Scene scene = activeSupplier.getAsBoolean() ? owner.getScene() : null;
+        if (!installed) {
+            return;
+        }
+        boolean active = activeSupplier.getAsBoolean();
+        @Nullable Scene scene = installed && active ? owner.getScene() : null;
         @Nullable Scene targetScene = scene != null && windowShowing(scene) ? scene : null;
         if (installedScene == targetScene) {
             if (targetScene != null) {
@@ -279,14 +287,18 @@ public final class M3ModalFocusTrap {
             scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
         }
 
-        /// Dispatches keyboard input to the most recently activated reachable trap.
+        /// Dispatches modal keys in the current stack order, skipping traps uninstalled during state queries.
         private void handleKeyPressed(KeyEvent event) {
-            if (event.isConsumed()) {
+            KeyCode code = event.getCode();
+            if (event.isConsumed() || code != KeyCode.ESCAPE && code != KeyCode.TAB && code != KeyCode.F6) {
                 return;
             }
-            for (int index = traps.size() - 1; index >= 0; index--) {
-                M3ModalFocusTrap trap = traps.get(index);
-                if (trap.installedScene == scene && trap.activeSupplier.getAsBoolean()) {
+            @Unmodifiable List<M3ModalFocusTrap> currentTraps = List.copyOf(traps);
+            for (int index = currentTraps.size() - 1; index >= 0; index--) {
+                M3ModalFocusTrap trap = currentTraps.get(index);
+                if (trap.installedScene == scene
+                        && trap.activeSupplier.getAsBoolean()
+                        && trap.installedScene == scene) {
                     trap.handleTopmostKeyPressed(event);
                     return;
                 }

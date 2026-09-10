@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -281,6 +282,112 @@ final class M3ModalFocusTrapTest {
 
             assertFalse(tab.isConsumed(), "uninstalled trap should not consume Tab");
             assertFalse(target.isFocused(), "uninstalled trap should not move focus into its owner");
+        });
+    }
+
+    /// Keeps updates inert before installation and after uninstallation, including supplier evaluation.
+    @Test
+    void updateDoesNotInstallStoppedTrap() {
+        FxTestUtils.runOnFxThread(() -> {
+            Button target = new Button("Target");
+            VBox owner = new VBox(target);
+            Scene scene = show(owner, 240.0, 120.0);
+            AtomicInteger activeStateReads = new AtomicInteger();
+            M3ModalFocusTrap trap = new M3ModalFocusTrap(
+                    owner,
+                    () -> {
+                        activeStateReads.incrementAndGet();
+                        return true;
+                    },
+                    () -> List.of(target),
+                    null
+            );
+            int initialPropertyCount = scene.getProperties().size();
+
+            trap.update();
+            assertEquals(0, activeStateReads.get());
+            assertEquals(initialPropertyCount, scene.getProperties().size());
+            assertFalse(fireKey(scene, keyEvent(KeyCode.TAB)).isConsumed());
+
+            trap.install();
+            assertTrue(fireKey(scene, keyEvent(KeyCode.TAB)).isConsumed());
+            trap.uninstall();
+            int previousReads = activeStateReads.get();
+            trap.update();
+            trap.uninstall();
+            assertEquals(previousReads, activeStateReads.get());
+            assertEquals(initialPropertyCount, scene.getProperties().size());
+            assertFalse(fireKey(scene, keyEvent(KeyCode.TAB)).isConsumed());
+
+            trap.install();
+            assertTrue(fireKey(scene, keyEvent(KeyCode.TAB)).isConsumed());
+            trap.uninstall();
+            assertEquals(initialPropertyCount, scene.getProperties().size());
+        });
+    }
+
+    /// Preserves uninstallation requested while the active-state supplier is being evaluated.
+    @Test
+    void activeStateLookupCanUninstallTrap() {
+        FxTestUtils.runOnFxThread(() -> {
+            Button target = new Button("Target");
+            VBox owner = new VBox(target);
+            Scene scene = show(owner, 240.0, 120.0);
+            AtomicReference<Runnable> lookupAction = new AtomicReference<>(() -> {});
+            M3ModalFocusTrap trap = new M3ModalFocusTrap(
+                    owner,
+                    () -> {
+                        lookupAction.get().run();
+                        return true;
+                    },
+                    () -> List.of(target),
+                    null
+            );
+            int initialPropertyCount = scene.getProperties().size();
+            trap.install();
+            lookupAction.set(trap::uninstall);
+
+            trap.update();
+
+            assertEquals(initialPropertyCount, scene.getProperties().size());
+            assertFalse(fireKey(scene, keyEvent(KeyCode.TAB)).isConsumed());
+            trap.uninstall();
+            assertEquals(initialPropertyCount, scene.getProperties().size());
+        });
+    }
+
+    /// Does not dispatch a key when the active-state supplier uninstalls all traps in the current stack.
+    @Test
+    void keyDispatchSkipsTrapUninstalledDuringLookup() {
+        FxTestUtils.runOnFxThread(() -> {
+            Button target = new Button("Target");
+            VBox owner = new VBox(target);
+            Scene scene = show(owner, 240.0, 120.0);
+            AtomicReference<Runnable> lookupAction = new AtomicReference<>(() -> {});
+            AtomicInteger dismissals = new AtomicInteger();
+            M3ModalFocusTrap lowerTrap = new M3ModalFocusTrap(
+                    owner, () -> true, () -> List.of(target), dismissals::incrementAndGet
+            );
+            M3ModalFocusTrap trap = new M3ModalFocusTrap(
+                    owner,
+                    () -> {
+                        lookupAction.get().run();
+                        return true;
+                    },
+                    () -> List.of(target),
+                    dismissals::incrementAndGet
+            );
+            int initialPropertyCount = scene.getProperties().size();
+            lowerTrap.install();
+            trap.install();
+            lookupAction.set(() -> {
+                trap.uninstall();
+                lowerTrap.uninstall();
+            });
+
+            assertFalse(fireKey(scene, keyEvent(KeyCode.ESCAPE)).isConsumed());
+            assertEquals(0, dismissals.get());
+            assertEquals(initialPropertyCount, scene.getProperties().size());
         });
     }
 

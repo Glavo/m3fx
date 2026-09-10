@@ -92,6 +92,8 @@ public final class M3DialogHandle {
     ///
     /// The request emits the dialog's cancellable close-request event. It has no effect after this handle is hidden,
     /// while another close request is being dispatched, or while an accepted exit transition is already running.
+    /// If the presentation ends during the close-request event, this method returns `false`. A later presentation
+    /// opened by a lifecycle handler is unaffected by this request.
     /// This method must run on the JavaFX Application Thread.
     ///
     /// @return `true` if this call started an accepted close transition; `false` otherwise

@@ -31,6 +31,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +51,10 @@ import java.util.Objects;
 /// [M3IconToggleButtonGroup] when their selection states must obey a single- or multiple-selection policy.
 /// Graphic nodes may have only one parent; an [M3Icon] supplied directly as the graphic follows the button's
 /// effective icon metrics and colors.
+///
+/// Computed minimum, preferred, and maximum dimensions use the greater of `48.0` and the corresponding visual
+/// container token, including insets, even before skin installation. Explicit dimensions and bindings remain in
+/// effect when tokens change; set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
@@ -624,13 +629,13 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -730,17 +735,46 @@ public final class M3IconToggleButton extends ButtonBase {
         return "m3-icon-button-" + shape.cssSuffix();
     }
 
-    /// Applies visual container tokens while preserving the minimum interaction target.
+    /// Computes minimum width from the visual container and interaction target.
+    @Override
+    protected double computeMinWidth(double height) {
+        return Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerWidth());
+    }
+
+    /// Computes minimum height from the visual container and interaction target.
+    @Override
+    protected double computeMinHeight(double width) {
+        return Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerHeight());
+    }
+
+    /// Computes preferred width from the visual container and interaction target.
+    @Override
+    protected double computePrefWidth(double height) {
+        return computeMinWidth(height);
+    }
+
+    /// Computes preferred height from the visual container and interaction target.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
+    }
+
+    /// Computes maximum width from the visual container and interaction target.
+    @Override
+    protected double computeMaxWidth(double height) {
+        return computeMinWidth(height);
+    }
+
+    /// Computes maximum height from the visual container and interaction target.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return computeMinHeight(width);
+    }
+
+    /// Updates direct icon graphics and requests layout after size-token changes.
     private void updateMetrics() {
-        double width = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerWidth());
-        double height = Math.max(MINIMUM_INTERACTION_TARGET_SIZE, getContainerHeight());
-        M3Css.setMinWidthIfUnbound(this, width);
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefWidthIfUnbound(this, width);
-        M3Css.setPrefHeightIfUnbound(this, height);
-        M3Css.setMaxWidthIfUnbound(this, width);
-        M3Css.setMaxHeightIfUnbound(this, height);
         updateM3IconGraphicSize();
+        requestLayout();
     }
 
     /// Applies the resolved icon button size token to direct M3FX icon graphics.
@@ -871,7 +905,7 @@ public final class M3IconToggleButton extends ButtonBase {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());

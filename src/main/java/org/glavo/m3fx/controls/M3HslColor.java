@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.scene.paint.Color;
 import org.glavo.m3fx.internal.M3ColorMath;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -99,29 +98,5 @@ public record M3HslColor(double hue, double saturation, double lightness, double
             case ALPHA -> new M3HslColor(hue, saturation, lightness, value);
             default -> throw new IllegalArgumentException("HSL does not contain channel " + channel);
         };
-    }
-
-    /// Converts this value to the requested color space.
-    ///
-    /// @param colorSpace the target color space
-    /// @return this value when `colorSpace` is [M3ColorSpace#HSL], otherwise an equivalent immutable color in the
-    ///         requested space
-    /// @throws NullPointerException if `colorSpace` is `null`
-    @Override
-    public M3Color toColorSpace(M3ColorSpace colorSpace) {
-        Objects.requireNonNull(colorSpace, "colorSpace");
-        return switch (colorSpace) {
-            case RGB -> M3ColorMath.toRgb(this);
-            case HSL -> this;
-            case HSB -> M3ColorMath.toHsb(this);
-        };
-    }
-
-    /// Returns the rendered RGBA value as a JavaFX color.
-    ///
-    /// @return the equivalent JavaFX color
-    @Override
-    public Color toFxColor() {
-        return M3ColorMath.toRgb(this).toFxColor();
     }
 }

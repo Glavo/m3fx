@@ -15,6 +15,7 @@ import java.util.Objects;
 /// associated with individual controls. Unless a record component states otherwise, numeric geometry is expressed
 /// in JavaFX logical pixels; opacity values are dimensionless. Each nested record is an immutable value object and
 /// validates the constraints documented by its canonical constructor.
+/// All numeric token values must be finite; neither NaN nor infinity is a supported sentinel value.
 ///
 /// [builder(M3Profile,M3ShapeTokens,M3Density)] creates a complete snapshot derived from a profile, shape scale,
 /// and density. Density affects only the generated component metrics for which density is defined, primarily
@@ -264,7 +265,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return a mutable component-token builder
     /// @throws NullPointerException if `profile`, `shapeTokens`, or `density` is `null`
     static M3ComponentTokensBuilder builder(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
-        return new M3ComponentTokensBuilder(defaultsForProfile(profile, shapeTokens, density));
+        return new M3ComponentTokensBuilder(M3ComponentTokensImpl.defaultsForProfile(profile, shapeTokens, density));
     }
 
     /// Creates a builder initialized from an existing component token set.
@@ -274,1063 +275,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @throws NullPointerException if `tokens` is `null`
     static M3ComponentTokensBuilder builder(M3ComponentTokens tokens) {
         return new M3ComponentTokensBuilder(tokens);
-    }
-
-    /// Creates component tokens for a profile.
-    ///
-    /// @param profile     the Material profile whose component defaults should be generated
-    /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density     the density adjustment applied to selected generated component metrics
-    /// @return a component token set generated from the supplied profile, shape scale, and density
-    private static M3ComponentTokens defaultsForProfile(
-            M3Profile profile,
-            M3ShapeTokens shapeTokens,
-            M3Density density
-    ) {
-        Objects.requireNonNull(profile, "profile");
-        Objects.requireNonNull(shapeTokens, "shapeTokens");
-        Objects.requireNonNull(density, "density");
-
-        double buttonHeight = density.compact(40.0);
-        double iconSmallSize = profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0;
-        double iconMediumSize = 24.0;
-        double iconLargeSize = profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0;
-        double iconExtraLargeSize = profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0;
-        double segmentedButtonHeight = density.compact(40.0);
-        double tabHeight = density.compact(48.0);
-        double tabMinWidth = 90.0;
-        double fieldHeight = density.compact(56.0);
-        double textAreaHeight = density.compact(112.0);
-        double menuItemHeight = density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
-        double searchBarHeight = density.compact(56.0);
-        double pickerNavigationButtonSize = 40.0;
-        double sideSheetWidth = 256.0;
-        double sideSheetMaxWidth = 400.0;
-        double bottomSheetMaxWidth = 640.0;
-        double chipHeight = 32.0;
-        double badgeSmallSize = 6.0;
-        double badgeLargeHeight = 16.0;
-        double badgeLargeMinWidth = 16.0;
-        double avatarSize = 40.0;
-        double topAppBarHeight = density.compact(64.0);
-        double topAppBarMediumHeight = density.compact(112.0);
-        double topAppBarLargeHeight = density.compact(152.0);
-        double topAppBarMediumFlexibleHeight = density.compact(112.0);
-        double topAppBarMediumFlexibleSubtitleHeight = density.compact(136.0);
-        double topAppBarLargeFlexibleHeight = density.compact(120.0);
-        double topAppBarLargeFlexibleSubtitleHeight = density.compact(152.0);
-        double bottomAppBarHeight = density.compact(80.0);
-        double navigationBarHeight = density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 80.0);
-        double navigationItemWidth = 80.0;
-        double navigationIndicatorWidth = profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 64.0;
-        double navigationIndicatorHeight = 32.0;
-        double navigationRailWidth = profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0;
-        double navigationRailItemWidth = 80.0;
-        double navigationRailIndicatorWidth = 56.0;
-        double navigationDrawerWidth = 360.0;
-        double navigationDrawerOneLineItemHeight = Math.max(48.0, density.compact(56.0));
-        double navigationDrawerTwoLineItemHeight = Math.max(48.0, density.compact(72.0));
-        double navigationDrawerThreeLineItemHeight = Math.max(48.0, density.compact(88.0));
-        double listItemOneLineHeight =
-                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0));
-        double listItemTwoLineHeight =
-                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0));
-        double listItemThreeLineHeight =
-                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0));
-        double listSectionHeaderHeight =
-                Math.max(48.0, density.compact(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0));
-        double progressLinearWaveAmplitude = profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0;
-        double progressCircularWaveAmplitude = profile == M3Profile.EXPRESSIVE_2025 ? 1.6 : 0.0;
-        double loadingIndicatorContainerSize = 48.0;
-        double loadingIndicatorIndicatorSize = 38.0;
-        double progressCircularIndicatorSize = 40.0;
-        double progressCircularWaveIndicatorSize = 48.0;
-        boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
-        double navigationContentSpacing = 4.0;
-        double navigationHorizontalPadding = 8.0;
-        double navigationBarItemSpacing = expressive ? 6.0 : 0.0;
-        double navigationRailCollapsedTopPadding = expressive ? 44.0 : 16.0;
-        double navigationRailCollapsedBottomPadding = expressive ? 0.0 : 16.0;
-        double navigationRailHorizontalPadding = 0.0;
-        double navigationRailItemSpacing = expressive ? 4.0 : 8.0;
-        double navigationRailHeaderSpacing = 40.0;
-        double navigationDrawerContainerPadding = 12.0;
-        double navigationDrawerItemHorizontalPadding = 16.0;
-        double navigationDrawerItemContentSpacing = 12.0;
-        double navigationDrawerItemSpacing = 0.0;
-        double navigationDrawerGroupChildPadding = 32.0;
-        double listItemHorizontalPadding = expressive ? 20.0 : 16.0;
-        double listItemVerticalPadding = density.compact(expressive ? 10.0 : 8.0);
-        double listItemContentSpacing = expressive ? 20.0 : 16.0;
-        double listSectionHeaderHorizontalPadding = expressive ? 20.0 : 16.0;
-        double menuContainerShape = expressive ? shapeTokens.large() : shapeTokens.extraSmall();
-        double menuContainerPadding = expressive ? 2.0 : 8.0;
-        double menuItemContainerShape = shapeTokens.extraSmall();
-        double menuSelectedItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
-        double menuActiveItemContainerShape = expressive ? shapeTokens.large() : menuItemContainerShape;
-        double menuFirstItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
-        double menuLastItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
-        double menuItemHorizontalPadding = expressive ? 16.0 : 12.0;
-        double menuItemContentSpacing = 12.0;
-        double menuItemSpacing = expressive ? 2.0 : 0.0;
-        double searchBarHorizontalPadding = 16.0;
-        double searchBarContentSpacing = 16.0;
-        double searchContainedBarHorizontalPadding = 4.0;
-        double searchContainedBarContentSpacing = 4.0;
-        double searchDividedBarHorizontalPadding = 16.0;
-        double searchDividedBarContentSpacing = 16.0;
-        double searchBarTrailingActionsGap = 0.0;
-        double searchViewContainerShape = shapeTokens.extraLarge();
-        double searchViewHorizontalPadding = 12.0;
-        double searchViewBarResultsGap = 2.0;
-        double searchViewResultsShape = shapeTokens.medium();
-        double searchViewDockedBottomPadding = 4.0;
-        double searchViewFullScreenBottomPadding = 16.0;
-        double searchViewMinWidth = 360.0;
-        double searchViewMaxWidth = 720.0;
-        double searchViewDockedMinHeight = 240.0;
-        double searchViewFullScreenDividedHeaderHeight = 72.0;
-        double pickerFieldPopupShape = shapeTokens.extraLarge();
-        double pickerFieldPopupPadding = 16.0;
-        double pickerFieldPopupSpacing = 16.0;
-        double pickerFieldPresetListWidth = 132.0;
-        double pickerFieldPresetListSpacing = 6.0;
-        double pickerFieldPresetButtonHorizontalPadding = 12.0;
-        double datePickerContainerWidth = 360.0;
-        double datePickerDockedContainerShape = shapeTokens.large();
-        double datePickerModalContainerShape = shapeTokens.extraLarge();
-        double datePickerHorizontalPadding = 12.0;
-        double datePickerContainerSpacing = 0.0;
-        double datePickerHeaderHeight = density.compact(64.0);
-        double datePickerHeaderSpacing = 0.0;
-        double datePickerNavigationButtonSize = 40.0;
-        double datePickerMenuButtonHeight = density.compact(40.0);
-        double datePickerDayCellSize = 48.0;
-        double datePickerDayStateLayerSize = 40.0;
-        double datePickerGridGap = 0.0;
-        double timePickerContainerShape = shapeTokens.extraLarge();
-        double timePickerContainerPadding = 24.0;
-        double timePickerContainerSpacing = 24.0;
-        double timePickerDisplaySpacing = 4.0;
-        double timePickerDisplayCellShape = shapeTokens.small();
-        double timePickerDisplayCellWidth = 96.0;
-        double timePickerDisplay24HourCellWidth = 114.0;
-        double timePickerDisplayCellHeight = 80.0;
-        double timePickerPeriodVerticalWidth = 52.0;
-        double timePickerPeriodVerticalHeight = 80.0;
-        double timePickerPeriodHorizontalWidth = 216.0;
-        double timePickerPeriodHorizontalHeight = 38.0;
-        double timePickerDialSize = 256.0;
-        double timePickerDialHandleSize = 48.0;
-        double timePickerDialCenterSize = 8.0;
-        double timePickerDialTrackWidth = 2.0;
-        double timePickerInputFieldWidth = 96.0;
-        double timePickerInputFieldHeight = 72.0;
-        double sheetContentPadding = 24.0;
-        double sheetHeaderPadding = 24.0;
-        double sheetHeaderContentSpacing = 12.0;
-        double sheetDragHandleVerticalPadding = 22.0;
-        double sheetDragHandleWidth = 32.0;
-        double sheetDragHandleHeight = 4.0;
-        double cardContainerShape = shapeTokens.medium();
-        double cardContentPadding = 16.0;
-        double dialogContentPadding = 24.0;
-        double dialogContainerMinWidth = 280.0;
-        double dialogContainerMaxWidth = 560.0;
-        double dialogActionSpacing = 8.0;
-        double dialogIconSize = 24.0;
-        double snackbarContainerShape = shapeTokens.extraSmall();
-        double snackbarContentPadding = 16.0;
-        double snackbarContainerMinWidth = 344.0;
-        double snackbarContainerMaxWidth = 672.0;
-        double snackbarSingleLineContainerHeight = density.compact(48.0);
-        double snackbarTwoLineContainerHeight = density.compact(68.0);
-        double snackbarActionContainerHeight = 32.0;
-        double bannerMinHeight = 80.0;
-        double bannerVerticalPadding = 16.0;
-        double bannerHorizontalPadding = 24.0;
-        double bannerContentSpacing = 16.0;
-        double bannerActionSpacing = 8.0;
-        double tooltipPlainContainerShape = shapeTokens.extraSmall();
-        double tooltipPlainVerticalPadding = 4.0;
-        double tooltipPlainHorizontalPadding = 8.0;
-        double tooltipRichContainerShape = shapeTokens.medium();
-        double tooltipRichTopPadding = 12.0;
-        double tooltipRichHorizontalPadding = 16.0;
-        double tooltipRichBottomPadding = 8.0;
-        double tooltipRichContentSpacing = 8.0;
-        double tooltipRichPreferredWidth = 320.0;
-        double tooltipRichActionSpacing = 8.0;
-        double tooltipRichActionButtonHeight = 32.0;
-        double tooltipRichActionButtonHorizontalPadding = 12.0;
-        double appBarHorizontalPadding = 16.0;
-        double topAppBarEdgePadding = 4.0;
-        double topAppBarContentSpacing = 0.0;
-        double topAppBarActionSpacing = 0.0;
-        double bottomAppBarContentSpacing = 16.0;
-        double bottomAppBarActionSpacing = 0.0;
-        double topAppBarMediumBottomPadding = 20.0;
-        double topAppBarLargeBottomPadding = 28.0;
-        double topAppBarFlexibleBottomPadding = 12.0;
-        double toolbarContainerHeight = density.compact(64.0);
-        double toolbarContainerWidth = 64.0;
-        double toolbarContainerShape = expressive ? shapeTokens.full() : shapeTokens.large();
-        double toolbarItemSlotSize = 48.0;
-        double toolbarContentPadding = 8.0;
-        double toolbarDockedContentPadding = 16.0;
-        double toolbarItemSpacing = 4.0;
-        double toolbarDockedMaxItemSpacing = 32.0;
-        double buttonHorizontalPadding = expressive ? 16.0 : 24.0;
-        double textButtonHorizontalPadding = expressive ? 16.0 : 12.0;
-        double segmentedButtonHorizontalPadding = 12.0;
-        double tabHorizontalPadding = 16.0;
-        double tabActiveIndicatorHeight = 3.0;
-        double tabSecondaryActiveIndicatorHeight = 2.0;
-        double tabActiveIndicatorShape = 3.0;
-        double tabActiveIndicatorMinWidth = 24.0;
-        double tabActiveIndicatorHorizontalInset = 2.0;
-        double chipHorizontalPadding = 16.0;
-        double chipIconHorizontalPadding = 8.0;
-        double chipElementSpacing = 8.0;
-        double chipIconSize = 18.0;
-        double chipAvatarSize = 24.0;
-        double chipAvatarShape = chipAvatarSize / 2.0;
-        double chipOutlineWidth = 1.0;
-        double chipGroupHorizontalGap = 8.0;
-        double chipGroupVerticalGap = 8.0;
-        double fieldHorizontalPadding = 16.0;
-        double textAreaHorizontalPadding = 16.0;
-        double textAreaVerticalPadding = density.compact(16.0);
-        double formRowSpacing = 16.0;
-        double formSectionContentSpacing = 12.0;
-        double formSectionHeaderSpacing = 4.0;
-        double formSectionHeaderBottomPadding = 4.0;
-        double formRowLabelWidth = 180.0;
-        double formRowColumnSpacing = 24.0;
-        double formRowMinHeight = density.compact(64.0);
-        double formRowTextSpacing = 2.0;
-        double validationSummaryContainerShape = shapeTokens.small();
-        double validationSummaryContentPadding = 16.0;
-        double validationSummaryItemsSpacing = 4.0;
-        double validationSummaryItemShape = shapeTokens.extraSmall();
-        double validationSummaryItemVerticalPadding = 8.0;
-        double validationSummaryItemHorizontalPadding = 10.0;
-        double selectionTouchTargetSize = 48.0;
-        double selectionStateLayerSize = 40.0;
-        double checkboxContainerSize = 18.0;
-        double checkboxSelectedMarkWidth = 12.0;
-        double checkboxSelectedMarkHeight = 10.0;
-        double checkboxIndeterminateMarkWidth = 12.0;
-        double checkboxIndeterminateMarkHeight = 2.0;
-        double radioContainerSize = 20.0;
-        double radioSelectedDotSize = 10.0;
-        double switchTouchTargetSize = 48.0;
-        double switchTrackWidth = 52.0;
-        double switchTrackHeight = 32.0;
-        double switchStateLayerSize = 40.0;
-        double switchUnselectedHandleSize = 16.0;
-        double switchWithIconHandleSize = 24.0;
-        double switchSelectedHandleSize = 24.0;
-        double switchPressedHandleSize = 28.0;
-        double switchIconSize = 16.0;
-        double sliderStopIndicatorSize = 4.0;
-        double sliderStopIndicatorTrailingSpace = 4.0;
-        double sliderThumbWidth = 4.0;
-        double sliderFocusedThumbWidth = 2.0;
-        double sliderPressedThumbWidth = 2.0;
-        double sliderThumbTrackGap = 6.0;
-        double sliderTouchTargetSize = 48.0;
-        SliderSizingTokens sliderSizing = new SliderSizingTokens(
-                new SliderSizeTokens(
-                        16.0,
-                        8.0,
-                        44.0,
-                        0.0,
-                        0.0
-                ),
-                new SliderSizeTokens(
-                        24.0,
-                        8.0,
-                        44.0,
-                        0.0,
-                        0.0
-                ),
-                new SliderSizeTokens(
-                        40.0,
-                        12.0,
-                        52.0,
-                        24.0,
-                        6.0
-                ),
-                new SliderSizeTokens(
-                        56.0,
-                        16.0,
-                        68.0,
-                        24.0,
-                        6.0
-                ),
-                new SliderSizeTokens(
-                        96.0,
-                        28.0,
-                        108.0,
-                        32.0,
-                        8.0
-                )
-        );
-        double surfaceContainerShape = shapeTokens.medium();
-        double surfaceContentPadding = 16.0;
-        double carouselTrackHorizontalPadding = 16.0;
-        double carouselTrackVerticalPadding = 8.0;
-        double carouselItemSpacing = 8.0;
-        double carouselItemShape = shapeTokens.extraLarge();
-        double carouselSmallItemMinWidth = 40.0;
-        double carouselSmallItemMaxWidth = 56.0;
-        double carouselLargeItemMaxWidth = 320.0;
-
-        return new M3ComponentTokensImpl(
-                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), textButtonHorizontalPadding),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
-                new ButtonSizingTokens(
-                        new ButtonSizeTokens(
-                                density.compact(32.0),
-                                20.0,
-                                shapeTokens.full(),
-                                shapeTokens.medium(),
-                                expressive ? shapeTokens.small() : shapeTokens.full(),
-                                expressive ? shapeTokens.small() : shapeTokens.medium(),
-                                12.0,
-                                12.0,
-                                8.0,
-                                1.0
-                        ),
-                        new ButtonSizeTokens(
-                                density.compact(40.0),
-                                20.0,
-                                shapeTokens.full(),
-                                shapeTokens.medium(),
-                                expressive ? shapeTokens.small() : shapeTokens.full(),
-                                expressive ? shapeTokens.small() : shapeTokens.medium(),
-                                buttonHorizontalPadding,
-                                textButtonHorizontalPadding,
-                                8.0,
-                                1.0
-                        ),
-                        new ButtonSizeTokens(
-                                density.compact(56.0),
-                                24.0,
-                                shapeTokens.full(),
-                                shapeTokens.large(),
-                                expressive ? shapeTokens.medium() : shapeTokens.full(),
-                                expressive ? shapeTokens.medium() : shapeTokens.large(),
-                                24.0,
-                                24.0,
-                                8.0,
-                                1.0
-                        ),
-                        new ButtonSizeTokens(
-                                density.compact(96.0),
-                                32.0,
-                                shapeTokens.full(),
-                                shapeTokens.extraLarge(),
-                                expressive ? shapeTokens.large() : shapeTokens.full(),
-                                expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
-                                48.0,
-                                48.0,
-                                12.0,
-                                2.0
-                        ),
-                        new ButtonSizeTokens(
-                                density.compact(136.0),
-                                40.0,
-                                shapeTokens.full(),
-                                shapeTokens.extraLarge(),
-                                expressive ? shapeTokens.large() : shapeTokens.full(),
-                                expressive ? shapeTokens.large() : shapeTokens.extraLarge(),
-                                64.0,
-                                64.0,
-                                16.0,
-                                3.0
-                        )
-                ),
-                new IconButtonTokens(
-                        new IconButtonSizeTokens(
-                                32.0,
-                                20.0,
-                                28.0,
-                                32.0,
-                                40.0,
-                                shapeTokens.full(),
-                                12.0,
-                                expressive ? 8.0 : shapeTokens.full(),
-                                expressive ? 8.0 : 12.0,
-                                expressive ? 12.0 : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : 12.0,
-                                1.0
-                        ),
-                        new IconButtonSizeTokens(
-                                40.0,
-                                24.0,
-                                32.0,
-                                40.0,
-                                52.0,
-                                shapeTokens.full(),
-                                12.0,
-                                expressive ? 8.0 : shapeTokens.full(),
-                                expressive ? 8.0 : 12.0,
-                                expressive ? 12.0 : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : 12.0,
-                                1.0
-                        ),
-                        new IconButtonSizeTokens(
-                                56.0,
-                                24.0,
-                                48.0,
-                                56.0,
-                                72.0,
-                                shapeTokens.full(),
-                                16.0,
-                                expressive ? 12.0 : shapeTokens.full(),
-                                expressive ? 12.0 : 16.0,
-                                expressive ? 16.0 : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : 16.0,
-                                1.0
-                        ),
-                        new IconButtonSizeTokens(
-                                96.0,
-                                32.0,
-                                64.0,
-                                96.0,
-                                128.0,
-                                shapeTokens.full(),
-                                28.0,
-                                expressive ? 16.0 : shapeTokens.full(),
-                                expressive ? 16.0 : 28.0,
-                                expressive ? 28.0 : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : 28.0,
-                                2.0
-                        ),
-                        new IconButtonSizeTokens(
-                                136.0,
-                                40.0,
-                                104.0,
-                                136.0,
-                                184.0,
-                                shapeTokens.full(),
-                                28.0,
-                                expressive ? 16.0 : shapeTokens.full(),
-                                expressive ? 16.0 : 28.0,
-                                expressive ? 28.0 : shapeTokens.full(),
-                                expressive ? shapeTokens.full() : 28.0,
-                                3.0
-                        )
-                ),
-                new FabTokens(
-                        new FabSizeTokens(
-                                40.0,
-                                shapeTokens.medium(),
-                                24.0,
-                                12.0,
-                                8.0,
-                                12.0
-                        ),
-                        new FabSizeTokens(
-                                56.0,
-                                shapeTokens.large(),
-                                24.0,
-                                16.0,
-                                expressive ? 8.0 : 12.0,
-                                expressive ? 16.0 : 20.0
-                        ),
-                        new FabSizeTokens(
-                                80.0,
-                                shapeTokens.largeIncreased(),
-                                28.0,
-                                26.0,
-                                12.0,
-                                26.0
-                        ),
-                        new FabSizeTokens(
-                                96.0,
-                                shapeTokens.extraLarge(),
-                                36.0,
-                                28.0,
-                                16.0,
-                                28.0
-                        ),
-                        new FabSizeTokens(
-                                56.0,
-                                shapeTokens.full(),
-                                24.0,
-                                24.0,
-                                8.0,
-                                24.0
-                        ),
-                        new FabSizeTokens(
-                                56.0,
-                                shapeTokens.full(),
-                                20.0,
-                                18.0,
-                                0.0,
-                                18.0
-                        ),
-                        4.0,
-                        8.0,
-                        expressive ? 16.0 : 14.0
-                ),
-                new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
-                createButtonGroupTokens(
-                        density,
-                        shapeTokens,
-                        expressive ? 10.0 : 8.0,
-                        expressive
-                ),
-                createSplitButtonTokens(density),
-                new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
-                new TabTokens(
-                        tabHeight,
-                        tabMinWidth,
-                        tabHorizontalPadding,
-                        tabActiveIndicatorHeight,
-                        tabSecondaryActiveIndicatorHeight,
-                        tabActiveIndicatorShape,
-                        tabActiveIndicatorMinWidth,
-                        tabActiveIndicatorHorizontalInset
-                ),
-                new FieldTokens(fieldHeight, shapeTokens.extraSmall(), fieldHorizontalPadding),
-                new TextAreaTokens(
-                        textAreaHeight,
-                        shapeTokens.extraSmall(),
-                        textAreaHorizontalPadding,
-                        textAreaVerticalPadding
-                ),
-                new FormTokens(
-                        0.0,
-                        formRowSpacing,
-                        formSectionContentSpacing,
-                        formSectionHeaderSpacing,
-                        formSectionHeaderBottomPadding,
-                        formRowLabelWidth,
-                        formRowColumnSpacing,
-                        formRowMinHeight,
-                        formRowTextSpacing
-                ),
-                new ValidationSummaryTokens(
-                        validationSummaryContainerShape,
-                        validationSummaryContentPadding,
-                        validationSummaryItemsSpacing,
-                        validationSummaryItemShape,
-                        validationSummaryItemVerticalPadding,
-                        validationSummaryItemHorizontalPadding
-                ),
-                new MenuTokens(
-                        menuContainerShape,
-                        menuContainerPadding,
-                        menuItemHeight,
-                        menuItemContainerShape,
-                        menuSelectedItemContainerShape,
-                        menuActiveItemContainerShape,
-                        menuItemContainerShape,
-                        menuFirstItemContainerShape,
-                        menuLastItemContainerShape,
-                        new MenuColorTokens(
-                                expressive ? ColorRole.SURFACE_CONTAINER_LOW : ColorRole.SURFACE_CONTAINER,
-                                ColorRole.ON_SURFACE,
-                                expressive ? ColorRole.TERTIARY_CONTAINER : ColorRole.SECONDARY_CONTAINER,
-                                expressive ? ColorRole.ON_TERTIARY_CONTAINER : ColorRole.ON_SECONDARY_CONTAINER,
-                                expressive ? 0.38 : 1.0,
-                                ColorRole.TERTIARY_CONTAINER,
-                                ColorRole.ON_TERTIARY_CONTAINER,
-                                ColorRole.ON_TERTIARY_CONTAINER,
-                                ColorRole.TERTIARY,
-                                ColorRole.ON_TERTIARY,
-                                expressive ? ColorRole.TERTIARY : ColorRole.ON_TERTIARY_CONTAINER
-                        ),
-                        expressive ? 20.0 : 24.0,
-                        menuItemHorizontalPadding,
-                        expressive ? 16.0 : 12.0,
-                        menuItemContentSpacing,
-                        menuItemSpacing
-                ),
-                new SearchTokens(
-                        searchBarHeight,
-                        shapeTokens.full(),
-                        searchBarHorizontalPadding,
-                        searchBarContentSpacing,
-                        searchContainedBarHorizontalPadding,
-                        searchContainedBarContentSpacing,
-                        searchDividedBarHorizontalPadding,
-                        searchDividedBarContentSpacing,
-                        searchBarTrailingActionsGap,
-                        searchViewContainerShape,
-                        searchViewHorizontalPadding,
-                        searchViewBarResultsGap,
-                        searchViewResultsShape,
-                        searchViewDockedBottomPadding,
-                        searchViewFullScreenBottomPadding,
-                        searchViewMinWidth,
-                        searchViewMaxWidth,
-                        searchViewDockedMinHeight,
-                        searchViewFullScreenDividedHeaderHeight
-                ),
-                new PickerFieldTokens(
-                        pickerNavigationButtonSize,
-                        shapeTokens.full(),
-                        pickerFieldPopupShape,
-                        pickerFieldPopupPadding,
-                        pickerFieldPopupSpacing,
-                        pickerFieldPresetListWidth,
-                        pickerFieldPresetListSpacing,
-                        pickerFieldPresetButtonHorizontalPadding
-                ),
-                new DatePickerTokens(
-                        datePickerContainerWidth,
-                        datePickerDockedContainerShape,
-                        datePickerModalContainerShape,
-                        datePickerHorizontalPadding,
-                        datePickerContainerSpacing,
-                        datePickerHeaderHeight,
-                        datePickerHeaderSpacing,
-                        datePickerNavigationButtonSize,
-                        shapeTokens.full(),
-                        datePickerMenuButtonHeight,
-                        datePickerDayCellSize,
-                        datePickerDayStateLayerSize,
-                        shapeTokens.full(),
-                        datePickerGridGap
-                ),
-                new TimePickerTokens(
-                        timePickerContainerShape,
-                        timePickerContainerPadding,
-                        timePickerContainerSpacing,
-                        timePickerDisplaySpacing,
-                        timePickerDisplayCellShape,
-                        timePickerDisplayCellWidth,
-                        timePickerDisplay24HourCellWidth,
-                        timePickerDisplayCellHeight,
-                        timePickerPeriodVerticalWidth,
-                        timePickerPeriodVerticalHeight,
-                        timePickerPeriodHorizontalWidth,
-                        timePickerPeriodHorizontalHeight,
-                        timePickerDialSize,
-                        timePickerDialHandleSize,
-                        timePickerDialCenterSize,
-                        timePickerDialTrackWidth,
-                        timePickerInputFieldWidth,
-                        timePickerInputFieldHeight
-                ),
-                new SheetTokens(
-                        sideSheetWidth,
-                        sideSheetMaxWidth,
-                        16.0,
-                        bottomSheetMaxWidth,
-                        28.0,
-                        sheetContentPadding,
-                        sheetHeaderPadding,
-                        sheetHeaderContentSpacing,
-                        sheetDragHandleVerticalPadding,
-                        sheetDragHandleWidth,
-                        sheetDragHandleHeight
-                ),
-                new ScrimTokens(0.32),
-                new SelectionTokens(
-                        selectionTouchTargetSize,
-                        selectionStateLayerSize,
-                        checkboxContainerSize,
-                        checkboxSelectedMarkWidth,
-                        checkboxSelectedMarkHeight,
-                        checkboxIndeterminateMarkWidth,
-                        checkboxIndeterminateMarkHeight,
-                        radioContainerSize,
-                        radioSelectedDotSize,
-                        shapeTokens.full(),
-                        switchTouchTargetSize,
-                        switchTrackWidth,
-                        switchTrackHeight,
-                        switchStateLayerSize,
-                        switchUnselectedHandleSize,
-                        switchWithIconHandleSize,
-                        switchSelectedHandleSize,
-                        switchPressedHandleSize,
-                        switchIconSize
-                ),
-                new SliderTokens(
-                        sliderSizing,
-                        sliderStopIndicatorSize,
-                        sliderStopIndicatorTrailingSpace,
-                        sliderThumbWidth,
-                        sliderFocusedThumbWidth,
-                        sliderPressedThumbWidth,
-                        sliderThumbTrackGap,
-                        sliderTouchTargetSize
-                ),
-                new ChipTokens(
-                        chipHeight,
-                        shapeTokens.small(),
-                        chipHorizontalPadding,
-                        chipIconHorizontalPadding,
-                        chipElementSpacing,
-                        chipIconSize,
-                        chipAvatarSize,
-                        chipAvatarShape,
-                        chipOutlineWidth,
-                        chipGroupHorizontalGap,
-                        chipGroupVerticalGap
-                ),
-                new ProgressTokens(
-                        4.0,
-                        shapeTokens.full(),
-                        progressCircularIndicatorSize,
-                        progressCircularWaveIndicatorSize,
-                        progressLinearWaveAmplitude,
-                        40.0,
-                        20.0,
-                        4.0,
-                        4.0,
-                        progressCircularWaveAmplitude,
-                        15.0,
-                        4.0
-                ),
-                new LoadingIndicatorTokens(
-                        loadingIndicatorContainerSize,
-                        loadingIndicatorIndicatorSize
-                ),
-                new SurfaceTokens(surfaceContainerShape, surfaceContentPadding),
-                new CarouselTokens(
-                        carouselTrackHorizontalPadding,
-                        carouselTrackVerticalPadding,
-                        carouselItemSpacing,
-                        carouselItemShape,
-                        carouselSmallItemMinWidth,
-                        carouselSmallItemMaxWidth,
-                        carouselLargeItemMaxWidth
-                ),
-                new CardTokens(cardContainerShape, cardContentPadding, 1.0),
-                new DialogTokens(
-                        shapeTokens.extraLarge(),
-                        dialogContentPadding,
-                        dialogContainerMinWidth,
-                        dialogContainerMaxWidth,
-                        dialogActionSpacing,
-                        dialogIconSize
-                ),
-                new SnackbarTokens(
-                        snackbarContainerShape,
-                        snackbarContentPadding,
-                        snackbarContainerMinWidth,
-                        snackbarContainerMaxWidth,
-                        snackbarSingleLineContainerHeight,
-                        snackbarTwoLineContainerHeight,
-                        snackbarActionContainerHeight
-                ),
-                new BannerTokens(
-                        bannerMinHeight,
-                        bannerVerticalPadding,
-                        bannerHorizontalPadding,
-                        bannerContentSpacing,
-                        bannerActionSpacing
-                ),
-                new TooltipTokens(
-                        tooltipPlainContainerShape,
-                        tooltipPlainVerticalPadding,
-                        tooltipPlainHorizontalPadding,
-                        tooltipRichContainerShape,
-                        tooltipRichTopPadding,
-                        tooltipRichHorizontalPadding,
-                        tooltipRichBottomPadding,
-                        tooltipRichContentSpacing,
-                        tooltipRichPreferredWidth,
-                        tooltipRichActionSpacing,
-                        tooltipRichActionButtonHeight,
-                        tooltipRichActionButtonHorizontalPadding
-                ),
-                new DividerTokens(1.0, 0.0, 0.0),
-                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeMinWidth, badgeLargeHeight / 2.0, 4.0),
-                new AvatarTokens(avatarSize, shapeTokens.full()),
-                new TopAppBarTokens(
-                        topAppBarHeight,
-                        topAppBarMediumHeight,
-                        topAppBarLargeHeight,
-                        topAppBarMediumFlexibleHeight,
-                        topAppBarMediumFlexibleSubtitleHeight,
-                        topAppBarLargeFlexibleHeight,
-                        topAppBarLargeFlexibleSubtitleHeight,
-                        topAppBarEdgePadding,
-                        appBarHorizontalPadding,
-                        topAppBarMediumBottomPadding,
-                        topAppBarLargeBottomPadding,
-                        topAppBarFlexibleBottomPadding,
-                        topAppBarContentSpacing,
-                        topAppBarActionSpacing
-                ),
-                new BottomAppBarTokens(
-                        bottomAppBarHeight,
-                        appBarHorizontalPadding,
-                        bottomAppBarContentSpacing,
-                        bottomAppBarActionSpacing
-                ),
-                new ToolbarTokens(
-                        toolbarContainerHeight,
-                        toolbarContainerWidth,
-                        toolbarContainerShape,
-                        toolbarItemSlotSize,
-                        toolbarContentPadding,
-                        toolbarDockedContentPadding,
-                        toolbarItemSpacing,
-                        toolbarDockedMaxItemSpacing
-                ),
-                new NavigationBarTokens(
-                        navigationBarHeight,
-                        navigationItemWidth,
-                        navigationIndicatorWidth,
-                        navigationIndicatorHeight,
-                        shapeTokens.full(),
-                        navigationContentSpacing,
-                        navigationHorizontalPadding,
-                        navigationBarItemSpacing,
-                        new NavigationBarColorTokens(
-                                expressive ? ColorRole.SECONDARY : ColorRole.ON_SURFACE,
-                                expressive ? ColorRole.ON_SECONDARY_CONTAINER : ColorRole.ON_SURFACE
-                        ),
-                        expressive
-                ),
-                new NavigationRailTokens(
-                        navigationRailWidth,
-                        80.0,
-                        220.0,
-                        280.0,
-                        360.0,
-                        navigationBarHeight,
-                        navigationRailItemWidth,
-                        navigationRailIndicatorWidth,
-                        navigationIndicatorHeight,
-                        shapeTokens.full(),
-                        navigationContentSpacing,
-                        navigationRailCollapsedTopPadding,
-                        navigationRailCollapsedBottomPadding,
-                        navigationRailHorizontalPadding,
-                        navigationRailItemSpacing,
-                        44.0,
-                        20.0,
-                        navigationRailHeaderSpacing,
-                        shapeTokens.large()
-                ),
-                new NavigationDrawerTokens(
-                        navigationDrawerWidth,
-                        navigationDrawerOneLineItemHeight,
-                        navigationDrawerTwoLineItemHeight,
-                        navigationDrawerThreeLineItemHeight,
-                        shapeTokens.full(),
-                        navigationDrawerContainerPadding,
-                        navigationDrawerItemHorizontalPadding,
-                        0.0,
-                        navigationDrawerItemContentSpacing,
-                        navigationDrawerItemSpacing,
-                        navigationDrawerOneLineItemHeight,
-                        shapeTokens.full(),
-                        navigationDrawerGroupChildPadding
-                ),
-                new ListItemTokens(
-                        listItemOneLineHeight,
-                        listItemTwoLineHeight,
-                        listItemThreeLineHeight,
-                        0.0,
-                        listItemHorizontalPadding,
-                        listItemVerticalPadding,
-                        listItemContentSpacing,
-                        2.0,
-                        expressive ? shapeTokens.extraSmall() : 0.0,
-                        expressive ? shapeTokens.medium() : 0.0,
-                        expressive ? shapeTokens.large() : 0.0,
-                        expressive ? shapeTokens.extraSmall() : 0.0,
-                        listSectionHeaderHeight,
-                        listSectionHeaderHorizontalPadding
-                )
-        );
-    }
-
-    /// Creates the five-step button-group token scale for one component profile.
-    ///
-    /// Button groups own spacing and connected inner-corner behavior. Their child buttons retain the shared
-    /// [ButtonSizingTokens] metrics for height, content padding, typography, icon size, and outline width.
-    ///
-    /// @param density                the density used for group container heights
-    /// @param shapeTokens            the shape system used by connected inner-corner aliases
-    /// @param iconToggleGroupSpacing the resolved spacing between icon toggle group children
-    /// @param expressive              whether Expressive connected-button state shapes should be generated
-    /// @return the button-group size token scale
-    private static ButtonGroupTokens createButtonGroupTokens(
-            M3Density density,
-            M3ShapeTokens shapeTokens,
-            double iconToggleGroupSpacing,
-            boolean expressive
-    ) {
-        double connectedSpacing = 2.0;
-        return new ButtonGroupTokens(
-                createButtonGroupSizeTokens(
-                        density,
-                        32.0,
-                        18.0,
-                        connectedSpacing,
-                        shapeTokens.small(),
-                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
-                        expressive
-                ),
-                createButtonGroupSizeTokens(
-                        density,
-                        40.0,
-                        12.0,
-                        connectedSpacing,
-                        shapeTokens.small(),
-                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
-                        expressive
-                ),
-                createButtonGroupSizeTokens(
-                        density,
-                        56.0,
-                        8.0,
-                        connectedSpacing,
-                        shapeTokens.small(),
-                        expressive ? shapeTokens.extraSmall() : shapeTokens.small(),
-                        expressive
-                ),
-                createButtonGroupSizeTokens(
-                        density,
-                        96.0,
-                        8.0,
-                        connectedSpacing,
-                        shapeTokens.large(),
-                        expressive ? shapeTokens.medium() : shapeTokens.large(),
-                        expressive
-                ),
-                createButtonGroupSizeTokens(
-                        density,
-                        136.0,
-                        8.0,
-                        connectedSpacing,
-                        shapeTokens.largeIncreased(),
-                        expressive ? shapeTokens.large() : shapeTokens.largeIncreased(),
-                        expressive
-                ),
-                -1.0,
-                iconToggleGroupSpacing
-        );
-    }
-
-    /// Creates tokens for one button-group size.
-    ///
-    /// @param density                     the density used for the container height
-    /// @param containerHeight             the baseline container height
-    /// @param standardSpacing             the baseline spacing between standard-group items
-    /// @param connectedSpacing            the resolved spacing between connected-group items
-    /// @param connectedInnerCorner        the resting connected inner corner
-    /// @param connectedPressedInnerCorner the pressed connected inner corner
-    /// @param expressive                  whether the selected state expands to a full-height inner corner
-    /// @return the size-specific button-group tokens
-    private static ButtonGroupSizeTokens createButtonGroupSizeTokens(
-            M3Density density,
-            double containerHeight,
-            double standardSpacing,
-            double connectedSpacing,
-            double connectedInnerCorner,
-            double connectedPressedInnerCorner,
-            boolean expressive
-    ) {
-        double resolvedContainerHeight = density.compact(containerHeight);
-        return new ButtonGroupSizeTokens(
-                resolvedContainerHeight,
-                standardSpacing,
-                0.15,
-                connectedSpacing,
-                connectedInnerCorner,
-                connectedPressedInnerCorner,
-                expressive ? resolvedContainerHeight / 2.0 : connectedInnerCorner
-        );
-    }
-
-    /// Creates the five-step split-button size scale.
-    ///
-    /// Split buttons are an Expressive component without a baseline joined variant, so all profiles retain the
-    /// current between-space, asymmetric padding, state corners, optical icon offsets, and selected trailing shape.
-    ///
-    /// @param density the density used for split-button container heights
-    /// @return the split-button size token scale
-    private static SplitButtonTokens createSplitButtonTokens(M3Density density) {
-        double spacing = 2.0;
-        return new SplitButtonTokens(
-                new SplitButtonSizeTokens(
-                        density.compact(32.0),
-                        spacing,
-                        4.0,
-                        8.0,
-                        8.0,
-                        12.0,
-                        10.0,
-                        22.0,
-                        1.0,
-                        13.0,
-                        13.0,
-                        16.0
-                ),
-                new SplitButtonSizeTokens(
-                        density.compact(40.0),
-                        spacing,
-                        4.0,
-                        12.0,
-                        12.0,
-                        16.0,
-                        12.0,
-                        22.0,
-                        1.0,
-                        13.0,
-                        13.0,
-                        20.0
-                ),
-                new SplitButtonSizeTokens(
-                        density.compact(56.0),
-                        spacing,
-                        4.0,
-                        12.0,
-                        12.0,
-                        24.0,
-                        24.0,
-                        26.0,
-                        2.0,
-                        15.0,
-                        15.0,
-                        28.0
-                ),
-                new SplitButtonSizeTokens(
-                        density.compact(96.0),
-                        spacing,
-                        8.0,
-                        20.0,
-                        20.0,
-                        48.0,
-                        48.0,
-                        38.0,
-                        3.0,
-                        29.0,
-                        29.0,
-                        48.0
-                ),
-                new SplitButtonSizeTokens(
-                        density.compact(136.0),
-                        spacing,
-                        12.0,
-                        20.0,
-                        20.0,
-                        64.0,
-                        64.0,
-                        50.0,
-                        6.0,
-                        43.0,
-                        43.0,
-                        68.0
-                )
-        );
     }
 
     /// Tokens shared by button variants.
@@ -1346,7 +290,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates button tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `height`, `containerShape`, `horizontalPadding`
         public ButtonTokens {
             validateNonNegative(height, "height");
@@ -1411,7 +355,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates tokens for one Material button size.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `iconSize`, `roundContainerShape`, `squareContainerShape`,
         ///         `pressedRoundContainerShape`, `pressedSquareContainerShape`, `horizontalPadding`,
         ///         `textHorizontalPadding`, `iconLabelSpace`,
@@ -1490,7 +434,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates icon button size tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `iconSize`, `narrowWidth`, `defaultWidth`,
         ///         `wideWidth`, `roundContainerShape`, `squareContainerShape`,
         ///         `pressedRoundContainerShape`, `pressedSquareContainerShape`,
@@ -1539,7 +483,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// @throws NullPointerException if one of the following values is `null`:
         ///         `small`, `regular`, `medium`, `large`,
         ///         `menuItem`, `menuCloseButton`
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `menuActionSpacing`, `menuCloseSpacing`, `regularLabelFontSize`
         public FabTokens {
             Objects.requireNonNull(small, "small");
@@ -1573,7 +517,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates a floating action button size token set.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerSize`, `containerShape`, `iconSize`, `leadingSpace`,
         ///         `iconLabelSpace`, `trailingSpace`
         public FabSizeTokens {
@@ -1601,7 +545,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates icon tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `smallSize`, `mediumSize`, `largeSize`, `extraLargeSize`
         public IconTokens {
             validateNonNegative(smallSize, "smallSize");
@@ -1635,7 +579,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// @throws NullPointerException if one of the following values is `null`:
         ///         `extraSmall`, `small`, `medium`, `large`,
         ///         `extraLarge`
-        /// @throws IllegalArgumentException if `iconToggleGroupSpacing` is negative
+        /// @throws IllegalArgumentException if `iconToggleGroupSpacing` is negative or not finite
         /// @throws IllegalArgumentException if `segmentedGroupSpacing` is not finite
         public ButtonGroupTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
@@ -1669,7 +613,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates button-group tokens for one size role.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `standardPressedWidthMultiplier`, `connectedInnerCorner`, `connectedPressedInnerCorner`,
         ///         `connectedSelectedInnerCorner`
         /// @throws IllegalArgumentException if one of the following values is not finite:
@@ -1745,7 +689,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates split-button metrics for one size role.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `innerCorner`, `hoveredInnerCorner`, `pressedInnerCorner`,
         ///         `actionLeadingSpace`, `actionTrailingSpace`, `menuIconSize`, `menuIconOffset`,
         ///         `menuLeadingSpace`, `menuTrailingSpace`, `selectedInnerCorner`
@@ -1789,7 +733,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates tab tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `tabMinWidth`, `horizontalPadding`, `activeIndicatorHeight`,
         ///         `secondaryActiveIndicatorHeight`, `activeIndicatorShape`, `activeIndicatorMinWidth`, `activeIndicatorHorizontalInset`
         public TabTokens {
@@ -1817,7 +761,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates field tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `height`, `containerShape`, `horizontalPadding`
         public FieldTokens {
             validateNonNegative(height, "height");
@@ -1841,7 +785,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates text area tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `height`, `containerShape`, `horizontalPadding`, `verticalPadding`
         public TextAreaTokens {
             validateNonNegative(height, "height");
@@ -1876,7 +820,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates form tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `contentPadding`, `rowSpacing`, `sectionContentSpacing`, `sectionHeaderSpacing`,
         ///         `sectionHeaderBottomPadding`, `rowLabelWidth`, `rowColumnSpacing`, `rowMinHeight`,
         ///         `rowTextSpacing`
@@ -1912,7 +856,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates validation summary tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `contentPadding`, `itemsSpacing`, `itemShape`,
         ///         `itemVerticalPadding`, `itemHorizontalPadding`
         public ValidationSummaryTokens {
@@ -1963,7 +907,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// Validates menu tokens.
         ///
         /// @throws NullPointerException if `colors` is `null`
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `containerPadding`, `itemHeight`, `itemContainerShape`,
         ///         `selectedItemContainerShape`, `activeItemContainerShape`, `innerCornerShape`, `firstItemContainerShape`,
         ///         `lastItemContainerShape`, `itemIconSize`, `itemHorizontalPadding`,
@@ -2021,7 +965,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// Creates menu color-role tokens.
         ///
         /// @throws NullPointerException if any color role is `null`
-        /// @throws IllegalArgumentException if `selectedDisabledContainerOpacity` is outside `[0, 1]`
+        /// @throws IllegalArgumentException if `selectedDisabledContainerOpacity` is not finite or outside `[0, 1]`
         public MenuColorTokens {
             Objects.requireNonNull(containerRole, "containerRole");
             Objects.requireNonNull(itemStateLayerRole, "itemStateLayerRole");
@@ -2082,7 +1026,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates search tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `barHeight`, `barContainerShape`, `barHorizontalPadding`, `barContentSpacing`,
         ///         `containedBarHorizontalPadding`, `containedBarContentSpacing`, `dividedBarHorizontalPadding`, `dividedBarContentSpacing`,
         ///         `barTrailingActionsGap`, `viewContainerShape`, `viewHorizontalPadding`, `viewBarResultsGap`,
@@ -2134,7 +1078,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates picker field tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `openButtonSize`, `openButtonShape`, `popupShape`, `popupPadding`,
         ///         `popupSpacing`, `presetListWidth`, `presetListSpacing`, `presetButtonHorizontalPadding`
         public PickerFieldTokens {
@@ -2184,7 +1128,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates date picker tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerWidth`, `dockedContainerShape`, `modalContainerShape`, `horizontalPadding`,
         ///         `containerSpacing`, `headerHeight`, `headerSpacing`, `navigationButtonSize`,
         ///         `navigationButtonShape`, `menuButtonHeight`, `dayCellSize`, `dayStateLayerSize`,
@@ -2250,7 +1194,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates time picker tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `containerPadding`, `containerSpacing`, `displaySpacing`,
         ///         `displayCellShape`, `displayCellWidth`, `display24HourCellWidth`, `displayCellHeight`,
         ///         `periodVerticalWidth`, `periodVerticalHeight`, `periodHorizontalWidth`, `periodHorizontalHeight`,
@@ -2307,7 +1251,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Validates sheet tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `sideContainerWidth`, `sideContainerMaxWidth`, `sideContainerShape`, `bottomContainerMaxWidth`,
         ///         `bottomContainerShape`, `contentPadding`, `headerPadding`, `headerContentSpacing`,
         ///         `dragHandleVerticalPadding`, `dragHandleWidth`, `dragHandleHeight`
@@ -2340,7 +1284,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     record ScrimTokens(double containerOpacity) {
         /// Validates scrim tokens.
         ///
-        /// @throws IllegalArgumentException if `containerOpacity` is less than `0.0` or greater than `1.0`
+        /// @throws IllegalArgumentException if `containerOpacity` is not finite or outside `[0.0, 1.0]`
         public ScrimTokens {
             validateOpacity(containerOpacity);
         }
@@ -2391,7 +1335,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates selection tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `touchTargetSize`, `stateLayerSize`, `checkboxContainerSize`, `checkboxSelectedMarkWidth`,
         ///         `checkboxSelectedMarkHeight`, `checkboxIndeterminateMarkWidth`, `checkboxIndeterminateMarkHeight`, `radioContainerSize`,
         ///         `radioSelectedDotSize`, `trackShape`, `switchTouchTargetSize`, `switchTrackWidth`,
@@ -2466,7 +1410,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates tokens for one slider size.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `trackThickness`, `trackShape`, `thumbSize`, `iconSize`,
         ///         `iconPadding`
         public SliderSizeTokens {
@@ -2502,7 +1446,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// Creates slider tokens.
         ///
         /// @throws NullPointerException if `sizing` is `null`
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `stopIndicatorSize`, `stopIndicatorTrailingSpace`, `thumbWidth`, `focusedThumbWidth`,
         ///         `pressedThumbWidth`, `thumbTrackGap`, `touchTargetSize`
         public SliderTokens {
@@ -2546,7 +1490,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates chip tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `height`, `containerShape`, `horizontalPadding`, `iconHorizontalPadding`,
         ///         `elementSpacing`, `iconSize`, `avatarSize`, `avatarShape`,
         ///         `outlineWidth`, `groupHorizontalGap`, `groupVerticalGap`
@@ -2596,7 +1540,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates progress tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `thickness`, `shape`, `indicatorSize`, `waveIndicatorSize`,
         ///         `linearWaveAmplitude`, `linearWavelength`, `linearIndeterminateWavelength`, `linearTrackGap`,
         ///         `linearStopSize`, `circularWaveAmplitude`, `circularWavelength`, `circularTrackGap`
@@ -2627,7 +1571,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates loading indicator tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerSize`, `indicatorSize`
         public LoadingIndicatorTokens {
             validateNonNegative(containerSize, "containerSize");
@@ -2646,7 +1590,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates surface tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `contentPadding`
         public SurfaceTokens {
             validateNonNegative(containerShape, "containerShape");
@@ -2675,7 +1619,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates carousel tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `trackHorizontalPadding`, `trackVerticalPadding`, `itemSpacing`, `itemShape`,
         ///         `smallItemMinWidth`, `smallItemMaxWidth`, `largeItemMaxWidth`
         /// @throws IllegalArgumentException if `smallItemMaxWidth` is less than `smallItemMinWidth`,
@@ -2710,7 +1654,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates card tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `contentPadding`, `outlineWidth`
         public CardTokens {
             validateNonNegative(containerShape, "containerShape");
@@ -2738,7 +1682,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates dialog tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `contentPadding`, `containerMinWidth`, `containerMaxWidth`,
         ///         `actionSpacing`, `iconSize`
         /// @throws IllegalArgumentException if `containerMaxWidth` is less than `containerMinWidth`
@@ -2778,7 +1722,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates snackbar tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerShape`, `contentPadding`, `containerMinWidth`, `containerMaxWidth`,
         ///         `singleLineContainerHeight`, `twoLineContainerHeight`, `actionContainerHeight`
         /// @throws IllegalArgumentException if `containerMaxWidth` is less than `containerMinWidth`
@@ -2815,7 +1759,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates banner tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerMinHeight`, `verticalPadding`, `horizontalPadding`, `contentSpacing`,
         ///         `actionSpacing`
         public BannerTokens {
@@ -2858,7 +1802,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates tooltip tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `plainContainerShape`, `plainVerticalPadding`, `plainHorizontalPadding`, `richContainerShape`,
         ///         `richTopPadding`, `richHorizontalPadding`, `richBottomPadding`, `richContentSpacing`,
         ///         `richPreferredWidth`, `richActionSpacing`, `richActionButtonHeight`, `richActionButtonHorizontalPadding`
@@ -2891,7 +1835,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates divider tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `thickness`, `insetStart`, `insetEnd`
         public DividerTokens {
             validateNonNegative(thickness, "thickness");
@@ -2917,7 +1861,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates badge tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `smallSize`, `largeHeight`, `largeMinWidth`, `containerShape`,
         ///         `horizontalPadding`
         public BadgeTokens {
@@ -2940,7 +1884,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates avatar tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerSize`, `containerShape`
         public AvatarTokens {
             validateNonNegative(containerSize, "containerSize");
@@ -2983,7 +1927,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates top app bar tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `mediumContainerHeight`, `largeContainerHeight`, `mediumFlexibleContainerHeight`,
         ///         `mediumFlexibleSubtitleContainerHeight`, `largeFlexibleContainerHeight`, `largeFlexibleSubtitleContainerHeight`, `edgePadding`,
         ///         `horizontalPadding`, `mediumBottomPadding`, `largeBottomPadding`, `flexibleBottomPadding`,
@@ -3023,7 +1967,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates bottom app bar tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `horizontalPadding`, `contentSpacing`, `actionSpacing`
         public BottomAppBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
@@ -3056,7 +2000,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates toolbar tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `containerWidth`, `containerShape`, `itemSlotSize`,
         ///         `contentPadding`, `dockedContentPadding`, `itemSpacing`, `dockedMaxItemSpacing`
         public ToolbarTokens {
@@ -3099,7 +2043,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         /// Creates navigation bar tokens.
         ///
         /// @throws NullPointerException if `colors` is `null`
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerHeight`, `itemWidth`, `indicatorWidth`, `indicatorHeight`,
         ///         `indicatorShape`, `contentSpacing`, `horizontalPadding`, `itemSpacing`
         public NavigationBarTokens {
@@ -3178,7 +2122,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates navigation rail tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `collapsedContainerWidth`, `narrowCollapsedContainerWidth`, `expandedMinimumContainerWidth`, `expandedContainerWidth`,
         ///         `expandedMaximumContainerWidth`, `itemHeight`, `itemWidth`, `indicatorWidth`,
         ///         `indicatorHeight`, `indicatorShape`, `contentSpacing`, `collapsedTopPadding`,
@@ -3248,7 +2192,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates navigation drawer tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `containerWidth`, `oneLineItemHeight`, `twoLineItemHeight`, `threeLineItemHeight`,
         ///         `itemContainerShape`, `containerPadding`, `itemHorizontalPadding`, `itemVerticalPadding`,
         ///         `itemContentSpacing`, `itemSpacing`, `groupChildItemHeight`, `groupChildItemContainerShape`,
@@ -3305,7 +2249,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates list item tokens.
         ///
-        /// @throws IllegalArgumentException if one of the following values is negative:
+        /// @throws IllegalArgumentException if one of the following values is negative or not finite:
         ///         `oneLineHeight`, `twoLineHeight`, `threeLineHeight`, `containerShape`,
         ///         `horizontalPadding`, `verticalPadding`, `contentSpacing`, `segmentedGap`,
         ///         `segmentedContainerShape`, `segmentedHoverContainerShape`, `segmentedActiveContainerShape`,
@@ -3329,8 +2273,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
-    /// Validates a non-negative component token.
+    /// Validates a finite, non-negative component token.
     private static void validateNonNegative(double value, String name) {
+        validateFinite(value, name);
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
         }
@@ -3345,6 +2290,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Validates that a token is a JavaFX opacity value.
     private static void validateOpacity(double value) {
+        validateFinite(value, "opacity");
         if (value < 0.0 || value > 1.0) {
             throw new IllegalArgumentException("opacity must be between 0 and 1");
         }

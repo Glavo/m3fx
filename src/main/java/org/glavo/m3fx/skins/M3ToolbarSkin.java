@@ -3,7 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -28,31 +28,32 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
     private static final String ITEM_SLOT_STYLE_CLASS = "m3-toolbar-item-slot";
 
     /// The item slot container.
-    private final ToolbarPane container = new ToolbarPane();
+    private final ToolbarPane container;
 
     /// Rebuilds item slots when the public item list changes.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
-    /// Updates layout when orientation or styleable metrics change.
-    private final InvalidationListener layoutInvalidation = observable -> {
-        updateContainerState();
-        getSkinnable().requestLayout();
-    };
+    /// Invalidates content measurements when layout properties change.
+    private final ChangeListener<Object> layoutListener;
 
     /// Creates a toolbar skin.
     ///
     /// @param control the toolbar controlled by this skin
     public M3ToolbarSkin(M3Toolbar control) {
         super(control);
+        container = new ToolbarPane(control);
+        layoutListener = (observable, oldValue, newValue) -> {
+            container.requestLayout();
+            control.requestLayout();
+        };
         container.setManaged(false);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         control.getItems().addListener(itemsListener);
-        control.orientationProperty().addListener(layoutInvalidation);
-        control.variantProperty().addListener(layoutInvalidation);
-        control.itemSlotSizeProperty().addListener(layoutInvalidation);
-        control.itemSpacingProperty().addListener(layoutInvalidation);
-        control.dockedMaxItemSpacingProperty().addListener(layoutInvalidation);
-        updateContainerState();
+        control.orientationProperty().addListener(layoutListener);
+        control.variantProperty().addListener(layoutListener);
+        control.itemSlotSizeProperty().addListener(layoutListener);
+        control.itemSpacingProperty().addListener(layoutListener);
+        control.dockedMaxItemSpacingProperty().addListener(layoutListener);
         updateItems();
         getChildren().setAll(container);
     }
@@ -62,11 +63,11 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
     public void dispose() {
         M3Toolbar control = getSkinnable();
         control.getItems().removeListener(itemsListener);
-        control.orientationProperty().removeListener(layoutInvalidation);
-        control.variantProperty().removeListener(layoutInvalidation);
-        control.itemSlotSizeProperty().removeListener(layoutInvalidation);
-        control.itemSpacingProperty().removeListener(layoutInvalidation);
-        control.dockedMaxItemSpacingProperty().removeListener(layoutInvalidation);
+        control.orientationProperty().removeListener(layoutListener);
+        control.variantProperty().removeListener(layoutListener);
+        control.itemSlotSizeProperty().removeListener(layoutListener);
+        control.itemSpacingProperty().removeListener(layoutListener);
+        control.dockedMaxItemSpacingProperty().removeListener(layoutListener);
         container.nodeOrientationProperty().unbind();
         clearItemSlots();
         getChildren().remove(container);
@@ -121,34 +122,6 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
         return topInset + container.prefHeight(width) + bottomInset;
     }
 
-    /// Computes the maximum width.
-    @Override
-    protected double computeMaxWidth(
-            double height,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return getSkinnable().getOrientation() == Orientation.HORIZONTAL
-                ? Double.MAX_VALUE
-                : leftInset + container.maxWidth(height) + rightInset;
-    }
-
-    /// Computes the maximum height.
-    @Override
-    protected double computeMaxHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return getSkinnable().getOrientation() == Orientation.VERTICAL
-                ? Double.MAX_VALUE
-                : topInset + container.maxHeight(width) + bottomInset;
-    }
-
     /// Lays out the toolbar item slot container.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
@@ -183,118 +156,64 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
         return slot;
     }
 
-    /// Updates container orientation and metrics.
-    private void updateContainerState() {
-        M3Toolbar toolbar = getSkinnable();
-        container.setOrientation(toolbar.getOrientation());
-        container.setDocked(toolbar.getVariant() == M3ToolbarVariant.DOCKED);
-        container.setSpacing(toolbar.getItemSpacing());
-        container.setDockedMaxSpacing(toolbar.getDockedMaxItemSpacing());
-        container.setSlotSize(toolbar.getItemSlotSize());
-    }
-
     /// Layout pane that arranges fixed-size toolbar item slots in one row or column.
     @NotNullByDefault
     private static final class ToolbarPane extends Pane {
-        /// The toolbar item flow orientation.
-        private Orientation orientation = Orientation.HORIZONTAL;
+        /// The toolbar supplying live orientation, variant, and layout tokens.
+        private final M3Toolbar toolbar;
 
-        /// Whether the toolbar uses docked adaptive spacing and centering.
-        private boolean docked;
-
-        /// The spacing between generated item slots.
-        private double spacing;
-
-        /// The preferred maximum spacing between docked toolbar items.
-        private double dockedMaxSpacing;
-
-        /// The minimum generated item slot width and height.
-        private double slotSize;
-
-        /// Returns the toolbar item flow orientation.
-        private Orientation getOrientation() {
-            return orientation;
+        /// Creates a content pane for the supplied toolbar.
+        private ToolbarPane(M3Toolbar toolbar) {
+            this.toolbar = toolbar;
         }
 
-        /// Sets the toolbar item flow orientation.
-        private void setOrientation(Orientation orientation) {
-            if (this.orientation == orientation) {
-                return;
-            }
-            this.orientation = orientation;
-            requestLayout();
-        }
-
-        /// Selects floating or docked layout behavior.
-        private void setDocked(boolean docked) {
-            if (this.docked == docked) {
-                return;
-            }
-            this.docked = docked;
-            requestLayout();
-        }
-
-        /// Sets the spacing between generated item slots.
-        private void setSpacing(double spacing) {
-            if (Double.compare(this.spacing, spacing) == 0) {
-                return;
-            }
-            this.spacing = spacing;
-            requestLayout();
-        }
-
-        /// Sets the preferred maximum spacing between docked toolbar items.
-        private void setDockedMaxSpacing(double dockedMaxSpacing) {
-            if (Double.compare(this.dockedMaxSpacing, dockedMaxSpacing) == 0) {
-                return;
-            }
-            this.dockedMaxSpacing = dockedMaxSpacing;
-            requestLayout();
-        }
-
-        /// Sets the minimum generated item slot width and height.
-        private void setSlotSize(double slotSize) {
-            if (Double.compare(this.slotSize, slotSize) == 0) {
-                return;
-            }
-            this.slotSize = slotSize;
-            requestLayout();
+        /// Returns whether docked spacing and centering apply.
+        private boolean isDocked() {
+            return toolbar.getVariant() == M3ToolbarVariant.DOCKED;
         }
 
         /// Computes the minimum toolbar content width.
         @Override
         protected double computeMinWidth(double height) {
-            return getOrientation() == Orientation.HORIZONTAL ? horizontalLength(true, spacing) : crossLength(true);
+            return toolbar.getOrientation() == Orientation.HORIZONTAL
+                    ? mainAxisLength(true, toolbar.getItemSpacing())
+                    : crossLength(true);
         }
 
         /// Computes the minimum toolbar content height.
         @Override
         protected double computeMinHeight(double width) {
-            return getOrientation() == Orientation.HORIZONTAL ? crossLength(false) : horizontalLength(false, spacing);
+            return toolbar.getOrientation() == Orientation.HORIZONTAL
+                    ? crossLength(false)
+                    : mainAxisLength(false, toolbar.getItemSpacing());
         }
 
         /// Computes the preferred toolbar content width.
         @Override
         protected double computePrefWidth(double height) {
-            double preferredSpacing = docked ? Math.max(spacing, dockedMaxSpacing) : spacing;
-            return getOrientation() == Orientation.HORIZONTAL
-                    ? horizontalLength(true, preferredSpacing)
+            double preferredSpacing = isDocked()
+                    ? Math.max(toolbar.getItemSpacing(), toolbar.getDockedMaxItemSpacing())
+                    : toolbar.getItemSpacing();
+            return toolbar.getOrientation() == Orientation.HORIZONTAL
+                    ? mainAxisLength(true, preferredSpacing)
                     : crossLength(true);
         }
 
         /// Computes the preferred toolbar content height.
         @Override
         protected double computePrefHeight(double width) {
-            double preferredSpacing = docked ? Math.max(spacing, dockedMaxSpacing) : spacing;
-            return getOrientation() == Orientation.HORIZONTAL
+            double preferredSpacing = isDocked()
+                    ? Math.max(toolbar.getItemSpacing(), toolbar.getDockedMaxItemSpacing())
+                    : toolbar.getItemSpacing();
+            return toolbar.getOrientation() == Orientation.HORIZONTAL
                     ? crossLength(false)
-                    : horizontalLength(false, preferredSpacing);
+                    : mainAxisLength(false, preferredSpacing);
         }
 
         /// Lays out item slots in the current orientation.
         @Override
         protected void layoutChildren() {
-            if (getOrientation() == Orientation.HORIZONTAL) {
+            if (toolbar.getOrientation() == Orientation.HORIZONTAL) {
                 layoutHorizontalChildren();
             } else {
                 layoutVerticalChildren();
@@ -307,14 +226,14 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
             int count = children.size();
             double childrenLength = 0.0;
             for (Node child : children) {
-                childrenLength += snapSizeX(Math.max(slotSize, child.prefWidth(-1.0)));
+                childrenLength += snapSizeX(Math.max(toolbar.getItemSlotSize(), child.prefWidth(-1.0)));
             }
             double spacingValue = resolvedSpacing(getWidth(), childrenLength, count, true);
             double groupLength = childrenLength + Math.max(0, count - 1) * spacingValue;
-            double position = docked ? Math.max(0.0, (getWidth() - groupLength) / 2.0) : 0.0;
+            double position = isDocked() ? Math.max(0.0, (getWidth() - groupLength) / 2.0) : 0.0;
             for (Node child : children) {
-                double width = snapSizeX(Math.max(slotSize, child.prefWidth(-1.0)));
-                double height = snapSizeY(Math.max(slotSize, child.prefHeight(width)));
+                double width = snapSizeX(Math.max(toolbar.getItemSlotSize(), child.prefWidth(-1.0)));
+                double height = snapSizeY(Math.max(toolbar.getItemSlotSize(), child.prefHeight(width)));
                 child.resizeRelocate(
                         snapPositionX(position),
                         Math.max(0.0, snapPositionY((getHeight() - height) / 2.0)),
@@ -331,14 +250,14 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
             int count = children.size();
             double childrenLength = 0.0;
             for (Node child : children) {
-                childrenLength += snapSizeY(Math.max(slotSize, child.prefHeight(-1.0)));
+                childrenLength += snapSizeY(Math.max(toolbar.getItemSlotSize(), child.prefHeight(-1.0)));
             }
             double spacingValue = resolvedSpacing(getHeight(), childrenLength, count, false);
             double groupLength = childrenLength + Math.max(0, count - 1) * spacingValue;
-            double position = docked ? Math.max(0.0, (getHeight() - groupLength) / 2.0) : 0.0;
+            double position = isDocked() ? Math.max(0.0, (getHeight() - groupLength) / 2.0) : 0.0;
             for (Node child : children) {
-                double width = snapSizeX(Math.max(slotSize, child.prefWidth(-1.0)));
-                double height = snapSizeY(Math.max(slotSize, child.prefHeight(width)));
+                double width = snapSizeX(Math.max(toolbar.getItemSlotSize(), child.prefWidth(-1.0)));
+                double height = snapSizeY(Math.max(toolbar.getItemSlotSize(), child.prefHeight(width)));
                 child.resizeRelocate(
                         Math.max(0.0, snapPositionX((getWidth() - width) / 2.0)),
                         snapPositionY(position),
@@ -351,22 +270,24 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
 
         /// Resolves fixed floating spacing or adaptive docked spacing for the available main-axis length.
         private double resolvedSpacing(double availableLength, double childrenLength, int count, boolean horizontal) {
-            double minimum = horizontal ? snapSpaceX(spacing) : snapSpaceY(spacing);
-            if (!docked || count < 2) {
+            double minimum = horizontal ? snapSpaceX(toolbar.getItemSpacing()) : snapSpaceY(toolbar.getItemSpacing());
+            if (!isDocked() || count < 2) {
                 return minimum;
             }
-            double maximum = horizontal ? snapSpaceX(dockedMaxSpacing) : snapSpaceY(dockedMaxSpacing);
+            double maximum = horizontal
+                    ? snapSpaceX(toolbar.getDockedMaxItemSpacing())
+                    : snapSpaceY(toolbar.getDockedMaxItemSpacing());
             double availableSpacing = (availableLength - childrenLength) / (count - 1);
             return Math.max(minimum, Math.min(maximum, availableSpacing));
         }
 
         /// Returns the total length along the toolbar item flow axis.
-        private double horizontalLength(boolean widthAxis, double spacingValue) {
+        private double mainAxisLength(boolean widthAxis, double spacingValue) {
             double total = 0.0;
             int count = 0;
             for (Node child : getManagedChildren()) {
                 double preferred = widthAxis ? child.prefWidth(-1.0) : child.prefHeight(-1.0);
-                total += Math.max(slotSize, preferred);
+                total += Math.max(toolbar.getItemSlotSize(), preferred);
                 count++;
             }
             return total + Math.max(0, count - 1) * spacingValue;
@@ -374,7 +295,7 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
 
         /// Returns the maximum item length on the toolbar cross axis.
         private double crossLength(boolean widthAxis) {
-            double maximum = slotSize;
+            double maximum = toolbar.getItemSlotSize();
             for (Node child : getManagedChildren()) {
                 double preferred = widthAxis ? child.prefWidth(-1.0) : child.prefHeight(-1.0);
                 maximum = Math.max(maximum, preferred);

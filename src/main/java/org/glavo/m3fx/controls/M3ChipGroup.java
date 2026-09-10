@@ -14,7 +14,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -40,12 +39,15 @@ import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /// A Material Design 3 wrapping container that coordinates chip selection.
 ///
@@ -211,7 +213,7 @@ public final class M3ChipGroup extends Control {
                         set(M3SelectionMode.MULTIPLE);
                         return;
                     }
-                    enforceSelectionPolicy();
+                    refreshSelectedChips();
                 }
             };
 
@@ -325,7 +327,7 @@ public final class M3ChipGroup extends Control {
     private final @UnmodifiableView ObservableList<M3SelectableChip> selectedChipsView =
             FXCollections.unmodifiableObservableList(selectedChips);
 
-    /// Reusable storage for computing selected chips without allocating on every refresh.
+    /// Reusable storage for selected candidates during reconciliation.
     private final List<M3SelectableChip> selectedChipsScratch = new ArrayList<>();
 
     /// Handles selected-state invalidation for every installed chip.
@@ -337,29 +339,51 @@ public final class M3ChipGroup extends Control {
     };
 
     /// Handles reachability invalidation for every installed chip.
-    private final InvalidationListener reachabilityInvalidation = observable -> {
-        if (observable instanceof ReadOnlyProperty<?> property
-                && property.getBean() instanceof M3SelectableChip chip) {
-            handleChipReachabilityChanged(chip);
-        }
-    };
+    private final InvalidationListener reachabilityInvalidation =
+            observable -> handleChipReachabilityChanged();
 
-    /// Updates chip listeners and selection when children change.
-    private final ListChangeListener<M3Chip> childrenListener = change -> {
-        while (change.next()) {
-            for (M3Chip child : change.getRemoved()) {
-                if (child instanceof M3SelectableChip chip) {
-                    uninstallChip(chip);
-                    chip.setSelected(false);
-                }
-            }
-            for (M3Chip child : change.getAddedSubList()) {
-                if (child instanceof M3SelectableChip chip) {
-                    installChip(chip);
-                }
+    /// Counts item-list notifications to detect stale traversal snapshots.
+    private long itemsRevision;
+
+    /// The most recent item snapshot used to reconcile listener registrations.
+    private @Unmodifiable List<M3Chip> observedItems = List.of();
+
+    /// Updates chip listeners and selection from actual membership, including nested list mutations.
+    private final InvalidationListener childrenListener = observable -> {
+        itemsRevision++;
+        Set<M3Chip> addedItems = Collections.newSetFromMap(new IdentityHashMap<>());
+        addedItems.addAll(getItems());
+        List<M3Chip> removed = new ArrayList<>();
+        for (M3Chip child : observedItems) {
+            if (!addedItems.remove(child)) {
+                removed.add(child);
             }
         }
-        enforceSelectionPolicy();
+        List<M3Chip> added = new ArrayList<>();
+        for (M3Chip child : getItems()) {
+            if (addedItems.contains(child)) {
+                added.add(child);
+            }
+        }
+        // Nested notifications must compare against the membership being installed here.
+        observedItems = List.copyOf(getItems());
+        for (M3Chip child : removed) {
+            if (child instanceof M3SelectableChip chip) {
+                uninstallChip(chip);
+            }
+        }
+        for (M3Chip child : added) {
+            if (child instanceof M3SelectableChip chip) {
+                installChip(chip);
+            }
+        }
+        // Finish registration changes before deselection callbacks can remove or reinstall added items.
+        for (M3Chip child : removed) {
+            if (child instanceof M3SelectableChip chip) {
+                chip.setSelected(false);
+            }
+        }
+        refreshSelectedChips();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         M3Accessible.notifyFocusNodeChanged(this);
@@ -369,11 +393,15 @@ public final class M3ChipGroup extends Control {
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
 
+    /// Whether a state change requires another selection reconciliation pass.
+    private boolean selectionRefreshPending;
+
     /// Returns the live list of chips displayed by this group.
     ///
     /// Changes to the returned list are reflected immediately. The list preserves insertion order and rejects
     /// `null` elements or repeated occurrences of the same chip instance. Bulk mutations are validated before the
     /// list changes.
+    /// Replacing the contents preserves the selection of retained chips, subject to the selection policy.
     ///
     /// @return the live, mutable chip list
     public final ObservableList<M3Chip> getItems() {
@@ -738,20 +766,22 @@ public final class M3ChipGroup extends Control {
             return;
         }
 
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (M3Chip child : getItems()) {
+            long revision = itemsRevision;
+            for (M3Chip child : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(child)) {
+                    continue;
+                }
                 if (child instanceof M3SelectableChip chip && isSelectableChip(chip)) {
                     chip.setSelected(M3Accessible.containsSelectionTarget(chip, parameters));
                 }
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedChips();
-        if (!isAllowEmptySelection()) {
-            selectFirstChipIfNeeded();
-        }
     }
 
     /// Installs a selected-state listener on a chip.
@@ -771,16 +801,12 @@ public final class M3ChipGroup extends Control {
     /// Keeps chip selected states consistent with the current group policy.
     private void handleChipSelectedChanged(M3SelectableChip chip, boolean selected) {
         if (updatingSelection) {
+            selectionRefreshPending = true;
             return;
         }
 
         if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableChip(chip)) {
-            if (selected) {
-                setChipSelected(chip, false);
-                if (!isAllowEmptySelection()) {
-                    selectFirstChipIfNeeded();
-                }
-            }
+            refreshSelectedChips();
             return;
         }
 
@@ -797,35 +823,13 @@ public final class M3ChipGroup extends Control {
         }
 
         refreshSelectedChips();
-        if (!isAllowEmptySelection()) {
-            selectFirstChipIfNeeded();
-        }
     }
 
     /// Keeps selection and accessibility state consistent when a chip becomes unreachable.
-    private void handleChipReachabilityChanged(M3SelectableChip chip) {
-        if (chip.isSelected() && !isSelectableChip(chip)) {
-            setChipSelected(chip, false);
-        }
-        enforceSelectionPolicy();
+    private void handleChipReachabilityChanged() {
+        refreshSelectedChips();
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-    }
-
-    /// Enforces single selection and non-empty selection invariants.
-    private void enforceSelectionPolicy() {
-        refreshSelectedChips();
-        if (getSelectionMode() == M3SelectionMode.NONE) {
-            selectOnly(null);
-            return;
-        }
-        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedChips.size() > 1) {
-            selectOnly(selectedChips.get(0));
-            return;
-        }
-        if (!isAllowEmptySelection()) {
-            selectFirstChipIfNeeded();
-        }
     }
 
     /// Selects the first chip when the selection is empty and empty selection is disabled.
@@ -848,52 +852,84 @@ public final class M3ChipGroup extends Control {
 
     /// Sets one chip's selected state without refreshing the aggregate selected chip list.
     private void setChipSelectedWithoutRefresh(M3SelectableChip chip, boolean selected) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
             chip.setSelected(selected);
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
     }
 
     /// Selects one chip and clears selection from the remaining chips.
     private void selectOnly(@Nullable M3SelectableChip chip) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (M3Chip child : getItems()) {
+            long revision = itemsRevision;
+            for (M3Chip child : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(child)) {
+                    continue;
+                }
                 if (child instanceof M3SelectableChip item) {
                     item.setSelected(item == chip);
                 }
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedChips();
     }
 
-    /// Refreshes the selected chip list from current child states.
+    /// Reconciles selection policy and published views, repeating after changes made by listeners.
     private void refreshSelectedChips() {
-        selectedChipsScratch.clear();
-        for (M3Chip child : getItems()) {
-            if (child instanceof M3SelectableChip chip && chip.isSelected()) {
-                if (isSelectableChip(chip)) {
-                    selectedChipsScratch.add(chip);
-                } else {
-                    setChipSelectedWithoutRefresh(chip, false);
+        if (updatingSelection) {
+            selectionRefreshPending = true;
+            return;
+        }
+        updatingSelection = true;
+        try {
+            do {
+                selectionRefreshPending = false;
+                selectedChipsScratch.clear();
+                long revision = itemsRevision;
+                for (M3Chip child : List.copyOf(getItems())) {
+                    if (revision != itemsRevision && !getItems().contains(child)) {
+                        continue;
+                    }
+                    if (child instanceof M3SelectableChip button && button.isSelected()) {
+                        if (getSelectionMode() != M3SelectionMode.NONE && isSelectableChip(button)
+                                && (getSelectionMode() == M3SelectionMode.MULTIPLE || selectedChipsScratch.isEmpty())) {
+                            selectedChipsScratch.add(button);
+                        } else {
+                            setChipSelectedWithoutRefresh(button, false);
+                        }
+                    }
                 }
-            }
-        }
-        boolean selectionChanged = !selectedChips.equals(selectedChipsScratch);
-        if (selectionChanged) {
-            selectedChips.setAll(selectedChipsScratch);
-        }
-        selectedChipsScratch.clear();
-
-        selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
-        if (selectionChanged) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            M3Accessible.notifyFocusNodeChanged(this);
-            focusNotifier.refresh();
+                if (selectedChipsScratch.isEmpty() && !isAllowEmptySelection()
+                        && getSelectionMode() != M3SelectionMode.NONE) {
+                    @Nullable M3SelectableChip first = firstChip();
+                    if (first != null && isSelectableChip(first)) {
+                        setChipSelectedWithoutRefresh(first, true);
+                    }
+                }
+                if (selectionRefreshPending) {
+                    continue;
+                }
+                boolean selectionChanged = !selectedChips.equals(selectedChipsScratch);
+                if (selectionChanged) {
+                    selectedChips.setAll(selectedChipsScratch);
+                }
+                selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
+                if (selectionChanged) {
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+                    M3Accessible.notifyFocusNodeChanged(this);
+                    focusNotifier.refresh();
+                }
+            } while (selectionRefreshPending);
+        } finally {
+            selectedChipsScratch.clear();
+            updatingSelection = false;
         }
     }
 

@@ -8,6 +8,7 @@ import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.SubScene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -16,6 +17,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -33,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /// Verifies popup lifecycle behavior when owners leave the reachable scene graph.
 @NotNullByDefault
@@ -107,6 +110,43 @@ final class M3PopupReachabilityTest {
                 dateField.hidePicker();
                 subMenuItem.hideSubMenu();
                 menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Closes a menu when its SubScene becomes hidden and native visibility is available.
+    @Test
+    void menuClosesWhenSubSceneBecomesHidden() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
+            StackPane content = new StackPane(menuButton);
+            SubScene subScene = new SubScene(content, 300.0, 100.0);
+            StackPane root = new StackPane(subScene);
+            Scene scene = new Scene(root, 300.0, 100.0);
+            subScene.setVisible(false);
+            assumeTrue(!M3PresentationActivity.isTreeVisible(menuButton),
+                    "JavaFX does not expose visibility across the SubScene boundary");
+            subScene.setVisible(true);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setReducedMotionRequested(menuButton, true);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                content.applyCss();
+                content.layout();
+
+                assertPopupHidesAfterReachabilityChange(root, menuButton,
+                        menuButton::showMenu, menuButton::isShowing,
+                        () -> subScene.setVisible(false), "Menu", "SubScene becomes hidden");
+                subScene.setVisible(true);
+                assertPopupHidesAfterReachabilityChange(root, menuButton,
+                        menuButton::showMenu, menuButton::isShowing,
+                        () -> subScene.setDisable(true), "Menu", "SubScene becomes disabled");
+            } finally {
                 stage.close();
             }
         });

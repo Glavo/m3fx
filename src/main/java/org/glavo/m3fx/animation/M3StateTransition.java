@@ -312,7 +312,8 @@ public final class M3StateTransition<S> {
     ///
     /// The target function is evaluated immediately for the current target state. If the transition is idle, the
     /// property is set to that target synchronously. If an automatic run or seek is active, all channels are
-    /// reconfigured together from their defined starts. A property may be registered only once by identity.
+    /// reconfigured together from their defined starts, retaining their previously accepted targets. Only the new
+    /// channel's target function is evaluated. A property may be registered only once by identity.
     ///
     /// The visibility threshold is expressed in the property's units and determines when physical springs are
     /// considered settled. It does not round, clamp, or otherwise alter the exact final value.
@@ -323,7 +324,7 @@ public final class M3StateTransition<S> {
     /// @throws NullPointerException     if `value` or `targetValue` is `null`
     /// @throws IllegalArgumentException if the property is already registered, the threshold is invalid, or a
     ///                                  current or target value is not finite
-    /// @throws IllegalStateException    if `value` is bound
+    /// @throws IllegalStateException    if `value` is bound, or an existing channel is bound during playback or seeking
     public void addDouble(
             DoubleProperty value,
             ToDoubleFunction<? super S> targetValue,
@@ -346,7 +347,7 @@ public final class M3StateTransition<S> {
     /// @throws NullPointerException     if an argument is `null`
     /// @throws IllegalArgumentException if the property is already registered, the threshold is invalid, or a
     ///                                  current or target value is not finite
-    /// @throws IllegalStateException    if `value` is bound
+    /// @throws IllegalStateException    if `value` is bound, or an existing channel is bound during playback or seeking
     public void addDouble(
             DoubleProperty value,
             ToDoubleFunction<? super S> targetValue,
@@ -390,7 +391,8 @@ public final class M3StateTransition<S> {
     /// The converter determines the fixed component count, ordering, and spring visibility thresholds. Current and
     /// target values must be non-null, and every decomposed component must be finite. Component arrays and scalar
     /// channels are allocated once during registration; only the converter's reconstructed immutable value may be
-    /// allocated on an animation pulse.
+    /// allocated on an animation pulse. Registration follows the same active-run behavior as
+    /// [#addDouble(DoubleProperty, ToDoubleFunction, double)]: existing channel targets are retained.
     ///
     /// @param value       the writable non-null property updated by animation pulses or seeks
     /// @param targetValue the deterministic function mapping a state to a non-null target value
@@ -399,7 +401,7 @@ public final class M3StateTransition<S> {
     /// @throws NullPointerException     if an argument, current value, target value, or reconstructed value is `null`
     /// @throws IllegalArgumentException if the property is already registered, the converter has no components, or
     ///                                  a component or visibility threshold violates its finite-value contract
-    /// @throws IllegalStateException    if `value` is bound
+    /// @throws IllegalStateException    if `value` is bound, or an existing channel is bound during playback or seeking
     public <T> void addValue(
             Property<T> value,
             Function<? super S, ? extends T> targetValue,
@@ -423,7 +425,7 @@ public final class M3StateTransition<S> {
     ///                                  `null`
     /// @throws IllegalArgumentException if the property is already registered, the converter has no components, or
     ///                                  a component or visibility threshold violates its finite-value contract
-    /// @throws IllegalStateException    if `value` is bound
+    /// @throws IllegalStateException    if `value` is bound, or an existing channel is bound during playback or seeking
     public <T> void addValue(
             Property<T> value,
             Function<? super S, ? extends T> targetValue,
@@ -466,20 +468,25 @@ public final class M3StateTransition<S> {
     /// Removes the channel associated with a writable property.
     ///
     /// The removed property retains its current value and is not modified again. Remaining channels are reconfigured
-    /// from their current automatic values or retained seek starts. If the last channel is removed, the typed state
+    /// from their current automatic values or retained seek starts toward their previously accepted targets. No
+    /// target function is evaluated. Remaining properties are checked before the registration is removed, so a bound
+    /// or invalid remaining property leaves the registration intact. If the last channel is removed, the typed state
     /// settles synchronously without changing the removed property.
     ///
     /// @param value the property whose channel should be removed
     /// @return `true` if an identity-equal registered property was removed; otherwise `false`
-    /// @throws NullPointerException  if `value` is `null`
-    /// @throws IllegalStateException if another registered property is bound while channels must be reconfigured
+    /// @throws NullPointerException     if `value` is `null`, or another registered value property contains `null`
+    ///                                  while channels must be reconfigured
+    /// @throws IllegalStateException    if another registered property is bound while channels must be reconfigured
+    /// @throws IllegalArgumentException if another registered property has an invalid component while channels must
+    ///                                  be reconfigured
     public boolean removeChannel(Property<?> value) {
         Property<?> checkedValue = Objects.requireNonNull(value, "value");
         for (int index = 0; index < channels.size(); index++) {
             if (channels.get(index).owns(checkedValue)) {
                 boolean running = isRunning();
-                if (running) {
-                    prepareTargets(getTargetState());
+                if (running || isSeeking()) {
+                    validateChannelValues(index);
                 }
                 channels.remove(index);
                 if (channels.isEmpty()) {
@@ -616,8 +623,10 @@ public final class M3StateTransition<S> {
 
     /// Adds a channel after its current and target values have been validated.
     private void addPreparedChannel(Channel<S> channel) {
+        if (isRunning() || isSeeking()) {
+            validateChannelValues(-1);
+        }
         if (isRunning()) {
-            prepareTargets(getTargetState());
             channel.prepareMotionSpec(resolveMotionSpec(), activeInitialState, activeTargetState);
             channels.add(channel);
             animation.retarget();
@@ -823,6 +832,16 @@ public final class M3StateTransition<S> {
         //noinspection ForLoopReplaceableByForEach
         for (int index = 0; index < channels.size(); index++) {
             channels.get(index).requireWritable();
+        }
+    }
+
+    /// Validates retained channel values before changing registrations; `-1` excludes no channel.
+    private void validateChannelValues(int excludedIndex) {
+        //noinspection ForLoopReplaceableByForEach
+        for (int index = 0; index < channels.size(); index++) {
+            if (index != excludedIndex) {
+                channels.get(index).validateCurrent();
+            }
         }
     }
 

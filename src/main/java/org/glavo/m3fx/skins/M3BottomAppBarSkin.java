@@ -96,18 +96,6 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         return leftInset + computeContentWidth(height, true) + rightInset;
     }
 
-    /// Computes the minimum height from the Material container height token.
-    @Override
-    protected double computeMinHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + getSkinnable().getContainerHeight() + bottomInset;
-    }
-
     /// Computes the preferred width needed by the action and floating action slots.
     @Override
     protected double computePrefWidth(
@@ -120,18 +108,6 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         return leftInset + computeContentWidth(height, false) + rightInset;
     }
 
-    /// Computes the preferred height from the Material container height token.
-    @Override
-    protected double computePrefHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + getSkinnable().getContainerHeight() + bottomInset;
-    }
-
     /// Computes the maximum width.
     @Override
     protected double computeMaxWidth(
@@ -142,18 +118,6 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double leftInset
     ) {
         return Double.MAX_VALUE;
-    }
-
-    /// Computes the maximum height from the Material container height token.
-    @Override
-    protected double computeMaxHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + getSkinnable().getContainerHeight() + bottomInset;
     }
 
     /// Lays out the action and floating action slots using full app bar geometry.

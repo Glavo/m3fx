@@ -100,6 +100,7 @@ import org.glavo.m3fx.tokens.M3TokenSet;
 import org.glavo.monetfx.Brightness;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -107,6 +108,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.glavo.m3fx.M3TestControls.*;
@@ -1044,6 +1046,54 @@ final class M3ThemeTest {
         M3ThemeManager.uninstall(root);
     }
 
+    /// Verifies that scene overrides suspend borrowed local CSS and restore its order without taking ownership.
+    @Test
+    void sceneThemeSuspendsPreexistingLocalStylesheet() throws Exception {
+        String beforeStylesheet = temporaryStylesheet(".app-before { -fx-padding: 1px; }");
+        String afterStylesheet = temporaryStylesheet(".app-after { -fx-padding: 2px; }");
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            Pane root = new Pane(button);
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+            M3Theme localTheme = M3Theme.fromTokenSet(M3TokenSet.builder(
+                    M3Profile.BASELINE_2021, sceneTheme.colorScheme(), M3Density.of(2.0)
+            ).build());
+            String localStylesheet = M3ThemeRuntime.themeStylesheetUrl(localTheme);
+            @Unmodifiable List<String> originalStylesheets = List.of(beforeStylesheet, localStylesheet, afterStylesheet);
+            root.getStylesheets().setAll(originalStylesheets);
+            M3ThemeManager.install(root, localTheme);
+            Scene scene = new Scene(root);
+            root.applyCss();
+            assertEquals(localTheme.tokens().componentTokens().filledButton().height(),
+                    button.getContainerHeight(), 0.0001);
+
+            M3ThemeManager.install(scene, sceneTheme);
+            root.applyCss();
+            assertSame(sceneTheme, M3ThemeManager.getTheme(root));
+            assertEquals(sceneTheme.tokens().componentTokens().filledButton().height(),
+                    button.getContainerHeight(), 0.0001);
+            assertEquals(List.of(beforeStylesheet, afterStylesheet), root.getStylesheets());
+
+            scene.setRoot(new Pane());
+            assertSame(localTheme, M3ThemeManager.getTheme(root));
+            assertEquals(originalStylesheets, root.getStylesheets());
+
+            scene.setRoot(root);
+            root.applyCss();
+            assertEquals(sceneTheme.tokens().componentTokens().filledButton().height(),
+                    button.getContainerHeight(), 0.0001);
+            M3ThemeManager.uninstall(scene);
+            root.applyCss();
+            assertSame(localTheme, M3ThemeManager.getTheme(root));
+            assertEquals(localTheme.tokens().componentTokens().filledButton().height(),
+                    button.getContainerHeight(), 0.0001);
+            assertEquals(originalStylesheets, root.getStylesheets());
+
+            M3ThemeManager.uninstall(root);
+            assertEquals(originalStylesheets, root.getStylesheets());
+        });
+    }
+
     /// Verifies that scene ownership coordinates local theme updates on the same root.
     @Test
     void sceneThemeCoordinatesLocalThemeMutationOnManagedRoot() {
@@ -1507,8 +1557,8 @@ final class M3ThemeTest {
         assertEquals(8.0, fabMenu.getCloseSpacing(), 0.0001);
         assertEquals(16.0, groupedButton.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
-        assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
-        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).minWidth(-1.0), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).prefWidth(-1.0), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
@@ -1645,17 +1695,17 @@ final class M3ThemeTest {
         assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.SMALL);
         root.applyCss();
-        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(40.0, avatar.getContainerSize(), 0.0001);
@@ -1697,8 +1747,8 @@ final class M3ThemeTest {
         assertEquals(24.0, groupedButton.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, splitButtonActionButton(splitButton).getPadding().getLeft(), 0.0001);
         assertEquals(12.0, splitButtonActionButton(splitButton).getPadding().getRight(), 0.0001);
-        assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
-        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).minWidth(-1.0), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).prefWidth(-1.0), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
@@ -1811,17 +1861,17 @@ final class M3ThemeTest {
         assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
-        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
-        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(40.0, avatar.getContainerSize(), 0.0001);
@@ -1893,7 +1943,7 @@ final class M3ThemeTest {
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
         assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
         assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(48.0, loadingIndicator.getPrefWidth(), 0.0001);
+        assertEquals(48.0, loadingIndicator.prefWidth(-1.0), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply internal layout tokens.

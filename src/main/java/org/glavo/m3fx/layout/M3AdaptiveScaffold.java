@@ -54,6 +54,10 @@ import java.util.Objects;
 /// single-pane layout. Explicit fixed, split, and three-pane layouts remain in force across breakpoints while their
 /// required slots are populated; empty slots cause the effective layout to collapse as described by [M3PaneLayout].
 ///
+/// Effective properties and CSS pseudo-classes are updated synchronously. Listeners may change layout requests
+/// during notification; those changes are processed before the outermost state update returns. Notifications for
+/// individual effective properties are not an atomic snapshot of all derived state.
+///
 /// ```java
 /// M3AdaptiveScaffold scaffold = new M3AdaptiveScaffold();
 /// scaffold.setTopBar(new M3TopAppBar("Inbox"));
@@ -801,6 +805,12 @@ public final class M3AdaptiveScaffold extends Control {
     /// @defaultValue `0`
     private final ReadOnlyIntegerWrapper visiblePaneCount = new ReadOnlyIntegerWrapper(this, "visiblePaneCount");
 
+    /// Whether effective state is currently being recomputed and published to listeners.
+    private boolean updatingAdaptiveState;
+
+    /// Whether a request changed while an effective-state update was being published.
+    private boolean adaptiveStateUpdatePending;
+
     /// Returns the number of pane slots currently participating in layout.
     ///
     /// @return the visible pane count from zero through three
@@ -1053,13 +1063,30 @@ public final class M3AdaptiveScaffold extends Control {
         };
     }
 
-    /// Recomputes the effective breakpoint, pane layout, navigation layout, and pseudo-class state.
+    /// Processes state changes synchronously, deferring listener-driven requests until the current pass finishes.
     private void updateAdaptiveState() {
+        adaptiveStateUpdatePending = true;
+        if (updatingAdaptiveState) {
+            return;
+        }
+        updatingAdaptiveState = true;
+        try {
+            do {
+                adaptiveStateUpdatePending = false;
+                recomputeAdaptiveState();
+            } while (adaptiveStateUpdatePending);
+        } finally {
+            updatingAdaptiveState = false;
+        }
+    }
+
+    /// Recomputes the effective breakpoint, pane layout, navigation layout, and pseudo-class state once.
+    private void recomputeAdaptiveState() {
         M3PaneLayout previousPaneLayout = getEffectivePaneLayout();
         M3NavigationLayout previousNavigationLayout = getEffectiveNavigationLayout();
         int previousPaneCount = getVisiblePaneCount();
 
-        M3Breakpoint nextBreakpoint = getBreakpointOverride();
+        @Nullable M3Breakpoint nextBreakpoint = getBreakpointOverride();
         if (nextBreakpoint == null) {
             nextBreakpoint = M3Breakpoint.forWidth(Math.max(0.0, getWidth()));
         }

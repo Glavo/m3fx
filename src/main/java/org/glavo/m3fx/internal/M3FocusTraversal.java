@@ -47,7 +47,7 @@ public final class M3FocusTraversal {
     /// @param owner          the container that owns traversal and reveals the selected target
     /// @param event          the key event to handle
     /// @param focusableItems the candidate targets in traversal order
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when the focus request succeeded and the event was consumed
     /// @throws NullPointerException if any argument is `null`
     public static boolean handleHorizontalKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
         return handleDirectionalKeyFocus(owner, event, focusableItems, true, false);
@@ -60,7 +60,7 @@ public final class M3FocusTraversal {
     /// @param focusableItems    the candidate targets in traversal order
     /// @param horizontalEnabled whether horizontal arrows are handled
     /// @param verticalEnabled   whether vertical arrows and page keys are handled
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when the focus request succeeded and the event was consumed
     /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
@@ -83,7 +83,7 @@ public final class M3FocusTraversal {
     /// @param horizontalEnabled    whether horizontal arrows are handled
     /// @param verticalEnabled      whether vertical arrows and page keys are handled
     /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when the focus request succeeded and the event was consumed
     /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
@@ -113,7 +113,7 @@ public final class M3FocusTraversal {
     /// @param verticalEnabled      whether vertical arrows and page keys are handled
     /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
     /// @param wrap                 whether arrow traversal wraps at the first and last target
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when the focus request succeeded and the event was consumed
     /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
@@ -139,8 +139,9 @@ public final class M3FocusTraversal {
     /// Handles directional keyboard traversal with an explicit event target fallback.
     ///
     /// Disabled, invisible, detached, and duplicate targets are ignored. Horizontal movement follows the owner's
-    /// effective node orientation. Home and End select the first and last reachable target; Page Up and Page Down
-    /// move by an estimated viewport page when vertical traversal is enabled.
+    /// effective node orientation. Home and End select the first and last reachable target when either axis is
+    /// enabled; Page Up and Page Down move by an estimated viewport page when vertical traversal is enabled.
+    /// Keys outside the enabled axes leave focus and event consumption unchanged.
     ///
     /// @param owner                the container that owns traversal and reveals the selected target
     /// @param event                the key event to handle
@@ -150,7 +151,7 @@ public final class M3FocusTraversal {
     /// @param fallbackFocusedIndex the caller's best known focused index, or a negative value for none
     /// @param wrap                 whether arrow traversal wraps at the first and last target
     /// @param eventTarget          the event endpoint used when scene focus cannot identify an anchor, or `null`
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when the focus request succeeded and the event was consumed
     /// @throws NullPointerException if `owner`, `event`, or `focusableItems` is `null`
     public static boolean handleDirectionalKeyFocus(
             Node owner,
@@ -165,7 +166,8 @@ public final class M3FocusTraversal {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(focusableItems, "focusableItems");
-        if (M3KeyEvents.hasNavigationModifier(event)) {
+        if (M3KeyEvents.hasNavigationModifier(event)
+                || !isNavigationKeyForEnabledAxis(event.getCode(), horizontalEnabled, verticalEnabled)) {
             return false;
         }
         if (consumeNavigationKeyIfFocusOwnerInsideTextInput(owner, event, horizontalEnabled, verticalEnabled)) {
@@ -178,8 +180,6 @@ public final class M3FocusTraversal {
                 eventTarget,
                 event.getCode(),
                 reachableFocusItems,
-                horizontalEnabled,
-                verticalEnabled,
                 normalizedFallbackIndex(focusableItems, reachableFocusItems, fallbackFocusedIndex),
                 wrap
         );
@@ -653,14 +653,12 @@ public final class M3FocusTraversal {
         };
     }
 
-    /// Returns the focus target selected by a directional navigation key.
+    /// Returns the focus target for a key already accepted by the enabled-axis check.
     private static @Nullable Node directionalTarget(
             Node owner,
             @Nullable Node eventTarget,
             KeyCode keyCode,
             List<Node> focusableItems,
-            boolean horizontalEnabled,
-            boolean verticalEnabled,
             int fallbackFocusedIndex,
             boolean wrap
     ) {
@@ -676,14 +674,12 @@ public final class M3FocusTraversal {
         return switch (keyCode) {
             case HOME -> focusableItems.get(0);
             case END -> focusableItems.get(focusableItems.size() - 1);
-            case LEFT ->
-                    horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, false, wrap) : null;
-            case RIGHT ->
-                    horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, true, wrap) : null;
-            case UP -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, false, wrap) : null;
-            case DOWN -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, true, wrap) : null;
-            case PAGE_UP -> verticalEnabled ? pageTarget(owner, focusableItems, focusedIndex, false) : null;
-            case PAGE_DOWN -> verticalEnabled ? pageTarget(owner, focusableItems, focusedIndex, true) : null;
+            case LEFT -> horizontalArrowTarget(owner, focusableItems, focusedIndex, false, wrap);
+            case RIGHT -> horizontalArrowTarget(owner, focusableItems, focusedIndex, true, wrap);
+            case UP -> verticalArrowTarget(focusableItems, focusedIndex, false, wrap);
+            case DOWN -> verticalArrowTarget(focusableItems, focusedIndex, true, wrap);
+            case PAGE_UP -> pageTarget(owner, focusableItems, focusedIndex, false);
+            case PAGE_DOWN -> pageTarget(owner, focusableItems, focusedIndex, true);
             default -> null;
         };
     }
@@ -728,10 +724,9 @@ public final class M3FocusTraversal {
             return focusableItems.get(forward ? 0 : focusableItems.size() - 1);
         }
 
-        int step = pageStep(owner, focusableItems);
-        int targetIndex = focusedIndex + (forward ? step : -step);
-        targetIndex = Math.max(0, Math.min(focusableItems.size() - 1, targetIndex));
-        return focusableItems.get(targetIndex);
+        int available = forward ? focusableItems.size() - 1 - focusedIndex : focusedIndex;
+        int step = Math.min(pageStep(owner, focusableItems), available);
+        return focusableItems.get(focusedIndex + (forward ? step : -step));
     }
 
     /// Returns the page-navigation step for an owner and its focus targets.

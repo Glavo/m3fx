@@ -16,8 +16,12 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -247,6 +251,10 @@ final class M3TextInputMotionTest {
         ));
 
         try {
+            // Sample cutout geometry over a broad interval without depending on the default spring's frame timing.
+            FxTestUtils.setMotionScheme(scene.root, M3MotionScheme.builder()
+                    .fastSpatial(M3MotionSpec.of(Duration.seconds(1.0), M3MotionEasing.LINEAR))
+                    .build());
             FxTestUtils.runOnFxThreadWhen(
                     () -> {
                         double progress = floatingProgress(renderedScale(scene.label), expandedScale);
@@ -276,6 +284,7 @@ final class M3TextInputMotionTest {
                     )
             );
         } finally {
+            FxTestUtils.clearMotionScheme(scene.root);
             scene.close();
         }
     }

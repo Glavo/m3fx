@@ -21,6 +21,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3LoadingIndicatorSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,10 @@ import java.util.Objects;
 /// The default variant draws the active shape alone; [M3LoadingIndicatorVariant#CONTAINED] places it in a
 /// contrasting container. The control does not accept or infer a progress value. Use [M3ProgressBar] or
 /// [M3ProgressIndicator] when progress can be measured.
+///
+/// The container-size token supplies the computed minimum and preferred width and height, including insets,
+/// even before a skin is installed. Explicit minimum, preferred, and maximum dimensions and their bindings are
+/// preserved when tokens change. Set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// The indeterminate animation follows [org.glavo.m3fx.animation.M3MotionSettings]. When reduced motion is
 /// requested, the control keeps a simpler rotating affordance so an indeterminate operation still communicates
@@ -106,7 +111,7 @@ public final class M3LoadingIndicator extends Control {
 
     /// The square container size, in logical pixels.
     ///
-    /// The value must be finite and non-negative. It determines the control's minimum and preferred dimensions and
+    /// The value must be finite and non-negative. It determines the computed minimum and preferred dimensions and
     /// is styleable through `-m3-container-size`.
     ///
     /// @defaultValue `48.0`
@@ -140,7 +145,7 @@ public final class M3LoadingIndicator extends Control {
                     this,
                     "containerSize",
                     StyleableProperties.CONTAINER_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerSize;
@@ -191,13 +196,13 @@ public final class M3LoadingIndicator extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for `M3LoadingIndicator`
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -236,15 +241,30 @@ public final class M3LoadingIndicator extends Control {
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, false);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = getContainerSize();
-        setMinSize(size, size);
-        setPrefSize(size, size);
-        setMaxSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
+    /// Computes the minimum loading indicator width from its size tokens.
+    @Override
+    protected double computeMinWidth(double height) {
+        return computePrefWidth(height);
+    }
+
+    /// Computes the minimum loading indicator height from its size tokens.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred loading indicator width from its size tokens.
+    @Override
+    protected double computePrefWidth(double height) {
+        return getContainerSize();
+    }
+
+    /// Computes the preferred loading indicator height from its size tokens.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerSize();
     }
 
     /// CSS metadata for M3FX loading indicator component tokens.
@@ -283,7 +303,7 @@ public final class M3LoadingIndicator extends Control {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());

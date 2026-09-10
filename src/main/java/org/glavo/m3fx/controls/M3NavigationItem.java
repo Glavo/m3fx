@@ -25,6 +25,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +43,10 @@ import java.util.Objects;
 /// preferred [#itemLayoutProperty()] to each item. The default standalone item is unselected, uses vertical layout,
 /// has empty text, and has no graphic or badge. Graphic and badge nodes are owned by the item while displayed and
 /// must not belong to another parent.
+///
+/// Computed minimum, preferred, and maximum dimensions use [#getItemWidth()] and [#getContainerHeight()],
+/// including insets, even before a skin is installed. Explicit layout dimensions and their bindings are preserved
+/// when these tokens change. Set a dimension to [#USE_COMPUTED_SIZE] to restore its computed value.
 ///
 /// See [Material Design navigation](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
@@ -263,7 +268,7 @@ public final class M3NavigationItem extends ButtonBase {
                     this,
                     "containerHeight",
                     StyleableProperties.CONTAINER_HEIGHT,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerHeight;
@@ -304,7 +309,7 @@ public final class M3NavigationItem extends ButtonBase {
                     this,
                     "itemWidth",
                     StyleableProperties.ITEM_WIDTH,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return itemWidth;
@@ -477,13 +482,13 @@ public final class M3NavigationItem extends ButtonBase {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for `M3NavigationItem`
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -536,7 +541,6 @@ public final class M3NavigationItem extends ButtonBase {
         updateItemLayoutStyleClass();
         graphicProperty().addListener(observable -> updateGraphicStyle());
         updateGraphicStyle();
-        updateMetrics();
     }
 
     /// Applies navigation-item semantic coloring to a direct M3FX icon and clears stale managed state.
@@ -565,13 +569,40 @@ public final class M3NavigationItem extends ButtonBase {
         );
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double width = getItemWidth();
-        double height = getContainerHeight();
-        setMinSize(width, height);
-        setPrefSize(width, height);
-        setMaxSize(width, height);
+    /// Computes the minimum navigation item width from its size tokens.
+    @Override
+    protected double computeMinWidth(double height) {
+        return computePrefWidth(height);
+    }
+
+    /// Computes the minimum navigation item height from its size tokens.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred navigation item width from its size tokens.
+    @Override
+    protected double computePrefWidth(double height) {
+        return getItemWidth();
+    }
+
+    /// Computes the preferred navigation item height from its size tokens.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes the maximum navigation item width from the item-width token.
+    @Override
+    protected double computeMaxWidth(double height) {
+        return getItemWidth();
+    }
+
+    /// Computes the maximum navigation item height from the container-height token.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return getContainerHeight();
     }
 
     /// CSS metadata for M3FX navigation item component tokens.
@@ -674,7 +705,7 @@ public final class M3NavigationItem extends ButtonBase {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());

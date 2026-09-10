@@ -23,6 +23,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,10 @@ import java.util.Objects;
 /// when the value is [INDETERMINATE_PROGRESS]. The control exposes token-backed track thickness, shape, active
 /// gap, stop indicator, and optional wave properties so the same API can render baseline and expressive
 /// progress styles.
+///
+/// Computed minimum, preferred, and maximum heights equal the track thickness plus twice the wave amplitude.
+/// This total includes insets and is available before skin installation. Explicit height constraints and bindings
+/// remain in effect as tokens change; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// Use this control for horizontal loading feedback in a bounded area. Indeterminate progress keeps a basic
 /// moving segment when reduced motion is requested through [org.glavo.m3fx.animation.M3MotionSettings], so
@@ -203,7 +208,7 @@ public final class M3ProgressBar extends Control {
                     this,
                     "trackThickness",
                     StyleableProperties.TRACK_THICKNESS,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return trackThickness;
@@ -286,10 +291,7 @@ public final class M3ProgressBar extends Control {
                     this,
                     "waveAmplitude",
                     StyleableProperties.WAVE_AMPLITUDE,
-                    () -> {
-                        updateMetrics();
-                        requestLayout();
-                    }
+                    this::requestLayout
             );
         }
         return waveAmplitude;
@@ -474,13 +476,13 @@ public final class M3ProgressBar extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for `M3ProgressBar`
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -526,16 +528,24 @@ public final class M3ProgressBar extends Control {
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double thickness = getTrackThickness();
-        double height = thickness + getWaveAmplitude() * 2.0;
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
-        M3Css.setMaxHeightIfUnbound(this, height);
+    /// Computes the minimum total height from the track thickness and wave amplitude.
+    @Override
+    protected double computeMinHeight(double width) {
+        return computePrefHeight(width);
+    }
+
+    /// Computes the preferred total height from the track thickness and wave amplitude.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getTrackThickness() + getWaveAmplitude() * 2.0;
+    }
+
+    /// Computes the maximum total height from the track thickness and wave amplitude.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return computePrefHeight(width);
     }
 
     /// Normalizes progress values to the supported range.
@@ -666,7 +676,7 @@ public final class M3ProgressBar extends Control {
                 };
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());

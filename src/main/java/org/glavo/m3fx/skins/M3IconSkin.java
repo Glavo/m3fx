@@ -22,9 +22,6 @@ import org.jetbrains.annotations.Nullable;
 /// resolves the fill from the control's Material color-role style class.
 @NotNullByDefault
 public final class M3IconSkin extends SkinBase<M3Icon> {
-    /// The layout line-box multiplier used by [M3Icon].
-    private static final double ICON_LINE_BOX_SCALE = 1.5;
-
     /// The rendered glyph node.
     private final Text glyphNode = new Text();
 
@@ -66,54 +63,6 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
         super.dispose();
     }
 
-    /// Computes the minimum width from the resolved icon line box.
-    @Override
-    protected double computeMinWidth(
-            double height,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return leftInset + iconLineBoxSize() + rightInset;
-    }
-
-    /// Computes the minimum height from the resolved icon line box.
-    @Override
-    protected double computeMinHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + iconLineBoxSize() + bottomInset;
-    }
-
-    /// Computes the preferred width from the resolved icon line box.
-    @Override
-    protected double computePrefWidth(
-            double height,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return leftInset + iconLineBoxSize() + rightInset;
-    }
-
-    /// Computes the preferred height from the resolved icon line box.
-    @Override
-    protected double computePrefHeight(
-            double width,
-            double topInset,
-            double rightInset,
-            double bottomInset,
-            double leftInset
-    ) {
-        return topInset + iconLineBoxSize() + bottomInset;
-    }
-
     /// Centers the glyph by its rendered local bounds instead of a text baseline.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
@@ -133,13 +82,6 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
         glyphNode.setMouseTransparent(true);
         glyphNode.textProperty().bind(control.glyphProperty());
         glyphNode.fontProperty().bind(control.iconFontProperty());
-    }
-
-    /// Returns the current icon line-box size.
-    ///
-    /// @return the icon line-box width and height
-    private double iconLineBoxSize() {
-        return Math.ceil(getSkinnable().getIconSize() * ICON_LINE_BOX_SCALE);
     }
 
     /// Resolves and applies the highest-precedence icon paint.

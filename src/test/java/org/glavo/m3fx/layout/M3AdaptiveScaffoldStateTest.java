@@ -143,6 +143,51 @@ final class M3AdaptiveScaffoldStateTest {
         });
     }
 
+    /// Recomputes pane and navigation state when a breakpoint listener changes the requested breakpoint.
+    @Test
+    void breakpointListenerCanReplaceAdaptiveRequest() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = scaffoldWithThreePanes();
+            scaffold.setNavigationBar(new Pane());
+            scaffold.setNavigationRail(new Pane());
+            scaffold.breakpointProperty().addListener((observable, previous, current) -> {
+                if (current == M3Breakpoint.EXPANDED) {
+                    scaffold.setBreakpointOverride(M3Breakpoint.COMPACT);
+                }
+            });
+
+            scaffold.resize(900.0, 600.0);
+
+            assertSame(M3Breakpoint.COMPACT, scaffold.getBreakpoint());
+            assertPaneState(scaffold, M3PaneLayout.SINGLE, false, true, false);
+            assertSame(M3NavigationLayout.BAR, scaffold.getEffectiveNavigationLayout());
+            assertTrue(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("compact")));
+            assertFalse(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("expanded")));
+            assertTrue(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("navigation-bar")));
+            assertFalse(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("navigation-rail")));
+        });
+    }
+
+    /// Keeps pseudo-classes consistent when an effective-layout listener selects a different pane policy.
+    @Test
+    void paneLayoutListenerCanReplaceAdaptiveRequest() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3AdaptiveScaffold scaffold = scaffoldWithThreePanes();
+            scaffold.effectivePaneLayoutProperty().addListener((observable, previous, current) -> {
+                if (current == M3PaneLayout.SPLIT_LEADING) {
+                    scaffold.setPaneLayout(M3PaneLayout.SINGLE);
+                    scaffold.setActivePane(M3PaneRole.TRAILING);
+                }
+            });
+
+            scaffold.resize(900.0, 600.0);
+
+            assertPaneState(scaffold, M3PaneLayout.SINGLE, false, false, true);
+            assertTrue(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("single-pane")));
+            assertFalse(scaffold.getPseudoClassStates().contains(PseudoClass.getPseudoClass("split-leading")));
+        });
+    }
+
     /// Verifies automatic one- and two-pane selection across breakpoints and active-pane changes.
     @Test
     void resolvesAdaptivePaneLayouts() {

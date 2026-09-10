@@ -2386,8 +2386,9 @@ public final class M3Accessible {
     /// Returns whether a node can be revealed from a collapsed or hidden-self state.
     ///
     /// Unlike [canReach], this allows the node itself to be invisible because several Material surfaces use
-    /// visibility to represent their collapsed state. The node may be detached for structural tests, but it must be
-    /// enabled and every ancestor must be visible and enabled.
+    /// visibility to represent their collapsed state. The node may be detached, but it must be enabled. When the
+    /// node has a public parent, that parent must be [effectively reachable][#isEffectivelyReachable(Node)].
+    /// When the node has no public parent, only its inherited disabled state is checked.
     ///
     /// @param node the node to inspect, or `null`
     /// @return `true` when the node can be revealed by its owner
@@ -2397,30 +2398,18 @@ public final class M3Accessible {
         }
 
         @Nullable Parent parent = node.getParent();
-        while (parent != null) {
-            if (!parent.isVisible() || parent.isDisabled()) {
-                return false;
-            }
-            parent = parent.getParent();
-        }
-        return true;
+        return parent == null || isEffectivelyReachable(parent);
     }
 
     /// Returns whether a node and its ancestor chain are visible and enabled.
     ///
-    /// Scene attachment is not required.
+    /// Scene attachment is not required. Visibility follows [M3TreeVisibility], including its public-parent
+    /// fallback when native effective visibility is unavailable. JavaFX supplies inherited disabled state.
     ///
     /// @param node the node to inspect, or `null`
-    /// @return `true` when the node and every ancestor are visible and enabled
+    /// @return `true` when the node is enabled and visible according to the shared tree-visibility policy
     public static boolean isEffectivelyReachable(@Nullable Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (!current.isVisible() || current.isDisabled()) {
-                return false;
-            }
-            current = current.getParent();
-        }
-        return node != null;
+        return node != null && !node.isDisabled() && M3TreeVisibility.isTreeVisible(node);
     }
 
     /// Notifies a node and its ancestors that the node's exposed accessibility focus target changed.

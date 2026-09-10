@@ -127,18 +127,14 @@ public final class M3NavigationBar extends Control {
     };
 
     /// Updates navigation item selection listeners when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
+    private final ListChangeListener<M3NavigationItem> childrenListener = change -> {
         while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof M3NavigationItem item) {
-                    uninstallItem(item);
-                    item.setSelected(false);
-                }
+            for (M3NavigationItem item : change.getRemoved()) {
+                uninstallItem(item);
+                item.setSelected(false);
             }
-            for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3NavigationItem item) {
-                    installItem(item);
-                }
+            for (M3NavigationItem item : change.getAddedSubList()) {
+                installItem(item);
             }
         }
         enforceSelectionPolicy();
@@ -366,12 +362,7 @@ public final class M3NavigationBar extends Control {
     /// @throws IndexOutOfBoundsException if `index` is outside the item list
     /// @throws IllegalArgumentException  if the indexed item is not selectable
     public final void selectIndex(int index) {
-        Node child = getItems().get(index);
-        if (child instanceof M3NavigationItem item) {
-            select(item);
-            return;
-        }
-        throw new IllegalArgumentException("child at index is not an M3NavigationItem");
+        select(getItems().get(index));
     }
 
     /// Selects the first navigation item when one exists.
@@ -604,10 +595,8 @@ public final class M3NavigationBar extends Control {
 
     /// Applies the configured layout to every navigation item child.
     private void updateItemLayouts() {
-        for (Node child : getItems()) {
-            if (child instanceof M3NavigationItem item) {
-                item.setItemLayout(getItemLayout());
-            }
+        for (M3NavigationItem item : getItems()) {
+            item.setItemLayout(getItemLayout());
         }
     }
 
@@ -689,10 +678,8 @@ public final class M3NavigationBar extends Control {
     private void selectItem(@Nullable M3NavigationItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3NavigationItem navigationItem) {
-                    navigationItem.setSelected(navigationItem == item);
-                }
+            for (M3NavigationItem navigationItem : getItems()) {
+                navigationItem.setSelected(navigationItem == item);
             }
         } finally {
             updatingSelection = false;
@@ -703,8 +690,8 @@ public final class M3NavigationBar extends Control {
     /// Refreshes selected item state from current child states.
     private void refreshSelectedItems() {
         selectedItemsScratch.clear();
-        for (Node child : getItems()) {
-            if (child instanceof M3NavigationItem item && item.isSelected()) {
+        for (M3NavigationItem item : getItems()) {
+            if (item.isSelected()) {
                 if (isModelSelectableNavigationItem(item)) {
                     selectedItemsScratch.add(item);
                 } else {
@@ -739,9 +726,8 @@ public final class M3NavigationBar extends Control {
     /// Returns the first selectable item referenced by accessibility parameters.
     private @Nullable M3NavigationItem firstAccessibleSelectableItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getItems()) {
-            if (child instanceof M3NavigationItem item
-                    && isAccessibleNavigationItem(item)
+        for (M3NavigationItem item : getItems()) {
+            if (isAccessibleNavigationItem(item)
                     && M3Accessible.containsSelectionTarget(item, parameters)) {
                 return item;
             }

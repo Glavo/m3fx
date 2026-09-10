@@ -11,6 +11,7 @@ import org.glavo.m3fx.controls.M3HslColor;
 import org.glavo.m3fx.controls.M3RgbColor;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Objects;
 
@@ -21,7 +22,7 @@ public final class M3ColorMath {
     private static final int MAXIMUM_CANONICAL_CHANNEL = 0xFFFF;
 
     /// Hexadecimal digits used by allocation-conscious color formatting.
-    private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
+    private static final char @Unmodifiable [] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
 
     /// Prevents utility class instantiation.
     private M3ColorMath() {
@@ -62,7 +63,7 @@ public final class M3ColorMath {
         if (wrapped < 0.0) {
             wrapped += 360.0;
         }
-        return wrapped == -0.0 ? 0.0 : wrapped;
+        return wrapped == 0.0 || wrapped == 360.0 ? 0.0 : wrapped;
     }
 
     /// Converts any supported color to RGB.
@@ -124,9 +125,12 @@ public final class M3ColorMath {
         double minimum = Math.min(rgb.red(), Math.min(rgb.green(), rgb.blue()));
         double delta = maximum - minimum;
         double lightness = (maximum + minimum) / 2.0;
+        // Compute distance to black or white directly to avoid cancellation near either boundary.
         double saturation = delta == 0.0
                 ? 0.0
-                : delta / (1.0 - Math.abs(2.0 * lightness - 1.0));
+                : delta / (lightness <= 0.5
+                        ? maximum + minimum
+                        : (1.0 - maximum) + (1.0 - minimum));
         return new M3HslColor(rgbHue(rgb, maximum, delta), saturation, lightness, rgb.alpha());
     }
 

@@ -616,30 +616,33 @@ final class M3ScrollPaneTest {
     /// Verifies that Material smooth scrolling can be enabled for JavaFX scroll panes.
     @Test
     void scrollPaneSmoothScrollingAnimatesWheelScroll() {
-        Region content = new Region();
-        content.setPrefSize(160.0, 480.0);
-        ScrollPane scrollPane = new ScrollPane(content);
-        scrollPane.setPrefSize(160.0, 120.0);
-        StackPane root = new StackPane(scrollPane);
-        Scene scene = new Scene(root, 180.0, 140.0);
+        // Inspect the initial scroll position before JavaFX can deliver an animation pulse.
+        FxTestUtils.runOnFxThread(() -> {
+            Region content = new Region();
+            content.setPrefSize(160.0, 480.0);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
 
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.applyCss();
-        root.resize(180.0, 140.0);
-        root.layout();
-        M3ScrollPane.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(180.0, 140.0);
+            root.layout();
+            M3ScrollPane.enableSmoothScrolling(scrollPane);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
 
-        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
-        scrollPane.fireEvent(event);
+            ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+            scrollPane.fireEvent(event);
 
-        assertTrue(M3ScrollPane.isSmoothScrollingEnabled(scrollPane));
-        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
-        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+            assertTrue(M3ScrollPane.isSmoothScrollingEnabled(scrollPane));
+            assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+            assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
-        M3ScrollPane.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
-        assertFalse(M3ScrollPane.isSmoothScrollingEnabled(scrollPane));
+            M3ScrollPane.disableSmoothScrolling(scrollPane);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+            assertFalse(M3ScrollPane.isSmoothScrollingEnabled(scrollPane));
+        });
     }
 
     /// Verifies that completed scroll pane smooth scrolling settles at its rendered target value.

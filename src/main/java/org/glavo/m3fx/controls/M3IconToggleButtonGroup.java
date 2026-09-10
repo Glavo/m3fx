@@ -12,7 +12,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -37,12 +36,15 @@ import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /// A Material Design 3 toggle icon button group.
 ///
@@ -135,7 +137,7 @@ public final class M3IconToggleButtonGroup extends Control {
                         set(M3SelectionMode.SINGLE);
                         return;
                     }
-                    enforceSelectionPolicy();
+                    refreshSelectedButtons();
                 }
             };
 
@@ -250,7 +252,7 @@ public final class M3IconToggleButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3IconToggleButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    /// Reusable storage for computing selected buttons without allocating on every refresh.
+    /// Reusable storage for selected candidates during reconciliation.
     private final List<M3IconToggleButton> selectedButtonsScratch = new ArrayList<>();
 
     /// Handles selected-state invalidation for every installed button.
@@ -262,29 +264,45 @@ public final class M3IconToggleButtonGroup extends Control {
     };
 
     /// Handles reachability invalidation for every installed button.
-    private final InvalidationListener reachabilityInvalidation = observable -> {
-        if (observable instanceof ReadOnlyProperty<?> property
-                && property.getBean() instanceof M3IconToggleButton button) {
-            handleButtonReachabilityChanged(button);
-        }
-    };
+    private final InvalidationListener reachabilityInvalidation =
+            observable -> handleButtonReachabilityChanged();
 
-    /// Updates button listeners when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
-        while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof M3IconToggleButton button) {
-                    uninstallButton(button);
-                    button.setSelected(false);
-                }
-            }
-            for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3IconToggleButton button) {
-                    installButton(button);
-                }
+    /// Counts item-list notifications to detect stale traversal snapshots.
+    private long itemsRevision;
+
+    /// The most recent item snapshot used to reconcile listener registrations.
+    private @Unmodifiable List<M3IconToggleButton> observedItems = List.of();
+
+    /// Updates button listeners from actual membership, including nested list mutations.
+    private final InvalidationListener childrenListener = observable -> {
+        itemsRevision++;
+        Set<M3IconToggleButton> addedItems = Collections.newSetFromMap(new IdentityHashMap<>());
+        addedItems.addAll(getItems());
+        List<M3IconToggleButton> removed = new ArrayList<>();
+        for (M3IconToggleButton button : observedItems) {
+            if (!addedItems.remove(button)) {
+                removed.add(button);
             }
         }
-        enforceSelectionPolicy();
+        List<M3IconToggleButton> added = new ArrayList<>();
+        for (M3IconToggleButton button : getItems()) {
+            if (addedItems.contains(button)) {
+                added.add(button);
+            }
+        }
+        // Nested notifications must compare against the membership being installed here.
+        observedItems = List.copyOf(getItems());
+        for (M3IconToggleButton button : removed) {
+            uninstallButton(button);
+        }
+        for (M3IconToggleButton button : added) {
+            installButton(button);
+        }
+        // Finish registration changes before deselection callbacks can remove or reinstall added items.
+        for (M3IconToggleButton button : removed) {
+            button.setSelected(false);
+        }
+        refreshSelectedButtons();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         M3Accessible.notifyFocusNodeChanged(this);
@@ -294,11 +312,15 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
 
+    /// Whether a state change requires another selection reconciliation pass.
+    private boolean selectionRefreshPending;
+
     /// Returns the live mutable list of buttons displayed by this group.
     ///
     /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
     /// rejects `null` elements and repeated occurrences of the same button instance. Bulk mutations are validated
     /// before the list changes, and each button must satisfy the JavaFX single-parent rule.
+    /// Replacing the contents preserves the selection of retained buttons, subject to the selection policy.
     ///
     /// @return the live mutable item list
     public final ObservableList<M3IconToggleButton> getItems() {
@@ -351,12 +373,7 @@ public final class M3IconToggleButtonGroup extends Control {
     /// @throws IndexOutOfBoundsException if `index` is outside the item list
     /// @throws IllegalArgumentException  if the indexed button is not selectable
     public final void selectIndex(int index) {
-        Node child = getItems().get(index);
-        if (child instanceof M3IconToggleButton button) {
-            select(button);
-            return;
-        }
-        throw new IllegalArgumentException("child at index is not an M3IconToggleButton");
+        select(getItems().get(index));
     }
 
     /// Selects the first toggle icon button when one exists.
@@ -585,20 +602,22 @@ public final class M3IconToggleButtonGroup extends Control {
             return;
         }
 
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3IconToggleButton button && isSelectableButton(button)) {
+            long revision = itemsRevision;
+            for (M3IconToggleButton button : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(button)) {
+                    continue;
+                }
+                if (isSelectableButton(button)) {
                     button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
                 }
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedButtons();
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
     }
 
     /// Installs a selected-state listener on a button.
@@ -618,16 +637,12 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Keeps selected buttons consistent with the current group policy.
     private void handleButtonSelectedChanged(M3IconToggleButton button, boolean selected) {
         if (updatingSelection) {
+            selectionRefreshPending = true;
             return;
         }
 
         if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableButton(button)) {
-            if (selected) {
-                setButtonSelected(button, false);
-                if (!isAllowEmptySelection()) {
-                    selectFirstButtonIfNeeded();
-                }
-            }
+            refreshSelectedButtons();
             return;
         }
 
@@ -640,36 +655,18 @@ public final class M3IconToggleButtonGroup extends Control {
             return;
         }
 
-        refreshSelectedButtons();
-        if (!isAllowEmptySelection() && selectedButtons.isEmpty()) {
-            select(button);
+        if (!isAllowEmptySelection() && selectedButtons.size() == 1 && selectedButtons.get(0) == button) {
+            selectOnly(button);
+            return;
         }
+        refreshSelectedButtons();
     }
 
     /// Keeps selection and accessibility state consistent when a button becomes unreachable.
-    private void handleButtonReachabilityChanged(M3IconToggleButton button) {
-        if (button.isSelected() && !isSelectableButton(button)) {
-            setButtonSelected(button, false);
-        }
-        enforceSelectionPolicy();
+    private void handleButtonReachabilityChanged() {
+        refreshSelectedButtons();
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-    }
-
-    /// Enforces single-selection and non-empty selection invariants.
-    private void enforceSelectionPolicy() {
-        refreshSelectedButtons();
-        if (getSelectionMode() == M3SelectionMode.NONE) {
-            selectOnly(null);
-            return;
-        }
-        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedButtons.size() > 1) {
-            selectOnly(selectedButtons.get(0));
-            return;
-        }
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
     }
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
@@ -692,52 +689,82 @@ public final class M3IconToggleButtonGroup extends Control {
 
     /// Sets one button's selected state without refreshing the aggregate selected button list.
     private void setButtonSelectedWithoutRefresh(M3IconToggleButton button, boolean selected) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
             button.setSelected(selected);
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
     }
 
     /// Selects one button and clears selection from the remaining buttons.
     private void selectOnly(@Nullable M3IconToggleButton button) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3IconToggleButton toggleButton) {
-                    toggleButton.setSelected(toggleButton == button);
+            long revision = itemsRevision;
+            for (M3IconToggleButton toggleButton : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(toggleButton)) {
+                    continue;
                 }
+                toggleButton.setSelected(toggleButton == button);
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedButtons();
     }
 
-    /// Refreshes selected button state from current child states.
+    /// Reconciles selection policy and published views, repeating after changes made by listeners.
     private void refreshSelectedButtons() {
-        selectedButtonsScratch.clear();
-        for (Node child : getItems()) {
-            if (child instanceof M3IconToggleButton button && button.isSelected()) {
-                if (isSelectableButton(button)) {
-                    selectedButtonsScratch.add(button);
-                } else {
-                    setButtonSelectedWithoutRefresh(button, false);
+        if (updatingSelection) {
+            selectionRefreshPending = true;
+            return;
+        }
+        updatingSelection = true;
+        try {
+            do {
+                selectionRefreshPending = false;
+                selectedButtonsScratch.clear();
+                long revision = itemsRevision;
+                for (M3IconToggleButton button : List.copyOf(getItems())) {
+                    if (revision != itemsRevision && !getItems().contains(button)) {
+                        continue;
+                    }
+                    if (button.isSelected()) {
+                        if (getSelectionMode() != M3SelectionMode.NONE && isSelectableButton(button)
+                                && (getSelectionMode() == M3SelectionMode.MULTIPLE || selectedButtonsScratch.isEmpty())) {
+                            selectedButtonsScratch.add(button);
+                        } else {
+                            setButtonSelectedWithoutRefresh(button, false);
+                        }
+                    }
                 }
-            }
-        }
-        boolean selectionChanged = !selectedButtons.equals(selectedButtonsScratch);
-        if (selectionChanged) {
-            selectedButtons.setAll(selectedButtonsScratch);
-        }
-        selectedButtonsScratch.clear();
-
-        selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
-        if (selectionChanged) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            M3Accessible.notifyFocusNodeChanged(this);
-            focusNotifier.refresh();
+                if (selectedButtonsScratch.isEmpty() && !isAllowEmptySelection()
+                        && getSelectionMode() != M3SelectionMode.NONE) {
+                    @Nullable M3IconToggleButton first = firstButton();
+                    if (first != null && isSelectableButton(first)) {
+                        setButtonSelectedWithoutRefresh(first, true);
+                    }
+                }
+                if (selectionRefreshPending) {
+                    continue;
+                }
+                boolean selectionChanged = !selectedButtons.equals(selectedButtonsScratch);
+                if (selectionChanged) {
+                    selectedButtons.setAll(selectedButtonsScratch);
+                }
+                selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
+                if (selectionChanged) {
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+                    M3Accessible.notifyFocusNodeChanged(this);
+                    focusNotifier.refresh();
+                }
+            } while (selectionRefreshPending);
+        } finally {
+            selectedButtonsScratch.clear();
+            updatingSelection = false;
         }
     }
 
@@ -749,9 +776,8 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Returns the first selectable button referenced by accessibility parameters.
     private @Nullable M3IconToggleButton firstAccessibleSelectableButton(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getItems()) {
-            if (child instanceof M3IconToggleButton button
-                    && isSelectableButton(button)
+        for (M3IconToggleButton button : getItems()) {
+            if (isSelectableButton(button)
                     && M3Accessible.containsSelectionTarget(button, parameters)) {
                 return button;
             }

@@ -13,7 +13,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -38,12 +37,15 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /// A Material Design 3 segmented button group that lays out adjacent segments.
 ///
@@ -107,7 +109,7 @@ public final class M3SegmentedButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3SegmentedButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    /// Reusable storage for computing selected buttons without allocating on every refresh.
+    /// Reusable storage for selected candidates during reconciliation.
     private final List<M3SegmentedButton> selectedButtonsScratch = new ArrayList<>();
 
     /// Handles selected-state invalidation for every installed segmented button.
@@ -119,28 +121,46 @@ public final class M3SegmentedButtonGroup extends Control {
     };
 
     /// Handles reachability invalidation for every installed segmented button.
-    private final InvalidationListener reachabilityInvalidation = observable -> {
-        if (observable instanceof ReadOnlyProperty<?> property
-                && property.getBean() instanceof M3SegmentedButton button) {
-            handleButtonReachabilityChanged(button);
-        }
-    };
+    private final InvalidationListener reachabilityInvalidation =
+            observable -> handleButtonReachabilityChanged();
 
-    /// Updates segment position style classes and selection listeners when children change.
-    private final ListChangeListener<M3SegmentedButton> childrenListener = change -> {
-        while (change.next()) {
-            for (M3SegmentedButton button : change.getRemoved()) {
-                uninstallButton(button);
-                button.setSelected(false);
-                clearSegmentStyle(button);
-                button.restoreStandaloneAccessibleRole();
+    /// Counts item-list notifications to detect stale traversal snapshots.
+    private long itemsRevision;
+
+    /// The most recent item snapshot used to reconcile listener registrations.
+    private @Unmodifiable List<M3SegmentedButton> observedItems = List.of();
+
+    /// Updates segment listeners and styling from actual membership, including nested list mutations.
+    private final InvalidationListener childrenListener = observable -> {
+        itemsRevision++;
+        Set<M3SegmentedButton> addedItems = Collections.newSetFromMap(new IdentityHashMap<>());
+        addedItems.addAll(getItems());
+        List<M3SegmentedButton> removed = new ArrayList<>();
+        for (M3SegmentedButton button : observedItems) {
+            if (!addedItems.remove(button)) {
+                removed.add(button);
             }
-            for (M3SegmentedButton button : change.getAddedSubList()) {
-                installButton(button);
+        }
+        List<M3SegmentedButton> added = new ArrayList<>();
+        for (M3SegmentedButton button : getItems()) {
+            if (addedItems.contains(button)) {
+                added.add(button);
             }
+        }
+        // Nested notifications must compare against the membership being installed here.
+        observedItems = List.copyOf(getItems());
+        for (M3SegmentedButton button : removed) {
+            uninstallButton(button);
+        }
+        for (M3SegmentedButton button : added) {
+            installButton(button);
+        }
+        // Finish registration changes before deselection callbacks can remove or reinstall added items.
+        for (M3SegmentedButton button : removed) {
+            button.setSelected(false);
         }
         updateSegmentStyles();
-        enforceSelectionPolicy();
+        refreshSelectedButtons();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         M3Accessible.notifyFocusNodeChanged(this);
@@ -153,6 +173,9 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
+
+    /// Whether a state change requires another selection reconciliation pass.
+    private boolean selectionRefreshPending;
 
     /// Creates an empty single-selection group that permits empty selection.
     public M3SegmentedButtonGroup() {
@@ -217,7 +240,7 @@ public final class M3SegmentedButtonGroup extends Control {
                         return;
                     }
                     updateAccessibleRoles();
-                    enforceSelectionPolicy();
+                    refreshSelectedButtons();
                 }
             };
 
@@ -311,6 +334,7 @@ public final class M3SegmentedButtonGroup extends Control {
     ///
     /// The list rejects `null` elements and repeated occurrences of the same segment instance. Bulk mutations are
     /// validated before the list changes, and each segment must satisfy the JavaFX single-parent rule.
+    /// Replacing the contents preserves the selection of retained segments, subject to the selection policy.
     ///
     /// @return the live, mutable segment list in display order
     public final ObservableList<M3SegmentedButton> getItems() {
@@ -597,20 +621,22 @@ public final class M3SegmentedButtonGroup extends Control {
             return;
         }
 
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (M3SegmentedButton button : getItems()) {
+            long revision = itemsRevision;
+            for (M3SegmentedButton button : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(button)) {
+                    continue;
+                }
                 if (isSelectableButton(button)) {
                     button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
                 }
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedButtons();
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
     }
 
     /// Installs a selected-state listener on a segmented button.
@@ -621,26 +647,27 @@ public final class M3SegmentedButtonGroup extends Control {
         button.visibleProperty().addListener(reachabilityInvalidation);
     }
 
-    /// Removes the selected-state listener from a segmented button.
+    /// Releases listeners, positional styles, and the grouped accessibility role before deselection callbacks run.
     private void uninstallButton(M3SegmentedButton button) {
         button.selectedProperty().removeListener(selectedInvalidation);
         button.disabledProperty().removeListener(reachabilityInvalidation);
         button.visibleProperty().removeListener(reachabilityInvalidation);
+        button.getStyleClass().remove(SINGLE_SEGMENT_STYLE_CLASS);
+        button.getStyleClass().remove(FIRST_SEGMENT_STYLE_CLASS);
+        button.getStyleClass().remove(MIDDLE_SEGMENT_STYLE_CLASS);
+        button.getStyleClass().remove(LAST_SEGMENT_STYLE_CLASS);
+        button.restoreStandaloneAccessibleRole();
     }
 
     /// Keeps selected segmented buttons mutually exclusive.
     private void handleButtonSelectedChanged(M3SegmentedButton button, boolean selected) {
         if (updatingSelection) {
+            selectionRefreshPending = true;
             return;
         }
 
         if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableButton(button)) {
-            if (selected) {
-                setButtonSelected(button, false);
-                if (!isAllowEmptySelection()) {
-                    selectFirstButtonIfNeeded();
-                }
-            }
+            refreshSelectedButtons();
             return;
         }
 
@@ -653,36 +680,18 @@ public final class M3SegmentedButtonGroup extends Control {
             return;
         }
 
-        refreshSelectedButtons();
-        if (!isAllowEmptySelection() && selectedButtons.isEmpty()) {
-            select(button);
+        if (!isAllowEmptySelection() && selectedButtons.size() == 1 && selectedButtons.get(0) == button) {
+            selectOnly(button);
+            return;
         }
+        refreshSelectedButtons();
     }
 
     /// Keeps selection and accessibility state consistent when a button becomes unreachable.
-    private void handleButtonReachabilityChanged(M3SegmentedButton button) {
-        if (button.isSelected() && !isSelectableButton(button)) {
-            setButtonSelected(button, false);
-        }
-        enforceSelectionPolicy();
+    private void handleButtonReachabilityChanged() {
+        refreshSelectedButtons();
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-    }
-
-    /// Enforces single-selection and non-empty selection invariants.
-    private void enforceSelectionPolicy() {
-        refreshSelectedButtons();
-        if (getSelectionMode() == M3SelectionMode.NONE) {
-            selectOnly(null);
-            return;
-        }
-        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedButtons.size() > 1) {
-            selectOnly(selectedButtons.get(0));
-            return;
-        }
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
     }
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
@@ -705,50 +714,82 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Sets one button's selected state without refreshing the aggregate selected button list.
     private void setButtonSelectedWithoutRefresh(M3SegmentedButton button, boolean selected) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
             button.setSelected(selected);
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
     }
 
     /// Selects one segmented button and clears selection from the remaining segments.
     private void selectOnly(@Nullable M3SegmentedButton button) {
+        boolean wasUpdatingSelection = updatingSelection;
         updatingSelection = true;
         try {
-            for (M3SegmentedButton segmentedButton : getItems()) {
+            long revision = itemsRevision;
+            for (M3SegmentedButton segmentedButton : List.copyOf(getItems())) {
+                if (revision != itemsRevision && !getItems().contains(segmentedButton)) {
+                    continue;
+                }
                 segmentedButton.setSelected(segmentedButton == button);
             }
         } finally {
-            updatingSelection = false;
+            updatingSelection = wasUpdatingSelection;
         }
         refreshSelectedButtons();
     }
 
-    /// Refreshes selected button state from current child states.
+    /// Reconciles selection policy and published views, repeating after changes made by listeners.
     private void refreshSelectedButtons() {
-        selectedButtonsScratch.clear();
-        for (M3SegmentedButton button : getItems()) {
-            if (button.isSelected()) {
-                if (isSelectableButton(button)) {
-                    selectedButtonsScratch.add(button);
-                } else {
-                    setButtonSelectedWithoutRefresh(button, false);
+        if (updatingSelection) {
+            selectionRefreshPending = true;
+            return;
+        }
+        updatingSelection = true;
+        try {
+            do {
+                selectionRefreshPending = false;
+                selectedButtonsScratch.clear();
+                long revision = itemsRevision;
+                for (M3SegmentedButton button : List.copyOf(getItems())) {
+                    if (revision != itemsRevision && !getItems().contains(button)) {
+                        continue;
+                    }
+                    if (button.isSelected()) {
+                        if (getSelectionMode() != M3SelectionMode.NONE && isSelectableButton(button)
+                                && (getSelectionMode() == M3SelectionMode.MULTIPLE || selectedButtonsScratch.isEmpty())) {
+                            selectedButtonsScratch.add(button);
+                        } else {
+                            setButtonSelectedWithoutRefresh(button, false);
+                        }
+                    }
                 }
-            }
-        }
-        boolean selectionChanged = !selectedButtons.equals(selectedButtonsScratch);
-        if (selectionChanged) {
-            selectedButtons.setAll(selectedButtonsScratch);
-        }
-        selectedButtonsScratch.clear();
-
-        selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
-        if (selectionChanged) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            M3Accessible.notifyFocusNodeChanged(this);
-            focusNotifier.refresh();
+                if (selectedButtonsScratch.isEmpty() && !isAllowEmptySelection()
+                        && getSelectionMode() != M3SelectionMode.NONE) {
+                    @Nullable M3SegmentedButton first = firstButton();
+                    if (first != null && isSelectableButton(first)) {
+                        setButtonSelectedWithoutRefresh(first, true);
+                    }
+                }
+                if (selectionRefreshPending) {
+                    continue;
+                }
+                boolean selectionChanged = !selectedButtons.equals(selectedButtonsScratch);
+                if (selectionChanged) {
+                    selectedButtons.setAll(selectedButtonsScratch);
+                }
+                selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
+                if (selectionChanged) {
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+                    M3Accessible.notifyFocusNodeChanged(this);
+                    focusNotifier.refresh();
+                }
+            } while (selectionRefreshPending);
+        } finally {
+            selectedButtonsScratch.clear();
+            updatingSelection = false;
         }
     }
 
@@ -814,14 +855,6 @@ public final class M3SegmentedButtonGroup extends Control {
             return LAST_SEGMENT_STYLE_CLASS;
         }
         return MIDDLE_SEGMENT_STYLE_CLASS;
-    }
-
-    /// Removes all segment position style classes from a button.
-    private static void clearSegmentStyle(M3SegmentedButton button) {
-        button.getStyleClass().remove(SINGLE_SEGMENT_STYLE_CLASS);
-        button.getStyleClass().remove(FIRST_SEGMENT_STYLE_CLASS);
-        button.getStyleClass().remove(MIDDLE_SEGMENT_STYLE_CLASS);
-        button.getStyleClass().remove(LAST_SEGMENT_STYLE_CLASS);
     }
 
     /// Creates the default Material Design 3 segmented button group skin.

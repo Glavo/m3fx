@@ -3,13 +3,16 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.collections.ListChangeListener;
+import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.List;
 
 /// Base skin for controls that mirror an observable item list into one layout container.
 ///
@@ -25,7 +28,16 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
     private final P container;
 
     /// Mirrors public item changes into the skin container.
-    private final ListChangeListener<N> itemsListener = this::updateItems;
+    private final InvalidationListener itemsListener = observable -> updateItems();
+
+    /// Whether item nodes are currently being synchronized with the container.
+    private boolean updatingItems;
+
+    /// Whether a nested item mutation requires another synchronization pass.
+    private boolean itemsRefreshPending;
+
+    /// Whether disposal has released this skin's listeners and child references.
+    private boolean disposed;
 
     /// Creates an item-container skin and installs its list listener.
     ///
@@ -40,12 +52,16 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().setAll(container);
         items.addListener(itemsListener);
-        container.getChildren().setAll(items);
+        updateItems();
     }
 
     /// Removes listeners and child references before disposal.
     @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
         items.removeListener(itemsListener);
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
@@ -138,37 +154,34 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
         container.resizeRelocate(x, y, width, height);
     }
 
-    /// Applies one public item-list change to the internal container.
-    private void updateItems(ListChangeListener.Change<? extends N> change) {
-        ObservableList<Node> children = container.getChildren();
-        boolean rebuild = false;
-        boolean membershipChanged = false;
-        while (change.next()) {
-            if (change.wasPermutated()) {
-                rebuild = true;
-                membershipChanged = true;
-                continue;
-            }
-            if (rebuild || change.wasUpdated()) {
-                continue;
-            }
-
-            int from = change.getFrom();
-            int removedSize = change.getRemovedSize();
-            if (removedSize != 0) {
-                children.remove(from, from + removedSize);
-                membershipChanged = true;
-            }
-            if (change.wasAdded()) {
-                children.addAll(from, change.getAddedSubList());
-                membershipChanged = true;
-            }
+    /// Reconciles actual item membership after mutations, including changes from parent or scene callbacks.
+    private void updateItems() {
+        if (disposed) {
+            return;
         }
-        if (rebuild) {
-            children.setAll(items);
+        itemsRefreshPending = true;
+        if (updatingItems) {
+            return;
         }
-        if (membershipChanged) {
-            getSkinnable().requestLayout();
+        updatingItems = true;
+        try {
+            do {
+                itemsRefreshPending = false;
+                @Unmodifiable List<N> currentItems = List.copyOf(items);
+                ObservableList<Node> children = container.getChildren();
+                boolean changed = children.size() != currentItems.size();
+                for (int index = 0; !changed && index < currentItems.size(); index++) {
+                    changed = children.get(index) != currentItems.get(index);
+                }
+                if (changed) {
+                    children.setAll(currentItems);
+                    if (!disposed) {
+                        getSkinnable().requestLayout();
+                    }
+                }
+            } while (itemsRefreshPending && !disposed);
+        } finally {
+            updatingItems = false;
         }
     }
 }

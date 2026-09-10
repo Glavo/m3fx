@@ -124,6 +124,22 @@ final class M3NumberFieldTest {
         assertNull(field.getValue());
     }
 
+    /// Reformats successful empty commits even when the committed value was already absent.
+    @Test
+    void emptyCommitsNormalizeWhitespaceOnRepeatedCalls() {
+        for (M3NumberFieldCommitBehavior behavior : M3NumberFieldCommitBehavior.values()) {
+            M3NumberField field = new M3NumberField();
+            field.setCommitBehavior(behavior);
+            for (int attempt = 0; attempt < 2; attempt++) {
+                field.setText(" \t\n ");
+                assertTrue(field.commitEditorText());
+                assertNull(field.getValue());
+                assertEquals("", field.getText());
+                assertEquals("", field.getEditor().getText());
+            }
+        }
+    }
+
     /// Verifies that validate commits preserve invalid text and the previous committed value.
     @Test
     void validateCommitRejectsRangeStepAndParseErrors() {
@@ -270,6 +286,53 @@ final class M3NumberFieldTest {
         field.decrement();
         assertEquals(-Double.MAX_VALUE, field.getValue());
         assertTrue(Double.isFinite(field.getValue()));
+    }
+
+    /// Avoids saturating steps whose multiplication overflows before cancellation with the current value.
+    @Test
+    void steppingRetainsFiniteResultsAfterIntermediateOverflow() {
+        M3NumberField field = new M3NumberField(-Double.MAX_VALUE);
+        field.setStep(Double.MAX_VALUE * 0.6);
+        field.increment(2);
+        assertEquals(0.0, field.getValue());
+
+        field.setValue(Double.MAX_VALUE);
+        field.decrement(2);
+        assertEquals(0.0, field.getValue());
+    }
+
+    /// Preserves minimum-anchored step alignment when a finite range spans an overflowing difference.
+    @Test
+    void alignsStepsAcrossExtremeFiniteRanges() {
+        double magnitude = Math.scalb(1.0, 1023);
+        M3NumberField field = new M3NumberField(-magnitude, magnitude * 1.5, 0.0);
+        field.setStep(magnitude * 0.75);
+
+        field.adjustValue(magnitude * 0.75);
+        assertEquals(magnitude * 0.5, field.getValue());
+        field.adjustValue(magnitude * 1.5);
+        assertEquals(magnitude * 1.25, field.getValue());
+
+        field.setCommitBehavior(M3NumberFieldCommitBehavior.VALIDATE);
+        NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
+        format.setGroupingUsed(false);
+        field.setFormatter(format);
+        field.setText(format.format(magnitude * 1.5));
+        assertFalse(field.commitEditorText());
+        assertEquals(magnitude * 1.25, field.getValue());
+    }
+
+    /// Returns the closest finite step when rounding would otherwise overflow beyond the double range.
+    @Test
+    void snappingChoosesFiniteBoundarySteps() {
+        double magnitude = Math.scalb(1.0, 1023);
+        M3NumberField field = new M3NumberField();
+        field.setStep(magnitude * 0.75);
+
+        field.adjustValue(Double.MAX_VALUE);
+        assertEquals(magnitude * 1.5, field.getValue());
+        field.adjustValue(-Double.MAX_VALUE);
+        assertEquals(-magnitude * 1.5, field.getValue());
     }
 
     /// Verifies localized grouping and decimal separators through a locale-specific formatter.

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -251,6 +252,113 @@ final class M3StateTransitionTest {
             assertTrue(specTransition.removeChannel(rejectedSpecValue));
             assertEquals(50.0, selectedSpecValue.get(), 1.0e-9);
             assertEquals(50.0, sharedSpecValue.get(), 1.0e-9);
+        });
+    }
+
+    /// Reuses accepted targets when channels are added or removed during automatic playback.
+    @Test
+    void changingChannelsDuringPlaybackRetainsAcceptedTargets() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            new Scene(owner);
+            M3StateTransition<Boolean> transition = new M3StateTransition<>(owner, false);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(4.0), M3MotionEasing.LINEAR));
+            SimpleDoubleProperty scalar = new SimpleDoubleProperty();
+            SimpleObjectProperty<Point2D> point = new SimpleObjectProperty<>(Point2D.ZERO);
+            AtomicInteger scalarEvaluations = new AtomicInteger();
+            AtomicInteger pointEvaluations = new AtomicInteger();
+            AtomicInteger addedEvaluations = new AtomicInteger();
+            transition.addDouble(scalar, state -> {
+                scalarEvaluations.incrementAndGet();
+                return state ? 100.0 : 0.0;
+            }, 0.01);
+            transition.addValue(point, state -> {
+                pointEvaluations.incrementAndGet();
+                return state ? new Point2D(100.0, 200.0) : Point2D.ZERO;
+            }, M3VectorConverters.POINT_2D);
+            try {
+                transition.seekTo(true, 0.25);
+                transition.animateToTarget();
+                assertTrue(transition.isRunning());
+                assertEquals(2, scalarEvaluations.get());
+                assertEquals(2, pointEvaluations.get());
+
+                SimpleDoubleProperty added = new SimpleDoubleProperty();
+                transition.addDouble(added, state -> {
+                    addedEvaluations.incrementAndGet();
+                    return state ? 80.0 : 0.0;
+                }, 0.01);
+                assertEquals(25.0, scalar.get(), 1.0e-9);
+                assertEquals(new Point2D(25.0, 50.0), point.get());
+                assertTrue(transition.removeChannel(added));
+                transition.finish();
+
+                assertEquals(2, scalarEvaluations.get());
+                assertEquals(2, pointEvaluations.get());
+                assertEquals(1, addedEvaluations.get());
+                assertEquals(100.0, scalar.get(), 1.0e-9);
+                assertEquals(new Point2D(100.0, 200.0), point.get());
+                assertEquals(0.0, added.get(), 1.0e-9);
+            } finally {
+                transition.clearChannels();
+            }
+        }));
+    }
+
+    /// Retains both registrations when removal cannot reconfigure a remaining bound property.
+    @Test
+    void failedRemovalDuringSeekPreservesRegistrations() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3StateTransition<Boolean> transition = new M3StateTransition<>(new Pane(), false);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(1.0), M3MotionEasing.LINEAR));
+            SimpleDoubleProperty removed = new SimpleDoubleProperty();
+            SimpleDoubleProperty remaining = new SimpleDoubleProperty();
+            transition.addDouble(removed, state -> state ? 100.0 : 0.0, 0.01);
+            transition.addDouble(remaining, state -> state ? 200.0 : 0.0, 0.01);
+            transition.seekTo(true, 0.25);
+            remaining.bind(new SimpleDoubleProperty(50.0));
+            try {
+                assertThrows(IllegalStateException.class, () -> transition.removeChannel(removed));
+                assertTrue(transition.isSeeking());
+                assertEquals(0.25, transition.getProgress());
+                assertEquals(25.0, removed.get());
+                remaining.unbind();
+
+                assertTrue(transition.removeChannel(removed));
+                transition.seekTo(true, 0.5);
+                assertEquals(25.0, removed.get());
+                assertEquals(100.0, remaining.get());
+            } finally {
+                remaining.unbind();
+                transition.clearChannels();
+            }
+        });
+    }
+
+    /// Does not install a new channel when an existing seek property prevents reconfiguration.
+    @Test
+    void failedAdditionDuringSeekLeavesNewPropertyUnregistered() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3StateTransition<Boolean> transition = new M3StateTransition<>(new Pane(), false);
+            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(1.0), M3MotionEasing.LINEAR));
+            SimpleDoubleProperty existing = new SimpleDoubleProperty();
+            SimpleDoubleProperty added = new SimpleDoubleProperty(7.0);
+            transition.addDouble(existing, state -> state ? 100.0 : 0.0, 0.01);
+            transition.seekTo(true, 0.25);
+            existing.bind(new SimpleDoubleProperty(25.0));
+            try {
+                assertThrows(IllegalStateException.class,
+                        () -> transition.addDouble(added, state -> state ? 200.0 : 0.0, 0.01));
+                assertEquals(7.0, added.get());
+                existing.unbind();
+
+                assertFalse(transition.removeChannel(added));
+                transition.seekTo(true, 0.5);
+                assertEquals(50.0, existing.get());
+            } finally {
+                existing.unbind();
+                transition.clearChannels();
+            }
         });
     }
 
