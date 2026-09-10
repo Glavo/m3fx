@@ -269,6 +269,74 @@ final class M3AnimationTest {
         });
     }
 
+    /// Retains lifecycle observation when an already running transition is restarted.
+    @Test
+    void restartingFiniteTransitionStillObservesReducedMotion() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            try {
+                M3Animation.playFromStart(owner, transition);
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                M3MotionSettings.setReducedMotionRequested(owner, true);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+            } finally {
+                transition.stop();
+            }
+        }));
+    }
+
+    /// Transfers restarted runs to the new owner's scene and settles when that owner is detached.
+    @Test
+    void restartingFiniteTransitionTransfersPresentationObservation() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane firstOwner = new Pane();
+            Pane secondOwner = new Pane();
+            Pane firstRoot = new Pane(firstOwner);
+            Pane secondRoot = new Pane(secondOwner);
+            Scene firstScene = new Scene(firstRoot);
+            Scene secondScene = new Scene(secondRoot);
+            int firstPropertyCount = firstScene.getProperties().size();
+            int secondPropertyCount = secondScene.getProperties().size();
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            try {
+                M3Animation.playFromStart(firstOwner, transition);
+                M3Animation.playFromStart(secondOwner, transition);
+                assertEquals(firstPropertyCount, firstScene.getProperties().size());
+                firstRoot.setVisible(false);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                secondRoot.getChildren().clear();
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+                assertEquals(secondPropertyCount, secondScene.getProperties().size());
+            } finally {
+                transition.stop();
+            }
+        });
+    }
+
+    /// Releases observation even when a zero-duration run never enters the RUNNING state.
+    @Test
+    void zeroDurationFiniteTransitionDoesNotRetainObservation() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            int ownerPropertyCount = owner.getProperties().size();
+            int scenePropertyCount = scene.getProperties().size();
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            TestFiniteTransition transition = new TestFiniteTransition(value, Duration.ZERO);
+            M3Animation.playFromStart(owner, transition);
+            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+            assertEquals(ownerPropertyCount, owner.getProperties().size());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+        });
+    }
+
     /// Finite transition used to verify synchronous reduced-motion completion.
     @NotNullByDefault
     private static final class TestFiniteTransition extends M3FiniteTransition {
@@ -277,8 +345,13 @@ final class M3AnimationTest {
 
         /// Creates a finite transition for a test property.
         private TestFiniteTransition(DoubleProperty value) {
+            this(value, Duration.millis(100.0));
+        }
+
+        /// Creates a finite transition with an explicit cycle duration.
+        private TestFiniteTransition(DoubleProperty value, Duration duration) {
             this.value = value;
-            setCycleDuration(Duration.millis(100.0));
+            setCycleDuration(duration);
         }
 
         /// Applies the current transition fraction to the test property.

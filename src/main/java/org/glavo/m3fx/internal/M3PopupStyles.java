@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.internal;
 
-import javafx.css.Styleable;
 import javafx.scene.Parent;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3Theme;
@@ -17,17 +16,14 @@ import java.util.Objects;
 /// Prepares stylesheet and token context for popup-hosted M3FX content roots.
 ///
 /// Popup content is often styled before JavaFX creates the popup scene. This helper copies the owner stylesheet
-/// list, installs popup-specific control stylesheets, applies the fallback JavaFX `root` style class, and copies
+/// list, installs popup-specific control stylesheets, applies the fallback token root style class, and copies
 /// a local Material theme context when one is available. The fallback class is intentionally applied before
 /// theme copying so standalone popup roots can resolve fallback tokens during early `applyCss()` calls.
+/// Synchronization does not read, write, or bind the popup root's application-owned inline style.
 @NotNullByDefault
 public final class M3PopupStyles {
     /// The M3FX token root style class used by fallback token declarations outside JavaFX scene roots.
     public static final String FALLBACK_ROOT_STYLE_CLASS = "m3-fallback-root";
-
-    /// The property key that stores a popup root style before copied theme declarations are applied.
-    private static final IdentityKey BASE_STYLE_PROPERTY_KEY =
-            new IdentityKey(M3PopupStyles.class.getName() + ".baseStyle");
 
     /// The property key that stores the last source stylesheet snapshot copied into a popup root.
     private static final IdentityKey SOURCE_STYLESHEETS_PROPERTY_KEY =
@@ -72,14 +68,14 @@ public final class M3PopupStyles {
         if (controlStylesheet != null) {
             addStylesheet(popupRoot, controlStylesheet);
         }
-        addFallbackRootStyleClass(popupRoot);
-        preserveBaseStyle(popupRoot);
+        M3ControlStyles.add(popupRoot, FALLBACK_ROOT_STYLE_CLASS);
         @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         if (themeRoot != null) {
             M3ThemeRuntime.copyThemeContext(themeRoot, popupRoot);
             updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, theme);
         } else {
-            restoreBaseStyle(popupRoot);
+            M3ThemeRuntime.clearThemeStyleClasses(popupRoot);
+            M3ThemeMetadata.clearTheme(popupRoot);
             updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, null);
         }
     }
@@ -167,39 +163,5 @@ public final class M3PopupStyles {
             stylesheets.remove(currentIndex);
         }
         stylesheets.add(stylesheet);
-    }
-
-    /// Ensures fallback token declarations match a standalone scene or popup root.
-    ///
-    /// @param root the styleable root that should expose default JavaFX root token declarations
-    public static void addFallbackRootStyleClass(Styleable root) {
-        Objects.requireNonNull(root, "root");
-
-        List<String> styleClasses = root.getStyleClass();
-        if (!styleClasses.contains(FALLBACK_ROOT_STYLE_CLASS)) {
-            styleClasses.add(FALLBACK_ROOT_STYLE_CLASS);
-        }
-    }
-
-    /// Preserves the popup root style that should be restored when no copied theme context is available.
-    ///
-    /// @param popupRoot the popup-hosted root whose base style should be preserved
-    private static void preserveBaseStyle(Parent popupRoot) {
-        if (!popupRoot.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
-            popupRoot.getProperties().put(BASE_STYLE_PROPERTY_KEY, popupRoot.getStyle());
-        }
-    }
-
-    /// Restores the popup root style and removes copied theme metadata.
-    ///
-    /// @param popupRoot the popup-hosted root whose copied theme context should be cleared
-    private static void restoreBaseStyle(Parent popupRoot) {
-        M3ThemeRuntime.clearThemeStyleClasses(popupRoot);
-        M3ThemeMetadata.clearTheme(popupRoot);
-        Object baseStyleValue = popupRoot.getProperties().get(BASE_STYLE_PROPERTY_KEY);
-        String baseStyle = baseStyleValue instanceof String style ? style : "";
-        if (!Objects.equals(popupRoot.getStyle(), baseStyle)) {
-            popupRoot.setStyle(baseStyle);
-        }
     }
 }

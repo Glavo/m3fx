@@ -29,19 +29,8 @@ public final class M3ThemeResolver {
     /// @param owner the node whose theme should be resolved
     /// @return the nearest installed theme, or `null` when no theme controls the node
     public static @Nullable M3Theme findTheme(Node owner) {
-        Objects.requireNonNull(owner, "owner");
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current instanceof Parent parent) {
-                @Nullable M3Theme parentTheme = M3ThemeMetadata.getTheme(parent);
-                if (parentTheme != null) {
-                    return parentTheme;
-                }
-            }
-            current = current.getParent();
-        }
-        @Nullable Parent sceneRoot = sceneRoot(owner);
-        return sceneRoot == null ? null : M3ThemeMetadata.getTheme(sceneRoot);
+        @Nullable Parent root = findThemeRoot(owner);
+        return root == null ? null : M3ThemeMetadata.getTheme(root);
     }
 
     /// Finds the root whose installed theme context should be copied into detached popup content.

@@ -40,8 +40,6 @@ public abstract class M3FiniteTransition extends Transition {
         statusProperty().addListener((observable, oldStatus, newStatus) -> {
             if (newStatus == Animation.Status.STOPPED) {
                 stopMotionObservation();
-                motionScene = null;
-                motionWindow = null;
             }
         });
     }
@@ -56,21 +54,33 @@ public abstract class M3FiniteTransition extends Transition {
     /// @param owner the node whose inherited motion setting controls this run
     final void playFromStart(Node owner) {
         Node checkedOwner = Objects.requireNonNull(owner, "owner");
+        // Stop the previous run before installing observation for its replacement. JavaFX playFromStart()
+        // stops an active transition, which would otherwise discard the replacement's listeners and context.
+        stop();
         if (!M3Animation.areAnimationsEnabled(checkedOwner)) {
             M3Animation.finish(this);
             return;
         }
 
-        motionScene = checkedOwner.getScene();
-        motionWindow = motionScene == null ? null : motionScene.getWindow();
+        @Nullable Scene scene = checkedOwner.getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
         if (!M3PresentationActivity.isTreeVisible(checkedOwner)
-                || motionWindow != null && !M3PresentationActivity.isRenderActive(motionWindow)) {
+                || window != null && !M3PresentationActivity.isRenderActive(window)) {
             M3Animation.finish(this);
             return;
         }
 
-        startMotionObservation(checkedOwner);
-        super.playFromStart();
+        motionScene = scene;
+        motionWindow = window;
+        try {
+            startMotionObservation(checkedOwner);
+            super.playFromStart();
+        } finally {
+            // A zero-duration run may complete without ever changing the STOPPED status.
+            if (getStatus() == Animation.Status.STOPPED) {
+                stopMotionObservation();
+            }
+        }
     }
 
     /// Applies the configured final values.
@@ -80,7 +90,7 @@ public abstract class M3FiniteTransition extends Transition {
 
     /// Starts or transfers the observer used by the current run.
     private void startMotionObservation(Node owner) {
-        M3MotionSettingsObserver observer = motionSettingsObserver;
+        @Nullable M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer == null || motionOwner != owner) {
             if (observer != null) {
                 observer.dispose();
@@ -124,9 +134,11 @@ public abstract class M3FiniteTransition extends Transition {
         }
     }
 
-    /// Releases active scene observation while preserving the reusable observer object.
+    /// Releases active observation and presentation context while preserving the reusable observer object.
     private void stopMotionObservation() {
-        M3MotionSettingsObserver observer = motionSettingsObserver;
+        motionScene = null;
+        motionWindow = null;
+        @Nullable M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer != null) {
             observer.stop();
         }
