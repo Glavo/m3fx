@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -156,6 +157,7 @@ public final class M3ObservableLists {
                 for (int newIndex = 0; newIndex < size; newIndex++) {
                     backingList.set(newIndex, previousOrder.get(sortedOldIndices[newIndex]));
                 }
+                modCount++;
                 nextPermutation(0, size, permutation);
             } finally {
                 endChange();
@@ -178,7 +180,7 @@ public final class M3ObservableLists {
         @Override
         @SafeVarargs
         public final boolean addAll(E... elements) {
-            return addValidated(size(), validatedAdditionCopy(elements));
+            return addAll(Arrays.asList(elements));
         }
 
         /// Replaces the list contents after validating the collection and its contents.
@@ -191,7 +193,7 @@ public final class M3ObservableLists {
         @Override
         @SafeVarargs
         public final boolean setAll(E... elements) {
-            return replaceContents(validatedCopy(elements));
+            return setAll(Arrays.asList(elements));
         }
 
         /// Applies a unary replacement after validating the complete replacement snapshot.
@@ -210,7 +212,7 @@ public final class M3ObservableLists {
             replaceContents(replacements);
         }
 
-        /// Adds one already-validated element to the backing list.
+        /// Validates and adds one element to the backing list.
         @Override
         protected void doAdd(int index, E element) {
             E validatedElement = requireElement(element);
@@ -242,6 +244,8 @@ public final class M3ObservableLists {
             beginChange();
             try {
                 backingList.addAll(index, additions);
+                // Bulk writes bypass the superclass methods that normally invalidate traversal state.
+                modCount++;
                 nextAdd(index, index + additions.size());
             } finally {
                 endChange();
@@ -264,6 +268,7 @@ public final class M3ObservableLists {
             try {
                 backingList.clear();
                 backingList.addAll(replacement);
+                modCount++;
                 if (removed.isEmpty()) {
                     nextAdd(0, replacement.size());
                 } else if (replacement.isEmpty()) {
@@ -288,26 +293,8 @@ public final class M3ObservableLists {
             return copy;
         }
 
-        /// Returns a validated snapshot of the supplied array.
-        private List<E> validatedCopy(E[] elements) {
-            Objects.requireNonNull(elements, "elements");
-            ArrayList<E> copy = new ArrayList<>(elements.length);
-            for (E element : elements) {
-                copy.add(requireElement(element));
-            }
-            requireDistinctElements(copy);
-            return copy;
-        }
-
         /// Returns an addition snapshot validated against itself and the current backing list.
         private List<E> validatedAdditionCopy(Collection<? extends E> elements) {
-            List<E> copy = validatedCopy(elements);
-            requireDistinctFromBacking(copy);
-            return copy;
-        }
-
-        /// Returns an array addition snapshot validated against itself and the current backing list.
-        private List<E> validatedAdditionCopy(E[] elements) {
             List<E> copy = validatedCopy(elements);
             requireDistinctFromBacking(copy);
             return copy;
