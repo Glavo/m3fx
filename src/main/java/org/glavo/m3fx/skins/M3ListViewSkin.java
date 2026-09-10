@@ -31,6 +31,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3ListViewPresentation;
 import org.glavo.m3fx.internal.M3ScrollReveal;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -694,31 +695,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         return Math.abs(first - second) <= EPSILON;
     }
 
-    /// Returns whether one attached node contains another attached node.
-    private static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
-        if (possibleAncestor == possibleDescendant) {
-            return true;
-        }
-        if (possibleAncestor instanceof M3ListItem listItem
-                && (containsOptionalNode(listItem.getLeading(), possibleDescendant)
-                || containsOptionalNode(listItem.getTrailing(), possibleDescendant))) {
-            return true;
-        }
-        if (possibleAncestor instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                if (containsNode(child, possibleDescendant)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /// Returns whether one optional logical slot node contains another attached node.
-    private static boolean containsOptionalNode(@Nullable Node possibleAncestor, Node possibleDescendant) {
-        return possibleAncestor != null && containsNode(possibleAncestor, possibleDescendant);
-    }
-
     /// A private wrapper exposing protected virtual flow hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListCell<T>> {
@@ -799,7 +775,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
                     continue;
                 }
                 @Nullable Node listItem = cell.getListItem();
-                if (listItem != null && containsNode(listItem, node)) {
+                if (listItem != null && M3Accessible.containsNode(listItem, node)) {
                     return cell.getIndex();
                 }
             }

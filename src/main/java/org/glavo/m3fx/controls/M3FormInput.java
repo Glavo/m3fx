@@ -34,13 +34,21 @@ public interface M3FormInput {
 
     /// Returns whether validation currently contributes an error to a form validator.
     ///
+    /// @implSpec The default implementation returns whether [#getValidationErrorText()] is non-empty.
+    ///
     /// @return `true` when [#getValidationErrorText()] is non-empty
-    boolean isValidationError();
+    default boolean isValidationError() {
+        return !getValidationErrorText().isEmpty();
+    }
 
     /// Returns the current validator-produced error text.
     ///
+    /// @implSpec The default implementation returns the current value of [#validationErrorTextProperty()].
+    ///
     /// @return the validation error text, or an empty string when validation succeeds or is inactive
-    String getValidationErrorText();
+    default String getValidationErrorText() {
+        return validationErrorTextProperty().get();
+    }
 
     /// Returns the observable read-only validator-produced error property.
     ///
@@ -49,8 +57,12 @@ public interface M3FormInput {
 
     /// Returns whether validation has run and has not subsequently been cleared.
     ///
+    /// @implSpec The default implementation returns the current value of [#validationActiveProperty()].
+    ///
     /// @return `true` while validation is active
-    boolean isValidationActive();
+    default boolean isValidationActive() {
+        return validationActiveProperty().get();
+    }
 
     /// Returns the observable read-only validation-active property.
     ///
@@ -61,8 +73,12 @@ public interface M3FormInput {
     ///
     /// Blank text permits a presenter to use the focus target's prompt text or a generic fallback.
     ///
+    /// @implSpec The default implementation returns the current value of [#labelTextProperty()].
+    ///
     /// @return the non-null validation label text
-    String getLabelText();
+    default String getLabelText() {
+        return labelTextProperty().get();
+    }
 
     /// Returns the observable, bindable validation-label property.
     ///
@@ -81,8 +97,12 @@ public interface M3FormInput {
     /// The target may be `null` while the input has no editor. Callers must still verify that a non-null target is
     /// reachable before requesting focus.
     ///
+    /// @implSpec The default implementation returns the current value of [#validationFocusTargetProperty()].
+    ///
     /// @return the preferred focus target, or `null` when none is installed
-    @Nullable Node getValidationFocusTarget();
+    default @Nullable Node getValidationFocusTarget() {
+        return validationFocusTargetProperty().getValue();
+    }
 
     /// Returns an observable value for the preferred validation focus target.
     ///

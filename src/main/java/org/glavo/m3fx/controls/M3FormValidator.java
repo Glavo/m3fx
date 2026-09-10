@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -29,8 +30,9 @@ import java.util.Objects;
 ///
 /// Inputs are registered in validation order through a live mutable list. [#validate()] invokes every registered
 /// input synchronously in that order and publishes aggregate invalid state after the pass completes.
-/// Validator exceptions are propagated. Removing an input stops observing it but does not clear that layout's own
+/// Validator exceptions are propagated. Removing an input stops observing it but does not clear that input's own
 /// validation state.
+/// Registration and single-input validation operations identify inputs by instance, independently of `equals`.
 ///
 /// Aggregate properties also track validation subsequently triggered by an input, such as focus-loss or
 /// text-change validation. [#validProperty()] reports whether the current validator-produced error set is empty; it
@@ -193,8 +195,9 @@ public final class M3FormValidator {
 
     /// Returns the mutable registered input list in validation order.
     ///
-    /// Mutating this list installs and removes validation observation, rejects `null` and duplicate layout
-    /// instances, and refreshes aggregate state. The list does not take scene-graph ownership of its elements.
+    /// Mutating this list installs and removes validation observation, rejects `null` and duplicate input
+    /// instances, and refreshes aggregate state. Distinct instances may compare equal. The list does not take
+    /// scene-graph ownership of its elements; its ordinary search and removal operations follow [List] equality.
     ///
     /// @return the registered inputs in validation order
     public ObservableList<M3FormInput> getInputs() {
@@ -419,10 +422,20 @@ public final class M3FormValidator {
     /// Returns a registered input or throws when the input is not managed by this validator.
     private M3FormInput registeredInput(M3FormInput input) {
         M3FormInput validatedInput = Objects.requireNonNull(input, "input");
-        if (!inputs.contains(validatedInput)) {
+        if (inputIdentityIndex(validatedInput) < 0) {
             throw new IllegalArgumentException("input is not registered");
         }
         return validatedInput;
+    }
+
+    /// Returns the registration index of this exact input instance, or `-1` when it is absent.
+    private int inputIdentityIndex(M3FormInput input) {
+        for (int index = 0; index < inputs.size(); index++) {
+            if (inputs.get(index) == input) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     /// Returns the preferred reachable focus target for one invalid input.
@@ -434,6 +447,7 @@ public final class M3FormValidator {
     }
 
     /// Mutable input list that keeps validator listeners synchronized with list contents.
+    @NotNullByDefault
     private final class InputList extends ModifiableObservableListBase<M3FormInput> {
         /// The registered inputs.
         private final ArrayList<M3FormInput> backingList = new ArrayList<>();
@@ -477,13 +491,7 @@ public final class M3FormValidator {
         /// Adds all inputs after validating the full mutation.
         @Override
         public boolean addAll(M3FormInput... inputs) {
-            List<M3FormInput> copy = validatedAddCopy(inputs);
-            beginAggregateUpdate();
-            try {
-                return super.addAll(copy);
-            } finally {
-                endAggregateUpdate();
-            }
+            return addAll(Arrays.asList(inputs));
         }
 
         /// Replaces all inputs after validating the full replacement.
@@ -501,13 +509,7 @@ public final class M3FormValidator {
         /// Replaces all inputs after validating the full replacement.
         @Override
         public boolean setAll(M3FormInput... inputs) {
-            List<M3FormInput> copy = validatedReplacementCopy(inputs);
-            beginAggregateUpdate();
-            try {
-                return super.setAll(copy);
-            } finally {
-                endAggregateUpdate();
-            }
+            return setAll(Arrays.asList(inputs));
         }
 
         /// Removes all matching inputs with one aggregate state refresh.
@@ -607,17 +609,6 @@ public final class M3FormValidator {
             return copy;
         }
 
-        /// Returns a validated copy for adding inputs.
-        private List<M3FormInput> validatedAddCopy(M3FormInput[] inputs) {
-            Objects.requireNonNull(inputs, "inputs");
-            ArrayList<M3FormInput> copy = new ArrayList<>(inputs.length);
-            for (M3FormInput input : inputs) {
-                copy.add(requireNewInput(input));
-            }
-            validateDistinctInputs(copy);
-            return copy;
-        }
-
         /// Returns a validated copy for replacing all inputs.
         private List<M3FormInput> validatedReplacementCopy(Collection<? extends M3FormInput> inputs) {
             Objects.requireNonNull(inputs, "inputs");
@@ -629,21 +620,10 @@ public final class M3FormValidator {
             return copy;
         }
 
-        /// Returns a validated copy for replacing all inputs.
-        private List<M3FormInput> validatedReplacementCopy(M3FormInput[] inputs) {
-            Objects.requireNonNull(inputs, "inputs");
-            ArrayList<M3FormInput> copy = new ArrayList<>(inputs.length);
-            for (M3FormInput input : inputs) {
-                copy.add(Objects.requireNonNull(input, "input"));
-            }
-            validateDistinctInputs(copy);
-            return copy;
-        }
-
         /// Returns one non-null input that is not already registered.
         private M3FormInput requireNewInput(M3FormInput input) {
             M3FormInput validatedInput = Objects.requireNonNull(input, "input");
-            if (backingList.contains(validatedInput)) {
+            if (inputIdentityIndex(validatedInput) >= 0) {
                 throw new IllegalArgumentException("input is already registered");
             }
             return validatedInput;
@@ -652,10 +632,9 @@ public final class M3FormValidator {
         /// Returns one non-null input that is not registered at another index.
         private M3FormInput requireReplacementInput(int replacementIndex, M3FormInput input) {
             M3FormInput validatedInput = Objects.requireNonNull(input, "input");
-            for (int index = 0; index < backingList.size(); index++) {
-                if (index != replacementIndex && backingList.get(index) == validatedInput) {
-                    throw new IllegalArgumentException("input is already registered");
-                }
+            int index = inputIdentityIndex(validatedInput);
+            if (index >= 0 && index != replacementIndex) {
+                throw new IllegalArgumentException("input is already registered");
             }
             return validatedInput;
         }

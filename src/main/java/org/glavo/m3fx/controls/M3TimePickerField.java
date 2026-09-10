@@ -3,15 +3,14 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
@@ -58,8 +57,16 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     /// The vertical preset action container.
     private final VBox presetList = new VBox(6.0);
 
-    /// Rebuilds preset action buttons when the public preset list changes.
-    private final ListChangeListener<M3TimePreset> presetsListener = change -> updatePresetContent();
+    /// Maintains preset buttons across list and selectable-range changes.
+    private final M3PickerPresetController<M3TimePreset> presetController =
+            new M3PickerPresetController<>(
+                    presets, presetList, PRESET_BUTTON_STYLE_CLASS, M3TimePreset::text,
+                    preset -> getPicker().isTimeDisabled(preset.time()),
+                    (preset, event) -> {
+                        applyPreset(preset);
+                        event.consume();
+                    }
+            );
 
     /// Creates an empty time picker field with no selected value or presets.
     public M3TimePickerField() {
@@ -169,43 +176,26 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         M3PresetNavigation.installColumn(presetList, this, () -> M3Accessible.requestAccessibleFocus(this, getPicker()));
         getPicker().minTimeProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         getPicker().maxTimeProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
-        presets.addListener(presetsListener);
+        presetList.visibleProperty().addListener(observable -> updatePresetContent());
+        presetController.install();
     }
 
     /// Refreshes preset and field validation state after picker bounds change.
     private void handleSelectableBoundsChanged() {
-        updatePresetContent();
+        presetController.refreshDisabledStates();
         selectableRangeChanged();
     }
 
-    /// Rebuilds popup content from the current preset list.
+    /// Changes popup composition only when preset actions appear or disappear.
     private void updatePresetContent() {
         presetContent.getChildren().clear();
-        presetList.getChildren().clear();
 
         if (presets.isEmpty()) {
             resetPopupContent();
             return;
         }
 
-        for (M3TimePreset preset : presets) {
-            presetList.getChildren().add(createPresetButton(preset));
-        }
         presetContent.getChildren().setAll(presetList, getPicker());
         setPopupContent(presetContent);
     }
-
-    /// Creates one popup preset action button.
-    private M3Button createPresetButton(M3TimePreset preset) {
-        M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
-        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
-        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
-        button.setDisable(getPicker().isTimeDisabled(preset.time()));
-        button.setOnAction(event -> {
-            applyPreset(preset);
-            event.consume();
-        });
-        return button;
-    }
-
 }

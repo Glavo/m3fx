@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /// Tests [M3DateRangePickerField] text editing, popup synchronization, and skin installation.
 @NotNullByDefault
@@ -680,4 +681,31 @@ final class M3DateRangePickerFieldTest {
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
+    /// Retains range preset buttons and calendar attachment while bounds and binding state change.
+    @Test
+    void rangePresetUpdatesPreserveExistingPresentation() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DateRangePickerField field = new M3DateRangePickerField();
+            field.getPresets().setAll(M3DateRangePresets.today(anchor), M3DateRangePresets.tomorrow(anchor));
+            Parent parent = assertInstanceOf(Parent.class, field.getPicker().getParent());
+            M3Button today = findPresetButton(parent, "Today");
+            M3Button tomorrow = findPresetButton(parent, "Tomorrow");
+            field.getPicker().parentProperty().addListener(observable -> fail("Calendar was reparented"));
+
+            field.getPicker().setMinDate(anchor.plusDays(1));
+            assertSame(today, findPresetButton(parent, "Today"));
+            assertTrue(today.isDisabled());
+            ObjectProperty<@Nullable LocalDate> source = new SimpleObjectProperty<>(anchor.plusDays(1));
+            field.startDateProperty().bind(source);
+            assertTrue(tomorrow.isDisabled());
+            field.startDateProperty().unbind();
+            assertSame(tomorrow, findPresetButton(parent, "Tomorrow"));
+            assertFalse(tomorrow.isDisabled());
+            assertTrue(today.isDisabled());
+            tomorrow.fire();
+            assertEquals(new M3DateRange(source.get(), source.get()), field.getRange());
+        });
+    }
+
 }

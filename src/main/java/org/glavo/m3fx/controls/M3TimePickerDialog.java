@@ -112,25 +112,11 @@ public final class M3TimePickerDialog extends M3Dialog {
         picker = pane.picker;
         this.value = createValueProperty();
         presetContent = new HBox(16.0, presetList, picker);
-        presetController = new M3PickerPresetController<>(presets, presetList, PRESET_BUTTON_STYLE_CLASS) {
-            /// Returns one time preset label.
-            @Override
-            protected String presetText(M3TimePreset preset) {
-                return preset.text();
-            }
-
-            /// Applies one selected time preset.
-            @Override
-            protected void applyPreset(M3TimePreset preset) {
-                picker.applyPreset(preset);
-            }
-
-            /// Returns whether one time preset is outside the selectable bounds.
-            @Override
-            protected boolean isPresetDisabled(M3TimePreset preset) {
-                return picker.isTimeDisabled(preset.time());
-            }
-        };
+        presetController = new M3PickerPresetController<>(
+                presets, presetList, PRESET_BUTTON_STYLE_CLASS, M3TimePreset::text,
+                preset -> picker.isTimeDisabled(preset.time()),
+                (preset, event) -> picker.applyPreset(preset)
+        );
         presetBoundsInvalidation = observable -> presetController.refreshDisabledStates();
         initialize();
         setValue(value);

@@ -652,12 +652,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         inputLayout.clearValidation();
     }
 
-    /// {@inheritDoc}
-    @Override
-    public final boolean isValidationError() {
-        return inputLayout.isValidationError();
-    }
-
     /// The non-null message used when editor text cannot be parsed.
     ///
     /// Concrete picker fields supply their documented initial message.

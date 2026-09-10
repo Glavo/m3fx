@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /// Tests [M3DatePickerField] and [M3TimePickerField] value editing, validation, and skin installation.
 @NotNullByDefault
@@ -810,6 +811,52 @@ final class M3PickerFieldTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /// Retains date preset buttons and the calendar parent when bounds or unrelated presets change.
+    @Test
+    void datePresetUpdatesPreserveExistingPresentation() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField();
+            field.getPresets().setAll(M3DatePresets.today(anchor), M3DatePresets.tomorrow(anchor));
+            Parent parent = assertInstanceOf(Parent.class, field.getPicker().getParent());
+            M3Button today = findPresetButton(parent, "Today");
+            M3Button tomorrow = findPresetButton(parent, "Tomorrow");
+            field.getPicker().parentProperty().addListener(observable -> fail("Calendar was reparented"));
+
+            field.getPicker().setMinDate(anchor.plusDays(1));
+            assertSame(today, findPresetButton(parent, "Today"));
+            assertTrue(today.isDisabled());
+            field.getPresets().add(new M3DatePreset("Later", anchor.plusDays(2)));
+            assertSame(tomorrow, findPresetButton(parent, "Tomorrow"));
+            field.getPresets().remove(0);
+            assertNull(today.getOnAction());
+            assertSame(parent, field.getPicker().getParent());
+            tomorrow.fire();
+            assertEquals(anchor.plusDays(1), field.getValue());
+        });
+    }
+
+    /// Retains time preset buttons and the clock parent when selectable bounds change.
+    @Test
+    void timePresetUpdatesPreserveExistingPresentation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePickerField field = new M3TimePickerField();
+            field.getPresets().setAll(M3TimePresets.midnight(), M3TimePresets.morning());
+            Parent parent = assertInstanceOf(Parent.class, field.getPicker().getParent());
+            M3Button midnight = findTimePresetButton(parent, "Midnight");
+            M3Button morning = findTimePresetButton(parent, "Morning");
+            field.getPicker().parentProperty().addListener(observable -> fail("Clock was reparented"));
+
+            field.getPicker().setMinTime(LocalTime.of(1, 0));
+            assertSame(midnight, findTimePresetButton(parent, "Midnight"));
+            assertTrue(midnight.isDisabled());
+            field.getPresets().add(M3TimePresets.noon());
+            assertSame(morning, findTimePresetButton(parent, "Morning"));
+            morning.fire();
+            assertEquals(M3TimePresets.morning().time(), field.getValue());
         });
     }
 

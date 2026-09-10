@@ -158,25 +158,11 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Incrementally maintains preset actions without rebuilding unaffected buttons.
     private final M3PickerPresetController<M3DatePreset> presetController =
-            new M3PickerPresetController<>(presets, presetList, PRESET_BUTTON_STYLE_CLASS) {
-                /// Returns one date preset label.
-                @Override
-                protected String presetText(M3DatePreset preset) {
-                    return preset.text();
-                }
-
-                /// Applies one selected date preset.
-                @Override
-                protected void applyPreset(M3DatePreset preset) {
-                    picker.applyPreset(preset);
-                }
-
-                /// Returns whether one date preset is outside the selectable bounds.
-                @Override
-                protected boolean isPresetDisabled(M3DatePreset preset) {
-                    return picker.isDateDisabled(preset.date());
-                }
-            };
+            new M3PickerPresetController<>(
+                    presets, presetList, PRESET_BUTTON_STYLE_CLASS, M3DatePreset::text,
+                    preset -> picker.isDateDisabled(preset.date()),
+                    (preset, event) -> picker.applyPreset(preset)
+            );
 
     /// Refreshes existing button disabled states after picker bounds change.
     private final InvalidationListener presetBoundsInvalidation =

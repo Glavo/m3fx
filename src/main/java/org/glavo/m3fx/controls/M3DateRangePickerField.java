@@ -15,7 +15,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -32,6 +31,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -927,8 +927,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     /// The vertical preset action container.
     private final VBox presetList = new VBox(6.0);
 
-    /// Rebuilds preset action buttons when the public preset list changes.
-    private final ListChangeListener<M3DateRangePreset> presetsListener = change -> updatePresetContent();
+    /// Maintains preset buttons across list and selectable-range changes.
+    private final M3PickerPresetController<M3DateRangePreset> presetController =
+            new M3PickerPresetController<>(
+                    presets, presetList, PRESET_BUTTON_STYLE_CLASS, M3DateRangePreset::text,
+                    preset -> isPresetDisabled(preset),
+                    (preset, event) -> {
+                        applyPreset(preset);
+                        event.consume();
+                    }
+            );
 
     /// The trailing button that opens the popup from the start editor.
     private final M3IconButton startOpenButton = createOpenButton("Open start date range picker");
@@ -1155,12 +1163,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     public void clearValidation() {
         startInputLayout.clearValidation();
         endInputLayout.clearValidation();
-    }
-
-    /// {@inheritDoc}
-    @Override
-    public boolean isValidationError() {
-        return !getValidationErrorText().isEmpty();
     }
 
     /// {@inheritDoc}
@@ -1432,7 +1434,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
         );
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
-        presets.addListener(presetsListener);
+        presetList.visibleProperty().addListener(observable -> updatePresetContent());
+        presetController.install();
         invalidTextErrorText.addListener(observable -> refreshActiveValidation());
         rangeErrorText.addListener(observable -> refreshActiveValidation());
         startInputLayout.validationErrorTextProperty().addListener(observable -> updateCompositeValidationState());
@@ -1497,36 +1500,20 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
         }
     }
 
-    /// Rebuilds popup content from the current preset list.
+    /// Changes popup composition only when preset actions appear or disappear.
     private void updatePresetContent() {
         popupContent.getChildren().clear();
         presetContent.getChildren().clear();
-        presetList.getChildren().clear();
 
         if (presets.isEmpty()) {
             popupContent.getChildren().setAll(picker);
             return;
         }
 
-        for (M3DateRangePreset preset : presets) {
-            presetList.getChildren().add(createPresetButton(preset));
-        }
         presetContent.getChildren().setAll(presetList, picker);
         popupContent.getChildren().setAll(presetContent);
     }
 
-    /// Creates one popup preset action button.
-    private M3Button createPresetButton(M3DateRangePreset preset) {
-        M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
-        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
-        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
-        button.setDisable(isPresetDisabled(preset));
-        button.setOnAction(event -> {
-            applyPreset(preset);
-            event.consume();
-        });
-        return button;
-    }
 
     /// Returns whether a preset cannot be selected with the current date bounds.
     private boolean isPresetDisabled(M3DateRangePreset preset) {
@@ -1770,7 +1757,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
         if (bound) {
             hidePicker(false);
         }
-        updatePresetContent();
+        presetController.refreshDisabledStates();
         if (!bound && !isFieldRangeValid()) {
             M3DateRangeSelection displayedSelection = lastDisplayedSelection;
             setRange(displayedSelection.startDate(), displayedSelection.endDate());
@@ -1804,7 +1791,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Refreshes preset and field validation state after picker bounds change.
     private void handleSelectableBoundsChanged() {
-        updatePresetContent();
+        presetController.refreshDisabledStates();
         if (isRangeBound()) {
             if (!isFieldRangeValid() || isValidationActive()) {
                 validateEditors();

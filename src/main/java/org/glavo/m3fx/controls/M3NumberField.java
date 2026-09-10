@@ -815,12 +815,6 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         inputLayout.clearValidation();
     }
 
-    /// {@inheritDoc}
-    @Override
-    public boolean isValidationError() {
-        return inputLayout.isValidationError();
-    }
-
     /// The message shown when non-empty editor text cannot be parsed completely.
     ///
     /// @defaultValue `"Enter a valid number"`

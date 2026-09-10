@@ -873,14 +873,6 @@ public final class M3TextInputLayout extends Control implements M3FormInput {
         }
     }
 
-    /// Returns whether the configured validator currently contributes an error.
-    ///
-    /// @return whether active validator output is non-empty
-    @Override
-    public final boolean isValidationError() {
-        return !getValidationErrorText().isEmpty();
-    }
-
     /// Clears the wrapped input text when one is installed and writable.
     public final void clearText() {
         TextInputControl input = installedInput;

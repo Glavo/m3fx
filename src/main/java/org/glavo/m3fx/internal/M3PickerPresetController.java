@@ -16,24 +16,38 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-/// Incrementally maintains the preset action container owned by one Material picker dialog.
+/// Incrementally maintains the preset actions owned by a Material picker field or dialog.
 ///
 /// The controller creates buttons only for added or replaced presets, preserves unaffected button nodes across
 /// bounds and list changes, and shares one action handler across the complete container.
+/// The source list and container must remain privately owned by the same control. Installation observes the list
+/// for that control's lifetime; callers must not independently modify the container's children.
 ///
 /// @param <P> the immutable picker preset type
 @NotNullByDefault
-public abstract class M3PickerPresetController<P>
+public final class M3PickerPresetController<P>
         implements ListChangeListener<P>, EventHandler<ActionEvent> {
     /// The source preset list mirrored into the button container.
     private final ObservableList<P> presets;
 
-    /// The private dialog-owned button container.
+    /// The private control-owned button container.
     private final Pane buttonContainer;
 
     /// The style class applied to every preset action button.
     private final String buttonStyleClass;
+
+    /// Supplies the label for each immutable preset.
+    private final Function<P, String> presetText;
+
+    /// Tests whether a preset is excluded by the owner's current state.
+    private final Predicate<P> presetDisabled;
+
+    /// Applies a preset and lets its owner decide whether to consume the action event.
+    private final BiConsumer<P, ActionEvent> presetAction;
 
     /// Whether source observation and initial button creation have completed.
     private boolean installed;
@@ -41,19 +55,29 @@ public abstract class M3PickerPresetController<P>
     /// Whether the previous synchronized source state contained presets.
     private boolean hasPresets;
 
-    /// Creates a controller for one picker dialog preset list.
+    /// Creates a controller for one picker preset list without installing listeners.
     ///
     /// @param presets the non-null preset source list
     /// @param buttonContainer the private button container that mirrors the source list
     /// @param buttonStyleClass the style class applied to created action buttons
-    protected M3PickerPresetController(
+    /// @param presetText supplies each preset's button label
+    /// @param presetDisabled tests whether each preset is currently unavailable
+    /// @param presetAction applies the selected preset and optionally consumes its action event
+    /// @throws NullPointerException if any argument is `null`
+    public M3PickerPresetController(
             ObservableList<P> presets,
             Pane buttonContainer,
-            String buttonStyleClass
+            String buttonStyleClass,
+            Function<P, String> presetText,
+            Predicate<P> presetDisabled,
+            BiConsumer<P, ActionEvent> presetAction
     ) {
         this.presets = Objects.requireNonNull(presets, "presets");
         this.buttonContainer = Objects.requireNonNull(buttonContainer, "buttonContainer");
         this.buttonStyleClass = Objects.requireNonNull(buttonStyleClass, "buttonStyleClass");
+        this.presetText = Objects.requireNonNull(presetText, "presetText");
+        this.presetDisabled = Objects.requireNonNull(presetDisabled, "presetDisabled");
+        this.presetAction = Objects.requireNonNull(presetAction, "presetAction");
     }
 
     /// Creates the initial button set and starts observing preset list changes.
@@ -90,8 +114,8 @@ public abstract class M3PickerPresetController<P>
         int count = Math.min(buttons.size(), presets.size());
         for (int index = 0; index < count; index++) {
             M3Button button = (M3Button) buttons.get(index);
-            boolean disabled = isPresetDisabled(presets.get(index));
-            if (button.isDisabled() != disabled) {
+            boolean disabled = presetDisabled.test(presets.get(index));
+            if (button.isDisable() != disabled) {
                 button.setDisable(disabled);
             }
         }
@@ -130,34 +154,17 @@ public abstract class M3PickerPresetController<P>
 
         int index = buttonContainer.getChildren().indexOf(button);
         if (index >= 0 && index < presets.size()) {
-            applyPreset(presets.get(index));
+            presetAction.accept(presets.get(index), event);
         }
     }
 
-    /// Returns the text rendered by one preset action button.
-    ///
-    /// @param preset the source preset
-    /// @return the button text
-    protected abstract String presetText(P preset);
-
-    /// Applies one selected preset to the owning picker.
-    ///
-    /// @param preset the selected preset
-    protected abstract void applyPreset(P preset);
-
-    /// Returns whether one preset currently falls outside the picker bounds.
-    ///
-    /// @param preset the source preset
-    /// @return whether the corresponding action button is disabled
-    protected abstract boolean isPresetDisabled(P preset);
-
     /// Creates one action button for a newly inserted preset.
     private M3Button createButton(P preset) {
-        M3Button button = new M3Button(presetText(preset), M3ButtonVariant.TEXT);
+        M3Button button = new M3Button(presetText.apply(preset), M3ButtonVariant.TEXT);
         button.getStyleClass().add(buttonStyleClass);
         button.setWrapText(true);
         M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
-        button.setDisable(isPresetDisabled(preset));
+        button.setDisable(presetDisabled.test(preset));
         button.setOnAction(this);
         return button;
     }
