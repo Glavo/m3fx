@@ -58,12 +58,12 @@ final class M3StyleableObjectProperty<T> extends StyleableObjectProperty<@Nullab
         this.invalidation = Objects.requireNonNull(invalidation, "invalidation");
     }
 
-    /// Sets a value from application code and marks this property as explicitly configured.
+    /// Sets a value from application code and marks an unbound property as explicitly configured.
     ///
     /// @param newValue the new token value
     @Override
     public void set(@Nullable T newValue) {
-        if (!applyingStyle) {
+        if (!applyingStyle && !isBound()) {
             userSet = true;
         }
         super.set(newValue);
@@ -71,10 +71,10 @@ final class M3StyleableObjectProperty<T> extends StyleableObjectProperty<@Nullab
 
     /// Applies a CSS value without marking the property as explicitly configured by application code.
     ///
-    /// @param origin the CSS origin
+    /// @param origin the CSS origin, or `null` to clear the origin
     /// @param value the value resolved from CSS
     @Override
-    public void applyStyle(StyleOrigin origin, @Nullable T value) {
+    public void applyStyle(@Nullable StyleOrigin origin, @Nullable T value) {
         applyingStyle = true;
         try {
             super.applyStyle(origin, value);

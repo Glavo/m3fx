@@ -363,8 +363,10 @@ public final class M3Css {
 
     /// Creates a styleable non-negative component token property.
     ///
-    /// Explicit application assignments prevent later CSS passes from replacing the value. Every changed value is
-    /// required to be finite and non-negative before `invalidation` runs.
+    /// Accepted application assignments prevent later CSS passes from replacing the value. Initial values and
+    /// direct Java or CSS assignments must be finite and non-negative; invalid values are rejected before changing
+    /// the property or its CSS eligibility. Binding sources must supply valid values: source changes cannot be
+    /// rolled back by this property. Values are also checked before `invalidation` runs.
     ///
     /// @param initialValue the initial token value before CSS is applied
     /// @param bean         the object that owns the property
@@ -373,6 +375,7 @@ public final class M3Css {
     /// @param invalidation the callback invoked after a valid value changes
     /// @return the newly created styleable property
     /// @throws NullPointerException if `bean`, `name`, `cssMetaData`, or `invalidation` is `null`
+    /// @throws IllegalArgumentException if `initialValue` is negative, infinite, or NaN
     public static StyleableDoubleProperty nonNegativeStyleableDoubleProperty(
             double initialValue,
             Object bean,
@@ -392,8 +395,10 @@ public final class M3Css {
 
     /// Creates a styleable finite component token property.
     ///
-    /// Explicit application assignments prevent later CSS passes from replacing the value. Every changed value is
-    /// required to be finite before `invalidation` runs.
+    /// Accepted application assignments prevent later CSS passes from replacing the value. Initial values and
+    /// direct Java or CSS assignments must be finite; invalid values are rejected before changing the property or
+    /// its CSS eligibility. Binding sources must supply valid values: source changes cannot be rolled back by this
+    /// property. Values are also checked before `invalidation` runs.
     ///
     /// @param initialValue the initial token value before CSS is applied
     /// @param bean         the object that owns the property
@@ -402,6 +407,7 @@ public final class M3Css {
     /// @param invalidation the callback invoked after a valid value changes
     /// @return the newly created styleable property
     /// @throws NullPointerException if `bean`, `name`, `cssMetaData`, or `invalidation` is `null`
+    /// @throws IllegalArgumentException if `initialValue` is infinite or NaN
     public static StyleableDoubleProperty finiteStyleableDoubleProperty(
             double initialValue,
             Object bean,

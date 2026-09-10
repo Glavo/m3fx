@@ -8,6 +8,7 @@ import javafx.css.StyleOrigin;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
@@ -58,7 +59,7 @@ final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
             DoubleUnaryOperator validator,
             Runnable invalidation
     ) {
-        super(initialValue);
+        super(Objects.requireNonNull(validator, "validator").applyAsDouble(initialValue));
         this.bean = Objects.requireNonNull(bean, "bean");
         this.name = Objects.requireNonNull(name, "name");
         this.cssMetaData = Objects.requireNonNull(cssMetaData, "cssMetaData");
@@ -66,23 +67,28 @@ final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
         this.invalidation = Objects.requireNonNull(invalidation, "invalidation");
     }
 
-    /// Sets a value from application code and marks this property as explicitly configured.
+    /// Validates a value before assignment and marks an unbound property as explicitly configured.
     ///
     /// @param newValue the new token value
     @Override
     public void set(double newValue) {
-        if (!applyingStyle) {
+        validator.applyAsDouble(newValue);
+        if (!applyingStyle && !isBound()) {
             userSet = true;
         }
         super.set(newValue);
     }
 
-    /// Applies a CSS value without marking the property as explicitly configured by application code.
+    /// Validates a CSS value before applying it without taking application ownership.
     ///
-    /// @param origin the CSS origin
+    /// @param origin the CSS origin, or `null` to clear the origin
     /// @param value the value resolved from CSS
     @Override
-    public void applyStyle(StyleOrigin origin, Number value) {
+    public void applyStyle(@Nullable StyleOrigin origin, @Nullable Number value) {
+        // Validate the target before JavaFX can schedule a CSS transition toward it.
+        if (value != null) {
+            validator.applyAsDouble(value.doubleValue());
+        }
         applyingStyle = true;
         try {
             super.applyStyle(origin, value);
@@ -98,7 +104,7 @@ final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
         return userSet;
     }
 
-    /// Validates the current value and runs the invalidation callback.
+    /// Validates values received from bindings or CSS interpolation before running the callback.
     @Override
     protected void invalidated() {
         validator.applyAsDouble(get());
