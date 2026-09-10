@@ -11,12 +11,15 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /// Shared child navigation helpers for M3FX selection containers.
+///
+/// Current nodes are located by object identity. An equal but distinct node does not establish a navigation anchor.
 @NotNullByDefault
 public final class M3SelectionNavigation {
     /// The fallback row height used for page navigation before rows have been measured.
@@ -37,6 +40,8 @@ public final class M3SelectionNavigation {
     /// @return the first reachable matching child, or `null` when none exists
     /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T first(List<? extends Node> children, Class<T> type) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
         for (Node child : children) {
             @Nullable T selectable = selectable(child, type);
             if (selectable != null) {
@@ -54,6 +59,8 @@ public final class M3SelectionNavigation {
     /// @return the last reachable matching child, or `null` when none exists
     /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T last(List<? extends Node> children, Class<T> type) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
         for (int index = children.size() - 1; index >= 0; index--) {
             @Nullable T selectable = selectable(children.get(index), type);
             if (selectable != null) {
@@ -72,12 +79,14 @@ public final class M3SelectionNavigation {
     /// @return the next reachable matching child, or `null` when none exists
     /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T next(List<? extends Node> children, @Nullable T current, Class<T> type) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
         int childCount = children.size();
         if (childCount == 0) {
             return null;
         }
 
-        int currentIndex = current == null ? -1 : children.indexOf(current);
+        int currentIndex = indexOfIdentity(children, current);
         for (int offset = 1; offset <= childCount; offset++) {
             @Nullable T selectable = selectable(children.get(Math.floorMod(currentIndex + offset, childCount)), type);
             if (selectable != null) {
@@ -96,12 +105,14 @@ public final class M3SelectionNavigation {
     /// @return the previous reachable matching child, or `null` when none exists
     /// @throws NullPointerException if `children` or `type` is `null`
     public static <T extends Node> @Nullable T previous(List<? extends Node> children, @Nullable T current, Class<T> type) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
         int childCount = children.size();
         if (childCount == 0) {
             return null;
         }
 
-        int currentIndex = current == null ? childCount : children.indexOf(current);
+        int currentIndex = indexOfIdentity(children, current);
         if (currentIndex < 0) {
             currentIndex = childCount;
         }
@@ -145,22 +156,20 @@ public final class M3SelectionNavigation {
             return null;
         }
 
-        @Nullable T target = current != null && children.contains(current) && selectable(current, type) != null
-                ? current
-                : null;
-        if (target == null) {
+        int currentIndex = indexOfIdentity(children, current);
+        if (currentIndex < 0 || current == null || selectable(current, type) == null) {
             return forward ? first(children, type) : last(children, type);
         }
 
-        int step = pageStep(owner, children, type);
-        for (int offset = 0; offset < step; offset++) {
-            @Nullable T next = forward
-                    ? nextWithoutWrap(children, target, type)
-                    : previousWithoutWrap(children, target, type);
-            if (next == null) {
-                return target;
+        T target = current;
+        int remaining = pageStep(owner, children, type);
+        ListIterator<? extends Node> iterator = children.listIterator(forward ? currentIndex + 1 : currentIndex);
+        while (remaining > 0 && (forward ? iterator.hasNext() : iterator.hasPrevious())) {
+            @Nullable T candidate = selectable(forward ? iterator.next() : iterator.previous(), type);
+            if (candidate != null) {
+                target = candidate;
+                remaining--;
             }
-            target = next;
         }
         return target;
     }
@@ -557,7 +566,7 @@ public final class M3SelectionNavigation {
         if (focused != null) {
             return focused;
         }
-        if (current != null && children.contains(current) && selectable(current, type) != null) {
+        if (current != null && indexOfIdentity(children, current) >= 0 && selectable(current, type) != null) {
             return current;
         }
         return null;
@@ -613,7 +622,7 @@ public final class M3SelectionNavigation {
         }
 
         int childCount = children.size();
-        int currentIndex = current == null ? -1 : children.indexOf(current);
+        int currentIndex = indexOfIdentity(children, current);
         for (int offset = 1; offset <= childCount; offset++) {
             @Nullable T selectable = selectable(
                     children.get(Math.floorMod(currentIndex + offset, childCount)),
@@ -691,7 +700,7 @@ public final class M3SelectionNavigation {
             boolean rightKey,
             boolean rightToLeft
     ) {
-        if (current == null) {
+        if (indexOfIdentity(children, current) < 0) {
             return rightKey ? first(children, type) : last(children, type);
         }
 
@@ -714,36 +723,18 @@ public final class M3SelectionNavigation {
         };
     }
 
-    /// Returns the next enabled visible child after the current child without wrapping.
-    private static <T extends Node> @Nullable T nextWithoutWrap(
-            List<? extends Node> children,
-            T current,
-            Class<T> type
-    ) {
-        int currentIndex = children.indexOf(current);
-        for (int index = Math.max(0, currentIndex + 1); index < children.size(); index++) {
-            @Nullable T selectable = selectable(children.get(index), type);
-            if (selectable != null) {
-                return selectable;
+    /// Returns the index of the exact node, or `-1` when it is null or absent.
+    private static int indexOfIdentity(List<? extends Node> children, @Nullable Node target) {
+        if (target != null) {
+            int index = 0;
+            for (Node child : children) {
+                if (child == target) {
+                    return index;
+                }
+                index++;
             }
         }
-        return null;
-    }
-
-    /// Returns the previous enabled visible child before the current child without wrapping.
-    private static <T extends Node> @Nullable T previousWithoutWrap(
-            List<? extends Node> children,
-            T current,
-            Class<T> type
-    ) {
-        int currentIndex = children.indexOf(current);
-        for (int index = Math.min(currentIndex - 1, children.size() - 1); index >= 0; index--) {
-            @Nullable T selectable = selectable(children.get(index), type);
-            if (selectable != null) {
-                return selectable;
-            }
-        }
-        return null;
+        return -1;
     }
 
     /// Returns the page navigation step for a list-like owner and its visible child rows.
