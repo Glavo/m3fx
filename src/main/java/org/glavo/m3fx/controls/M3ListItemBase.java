@@ -18,7 +18,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.event.ActionEvent;
@@ -43,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /// The common base class for Material Design 3 list-derived rows.
 ///
@@ -1320,31 +1320,31 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
         /// CSS metadata for the one-line height token.
         private static final CssMetaData<M3ListItemBase, Number> ONE_LINE_HEIGHT =
-                createSizeCssMetaData("-m3-one-line-height", DEFAULT_ONE_LINE_HEIGHT, M3ListItemBase::oneLineHeightProperty);
+                M3Css.sizeMetaData("-m3-one-line-height", DEFAULT_ONE_LINE_HEIGHT, M3ListItemBase::oneLineHeightProperty);
 
         /// CSS metadata for the two-line height token.
         private static final CssMetaData<M3ListItemBase, Number> TWO_LINE_HEIGHT =
-                createSizeCssMetaData("-m3-two-line-height", DEFAULT_TWO_LINE_HEIGHT, M3ListItemBase::twoLineHeightProperty);
+                M3Css.sizeMetaData("-m3-two-line-height", DEFAULT_TWO_LINE_HEIGHT, M3ListItemBase::twoLineHeightProperty);
 
         /// CSS metadata for the three-line height token.
         private static final CssMetaData<M3ListItemBase, Number> THREE_LINE_HEIGHT =
-                createSizeCssMetaData("-m3-three-line-height", DEFAULT_THREE_LINE_HEIGHT, M3ListItemBase::threeLineHeightProperty);
+                M3Css.sizeMetaData("-m3-three-line-height", DEFAULT_THREE_LINE_HEIGHT, M3ListItemBase::threeLineHeightProperty);
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3ListItemBase, Number> CONTAINER_SHAPE =
-                createSizeCssMetaData("-m3-container-shape", DEFAULT_CONTAINER_SHAPE, M3ListItemBase::containerShapeProperty);
+                M3Css.sizeMetaData("-m3-container-shape", DEFAULT_CONTAINER_SHAPE, M3ListItemBase::containerShapeProperty);
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3ListItemBase, Number> HORIZONTAL_PADDING =
-                createSizeCssMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING, M3ListItemBase::horizontalPaddingProperty);
+                M3Css.sizeMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING, M3ListItemBase::horizontalPaddingProperty);
 
         /// CSS metadata for the vertical padding token.
         private static final CssMetaData<M3ListItemBase, Number> VERTICAL_PADDING =
-                createSizeCssMetaData("-m3-vertical-padding", DEFAULT_VERTICAL_PADDING, M3ListItemBase::verticalPaddingProperty);
+                M3Css.sizeMetaData("-m3-vertical-padding", DEFAULT_VERTICAL_PADDING, M3ListItemBase::verticalPaddingProperty);
 
         /// CSS metadata for the content spacing token.
         private static final CssMetaData<M3ListItemBase, Number> CONTENT_SPACING =
-                createSizeCssMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING, M3ListItemBase::contentSpacingProperty);
+                M3Css.sizeMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING, M3ListItemBase::contentSpacingProperty);
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -1369,58 +1369,22 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         /// Creates CSS metadata for a text-paint token.
         private static CssMetaData<M3ListItemBase, @Nullable Paint> createPaintCssMetaData(
                 String property,
-                StyleablePaintPropertyProvider provider
+                Function<M3ListItemBase, StyleableObjectProperty<@Nullable Paint>> provider
         ) {
             return new CssMetaData<>(property, PaintConverter.getInstance(), DEFAULT_TEXT_COLOR) {
                 /// Returns whether this property can be set by CSS.
                 @Override
                 public boolean isSettable(M3ListItemBase control) {
-                    return M3Css.isSettable(provider.property(control));
+                    return M3Css.isSettable(provider.apply(control));
                 }
 
                 /// Returns the styleable property for a control.
                 @Override
                 public StyleableProperty<@Nullable Paint> getStyleableProperty(M3ListItemBase control) {
-                    return provider.property(control);
+                    return provider.apply(control);
                 }
             };
         }
 
-        /// Creates CSS metadata for a size token.
-        private static CssMetaData<M3ListItemBase, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyProvider provider
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3ListItemBase control) {
-                    return M3Css.isSettable(provider.property(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3ListItemBase control) {
-                    return provider.property(control);
-                }
-            };
-        }
-    }
-
-    /// Provides a styleable text-paint property for a list item.
-    @FunctionalInterface
-    @NotNullByDefault
-    private interface StyleablePaintPropertyProvider {
-        /// Returns the styleable paint property for a list item.
-        StyleableObjectProperty<@Nullable Paint> property(M3ListItemBase control);
-    }
-
-    /// Provides a styleable double property for a list item.
-    @FunctionalInterface
-    @NotNullByDefault
-    private interface StyleablePropertyProvider {
-        /// Returns the styleable property for a list item.
-        StyleableDoubleProperty property(M3ListItemBase control);
     }
 }

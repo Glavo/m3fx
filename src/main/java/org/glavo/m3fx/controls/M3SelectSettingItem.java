@@ -17,7 +17,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -29,7 +29,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
@@ -39,6 +38,7 @@ import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
@@ -56,6 +56,7 @@ import java.util.function.Function;
 /// The control does not persist preference values. Applications own storage and may bind [#valueProperty()] or
 /// listen for action events. Menu item labels come from [#converterProperty()]; optional supporting text on each
 /// menu item comes from [#descriptionConverterProperty()].
+/// A bound value makes popup choices read-only: activation neither changes the value nor delivers a row action.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview) and
 /// [Material Design menus](https://m3.material.io/components/menus/overview).
@@ -78,6 +79,26 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// The menu displayed by this setting row.
     private final M3Menu menu = new M3Menu();
+
+    /// The stable read-only view of generated menu nodes.
+    private final @UnmodifiableView ObservableList<Node> menuItemsView =
+            FXCollections.unmodifiableObservableList(menu.getItems());
+
+    /// The last published choice-to-node mapping and formatted content.
+    private @Unmodifiable List<MenuChoice<T>> renderedChoices = List.of();
+
+    /// Routes generated-item activation through the selected-value property before menu selection changes.
+    private final EventHandler<ActionEvent> choiceActionFilter = this::handleMenuAction;
+
+    /// One formatted choice associated with its generated menu node.
+    ///
+    /// @param value the source choice, including `null` when permitted by `T`
+    /// @param item the generated menu item
+    /// @param label the formatted headline
+    /// @param description the formatted supporting text, or an empty string
+    @NotNullByDefault
+    private record MenuChoice<T>(T value, M3MenuItem item, String label, String description) {
+    }
 
     /// The popup window used to host the menu.
     private final Popup popup = new Popup();
@@ -111,6 +132,15 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Whether menu content is currently being rebuilt.
     private boolean rebuildingMenu;
+
+    /// Whether a source or converter changed during the current menu refresh.
+    private boolean menuRebuildRequested;
+
+    /// Whether the current value is being formatted for the trailing label.
+    private boolean updatingValuePresentation;
+
+    /// Whether the value presentation changed during its current formatting pass.
+    private boolean valuePresentationRequested;
 
     /// Creates an empty select setting row with no selected value.
     public M3SelectSettingItem() {
@@ -155,17 +185,20 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     /// Sets the selected value.
     ///
     /// Direct assignment does not fire an action event. Choosing an item from the popup menu updates this property
-    /// and then delivers an action event.
+    /// and then delivers an action event when the value is unbound and the row is enabled.
     ///
     /// @param value the selected value, or `null`
+    /// @throws RuntimeException if the selected-value property is bound
     public void setValue(@Nullable T value) {
         this.value.set(value);
     }
 
     /// Returns the observable, bindable selected-value property.
     ///
-    /// The property defaults to `null`. Programmatic changes update presentation only; popup selection also fires
-    /// an action event after the value is assigned.
+    /// The property defaults to `null`. Programmatic changes update presentation only. When this property is
+    /// unbound and the row is enabled, popup selection also fires an action event after assignment. Bound values
+    /// reject popup edits without closing the menu or delivering a row action. Menu selection follows the first
+    /// choice equal to the current value according to [Objects#equals(Object, Object)].
     ///
     /// @return the selected-value property
     public ObjectProperty<@Nullable T> valueProperty() {
@@ -175,23 +208,33 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     /// The ordered selectable values presented by the popup menu.
     ///
     /// Mutate the live list through [#getItems()] (for example `getItems().setAll(...)`). Individual elements may be
-    /// `null` when `T` permits them. Mutations rebuild the popup menu content.
+    /// `null` when `T` permits them. Mutations rebuild the popup menu content. A null backing list represents no
+    /// choices and leaves the selected value unchanged.
     ///
     /// @defaultValue an empty observable list
     private final ListProperty<T> items =
             new SimpleListProperty<>(this, "items", FXCollections.observableArrayList());
 
-    /// Returns the live selectable-value list.
+    /// Returns a stable list facade over the current selectable values.
     ///
-    /// Callers should mutate this list in place. Replacing the backing list instance is supported through
-    /// [#itemsProperty()].
+    /// This list delegates to the current backing list in [#itemsProperty()]. Previously obtained references and
+    /// listeners remain connected when that backing list is replaced. Mutations affect the current backing list,
+    /// including while the property is bound, and are subject to that list's mutation restrictions.
     ///
-    /// @return the selectable values
+    /// When the backing list is `null`, this facade behaves as an immutable empty list; adding a choice throws
+    /// [UnsupportedOperationException]. Supply a non-null backing list through [#itemsProperty()] or its binding
+    /// source before adding choices.
+    ///
+    /// @return the stable, non-null selectable-value list
     public ObservableList<T> getItems() {
-        return items.get();
+        return items;
     }
 
     /// Returns the bindable selectable-value list property.
+    ///
+    /// Its value is the backing list used by [#getItems()] and may be `null`, which clears the generated menu
+    /// without changing [#getValue()]. Replacing the list or changing its contents refreshes the menu. Mutations
+    /// of a replaced list no longer affect this control.
     ///
     /// @return the items property
     public ListProperty<T> itemsProperty() {
@@ -201,59 +244,61 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     /// Converts a selectable value to the text shown on the row and in the menu.
     ///
     /// When the converter is `null`, the control uses [Objects#toString(Object, String)] with an empty fallback. A
-    /// `null` selected value always produces an empty trailing label and is not passed to the converter.
+    /// `null` selected value always produces an empty trailing label and is not passed to the converter. A `null`
+    /// conversion result is displayed as empty text. Reentrant value, item, and converter changes are reconciled
+    /// after formatting; changes initiated by converters must eventually stabilize.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Function<? super T, String>> converter =
+    private final ObjectProperty<@Nullable Function<? super T, @Nullable String>> converter =
             new SimpleObjectProperty<>(this, "converter");
 
     /// Returns the value-to-text converter.
     ///
     /// @return the converter, or `null` for the default string conversion
-    public @Nullable Function<? super T, String> getConverter() {
+    public @Nullable Function<? super T, @Nullable String> getConverter() {
         return converter.get();
     }
 
     /// Sets the value-to-text converter.
     ///
     /// @param converter the converter, or `null` for the default string conversion
-    public void setConverter(@Nullable Function<? super T, String> converter) {
+    public void setConverter(@Nullable Function<? super T, @Nullable String> converter) {
         this.converter.set(converter);
     }
 
     /// Returns the bindable value-to-text converter property.
     ///
     /// @return the converter property
-    public ObjectProperty<@Nullable Function<? super T, String>> converterProperty() {
+    public ObjectProperty<@Nullable Function<? super T, @Nullable String>> converterProperty() {
         return converter;
     }
 
     /// Converts a selectable value to optional supporting text shown under the menu item label.
     ///
-    /// When the converter is `null` or returns a blank string, the menu item has no supporting text.
+    /// When the converter is `null` or returns a null or blank string, the menu item has no supporting text.
     ///
     /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Function<? super T, String>> descriptionConverter =
+    private final ObjectProperty<@Nullable Function<? super T, @Nullable String>> descriptionConverter =
             new SimpleObjectProperty<>(this, "descriptionConverter");
 
     /// Returns the value-to-description converter.
     ///
     /// @return the description converter, or `null` when menu items have no supporting text
-    public @Nullable Function<? super T, String> getDescriptionConverter() {
+    public @Nullable Function<? super T, @Nullable String> getDescriptionConverter() {
         return descriptionConverter.get();
     }
 
     /// Sets the value-to-description converter.
     ///
     /// @param descriptionConverter the converter, or `null` to omit menu supporting text
-    public void setDescriptionConverter(@Nullable Function<? super T, String> descriptionConverter) {
+    public void setDescriptionConverter(@Nullable Function<? super T, @Nullable String> descriptionConverter) {
         this.descriptionConverter.set(descriptionConverter);
     }
 
     /// Returns the bindable value-to-description converter property.
     ///
     /// @return the description-converter property
-    public ObjectProperty<@Nullable Function<? super T, String>> descriptionConverterProperty() {
+    public ObjectProperty<@Nullable Function<? super T, @Nullable String>> descriptionConverterProperty() {
         return descriptionConverter;
     }
 
@@ -318,6 +363,10 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     ///
     /// Applications may adjust color style or other menu presentation, but the content list is rebuilt from
     /// [#getItems()] and must not be mutated as the primary choice source.
+    /// Converter changes update labels in place. A generated item is retained while the same choice object remains
+    /// at its index; reopening alone retains all items. Source and converter changes made during formatting are
+    /// applied by a subsequent refresh pass after the callback returns. Such changes must eventually stabilize.
+    /// The row consumes generated-item actions and delivers its own action after an accepted selection.
     ///
     /// @return the stable owned menu instance
     public M3Menu getMenu() {
@@ -328,7 +377,7 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     ///
     /// @return the generated menu content
     public @UnmodifiableView ObservableList<Node> getMenuItems() {
-        return FXCollections.unmodifiableObservableList(menu.getItems());
+        return menuItemsView;
     }
 
     /// Shows the owned menu in a popup positioned relative to this row.
@@ -340,11 +389,10 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
             return;
         }
 
-        rebuildMenuItems();
         boolean popupShown = false;
         popupContextSynchronizer.start();
         try {
-            M3Css.setMinWidthIfUnbound(menu, Math.max(getWidth(), menu.minWidth(-1.0)));
+            menu.setPopupMinWidth(getWidth());
             @Nullable M3PopupPositioning.Placement placement =
                     M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
             if (placement == null) {
@@ -493,64 +541,97 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
         rebuildMenuItems();
     }
 
-    /// Commits a chosen value from the popup menu and delivers the row action.
-    private void commitSelection(@Nullable T choice) {
-        if (rebuildingMenu) {
+    /// Commits a current choice before the menu can independently change its selection.
+    private void handleMenuAction(ActionEvent event) {
+        if (!(event.getSource() instanceof M3MenuItem item) || !menu.getItems().contains(item)) {
             return;
         }
-        setValue(choice);
-        hideMenu(true);
-        if (!isDisabled()) {
-            Event.fireEvent(this, new ActionEvent(this, this));
+        for (MenuChoice<T> choice : renderedChoices) {
+            if (choice.item() == item) {
+                event.consume();
+                try {
+                    if (!rebuildingMenu && !isDisabled() && !value.isBound()) {
+                        setValue(choice.value());
+                        hideMenu(true);
+                        dispatchActionEvent();
+                    }
+                } finally {
+                    // Row listeners may replace choices or change the value while handling the action.
+                    syncMenuSelection();
+                }
+                return;
+            }
         }
     }
 
-    /// Rebuilds the popup menu from the current items and converters.
+    /// Reconciles menu content from snapshots, deferring reentrant refreshes until the current pass completes.
     private void rebuildMenuItems() {
+        menuRebuildRequested = true;
+        if (rebuildingMenu) {
+            return;
+        }
         rebuildingMenu = true;
         try {
-            ObservableList<T> choices = getItems();
-            List<Node> menuItems = new ArrayList<>(choices.size());
-            for (T choice : choices) {
-                M3MenuItem menuItem = new M3MenuItem(formatValue(choice));
-                @Nullable Function<? super T, String> description = getDescriptionConverter();
-                if (description != null) {
-                    @Nullable String supporting = description.apply(choice);
-                    if (supporting != null && !supporting.isBlank()) {
-                        menuItem.setSupportingText(supporting);
+            do {
+                menuRebuildRequested = false;
+                List<T> choices = new ArrayList<>(getItems());
+                @Nullable Function<? super T, @Nullable String> textConverter = getConverter();
+                @Nullable Function<? super T, @Nullable String> description = getDescriptionConverter();
+                List<MenuChoice<T>> next = new ArrayList<>(choices.size());
+                for (int index = 0; index < choices.size(); index++) {
+                    T choice = choices.get(index);
+                    String label = formatValue(choice, textConverter);
+                    String supporting = description == null ? "" : Objects.toString(description.apply(choice), "");
+                    if (menuRebuildRequested) {
+                        break;
+                    }
+                    M3MenuItem item;
+                    if (index < renderedChoices.size() && renderedChoices.get(index).value() == choice) {
+                        item = renderedChoices.get(index).item();
+                    } else {
+                        item = new M3MenuItem();
+                        item.addEventFilter(ActionEvent.ACTION, choiceActionFilter);
+                    }
+                    next.add(new MenuChoice<>(choice, item, label, supporting.isBlank() ? "" : supporting));
+                }
+                if (menuRebuildRequested) {
+                    continue;
+                }
+
+                // Finish application callbacks before changing visible labels or publishing the choice mapping.
+                for (int index = 0; index < renderedChoices.size(); index++) {
+                    M3MenuItem previous = renderedChoices.get(index).item();
+                    if (index >= next.size() || previous != next.get(index).item()) {
+                        previous.removeEventFilter(ActionEvent.ACTION, choiceActionFilter);
                     }
                 }
-                menuItem.setOnAction(event -> commitSelection(choice));
-                menuItems.add(menuItem);
-            }
-            menu.getItems().setAll(menuItems);
-            syncMenuSelection();
+                renderedChoices = List.copyOf(next);
+                List<Node> nodes = new ArrayList<>(next.size());
+                for (MenuChoice<T> choice : next) {
+                    choice.item().setHeadlineText(choice.label());
+                    choice.item().setSupportingText(choice.description());
+                    nodes.add(choice.item());
+                }
+                if (!menu.getItems().equals(nodes)) {
+                    menu.getItems().setAll(nodes);
+                }
+                syncMenuSelection();
+            } while (menuRebuildRequested);
         } finally {
             rebuildingMenu = false;
         }
     }
 
-    /// Synchronizes menu item selection with [#getValue()].
+    /// Synchronizes selection against the choices represented by the currently published menu nodes.
     private void syncMenuSelection() {
-        if (rebuildingMenu && menu.getItems().isEmpty()) {
-            return;
-        }
-        ObservableList<T> choices = getItems();
-        ObservableList<Node> menuItems = menu.getItems();
-        if (choices.size() != menuItems.size()) {
-            return;
-        }
-
         @Nullable T selectedValue = getValue();
         @Nullable M3MenuItem selectedItem = null;
-        for (int index = 0; index < choices.size(); index++) {
-            if (Objects.equals(choices.get(index), selectedValue)
-                    && menuItems.get(index) instanceof M3MenuItem menuItem) {
-                selectedItem = menuItem;
+        for (MenuChoice<T> choice : renderedChoices) {
+            if (Objects.equals(choice.value(), selectedValue)) {
+                selectedItem = choice.item();
                 break;
             }
         }
-
         if (selectedItem == null) {
             menu.clearSelection();
         } else if (!selectedItem.isSelected()) {
@@ -560,16 +641,31 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Updates the trailing value label from the current value and converter.
     private void updateValuePresentation() {
-        if (isShowValue()) {
-            setTrailingSupportingText(formatValue(getValue()));
-        } else {
-            setTrailingSupportingText("");
+        valuePresentationRequested = true;
+        if (updatingValuePresentation) {
+            return;
+        }
+        updatingValuePresentation = true;
+        try {
+            do {
+                valuePresentationRequested = false;
+                String text = isShowValue() ? formatValue(getValue()) : "";
+                if (!valuePresentationRequested) {
+                    setTrailingSupportingText(text);
+                }
+            } while (valuePresentationRequested);
+        } finally {
+            updatingValuePresentation = false;
         }
     }
 
     /// Formats a choice for display on the row or in the menu.
     private String formatValue(@Nullable T choice) {
-        @Nullable Function<? super T, String> activeConverter = getConverter();
+        return formatValue(choice, getConverter());
+    }
+
+    /// Formats a choice using the converter captured for one refresh pass.
+    private static <T> String formatValue(@Nullable T choice, @Nullable Function<? super T, @Nullable String> activeConverter) {
         if (choice == null) {
             return "";
         }
@@ -771,8 +867,11 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
         M3Animation.playFromStart(this, popupAnimation);
     }
 
-    /// Resets transient popup menu animation transforms.
+    /// Clears the popup width constraint and resets transient animation transforms.
     private void resetMenuAnimationState() {
+        if (!popup.isShowing()) {
+            menu.setPopupMinWidth(0.0);
+        }
         popupAnimation.stop();
         hidingPopup = false;
         menu.setOpacity(1.0);

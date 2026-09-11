@@ -10,8 +10,6 @@ import javafx.beans.property.StringProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
@@ -327,19 +325,11 @@ public final class M3Avatar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the avatar container size token.
         private static final CssMetaData<M3Avatar, Number> CONTAINER_SIZE =
-                new CssMetaData<>("-m3-container-size", SizeConverter.getInstance(), DEFAULT_CONTAINER_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Avatar control) {
-                        return M3Css.isSettable(control.containerSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Avatar control) {
-                        return control.containerSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-size",
+                        DEFAULT_CONTAINER_SIZE,
+                        M3Avatar::containerSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

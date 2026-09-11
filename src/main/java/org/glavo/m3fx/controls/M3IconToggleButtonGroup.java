@@ -16,8 +16,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -802,23 +800,11 @@ public final class M3IconToggleButtonGroup extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for icon toggle button spacing.
         private static final CssMetaData<M3IconToggleButtonGroup, Number> SPACING =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-icon-toggle-button-group-spacing",
-                        SizeConverter.getInstance(),
-                        DEFAULT_SPACING
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconToggleButtonGroup control) {
-                        return M3Css.isSettable(control.spacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButtonGroup control) {
-                        return control.spacingProperty();
-                    }
-                };
+                        DEFAULT_SPACING,
+                        M3IconToggleButtonGroup::spacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

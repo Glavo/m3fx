@@ -8,8 +8,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.Node;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
@@ -253,19 +251,11 @@ public final class M3IconButton extends M3ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the visual container width token.
         private static final CssMetaData<M3IconButton, Number> CONTAINER_WIDTH =
-                new CssMetaData<>("-m3-container-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconButton control) {
-                        return M3Css.isSettable(control.containerWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconButton control) {
-                        return control.containerWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-width",
+                        DEFAULT_CONTAINER_WIDTH,
+                        M3IconButton::containerWidthProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

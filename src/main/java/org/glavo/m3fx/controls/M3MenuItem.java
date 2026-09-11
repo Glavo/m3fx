@@ -8,8 +8,6 @@ import javafx.scene.Node;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -144,23 +142,11 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// Metadata for the grouped-menu inner-corner radius.
-        private static final CssMetaData<M3MenuItem, Number> INNER_CORNER_SHAPE = new CssMetaData<>(
-                "-m3-menu-inner-corner-shape",
-                SizeConverter.getInstance(),
-                DEFAULT_INNER_CORNER_SHAPE
-        ) {
-            /// Returns whether CSS may assign the property.
-            @Override
-            public boolean isSettable(M3MenuItem control) {
-                return M3Css.isSettable(control.innerCornerShapeProperty());
-            }
-
-            /// Returns the styleable property represented by this metadata.
-            @Override
-            public StyleableProperty<Number> getStyleableProperty(M3MenuItem control) {
-                return control.innerCornerShapeProperty();
-            }
-        };
+        private static final CssMetaData<M3MenuItem, Number> INNER_CORNER_SHAPE = M3Css.sizeMetaData(
+                        "-m3-menu-inner-corner-shape",
+                        DEFAULT_INNER_CORNER_SHAPE,
+                        M3MenuItem::innerCornerShapeProperty
+                );
 
         /// The immutable CSS metadata list for menu items.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

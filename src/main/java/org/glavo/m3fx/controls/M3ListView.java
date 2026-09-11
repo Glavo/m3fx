@@ -25,8 +25,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -1987,19 +1985,7 @@ public final class M3ListView<T> extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the gap between adjacent virtualized items.
         private static final CssMetaData<M3ListView<?>, Number> ITEM_SPACING =
-                new CssMetaData<>("-m3-list-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
-                    /// Returns whether the spacing can be set from CSS.
-                    @Override
-                    public boolean isSettable(M3ListView<?> control) {
-                        return M3Css.isSettable(control.itemSpacingProperty());
-                    }
-
-                    /// Returns the styleable spacing property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ListView<?> control) {
-                        return control.itemSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData("-m3-list-item-spacing", DEFAULT_ITEM_SPACING, M3ListView::itemSpacingProperty);
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

@@ -12,8 +12,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -986,36 +984,20 @@ public final class M3FabMenu extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for expanded action item spacing.
         private static final CssMetaData<M3FabMenu, Number> ACTION_SPACING =
-                new CssMetaData<>("-m3-fab-menu-action-spacing", SizeConverter.getInstance(), DEFAULT_ACTION_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FabMenu control) {
-                        return M3Css.isSettable(control.actionSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FabMenu control) {
-                        return control.actionSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-fab-menu-action-spacing",
+                        DEFAULT_ACTION_SPACING,
+                        M3FabMenu::actionSpacingProperty
+                );
 
 
         /// CSS metadata for spacing before the close button.
         private static final CssMetaData<M3FabMenu, Number> CLOSE_SPACING =
-                new CssMetaData<>("-m3-fab-menu-close-spacing", SizeConverter.getInstance(), DEFAULT_CLOSE_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FabMenu control) {
-                        return M3Css.isSettable(control.closeSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FabMenu control) {
-                        return control.closeSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-fab-menu-close-spacing",
+                        DEFAULT_CLOSE_SPACING,
+                        M3FabMenu::closeSpacingProperty
+                );
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 

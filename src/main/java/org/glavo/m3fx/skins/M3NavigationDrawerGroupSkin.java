@@ -11,8 +11,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
-import javafx.scene.Parent;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -23,7 +21,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
 ///
@@ -42,7 +39,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private static final Insets EMPTY_CHILD_PADDING = Insets.EMPTY;
 
     /// The clipped viewport for child destination rows.
-    private final Pane childViewport = new Pane();
+    private final Pane childViewport = new ChildViewport();
 
     /// The vertical container holding child destination rows during expansion.
     private final VBox childrenContainer = new VBox();
@@ -88,9 +85,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// @param control the skinned navigation drawer group
     public M3NavigationDrawerGroupSkin(M3NavigationDrawerGroup control) {
         super(control);
-        childViewport.setManaged(false);
         childViewport.setClip(childrenClip);
-        childrenContainer.setManaged(false);
         childrenContainer.setSpacing(ITEM_SPACING);
         expansionAnimation.setOnFinished(event -> finishExpansionAnimation());
         childViewport.getChildren().add(childrenContainer);
@@ -132,7 +127,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, Region::minWidth) + rightInset;
+        return leftInset + contentWidth(height, topInset, bottomInset, Region::minWidth) + rightInset;
     }
 
     /// Computes the minimum height from the internal item container.
@@ -144,7 +139,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, Region::minHeight) + bottomInset;
+        return topInset + contentHeight(width, leftInset, rightInset, Region::minHeight) + bottomInset;
     }
 
     /// Computes the preferred width from the internal item container.
@@ -156,7 +151,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, Region::prefWidth) + rightInset;
+        return leftInset + contentWidth(height, topInset, bottomInset, Region::prefWidth) + rightInset;
     }
 
     /// Computes the preferred height from the internal item container.
@@ -168,7 +163,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, Region::prefHeight) + bottomInset;
+        return topInset + contentHeight(width, leftInset, rightInset, Region::prefHeight) + bottomInset;
     }
 
     /// Computes the maximum width from the internal item container.
@@ -180,7 +175,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, Region::maxWidth) + rightInset;
+        return leftInset + contentWidth(height, topInset, bottomInset, Region::maxWidth) + rightInset;
     }
 
     /// Computes the maximum height from the internal item container.
@@ -192,7 +187,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, Region::maxHeight) + bottomInset;
+        return topInset + contentHeight(width, leftInset, rightInset, Region::maxHeight) + bottomInset;
     }
 
     /// Lays out the header and clipped child row viewport.
@@ -207,8 +202,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             return;
         }
 
-        double childEdgeInset = childEdgeInset();
-        updateChildrenContainerPadding(childEdgeInset);
+        updateChildrenContainerPadding();
         double childrenHeight = childrenContainer.prefHeight(width);
         double viewportHeight = childrenHeight * expansionProgress.get();
         if (viewportHeight <= 0.0) {
@@ -220,24 +214,30 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childViewport.resizeRelocate(x, y + headerHeight + ITEM_SPACING, width, viewportHeight);
         childrenClip.setWidth(width);
         childrenClip.setHeight(viewportHeight);
-        childrenContainer.resizeRelocate(0.0, 0.0, width, childrenHeight);
-        childrenContainer.layout();
     }
 
-    /// Returns the combined content width from the header and mounted children.
-    private double contentWidth(double height, SizeFunction sizeFunction) {
+    /// Measures header and mounted-child widths within the control's vertical insets.
+    /// Negative height constraints remain unconstrained; smaller constrained heights leave zero content space.
+    private double contentWidth(double height, double topInset, double bottomInset, SizeFunction sizeFunction) {
+        height = height < 0.0 ? height : Math.max(0.0, height - topInset - bottomInset);
         double headerWidth = sizeFunction.size(getSkinnable().getHeaderItem(), height);
-        double childrenWidth = childItemsMounted ? sizeFunction.size(childrenContainer, height) : 0.0;
-        return Math.max(headerWidth, childrenWidth);
+        if (!childItemsMounted) {
+            return headerWidth;
+        }
+        updateChildrenContainerPadding();
+        return Math.max(headerWidth, sizeFunction.size(childrenContainer, height));
     }
 
-    /// Returns the combined content height from the header and animated child viewport.
-    private double contentHeight(double width, SizeFunction sizeFunction) {
+    /// Measures the header and animated child viewport within the control's horizontal insets.
+    /// Negative width constraints remain unconstrained; smaller constrained widths leave zero content space.
+    private double contentHeight(double width, double leftInset, double rightInset, SizeFunction sizeFunction) {
+        width = width < 0.0 ? width : Math.max(0.0, width - leftInset - rightInset);
         double headerHeight = sizeFunction.size(getSkinnable().getHeaderItem(), width);
         if (!childItemsMounted) {
             return headerHeight;
         }
 
+        updateChildrenContainerPadding();
         double childrenHeight = sizeFunction.size(childrenContainer, width);
         double progress = expansionProgress.get();
         if (childrenHeight <= 0.0 || progress <= 0.0) {
@@ -316,33 +316,16 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childrenContainer.setOpacity(progress);
         childrenContainer.setTranslateY((1.0 - progress) * CHILD_TRANSITION_OFFSET);
         getSkinnable().requestLayout();
-        requestAncestorDrawerLayout();
     }
 
-    /// Requests layout up to the containing scroll pane while child rows change their revealed height.
-    private void requestAncestorDrawerLayout() {
-        @Nullable Parent parent = getSkinnable().getParent();
-        while (parent != null) {
-            parent.requestLayout();
-            if (parent instanceof ScrollPane) {
-                break;
-            }
-            parent = parent.getParent();
-        }
-    }
-
-    /// Returns the child row edge inset derived from child and header content padding.
-    private double childEdgeInset() {
+    /// Updates indentation from current row padding before measurement or layout.
+    private void updateChildrenContainerPadding() {
         double headerPadding = getSkinnable().getHeaderItem().getHorizontalPadding();
         double childPadding = 0.0;
         for (M3ListItem item : getSkinnable().getItems()) {
             childPadding = Math.max(childPadding, item.getHorizontalPadding());
         }
-        return Math.max(0.0, childPadding - headerPadding);
-    }
-
-    /// Updates the child container padding that creates indented selected row geometry.
-    private void updateChildrenContainerPadding(double childEdgeInset) {
+        double childEdgeInset = Math.max(0.0, childPadding - headerPadding);
         if (Double.compare(appliedChildEdgeInset, childEdgeInset) == 0) {
             return;
         }
@@ -351,6 +334,22 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
                 ? EMPTY_CHILD_PADDING
                 : new Insets(0.0, 0.0, 0.0, childEdgeInset);
         childrenContainer.setPadding(padding);
+    }
+
+    /// Fits rows to the viewport width while retaining their full height throughout disclosure motion.
+    /// Both containers remain managed so row size changes invalidate the enclosing control and its parents.
+    @NotNullByDefault
+    private final class ChildViewport extends Pane {
+        /// Creates the viewport whose clip is maintained by the enclosing skin.
+        private ChildViewport() {
+        }
+
+        /// Allocates full row height independently of the viewport's partially revealed height.
+        @Override
+        protected void layoutChildren() {
+            double width = getWidth();
+            childrenContainer.resizeRelocate(0.0, 0.0, width, childrenContainer.prefHeight(width));
+        }
     }
 
     /// Computes one dimension for a region.

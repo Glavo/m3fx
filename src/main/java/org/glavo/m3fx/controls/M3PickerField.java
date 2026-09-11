@@ -1449,11 +1449,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     }
 
-    /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
+    /// Applies popup styles and invalidates dimensions derived from the current anchor width.
     private void preparePopupForShow(PickerPopup popup) {
-        double fieldWidth = Math.max(0.0, inputLayout.getWidth());
-        M3Css.setMinWidthIfUnbound(popup.root, Math.max(fieldWidth, popup.root.minWidth(-1.0)));
         popup.root.applyCss();
+        popup.root.requestLayout();
     }
 
     /// Applies initial visual state before the popup is shown.
@@ -1516,7 +1515,13 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     @NotNullByDefault
     private final class PickerPopup {
         /// The detached popup root that inherits owner styles and hosts the selected popup content.
-        private final StackPane root = new StackPane();
+        private final StackPane root = new StackPane() {
+            /// Includes the current editor layout width in the computed minimum.
+            @Override
+            protected double computeMinWidth(double height) {
+                return Math.max(inputLayout.getWidth(), super.computeMinWidth(height));
+            }
+        };
 
         /// The native popup window used for picker presentation.
         private final Popup window = new Popup();

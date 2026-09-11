@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
@@ -133,6 +134,122 @@ final class M3TypeAheadStateTest {
                 assertEquals("ab", state.getPrefix());
                 state.clear();
                 assertEquals("c", state.find(typed("c"), prefix -> prefix));
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Discards a lookup result when its callback explicitly clears the search state.
+    @Test
+    void clearingDuringSearchDiscardsResult() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TypeAheadState state = new M3TypeAheadState(new Pane());
+            try {
+                assertNull(state.find(typed("a"), prefix -> {
+                    state.clear();
+                    return "obsolete";
+                }));
+                assertEquals("", state.getPrefix());
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Keeps a nested search's prefix and discards a successful result from the superseded search.
+    @Test
+    void nestedSearchDiscardsEarlierResult() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TypeAheadState state = new M3TypeAheadState(new Pane());
+            try {
+                assertNull(state.find(typed("a"), prefix -> {
+                    assertEquals("ab", state.find(typed("b"), nestedPrefix -> nestedPrefix));
+                    return "obsolete";
+                }));
+                assertEquals("ab", state.getPrefix());
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Does not retry an older failed lookup after a nested search has replaced its prefix.
+    @Test
+    void nestedSearchPreventsEarlierFallback() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TypeAheadState state = new M3TypeAheadState(new Pane());
+            try {
+                List<String> attempts = new ArrayList<>();
+                assertNull(state.find(typed("a"), prefix -> {
+                    attempts.add(prefix);
+                    state.find(typed("b"), nestedPrefix -> nestedPrefix);
+                    return null;
+                }));
+                assertEquals(List.of("a"), attempts);
+                assertEquals("ab", state.getPrefix());
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Discards a fallback result when its callback clears and recreates the same prefix.
+    @Test
+    void replacementDuringFallbackDiscardsResult() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TypeAheadState state = new M3TypeAheadState(new Pane());
+            try {
+                state.find(typed("a"), prefix -> prefix);
+                List<String> attempts = new ArrayList<>();
+                assertNull(state.find(typed("b"), prefix -> {
+                    attempts.add(prefix);
+                    if (prefix.equals("ab")) {
+                        return null;
+                    }
+                    state.clear();
+                    assertEquals("b", state.find(typed("b"), nestedPrefix -> nestedPrefix));
+                    return "obsolete";
+                }));
+                assertEquals(List.of("ab", "b"), attempts);
+                assertEquals("b", state.getPrefix());
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Cancels a lookup if its callback detaches the owner from its scene.
+    @Test
+    void detachingOwnerDuringSearchDiscardsResult() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Pane root = new Pane(owner);
+            new Scene(root);
+            M3TypeAheadState state = new M3TypeAheadState(owner);
+            try {
+                assertNull(state.find(typed("a"), prefix -> {
+                    root.getChildren().clear();
+                    return "obsolete";
+                }));
+                assertEquals("", state.getPrefix());
+            } finally {
+                state.clear();
+            }
+        });
+    }
+
+    /// Leaves an active lookup intact when a nested call receives ignored input.
+    @Test
+    void ignoredNestedInputDoesNotCancelSearch() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TypeAheadState state = new M3TypeAheadState(new Pane());
+            try {
+                assertEquals("a", state.find(typed("a"), prefix -> {
+                    assertNull(state.find(typed(" "), nestedPrefix -> nestedPrefix));
+                    return prefix;
+                }));
+                assertEquals("a", state.getPrefix());
             } finally {
                 state.clear();
             }

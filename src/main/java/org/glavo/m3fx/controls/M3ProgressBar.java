@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -561,119 +559,59 @@ public final class M3ProgressBar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the track thickness token.
         private static final CssMetaData<M3ProgressBar, Number> TRACK_THICKNESS =
-                new CssMetaData<>("-m3-track-thickness", SizeConverter.getInstance(), DEFAULT_TRACK_THICKNESS) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.trackThicknessProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.trackThicknessProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-thickness",
+                        DEFAULT_TRACK_THICKNESS,
+                        M3ProgressBar::trackThicknessProperty
+                );
 
         /// CSS metadata for the track shape token.
         private static final CssMetaData<M3ProgressBar, Number> TRACK_SHAPE =
-                new CssMetaData<>("-m3-track-shape", SizeConverter.getInstance(), DEFAULT_TRACK_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.trackShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.trackShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-shape",
+                        DEFAULT_TRACK_SHAPE,
+                        M3ProgressBar::trackShapeProperty
+                );
 
         /// CSS metadata for the wave amplitude token.
         private static final CssMetaData<M3ProgressBar, Number> WAVE_AMPLITUDE =
-                new CssMetaData<>("-m3-wave-amplitude", SizeConverter.getInstance(), DEFAULT_WAVE_AMPLITUDE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.waveAmplitudeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.waveAmplitudeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-wave-amplitude",
+                        DEFAULT_WAVE_AMPLITUDE,
+                        M3ProgressBar::waveAmplitudeProperty
+                );
 
         /// CSS metadata for the wavelength token.
         private static final CssMetaData<M3ProgressBar, Number> WAVELENGTH =
-                new CssMetaData<>("-m3-wavelength", SizeConverter.getInstance(), DEFAULT_WAVELENGTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.wavelengthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.wavelengthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-wavelength",
+                        DEFAULT_WAVELENGTH,
+                        M3ProgressBar::wavelengthProperty
+                );
 
         /// CSS metadata for the indeterminate wavelength token.
         private static final CssMetaData<M3ProgressBar, Number> INDETERMINATE_WAVELENGTH =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-indeterminate-wavelength",
-                        SizeConverter.getInstance(),
-                        DEFAULT_INDETERMINATE_WAVELENGTH
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.indeterminateWavelengthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.indeterminateWavelengthProperty();
-                    }
-                };
+                        DEFAULT_INDETERMINATE_WAVELENGTH,
+                        M3ProgressBar::indeterminateWavelengthProperty
+                );
 
         /// CSS metadata for the active-to-track gap token.
         private static final CssMetaData<M3ProgressBar, Number> TRACK_GAP =
-                new CssMetaData<>("-m3-track-gap", SizeConverter.getInstance(), DEFAULT_TRACK_GAP) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.trackGapProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.trackGapProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-gap",
+                        DEFAULT_TRACK_GAP,
+                        M3ProgressBar::trackGapProperty
+                );
 
         /// CSS metadata for the stop indicator size token.
         private static final CssMetaData<M3ProgressBar, Number> STOP_SIZE =
-                new CssMetaData<>("-m3-stop-size", SizeConverter.getInstance(), DEFAULT_STOP_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressBar control) {
-                        return M3Css.isSettable(control.stopSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
-                        return control.stopSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-stop-size",
+                        DEFAULT_STOP_SIZE,
+                        M3ProgressBar::stopSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

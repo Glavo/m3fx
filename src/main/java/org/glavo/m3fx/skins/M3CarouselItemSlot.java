@@ -173,41 +173,29 @@ final class M3CarouselItemSlot extends Region {
     /// Computes minimum width from the authored item.
     @Override
     protected double computeMinWidth(double height) {
-        if (!(content instanceof Region region)) {
-            return content.getLayoutBounds().getWidth();
-        }
-        return boundedSize(region.minWidth(height));
+        return boundedSize(content.minWidth(height));
     }
 
     /// Computes preferred width from the authored item.
     @Override
     protected double computePrefWidth(double height) {
-        if (!(content instanceof Region region)) {
-            return content.getLayoutBounds().getWidth();
-        }
-        return boundedSize(region.prefWidth(height), region.minWidth(height), region.maxWidth(height));
+        return boundedSize(content.prefWidth(height), content.minWidth(height), content.maxWidth(height));
     }
 
     /// Computes minimum height from the authored item.
     @Override
     protected double computeMinHeight(double width) {
-        if (!(content instanceof Region region)) {
-            return content.getLayoutBounds().getHeight();
-        }
-        return boundedSize(region.minHeight(width));
+        return boundedSize(content.minHeight(width));
     }
 
     /// Computes preferred height from the authored item at its unmasked focal width.
     @Override
     protected double computePrefHeight(double width) {
-        if (!(content instanceof Region region)) {
-            return content.getLayoutBounds().getHeight();
-        }
         double effectiveWidth = contentWidth > 0.0 ? contentWidth : width;
         return boundedSize(
-                region.prefHeight(effectiveWidth),
-                region.minHeight(effectiveWidth),
-                region.maxHeight(effectiveWidth)
+                content.prefHeight(effectiveWidth),
+                content.minHeight(effectiveWidth),
+                content.maxHeight(effectiveWidth)
         );
     }
 

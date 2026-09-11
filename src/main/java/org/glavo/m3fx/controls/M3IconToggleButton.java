@@ -14,7 +14,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
@@ -49,7 +48,7 @@ import java.util.Objects;
 /// width role, round shape, and a `40.0` by `40.0` logical-pixel visual container centered in a `48.0` by `48.0`
 /// interaction target. Larger visual containers expand the interaction target as needed. Add buttons to an
 /// [M3IconToggleButtonGroup] when their selection states must obey a single- or multiple-selection policy.
-/// Graphic nodes may have only one parent; an [M3Icon] supplied directly as the graphic follows the button's
+/// Graphic nodes may have only one parent; an [M3Icon] or [M3SVGIcon] supplied directly as the graphic follows the button's
 /// effective icon metrics and colors.
 ///
 /// Computed minimum, preferred, and maximum dimensions use the greater of `48.0` and the corresponding visual
@@ -585,6 +584,10 @@ public final class M3IconToggleButton extends ButtonBase {
     /// The property defaults to `24.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
     /// the property while it is bound.
     ///
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this token unless their icon-size property has an explicit Java
+    /// value or a binding. The container token takes precedence over the graphic's CSS sizing. Removing a graphic
+    /// releases container sizing; the last value remains until the graphic is restyled or explicitly configured.
+    ///
     /// @return the icon glyph-size property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
@@ -785,6 +788,7 @@ public final class M3IconToggleButton extends ButtonBase {
         @Nullable Node currentIconNode = currentIcon == null ? null : graphic;
         if (managedIconGraphic != currentIconNode) {
             if (managedIconGraphic != null) {
+                M3Css.clearControlToken(((M3IconGraphic) managedIconGraphic).iconSizeProperty());
                 managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
             }
             managedIconGraphic = currentIconNode;
@@ -793,7 +797,7 @@ public final class M3IconToggleButton extends ButtonBase {
             }
         }
         if (currentIcon != null) {
-            currentIcon.setIconSize(getIconSize());
+            M3Css.setControlToken(currentIcon.iconSizeProperty(), getIconSize());
         }
     }
 
@@ -842,67 +846,35 @@ public final class M3IconToggleButton extends ButtonBase {
 
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_HEIGHT =
-                new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconToggleButton control) {
-                        return M3Css.isSettable(control.containerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
-                        return control.containerHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-height",
+                        DEFAULT_CONTAINER_HEIGHT,
+                        M3IconToggleButton::containerHeightProperty
+                );
 
         /// CSS metadata for the container width token.
         private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_WIDTH =
-                new CssMetaData<>("-m3-container-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconToggleButton control) {
-                        return M3Css.isSettable(control.containerWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
-                        return control.containerWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-width",
+                        DEFAULT_CONTAINER_WIDTH,
+                        M3IconToggleButton::containerWidthProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconToggleButton control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3IconToggleButton::containerShapeProperty
+                );
 
         /// CSS metadata for the icon glyph size token.
         private static final CssMetaData<M3IconToggleButton, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-icon-button-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconToggleButton control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-icon-button-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3IconToggleButton::iconSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

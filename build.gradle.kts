@@ -283,6 +283,11 @@ tasks.withType<Javadoc> {
     setSource(fileTree(mainSourceDirectory) {
         include("org/glavo/m3fx/controls/package-info.java")
     })
+    // Javadoc discovers these files through sourcepath rather than the task's explicit source collection.
+    inputs.files(fileTree(mainSourceDirectory) {
+        include("**/*.java")
+    }).withPropertyName("documentationSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 
     (options as StandardJavadocDocletOptions).also {
         it.doclet = M3FXStandardDoclet::class.java.name

@@ -10,8 +10,6 @@ import javafx.beans.property.StringProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -427,83 +425,43 @@ public final class M3Badge extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the small size token.
         private static final CssMetaData<M3Badge, Number> SMALL_SIZE =
-                new CssMetaData<>("-m3-small-size", SizeConverter.getInstance(), DEFAULT_SMALL_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Badge control) {
-                        return M3Css.isSettable(control.smallSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Badge control) {
-                        return control.smallSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-small-size",
+                        DEFAULT_SMALL_SIZE,
+                        M3Badge::smallSizeProperty
+                );
 
         /// CSS metadata for the large height token.
         private static final CssMetaData<M3Badge, Number> LARGE_HEIGHT =
-                new CssMetaData<>("-m3-large-height", SizeConverter.getInstance(), DEFAULT_LARGE_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Badge control) {
-                        return M3Css.isSettable(control.largeHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Badge control) {
-                        return control.largeHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-large-height",
+                        DEFAULT_LARGE_HEIGHT,
+                        M3Badge::largeHeightProperty
+                );
 
         /// CSS metadata for the large minimum width token.
         private static final CssMetaData<M3Badge, Number> LARGE_MIN_WIDTH =
-                new CssMetaData<>("-m3-large-min-width", SizeConverter.getInstance(), DEFAULT_LARGE_MIN_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Badge control) {
-                        return M3Css.isSettable(control.largeMinWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Badge control) {
-                        return control.largeMinWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-large-min-width",
+                        DEFAULT_LARGE_MIN_WIDTH,
+                        M3Badge::largeMinWidthProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3Badge, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Badge control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Badge control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3Badge::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3Badge, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Badge control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Badge control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-horizontal-padding",
+                        DEFAULT_HORIZONTAL_PADDING,
+                        M3Badge::horizontalPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

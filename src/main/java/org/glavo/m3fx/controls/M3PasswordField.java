@@ -14,6 +14,7 @@ import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,22 +27,25 @@ import java.util.Objects;
 /// or wrap it in [M3TextInputLayout] to add a label, supporting text, validation messages, or a trailing visibility
 /// action.
 ///
+/// Computed minimum and preferred total heights, including insets, equal the container-height token before and
+/// after skin installation. Explicit heights and bindings remain in effect through geometry changes; set a
+/// height to [#USE_COMPUTED_SIZE] to restore computed sizing.
+///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3PasswordField extends PasswordField implements M3TextInput {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-password-field";
 
-    /// Shared Material text input state and token plumbing.
-    private final M3TextInputSupport<M3PasswordField> support = new M3TextInputSupport<>(
-            this,
+    /// The immutable defaults and CSS metadata shared by instances of this class.
+    private static final M3TextInputSupport.Metadata<M3PasswordField> METADATA = new M3TextInputSupport.Metadata<>(
+            PasswordField.getClassCssMetaData(),
             M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
-            M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
-            StyleableProperties.CONTAINER_HEIGHT,
-            StyleableProperties.CONTAINER_SHAPE,
-            StyleableProperties.HORIZONTAL_PADDING,
-            StyleableProperties.VERTICAL_PADDING
+            M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING
     );
+
+    /// Shared Material text input state and token plumbing.
+    private final M3TextInputSupport<M3PasswordField> support = new M3TextInputSupport<>(this, METADATA);
 
     /// Creates an empty password field using the filled variant.
     public M3PasswordField() {
@@ -226,15 +230,15 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for `M3PasswordField`
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return METADATA.styleables();
     }
 
     /// Returns the CSS metadata for this control.
     ///
     /// @return the immutable CSS metadata list for this control
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -246,59 +250,21 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
         return M3Stylesheets.controlStylesheet("text-field.css");
     }
 
+    /// Computes minimum total height from the container-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes preferred total height from the container-height token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         support.initialize(DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PASSWORD_FIELD);
-    }
-
-    /// CSS metadata for M3FX password field component tokens.
-    @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the container height token.
-        private static final CssMetaData<M3PasswordField, Number> CONTAINER_HEIGHT =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-container-height",
-                        M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
-                        M3PasswordField::containerHeightProperty
-                );
-
-        /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3PasswordField, Number> CONTAINER_SHAPE =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-container-shape",
-                        M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
-                        M3PasswordField::containerShapeProperty
-                );
-
-        /// CSS metadata for the horizontal padding token.
-        private static final CssMetaData<M3PasswordField, Number> HORIZONTAL_PADDING =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-horizontal-padding",
-                        M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
-                        M3PasswordField::horizontalPaddingProperty
-                );
-
-        /// CSS metadata for the vertical padding token.
-        private static final CssMetaData<M3PasswordField, Number> VERTICAL_PADDING =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-vertical-padding",
-                        M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
-                        M3PasswordField::verticalPaddingProperty
-                );
-
-        /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(
-                TextField.getClassCssMetaData(),
-                CONTAINER_HEIGHT,
-                CONTAINER_SHAPE,
-                HORIZONTAL_PADDING,
-                VERTICAL_PADDING
-        );
-
-        /// Prevents utility class instantiation.
-        private StyleableProperties() {
-        }
-
     }
 }

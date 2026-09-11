@@ -16,7 +16,6 @@ import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.FontConverter;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
@@ -630,29 +629,11 @@ public final class M3Icon extends Control implements M3IconGraphic {
 
         /// CSS metadata for the icon size token.
         private static final CssMetaData<M3Icon, Number> ICON_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-icon-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_ICON_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    ///
-                    /// @param control the target icon
-                    /// @return whether CSS may assign the property
-                    @Override
-                    public boolean isSettable(M3Icon control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for an icon.
-                    ///
-                    /// @param control the target icon
-                    /// @return the icon-size property
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Icon control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                        DEFAULT_ICON_SIZE,
+                        M3Icon::iconSizeProperty
+                );
 
         /// CSS metadata for the icon font-weight token.
         private static final CssMetaData<M3Icon, @Nullable FontWeight> ICON_FONT_WEIGHT =

@@ -35,6 +35,9 @@ public abstract class M3FiniteTransition extends Transition {
     /// Observes runtime motion changes only while this transition is running.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
 
+    /// Counts explicit stop requests, including requests made by synchronous lifecycle callbacks.
+    private long stopVersion;
+
     /// Creates a finite transition.
     protected M3FiniteTransition() {
         statusProperty().addListener((observable, oldStatus, newStatus) -> {
@@ -42,6 +45,18 @@ public abstract class M3FiniteTransition extends Transition {
                 stopMotionObservation();
             }
         });
+    }
+
+    /// Stops playback and invalidates an earlier operation that is dispatching a lifecycle callback.
+    @Override
+    public void stop() {
+        stopVersion++;
+        super.stop();
+    }
+
+    /// Returns the stop-request version used to detect operations superseded by callbacks.
+    protected final long getStopVersion() {
+        return stopVersion;
     }
 
     /// Plays this transition from the beginning while observing the owner's resolved motion setting.
@@ -56,7 +71,11 @@ public abstract class M3FiniteTransition extends Transition {
         Node checkedOwner = Objects.requireNonNull(owner, "owner");
         // Stop the previous run before installing observation for its replacement. JavaFX playFromStart()
         // stops an active transition, which would otherwise discard the replacement's listeners and context.
+        long version = stopVersion + 1;
         stop();
+        if (version != stopVersion) {
+            return;
+        }
         if (!M3Animation.areAnimationsEnabled(checkedOwner)) {
             M3Animation.finish(this);
             return;

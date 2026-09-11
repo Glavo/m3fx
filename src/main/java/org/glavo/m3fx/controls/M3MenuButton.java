@@ -18,7 +18,6 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
@@ -186,7 +185,7 @@ public final class M3MenuButton extends M3ButtonBase {
         boolean popupShown = false;
         popupContextSynchronizer.start();
         try {
-            M3Css.setMinWidthIfUnbound(menu, Math.max(getWidth(), menu.minWidth(-1.0)));
+            menu.setPopupMinWidth(getWidth());
             @Nullable M3PopupPositioning.Placement placement =
                     M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
             if (placement == null) {
@@ -504,8 +503,11 @@ public final class M3MenuButton extends M3ButtonBase {
         M3Animation.playFromStart(this, popupAnimation);
     }
 
-    /// Resets transient popup menu animation transforms.
+    /// Clears the popup width constraint and resets transient animation transforms.
     private void resetMenuAnimationState() {
+        if (!popup.isShowing()) {
+            menu.setPopupMinWidth(0.0);
+        }
         popupAnimation.stop();
         hidingPopup = false;
         menu.setOpacity(1.0);

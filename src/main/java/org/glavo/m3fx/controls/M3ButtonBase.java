@@ -14,7 +14,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -44,7 +43,7 @@ import java.util.Objects;
 /// concrete button by pointer, keyboard, mnemonic, or [fire][#fire()] emits an [ActionEvent]. The action is not
 /// emitted while the control is disabled.
 ///
-/// A direct [M3Icon] graphic follows the button's icon-size property; other graphic nodes retain their own sizing.
+/// Direct [M3Icon] and [M3SVGIcon] graphics follow [#iconSizeProperty()]; other graphics retain their own sizing.
 /// The default and cancel properties identify semantic roles for a containing control, such as [M3DialogPane];
 /// setting either property alone does not install a scene-wide keyboard accelerator.
 ///
@@ -582,7 +581,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Returns the icon glyph size token.
     ///
-    /// Direct [M3Icon] graphics are resized to this value after CSS resolves the active size tokens. Other
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this value according to [#iconSizeProperty()]. Other
     /// graphic nodes retain their application-controlled dimensions.
     ///
     /// @return the icon glyph size in logical pixels
@@ -602,6 +601,10 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     ///
     /// The property can be observed and bound, is exposed to CSS as `-m3-button-icon-size`, and accepts finite,
     /// non-negative values. Its default value is `20.0` logical pixels.
+    ///
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this token unless their icon-size property has an explicit Java
+    /// value or a binding. The container token takes precedence over the graphic's CSS sizing. Removing a graphic
+    /// releases container sizing; the last value remains until the graphic is restyled or explicitly configured.
     ///
     /// @return the managed icon size property
     public final StyleableDoubleProperty iconSizeProperty() {
@@ -880,6 +883,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
         @Nullable Node currentIconNode = currentIcon == null ? null : graphic;
         if (managedIconGraphic != currentIconNode) {
             if (managedIconGraphic != null) {
+                M3Css.clearControlToken(((M3IconGraphic) managedIconGraphic).iconSizeProperty());
                 managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
                 M3IconPaints.setInheritedPaint(managedIconGraphic, null);
             }
@@ -889,7 +893,7 @@ public abstract sealed class M3ButtonBase extends ButtonBase
             }
         }
         if (currentIcon != null) {
-            currentIcon.setIconSize(getIconSize());
+            M3Css.setControlToken(currentIcon.iconSizeProperty(), getIconSize());
         }
         updateManagedIconGraphicColor();
     }
@@ -946,67 +950,35 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3ButtonBase, Number> CONTAINER_HEIGHT =
-                new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonBase control) {
-                        return M3Css.isSettable(control.containerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonBase control) {
-                        return control.containerHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-height",
+                        DEFAULT_CONTAINER_HEIGHT,
+                        M3ButtonBase::containerHeightProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3ButtonBase, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonBase control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonBase control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3ButtonBase::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3ButtonBase, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonBase control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonBase control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-horizontal-padding",
+                        DEFAULT_HORIZONTAL_PADDING,
+                        M3ButtonBase::horizontalPaddingProperty
+                );
 
         /// CSS metadata for the icon glyph size token.
         private static final CssMetaData<M3ButtonBase, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-button-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonBase control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonBase control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-button-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3ButtonBase::iconSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

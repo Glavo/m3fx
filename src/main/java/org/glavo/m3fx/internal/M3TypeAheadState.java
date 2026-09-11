@@ -29,6 +29,9 @@ public final class M3TypeAheadState {
     /// The current normalized search prefix.
     private String prefix = "";
 
+    /// Identifies the latest accepted search or explicit or lifecycle-driven clear operation.
+    private long searchVersion;
+
     /// The inactivity timer retained only while a prefix is active.
     private @Nullable PauseTransition resetDelay;
 
@@ -59,7 +62,10 @@ public final class M3TypeAheadState {
     /// Accepted input is normalized, appended to the current prefix, and restarts the inactivity timer. The finder
     /// receives that prefix; if it returns `null` and a previous prefix existed, the new character replaces the
     /// prefix and the finder is called once more. The last attempted prefix remains active even if no target is
-    /// found or the finder throws. Owner lifecycle changes may clear the prefix and cancel the search.
+    /// found or the finder throws, unless a nested operation changes it. Clearing the state or accepting another
+    /// search during a finder callback cancels the earlier search: after the callback returns normally, the earlier
+    /// call returns `null` without retrying or applying its result. Ignored input does not cancel a search. Owner
+    /// lifecycle changes may also clear the prefix and cancel the search.
     ///
     /// This method must run on the JavaFX application thread. It does not consume the event or change focus or
     /// selection; the caller applies the returned target according to its control's interaction policy.
@@ -86,22 +92,27 @@ public final class M3TypeAheadState {
             return null;
         }
 
+        long version = ++searchVersion;
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
         prefix += normalizedCharacter;
         restartResetDelay();
-        if (prefix.isEmpty()) {
+        if (version != searchVersion || prefix.isEmpty()) {
             return null;
         }
         @Nullable T target = targetFinder.apply(prefix);
+        if (version != searchVersion) {
+            return null;
+        }
         if (target == null && prefix.length() > normalizedCharacter.length()) {
             prefix = normalizedCharacter;
             target = targetFinder.apply(prefix);
         }
-        return target;
+        return version == searchVersion ? target : null;
     }
 
-    /// Clears the prefix, stops its inactivity timer, and releases active motion observation.
+    /// Clears the prefix, cancels an active search, stops its timer, and releases motion observation.
     public void clear() {
+        searchVersion++;
         prefix = "";
         resetDelayObservedScene = false;
         @Nullable PauseTransition delay = resetDelay;

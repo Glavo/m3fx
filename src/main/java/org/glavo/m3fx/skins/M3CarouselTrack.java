@@ -453,7 +453,7 @@ final class M3CarouselTrack extends HBox {
             for (Node child : getChildren()) {
                 M3CarouselItemSlot slot = (M3CarouselItemSlot) child;
                 if (slot.participatesInLayout()) {
-                    width = Math.max(width, childPrefWidth(slot, height));
+                    width = Math.max(width, slotPrefWidth(slot, height));
                 }
             }
             return width;
@@ -496,7 +496,7 @@ final class M3CarouselTrack extends HBox {
         for (Node child : getChildren()) {
             M3CarouselItemSlot slot = (M3CarouselItemSlot) child;
             if (slot.participatesInLayout()) {
-                height = Math.max(height, childPrefHeight(slot, width));
+                height = Math.max(height, slotPrefHeight(slot, width));
             }
         }
         return verticalLeadingPadding() + height + verticalTrailingPadding();
@@ -516,7 +516,7 @@ final class M3CarouselTrack extends HBox {
                     continue;
                 }
                 slot.configure(width, itemShape.get(), false);
-                layoutChild(slot, 0.0, cursor, width, height);
+                slot.resizeRelocate(0.0, cursor, width, height);
                 slot.layout();
                 cursor += height + spacing;
             }
@@ -544,7 +544,7 @@ final class M3CarouselTrack extends HBox {
             double width = interpolatedWidth(index, fromSelection, toSelection, progress, contentHeight);
             double focalContentWidth = focalContentWidth(index, fromSelection, toSelection, progress, contentHeight);
             slot.configure(focalContentWidth, itemShape.get(), occupiesSmallKeyline(width));
-            double height = Math.min(contentHeight, childPrefHeight(slot, focalContentWidth));
+            double height = Math.min(contentHeight, slotPrefHeight(slot, focalContentWidth));
             double y = verticalLeadingPadding() + (contentHeight - height) / 2.0;
             double x;
             if (rightToLeft) {
@@ -555,7 +555,7 @@ final class M3CarouselTrack extends HBox {
                 x = cursor;
                 cursor += width + spacing;
             }
-            layoutChild(slot, x, y, width, height);
+            slot.resizeRelocate(x, y, width, height);
             slot.layout();
         }
     }
@@ -947,7 +947,7 @@ final class M3CarouselTrack extends HBox {
     private double widthFor(int index, int selection, double height) {
         M3CarouselLayout layout = owner.getCarouselLayout();
         if (layout.preservesAuthoredWidths()) {
-            return childPrefWidth(slotAt(index), height);
+            return slotPrefWidth(slotAt(index), height);
         }
         if (layout == M3CarouselLayout.FULL_SCREEN) {
             return Math.max(MIN_LAYOUT_ITEM_WIDTH, viewportWidth);
@@ -965,7 +965,7 @@ final class M3CarouselTrack extends HBox {
         if (layout == M3CarouselLayout.CENTER_ALIGNED_HERO) {
             return centeredHeroWidth(index, selection);
         }
-        return childPrefWidth(slotAt(index), height);
+        return slotPrefWidth(slotAt(index), height);
     }
 
     /// Returns focal-width content geometry before a smaller keyline mask is applied.
@@ -1080,7 +1080,7 @@ final class M3CarouselTrack extends HBox {
         for (Node child : getChildren()) {
             M3CarouselItemSlot slot = (M3CarouselItemSlot) child;
             if (slot.participatesInLayout()) {
-                preferredWidth = Math.max(preferredWidth, childPrefWidth(slot, getHeight()));
+                preferredWidth = Math.max(preferredWidth, slotPrefWidth(slot, getHeight()));
             }
         }
         if (preferredWidth <= 0.0) {
@@ -1168,25 +1168,19 @@ final class M3CarouselTrack extends HBox {
         return (M3CarouselItemSlot) getChildren().get(index);
     }
 
-    /// Returns a child's bounded preferred width without changing its sizing properties.
-    private static double childPrefWidth(Node child, double height) {
-        if (!(child instanceof Region region)) {
-            return Math.max(MIN_LAYOUT_ITEM_WIDTH, child.getLayoutBounds().getWidth());
-        }
+    /// Returns a slot's bounded preferred width without changing its sizing properties.
+    private static double slotPrefWidth(M3CarouselItemSlot slot, double height) {
         return Math.max(
                 MIN_LAYOUT_ITEM_WIDTH,
-                boundedSize(region.prefWidth(height), region.minWidth(height), region.maxWidth(height))
+                boundedSize(slot.prefWidth(height), slot.minWidth(height), slot.maxWidth(height))
         );
     }
 
-    /// Returns a child's bounded preferred height without changing its sizing properties.
-    private static double childPrefHeight(Node child, double width) {
-        if (!(child instanceof Region region)) {
-            return Math.max(MIN_LAYOUT_ITEM_WIDTH, child.getLayoutBounds().getHeight());
-        }
+    /// Returns a slot's bounded preferred height without changing its sizing properties.
+    private static double slotPrefHeight(M3CarouselItemSlot slot, double width) {
         return Math.max(
                 MIN_LAYOUT_ITEM_WIDTH,
-                boundedSize(region.prefHeight(width), region.minHeight(width), region.maxHeight(width))
+                boundedSize(slot.prefHeight(width), slot.minHeight(width), slot.maxHeight(width))
         );
     }
 
@@ -1196,18 +1190,6 @@ final class M3CarouselTrack extends HBox {
         double finiteMinimum = Double.isFinite(minimum) ? minimum : 0.0;
         double finiteMaximum = Double.isFinite(maximum) ? maximum : Double.MAX_VALUE;
         return Math.max(finiteMinimum, Math.min(finitePreferred, finiteMaximum));
-    }
-
-    /// Resizes and positions one child inside its assigned keyline slot.
-    private static void layoutChild(Node child, double x, double y, double width, double height) {
-        if (child.isResizable()) {
-            child.resize(width, height);
-            child.relocate(x, y);
-            return;
-        }
-        double childWidth = child.getLayoutBounds().getWidth();
-        double childHeight = child.getLayoutBounds().getHeight();
-        child.relocate(x + (width - childWidth) / 2.0, y + (height - childHeight) / 2.0);
     }
 
     /// Validates a finite non-negative styleable layout metric.

@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.skins.M3DisclosureIconSkin;
@@ -186,23 +184,11 @@ public final class M3DisclosureIcon extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the icon viewport size.
         private static final CssMetaData<M3DisclosureIcon, Number> ICON_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-disclosure-icon-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_ICON_SIZE
-                ) {
-                    /// Returns whether CSS can set the icon viewport size.
-                    @Override
-                    public boolean isSettable(M3DisclosureIcon control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable icon viewport size property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DisclosureIcon control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                        DEFAULT_ICON_SIZE,
+                        M3DisclosureIcon::iconSizeProperty
+                );
 
         /// The immutable disclosure icon CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

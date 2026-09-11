@@ -14,8 +14,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -27,6 +25,7 @@ import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3SliderMath;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -214,26 +213,13 @@ public final class M3Slider extends Control {
     /// @return the `activeTrackGraphic` property
     public final ObjectProperty<@Nullable Node> activeTrackGraphicProperty() {
         if (activeTrackGraphic == null) {
-            activeTrackGraphic = new ObjectPropertyBase<>() {
-                /// Requests layout when the mounted graphic changes.
-                @Override
-                protected void invalidated() {
-                    updateTrackGraphicMetrics();
-                    requestLayout();
+            activeTrackGraphic = new SimpleObjectProperty<>(this, "activeTrackGraphic");
+            activeTrackGraphic.addListener((observable, oldGraphic, newGraphic) -> {
+                if (oldGraphic instanceof M3IconGraphic icon) {
+                    M3Css.clearControlToken(icon.iconSizeProperty());
                 }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "activeTrackGraphic";
-                }
-            };
+                updateTrackGraphicMetrics();
+            });
         }
         return activeTrackGraphic;
     }
@@ -270,26 +256,13 @@ public final class M3Slider extends Control {
     /// @return the `inactiveTrackGraphic` property
     public final ObjectProperty<@Nullable Node> inactiveTrackGraphicProperty() {
         if (inactiveTrackGraphic == null) {
-            inactiveTrackGraphic = new ObjectPropertyBase<>() {
-                /// Requests layout when the mounted graphic changes.
-                @Override
-                protected void invalidated() {
-                    updateTrackGraphicMetrics();
-                    requestLayout();
+            inactiveTrackGraphic = new SimpleObjectProperty<>(this, "inactiveTrackGraphic");
+            inactiveTrackGraphic.addListener((observable, oldGraphic, newGraphic) -> {
+                if (oldGraphic instanceof M3IconGraphic icon) {
+                    M3Css.clearControlToken(icon.iconSizeProperty());
                 }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "inactiveTrackGraphic";
-                }
-            };
+                updateTrackGraphicMetrics();
+            });
         }
         return inactiveTrackGraphic;
     }
@@ -751,7 +724,8 @@ public final class M3Slider extends Control {
     /// Sets the step size used by discrete sliders.
     ///
     /// A value of `0` makes the slider continuous. Positive values snap all direct, keyboard, programmatic,
-    /// and accessibility value changes to the nearest step measured from `min`.
+    /// and accessibility value changes to the nearest step measured from `min`. Half-step ties select the even
+    /// step index, counting the minimum as index zero. The snapped value is clamped to the range.
     ///
     /// @param stepSize the non-negative step size
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
@@ -1200,6 +1174,10 @@ public final class M3Slider extends Control {
     /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
     /// default value of `0.0` logical pixels.
     ///
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this token unless their icon-size property has an explicit Java
+    /// value or a binding. The container token takes precedence over the graphic's CSS sizing. Removing a graphic
+    /// releases container sizing; the last value remains until the graphic is restyled or explicitly configured.
+    ///
     /// @return the `iconSize` property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
@@ -1217,10 +1195,10 @@ public final class M3Slider extends Control {
     /// Applies the inset-icon size token to direct M3FX track graphics and requests layout.
     private void updateTrackGraphicMetrics() {
         if (getActiveTrackGraphic() instanceof M3IconGraphic icon) {
-            icon.setIconSize(getIconSize());
+            M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
         }
         if (getInactiveTrackGraphic() instanceof M3IconGraphic icon) {
-            icon.setIconSize(getIconSize());
+            M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
         }
         requestLayout();
     }
@@ -1460,9 +1438,7 @@ public final class M3Slider extends Control {
             return clampedValue;
         }
 
-        double min = getMin();
-        double snappedValue = min + Math.rint((clampedValue - min) / stepSize) * stepSize;
-        return clampToRange(snappedValue);
+        return clampToRange(M3SliderMath.snap(clampedValue, getMin(), stepSize));
     }
 
     /// Clamps a value to the current range.
@@ -1494,191 +1470,91 @@ public final class M3Slider extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the track thickness token.
         private static final CssMetaData<M3Slider, Number> TRACK_THICKNESS =
-                new CssMetaData<>("-m3-track-thickness", SizeConverter.getInstance(), DEFAULT_TRACK_THICKNESS) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.trackThicknessProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.trackThicknessProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-thickness",
+                        DEFAULT_TRACK_THICKNESS,
+                        M3Slider::trackThicknessProperty
+                );
 
         /// CSS metadata for the track shape token.
         private static final CssMetaData<M3Slider, Number> TRACK_SHAPE =
-                new CssMetaData<>("-m3-track-shape", SizeConverter.getInstance(), DEFAULT_TRACK_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.trackShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.trackShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-shape",
+                        DEFAULT_TRACK_SHAPE,
+                        M3Slider::trackShapeProperty
+                );
 
         /// CSS metadata for the stop indicator diameter token.
         private static final CssMetaData<M3Slider, Number> STOP_INDICATOR_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-stop-indicator-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_STOP_INDICATOR_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.stopIndicatorSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.stopIndicatorSizeProperty();
-                    }
-                };
+                        DEFAULT_STOP_INDICATOR_SIZE,
+                        M3Slider::stopIndicatorSizeProperty
+                );
 
         /// CSS metadata for the stop indicator trailing-space token.
         private static final CssMetaData<M3Slider, Number> STOP_INDICATOR_TRAILING_SPACE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-stop-indicator-trailing-space",
-                        SizeConverter.getInstance(),
-                        DEFAULT_STOP_INDICATOR_TRAILING_SPACE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.stopIndicatorTrailingSpaceProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.stopIndicatorTrailingSpaceProperty();
-                    }
-                };
+                        DEFAULT_STOP_INDICATOR_TRAILING_SPACE,
+                        M3Slider::stopIndicatorTrailingSpaceProperty
+                );
 
         /// CSS metadata for the thumb long-side size token.
         private static final CssMetaData<M3Slider, Number> THUMB_SIZE =
-                new CssMetaData<>("-m3-thumb-size", SizeConverter.getInstance(), DEFAULT_THUMB_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.thumbSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.thumbSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-thumb-size",
+                        DEFAULT_THUMB_SIZE,
+                        M3Slider::thumbSizeProperty
+                );
 
         /// CSS metadata for the thumb short-side width token.
         private static final CssMetaData<M3Slider, Number> THUMB_WIDTH =
-                new CssMetaData<>("-m3-thumb-width", SizeConverter.getInstance(), DEFAULT_THUMB_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.thumbWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.thumbWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-thumb-width",
+                        DEFAULT_THUMB_WIDTH,
+                        M3Slider::thumbWidthProperty
+                );
 
         /// CSS metadata for the handle track-gap token.
         private static final CssMetaData<M3Slider, Number> THUMB_TRACK_GAP =
-                new CssMetaData<>("-m3-thumb-track-gap", SizeConverter.getInstance(), DEFAULT_THUMB_TRACK_GAP) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.thumbTrackGapProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.thumbTrackGapProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-thumb-track-gap",
+                        DEFAULT_THUMB_TRACK_GAP,
+                        M3Slider::thumbTrackGapProperty
+                );
 
         /// CSS metadata for the touch target size token.
         private static final CssMetaData<M3Slider, Number> TOUCH_TARGET_SIZE =
-                new CssMetaData<>("-m3-touch-target-size", SizeConverter.getInstance(), DEFAULT_TOUCH_TARGET_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.touchTargetSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.touchTargetSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-touch-target-size",
+                        DEFAULT_TOUCH_TARGET_SIZE,
+                        M3Slider::touchTargetSizeProperty
+                );
 
         /// CSS metadata for the inset-icon size token.
         private static final CssMetaData<M3Slider, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-slider-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-slider-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3Slider::iconSizeProperty
+                );
 
         /// CSS metadata for the inset-icon padding token.
         private static final CssMetaData<M3Slider, Number> ICON_PADDING =
-                new CssMetaData<>("-m3-slider-icon-padding", SizeConverter.getInstance(), DEFAULT_ICON_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.iconPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.iconPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-slider-icon-padding",
+                        DEFAULT_ICON_PADDING,
+                        M3Slider::iconPaddingProperty
+                );
 
         /// CSS metadata for the value-indicator bottom-space token.
         private static final CssMetaData<M3Slider, Number> VALUE_INDICATOR_BOTTOM_SPACE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-value-indicator-bottom-space",
-                        SizeConverter.getInstance(),
-                        DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Slider control) {
-                        return M3Css.isSettable(control.valueIndicatorBottomSpaceProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
-                        return control.valueIndicatorBottomSpaceProperty();
-                    }
-                };
+                        DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE,
+                        M3Slider::valueIndicatorBottomSpaceProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

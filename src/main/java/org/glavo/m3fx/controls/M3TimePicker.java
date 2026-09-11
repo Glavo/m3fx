@@ -5,16 +5,14 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -226,30 +224,32 @@ public final class M3TimePicker extends Control {
     /// selected value.
     ///
     /// @defaultValue `5`
-    private final IntegerProperty minuteStep = new IntegerPropertyBase(DEFAULT_MINUTE_STEP) {
-        /// Validates the minute step whenever it changes.
+    private final IntegerProperty minuteStep = new SimpleIntegerProperty(this, "minuteStep", DEFAULT_MINUTE_STEP) {
+        /// Rejects invalid assignments before changing the step or notifying observers.
+        @Override
+        public void set(int value) {
+            super.set(validateMinuteStep(value));
+        }
+
+        /// Validates the current step, including values supplied by a binding.
+        @Override
+        public int get() {
+            return validateMinuteStep(super.get());
+        }
+
+        /// Validates a bound value before announcing changes to generated minute choices.
         @Override
         protected void invalidated() {
-            validateMinuteStep(get());
+            get();
             notifyAccessibleItemsChanged();
         }
 
-        /// Returns the owning bean.
-        @Override
-        public Object getBean() {
-            return M3TimePicker.this;
-        }
-
-        /// Returns the property name.
-        @Override
-        public String getName() {
-            return "minuteStep";
-        }
     };
 
     /// Returns the minute interval used by dial and keyboard adjustments.
     ///
     /// @return a positive divisor of 60 no greater than 30; the default is 5
+    /// @throws IllegalArgumentException if the current property value supplied by a binding is invalid
     public final int getMinuteStep() {
         return minuteStep.get();
     }
@@ -261,14 +261,17 @@ public final class M3TimePicker extends Control {
     ///
     /// @param minuteStep a positive divisor of 60 between 1 and 30, inclusive
     /// @throws IllegalArgumentException if `minuteStep` is outside the supported range or does not divide 60
+    /// @throws RuntimeException if the minute-step property is bound
     public final void setMinuteStep(int minuteStep) {
-        validateMinuteStep(minuteStep);
         this.minuteStep.set(minuteStep);
     }
 
     /// Returns the `minuteStep` property.
     ///
     /// The returned property is observable and bindable. Its default value is `5`.
+    /// Direct assignments are validated before the value changes. Binding sources must supply positive divisors
+    /// of 60 no greater than 30; reading an invalid value throws [IllegalArgumentException]. Correct the binding
+    /// source, or unbind and assign a valid step, to resume normal reads and minute adjustments.
     ///
     /// @return the `minuteStep` property
     public final IntegerProperty minuteStepProperty() {
@@ -957,11 +960,12 @@ public final class M3TimePicker extends Control {
         }
     }
 
-    /// Validates a minute step value.
-    private static void validateMinuteStep(int minuteStep) {
+    /// Validates and returns a positive divisor of 60 no greater than 30.
+    private static int validateMinuteStep(int minuteStep) {
         if (minuteStep <= 0 || minuteStep > 30 || 60 % minuteStep != 0) {
             throw new IllegalArgumentException("minuteStep must evenly divide 60 and be between 1 and 30");
         }
+        return minuteStep;
     }
 
     /// CSS metadata for metrics consumed by the time-picker presentation.
@@ -969,63 +973,27 @@ public final class M3TimePicker extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for spacing between major picker regions.
         private static final CssMetaData<M3TimePicker, Number> CONTAINER_SPACING =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-container-spacing",
-                        SizeConverter.getInstance(),
-                        DEFAULT_CONTAINER_SPACING
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3TimePicker control) {
-                        return M3Css.isSettable(control.containerSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a Time Picker.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
-                        return control.containerSpacingProperty();
-                    }
-                };
+                        DEFAULT_CONTAINER_SPACING,
+                        M3TimePicker::containerSpacingProperty
+                );
 
         /// CSS metadata for the dial selector handle diameter.
         private static final CssMetaData<M3TimePicker, Number> DIAL_HANDLE_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-dial-handle-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_DIAL_HANDLE_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3TimePicker control) {
-                        return M3Css.isSettable(control.dialHandleSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a Time Picker.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
-                        return control.dialHandleSizeProperty();
-                    }
-                };
+                        DEFAULT_DIAL_HANDLE_SIZE,
+                        M3TimePicker::dialHandleSizeProperty
+                );
 
         /// CSS metadata for the dial center dot diameter.
         private static final CssMetaData<M3TimePicker, Number> DIAL_CENTER_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-dial-center-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_DIAL_CENTER_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3TimePicker control) {
-                        return M3Css.isSettable(control.dialCenterSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a Time Picker.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
-                        return control.dialCenterSizeProperty();
-                    }
-                };
+                        DEFAULT_DIAL_CENTER_SIZE,
+                        M3TimePicker::dialCenterSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

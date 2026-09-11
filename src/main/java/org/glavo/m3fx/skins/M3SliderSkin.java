@@ -28,6 +28,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3SliderMath;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -945,22 +946,22 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     ) {
         M3Slider slider = getSkinnable();
         stepIndicatorLayer.resizeRelocate(0.0, 0.0, slider.getWidth(), slider.getHeight());
-        double range = slider.getMax() - slider.getMin();
+        double stepFraction = M3SliderMath.stepFraction(slider.getStepSize(), slider.getMin(), slider.getMax());
         double stepSize = slider.getStepSize();
         double indicatorSize = slider.getStopIndicatorSize();
         double trackLength = trackEnd - trackStart;
-        if (!(range > 0.0) || !(stepSize > 0.0) || !(indicatorSize > 0.0) || !(trackLength > 0.0)) {
+        if (!(slider.getMax() > slider.getMin()) || !(stepSize > 0.0) || !(indicatorSize > 0.0) || !(trackLength > 0.0)) {
             hideUnusedStepIndicators(0);
             return;
         }
 
-        double stepCountValue = Math.floor(range / stepSize + 1.0e-9);
+        double stepCountValue = Math.floor(1.0 / stepFraction + 1.0e-9);
         if (!Double.isFinite(stepCountValue) || stepCountValue > MAX_STEP_INDICATORS + 1.0) {
             hideUnusedStepIndicators(0);
             return;
         }
         int maximumStepIndex = (int) stepCountValue;
-        double spacing = trackLength * stepSize / range;
+        double spacing = trackLength * stepFraction;
         if (spacing < indicatorSize * 2.0) {
             hideUnusedStepIndicators(0);
             return;
@@ -975,7 +976,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 + indicatorRadius;
         int used = 0;
         for (int stepIndex = 0; stepIndex <= maximumStepIndex; stepIndex++) {
-            double fraction = Math.min(1.0, stepIndex * stepSize / range);
+            double fraction = Math.min(1.0, stepIndex * stepFraction);
             boolean atMinimum = stepIndex == 0;
             boolean atMaximum = Math.abs(1.0 - fraction) < 1.0e-9;
             if (atMaximum || slider.isCentered() && atMinimum) {
@@ -1278,11 +1279,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Converts a slider value to a normalized position.
     private double valueToPosition(double value) {
         M3Slider slider = getSkinnable();
-        double range = slider.getMax() - slider.getMin();
-        if (range == 0.0) {
-            return 0.0;
-        }
-        return clamp((value - slider.getMin()) / range);
+        return M3SliderMath.position(value, slider.getMin(), slider.getMax());
     }
 
     /// Returns whether this slider currently mirrors horizontal value geometry.
@@ -1297,7 +1294,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Converts a normalized position to a slider value.
     private double positionToValue(double position) {
         M3Slider slider = getSkinnable();
-        return slider.getMin() + (slider.getMax() - slider.getMin()) * clamp(position);
+        return M3SliderMath.valueAt(position, slider.getMin(), slider.getMax());
     }
 
     /// Resets interaction state when disabled during pointer or keyboard work.

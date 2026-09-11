@@ -11,8 +11,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
@@ -741,37 +739,37 @@ public final class M3Toolbar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for horizontal toolbar container height.
         private static final CssMetaData<M3Toolbar, Number> CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
+                M3Css.sizeMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
                         M3Toolbar::containerHeightProperty);
 
         /// CSS metadata for vertical toolbar container width.
         private static final CssMetaData<M3Toolbar, Number> CONTAINER_WIDTH =
-                createSizeCssMetaData("-m3-container-width", DEFAULT_CONTAINER_WIDTH,
+                M3Css.sizeMetaData("-m3-container-width", DEFAULT_CONTAINER_WIDTH,
                         M3Toolbar::containerWidthProperty);
 
         /// CSS metadata for toolbar item slot size.
         private static final CssMetaData<M3Toolbar, Number> ITEM_SLOT_SIZE =
-                createSizeCssMetaData("-m3-item-slot-size", DEFAULT_ITEM_SLOT_SIZE,
+                M3Css.sizeMetaData("-m3-item-slot-size", DEFAULT_ITEM_SLOT_SIZE,
                         M3Toolbar::itemSlotSizeProperty);
 
         /// CSS metadata for toolbar content padding.
         private static final CssMetaData<M3Toolbar, Number> CONTENT_PADDING =
-                createSizeCssMetaData("-m3-content-padding", DEFAULT_CONTENT_PADDING,
+                M3Css.sizeMetaData("-m3-content-padding", DEFAULT_CONTENT_PADDING,
                         M3Toolbar::contentPaddingProperty);
 
         /// CSS metadata for docked toolbar leading and trailing padding.
         private static final CssMetaData<M3Toolbar, Number> DOCKED_CONTENT_PADDING =
-                createSizeCssMetaData("-m3-docked-content-padding", DEFAULT_DOCKED_CONTENT_PADDING,
+                M3Css.sizeMetaData("-m3-docked-content-padding", DEFAULT_DOCKED_CONTENT_PADDING,
                         M3Toolbar::dockedContentPaddingProperty);
 
         /// CSS metadata for toolbar item spacing.
         private static final CssMetaData<M3Toolbar, Number> ITEM_SPACING =
-                createSizeCssMetaData("-m3-item-spacing", DEFAULT_ITEM_SPACING,
+                M3Css.sizeMetaData("-m3-item-spacing", DEFAULT_ITEM_SPACING,
                         M3Toolbar::itemSpacingProperty);
 
         /// CSS metadata for preferred docked toolbar item spacing.
         private static final CssMetaData<M3Toolbar, Number> DOCKED_MAX_ITEM_SPACING =
-                createSizeCssMetaData("-m3-docked-max-item-spacing", DEFAULT_DOCKED_MAX_ITEM_SPACING,
+                M3Css.sizeMetaData("-m3-docked-max-item-spacing", DEFAULT_DOCKED_MAX_ITEM_SPACING,
                         M3Toolbar::dockedMaxItemSpacingProperty);
 
         /// The complete immutable CSS metadata list.
@@ -793,33 +791,6 @@ public final class M3Toolbar extends Control {
         private StyleableProperties() {
         }
 
-        /// Creates CSS metadata for a non-negative size token.
-        private static CssMetaData<M3Toolbar, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyAccessor accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3Toolbar control) {
-                    return M3Css.isSettable(accessor.property(control));
-                }
 
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3Toolbar control) {
-                    return accessor.property(control);
-                }
-            };
-        }
-
-        /// Provides access to a styleable toolbar size token property.
-        @NotNullByDefault
-        @FunctionalInterface
-        private interface StyleablePropertyAccessor {
-            /// Returns the property for the supplied toolbar.
-            StyleableDoubleProperty property(M3Toolbar control);
-        }
     }
 }

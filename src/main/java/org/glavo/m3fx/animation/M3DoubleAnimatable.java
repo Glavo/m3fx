@@ -33,6 +33,10 @@ import java.util.Objects;
 /// bind it or independently write it until the run has stopped. All methods that start, stop, or finish an animation
 /// must be invoked on the JavaFX Application Thread.
 ///
+/// Target-value and status listeners may issue another animation operation. A newer accepted operation supersedes
+/// the earlier operation: once the listener returns, the earlier call does not resume value assignment or playback.
+/// A replacement rejected during argument validation does not supersede the earlier operation.
+///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3DoubleAnimatable {
@@ -50,6 +54,9 @@ public final class M3DoubleAnimatable {
 
     /// The reusable transition that performs interpolation without allocating key frames.
     private final M3DoubleTransition transition;
+
+    /// Identifies the latest accepted operation across synchronous property and status notifications.
+    private long operationVersion;
 
     /// Creates an animatable for a writable double property.
     ///
@@ -166,16 +173,24 @@ public final class M3DoubleAnimatable {
     /// @throws IllegalStateException    if the value property is bound
     public void animateTo(double targetValue, M3MotionSpec motionSpec) {
         requireWritableValue();
+        long previousVersion = operationVersion;
         transition.configure(Objects.requireNonNull(motionSpec, "motionSpec"), targetValue);
+        if (previousVersion != operationVersion) {
+            return;
+        }
+        long version = ++operationVersion;
         this.targetValue.set(targetValue);
-        M3Animation.playFromStart(owner, transition);
+        if (version == operationVersion) {
+            M3Animation.playFromStart(owner, transition);
+        }
     }
 
     /// Stops the current run at its current value.
     ///
-    /// This method has no effect when no animation is running. The target-value property is not changed, and a later
-    /// call to [#animateTo(double, M3MotionSpec)] starts from the value retained by this method.
+    /// This method also cancels pending playback when invoked from a target-value listener. The target-value
+    /// property is not changed, and a later call to [#animateTo(double, M3MotionSpec)] starts from the retained value.
     public void stop() {
+        operationVersion++;
         transition.stop();
     }
 
@@ -187,9 +202,9 @@ public final class M3DoubleAnimatable {
     /// @throws IllegalStateException if the value property is bound
     public void finish() {
         requireWritableValue();
-        if (transition.getStatus() == Animation.Status.RUNNING) {
-            M3Animation.finish(transition);
-        } else {
+        long version = ++operationVersion;
+        transition.stop();
+        if (version == operationVersion) {
             value.set(getTargetValue());
         }
     }
@@ -204,9 +219,15 @@ public final class M3DoubleAnimatable {
             throw new IllegalArgumentException("value must be finite");
         }
         requireWritableValue();
+        long version = ++operationVersion;
         transition.stop();
+        if (version != operationVersion) {
+            return;
+        }
         targetValue.set(value);
-        this.value.set(value);
+        if (version == operationVersion) {
+            this.value.set(value);
+        }
     }
 
     /// Verifies that an animation pulse may write the configured value property.

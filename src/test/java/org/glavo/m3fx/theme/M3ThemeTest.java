@@ -1604,7 +1604,7 @@ final class M3ThemeTest {
         menu.select(middleMenuItem);
         root.applyCss();
         assertEquals(16.0, middleMenuItem.getContainerShape(), 0.0001);
-        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.0, ((HBox) searchBar.lookup("." + "m3-search-bar-trailing")).getSpacing(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
@@ -1683,8 +1683,8 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
-        assertEquals(304.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(584.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(304.0, dialogPane.minWidth(-1.0), 0.0001);
+        assertEquals(584.0, dialogPane.maxWidth(-1.0), 0.0001);
         assertEquals(36.0, dialogPane.getPadding().getTop(), 0.0001);
         assertEquals(16.0, snackbarSurface.getPadding().getLeft(), 0.0001);
         assertEquals(
@@ -1693,7 +1693,7 @@ final class M3ThemeTest {
                 0.0001
         );
         assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
-        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(80.0, banner.minHeight(-1.0), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
@@ -1778,7 +1778,7 @@ final class M3ThemeTest {
         assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(16.0, ((Region) slider.lookup(".track")).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
-        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(0.0, ((HBox) searchBar.lookup("." + "m3-search-bar-trailing")).getSpacing(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(0.0, ((M3ListItem) searchView.getResults().get(0)).getContainerShape(), 0.0001);
@@ -1859,7 +1859,7 @@ final class M3ThemeTest {
                 0.0001
         );
         assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
-        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(80.0, banner.minHeight(-1.0), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.prefHeight(-1.0), 0.0001);
         assertEquals(Insets.EMPTY, topAppBar.getPadding());
@@ -1980,7 +1980,7 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, expressiveTheme);
         root.applyCss();
 
-        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(80.0, banner.minHeight(-1.0), 0.0001);
         assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, ((HBox) banner.lookup("." + "m3-banner-container")).getSpacing(), 0.0001);
@@ -2040,7 +2040,7 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(80.0, banner.minHeight(-1.0), 0.0001);
         assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, ((HBox) banner.lookup("." + "m3-banner-container")).getSpacing(), 0.0001);
@@ -2148,8 +2148,8 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
-        assertEquals(304.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(584.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(304.0, dialogPane.minWidth(-1.0), 0.0001);
+        assertEquals(584.0, dialogPane.maxWidth(-1.0), 0.0001);
         assertEquals(36.0, dialogPane.getPadding().getTop(), 0.0001);
     }
 

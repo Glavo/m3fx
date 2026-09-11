@@ -8,8 +8,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -321,35 +319,19 @@ public final class M3FormPane extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the content padding token.
         private static final CssMetaData<M3FormPane, Number> CONTENT_PADDING =
-                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormPane control) {
-                        return M3Css.isSettable(control.contentPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormPane control) {
-                        return control.contentPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-padding",
+                        DEFAULT_CONTENT_PADDING,
+                        M3FormPane::contentPaddingProperty
+                );
 
         /// CSS metadata for the row spacing token.
         private static final CssMetaData<M3FormPane, Number> ROW_SPACING =
-                new CssMetaData<>("-m3-row-spacing", SizeConverter.getInstance(), DEFAULT_ROW_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormPane control) {
-                        return M3Css.isSettable(control.rowSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormPane control) {
-                        return control.rowSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-row-spacing",
+                        DEFAULT_ROW_SPACING,
+                        M3FormPane::rowSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

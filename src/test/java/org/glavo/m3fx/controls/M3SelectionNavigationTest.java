@@ -73,6 +73,7 @@ final class M3SelectionNavigationTest {
             KeyEvent leftToRightForward = keyEvent(KeyCode.RIGHT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     leftToRightForward,
+                    null,
                     owner.getChildren(),
                     second,
                     M3Button.class,
@@ -87,6 +88,7 @@ final class M3SelectionNavigationTest {
             KeyEvent leftToRightBackward = keyEvent(KeyCode.LEFT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     leftToRightBackward,
+                    null,
                     owner.getChildren(),
                     second,
                     M3Button.class,
@@ -101,6 +103,7 @@ final class M3SelectionNavigationTest {
             KeyEvent rightToLeftForward = keyEvent(KeyCode.LEFT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     rightToLeftForward,
+                    null,
                     owner.getChildren(),
                     second,
                     M3Button.class,
@@ -115,6 +118,7 @@ final class M3SelectionNavigationTest {
             KeyEvent rightToLeftBackward = keyEvent(KeyCode.RIGHT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     rightToLeftBackward,
+                    null,
                     owner.getChildren(),
                     second,
                     M3Button.class,
@@ -141,6 +145,7 @@ final class M3SelectionNavigationTest {
             KeyEvent unanchoredStart = keyEvent(KeyCode.RIGHT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     unanchoredStart,
+                    null,
                     owner.getChildren(),
                     null,
                     M3Button.class,
@@ -155,6 +160,7 @@ final class M3SelectionNavigationTest {
             KeyEvent unanchoredEnd = keyEvent(KeyCode.LEFT);
             assertTrue(M3SelectionNavigation.handleKeySelection(
                     unanchoredEnd,
+                    null,
                     owner.getChildren(),
                     null,
                     M3Button.class,
@@ -181,6 +187,7 @@ final class M3SelectionNavigationTest {
             KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true);
             assertFalse(M3SelectionNavigation.handleKeySelection(
                     event,
+                    null,
                     owner.getChildren(),
                     second,
                     M3Button.class,
@@ -228,6 +235,7 @@ final class M3SelectionNavigationTest {
             KeyEvent event = keyEvent(KeyCode.RIGHT);
             assertFalse(M3SelectionNavigation.handleKeyFocus(
                     event,
+                    null,
                     owner.getChildren(),
                     null,
                     M3Button.class,

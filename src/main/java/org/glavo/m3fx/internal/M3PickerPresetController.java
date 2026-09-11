@@ -163,7 +163,7 @@ public final class M3PickerPresetController<P>
         M3Button button = new M3Button(presetText.apply(preset), M3ButtonVariant.TEXT);
         button.getStyleClass().add(buttonStyleClass);
         button.setWrapText(true);
-        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
+        button.setMaxWidth(Double.MAX_VALUE);
         button.setDisable(presetDisabled.test(preset));
         button.setOnAction(this);
         return button;

@@ -9,7 +9,6 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.DoublePropertyBase;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
@@ -37,6 +36,11 @@ import java.util.function.DoubleUnaryOperator;
 /// Rendering is isolated in a dedicated [Scale] appended to the content's transform list. Existing transform and
 /// scale properties are not changed. The transform and geometry listeners exist only while a stretch is visible and
 /// are removed when the effect settles or is detached.
+///
+/// If a scroll callback detaches this effect or starts another scroll or release operation on it, the earlier
+/// operation still invokes its bounded-scroll callback exactly once but does not apply a remaining pull afterward.
+/// Its result retains input consumed before and by that callback. Changes made by content or transform listeners
+/// are reconciled before the outermost rendering update returns normally.
 @NotNullByDefault
 public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
     /// The default maximum scale increase on either axis.
@@ -69,32 +73,23 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
     /// The lazily created observable in-progress property.
     private @Nullable ReadOnlyBooleanWrapper inProgress;
 
-    /// The scale transform created after the first visible pull.
-    private @Nullable Scale contentScale;
+    /// The resources owned by the current visible stretch, or `null` while no renderer is installed.
+    private @Nullable StretchRenderer renderer;
 
     /// The release transition created after the first released pull.
     private @Nullable StretchReleaseTransition releaseTransition;
 
-    /// The content listener created after the first visible pull.
-    private @Nullable ChangeListener<@Nullable Node> contentListener;
+    /// Changes whenever a scroll, release, or attachment lifecycle operation supersedes earlier work.
+    private long operationVersion;
 
-    /// The geometry listener created after the first visible pull.
-    private @Nullable InvalidationListener geometryListener;
-
-    /// The presentation observer created after the first visible pull.
-    private @Nullable M3MotionSettingsObserver presentationObserver;
-
-    /// The content currently carrying [contentScale], or `null` while none is rendered.
-    private @Nullable Node renderedContent;
+    /// Whether the current attachment accepts visual state changes.
+    private boolean attached;
 
     /// The raw horizontal pull retained in input pixels.
     private double horizontalPull;
 
     /// The raw vertical pull retained in input pixels.
     private double verticalPull;
-
-    /// Whether active-only content and viewport listeners are installed.
-    private boolean rendererActive;
 
     /// Creates a stretch overscroll effect with the default maximum and resistance.
     public M3StretchOverscrollEffect() {
@@ -259,6 +254,10 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
             ScrollEvent event,
             DoubleUnaryOperator performScroll
     ) {
+        long version = ++operationVersion;
+        if (!attached) {
+            return performScroll.applyAsDouble(delta);
+        }
         @Nullable StretchReleaseTransition activeRelease = releaseTransition;
         if (activeRelease != null) {
             activeRelease.stop();
@@ -266,6 +265,9 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
         double consumedBeforeScroll = consumeOppositePull(orientation, delta);
         double availableToScroll = delta - consumedBeforeScroll;
         double consumedByScroll = performScroll.applyAsDouble(availableToScroll);
+        if (version != operationVersion || !attached) {
+            return consumedBeforeScroll + consumedByScroll;
+        }
         double remaining = availableToScroll - consumedByScroll;
 
         if (Math.abs(remaining) > PULL_EPSILON && canRender(orientation)) {
@@ -283,6 +285,10 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
     /// Animates both pulled axes to their resting scale.
     @Override
     protected void onRelease() {
+        long version = ++operationVersion;
+        if (!attached) {
+            return;
+        }
         if (!hasPull()) {
             @Nullable StretchReleaseTransition activeRelease = releaseTransition;
             if (activeRelease != null) {
@@ -297,7 +303,16 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
         StretchReleaseTransition transition = releaseTransition();
         transition.configure(spec, horizontalPull, verticalPull);
         setInProgress(true);
-        M3Animation.playFromStart(scrollPane, transition);
+        if (version == operationVersion && attached) {
+            M3Animation.playFromStart(scrollPane, transition);
+        }
+    }
+
+    /// Starts a new attachment without retaining rendering resources from a previous owner.
+    @Override
+    protected void onAttached(M3ScrollPane scrollPane) {
+        operationVersion++;
+        attached = true;
     }
 
     /// Resets any retained rendering when this effect is detached.
@@ -305,6 +320,8 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
     /// @param scrollPane the scroll pane being detached
     @Override
     protected void onDetached(M3ScrollPane scrollPane) {
+        operationVersion++;
+        attached = false;
         @Nullable StretchReleaseTransition activeRelease = releaseTransition;
         if (activeRelease != null) {
             activeRelease.stop();
@@ -312,11 +329,6 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
         horizontalPull = 0.0;
         verticalPull = 0.0;
         deactivateRenderer();
-        @Nullable M3MotionSettingsObserver observer = presentationObserver;
-        if (observer != null) {
-            observer.dispose();
-            presentationObserver = null;
-        }
         setInProgress(false);
     }
 
@@ -409,102 +421,36 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
 
     /// Activates or removes the transient renderer to match the current pull.
     private void refreshRenderer() {
-        if (hasPull()) {
-            activateRenderer();
-            updateTransform();
+        if (hasPull() && attached) {
+            @Nullable StretchRenderer current = renderer;
+            if (current == null) {
+                current = new StretchRenderer(getScrollPane());
+                renderer = current;
+                current.start();
+            } else {
+                current.refresh();
+            }
         } else {
             deactivateRenderer();
         }
         refreshInProgress();
     }
 
-    /// Installs active-only listeners and attaches the dedicated content transform.
-    private void activateRenderer() {
-        if (rendererActive) {
-            if (renderedContent == null) {
-                setRenderedContent(getScrollPane().getContent());
-            }
-            return;
-        }
-
-        rendererActive = true;
-        M3ScrollPane scrollPane = getScrollPane();
-        contentScale();
-        scrollPane.contentProperty().addListener(contentListener());
-        scrollPane.viewportBoundsProperty().addListener(geometryListener());
-        setRenderedContent(scrollPane.getContent());
-        presentationObserver().start();
-    }
-
     /// Removes the transient renderer and every active-only geometry listener.
     private void deactivateRenderer() {
-        if (!rendererActive) {
-            return;
+        @Nullable StretchRenderer previous = renderer;
+        renderer = null;
+        if (previous != null) {
+            previous.dispose();
         }
-
-        M3ScrollPane scrollPane = getScrollPane();
-        ChangeListener<@Nullable Node> activeContentListener =
-                Objects.requireNonNull(contentListener, "contentListener");
-        InvalidationListener activeGeometryListener =
-                Objects.requireNonNull(geometryListener, "geometryListener");
-        scrollPane.contentProperty().removeListener(activeContentListener);
-        scrollPane.viewportBoundsProperty().removeListener(activeGeometryListener);
-        @Nullable M3MotionSettingsObserver observer = presentationObserver;
-        if (observer != null) {
-            observer.stop();
-        }
-        setRenderedContent(null);
-        Scale scale = Objects.requireNonNull(contentScale, "contentScale");
-        scale.setX(1.0);
-        scale.setY(1.0);
-        rendererActive = false;
-    }
-
-    /// Moves the dedicated scale transform to the current content node.
-    ///
-    /// @param content the content that should render the stretch, or `null`
-    private void setRenderedContent(@Nullable Node content) {
-        Scale scale = Objects.requireNonNull(contentScale, "contentScale");
-        InvalidationListener activeGeometryListener =
-                Objects.requireNonNull(geometryListener, "geometryListener");
-        @Nullable Node previousContent = renderedContent;
-        if (previousContent == content) {
-            if (content != null && !content.getTransforms().contains(scale)) {
-                content.getTransforms().add(scale);
-            }
-            updateTransform();
-            return;
-        }
-
-        if (previousContent != null) {
-            previousContent.layoutBoundsProperty().removeListener(activeGeometryListener);
-            previousContent.getTransforms().remove(scale);
-        }
-        renderedContent = content;
-        if (content != null) {
-            content.layoutBoundsProperty().addListener(activeGeometryListener);
-            if (!content.getTransforms().contains(scale)) {
-                content.getTransforms().add(scale);
-            }
-        }
-        updateTransform();
     }
 
     /// Recomputes scale factors and fixed-edge pivots from current geometry.
     private void updateTransform() {
-        @Nullable Node content = renderedContent;
-        if (!rendererActive || content == null) {
-            return;
+        @Nullable StretchRenderer current = renderer;
+        if (current != null) {
+            current.refresh();
         }
-
-        Bounds bounds = content.getLayoutBounds();
-        double horizontalStretch = stretchForPull(horizontalPull, viewportLength(Orientation.HORIZONTAL));
-        double verticalStretch = stretchForPull(verticalPull, viewportLength(Orientation.VERTICAL));
-        Scale scale = Objects.requireNonNull(contentScale, "contentScale");
-        scale.setPivotX(horizontalPull < 0.0 ? bounds.getMaxX() : bounds.getMinX());
-        scale.setPivotY(verticalPull < 0.0 ? bounds.getMaxY() : bounds.getMinY());
-        scale.setX(1.0 + horizontalStretch);
-        scale.setY(1.0 + verticalStretch);
     }
 
     /// Converts raw pull pixels to a nonlinear normalized scale increase.
@@ -528,77 +474,13 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
 
     /// Completes a release and removes idle rendering resources.
     private void finishRelease() {
+        long version = ++operationVersion;
         horizontalPull = 0.0;
         verticalPull = 0.0;
         deactivateRenderer();
-        setInProgress(false);
-    }
-
-    /// Returns the dedicated content scale, creating it after the first visible pull.
-    ///
-    /// @return the reusable content scale
-    private Scale contentScale() {
-        @Nullable Scale scale = contentScale;
-        if (scale == null) {
-            scale = new Scale();
-            contentScale = scale;
+        if (version == operationVersion) {
+            setInProgress(false);
         }
-        return scale;
-    }
-
-    /// Returns the content listener, creating it after the first visible pull.
-    ///
-    /// @return the reusable content listener
-    private ChangeListener<@Nullable Node> contentListener() {
-        @Nullable ChangeListener<@Nullable Node> listener = contentListener;
-        if (listener == null) {
-            listener = (observable, oldContent, newContent) -> setRenderedContent(newContent);
-            contentListener = listener;
-        }
-        return listener;
-    }
-
-    /// Returns the geometry listener, creating it after the first visible pull.
-    ///
-    /// @return the reusable geometry listener
-    private InvalidationListener geometryListener() {
-        @Nullable InvalidationListener listener = geometryListener;
-        if (listener == null) {
-            listener = observable -> updateTransform();
-            geometryListener = listener;
-        }
-        return listener;
-    }
-
-    /// Returns the presentation observer, creating it after the first visible pull.
-    ///
-    /// @return the reusable presentation observer
-    private M3MotionSettingsObserver presentationObserver() {
-        @Nullable M3MotionSettingsObserver observer = presentationObserver;
-        if (observer == null) {
-            observer = new M3MotionSettingsObserver(getScrollPane(), this::refreshPresentationActivity, false);
-            presentationObserver = observer;
-        }
-        return observer;
-    }
-
-    /// Settles a retained pull when its owner can no longer render it.
-    private void refreshPresentationActivity() {
-        if (!rendererActive) {
-            return;
-        }
-        M3ScrollPane scrollPane = getScrollPane();
-        @Nullable Scene scene = scrollPane.getScene();
-        @Nullable Window window = scene == null ? null : scene.getWindow();
-        if (M3PresentationActivity.isTreeVisible(scrollPane)
-                && (window == null || M3PresentationActivity.isRenderActive(window))) {
-            return;
-        }
-        @Nullable StretchReleaseTransition transition = releaseTransition;
-        if (transition != null) {
-            transition.stop();
-        }
-        finishRelease();
     }
 
     /// Returns the release transition, creating it after the first released pull.
@@ -651,6 +533,151 @@ public final class M3StretchOverscrollEffect extends M3OverscrollEffect {
     /// @return the clamped value
     private static double clamp(double value, double minimumValue, double maximumValue) {
         return Math.max(minimumValue, Math.min(maximumValue, value));
+    }
+
+    /// Owns the transform and observations for one uninterrupted period of visible stretching.
+    @NotNullByDefault
+    private final class StretchRenderer {
+        /// The pane whose content and viewport supply this renderer's geometry.
+        private final M3ScrollPane scrollPane;
+
+        /// The transform owned exclusively by this renderer.
+        private final Scale scale = new Scale();
+
+        /// Reconciles content and geometry against their current values after invalidation.
+        private final InvalidationListener invalidated = observable -> refresh();
+
+        /// Observes presentation activity until this renderer is disposed.
+        private final M3MotionSettingsObserver presentationObserver;
+
+        /// The node carrying the transform, or `null` while no content is installed.
+        private @Nullable Node content;
+
+        /// Whether this renderer has permanently released its resources.
+        private boolean disposed;
+
+        /// Whether content or transform updates are currently being dispatched.
+        private boolean refreshing;
+
+        /// Whether a callback invalidated the current update's content or geometry.
+        private boolean refreshRequested;
+
+        /// Creates unpublished rendering resources without registering listeners.
+        private StretchRenderer(M3ScrollPane scrollPane) {
+            this.scrollPane = scrollPane;
+            presentationObserver = new M3MotionSettingsObserver(
+                    scrollPane, this::refreshPresentationActivity, false);
+        }
+
+        /// Installs observation after this renderer has been published as the active owner.
+        private void start() {
+            scrollPane.contentProperty().addListener(invalidated);
+            scrollPane.viewportBoundsProperty().addListener(invalidated);
+            refresh();
+            if (!disposed) {
+                presentationObserver.start();
+            }
+        }
+
+        /// Reconciles the latest content and geometry without continuing superseded transform writes.
+        private void refresh() {
+            if (disposed) {
+                return;
+            }
+            refreshRequested = true;
+            if (refreshing) {
+                return;
+            }
+            refreshing = true;
+            try {
+                while (!disposed && refreshRequested) {
+                    refreshRequested = false;
+                    @Nullable Node next = scrollPane.getContent();
+                    if (content != next) {
+                        @Nullable Node previous = content;
+                        content = null;
+                        if (previous != null) {
+                            previous.layoutBoundsProperty().removeListener(invalidated);
+                            previous.getTransforms().remove(scale);
+                        }
+                        if (disposed || refreshRequested) {
+                            continue;
+                        }
+                        content = next;
+                        if (next != null) {
+                            next.layoutBoundsProperty().addListener(invalidated);
+                            if (!next.getTransforms().contains(scale)) {
+                                next.getTransforms().add(scale);
+                            }
+                        }
+                        if (disposed || refreshRequested) {
+                            continue;
+                        }
+                    }
+                    if (next == null) {
+                        continue;
+                    }
+
+                    Bounds bounds = next.getLayoutBounds();
+                    Bounds viewport = scrollPane.getViewportBounds();
+                    double horizontalStretch = stretchForPull(horizontalPull, viewport.getWidth());
+                    double verticalStretch = stretchForPull(verticalPull, viewport.getHeight());
+                    // Every property write can detach this renderer or request a newer geometry pass.
+                    scale.setPivotX(horizontalPull < 0.0 ? bounds.getMaxX() : bounds.getMinX());
+                    if (disposed || refreshRequested) {
+                        continue;
+                    }
+                    scale.setPivotY(verticalPull < 0.0 ? bounds.getMaxY() : bounds.getMinY());
+                    if (disposed || refreshRequested) {
+                        continue;
+                    }
+                    scale.setX(1.0 + horizontalStretch);
+                    if (disposed || refreshRequested) {
+                        continue;
+                    }
+                    scale.setY(1.0 + verticalStretch);
+                }
+            } finally {
+                refreshing = false;
+            }
+        }
+
+        /// Settles the active pull when this renderer's pane can no longer present it.
+        private void refreshPresentationActivity() {
+            if (disposed) {
+                return;
+            }
+            @Nullable Scene scene = scrollPane.getScene();
+            @Nullable Window window = scene == null ? null : scene.getWindow();
+            if (M3PresentationActivity.isTreeVisible(scrollPane)
+                    && (window == null || M3PresentationActivity.isRenderActive(window))) {
+                return;
+            }
+            @Nullable StretchReleaseTransition transition = releaseTransition;
+            if (transition != null) {
+                transition.stop();
+            }
+            finishRelease();
+        }
+
+        /// Retires ownership before removing resources that can invoke application listeners.
+        private void dispose() {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
+            scrollPane.contentProperty().removeListener(invalidated);
+            scrollPane.viewportBoundsProperty().removeListener(invalidated);
+            presentationObserver.dispose();
+            @Nullable Node previous = content;
+            content = null;
+            if (previous != null) {
+                previous.layoutBoundsProperty().removeListener(invalidated);
+                previous.getTransforms().remove(scale);
+            }
+            scale.setX(1.0);
+            scale.setY(1.0);
+        }
     }
 
     /// Reusable two-axis transition that relaxes the retained raw pull.

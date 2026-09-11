@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
@@ -518,103 +516,51 @@ public final class M3ProgressIndicator extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the circular indicator stroke thickness token.
         private static final CssMetaData<M3ProgressIndicator, Number> TRACK_THICKNESS =
-                new CssMetaData<>("-m3-track-thickness", SizeConverter.getInstance(), DEFAULT_TRACK_THICKNESS) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.trackThicknessProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.trackThicknessProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-thickness",
+                        DEFAULT_TRACK_THICKNESS,
+                        M3ProgressIndicator::trackThicknessProperty
+                );
 
         /// CSS metadata for the circular indicator size token.
         private static final CssMetaData<M3ProgressIndicator, Number> INDICATOR_SIZE =
-                new CssMetaData<>("-m3-indicator-size", SizeConverter.getInstance(), DEFAULT_INDICATOR_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.indicatorSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.indicatorSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-indicator-size",
+                        DEFAULT_INDICATOR_SIZE,
+                        M3ProgressIndicator::indicatorSizeProperty
+                );
 
         /// CSS metadata for the circular wavy indicator size token.
         private static final CssMetaData<M3ProgressIndicator, Number> WAVE_INDICATOR_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-wave-indicator-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_WAVE_INDICATOR_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.waveIndicatorSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.waveIndicatorSizeProperty();
-                    }
-                };
+                        DEFAULT_WAVE_INDICATOR_SIZE,
+                        M3ProgressIndicator::waveIndicatorSizeProperty
+                );
 
         /// CSS metadata for the wave amplitude token.
         private static final CssMetaData<M3ProgressIndicator, Number> WAVE_AMPLITUDE =
-                new CssMetaData<>("-m3-wave-amplitude", SizeConverter.getInstance(), DEFAULT_WAVE_AMPLITUDE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.waveAmplitudeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.waveAmplitudeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-wave-amplitude",
+                        DEFAULT_WAVE_AMPLITUDE,
+                        M3ProgressIndicator::waveAmplitudeProperty
+                );
 
         /// CSS metadata for the wavelength token.
         private static final CssMetaData<M3ProgressIndicator, Number> WAVELENGTH =
-                new CssMetaData<>("-m3-wavelength", SizeConverter.getInstance(), DEFAULT_WAVELENGTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.wavelengthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.wavelengthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-wavelength",
+                        DEFAULT_WAVELENGTH,
+                        M3ProgressIndicator::wavelengthProperty
+                );
 
         /// CSS metadata for the active-to-track gap token.
         private static final CssMetaData<M3ProgressIndicator, Number> TRACK_GAP =
-                new CssMetaData<>("-m3-track-gap", SizeConverter.getInstance(), DEFAULT_TRACK_GAP) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ProgressIndicator control) {
-                        return M3Css.isSettable(control.trackGapProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
-                        return control.trackGapProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-track-gap",
+                        DEFAULT_TRACK_GAP,
+                        M3ProgressIndicator::trackGapProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

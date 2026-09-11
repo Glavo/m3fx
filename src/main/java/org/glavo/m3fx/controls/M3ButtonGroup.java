@@ -12,8 +12,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -548,39 +546,19 @@ public final class M3ButtonGroup extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for grouped button spacing.
         private static final CssMetaData<M3ButtonGroup, Number> SPACING =
-                new CssMetaData<>("-m3-button-group-spacing", SizeConverter.getInstance(), DEFAULT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonGroup control) {
-                        return M3Css.isSettable(control.spacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonGroup control) {
-                        return control.spacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-button-group-spacing",
+                        DEFAULT_SPACING,
+                        M3ButtonGroup::spacingProperty
+                );
 
         /// CSS metadata for the standard-group pressed width multiplier.
         private static final CssMetaData<M3ButtonGroup, Number> STANDARD_PRESSED_WIDTH_MULTIPLIER =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-button-group-standard-pressed-width-multiplier",
-                        SizeConverter.getInstance(),
-                        DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ButtonGroup control) {
-                        return M3Css.isSettable(control.standardPressedWidthMultiplierProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ButtonGroup control) {
-                        return control.standardPressedWidthMultiplierProperty();
-                    }
-                };
+                        DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER,
+                        M3ButtonGroup::standardPressedWidthMultiplierProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

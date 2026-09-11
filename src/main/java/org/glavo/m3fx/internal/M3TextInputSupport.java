@@ -11,17 +11,15 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.TextInputControl;
 import org.glavo.m3fx.controls.M3TextInput;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,63 +56,17 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// The owning JavaFX text input control.
     private final C control;
 
-    /// The default container height for the owning control kind.
-    private final double defaultContainerHeight;
+    /// The immutable defaults and CSS metadata shared by this concrete control class.
+    private final Metadata<C> metadata;
 
-    /// The default vertical padding for the owning control kind.
-    private final double defaultVerticalPadding;
-
-    /// The CSS metadata for the container height token.
-    private final CssMetaData<C, Number> containerHeightCssMetaData;
-
-    /// The CSS metadata for the container shape token.
-    private final CssMetaData<C, Number> containerShapeCssMetaData;
-
-    /// The CSS metadata for the horizontal padding token.
-    private final CssMetaData<C, Number> horizontalPaddingCssMetaData;
-
-    /// The CSS metadata for the optional vertical padding token.
-    private final @Nullable CssMetaData<C, Number> verticalPaddingCssMetaData;
-
-    /// Creates shared text input state for a concrete JavaFX text input control.
+    /// Creates shared text input state using a concrete control class's metadata.
     ///
-    /// The vertical padding metadata may be `null` for controls that do not expose vertical padding to CSS. In
-    /// that case [#getVerticalPadding()] still returns the supplied default, while [#setVerticalPadding(double)] and
-    /// [#verticalPaddingProperty()] throw [UnsupportedOperationException].
-    ///
-    /// @param control                      the control whose state and layout are managed
-    /// @param defaultContainerHeight       the default container height in logical pixels
-    /// @param defaultVerticalPadding       the default vertical padding in logical pixels
-    /// @param containerHeightCssMetaData   CSS metadata for the container height
-    /// @param containerShapeCssMetaData    CSS metadata for the container corner radius
-    /// @param horizontalPaddingCssMetaData CSS metadata for the horizontal content padding
-    /// @param verticalPaddingCssMetaData   CSS metadata for the vertical content padding, or `null` when unsupported
-    /// @throws NullPointerException if `control` or any non-nullable metadata argument is `null`
-    public M3TextInputSupport(
-            C control,
-            double defaultContainerHeight,
-            double defaultVerticalPadding,
-            CssMetaData<C, Number> containerHeightCssMetaData,
-            CssMetaData<C, Number> containerShapeCssMetaData,
-            CssMetaData<C, Number> horizontalPaddingCssMetaData,
-            @Nullable CssMetaData<C, Number> verticalPaddingCssMetaData
-    ) {
+    /// @param control the control whose state and geometry are managed
+    /// @param metadata the defaults and CSS metadata for that control class
+    /// @throws NullPointerException if either argument is `null`
+    public M3TextInputSupport(C control, Metadata<C> metadata) {
         this.control = Objects.requireNonNull(control, "control");
-        this.defaultContainerHeight = defaultContainerHeight;
-        this.defaultVerticalPadding = defaultVerticalPadding;
-        this.containerHeightCssMetaData = Objects.requireNonNull(
-                containerHeightCssMetaData,
-                "containerHeightCssMetaData"
-        );
-        this.containerShapeCssMetaData = Objects.requireNonNull(
-                containerShapeCssMetaData,
-                "containerShapeCssMetaData"
-        );
-        this.horizontalPaddingCssMetaData = Objects.requireNonNull(
-                horizontalPaddingCssMetaData,
-                "horizontalPaddingCssMetaData"
-        );
-        this.verticalPaddingCssMetaData = verticalPaddingCssMetaData;
+        this.metadata = Objects.requireNonNull(metadata, "metadata");
         this.variant = new SimpleObjectProperty<>(control, "variant", M3TextInputVariant.FILLED) {
             /// Updates variant style classes when the property changes.
             @Override
@@ -194,7 +146,7 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
 
     /// The preferred container height, in logical pixels.
     ///
-    /// The default is the `defaultContainerHeight` supplied at construction. Values must be finite and
+    /// The default comes from the concrete control class metadata. Values must be finite and
     /// non-negative.
     private @Nullable StyleableDoubleProperty containerHeight;
 
@@ -202,7 +154,7 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     ///
     /// @return the preferred container height in logical pixels
     public double getContainerHeight() {
-        return containerHeight == null ? defaultContainerHeight : containerHeight.get();
+        return containerHeight == null ? metadata.defaultContainerHeight : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
@@ -218,11 +170,12 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// @return the container height property, in logical pixels
     public StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
-            containerHeight = createStyleableDoubleProperty(
-                    defaultContainerHeight,
+            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    metadata.defaultContainerHeight,
+                    control,
                     "containerHeight",
-                    containerHeightCssMetaData,
-                    true
+                    metadata.containerHeight,
+                    control::requestLayout
             );
         }
         return containerHeight;
@@ -255,11 +208,12 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// @return the container shape property, in logical pixels
     public StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = createStyleableDoubleProperty(
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_CONTAINER_SHAPE,
+                    control,
                     "containerShape",
-                    containerShapeCssMetaData,
-                    false
+                    metadata.containerShape,
+                    control::requestLayout
             );
         }
         return containerShape;
@@ -292,11 +246,12 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// @return the horizontal padding property, in logical pixels
     public StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
-            horizontalPadding = createStyleableDoubleProperty(
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_HORIZONTAL_PADDING,
+                    control,
                     "horizontalPadding",
-                    horizontalPaddingCssMetaData,
-                    true
+                    metadata.horizontalPadding,
+                    this::updatePadding
             );
         }
         return horizontalPadding;
@@ -304,24 +259,21 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
 
     /// The vertical content padding, in logical pixels.
     ///
-    /// The default is the `defaultVerticalPadding` supplied at construction. Values must be finite and
-    /// non-negative. The property exists only when vertical padding CSS metadata was supplied.
+    /// The default comes from the concrete control class metadata. Values must be finite and
+    /// non-negative.
     private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Returns the vertical content padding token.
     ///
-    /// This method also returns the configured default for controls that do not expose a vertical padding property.
-    ///
     /// @return the vertical content padding in logical pixels
     public double getVerticalPadding() {
-        return verticalPadding == null ? defaultVerticalPadding : verticalPadding.get();
+        return verticalPadding == null ? metadata.defaultVerticalPadding : verticalPadding.get();
     }
 
     /// Sets the vertical content padding token.
     ///
     /// @param verticalPadding the vertical content padding in logical pixels
-    /// @throws IllegalArgumentException      if `verticalPadding` is negative or not finite
-    /// @throws UnsupportedOperationException if this support object has no vertical padding CSS metadata
+    /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
     public void setVerticalPadding(double verticalPadding) {
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
@@ -329,104 +281,17 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// Returns the styleable property that stores the vertical content padding.
     ///
     /// @return the vertical padding property, in logical pixels
-    /// @throws UnsupportedOperationException if this support object has no vertical padding CSS metadata
     public StyleableDoubleProperty verticalPaddingProperty() {
-        CssMetaData<C, Number> cssMetaData = verticalPaddingCssMetaData;
-        if (cssMetaData == null) {
-            throw new UnsupportedOperationException("verticalPadding is not styleable for this input");
-        }
         if (verticalPadding == null) {
-            verticalPadding = createStyleableDoubleProperty(
-                    defaultVerticalPadding,
+            verticalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    metadata.defaultVerticalPadding,
+                    control,
                     "verticalPadding",
-                    cssMetaData,
-                    true
+                    metadata.verticalPadding,
+                    this::updatePadding
             );
         }
         return verticalPadding;
-    }
-
-    /// Creates CSS metadata for a non-negative text input size token.
-    ///
-    /// The returned metadata delegates property lookup to `provider` and permits CSS assignment only while the
-    /// selected property is not bound.
-    ///
-    /// @param property     the CSS property name
-    /// @param initialValue the initial value in logical pixels
-    /// @param provider     the function that selects the property from a control
-    /// @param <C>          the supported text input type
-    /// @return CSS metadata backed by the supplied property provider
-    public static <C extends TextInputControl & M3TextInput> CssMetaData<C, Number> createSizeCssMetaData(
-            String property,
-            double initialValue,
-            StyleablePropertyProvider<C> provider
-    ) {
-        return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-            /// Returns whether this property can be set by CSS.
-            @Override
-            public boolean isSettable(C control) {
-                return M3Css.isSettable(provider.property(control));
-            }
-
-            /// Returns the styleable property for a control.
-            @Override
-            public StyleableProperty<Number> getStyleableProperty(C control) {
-                return provider.property(control);
-            }
-        };
-    }
-
-    /// Combines JavaFX text input CSS metadata with three Material text input token entries.
-    ///
-    /// The returned list is an immutable snapshot. The source list is not modified.
-    ///
-    /// @param baseCssMetaData              the metadata inherited from the JavaFX control
-    /// @param containerHeightCssMetaData   metadata for the container height
-    /// @param containerShapeCssMetaData    metadata for the container corner radius
-    /// @param horizontalPaddingCssMetaData metadata for horizontal content padding
-    /// @param <C>                          the supported text input type
-    /// @return an immutable metadata list in base, height, shape, and padding order
-    /// @throws NullPointerException if `baseCssMetaData` is `null`
-    public static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
-            List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
-            CssMetaData<C, Number> containerHeightCssMetaData,
-            CssMetaData<C, Number> containerShapeCssMetaData,
-            CssMetaData<C, Number> horizontalPaddingCssMetaData
-    ) {
-        List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(baseCssMetaData);
-        styleables.add(containerHeightCssMetaData);
-        styleables.add(containerShapeCssMetaData);
-        styleables.add(horizontalPaddingCssMetaData);
-        return Collections.unmodifiableList(styleables);
-    }
-
-    /// Combines JavaFX text input CSS metadata with four Material text input token entries.
-    ///
-    /// The returned list is an immutable snapshot. The source list is not modified.
-    ///
-    /// @param baseCssMetaData              the metadata inherited from the JavaFX control
-    /// @param containerHeightCssMetaData   metadata for the container height
-    /// @param containerShapeCssMetaData    metadata for the container corner radius
-    /// @param horizontalPaddingCssMetaData metadata for horizontal content padding
-    /// @param verticalPaddingCssMetaData   metadata for vertical content padding
-    /// @param <C>                          the supported text input type
-    /// @return an immutable metadata list with vertical padding appended last
-    /// @throws NullPointerException if `baseCssMetaData` is `null`
-    public static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
-            List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
-            CssMetaData<C, Number> containerHeightCssMetaData,
-            CssMetaData<C, Number> containerShapeCssMetaData,
-            CssMetaData<C, Number> horizontalPaddingCssMetaData,
-            CssMetaData<C, Number> verticalPaddingCssMetaData
-    ) {
-        List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(cssMetaData(
-                baseCssMetaData,
-                containerHeightCssMetaData,
-                containerShapeCssMetaData,
-                horizontalPaddingCssMetaData
-        ));
-        styleables.add(verticalPaddingCssMetaData);
-        return Collections.unmodifiableList(styleables);
     }
 
     /// Installs the base style class and applies the current variant and geometry to the owning control.
@@ -437,7 +302,7 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     public void initialize(String styleClass) {
         M3ControlStyles.initialize(control, styleClass);
         updateVariantStyle();
-        updateMetrics();
+        updatePadding();
     }
 
     /// Applies the current variant style class.
@@ -458,45 +323,78 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         };
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double height = getContainerHeight();
+    /// Applies content padding independently of application height constraints.
+    private void updatePadding() {
         double horizontalPadding = getHorizontalPadding();
         double verticalPadding = getVerticalPadding();
-        M3Css.setMinHeightIfUnbound(control, height);
-        M3Css.setPrefHeightIfUnbound(control, height);
         M3Css.setPaddingIfUnbound(
                 control,
                 new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding)
         );
     }
 
-    /// Creates a non-negative styleable double property.
-    private StyleableDoubleProperty createStyleableDoubleProperty(
-            double initialValue,
-            String name,
-            CssMetaData<C, Number> cssMetaData,
-            boolean updateMetrics
-    ) {
-        return M3Css.nonNegativeStyleableDoubleProperty(
-                initialValue,
-                control,
-                name,
-                cssMetaData,
-                updateMetrics ? this::updateMetrics : control::requestLayout
-        );
-    }
-
-    /// Provides a styleable double property for a text input control.
+    /// Holds immutable defaults and the four geometry-token declarations for one concrete text input class.
     ///
-    /// @param <C> the concrete text input type accepted by the provider
-    @FunctionalInterface
+    /// Each control class shares one instance. Instance properties remain owned by individual controls; metadata
+    /// resolves them through [M3TextInput] without retaining control instances.
+    ///
+    /// @param <C> the concrete JavaFX text input type
     @NotNullByDefault
-    public interface StyleablePropertyProvider<C extends TextInputControl & M3TextInput> {
-        /// Returns the styleable property for a text input control.
+    public static final class Metadata<C extends TextInputControl & M3TextInput> {
+        /// The default container height in logical pixels.
+        private final double defaultContainerHeight;
+
+        /// The default vertical padding in logical pixels.
+        private final double defaultVerticalPadding;
+
+        /// CSS metadata for the container-height token.
+        private final CssMetaData<C, Number> containerHeight;
+
+        /// CSS metadata for the container-shape token.
+        private final CssMetaData<C, Number> containerShape;
+
+        /// CSS metadata for the horizontal-padding token.
+        private final CssMetaData<C, Number> horizontalPadding;
+
+        /// CSS metadata for the vertical-padding token.
+        private final CssMetaData<C, Number> verticalPadding;
+
+        /// The immutable snapshot of inherited and Material metadata in declaration order.
+        private final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> styleables;
+
+        /// Creates the common Material token declarations after the inherited JavaFX metadata.
         ///
-        /// @param control the control whose property is requested
-        /// @return the control's styleable property
-        StyleableDoubleProperty property(C control);
+        /// @param base the inherited metadata, copied without modification
+        /// @param defaultContainerHeight the finite, non-negative container height in logical pixels
+        /// @param defaultVerticalPadding the finite, non-negative vertical padding in logical pixels
+        /// @throws NullPointerException if `base` or any of its entries is `null`
+        /// @throws IllegalArgumentException if either default is negative or not finite
+        public Metadata(List<CssMetaData<? extends Styleable, ?>> base,
+                        double defaultContainerHeight, double defaultVerticalPadding) {
+            this.defaultContainerHeight = M3Css.nonNegative(defaultContainerHeight, "defaultContainerHeight");
+            this.defaultVerticalPadding = M3Css.nonNegative(defaultVerticalPadding, "defaultVerticalPadding");
+            containerHeight = M3Css.sizeMetaData("-m3-container-height", defaultContainerHeight,
+                    M3TextInput::containerHeightProperty);
+            containerShape = M3Css.sizeMetaData("-m3-container-shape", DEFAULT_CONTAINER_SHAPE,
+                    M3TextInput::containerShapeProperty);
+            horizontalPadding = M3Css.sizeMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
+                    M3TextInput::horizontalPaddingProperty);
+            verticalPadding = M3Css.sizeMetaData("-m3-vertical-padding", defaultVerticalPadding,
+                    M3TextInput::verticalPaddingProperty);
+            List<CssMetaData<? extends Styleable, ?>> entries = new ArrayList<>(base);
+            entries.add(containerHeight);
+            entries.add(containerShape);
+            entries.add(horizontalPadding);
+            entries.add(verticalPadding);
+            styleables = List.copyOf(entries);
+        }
+
+        /// Returns inherited metadata followed by height, shape, horizontal padding, and vertical padding.
+        ///
+        /// @return the immutable metadata snapshot shared by this control class
+        public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> styleables() {
+            return styleables;
+        }
+
     }
 }

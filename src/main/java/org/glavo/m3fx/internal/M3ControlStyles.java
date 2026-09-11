@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
 /// Provides the common style-class and fallback-token setup used by M3FX controls.
 ///
@@ -85,6 +86,8 @@ public final class M3ControlStyles {
     /// @param styleClass the style class to add
     /// @throws NullPointerException if `node` or `styleClass` is `null`
     public static void add(Styleable node, String styleClass) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(styleClass, "styleClass");
         List<String> styleClasses = node.getStyleClass();
         if (!styleClasses.contains(styleClass)) {
             styleClasses.add(styleClass);
@@ -93,17 +96,27 @@ public final class M3ControlStyles {
 
     /// Replaces the known variant style classes with the selected style class.
     ///
-    /// One occurrence of each known variant is removed before `selectedStyleClass` is added if absent. Existing
-    /// duplicate style-class entries are not normalized.
+    /// One occurrence is removed for each unselected variant in `variantStyleClasses`. Existing occurrences of
+    /// `selectedStyleClass` remain in place; the class is appended if absent. Duplicate entries are not normalized.
+    /// No change is made when the selected class is already present and no unselected variant is present.
+    /// All arguments and array elements are validated before the style-class list is modified.
     ///
     /// @param node                the styleable object to update
     /// @param selectedStyleClass  the variant style class that should remain selected
     /// @param variantStyleClasses all mutually exclusive variant style classes
-    /// @throws NullPointerException if any argument is `null`
+    /// @throws NullPointerException if any argument or variant array element is `null`
     public static void replaceVariant(Styleable node, String selectedStyleClass, String... variantStyleClasses) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(selectedStyleClass, "selectedStyleClass");
+        Objects.requireNonNull(variantStyleClasses, "variantStyleClasses");
+        for (String styleClass : variantStyleClasses) {
+            Objects.requireNonNull(styleClass, "variantStyleClass");
+        }
         List<String> styleClasses = node.getStyleClass();
         for (String styleClass : variantStyleClasses) {
-            styleClasses.remove(styleClass);
+            if (!selectedStyleClass.equals(styleClass)) {
+                styleClasses.remove(styleClass);
+            }
         }
         if (!styleClasses.contains(selectedStyleClass)) {
             styleClasses.add(selectedStyleClass);

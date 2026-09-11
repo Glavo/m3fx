@@ -2306,7 +2306,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, textField.getVerticalPadding(), 0.0001);
-        assertEquals(103.0, textField.getPrefHeight(), 0.0001);
+        assertEquals(103.0, textField.prefHeight(-1.0), 0.0001);
         assertEquals(new Insets(6.0, 7.0, 8.0, 9.0), textField.getPadding());
 
         M3Toolbar toolbar = new M3Toolbar();
@@ -2446,7 +2446,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(12.0, textField.getContainerShape(), 0.0001);
         assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
-        assertEquals(64.0, textField.getPrefHeight(), 0.0001);
+        assertEquals(64.0, textField.prefHeight(-1.0), 0.0001);
 
         assertEquals(54.0, checkBox.getTouchTargetSize(), 0.0001);
         assertEquals(42.0, checkBox.getStateLayerSize(), 0.0001);
@@ -2455,7 +2455,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(11.0, checkBox.getSelectedMarkHeight(), 0.0001);
         assertEquals(15.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
         assertEquals(3.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
-        assertEquals(54.0, checkBox.getPrefHeight(), 0.0001);
+        assertEquals(54.0, checkBox.prefHeight(-1.0), 0.0001);
 
         assertEquals(52.0, radioButton.getTouchTargetSize(), 0.0001);
         assertEquals(38.0, radioButton.getStateLayerSize(), 0.0001);
@@ -2484,7 +2484,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(20.0, switchControl.getUnselectedHandleSize(), 0.0001);
         assertEquals(28.0, switchControl.getSelectedHandleSize(), 0.0001);
         assertEquals(32.0, switchControl.getPressedHandleSize(), 0.0001);
-        assertEquals(60.0, switchControl.getPrefHeight(), 0.0001);
+        assertEquals(60.0, switchControl.prefHeight(-1.0), 0.0001);
 
         assertEquals(10.0, progressBar.getTrackThickness(), 0.0001);
         assertEquals(5.0, progressBar.getTrackShape(), 0.0001);
@@ -5264,15 +5264,15 @@ final class M3ControlContractMatrixTest {
         assertEquals(20.0, button.getContainerShape(), 0.0001);
         assertEquals(22.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(30.0, button.getTrailingPadding(), 0.0001);
-        assertEquals(64.0, button.getPrefWidth(), 0.0001);
-        assertEquals(64.0, button.getPrefHeight(), 0.0001);
+        assertEquals(64.0, button.prefWidth(-1.0), 0.0001);
+        assertEquals(64.0, button.prefHeight(-1.0), 0.0001);
         assertEquals(0.0, button.getPadding().getLeft(), 0.0001);
 
         button.setText("Create");
         applyCss(button);
 
         assertEquals(javafx.scene.layout.Region.USE_COMPUTED_SIZE, button.getPrefWidth(), 0.0001);
-        assertEquals(64.0, button.getPrefHeight(), 0.0001);
+        assertEquals(64.0, button.prefHeight(-1.0), 0.0001);
         assertEquals(22.0, button.getPadding().getLeft(), 0.0001);
         assertEquals(30.0, button.getPadding().getRight(), 0.0001);
 
@@ -6857,8 +6857,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(520.0, dialogPane.getContainerMaxWidth(), 0.0001);
         assertEquals(12.0, dialogPane.getActionSpacing(), 0.0001);
         assertEquals(28.0, dialogPane.getIconSize(), 0.0001);
-        assertEquals(324.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(544.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(324.0, dialogPane.minWidth(-1.0), 0.0001);
+        assertEquals(544.0, dialogPane.maxWidth(-1.0), 0.0001);
         assertEquals(28.0, graphic.getIconSize(), 0.0001);
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, graphic.getVariant());
         assertEquals("-fx-opacity: 0.75;", graphic.getStyle());
@@ -7318,7 +7318,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(12.0, textField.getContainerShape(), 0.0001);
         assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
-        assertEquals(64.0, textField.getPrefHeight(), 0.0001);
+        assertEquals(64.0, textField.prefHeight(-1.0), 0.0001);
         assertEquals(22.0, textField.getPadding().getLeft(), 0.0001);
         assertEquals(22.0, textField.getPadding().getRight(), 0.0001);
     }
@@ -7336,7 +7336,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(60.0, passwordField.getContainerHeight(), 0.0001);
         assertEquals(10.0, passwordField.getContainerShape(), 0.0001);
         assertEquals(20.0, passwordField.getHorizontalPadding(), 0.0001);
-        assertEquals(60.0, passwordField.getPrefHeight(), 0.0001);
+        assertEquals(60.0, passwordField.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, passwordField.getPadding().getLeft(), 0.0001);
         assertEquals(20.0, passwordField.getPadding().getRight(), 0.0001);
     }
@@ -7360,7 +7360,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(12.0, textArea.getContainerShape(), 0.0001);
         assertEquals(22.0, textArea.getHorizontalPadding(), 0.0001);
         assertEquals(18.0, textArea.getVerticalPadding(), 0.0001);
-        assertEquals(140.0, textArea.getPrefHeight(), 0.0001);
+        assertEquals(140.0, textArea.prefHeight(-1.0), 0.0001);
         assertEquals(22.0, textArea.getPadding().getLeft(), 0.0001);
         assertEquals(22.0, textArea.getPadding().getRight(), 0.0001);
         assertEquals(18.0, textArea.getPadding().getTop(), 0.0001);
@@ -7422,7 +7422,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(14.0, input.getContainerShape(), 0.0001);
             assertEquals(24.0, input.getHorizontalPadding(), 0.0001);
             assertEquals(10.0, input.getVerticalPadding(), 0.0001);
-            assertEquals(72.0, control.getPrefHeight(), 0.0001);
+            assertEquals(72.0, control.prefHeight(-1.0), 0.0001);
             assertEquals(24.0, control.getPadding().getLeft(), 0.0001);
             assertEquals(24.0, control.getPadding().getRight(), 0.0001);
             assertEquals(10.0, control.getPadding().getTop(), 0.0001);
@@ -7479,8 +7479,8 @@ final class M3ControlContractMatrixTest {
             input.setHorizontalPadding(30.0);
             input.setVerticalPadding(12.0);
 
-            assertEquals(80.0, control.getMinHeight(), 0.0001);
-            assertEquals(80.0, control.getPrefHeight(), 0.0001);
+            assertEquals(35.0, control.minHeight(-1.0), 0.0001);
+            assertEquals(45.0, control.prefHeight(-1.0), 0.0001);
             assertEquals(new Insets(12.0, 30.0, 12.0, 30.0), control.getPadding());
         }
     }
@@ -10775,9 +10775,7 @@ final class M3ControlContractMatrixTest {
                 assertSame(expressiveDarkTheme, tooltip.getTheme());
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
-                ));
+                assertTooltipThemeStylesheet(tooltip, expressiveDarkTheme);
             } finally {
                 tooltip.hide();
                 M3Tooltip.uninstall(target, tooltip);
@@ -10967,9 +10965,7 @@ final class M3ControlContractMatrixTest {
                 assertSame(expressiveDarkTheme, tooltip.getTheme());
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
-                ));
+                assertTooltipThemeStylesheet(tooltip, expressiveDarkTheme);
 
                 M3ThemeManager.uninstall(scene);
 
@@ -11033,9 +11029,7 @@ final class M3ControlContractMatrixTest {
                 assertSame(expressiveDarkTheme, tooltip.getTheme());
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
-                ));
+                assertTooltipThemeStylesheet(tooltip, expressiveDarkTheme);
             } finally {
                 tooltip.hide();
                 M3Tooltip.uninstall(target, tooltip);
@@ -11082,9 +11076,7 @@ final class M3ControlContractMatrixTest {
                 assertSame(expressiveDarkTheme, tooltip.getTheme());
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
-                ));
+                assertTooltipThemeStylesheet(tooltip, expressiveDarkTheme);
 
                 secondLocalRoot.getChildren().remove(target);
                 root.getChildren().add(target);
@@ -16336,7 +16328,7 @@ final class M3ControlContractMatrixTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
         assertInstanceOf(M3SearchBarSkin.class, searchBar.getSkin());
@@ -16359,7 +16351,7 @@ final class M3ControlContractMatrixTest {
         ));
         root.applyCss();
 
-        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
         assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + "m3-search-bar-content")).getSpacing(), 0.0001);
@@ -16428,14 +16420,14 @@ final class M3ControlContractMatrixTest {
         assertEquals(Region.USE_COMPUTED_SIZE, searchView.getMinWidth(), 0.0001);
         assertEquals(Region.USE_COMPUTED_SIZE, searchView.getMaxWidth(), 0.0001);
         assertEquals(Region.USE_COMPUTED_SIZE, searchView.getMinHeight(), 0.0001);
-        assertEquals(72.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(72.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(0.0, searchView.getBackground().getFills().get(0)
                 .getRadii().getTopLeftHorizontalRadius(), 0.0001);
 
         searchView.setViewStyle(M3SearchViewStyle.CONTAINED);
         root.applyCss();
 
-        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, searchView.getPadding().getBottom(), 0.0001);
         assertFalse(divider.isManaged());
@@ -16536,8 +16528,8 @@ final class M3ControlContractMatrixTest {
             root.resize(760.0, 420.0);
             root.layout();
 
-            assertTrue(datePicker.getHeight() > searchBar.getPrefHeight() * 2.0);
-            assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+            assertTrue(datePicker.getHeight() > searchBar.prefHeight(-1.0) * 2.0);
+            assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
             assertEquals(56.0, searchBar.getHeight(), 0.0001);
         });
     }
@@ -18067,7 +18059,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(16.0, chip.getContainerShape(), 0.0001);
         assertEquals(14.0, chip.getHorizontalPadding(), 0.0001);
         assertEquals(6.0, chip.getIconHorizontalPadding(), 0.0001);
-        assertEquals(36.0, chip.getPrefHeight(), 0.0001);
+        assertEquals(36.0, chip.prefHeight(-1.0), 0.0001);
         assertEquals(6.0, chip.getPadding().getLeft(), 0.0001);
         assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
         assertEquals(22.0, icon.getIconSize(), 0.0001);
@@ -18346,7 +18338,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(44.0, button.getContainerHeight(), 0.0001);
         assertEquals(12.0, button.getContainerShape(), 0.0001);
         assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
-        assertEquals(44.0, button.getPrefHeight(), 0.0001);
+        assertEquals(44.0, button.prefHeight(-1.0), 0.0001);
         assertEquals(18.0, button.getPadding().getLeft(), 0.0001);
         assertEquals(18.0, button.getPadding().getRight(), 0.0001);
     }
@@ -18958,8 +18950,8 @@ final class M3ControlContractMatrixTest {
         assertEquals(2.0, tab.getActiveIndicatorShape(), 0.0001);
         assertEquals(28.0, tab.getActiveIndicatorMinWidth(), 0.0001);
         assertEquals(3.0, tab.getActiveIndicatorHorizontalInset(), 0.0001);
-        assertEquals(120.0, tab.getMinWidth(), 0.0001);
-        assertEquals(52.0, tab.getPrefHeight(), 0.0001);
+        assertEquals(120.0, tab.minWidth(-1.0), 0.0001);
+        assertEquals(52.0, tab.prefHeight(-1.0), 0.0001);
         assertInstanceOf(M3TabSkin.class, tab.getSkin());
     }
 
@@ -19211,12 +19203,12 @@ final class M3ControlContractMatrixTest {
         assertEquals(11.0, checkBox.getSelectedMarkHeight(), 0.0001);
         assertEquals(14.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
         assertEquals(3.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
-        assertEquals(44.0, checkBox.getPrefHeight(), 0.0001);
+        assertEquals(44.0, checkBox.prefHeight(-1.0), 0.0001);
         assertEquals(46.0, radioButton.getTouchTargetSize(), 0.0001);
         assertEquals(36.0, radioButton.getStateLayerSize(), 0.0001);
         assertEquals(22.0, radioButton.getContainerSize(), 0.0001);
         assertEquals(12.0, radioButton.getSelectedDotSize(), 0.0001);
-        assertEquals(46.0, radioButton.getPrefHeight(), 0.0001);
+        assertEquals(46.0, radioButton.prefHeight(-1.0), 0.0001);
         assertEquals(50.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(18.0, switchControl.getTrackShape(), 0.0001);
         assertEquals(60.0, switchControl.getTrackWidth(), 0.0001);
@@ -19227,12 +19219,12 @@ final class M3ControlContractMatrixTest {
         assertEquals(26.0, switchControl.getSelectedHandleSize(), 0.0001);
         assertEquals(30.0, switchControl.getPressedHandleSize(), 0.0001);
         assertEquals(15.0, switchControl.getIconSize(), 0.0001);
-        assertEquals(50.0, switchControl.getPrefHeight(), 0.0001);
+        assertEquals(50.0, switchControl.prefHeight(-1.0), 0.0001);
 
         switchControl.setStyle(switchControl.getStyle() + " -m3-state-layer-size: 54px;");
         applyCss(switchControl);
         assertEquals(54.0, switchControl.getStateLayerSize(), 0.0001);
-        assertEquals(54.0, switchControl.getPrefHeight(), 0.0001);
+        assertEquals(54.0, switchControl.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that switch handle icons use the MD3 icon slot, handle size, color roles, and ownership lifecycle.
@@ -30017,6 +30009,7 @@ final class M3ControlContractMatrixTest {
         KeyEvent listFocusEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
         assertFalse(M3SelectionNavigation.handleKeyFocus(
                 listFocusEvent,
+                null,
                 listWithoutSelection.getItems(),
                 null,
                 M3ListItem.class,
@@ -30030,6 +30023,7 @@ final class M3ControlContractMatrixTest {
         KeyEvent menuFocusEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
         assertFalse(M3SelectionNavigation.handleKeyFocus(
                 menuFocusEvent,
+                null,
                 menuWithoutSelection.getItems(),
                 null,
                 M3MenuItem.class,
@@ -36176,7 +36170,7 @@ final class M3ControlContractMatrixTest {
             assertEquals(16.0, menuSave.getContainerShape(), 0.0001);
             assertEquals(16.0, menuOpen.getHorizontalPadding(), 0.0001);
             assertEquals(12.0, menuOpen.getContentSpacing(), 0.0001);
-            assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+            assertEquals(56.0, searchBar.prefHeight(-1.0), 0.0001);
             assertEquals(56.0, searchBar.getHeight(), 0.0001);
             assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
             assertEquals(4.0, searchView.getPadding().getBottom(), 0.0001);
@@ -36505,9 +36499,7 @@ final class M3ControlContractMatrixTest {
                         assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                         assertSame(theme, tooltip.getTheme());
                         assertTrue(tooltip.getStyle().isEmpty());
-                        assertTrue(tooltip.getScene().getStylesheets().contains(
-                                M3ThemeRuntime.themeStylesheetUrl(theme)
-                        ));
+                        assertTooltipThemeStylesheet(tooltip, theme);
 
                         WritableImage tooltipImage = snapshotImageOnFxThread(tooltipRoot);
                         assertSnapshotHasColorVariety(tooltipImage, 2);
@@ -37888,6 +37880,7 @@ final class M3ControlContractMatrixTest {
 
                 assertTrue(M3SelectionNavigation.handleKeyFocus(
                         event,
+                        null,
                         candidates,
                         null,
                         M3Button.class,
@@ -45143,6 +45136,12 @@ final class M3ControlContractMatrixTest {
     /// Creates a typed key event for printable-key behavior tests.
     private static KeyEvent keyTypedEvent(String character) {
         return new KeyEvent(KeyEvent.KEY_TYPED, character, character, KeyCode.UNDEFINED, false, false, false, false);
+    }
+
+    /// Verifies that the rendered tooltip content has its current local theme stylesheet.
+    private static void assertTooltipThemeStylesheet(M3Tooltip tooltip, M3Theme theme) {
+        Label content = assertInstanceOf(Label.class, tooltip.getSkin().getNode().lookup(".m3-tooltip"));
+        assertTrue(content.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
     }
 
     /// Creates and installs a tooltip for tests that need installed tooltip behavior.

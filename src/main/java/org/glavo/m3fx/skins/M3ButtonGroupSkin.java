@@ -153,13 +153,13 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// Returns the minimum width needed by managed children and spacing.
         @Override
         protected double computeMinWidth(double height) {
-            return summedChildWidth(height, WidthMetric.MINIMUM);
+            return summedChildWidth(height, SizeMetric.MINIMUM);
         }
 
         /// Returns the preferred width needed by managed children and spacing.
         @Override
         protected double computePrefWidth(double height) {
-            return summedChildWidth(height, WidthMetric.PREFERRED);
+            return summedChildWidth(height, SizeMetric.PREFERRED);
         }
 
         /// Returns an unbounded width for connected groups and a content-hugging width for standard groups.
@@ -173,13 +173,13 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// Returns the largest minimum child height.
         @Override
         protected double computeMinHeight(double width) {
-            return maximumChildHeight(width, HeightMetric.MINIMUM);
+            return maximumChildHeight(width, SizeMetric.MINIMUM);
         }
 
         /// Returns the largest preferred child height.
         @Override
         protected double computePrefHeight(double width) {
-            return maximumChildHeight(width, HeightMetric.PREFERRED);
+            return maximumChildHeight(width, SizeMetric.PREFERRED);
         }
 
         /// Returns the preferred content height as the default maximum height.
@@ -201,8 +201,8 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             double height = getHeight();
             double spacing = control.getSpacing();
             double totalSpacing = spacing * Math.max(0, managedCount - 1);
-            double preferredChildrenWidth = summedManagedWidths(children, height, WidthMetric.PREFERRED);
-            double minimumChildrenWidth = summedManagedWidths(children, height, WidthMetric.MINIMUM);
+            double preferredChildrenWidth = summedManagedWidths(children, height, SizeMetric.PREFERRED);
+            double minimumChildrenWidth = summedManagedWidths(children, height, SizeMetric.MINIMUM);
             double availableChildrenWidth = Math.max(0.0, width - totalSpacing);
             double shrinkRatio = shrinkRatio(
                     preferredChildrenWidth,
@@ -453,7 +453,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         }
 
         /// Returns the sum of child widths plus current spacing.
-        private double summedChildWidth(double height, WidthMetric metric) {
+        private double summedChildWidth(double height, SizeMetric metric) {
             ObservableList<Node> children = getChildren();
             int managedCount = managedChildCount(children);
             return summedManagedWidths(children, height, metric)
@@ -464,7 +464,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         private double summedManagedWidths(
                 ObservableList<Node> children,
                 double height,
-                WidthMetric metric
+                SizeMetric metric
         ) {
             double width = 0.0;
             for (Node child : children) {
@@ -476,7 +476,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         }
 
         /// Returns the maximum child height for one sizing metric.
-        private double maximumChildHeight(double width, HeightMetric metric) {
+        private double maximumChildHeight(double width, SizeMetric metric) {
             double height = 0.0;
             for (Node child : getChildren()) {
                 if (child.isManaged()) {
@@ -501,13 +501,13 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
 
         /// Returns one child's width after proportional compression.
         private double fittedWidth(Node child, double height, double shrinkRatio) {
-            double preferred = resolvedWidth(child, height, WidthMetric.PREFERRED);
-            double minimum = resolvedWidth(child, height, WidthMetric.MINIMUM);
+            double preferred = resolvedWidth(child, height, SizeMetric.PREFERRED);
+            double minimum = resolvedWidth(child, height, SizeMetric.MINIMUM);
             return preferred - (preferred - minimum) * shrinkRatio;
         }
 
         /// Returns one width metric after applying the compact connected-group target minimum.
-        private double resolvedWidth(Node child, double height, WidthMetric metric) {
+        private double resolvedWidth(Node child, double height, SizeMetric metric) {
             double width = metric.width(child, height);
             if (control.getVariant() == M3ButtonGroupVariant.CONNECTED
                     && (control.getSize() == M3ButtonSize.EXTRA_SMALL
@@ -554,70 +554,28 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             }
         }
 
-        /// Supplies one child width metric without allocation during layout.
+        /// Selects minimum or bounded preferred dimensions without allocating layout callbacks.
         @NotNullByDefault
-        private enum WidthMetric {
-            /// The minimum width metric.
-            MINIMUM {
-                /// Returns a child's minimum width.
-                @Override
-                double width(Node child, double height) {
-                    return child instanceof Region region
-                            ? region.minWidth(height)
-                            : child.getLayoutBounds().getWidth();
-                }
-            },
+        private enum SizeMetric {
+            /// The minimum dimension reported by the child.
+            MINIMUM,
 
-            /// The preferred width metric.
-            PREFERRED {
-                /// Returns a child's preferred width.
-                @Override
-                double width(Node child, double height) {
-                    if (!(child instanceof Region region)) {
-                        return child.getLayoutBounds().getWidth();
-                    }
-                    double minimum = region.minWidth(height);
-                    double preferred = region.prefWidth(height);
-                    double maximum = region.maxWidth(height);
-                    return Math.max(minimum, Math.min(preferred, maximum));
-                }
-            };
+            /// The preferred dimension bounded by the child's minimum and maximum.
+            PREFERRED;
 
-            /// Returns the requested child width.
-            abstract double width(Node child, double height);
-        }
+            /// Returns the requested width for the supplied height constraint.
+            double width(Node child, double height) {
+                double minimum = child.minWidth(height);
+                return this == MINIMUM ? minimum
+                        : Math.max(minimum, Math.min(child.prefWidth(height), child.maxWidth(height)));
+            }
 
-        /// Supplies one child height metric without allocation during layout.
-        @NotNullByDefault
-        private enum HeightMetric {
-            /// The minimum height metric.
-            MINIMUM {
-                /// Returns a child's minimum height.
-                @Override
-                double height(Node child, double width) {
-                    return child instanceof Region region
-                            ? region.minHeight(width)
-                            : child.getLayoutBounds().getHeight();
-                }
-            },
-
-            /// The preferred height metric.
-            PREFERRED {
-                /// Returns a child's preferred height.
-                @Override
-                double height(Node child, double width) {
-                    if (!(child instanceof Region region)) {
-                        return child.getLayoutBounds().getHeight();
-                    }
-                    double minimum = region.minHeight(width);
-                    double preferred = region.prefHeight(width);
-                    double maximum = region.maxHeight(width);
-                    return Math.max(minimum, Math.min(preferred, maximum));
-                }
-            };
-
-            /// Returns the requested child height.
-            abstract double height(Node child, double width);
+            /// Returns the requested height for the supplied width constraint.
+            double height(Node child, double width) {
+                double minimum = child.minHeight(width);
+                return this == MINIMUM ? minimum
+                        : Math.max(minimum, Math.min(child.prefHeight(width), child.maxHeight(width)));
+            }
         }
     }
 }

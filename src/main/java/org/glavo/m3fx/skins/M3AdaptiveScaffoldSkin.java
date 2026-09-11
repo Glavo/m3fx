@@ -20,9 +20,11 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3PresentationActivity;
+import org.glavo.m3fx.internal.M3ScaffoldLayout;
 import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
 import org.glavo.m3fx.layout.M3NavigationLayout;
+import org.glavo.m3fx.layout.M3PaneLayout;
 import org.glavo.m3fx.layout.M3PaneRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -337,20 +339,24 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
             boolean minimum
     ) {
         M3AdaptiveScaffold control = getSkinnable();
+        M3ScaffoldLayout resolved = M3ScaffoldLayout.resolve(control,
+                width < 0.0 ? Math.max(0.0, control.getWidth()) : width);
         double horizontalSafety = control.getSafetyInsets().getLeft() + control.getSafetyInsets().getRight();
-        double contentWidth = Math.max(0.0, width - leftInset - rightInset - horizontalSafety);
-        double top = visibleHeight(topBarSlot, contentWidth, minimum);
-        double bottom = visibleHeight(bottomBarSlot, contentWidth, minimum);
-        double navigation = visibleHeight(navigationBarSlot, contentWidth, minimum);
+        double contentWidth = width < 0.0 ? width
+                : Math.max(0.0, width - leftInset - rightInset - horizontalSafety);
+        double top = visibleHeight(resolved, topBarSlot, contentWidth, minimum);
+        double bottom = visibleHeight(resolved, bottomBarSlot, contentWidth, minimum);
+        double navigation = visibleHeight(resolved, navigationBarSlot, contentWidth, minimum);
+        BodyWidths widths = bodyWidths(resolved, contentWidth, -1.0);
         double body = Math.max(
-                visibleHeight(navigationRailSlot, contentWidth, minimum),
+                visibleHeight(resolved, navigationRailSlot, widths.navigationRail(), minimum),
                 Math.max(
-                        visibleHeight(trailingRailSlot, contentWidth, minimum),
+                        visibleHeight(resolved, trailingRailSlot, widths.trailingRail(), minimum),
                         Math.max(
-                                visibleHeight(leadingPaneSlot, contentWidth, minimum),
+                                visibleHeight(resolved, leadingPaneSlot, widths.leadingPane(), minimum),
                                 Math.max(
-                                        visibleHeight(mainPaneSlot, contentWidth, minimum),
-                                        visibleHeight(trailingPaneSlot, contentWidth, minimum)
+                                        visibleHeight(resolved, mainPaneSlot, widths.mainPane(), minimum),
+                                        visibleHeight(resolved, trailingPaneSlot, widths.trailingPane(), minimum)
                                 )
                         )
                 )
@@ -408,187 +414,121 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
                 + control.getEffectiveFixedTrailingPaneWidth();
     }
 
-    /// Lays out navigation rails and panes in logical horizontal coordinates.
+    /// Lays out navigation rails and panes using the same horizontal allocation as height measurement.
     private void layoutBody(double x, double y, double width, double height) {
-        double leadingRailWidth = visiblePrefWidth(navigationRailSlot, height);
-        double trailingRailWidth = visiblePrefWidth(trailingRailSlot, height);
-        layoutLogical(navigationRailSlot, x, 0.0, y, leadingRailWidth, height);
-        layoutLogical(
-                trailingRailSlot,
-                x,
-                Math.max(0.0, width - trailingRailWidth),
-                y,
-                trailingRailWidth,
-                height
-        );
+        M3ScaffoldLayout resolved = M3ScaffoldLayout.resolve(getSkinnable(), Math.max(0.0, getSkinnable().getWidth()));
+        BodyWidths widths = bodyWidths(resolved, width, height);
+        layoutSlot(navigationRailSlot, x, y, widths.navigationRail(), height);
+        layoutSlot(trailingRailSlot, x + Math.max(0.0, width - widths.trailingRail()), y,
+                widths.trailingRail(), height);
 
+        // Positions remain logical; JavaFX mirrors the skin children for right-to-left orientation.
+        double paneX = x + widths.paneStart();
+        if (leadingPaneState.targetVisible) {
+            layoutSlot(leadingPaneSlot, paneX, y, widths.leadingPane(), height);
+            paneX += widths.leadingPane() + widths.spacing();
+        }
+        if (mainPaneState.targetVisible) {
+            layoutSlot(mainPaneSlot, paneX, y, widths.mainPane(), height);
+            paneX += widths.mainPane() + widths.spacing();
+        }
+        layoutSlot(trailingPaneSlot, paneX, y, widths.trailingPane(), height);
+    }
+
+    /// Allocates body widths without changing slot geometry or animation state.
+    /// Negative width constraints remain unconstrained; negative height requests use natural width measurements.
+    private BodyWidths bodyWidths(M3ScaffoldLayout resolved, double width, double height) {
+        if (width < 0.0) {
+            return new BodyWidths(width, width, 0.0, 0.0, width, width, width);
+        }
+        double leadingRailWidth = visiblePrefWidth(resolved, navigationRailSlot, height);
+        double trailingRailWidth = visiblePrefWidth(resolved, trailingRailSlot, height);
         M3AdaptiveScaffold control = getSkinnable();
-        double margin = control.getEffectiveContentMargin();
+        double margin = M3ScaffoldLayout.contentMargin(control.getContentMargin(), resolved.breakpoint());
         double paneStart = Math.min(width, leadingRailWidth + margin);
         double paneEnd = Math.max(paneStart, width - trailingRailWidth - margin);
         double paneWidth = Math.max(0.0, paneEnd - paneStart);
-        double spacing = Math.min(control.getEffectivePaneSpacing(), paneWidth);
+        double spacing = Math.min(M3ScaffoldLayout.paneSpacing(control.getPaneSpacing(), resolved.breakpoint()), paneWidth);
+        double available = Math.max(0.0, paneWidth - spacing);
+        double leadingWidth = 0.0;
+        double mainWidth = 0.0;
+        double trailingWidth = 0.0;
+        M3PaneLayout layout = resolved.paneLayout();
 
-        switch (control.getEffectivePaneLayout()) {
+        switch (layout) {
             case ADAPTIVE -> {
             }
-            case SINGLE -> layoutLogical(singlePaneSlot(), x, paneStart, y, paneWidth, height);
-            case SPLIT_LEADING -> layoutSplit(
-                    x,
-                    y,
-                    width,
-                    height,
-                    paneStart,
-                    paneEnd,
-                    spacing,
-                    leadingPaneSlot,
-                    mainPaneSlot
-            );
-            case SPLIT_TRAILING -> layoutSplit(
-                    x,
-                    y,
-                    width,
-                    height,
-                    paneStart,
-                    paneEnd,
-                    spacing,
-                    mainPaneSlot,
-                    trailingPaneSlot
-            );
-            case FIXED_LEADING -> layoutFixed(
-                    x,
-                    y,
-                    height,
-                    paneStart,
-                    paneEnd,
-                    spacing,
-                    leadingPaneSlot,
-                    mainPaneSlot,
-                    control.getEffectiveFixedLeadingPaneWidth(),
-                    true
-            );
-            case FIXED_TRAILING -> layoutFixed(
-                    x,
-                    y,
-                    height,
-                    paneStart,
-                    paneEnd,
-                    spacing,
-                    mainPaneSlot,
-                    trailingPaneSlot,
-                    control.getEffectiveFixedTrailingPaneWidth(),
-                    false
-            );
-            case THREE_PANE -> layoutThreePanes(
-                    x,
-                    y,
-                    height,
-                    paneStart,
-                    paneEnd,
-                    spacing
-            );
+            case SINGLE -> {
+                if (resolved.leadingPaneVisible()) {
+                    leadingWidth = paneWidth;
+                } else if (resolved.mainPaneVisible()) {
+                    mainWidth = paneWidth;
+                } else {
+                    trailingWidth = paneWidth;
+                }
+            }
+            case SPLIT_LEADING, SPLIT_TRAILING -> {
+                boolean leading = layout == M3PaneLayout.SPLIT_LEADING;
+                StackPane first = leading ? leadingPaneSlot : mainPaneSlot;
+                StackPane second = leading ? mainPaneSlot : trailingPaneSlot;
+                double firstMinimum = Math.min(available, visibleMinimumWidth(resolved, first, height));
+                double secondMinimum = Math.min(Math.max(0.0, available - firstMinimum),
+                        visibleMinimumWidth(resolved, second, height));
+                double requestedFirst = width * control.getSplitPosition() - spacing / 2.0 - paneStart;
+                double firstWidth = clamp(requestedFirst, firstMinimum, Math.max(firstMinimum, available - secondMinimum));
+                if (leading) {
+                    leadingWidth = firstWidth;
+                    mainWidth = Math.max(0.0, available - firstWidth);
+                } else {
+                    mainWidth = firstWidth;
+                    trailingWidth = Math.max(0.0, available - firstWidth);
+                }
+            }
+            case FIXED_LEADING, FIXED_TRAILING -> {
+                double flexibleMinimum = Math.min(available, visibleMinimumWidth(resolved, mainPaneSlot, height));
+                double sideSpace = Math.max(0.0, available - flexibleMinimum);
+                if (layout == M3PaneLayout.FIXED_LEADING) {
+                    leadingWidth = Math.min(M3ScaffoldLayout.fixedLeadingPaneWidth(
+                            control.getFixedLeadingPaneWidth(), resolved.breakpoint()), sideSpace);
+                } else {
+                    trailingWidth = Math.min(M3ScaffoldLayout.fixedTrailingPaneWidth(
+                            control.getFixedTrailingPaneWidth(), resolved.breakpoint(), layout), sideSpace);
+                }
+                mainWidth = Math.max(0.0, available - leadingWidth - trailingWidth);
+            }
+            case THREE_PANE -> {
+                double paneSpace = Math.max(0.0, paneWidth - spacing - spacing);
+                double mainMinimum = Math.min(paneSpace, visibleMinimumWidth(resolved, mainPaneSlot, height));
+                double sideSpace = Math.max(0.0, paneSpace - mainMinimum);
+                leadingWidth = Math.min(M3ScaffoldLayout.fixedLeadingPaneWidth(
+                        control.getFixedLeadingPaneWidth(), resolved.breakpoint()), sideSpace);
+                trailingWidth = Math.min(M3ScaffoldLayout.fixedTrailingPaneWidth(
+                        control.getFixedTrailingPaneWidth(), resolved.breakpoint(), layout), sideSpace);
+                double requestedSides = leadingWidth + trailingWidth;
+                if (requestedSides > sideSpace && requestedSides > 0.0) {
+                    double scale = sideSpace / requestedSides;
+                    leadingWidth *= scale;
+                    trailingWidth *= scale;
+                }
+                mainWidth = Math.max(0.0, paneSpace - leadingWidth - trailingWidth);
+            }
         }
+        return new BodyWidths(leadingRailWidth, trailingRailWidth, paneStart, spacing,
+                leadingWidth, mainWidth, trailingWidth);
     }
 
-    /// Lays out two flexible panes around the requested logical split position.
-    private void layoutSplit(
-            double x,
-            double y,
-            double width,
-            double height,
-            double paneStart,
-            double paneEnd,
-            double spacing,
-            StackPane first,
-            StackPane second
-    ) {
-        double available = Math.max(0.0, paneEnd - paneStart - spacing);
-        double firstMinimum = Math.min(available, visibleMinimumWidth(first, height));
-        double secondMinimum = Math.min(
-                Math.max(0.0, available - firstMinimum),
-                visibleMinimumWidth(second, height)
-        );
-        double minimumSplit = paneStart + firstMinimum;
-        double maximumSplit = Math.max(minimumSplit, paneEnd - spacing - secondMinimum);
-        double requestedSplit = width * getSkinnable().getSplitPosition() - spacing / 2.0;
-        double split = clamp(requestedSplit, minimumSplit, maximumSplit);
-
-        layoutLogical(first, x, paneStart, y, Math.max(0.0, split - paneStart), height);
-        double secondStart = split + spacing;
-        layoutLogical(second, x, secondStart, y, Math.max(0.0, paneEnd - secondStart), height);
-    }
-
-    /// Lays out a fixed pane adjacent to a flexible pane.
-    private void layoutFixed(
-            double x,
-            double y,
-            double height,
-            double paneStart,
-            double paneEnd,
-            double spacing,
-            StackPane first,
-            StackPane second,
-            double requestedFixedWidth,
-            boolean firstFixed
-    ) {
-        double available = Math.max(0.0, paneEnd - paneStart - spacing);
-        StackPane flexible = firstFixed ? second : first;
-        double flexibleMinimum = Math.min(available, visibleMinimumWidth(flexible, height));
-        double fixedWidth = Math.min(requestedFixedWidth, Math.max(0.0, available - flexibleMinimum));
-        if (firstFixed) {
-            layoutLogical(first, x, paneStart, y, fixedWidth, height);
-            double secondStart = paneStart + fixedWidth + spacing;
-            layoutLogical(second, x, secondStart, y, Math.max(0.0, paneEnd - secondStart), height);
-        } else {
-            double secondStart = paneEnd - fixedWidth;
-            layoutLogical(first, x, paneStart, y, Math.max(0.0, secondStart - spacing - paneStart), height);
-            layoutLogical(second, x, secondStart, y, fixedWidth, height);
-        }
-    }
-
-    /// Lays out two fixed side panes and one flexible main pane.
-    private void layoutThreePanes(
-            double x,
-            double y,
-            double height,
-            double paneStart,
-            double paneEnd,
-            double spacing
-    ) {
-        M3AdaptiveScaffold control = getSkinnable();
-        double paneSpace = Math.max(0.0, paneEnd - paneStart - spacing - spacing);
-        double mainMinimum = Math.min(paneSpace, visibleMinimumWidth(mainPaneSlot, height));
-        double sideSpace = Math.max(0.0, paneSpace - mainMinimum);
-        double leadingWidth = Math.min(control.getEffectiveFixedLeadingPaneWidth(), sideSpace);
-        double trailingWidth = Math.min(control.getEffectiveFixedTrailingPaneWidth(), sideSpace);
-        double requestedSides = leadingWidth + trailingWidth;
-        if (requestedSides > sideSpace && requestedSides > 0.0) {
-            double scale = sideSpace / requestedSides;
-            leadingWidth *= scale;
-            trailingWidth *= scale;
-        }
-        double mainWidth = Math.max(0.0, paneSpace - leadingWidth - trailingWidth);
-        double mainStart = paneStart + leadingWidth + spacing;
-        double trailingStart = mainStart + mainWidth + spacing;
-
-        layoutLogical(leadingPaneSlot, x, paneStart, y, leadingWidth, height);
-        layoutLogical(mainPaneSlot, x, mainStart, y, mainWidth, height);
-        layoutLogical(trailingPaneSlot, x, trailingStart, y, trailingWidth, height);
-    }
-
-    /// Lays out a slot in logical horizontal coordinates.
+    /// Stores logical horizontal allocation for body measurement and layout, in logical pixels.
     ///
-    /// JavaFX mirrors skin children as part of the control's effective right-to-left orientation. Retaining logical
-    /// coordinates here avoids applying that transformation twice.
-    private void layoutLogical(
-            StackPane slot,
-            double x,
-            double logicalStart,
-            double y,
-            double slotWidth,
-            double slotHeight
-    ) {
-        layoutSlot(slot, x + logicalStart, y, slotWidth, slotHeight);
+    /// @param navigationRail the leading navigation-rail width
+    /// @param trailingRail the trailing-rail width
+    /// @param paneStart the logical offset of the first visible pane from the body edge
+    /// @param spacing the space between adjacent visible panes
+    /// @param leadingPane the leading-pane width
+    /// @param mainPane the main-pane width
+    /// @param trailingPane the trailing-pane width
+    @NotNullByDefault
+    private record BodyWidths(double navigationRail, double trailingRail, double paneStart, double spacing,
+                              double leadingPane, double mainPane, double trailingPane) {
     }
 
     /// Records snapped target bounds for an effective slot.
@@ -951,19 +891,15 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
 
     /// Returns the slot selected by the active pane with the same fallback order as the control.
     private StackPane singlePaneSlot() {
-        M3AdaptiveScaffold control = getSkinnable();
-        StackPane preferred = switch (control.getActivePane()) {
+        @Nullable M3PaneRole role = M3ScaffoldLayout.singlePaneRole(getSkinnable());
+        if (role == null) {
+            return mainPaneSlot;
+        }
+        return switch (role) {
             case LEADING -> leadingPaneSlot;
             case MAIN -> mainPaneSlot;
             case TRAILING -> trailingPaneSlot;
         };
-        if (installedNode(preferred) != null) {
-            return preferred;
-        }
-        if (installedNode(mainPaneSlot) != null) {
-            return mainPaneSlot;
-        }
-        return installedNode(leadingPaneSlot) != null ? leadingPaneSlot : trailingPaneSlot;
     }
 
     /// Adds listeners to all public slot properties.
@@ -1008,8 +944,8 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Returns a slot's minimum width when it is visible.
-    private double visibleMinimumWidth(StackPane slot, double height) {
-        return stateFor(slot).targetVisible ? Math.max(0.0, slot.minWidth(height)) : 0.0;
+    private double visibleMinimumWidth(M3ScaffoldLayout resolved, StackPane slot, double height) {
+        return isVisible(resolved, slot) ? Math.max(0.0, slot.minWidth(height)) : 0.0;
     }
 
     /// Returns a slot's minimum or preferred width when it is visible.
@@ -1022,8 +958,8 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Returns a slot's preferred width when it is visible.
-    private double visiblePrefWidth(StackPane slot, double height) {
-        return stateFor(slot).targetVisible ? Math.max(0.0, slot.prefWidth(height)) : 0.0;
+    private double visiblePrefWidth(M3ScaffoldLayout resolved, StackPane slot, double height) {
+        return isVisible(resolved, slot) ? Math.max(0.0, slot.prefWidth(height)) : 0.0;
     }
 
     /// Returns a slot's preferred height when it is visible.
@@ -1032,12 +968,32 @@ public final class M3AdaptiveScaffoldSkin extends SkinBase<M3AdaptiveScaffold> {
     }
 
     /// Returns a slot's minimum or preferred height when it is visible.
-    private double visibleHeight(StackPane slot, double width, boolean minimum) {
-        if (!stateFor(slot).targetVisible) {
+    private double visibleHeight(M3ScaffoldLayout resolved, StackPane slot, double width, boolean minimum) {
+        if (!isVisible(resolved, slot)) {
             return 0.0;
         }
         double height = minimum ? slot.minHeight(width) : slot.prefHeight(width);
         return Math.max(0.0, height);
+    }
+
+    /// Tests participation in a resolved layout without consulting or changing animated slot visibility.
+    private boolean isVisible(M3ScaffoldLayout resolved, StackPane slot) {
+        if (slot == leadingPaneSlot) {
+            return resolved.leadingPaneVisible();
+        }
+        if (slot == mainPaneSlot) {
+            return resolved.mainPaneVisible();
+        }
+        if (slot == trailingPaneSlot) {
+            return resolved.trailingPaneVisible();
+        }
+        if (slot == navigationBarSlot) {
+            return resolved.navigationLayout() == M3NavigationLayout.BAR;
+        }
+        if (slot == navigationRailSlot) {
+            return resolved.navigationLayout() == M3NavigationLayout.RAIL;
+        }
+        return installedNode(slot) != null;
     }
 
     /// Hosts one public scaffold node while forwarding its layout requests through the unmanaged skin layer.

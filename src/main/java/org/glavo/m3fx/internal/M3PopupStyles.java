@@ -9,6 +9,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.Objects;
@@ -50,10 +51,14 @@ public final class M3PopupStyles {
 
     /// Prepares a popup root with copied stylesheets, fallback tokens, and optional local theme context.
     ///
+    /// The source stylesheet list is snapshotted before popup state is changed. Source edits made by popup
+    /// listeners are picked up by a subsequent call.
+    ///
     /// @param popupRoot the popup-hosted root that will be styled before or after popup scene creation
     /// @param sourceStylesheets the owner scene or parent popup stylesheet list to copy
     /// @param themeRoot the local theme root to copy into the popup, or `null` for standalone fallback tokens
     /// @param controlStylesheet the popup-specific control stylesheet URL to append, or `null` for none
+    /// @throws NullPointerException if `popupRoot`, `sourceStylesheets`, or a source stylesheet is `null`
     public static void preparePopupRoot(
             Parent popupRoot,
             List<String> sourceStylesheets,
@@ -61,9 +66,9 @@ public final class M3PopupStyles {
             @Nullable String controlStylesheet
     ) {
         Objects.requireNonNull(popupRoot, "popupRoot");
-        Objects.requireNonNull(sourceStylesheets, "sourceStylesheets");
+        @Unmodifiable List<String> sourceSnapshot = List.copyOf(sourceStylesheets);
 
-        synchronizeSourceStylesheets(popupRoot, sourceStylesheets);
+        synchronizeSourceStylesheets(popupRoot, sourceSnapshot);
         ensureFallbackStylesheet(popupRoot);
         if (controlStylesheet != null) {
             addStylesheet(popupRoot, controlStylesheet);
@@ -72,23 +77,23 @@ public final class M3PopupStyles {
         @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         if (themeRoot != null) {
             M3ThemeRuntime.copyThemeContext(themeRoot, popupRoot);
-            updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, theme);
+            updateCopiedThemeStylesheet(popupRoot, sourceSnapshot, theme);
         } else {
             M3ThemeRuntime.clearThemeStyleClasses(popupRoot);
             M3ThemeMetadata.clearTheme(popupRoot);
-            updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, null);
+            updateCopiedThemeStylesheet(popupRoot, sourceSnapshot, null);
         }
     }
 
     /// Copies owner stylesheets only when the source list has changed since the previous synchronization.
-    private static void synchronizeSourceStylesheets(Parent popupRoot, List<String> sourceStylesheets) {
-        Object snapshot = popupRoot.getProperties().get(SOURCE_STYLESHEETS_PROPERTY_KEY);
+    private static void synchronizeSourceStylesheets(Parent popupRoot, @Unmodifiable List<String> sourceStylesheets) {
+        @Nullable Object snapshot = popupRoot.getProperties().get(SOURCE_STYLESHEETS_PROPERTY_KEY);
         if (snapshot instanceof List<?> sourceSnapshot && sourceSnapshot.equals(sourceStylesheets)) {
             return;
         }
 
         popupRoot.getStylesheets().setAll(sourceStylesheets);
-        popupRoot.getProperties().put(SOURCE_STYLESHEETS_PROPERTY_KEY, List.copyOf(sourceStylesheets));
+        popupRoot.getProperties().put(SOURCE_STYLESHEETS_PROPERTY_KEY, sourceStylesheets);
     }
 
     /// Updates the generated stylesheet inserted for a copied local theme.
@@ -97,7 +102,7 @@ public final class M3PopupStyles {
             List<String> sourceStylesheets,
             @Nullable M3Theme theme
     ) {
-        Object previousValue = popupRoot.getProperties().get(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
+        @Nullable Object previousValue = popupRoot.getProperties().get(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
         @Nullable String previousStylesheet = previousValue instanceof String stylesheet ? stylesheet : null;
         @Nullable String stylesheet = theme == null ? null : M3ThemeRuntime.themeStylesheetUrl(theme);
         if (previousStylesheet != null

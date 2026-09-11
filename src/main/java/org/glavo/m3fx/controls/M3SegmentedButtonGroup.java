@@ -17,8 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -870,19 +868,11 @@ public final class M3SegmentedButtonGroup extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for segmented button spacing.
         private static final CssMetaData<M3SegmentedButtonGroup, Number> SPACING =
-                new CssMetaData<>("-m3-segmented-button-group-spacing", SizeConverter.getInstance(), DEFAULT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3SegmentedButtonGroup control) {
-                        return M3Css.isSettable(control.spacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SegmentedButtonGroup control) {
-                        return control.spacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-segmented-button-group-spacing",
+                        DEFAULT_SPACING,
+                        M3SegmentedButtonGroup::spacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

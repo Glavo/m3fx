@@ -27,7 +27,6 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
@@ -247,7 +246,7 @@ public final class M3SubMenuItem extends M3MenuItem {
         boolean popupShown = false;
         popupContextSynchronizer.start();
         try {
-            M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
+            subMenu.setPopupMinWidth(getWidth());
             @Nullable Bounds anchorBounds = subMenuAnchorBounds();
             if (anchorBounds == null) {
                 return;
@@ -638,8 +637,11 @@ public final class M3SubMenuItem extends M3MenuItem {
         M3Animation.playFromStart(this, popupAnimation);
     }
 
-    /// Resets transient submenu animation transforms.
+    /// Clears the popup width constraint and resets transient animation transforms.
     private void resetSubMenuAnimationState() {
+        if (!popup.isShowing()) {
+            subMenu.setPopupMinWidth(0.0);
+        }
         popupAnimation.stop();
         hidingPopup = false;
         subMenu.setOpacity(1.0);

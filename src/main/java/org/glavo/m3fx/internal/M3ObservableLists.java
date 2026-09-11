@@ -3,11 +3,14 @@
 
 package org.glavo.m3fx.internal;
 
-import javafx.collections.ModifiableObservableListBase;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableListBase;
 import javafx.collections.ObservableList;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,9 +18,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /// Internal factories for observable lists with M3FX control invariants.
+///
+/// Completed changes retain snapshots of their added and removed elements. Mutations performed by observers
+/// take effect immediately; their notifications wait until the current notification has reached every observer.
+/// This preserves mutation order without merging a new operation into a change that is already being delivered.
 @NotNullByDefault
 public final class M3ObservableLists {
     /// Prevents instantiation.
@@ -76,9 +84,94 @@ public final class M3ObservableLists {
         );
     }
 
+    /// Describes one completed contiguous change or permutation.
+    ///
+    /// @param from the first affected index
+    /// @param to the exclusive end of the added or permuted interval
+    /// @param removed the removed element snapshot
+    /// @param added the added element snapshot
+    /// @param permutation the old-to-new index mapping, or an empty array for a structural change
+    /// @param <E> the element type
+    @NotNullByDefault
+    private record Segment<E>(int from, int to, @Unmodifiable List<E> removed,
+                              @Unmodifiable List<E> added, int @Unmodifiable [] permutation) {
+    }
+
+    /// Exposes completed change snapshots without consulting a mutable change builder.
+    ///
+    /// @param <E> the element type
+    @NotNullByDefault
+    private static final class RecordedChange<E> extends ListChangeListener.Change<E> {
+        /// The immutable sequence of affected ranges.
+        private final @Unmodifiable List<Segment<E>> segments;
+
+        /// The current range index, or minus one before iteration begins.
+        private int cursor = -1;
+
+        /// Creates a change over the supplied completed range descriptions.
+        private RecordedChange(ObservableList<E> list, @Unmodifiable List<Segment<E>> segments) {
+            super(list);
+            this.segments = segments;
+        }
+
+        /// Advances to the next affected range.
+        @Override
+        public boolean next() {
+            if (cursor + 1 >= segments.size()) {
+                return false;
+            }
+            cursor++;
+            return true;
+        }
+
+        /// Restarts traversal before the first range.
+        @Override
+        public void reset() {
+            cursor = -1;
+        }
+
+        /// Returns the current range after validating traversal state.
+        private Segment<E> current() {
+            if (cursor < 0) {
+                throw new IllegalStateException("Call next() before inspecting a change");
+            }
+            return segments.get(cursor);
+        }
+
+        /// Returns the first affected index.
+        @Override
+        public int getFrom() {
+            return current().from();
+        }
+
+        /// Returns the exclusive end of the added or permuted interval.
+        @Override
+        public int getTo() {
+            return current().to();
+        }
+
+        /// Returns the immutable removed-element snapshot.
+        @Override
+        public @Unmodifiable List<E> getRemoved() {
+            return current().removed();
+        }
+
+        /// Returns the immutable added-element snapshot even if a listener has subsequently changed the list.
+        @Override
+        public @Unmodifiable List<E> getAddedSubList() {
+            return current().added();
+        }
+
+        /// Returns the immutable old-to-new index mapping.
+        @Override
+        protected int @Unmodifiable [] getPermutation() {
+            return current().permutation();
+        }
+    }
+
     /// Mutable observable list implementation that validates elements before mutating the backing list.
     @NotNullByDefault
-    private static final class NonNullObservableList<E> extends ModifiableObservableListBase<E> {
+    private static final class NonNullObservableList<E> extends ObservableListBase<E> {
         /// The stored list elements.
         private final ArrayList<E> backingList = new ArrayList<>();
 
@@ -90,6 +183,12 @@ public final class M3ObservableLists {
 
         /// The exception message used when the equivalence predicate rejects an element.
         private final @Nullable String duplicateMessage;
+
+        /// Completed immutable change descriptions waiting for notification.
+        private final ArrayDeque<RecordedChange<E>> pendingChanges = new ArrayDeque<>();
+
+        /// Whether one change is currently being delivered to observers.
+        private boolean notifying;
 
         /// Creates a non-null list.
         ///
@@ -116,6 +215,105 @@ public final class M3ObservableLists {
         @Override
         public int size() {
             return backingList.size();
+        }
+
+        /// Inserts a validated element and publishes the completed addition.
+        @Override
+        public void add(int index, E element) {
+            doAdd(index, element);
+            modCount++;
+            publish(List.of(new Segment<>(index, index + 1, List.of(), List.of(element), new int[0])));
+        }
+
+        /// Replaces a validated element and publishes the completed replacement.
+        @Override
+        public E set(int index, E element) {
+            E removed = doSet(index, element);
+            publish(List.of(new Segment<>(index, index + 1, List.of(removed), List.of(element), new int[0])));
+            return removed;
+        }
+
+        /// Removes an element and publishes its former position and value.
+        @Override
+        public E remove(int index) {
+            E removed = backingList.remove(index);
+            modCount++;
+            publish(List.of(new Segment<>(index, index, List.of(removed), List.of(), new int[0])));
+            return removed;
+        }
+
+        /// Removes a contiguous range with one completed change.
+        @Override
+        protected void removeRange(int from, int to) {
+            Objects.checkFromToIndex(from, to, size());
+            if (from == to) {
+                return;
+            }
+            @Unmodifiable List<E> removed = List.copyOf(backingList.subList(from, to));
+            backingList.subList(from, to).clear();
+            modCount++;
+            publish(List.of(new Segment<>(from, from, removed, List.of(), new int[0])));
+        }
+
+        /// Removes matching elements and publishes all removed ranges together.
+        @Override
+        public boolean removeAll(Collection<?> elements) {
+            Objects.requireNonNull(elements, "elements");
+            return removeIf(elements::contains);
+        }
+
+        /// Retains matching elements and publishes all removed ranges together.
+        @Override
+        public boolean retainAll(Collection<?> elements) {
+            Objects.requireNonNull(elements, "elements");
+            return removeIf(element -> !elements.contains(element));
+        }
+
+        /// Evaluates removals before mutation and reports their sequential positions in one notification.
+        @Override
+        public boolean removeIf(Predicate<? super E> filter) {
+            Objects.requireNonNull(filter, "filter");
+            ArrayList<E> retained = new ArrayList<>(size());
+            ArrayList<Segment<E>> segments = new ArrayList<>();
+            ArrayList<E> removed = new ArrayList<>();
+            for (E element : backingList) {
+                if (filter.test(element)) {
+                    removed.add(element);
+                } else {
+                    if (!removed.isEmpty()) {
+                        segments.add(new Segment<>(retained.size(), retained.size(), List.copyOf(removed), List.of(), new int[0]));
+                        removed.clear();
+                    }
+                    retained.add(element);
+                }
+            }
+            if (!removed.isEmpty()) {
+                segments.add(new Segment<>(retained.size(), retained.size(), List.copyOf(removed), List.of(), new int[0]));
+            }
+            if (segments.isEmpty()) {
+                return false;
+            }
+            backingList.clear();
+            backingList.addAll(retained);
+            modCount++;
+            publish(List.copyOf(segments));
+            return true;
+        }
+
+        /// Delivers immutable changes in mutation order, queuing mutations performed by observers.
+        private void publish(@Unmodifiable List<Segment<E>> segments) {
+            pendingChanges.addLast(new RecordedChange<>(this, segments));
+            if (notifying) {
+                return;
+            }
+            notifying = true;
+            try {
+                while (!pendingChanges.isEmpty()) {
+                    fireChange(pendingChanges.removeFirst());
+                }
+            } finally {
+                notifying = false;
+            }
         }
 
         /// Sorts the backing list atomically and reports one permutation change.
@@ -152,16 +350,11 @@ public final class M3ObservableLists {
                 return;
             }
 
-            beginChange();
-            try {
-                for (int newIndex = 0; newIndex < size; newIndex++) {
-                    backingList.set(newIndex, previousOrder.get(sortedOldIndices[newIndex]));
-                }
-                modCount++;
-                nextPermutation(0, size, permutation);
-            } finally {
-                endChange();
+            for (int newIndex = 0; newIndex < size; newIndex++) {
+                backingList.set(newIndex, previousOrder.get(sortedOldIndices[newIndex]));
             }
+            modCount++;
+            publish(List.of(new Segment<>(0, size, List.of(), List.of(), permutation)));
         }
 
         /// Adds all elements after validating the collection and its contents.
@@ -213,25 +406,17 @@ public final class M3ObservableLists {
         }
 
         /// Validates and adds one element to the backing list.
-        @Override
-        protected void doAdd(int index, E element) {
+        private void doAdd(int index, E element) {
             E validatedElement = requireElement(element);
             requireDistinctFromBacking(validatedElement, -1);
             backingList.add(index, validatedElement);
         }
 
         /// Replaces one element in the backing list.
-        @Override
-        protected E doSet(int index, E element) {
+        private E doSet(int index, E element) {
             E validatedElement = requireElement(element);
             requireDistinctFromBacking(validatedElement, index);
             return backingList.set(index, validatedElement);
-        }
-
-        /// Removes one element from the backing list.
-        @Override
-        protected E doRemove(int index) {
-            return backingList.remove(index);
         }
 
         /// Inserts one fully validated snapshot and reports it as a single addition.
@@ -241,15 +426,9 @@ public final class M3ObservableLists {
                 return false;
             }
 
-            beginChange();
-            try {
-                backingList.addAll(index, additions);
-                // Bulk writes bypass the superclass methods that normally invalidate traversal state.
-                modCount++;
-                nextAdd(index, index + additions.size());
-            } finally {
-                endChange();
-            }
+            backingList.addAll(index, additions);
+            modCount++;
+            publish(List.of(new Segment<>(index, index + additions.size(), List.of(), List.copyOf(additions), new int[0])));
             return true;
         }
 
@@ -263,22 +442,11 @@ public final class M3ObservableLists {
                 return false;
             }
 
-            ArrayList<E> removed = new ArrayList<>(backingList);
-            beginChange();
-            try {
-                backingList.clear();
-                backingList.addAll(replacement);
-                modCount++;
-                if (removed.isEmpty()) {
-                    nextAdd(0, replacement.size());
-                } else if (replacement.isEmpty()) {
-                    nextRemove(0, removed);
-                } else {
-                    nextReplace(0, replacement.size(), removed);
-                }
-            } finally {
-                endChange();
-            }
+            @Unmodifiable List<E> removed = List.copyOf(backingList);
+            backingList.clear();
+            backingList.addAll(replacement);
+            modCount++;
+            publish(List.of(new Segment<>(0, replacement.size(), removed, List.copyOf(replacement), new int[0])));
             return true;
         }
 

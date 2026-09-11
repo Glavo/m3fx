@@ -12,8 +12,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
@@ -57,6 +55,12 @@ import java.util.function.Consumer;
 ///
 /// Geometry properties are expressed in logical pixels and are styleable. Java assignments take precedence over
 /// user-agent defaults, and CSS cannot replace a bound styleable property.
+///
+/// Computed minimum width equals the container-minimum-width token plus 24 logical pixels of shadow margin.
+/// Computed maximum width uses the larger of the minimum and maximum container-width tokens plus the same margin.
+/// These total dimensions are available before skin installation and do not depend on content padding. Explicit
+/// width constraints and bindings remain in effect through token changes; set a constraint to [#USE_COMPUTED_SIZE]
+/// to restore computed sizing. Preferred dimensions follow the skin's content measurements.
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
@@ -105,7 +109,7 @@ public class M3DialogPane extends Control {
         addEventHandler(ActionEvent.ACTION, this::handleActionButtonEvent);
         focusTrap.install();
         focusNotifier.start();
-        updateMetrics();
+        updatePadding();
         updateAccessibleText();
     }
 
@@ -192,7 +196,7 @@ public class M3DialogPane extends Control {
     /// The optional graphic displayed before the dialog headline.
     ///
     /// A non-null node must not already belong to another scene-graph parent when this pane is presented. Material
-    /// icon sizing is applied only when the value is an [M3Icon].
+    /// icon sizing applies to [M3Icon] and [M3SVGIcon] graphics; see [#iconSizeProperty()].
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
@@ -330,7 +334,7 @@ public class M3DialogPane extends Control {
                     this,
                     "contentPadding",
                     StyleableProperties.CONTENT_PADDING,
-                    this::updateMetrics
+                    this::updatePadding
             );
         }
         return contentPadding;
@@ -372,7 +376,7 @@ public class M3DialogPane extends Control {
                     this,
                     "containerMinWidth",
                     StyleableProperties.CONTAINER_MIN_WIDTH,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerMinWidth;
@@ -415,7 +419,7 @@ public class M3DialogPane extends Control {
                     this,
                     "containerMaxWidth",
                     StyleableProperties.CONTAINER_MAX_WIDTH,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerMaxWidth;
@@ -456,16 +460,15 @@ public class M3DialogPane extends Control {
                     this,
                     "actionSpacing",
                     StyleableProperties.ACTION_SPACING,
-                    this::updateActionSpacing
+                    this::requestLayout
             );
         }
         return actionSpacing;
     }
 
-    /// The preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
+    /// The preferred size of an [M3Icon] or [M3SVGIcon] used as the dialog graphic, in logical pixels.
     ///
-    /// Other graphic node types are not resized by this property. A bound icon-size property is not replaced. This
-    /// styleable property maps to `-m3-dialog-icon-size`.
+    /// See [#iconSizeProperty()] for sizing precedence. This styleable property maps to `-m3-dialog-icon-size`.
     ///
     /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty iconSize;
@@ -477,7 +480,7 @@ public class M3DialogPane extends Control {
         return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
     }
 
-    /// Sets the preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
+    /// Sets the preferred size of an [M3Icon] or [M3SVGIcon] used as the dialog graphic, in logical pixels.
     ///
     /// @param iconSize the dialog graphic icon size token
     /// @throws IllegalArgumentException if `iconSize` is negative or not finite
@@ -488,7 +491,11 @@ public class M3DialogPane extends Control {
     /// Returns the styleable property that stores the preferred dialog icon size.
     ///
     /// The property can be observed and bound, is exposed to CSS as `-m3-dialog-icon-size`, and accepts finite,
-    /// non-negative values. Its default value is `24.0` logical pixels and affects only [M3Icon] graphics.
+    /// non-negative values. Its default value is `24.0` logical pixels and affects [M3Icon] and [M3SVGIcon] graphics.
+    /// Other graphic node types are not resized. Explicit Java assignments and bindings on the graphic's own
+    /// icon-size property take precedence. Otherwise, the dialog supplies the icon size in place of the graphic's
+    /// CSS sizing. Set `-m3-dialog-icon-size` on the dialog to configure this size through CSS. Removing the graphic
+    /// releases dialog sizing; its last value remains until the graphic is restyled or explicitly configured.
     ///
     /// @return the icon-size property, in logical pixels
     public final StyleableDoubleProperty iconSizeProperty() {
@@ -764,25 +771,28 @@ public class M3DialogPane extends Control {
         return M3Stylesheets.controlStylesheet("dialog.css");
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double surfaceInsets = SURFACE_EFFECT_MARGIN * 2.0;
-        double minWidth = getContainerMinWidth() + surfaceInsets;
-        M3Css.setPaddingIfUnbound(this, new Insets(getContentPadding() + SURFACE_EFFECT_MARGIN));
-        M3Css.setMinWidthIfUnbound(this, minWidth);
-        M3Css.setMaxWidthIfUnbound(this, Math.max(minWidth, getContainerMaxWidth() + surfaceInsets));
-        updateActionSpacing();
-        updateGraphicMetrics(null, getGraphic());
+    /// Computes minimum total width from the container token and shadow margin.
+    @Override
+    protected double computeMinWidth(double height) {
+        return getContainerMinWidth() + SURFACE_EFFECT_MARGIN * 2.0;
     }
 
-    /// Requests layout after the action-spacing token changes.
-    private void updateActionSpacing() {
+    /// Computes maximum total width, ensuring its container token is at least the minimum token.
+    @Override
+    protected double computeMaxWidth(double height) {
+        return Math.max(getContainerMinWidth(), getContainerMaxWidth()) + SURFACE_EFFECT_MARGIN * 2.0;
+    }
+
+    /// Applies content padding and the surrounding shadow margin.
+    private void updatePadding() {
+        M3Css.setPaddingIfUnbound(this, new Insets(getContentPadding() + SURFACE_EFFECT_MARGIN));
         requestLayout();
     }
 
     /// Applies dialog graphic tokens to a Material icon graphic.
     private void updateGraphicMetrics(@Nullable Node oldGraphic, @Nullable Node newGraphic) {
-        if (oldGraphic instanceof M3IconGraphic) {
+        if (oldGraphic instanceof M3IconGraphic oldIcon) {
+            M3Css.clearControlToken(oldIcon.iconSizeProperty());
             restoreGraphicIconStyle(oldGraphic);
         }
         if (!(newGraphic instanceof M3IconGraphic icon)) {
@@ -790,10 +800,7 @@ public class M3DialogPane extends Control {
         }
 
         applyGraphicIconStyle(newGraphic);
-        double targetSize = getIconSize();
-        if (M3Css.isSettable(icon.iconSizeProperty()) && Double.compare(icon.getIconSize(), targetSize) != 0) {
-            icon.setIconSize(targetSize);
-        }
+        M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
     }
 
     /// Applies the dialog-specific style class to a graphic icon.
@@ -1128,99 +1135,51 @@ public class M3DialogPane extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3DialogPane, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3DialogPane::containerShapeProperty
+                );
 
         /// CSS metadata for the content padding token.
         private static final CssMetaData<M3DialogPane, Number> CONTENT_PADDING =
-                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.contentPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.contentPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-padding",
+                        DEFAULT_CONTENT_PADDING,
+                        M3DialogPane::contentPaddingProperty
+                );
 
         /// CSS metadata for the minimum container width token.
         private static final CssMetaData<M3DialogPane, Number> CONTAINER_MIN_WIDTH =
-                new CssMetaData<>("-m3-container-min-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MIN_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.containerMinWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.containerMinWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-min-width",
+                        DEFAULT_CONTAINER_MIN_WIDTH,
+                        M3DialogPane::containerMinWidthProperty
+                );
 
         /// CSS metadata for the maximum container width token.
         private static final CssMetaData<M3DialogPane, Number> CONTAINER_MAX_WIDTH =
-                new CssMetaData<>("-m3-container-max-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MAX_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.containerMaxWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.containerMaxWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-max-width",
+                        DEFAULT_CONTAINER_MAX_WIDTH,
+                        M3DialogPane::containerMaxWidthProperty
+                );
 
         /// CSS metadata for the dialog action spacing token.
         private static final CssMetaData<M3DialogPane, Number> ACTION_SPACING =
-                new CssMetaData<>("-m3-action-spacing", SizeConverter.getInstance(), DEFAULT_ACTION_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.actionSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.actionSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-action-spacing",
+                        DEFAULT_ACTION_SPACING,
+                        M3DialogPane::actionSpacingProperty
+                );
 
         /// CSS metadata for the dialog graphic icon size token.
         private static final CssMetaData<M3DialogPane, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-dialog-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3DialogPane control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-dialog-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3DialogPane::iconSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

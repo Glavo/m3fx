@@ -15,11 +15,9 @@ import java.util.function.DoubleUnaryOperator;
 
 /// A styleable double property that preserves explicit API values against later stylesheet passes.
 ///
-/// JavaFX styleable properties do not expose whether a value came from the public setter or from CSS. M3FX
-/// component token properties need that distinction because controls install user-agent token defaults, while
-/// applications may still configure one control through its Java property API. This property marks ordinary
-/// `set` calls as explicit user values but keeps CSS-origin `applyStyle` calls styleable for later stylesheet
-/// updates until the application sets the property directly.
+/// Ordinary `set` calls mark explicit application values. CSS-origin `applyStyle` calls remain eligible for later
+/// stylesheet updates. A containing control may temporarily supply the value through [#setFromControl(double)],
+/// suspending stylesheet updates without preventing application assignments or later container updates.
 @NotNullByDefault
 final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
     /// The bean that owns this property.
@@ -42,6 +40,9 @@ final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
 
     /// Whether application code has explicitly assigned this property.
     private boolean userSet;
+
+    /// Whether a containing control currently supplies this token instead of CSS.
+    private boolean controlSet;
 
     /// Creates a styleable double property for one M3FX component token.
     ///
@@ -97,11 +98,35 @@ final class M3StyleableDoubleProperty extends StyleableDoubleProperty {
         }
     }
 
-    /// Returns whether application code has explicitly assigned this property.
+    /// Returns whether neither an application nor a containing control supplies the value.
     ///
-    /// @return `true` when this property has a user-assigned value
-    boolean isUserSet() {
-        return userSet;
+    /// Binding eligibility is checked separately by [M3Css#isSettable(StyleableDoubleProperty)].
+    boolean isCssSettable() {
+        return !userSet && !controlSet;
+    }
+
+    /// Applies a containing control's token unless an application assignment or binding takes precedence.
+    ///
+    /// @param value the validated token value to install
+    void setFromControl(double value) {
+        validator.applyAsDouble(value);
+        if (!userSet && !isBound()) {
+            controlSet = true;
+            // Bypass the application setter while retaining its priority over stylesheet defaults.
+            super.set(value);
+        }
+    }
+
+    /// Releases container sizing so subsequent CSS passes may resolve the token again.
+    ///
+    /// The current value is retained until restyled. Application assignments and bindings are preserved.
+    void clearControlValue() {
+        if (controlSet) {
+            controlSet = false;
+            if (!userSet && !isBound()) {
+                applyStyle(null, get());
+            }
+        }
     }
 
     /// Validates values received from bindings or CSS interpolation before running the callback.

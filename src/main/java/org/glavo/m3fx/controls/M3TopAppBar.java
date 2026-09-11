@@ -17,8 +17,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -1204,22 +1202,22 @@ public final class M3TopAppBar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the small and centered container height token.
         private static final CssMetaData<M3TopAppBar, Number> CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
+                M3Css.sizeMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
                         M3TopAppBar::containerHeightProperty);
 
         /// CSS metadata for the medium container height token.
         private static final CssMetaData<M3TopAppBar, Number> MEDIUM_CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-medium-container-height", DEFAULT_MEDIUM_CONTAINER_HEIGHT,
+                M3Css.sizeMetaData("-m3-medium-container-height", DEFAULT_MEDIUM_CONTAINER_HEIGHT,
                         M3TopAppBar::mediumContainerHeightProperty);
 
         /// CSS metadata for the large container height token.
         private static final CssMetaData<M3TopAppBar, Number> LARGE_CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-large-container-height", DEFAULT_LARGE_CONTAINER_HEIGHT,
+                M3Css.sizeMetaData("-m3-large-container-height", DEFAULT_LARGE_CONTAINER_HEIGHT,
                         M3TopAppBar::largeContainerHeightProperty);
 
         /// CSS metadata for the medium flexible container height token.
         private static final CssMetaData<M3TopAppBar, Number> MEDIUM_FLEXIBLE_CONTAINER_HEIGHT =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-medium-flexible-container-height",
                         DEFAULT_MEDIUM_FLEXIBLE_CONTAINER_HEIGHT,
                         M3TopAppBar::mediumFlexibleContainerHeightProperty
@@ -1227,7 +1225,7 @@ public final class M3TopAppBar extends Control {
 
         /// CSS metadata for the medium flexible subtitle container height token.
         private static final CssMetaData<M3TopAppBar, Number> MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-medium-flexible-subtitle-container-height",
                         DEFAULT_MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
                         M3TopAppBar::mediumFlexibleSubtitleContainerHeightProperty
@@ -1235,7 +1233,7 @@ public final class M3TopAppBar extends Control {
 
         /// CSS metadata for the large flexible container height token.
         private static final CssMetaData<M3TopAppBar, Number> LARGE_FLEXIBLE_CONTAINER_HEIGHT =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-large-flexible-container-height",
                         DEFAULT_LARGE_FLEXIBLE_CONTAINER_HEIGHT,
                         M3TopAppBar::largeFlexibleContainerHeightProperty
@@ -1243,7 +1241,7 @@ public final class M3TopAppBar extends Control {
 
         /// CSS metadata for the large flexible subtitle container height token.
         private static final CssMetaData<M3TopAppBar, Number> LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-large-flexible-subtitle-container-height",
                         DEFAULT_LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
                         M3TopAppBar::largeFlexibleSubtitleContainerHeightProperty
@@ -1251,26 +1249,26 @@ public final class M3TopAppBar extends Control {
 
         /// CSS metadata for the leading and trailing edge-padding token.
         private static final CssMetaData<M3TopAppBar, Number> EDGE_PADDING =
-                createSizeCssMetaData("-m3-edge-padding", DEFAULT_EDGE_PADDING, M3TopAppBar::edgePaddingProperty);
+                M3Css.sizeMetaData("-m3-edge-padding", DEFAULT_EDGE_PADDING, M3TopAppBar::edgePaddingProperty);
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3TopAppBar, Number> HORIZONTAL_PADDING =
-                createSizeCssMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
+                M3Css.sizeMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
                         M3TopAppBar::horizontalPaddingProperty);
 
         /// CSS metadata for the medium bottom padding token.
         private static final CssMetaData<M3TopAppBar, Number> MEDIUM_BOTTOM_PADDING =
-                createSizeCssMetaData("-m3-medium-bottom-padding", DEFAULT_MEDIUM_BOTTOM_PADDING,
+                M3Css.sizeMetaData("-m3-medium-bottom-padding", DEFAULT_MEDIUM_BOTTOM_PADDING,
                         M3TopAppBar::mediumBottomPaddingProperty);
 
         /// CSS metadata for the large bottom padding token.
         private static final CssMetaData<M3TopAppBar, Number> LARGE_BOTTOM_PADDING =
-                createSizeCssMetaData("-m3-large-bottom-padding", DEFAULT_LARGE_BOTTOM_PADDING,
+                M3Css.sizeMetaData("-m3-large-bottom-padding", DEFAULT_LARGE_BOTTOM_PADDING,
                         M3TopAppBar::largeBottomPaddingProperty);
 
         /// CSS metadata for the flexible title bottom-padding token.
         private static final CssMetaData<M3TopAppBar, Number> FLEXIBLE_BOTTOM_PADDING =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-flexible-bottom-padding",
                         DEFAULT_FLEXIBLE_BOTTOM_PADDING,
                         M3TopAppBar::flexibleBottomPaddingProperty
@@ -1278,12 +1276,12 @@ public final class M3TopAppBar extends Control {
 
         /// CSS metadata for the content slot spacing token.
         private static final CssMetaData<M3TopAppBar, Number> CONTENT_SPACING =
-                createSizeCssMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
+                M3Css.sizeMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
                         M3TopAppBar::contentSpacingProperty);
 
         /// CSS metadata for the trailing action spacing token.
         private static final CssMetaData<M3TopAppBar, Number> ACTION_SPACING =
-                createSizeCssMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
+                M3Css.sizeMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
                         M3TopAppBar::actionSpacingProperty);
 
         /// The complete immutable CSS metadata list.
@@ -1312,33 +1310,6 @@ public final class M3TopAppBar extends Control {
         private StyleableProperties() {
         }
 
-        /// Creates CSS metadata for a non-negative size token.
-        private static CssMetaData<M3TopAppBar, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyAccessor accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3TopAppBar control) {
-                    return M3Css.isSettable(accessor.property(control));
-                }
 
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3TopAppBar control) {
-                    return accessor.property(control);
-                }
-            };
-        }
-
-        /// Provides access to a styleable top app bar size token property.
-        @NotNullByDefault
-        @FunctionalInterface
-        private interface StyleablePropertyAccessor {
-            /// Returns the property for the supplied top app bar.
-            StyleableDoubleProperty property(M3TopAppBar control);
-        }
     }
 }

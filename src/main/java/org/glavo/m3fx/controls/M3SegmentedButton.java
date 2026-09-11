@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
@@ -45,7 +43,15 @@ import java.util.Objects;
 /// display a check indicator in place of its graphic. [#selectionIndicatorEnabledProperty()] controls that indicator
 /// when selection is already communicated by custom content.
 ///
+/// Computed minimum and preferred total heights, including insets, equal the container-height token before and
+/// after skin installation. Explicit heights and bindings remain in effect through token changes; set a height
+/// to [#USE_COMPUTED_SIZE] to restore computed sizing.
+///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
+///
+/// Direct [M3Icon] and [M3SVGIcon] graphics use an 18-pixel size unless their icon-size property has an explicit
+/// Java value or binding. This slot size takes precedence over graphic CSS. Removing a graphic releases the size;
+/// its last value remains until it is restyled or explicitly configured.
 @NotNullByDefault
 public final class M3SegmentedButton extends ButtonBase {
     /// The default style class.
@@ -197,7 +203,7 @@ public final class M3SegmentedButton extends ButtonBase {
                     this,
                     "containerHeight",
                     StyleableProperties.CONTAINER_HEIGHT,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerHeight;
@@ -275,7 +281,7 @@ public final class M3SegmentedButton extends ButtonBase {
                     this,
                     "horizontalPadding",
                     StyleableProperties.HORIZONTAL_PADDING,
-                    this::updateMetrics
+                    this::updatePadding
             );
         }
         return horizontalPadding;
@@ -364,24 +370,38 @@ public final class M3SegmentedButton extends ButtonBase {
         restoreStandaloneAccessibleRole();
         setFocusTraversable(true);
         setPickOnBounds(true);
-        graphicProperty().addListener(observable -> updateGraphicMetrics());
+        graphicProperty().addListener((observable, oldGraphic, newGraphic) -> {
+            if (oldGraphic instanceof M3IconGraphic icon) {
+                M3Css.clearControlToken(icon.iconSizeProperty());
+            }
+            updateGraphicMetrics();
+        });
         updateGraphicMetrics();
-        updateMetrics();
+        updatePadding();
     }
 
     /// Applies the Material icon-slot size to a direct M3FX icon graphic.
     private void updateGraphicMetrics() {
         if (getGraphic() instanceof M3IconGraphic icon) {
-            icon.setIconSize(DEFAULT_ICON_SIZE);
+            M3Css.setControlToken(icon.iconSizeProperty(), DEFAULT_ICON_SIZE);
         }
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double height = getContainerHeight();
+    /// Computes minimum total height from the container-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes preferred total height from the container-height token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Applies horizontal content padding from its component token.
+    private void updatePadding() {
         double padding = getHorizontalPadding();
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
@@ -390,51 +410,27 @@ public final class M3SegmentedButton extends ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3SegmentedButton, Number> CONTAINER_HEIGHT =
-                new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3SegmentedButton control) {
-                        return M3Css.isSettable(control.containerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SegmentedButton control) {
-                        return control.containerHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-height",
+                        DEFAULT_CONTAINER_HEIGHT,
+                        M3SegmentedButton::containerHeightProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3SegmentedButton, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3SegmentedButton control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SegmentedButton control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3SegmentedButton::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3SegmentedButton, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3SegmentedButton control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SegmentedButton control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-horizontal-padding",
+                        DEFAULT_HORIZONTAL_PADDING,
+                        M3SegmentedButton::horizontalPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

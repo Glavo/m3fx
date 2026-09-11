@@ -19,6 +19,8 @@ import java.util.List;
 /// While the skin is installed, item nodes are children of the supplied container and list membership, insertion,
 /// removal, and permutation changes are mirrored into its child list. Disposing the skin releases those child
 /// references without modifying the source item list.
+/// Size queries remove the control's opposite-axis insets before measuring the container, matching its layout area.
+/// The container remains managed so changes to item sizes invalidate the control's layout and size caches.
 @NotNullByDefault
 abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N extends Node> extends SkinBase<C> {
     /// The public item list mirrored by this skin.
@@ -48,7 +50,6 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
         super(control);
         this.items = items;
         this.container = container;
-        container.setManaged(false);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().setAll(container);
         items.addListener(itemsListener);
@@ -85,7 +86,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.minWidth(height) + rightInset;
+        return leftInset + container.minWidth(contentSize(height, topInset, bottomInset)) + rightInset;
     }
 
     /// Computes the minimum height from the internal item container.
@@ -97,7 +98,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.minHeight(width) + bottomInset;
+        return topInset + container.minHeight(contentSize(width, leftInset, rightInset)) + bottomInset;
     }
 
     /// Computes the preferred width from the internal item container.
@@ -109,7 +110,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.prefWidth(height) + rightInset;
+        return leftInset + container.prefWidth(contentSize(height, topInset, bottomInset)) + rightInset;
     }
 
     /// Computes the preferred height from the internal item container.
@@ -121,7 +122,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.prefHeight(width) + bottomInset;
+        return topInset + container.prefHeight(contentSize(width, leftInset, rightInset)) + bottomInset;
     }
 
     /// Computes the maximum width from the internal item container.
@@ -133,7 +134,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.maxWidth(height) + rightInset;
+        return leftInset + container.maxWidth(contentSize(height, topInset, bottomInset)) + rightInset;
     }
 
     /// Computes the maximum height from the internal item container.
@@ -145,13 +146,23 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N exte
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.maxHeight(width) + bottomInset;
+        return topInset + container.maxHeight(contentSize(width, leftInset, rightInset)) + bottomInset;
     }
 
     /// Lays out the item container in the full control content bounds.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         container.resizeRelocate(x, y, width, height);
+    }
+
+    /// Removes insets from a constrained size, retaining negative unconstrained values unchanged.
+    ///
+    /// @param size the outer size, or a negative value for an unconstrained query
+    /// @param leadingInset the inset at the start of the measured axis
+    /// @param trailingInset the inset at the end of the measured axis
+    /// @return the non-negative available size, or the original negative constraint
+    private static double contentSize(double size, double leadingInset, double trailingInset) {
+        return size < 0.0 ? size : Math.max(0.0, size - leadingInset - trailingInset);
     }
 
     /// Reconciles actual item membership after mutations, including changes from parent or scene callbacks.

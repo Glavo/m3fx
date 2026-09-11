@@ -21,8 +21,11 @@ import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
 
 /// Animates direct-child position changes produced by an existing JavaFX layout container.
@@ -39,6 +42,11 @@ import java.util.Objects;
 ///
 /// At most one active `M3LayoutTransition` may be installed on a parent. [#stop()] settles all children and stops
 /// observation but permits a later [#start()]. [#dispose()] performs the same cleanup permanently.
+/// Transform-list listeners may modify the parent's children or invoke lifecycle methods. Child-list changes made
+/// during installation or removal are reconciled after the callback returns and must eventually stabilize.
+/// A new layout or lifecycle operation initiated by a translation-value callback supersedes the current update's
+/// remaining writes. Removed children receive no further writes; retained children are traversed from a stable
+/// membership snapshot.
 ///
 /// All lifecycle and property methods must be invoked on the JavaFX Application Thread once the parent is attached
 /// to a showing scene. Effective reduced-motion settings are resolved from the parent for each run and are observed
@@ -59,14 +67,29 @@ public final class M3LayoutTransition {
     /// The parent whose direct children are observed.
     private final Parent parent;
 
-    /// Mutable child states reused by the shared transition.
-    private final ArrayList<ChildState> childStates = new ArrayList<>();
+    /// Stable child membership reused by animation pulses and replaced when the parent's children change.
+    private @Unmodifiable List<ChildState> childStates = List.of();
+
+    /// Identifies the latest layout delta or explicit completion request across axis-value callbacks.
+    private long layoutVersion;
 
     /// The single finite transition that updates every active child.
     private final LayoutAnimation animation = new LayoutAnimation();
 
     /// Observes direct child additions and removals while this transition is active.
-    private final ListChangeListener<Node> childrenListener = this::childrenChanged;
+    private final ListChangeListener<Node> childrenListener = change -> synchronizeChildren();
+
+    /// Whether child ownership is currently being reconciled with a snapshot of the parent.
+    private boolean synchronizingChildren;
+
+    /// Whether a callback changed child ownership during the current reconciliation pass.
+    private boolean childrenSyncRequested;
+
+    /// Whether an installation is releasing its listeners and transforms.
+    private boolean stopping;
+
+    /// Whether a cleanup callback requested installation after the current cleanup completes.
+    private boolean restartRequested;
 
     /// Whether child deltas collected during one parent layout pass still need one shared retarget.
     private boolean retargetPending;
@@ -98,7 +121,7 @@ public final class M3LayoutTransition {
                 @Override
                 protected void invalidated() {
                     if (animation.getStatus() == Animation.Status.RUNNING) {
-                        animation.retarget(resolveMotionSpec());
+                        animation.retarget();
                     }
                 }
             };
@@ -183,13 +206,18 @@ public final class M3LayoutTransition {
     ///
     /// Existing child coordinates become the initial baseline. If the parent currently needs layout, changes made
     /// by that pending layout pass are treated as baseline placement and are not animated. Repeated calls while this
-    /// transition is active have no effect.
+    /// transition is active have no effect. A call from a cleanup callback is deferred until cleanup completes;
+    /// a subsequent [#stop()] or [#dispose()] cancels that pending restart.
     ///
-    /// @throws IllegalStateException if this transition has been disposed or another active layout transition owns
+    /// @throws IllegalStateException if this transition has been disposed or another layout transition owns
     ///                               the same parent
     public void start() {
         if (disposed) {
             throw new IllegalStateException("a disposed layout transition cannot be restarted");
+        }
+        if (stopping) {
+            restartRequested = true;
+            return;
         }
         if (active) {
             return;
@@ -200,35 +228,51 @@ public final class M3LayoutTransition {
             throw new IllegalStateException("the parent already has an active M3LayoutTransition");
         }
 
-        parent.getProperties().put(ACTIVE_TRANSITION_KEY, this);
         active = true;
-        boolean armed = !parent.isNeedsLayout();
-        for (Node child : parent.getChildrenUnmodifiable()) {
-            addChild(child, armed);
-        }
         parent.getChildrenUnmodifiable().addListener(childrenListener);
         parent.needsLayoutProperty().addListener(needsLayoutListener);
+        parent.getProperties().put(ACTIVE_TRANSITION_KEY, this);
+        synchronizeChildren();
     }
 
     /// Stops observing layout changes and settles every child at its current layout position.
     ///
-    /// The transition remains reusable and may be started again. Repeated calls while inactive have no effect.
+    /// The transition becomes inactive and releases coordinate listeners before invoking cleanup callbacks. It
+    /// remains reusable and may be started again. Repeated calls while inactive have no effect, except that a call
+    /// during cleanup cancels a pending restart requested by an earlier callback.
     public void stop() {
+        if (stopping) {
+            restartRequested = false;
+            return;
+        }
         if (!active) {
             return;
         }
 
-        animation.stop();
+        stopping = true;
+        active = false;
         retargetPending = false;
         retargetDirty = false;
         parent.getChildrenUnmodifiable().removeListener(childrenListener);
         parent.needsLayoutProperty().removeListener(needsLayoutListener);
-        for (int index = childStates.size() - 1; index >= 0; index--) {
-            childStates.get(index).detach();
+        @Unmodifiable List<ChildState> retired = childStates;
+        childStates = List.of();
+        for (ChildState state : retired) {
+            state.stopObserving();
         }
-        childStates.clear();
-        parent.getProperties().remove(ACTIVE_TRANSITION_KEY, this);
-        active = false;
+        try {
+            animation.stop();
+            parent.getProperties().remove(ACTIVE_TRANSITION_KEY, this);
+            for (ChildState state : retired) {
+                state.detach();
+            }
+        } finally {
+            stopping = false;
+        }
+        if (restartRequested) {
+            restartRequested = false;
+            start();
+        }
     }
 
     /// Immediately settles an active run while continuing to observe future layout changes.
@@ -236,52 +280,71 @@ public final class M3LayoutTransition {
     /// This method has no effect when no placement animation is running.
     public void finish() {
         if (animation.getStatus() == Animation.Status.RUNNING) {
+            layoutVersion++;
             M3Animation.finish(animation);
         }
     }
 
     /// Permanently stops this transition and releases installed listeners and transforms.
     ///
-    /// Repeated calls are harmless. Calling [#start()] after disposal throws [IllegalStateException].
+    /// Repeated calls are harmless. Disposal is visible to cleanup callbacks, and calling [#start()] from such a
+    /// callback or after disposal throws [IllegalStateException].
     public void dispose() {
         if (disposed) {
             return;
         }
-        stop();
         disposed = true;
+        stop();
     }
 
-    /// Applies one direct-child list change to the reusable state collection.
-    private void childrenChanged(ListChangeListener.Change<? extends Node> change) {
-        while (change.next()) {
-            for (Node removed : change.getRemoved()) {
-                removeChild(removed);
-            }
-            boolean armed = !parent.isNeedsLayout();
-            for (Node added : change.getAddedSubList()) {
-                addChild(added, armed);
-            }
+    /// Reconciles registered child states, coalescing changes made by transform-list callbacks.
+    private void synchronizeChildren() {
+        if (!active) {
+            return;
         }
-    }
-
-    /// Installs listeners and a private translation transform for one child.
-    private void addChild(Node child, boolean armed) {
-        ChildState state = new ChildState(child, armed);
-        childStates.add(state);
-    }
-
-    /// Removes and detaches the state associated with one child.
-    private void removeChild(Node child) {
-        for (int index = 0; index < childStates.size(); index++) {
-            ChildState state = childStates.get(index);
-            if (state.node == child) {
-                state.detach();
-                childStates.remove(index);
-                if (childStates.isEmpty()) {
+        childrenSyncRequested = true;
+        if (synchronizingChildren) {
+            return;
+        }
+        synchronizingChildren = true;
+        try {
+            do {
+                childrenSyncRequested = false;
+                @Unmodifiable List<Node> children = List.copyOf(parent.getChildrenUnmodifiable());
+                @Unmodifiable List<ChildState> previous = childStates;
+                IdentityHashMap<Node, ChildState> remaining = new IdentityHashMap<>();
+                for (ChildState state : previous) {
+                    remaining.put(state.node, state);
+                }
+                List<ChildState> next = new ArrayList<>(children.size());
+                for (Node child : children) {
+                    @Nullable ChildState retained = remaining.remove(child);
+                    next.add(retained != null ? retained : new ChildState(child));
+                }
+                childStates = List.copyOf(next);
+                // Publish membership before callbacks, then retire every state excluded from that snapshot.
+                for (ChildState state : previous) {
+                    if (remaining.containsKey(state.node)) {
+                        state.detach();
+                    }
+                }
+                if (!active || childrenSyncRequested) {
+                    continue;
+                }
+                for (ChildState state : childStates) {
+                    if (!state.attached) {
+                        state.install();
+                        if (!active || childrenSyncRequested) {
+                            break;
+                        }
+                    }
+                }
+                if (active && childStates.isEmpty()) {
                     animation.stop();
                 }
-                return;
-            }
+            } while (active && childrenSyncRequested);
+        } finally {
+            synchronizingChildren = false;
         }
     }
 
@@ -294,6 +357,9 @@ public final class M3LayoutTransition {
 
     /// Applies a horizontal layout-coordinate change to one child state.
     private void childLayoutXChanged(ChildState state, double oldValue, double newValue) {
+        if (!active || !state.attached) {
+            return;
+        }
         if (!state.armed || !Double.isFinite(oldValue) || !Double.isFinite(newValue)) {
             state.translation.setX(0.0);
             return;
@@ -303,11 +369,16 @@ public final class M3LayoutTransition {
             return;
         }
         addParentDelta(state, delta, 0.0);
-        requestRetarget();
+        if (active && state.attached) {
+            requestRetarget();
+        }
     }
 
     /// Applies a vertical layout-coordinate change to one child state.
     private void childLayoutYChanged(ChildState state, double oldValue, double newValue) {
+        if (!active || !state.attached) {
+            return;
+        }
         if (!state.armed || !Double.isFinite(oldValue) || !Double.isFinite(newValue)) {
             state.translation.setY(0.0);
             return;
@@ -317,7 +388,9 @@ public final class M3LayoutTransition {
             return;
         }
         addParentDelta(state, 0.0, delta);
-        requestRetarget();
+        if (active && state.attached) {
+            requestRetarget();
+        }
     }
 
     /// Starts one shared retarget and schedules at most one final retarget for the current event.
@@ -328,7 +401,7 @@ public final class M3LayoutTransition {
         }
         retargetPending = true;
         retargetDirty = false;
-        animation.retarget(resolveMotionSpec());
+        animation.retarget();
         Platform.runLater(retargetFlusher);
     }
 
@@ -341,7 +414,7 @@ public final class M3LayoutTransition {
         retargetPending = false;
         retargetDirty = false;
         if (shouldRetarget) {
-            animation.retarget(resolveMotionSpec());
+            animation.retarget();
         }
     }
 
@@ -362,14 +435,11 @@ public final class M3LayoutTransition {
         double scaleY = node.getScaleY();
         double localX = Double.compare(scaleX, 0.0) == 0 ? 0.0 : unrotatedX / scaleX;
         double localY = Double.compare(scaleY, 0.0) == 0 ? 0.0 : unrotatedY / scaleY;
+        long version = ++layoutVersion;
         state.translation.setX(state.translation.getX() + localX);
-        state.translation.setY(state.translation.getY() + localY);
-    }
-
-    /// Resolves the explicit or theme-derived placement specification for a new run.
-    private M3MotionSpec resolveMotionSpec() {
-        @Nullable M3MotionSpec explicitSpec = getMotionSpec();
-        return explicitSpec == null ? M3Animation.defaultSpatial(parent) : explicitSpec;
+        if (active && state.attached && version == layoutVersion) {
+            state.translation.setY(state.translation.getY() + localY);
+        }
     }
 
     /// Stores reusable animation channels and listeners for one direct child.
@@ -400,26 +470,43 @@ public final class M3LayoutTransition {
         /// Whether coordinate changes should animate rather than establish an initial baseline.
         private boolean armed;
 
+        /// Whether coordinate listeners belong to the current installation.
+        private boolean attached;
+
         /// The reusable horizontal translation channel.
         private final M3ScalarChannel horizontal = new M3ScalarChannel(POSITION_VISIBILITY_THRESHOLD);
 
         /// The reusable vertical translation channel.
         private final M3ScalarChannel vertical = new M3ScalarChannel(POSITION_VISIBILITY_THRESHOLD);
 
-        /// Installs state for one child.
-        private ChildState(Node node, boolean armed) {
+        /// Creates unpublished state for one child.
+        private ChildState(Node node) {
             this.node = node;
-            this.armed = armed;
-            // The first list transform is applied after user list transforms, keeping the FLIP delta in parent axes.
-            node.getTransforms().add(0, translation);
+        }
+
+        /// Installs listeners before publishing the transform, after this state has been registered.
+        private void install() {
+            armed = !parent.isNeedsLayout();
+            attached = true;
             node.layoutXProperty().addListener(layoutXListener);
             node.layoutYProperty().addListener(layoutYListener);
+            // The first list transform is applied after user list transforms, keeping the FLIP delta in parent axes.
+            node.getTransforms().add(0, translation);
+        }
+
+        /// Releases coordinate observation before cleanup invokes transform-list listeners.
+        private void stopObserving() {
+            if (!attached) {
+                return;
+            }
+            attached = false;
+            node.layoutXProperty().removeListener(layoutXListener);
+            node.layoutYProperty().removeListener(layoutYListener);
         }
 
         /// Removes all state owned by this layout transition from the child.
         private void detach() {
-            node.layoutXProperty().removeListener(layoutXListener);
-            node.layoutYProperty().removeListener(layoutYListener);
+            stopObserving();
             node.getTransforms().remove(translation);
         }
     }
@@ -430,26 +517,24 @@ public final class M3LayoutTransition {
         /// The duration of the longest child channel in the current run, in seconds.
         private double runDurationSeconds;
 
-        /// Reconfigures the shared run from every child's current rendered position.
-        private void retarget(M3MotionSpec spec) {
-            M3MotionSpec checkedSpec = Objects.requireNonNull(spec, "spec");
+        /// Reconfigures current children using the specification visible after stopped-status callbacks complete.
+        private void retarget() {
             double elapsedSeconds = getStatus() == Animation.Status.RUNNING
                     ? Math.max(0.0, getCurrentTime().toSeconds())
                     : Double.POSITIVE_INFINITY;
-
-            //noinspection ForLoopReplaceableByForEach
-            for (int index = 0; index < childStates.size(); index++) {
-                ChildState state = childStates.get(index);
-                state.horizontal.configure(state.translation.getX(), 0.0, checkedSpec, elapsedSeconds);
-                state.vertical.configure(state.translation.getY(), 0.0, checkedSpec, elapsedSeconds);
-            }
-
+            long version = getStopVersion() + 1;
             stop();
+            if (!active || version != getStopVersion()) {
+                return;
+            }
+            @Nullable M3MotionSpec explicitSpec = getMotionSpec();
+            M3MotionSpec spec = explicitSpec == null ? M3Animation.defaultSpatial(parent) : explicitSpec;
             runDurationSeconds = 0.0;
-
             //noinspection ForLoopReplaceableByForEach
             for (int index = 0; index < childStates.size(); index++) {
                 ChildState state = childStates.get(index);
+                state.horizontal.configure(state.translation.getX(), 0.0, spec, elapsedSeconds);
+                state.vertical.configure(state.translation.getY(), 0.0, spec, elapsedSeconds);
                 runDurationSeconds = Math.max(
                         runDurationSeconds,
                         Math.max(
@@ -471,13 +556,27 @@ public final class M3LayoutTransition {
         /// Applies the current shared fraction to every child channel.
         @Override
         protected void interpolate(double fraction) {
+            long version = layoutVersion;
+            long stopVersion = getStopVersion();
+            @Unmodifiable List<ChildState> states = childStates;
             double elapsedSeconds = Math.max(0.0, fraction) * runDurationSeconds;
-            // Avoid allocating an ArrayList iterator on every animation pulse.
+            // Keep membership stable across callbacks without allocating a snapshot or iterator on each pulse.
             //noinspection ForLoopReplaceableByForEach
-            for (int index = 0; index < childStates.size(); index++) {
-                ChildState state = childStates.get(index);
+            for (int index = 0; index < states.size(); index++) {
+                ChildState state = states.get(index);
+                if (!state.attached) {
+                    continue;
+                }
                 state.translation.setX(state.horizontal.valueAt(elapsedSeconds));
-                state.translation.setY(state.vertical.valueAt(elapsedSeconds));
+                if (!active || version != layoutVersion || stopVersion != getStopVersion()) {
+                    return;
+                }
+                if (state.attached) {
+                    state.translation.setY(state.vertical.valueAt(elapsedSeconds));
+                    if (!active || version != layoutVersion || stopVersion != getStopVersion()) {
+                        return;
+                    }
+                }
             }
         }
     }

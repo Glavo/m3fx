@@ -1,7 +1,6 @@
 .m3-menu {
     -fx-background-color: -m3-menu-container-color;
     -fx-background-insets: 0;
-    -fx-min-width: 112px;
     -fx-max-width: 280px;
     -fx-effect: dropshadow(gaussian, -m3-elevation-shadow-color, 3, 0.18, 0, 2);
 }

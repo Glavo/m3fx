@@ -8,8 +8,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -364,19 +362,11 @@ public final class M3FormSection extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the content spacing token.
         private static final CssMetaData<M3FormSection, Number> CONTENT_SPACING =
-                new CssMetaData<>("-m3-content-spacing", SizeConverter.getInstance(), DEFAULT_CONTENT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormSection control) {
-                        return M3Css.isSettable(control.contentSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormSection control) {
-                        return control.contentSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-spacing",
+                        DEFAULT_CONTENT_SPACING,
+                        M3FormSection::contentSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

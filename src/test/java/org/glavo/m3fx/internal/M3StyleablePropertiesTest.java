@@ -35,6 +35,56 @@ final class M3StyleablePropertiesTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Rejects invalid container updates before taking ownership from CSS.
+    @Test
+    void invalidControlAssignmentsPreserveCssEligibility() {
+        FxTestUtils.runOnFxThread(() -> {
+            StyleableDoubleProperty property = new M3Button().containerHeightProperty();
+            double initialValue = property.get();
+            assertThrows(IllegalArgumentException.class, () -> M3Css.setControlToken(property, -1.0));
+            assertEquals(initialValue, property.get());
+            assertTrue(M3Css.isSettable(property));
+        });
+    }
+
+    /// Preserves application ownership acquired by a listener during a container update.
+    @Test
+    void reentrantApplicationAssignmentTakesPrecedenceOverControl() {
+        FxTestUtils.runOnFxThread(() -> {
+            StyleableDoubleProperty property = new M3Button().containerHeightProperty();
+            property.addListener((observable, oldValue, newValue) -> {
+                if (newValue.doubleValue() == 48.0) {
+                    property.set(56.0);
+                }
+            });
+            M3Css.setControlToken(property, 48.0);
+            M3Css.setControlToken(property, 64.0);
+            M3Css.clearControlToken(property);
+            assertEquals(56.0, property.get());
+            assertFalse(M3Css.isSettable(property));
+        });
+    }
+
+    /// Resumes CSS after release while preserving later application assignments, including equal values.
+    @Test
+    void releasingControlTokenPreservesExplicitOwnership() {
+        FxTestUtils.runOnFxThread(() -> {
+            StyleableDoubleProperty property = new M3Button().containerHeightProperty();
+            M3Css.setControlToken(property, 48.0);
+            assertFalse(M3Css.isSettable(property));
+            M3Css.clearControlToken(property);
+            M3Css.clearControlToken(property);
+            assertEquals(48.0, property.get());
+            assertTrue(M3Css.isSettable(property));
+            M3Css.setControlToken(property, 56.0);
+            property.set(56.0);
+            M3Css.clearControlToken(property);
+            M3Css.setControlToken(property, 64.0);
+            assertEquals(56.0, property.get());
+            assertFalse(M3Css.isSettable(property));
+        });
+    }
+
     /// Rejects invalid direct assignments without changing the value, origin, or CSS eligibility.
     @Test
     void invalidNumericAssignmentsPreservePropertyState() {

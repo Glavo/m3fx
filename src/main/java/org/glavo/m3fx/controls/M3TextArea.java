@@ -13,6 +13,7 @@ import javafx.scene.control.TextArea;
 import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
@@ -24,8 +25,12 @@ import java.util.List;
 /// character counter, and adornment slots.
 ///
 /// A new text area uses the filled variant, is not in error state, wraps text, and applies M3FX styling to its scroll
-/// bars. Text, selection, editing, preferred row count, and scroll position retain the inherited [TextArea]
-/// contracts.
+/// bars. Text, selection, editing, and scroll position retain the inherited [TextArea] contracts.
+///
+/// Computed minimum and preferred total heights, including insets, equal the container-height token before and
+/// after skin installation. Preferred row count does not determine these computed heights. Explicit heights and
+/// bindings remain in effect through geometry changes; set a height to [#USE_COMPUTED_SIZE] to restore computed
+/// sizing.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
@@ -33,16 +38,15 @@ public final class M3TextArea extends TextArea implements M3TextInput {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-text-area";
 
-    /// Shared Material text input state and token plumbing.
-    private final M3TextInputSupport<M3TextArea> support = new M3TextInputSupport<>(
-            this,
+    /// The immutable defaults and CSS metadata shared by instances of this class.
+    private static final M3TextInputSupport.Metadata<M3TextArea> METADATA = new M3TextInputSupport.Metadata<>(
+            TextArea.getClassCssMetaData(),
             M3TextInputSupport.DEFAULT_AREA_CONTAINER_HEIGHT,
-            M3TextInputSupport.DEFAULT_AREA_VERTICAL_PADDING,
-            StyleableProperties.CONTAINER_HEIGHT,
-            StyleableProperties.CONTAINER_SHAPE,
-            StyleableProperties.HORIZONTAL_PADDING,
-            StyleableProperties.VERTICAL_PADDING
+            M3TextInputSupport.DEFAULT_AREA_VERTICAL_PADDING
     );
+
+    /// Shared Material text input state and token plumbing.
+    private final M3TextInputSupport<M3TextArea> support = new M3TextInputSupport<>(this, METADATA);
 
     /// Creates an empty, wrapping, filled text area that is not in error state.
     public M3TextArea() {
@@ -182,13 +186,13 @@ public final class M3TextArea extends TextArea implements M3TextInput {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class and its superclasses
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return METADATA.styleables();
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -198,60 +202,22 @@ public final class M3TextArea extends TextArea implements M3TextInput {
         return M3Stylesheets.controlStylesheet("text-field.css");
     }
 
+    /// Computes minimum total height from the container-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes preferred total height from the container-height token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         support.initialize(DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT_AREA);
         setWrapText(true);
-    }
-
-    /// CSS metadata for M3FX text area component tokens.
-    @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the container height token.
-        private static final CssMetaData<M3TextArea, Number> CONTAINER_HEIGHT =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-container-height",
-                        M3TextInputSupport.DEFAULT_AREA_CONTAINER_HEIGHT,
-                        M3TextArea::containerHeightProperty
-                );
-
-        /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3TextArea, Number> CONTAINER_SHAPE =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-container-shape",
-                        M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
-                        M3TextArea::containerShapeProperty
-                );
-
-        /// CSS metadata for the horizontal padding token.
-        private static final CssMetaData<M3TextArea, Number> HORIZONTAL_PADDING =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-horizontal-padding",
-                        M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
-                        M3TextArea::horizontalPaddingProperty
-                );
-
-        /// CSS metadata for the vertical padding token.
-        private static final CssMetaData<M3TextArea, Number> VERTICAL_PADDING =
-                M3TextInputSupport.createSizeCssMetaData(
-                        "-m3-vertical-padding",
-                        M3TextInputSupport.DEFAULT_AREA_VERTICAL_PADDING,
-                        M3TextArea::verticalPaddingProperty
-                );
-
-        /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(
-                TextArea.getClassCssMetaData(),
-                CONTAINER_HEIGHT,
-                CONTAINER_SHAPE,
-                HORIZONTAL_PADDING,
-                VERTICAL_PADDING
-        );
-
-        /// Prevents utility class instantiation.
-        private StyleableProperties() {
-        }
-
     }
 }

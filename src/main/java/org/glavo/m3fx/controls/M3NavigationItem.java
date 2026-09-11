@@ -11,8 +11,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -610,99 +608,51 @@ public final class M3NavigationItem extends ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3NavigationItem, Number> CONTAINER_HEIGHT =
-                new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.containerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.containerHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-height",
+                        DEFAULT_CONTAINER_HEIGHT,
+                        M3NavigationItem::containerHeightProperty
+                );
 
         /// CSS metadata for the item width token.
         private static final CssMetaData<M3NavigationItem, Number> ITEM_WIDTH =
-                new CssMetaData<>("-m3-item-width", SizeConverter.getInstance(), DEFAULT_ITEM_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.itemWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.itemWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-item-width",
+                        DEFAULT_ITEM_WIDTH,
+                        M3NavigationItem::itemWidthProperty
+                );
 
         /// CSS metadata for the selected indicator width token.
         private static final CssMetaData<M3NavigationItem, Number> INDICATOR_WIDTH =
-                new CssMetaData<>("-m3-indicator-width", SizeConverter.getInstance(), DEFAULT_INDICATOR_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.indicatorWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.indicatorWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-indicator-width",
+                        DEFAULT_INDICATOR_WIDTH,
+                        M3NavigationItem::indicatorWidthProperty
+                );
 
         /// CSS metadata for the selected indicator height token.
         private static final CssMetaData<M3NavigationItem, Number> INDICATOR_HEIGHT =
-                new CssMetaData<>("-m3-indicator-height", SizeConverter.getInstance(), DEFAULT_INDICATOR_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.indicatorHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.indicatorHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-indicator-height",
+                        DEFAULT_INDICATOR_HEIGHT,
+                        M3NavigationItem::indicatorHeightProperty
+                );
 
         /// CSS metadata for the selected indicator shape token.
         private static final CssMetaData<M3NavigationItem, Number> INDICATOR_SHAPE =
-                new CssMetaData<>("-m3-indicator-shape", SizeConverter.getInstance(), DEFAULT_INDICATOR_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.indicatorShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.indicatorShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-indicator-shape",
+                        DEFAULT_INDICATOR_SHAPE,
+                        M3NavigationItem::indicatorShapeProperty
+                );
 
         /// CSS metadata for the content spacing token.
         private static final CssMetaData<M3NavigationItem, Number> CONTENT_SPACING =
-                new CssMetaData<>("-m3-content-spacing", SizeConverter.getInstance(), DEFAULT_CONTENT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationItem control) {
-                        return M3Css.isSettable(control.contentSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationItem control) {
-                        return control.contentSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-spacing",
+                        DEFAULT_CONTENT_SPACING,
+                        M3NavigationItem::contentSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

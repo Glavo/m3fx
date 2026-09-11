@@ -127,12 +127,24 @@ public final class M3Scrim extends Region {
     /// @defaultValue `0.32`
     private final DoubleProperty visibleOpacity =
             new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
+                /// Rejects invalid direct assignments before the property value or listeners change.
+                @Override
+                public void set(double value) {
+                    super.set(validateOpacity(value));
+                }
+
+                /// Validates the current value, including values supplied by a binding.
+                @Override
+                public double get() {
+                    return validateOpacity(super.get());
+                }
+
                 /// Applies the updated visible opacity when the scrim is shown.
                 @Override
                 protected void invalidated() {
-                    validateOpacity(get());
+                    double opacity = get();
                     if (isShown()) {
-                        setOpacity(get());
+                        setOpacity(opacity);
                     }
                 }
             };
@@ -140,6 +152,7 @@ public final class M3Scrim extends Region {
     /// Returns the opacity used while this scrim is shown.
     ///
     /// @return the opacity used while this scrim is shown
+    /// @throws IllegalArgumentException if the current property value supplied by a binding is invalid
     public final double getVisibleOpacity() {
         return visibleOpacity.get();
     }
@@ -148,14 +161,18 @@ public final class M3Scrim extends Region {
     ///
     /// @param visibleOpacity the normalized opacity used while this scrim is shown
     /// @throws IllegalArgumentException if the value is not finite or is outside `0.0..1.0`
+    /// @throws RuntimeException if the opacity property is bound
     public final void setVisibleOpacity(double visibleOpacity) {
-        this.visibleOpacity.set(validateOpacity(visibleOpacity));
+        this.visibleOpacity.set(visibleOpacity);
     }
 
     /// Returns the observable, bindable fully shown opacity property.
     ///
     /// The property is `0.32` by default and accepts only values in the inclusive range `0.0..1.0`. Changing it
     /// immediately updates [#opacityProperty()] while the scrim is shown.
+    /// Direct assignments are validated before the value changes. Binding sources must supply finite values in
+    /// the same range; reading an invalid value throws [IllegalArgumentException] and does not apply it to the
+    /// node's opacity. Correct the binding source, or unbind and assign a valid value, to resume normal reads.
     ///
     /// @return the fully shown opacity property
     public final DoubleProperty visibleOpacityProperty() {

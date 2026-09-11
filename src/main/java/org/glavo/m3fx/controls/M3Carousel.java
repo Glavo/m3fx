@@ -314,6 +314,9 @@ public final class M3Carousel extends Control {
     /// instance. Bulk mutations are validated before the list changes, and successful changes update selection
     /// immediately.
     ///
+    /// The default skin measures items through their [Node] sizing methods. Layout strategies may assign other
+    /// sizes to resizable items; non-resizable items retain their geometry.
+    ///
     /// @return the live, mutable item list
     public final ObservableList<Node> getItems() {
         return items;

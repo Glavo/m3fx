@@ -10,8 +10,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -501,22 +499,22 @@ public final class M3BottomAppBar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3BottomAppBar, Number> CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
+                M3Css.sizeMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
                         M3BottomAppBar::containerHeightProperty);
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3BottomAppBar, Number> HORIZONTAL_PADDING =
-                createSizeCssMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
+                M3Css.sizeMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
                         M3BottomAppBar::horizontalPaddingProperty);
 
         /// CSS metadata for the content slot spacing token.
         private static final CssMetaData<M3BottomAppBar, Number> CONTENT_SPACING =
-                createSizeCssMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
+                M3Css.sizeMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
                         M3BottomAppBar::contentSpacingProperty);
 
         /// CSS metadata for the regular action slot spacing token.
         private static final CssMetaData<M3BottomAppBar, Number> ACTION_SPACING =
-                createSizeCssMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
+                M3Css.sizeMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
                         M3BottomAppBar::actionSpacingProperty);
 
         /// The complete immutable CSS metadata list.
@@ -535,33 +533,6 @@ public final class M3BottomAppBar extends Control {
         private StyleableProperties() {
         }
 
-        /// Creates CSS metadata for a non-negative size token.
-        private static CssMetaData<M3BottomAppBar, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyAccessor accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3BottomAppBar control) {
-                    return M3Css.isSettable(accessor.property(control));
-                }
 
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3BottomAppBar control) {
-                    return accessor.property(control);
-                }
-            };
-        }
-
-        /// Provides access to a styleable bottom app bar size token property.
-        @NotNullByDefault
-        @FunctionalInterface
-        private interface StyleablePropertyAccessor {
-            /// Returns the property for the supplied bottom app bar.
-            StyleableDoubleProperty property(M3BottomAppBar control);
-        }
     }
 }

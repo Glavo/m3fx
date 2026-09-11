@@ -56,7 +56,6 @@ public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3Navi
     public M3NavigationDrawerSkin(M3NavigationDrawer control) {
         super(control, control.getItems(), new VBox());
         VBox container = getContainer();
-        container.setManaged(true);
         container.spacingProperty().bind(control.itemSpacingProperty());
 
         getChildren().clear();

@@ -20,6 +20,9 @@ import java.util.Objects;
 /// duration. Only channels with displacement or retained spring velocity are written during a run, allowing
 /// independent transitions to animate disjoint properties of the same node. The enclosing transition runs until
 /// the longest channel settles and allocates no per-pulse objects.
+///
+/// Property listeners may stop or reconfigure this transition. Writes already delivered to earlier channels remain
+/// visible, but the superseded update does not write any later channels.
 @NotNullByDefault
 public final class M3NodeTransition extends M3FiniteTransition {
     /// The opacity delta below which a physical spring is visually settled.
@@ -83,6 +86,7 @@ public final class M3NodeTransition extends M3FiniteTransition {
     /// A running transition contributes each channel's current velocity to the corresponding new channel. A stopped
     /// transition starts every channel with zero velocity. Opacity output is restricted to the closed unit interval;
     /// scale and translation values are not clamped.
+    /// A stop or replacement configuration requested by a stopped-status listener supersedes this configuration.
     ///
     /// @param spec             the motion specification for the next run
     /// @param targetOpacity    the target opacity before output clamping
@@ -125,7 +129,11 @@ public final class M3NodeTransition extends M3FiniteTransition {
         double previousElapsedSeconds = getStatus() == Animation.Status.STOPPED
                 ? Double.POSITIVE_INFINITY
                 : Math.max(0.0, getCurrentTime().toSeconds());
+        long version = getStopVersion() + 1;
         stop();
+        if (version != getStopVersion()) {
+            return;
+        }
 
         opacityChannel.configure(currentOpacity, targetOpacity, checkedSpec, previousElapsedSeconds);
         scaleXChannel.configure(currentScaleX, targetScaleX, checkedSpec, previousElapsedSeconds);
@@ -158,6 +166,7 @@ public final class M3NodeTransition extends M3FiniteTransition {
             return;
         }
 
+        long version = getStopVersion();
         double elapsedSeconds = fraction >= 1.0 || runDurationSeconds <= 0.0
                 ? Double.POSITIVE_INFINITY
                 : Math.max(0.0, fraction) * runDurationSeconds;
@@ -168,12 +177,18 @@ public final class M3NodeTransition extends M3FiniteTransition {
                 node.setOpacity(opacity);
             }
         }
+        if (version != getStopVersion()) {
+            return;
+        }
 
         if (animateScaleX) {
             double scaleX = scaleXChannel.valueAt(elapsedSeconds);
             if (Double.compare(node.getScaleX(), scaleX) != 0) {
                 node.setScaleX(scaleX);
             }
+        }
+        if (version != getStopVersion()) {
+            return;
         }
 
         if (animateScaleY) {
@@ -182,12 +197,18 @@ public final class M3NodeTransition extends M3FiniteTransition {
                 node.setScaleY(scaleY);
             }
         }
+        if (version != getStopVersion()) {
+            return;
+        }
 
         if (animateTranslateX) {
             double translateX = translateXChannel.valueAt(elapsedSeconds);
             if (Double.compare(node.getTranslateX(), translateX) != 0) {
                 node.setTranslateX(translateX);
             }
+        }
+        if (version != getStopVersion()) {
+            return;
         }
 
         if (animateTranslateY) {

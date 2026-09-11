@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -18,13 +16,13 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
-import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +38,11 @@ import java.util.Objects;
 ///
 /// Variant and size choose semantic Material token families. The styleable geometry properties provide local
 /// overrides in logical pixels; CSS cannot replace a bound styleable property.
+///
+/// Computed minimum and preferred total heights equal the container-size token, including insets. With `null`
+/// or blank text, computed widths also equal that token and are available before skin installation. Non-blank
+/// text selects content-dependent widths supplied by the skin. Explicit layout dimensions and bindings remain
+/// in effect through text and token changes; set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// Use one floating action button for the most important screen-level action. See
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
@@ -369,6 +372,10 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// The property defaults to `24.0` logical pixels and accepts only finite, non-negative values. CSS cannot set
     /// the property while it is bound.
     ///
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this token unless their icon-size property has an explicit Java
+    /// value or a binding. The container token takes precedence over the graphic's CSS sizing. Removing a graphic
+    /// releases container sizing; the last value remains until the graphic is restyled or explicitly configured.
+    ///
     /// @return the graphic icon-size property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
@@ -408,13 +415,13 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -460,26 +467,49 @@ public final class M3FloatingActionButton extends ButtonBase {
         );
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = getContainerSize();
-        M3Css.setMinHeightIfUnbound(this, size);
-        M3Css.setPrefHeightIfUnbound(this, size);
+    /// Computes minimum width from extended content or the square container size.
+    @Override
+    protected double computeMinWidth(double height) {
+        return hasLabelText() ? super.computeMinWidth(height) : getContainerSize();
+    }
+
+    /// Computes minimum total height from the container-size token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerSize();
+    }
+
+    /// Computes preferred width from extended content or the square container size.
+    @Override
+    protected double computePrefWidth(double height) {
+        return hasLabelText() ? super.computePrefWidth(height) : getContainerSize();
+    }
+
+    /// Computes preferred total height from the container-size token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerSize();
+    }
+
+    /// Returns whether non-blank text selects extended layout.
+    private boolean hasLabelText() {
         @Nullable String text = getText();
-        if (text != null && !text.isBlank()) {
+        return text != null && !text.isBlank();
+    }
+
+    /// Updates presentation-dependent padding and graphic metrics, then requests layout.
+    private void updateMetrics() {
+        if (hasLabelText()) {
             double padding = getHorizontalPadding();
-            M3Css.setMinWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
-            M3Css.setPrefWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
             M3Css.setPaddingIfUnbound(
                     this,
                     new Insets(0.0, getTrailingPadding(), 0.0, padding)
             );
         } else {
-            M3Css.setMinWidthIfUnbound(this, size);
-            M3Css.setPrefWidthIfUnbound(this, size);
             M3Css.setPaddingIfUnbound(this, Insets.EMPTY);
         }
         updateGraphicMetrics();
+        requestLayout();
     }
 
     /// Applies the current icon tokens to a direct M3FX graphic and clears stale managed state.
@@ -488,6 +518,7 @@ public final class M3FloatingActionButton extends ButtonBase {
         @Nullable Node previous = managedIconGraphic;
         if (previous != graphic) {
             if (previous != null) {
+                M3Css.clearControlToken(((M3IconGraphic) previous).iconSizeProperty());
                 previous.pseudoClassStateChanged(FAB_GRAPHIC_PSEUDO_CLASS, false);
             }
             managedIconGraphic = graphic instanceof M3IconGraphic ? graphic : null;
@@ -496,7 +527,7 @@ public final class M3FloatingActionButton extends ButtonBase {
             }
         }
         if (graphic instanceof M3IconGraphic icon) {
-            icon.setIconSize(getIconSize());
+            M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
         }
     }
 
@@ -505,86 +536,46 @@ public final class M3FloatingActionButton extends ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the container size token.
         private static final CssMetaData<M3FloatingActionButton, Number> CONTAINER_SIZE =
-                new CssMetaData<>("-m3-container-size", SizeConverter.getInstance(), DEFAULT_CONTAINER_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FloatingActionButton control) {
-                        return M3Css.isSettable(control.containerSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
-                        return control.containerSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-size",
+                        DEFAULT_CONTAINER_SIZE,
+                        M3FloatingActionButton::containerSizeProperty
+                );
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3FloatingActionButton, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FloatingActionButton control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3FloatingActionButton::containerShapeProperty
+                );
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3FloatingActionButton, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FloatingActionButton control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-horizontal-padding",
+                        DEFAULT_HORIZONTAL_PADDING,
+                        M3FloatingActionButton::horizontalPaddingProperty
+                );
 
         /// CSS metadata for the logical trailing padding token.
         private static final CssMetaData<M3FloatingActionButton, Number> TRAILING_PADDING =
-                new CssMetaData<>("-m3-trailing-padding", SizeConverter.getInstance(), DEFAULT_TRAILING_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FloatingActionButton control) {
-                        return M3Css.isSettable(control.trailingPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
-                        return control.trailingPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-trailing-padding",
+                        DEFAULT_TRAILING_PADDING,
+                        M3FloatingActionButton::trailingPaddingProperty
+                );
 
         /// CSS metadata for the direct M3FX graphic icon size.
         private static final CssMetaData<M3FloatingActionButton, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-fab-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FloatingActionButton control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-fab-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3FloatingActionButton::iconSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());

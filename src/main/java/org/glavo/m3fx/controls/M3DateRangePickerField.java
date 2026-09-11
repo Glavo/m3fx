@@ -945,7 +945,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     private final M3IconButton endOpenButton = createOpenButton("Open end date range picker");
 
     /// The popup root that inherits scene styles and hosts the picker.
-    private final StackPane popupContent = new StackPane();
+    private final StackPane popupContent = new StackPane() {
+        /// Includes the current field width in the computed minimum.
+        @Override
+        protected double computeMinWidth(double height) {
+            return Math.max(M3DateRangePickerField.this.getWidth(), super.computeMinWidth(height));
+        }
+    };
 
     /// The popup window used for picker display.
     private final Popup popup = new Popup();
@@ -2026,11 +2032,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
         M3Accessible.notifyFocusNodeChanged(this);
     }
 
-    /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
+    /// Applies popup styles and invalidates dimensions derived from the current anchor width.
     private void preparePopupForShow() {
-        double fieldWidth = Math.max(0.0, getWidth());
-        M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
+        popupContent.requestLayout();
     }
 
     /// Applies initial visual state before the popup is shown.

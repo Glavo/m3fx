@@ -7,7 +7,6 @@ import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.stage.Window;
@@ -22,8 +21,9 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3Tooltip].
 ///
 /// The skin renders tooltip text and graphic content in the popup scene, mirrors style classes and sizing constraints
-/// from the tooltip, and installs the tooltip's optional local theme into that scene. Theme changes resize an already
-/// showing popup after CSS has been applied.
+/// from the tooltip, and installs the tooltip's optional theme on the content label. Theme resources remain local
+/// to that label, including while it is detached from a scene. Theme changes resize an already showing popup after
+/// CSS has been applied. Disposal releases the local installation while preserving application-owned stylesheets.
 @NotNullByDefault
 public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// The minimum plain tooltip container height from the Material specification.
@@ -35,16 +35,9 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// Keeps the root style classes aligned with the tooltip style classes.
     private final ListChangeListener<String> styleClassListener = change -> syncStyleClasses();
 
-    /// Reinstalls generated theme CSS when the popup scene changes.
-    private final ChangeListener<@Nullable Scene> sceneListener =
-            (observable, oldValue, newValue) -> updateThemeStylesheet(oldValue, newValue);
-
-    /// Reinstalls generated theme CSS when the tooltip theme changes.
+    /// Updates the content's local theme when the tooltip theme changes.
     private final ChangeListener<@Nullable M3Theme> themeListener =
-            (observable, oldValue, newValue) -> updateThemeStylesheet(root.getScene(), root.getScene());
-
-    /// The generated theme stylesheet currently installed on the popup scene and skin root.
-    private @Nullable String installedThemeStylesheet;
+            (observable, oldValue, newValue) -> updateTheme();
 
     /// Whether a deferred showing-popup resize is already queued.
     private boolean popupResizePending;
@@ -60,11 +53,12 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
 
         getChildren().setAll(root);
         syncStyleClasses();
-        M3PopupStyles.addStylesheet(root, M3Stylesheets.fallbackStylesheet());
-        M3PopupStyles.addStylesheet(root, M3Stylesheets.controlStylesheet("tooltip.css"));
+        // Keep base styling on the skin so content-local theme and application styles take precedence.
+        getStyleClass().add(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
+        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
+        M3PopupStyles.addStylesheet(this, M3Stylesheets.controlStylesheet("tooltip.css"));
         tooltip.getStyleClass().addListener(styleClassListener);
         tooltip.themeProperty().addListener(themeListener);
-        root.sceneProperty().addListener(sceneListener);
         root.textProperty().bind(tooltip.textProperty());
         root.graphicProperty().bind(tooltip.graphicProperty());
         root.contentDisplayProperty().bind(tooltip.contentDisplayProperty());
@@ -76,7 +70,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         root.prefHeightProperty().bind(tooltip.prefHeightProperty());
         root.minHeightProperty().bind(tooltip.minHeightProperty());
         root.maxHeightProperty().bind(tooltip.maxHeightProperty());
-        updateThemeStylesheet(null, root.getScene());
+        updateTheme();
     }
 
     /// Returns the preferred width of the rendered tooltip content.
@@ -109,12 +103,14 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// Releases bindings and listeners installed by this skin.
     @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
         disposed = true;
         M3Tooltip tooltip = getSkinnable();
         tooltip.getStyleClass().removeListener(styleClassListener);
         tooltip.themeProperty().removeListener(themeListener);
-        root.sceneProperty().removeListener(sceneListener);
-        updateThemeStylesheet(root.getScene(), null);
+        M3ThemeRuntime.uninstall(root);
         root.textProperty().unbind();
         root.graphicProperty().unbind();
         root.contentDisplayProperty().unbind();
@@ -133,8 +129,10 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// Copies current tooltip style classes onto the rendered root node.
     private void syncStyleClasses() {
         M3Tooltip tooltip = getSkinnable();
-        root.getStyleClass().setAll(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
-        root.getStyleClass().addAll(tooltip.getStyleClass());
+        root.getStyleClass().setAll(tooltip.getStyleClass());
+        if (tooltip.getTheme() == null) {
+            root.getStyleClass().add(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
+        }
     }
 
     /// Returns the preferred width of wrapped or graphic-only tooltip content.
@@ -176,30 +174,15 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         return preferredWidth;
     }
 
-    /// Installs or removes the generated theme stylesheet used by popup content.
-    private void updateThemeStylesheet(@Nullable Scene oldScene, @Nullable Scene newScene) {
-        M3Tooltip tooltip = getSkinnable();
-        String currentStylesheet = installedThemeStylesheet;
-        if (currentStylesheet != null) {
-            if (oldScene != null) {
-                oldScene.getStylesheets().remove(currentStylesheet);
-            }
-            root.getStylesheets().remove(currentStylesheet);
+    /// Applies the content theme through the shared local-theme lifecycle and restores mirrored classes.
+    private void updateTheme() {
+        @Nullable M3Theme theme = getSkinnable().getTheme();
+        if (theme == null) {
+            M3ThemeRuntime.uninstall(root);
+        } else {
+            M3ThemeRuntime.install(root, theme);
         }
-        installedThemeStylesheet = null;
-
-        @Nullable M3Theme theme = tooltip.getTheme();
-        if (theme == null || newScene == null) {
-            requestShowingPopupResize();
-            return;
-        }
-
-        String themeStylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
-        if (!newScene.getStylesheets().contains(themeStylesheet)) {
-            newScene.getStylesheets().add(themeStylesheet);
-        }
-        M3PopupStyles.addStylesheet(root, themeStylesheet);
-        installedThemeStylesheet = themeStylesheet;
+        syncStyleClasses();
         requestShowingPopupResize();
     }
 

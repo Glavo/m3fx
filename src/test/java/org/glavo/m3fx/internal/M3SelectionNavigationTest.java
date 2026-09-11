@@ -76,10 +76,10 @@ final class M3SelectionNavigationTest {
 
         assertTrue(M3SelectionNavigation.handleKeySelection(
                 new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.RIGHT, false, false, false, false),
-                children, foreign, EqualRegion.class, true, false, true, selections::add));
+                null, children, foreign, EqualRegion.class, true, false, true, selections::add));
         assertTrue(M3SelectionNavigation.handleKeySelection(
                 new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.LEFT, false, false, false, false),
-                children, foreign, EqualRegion.class, true, false, true, selections::add));
+                null, children, foreign, EqualRegion.class, true, false, true, selections::add));
 
         assertSame(first, selections.get(0));
         assertSame(last, selections.get(1));

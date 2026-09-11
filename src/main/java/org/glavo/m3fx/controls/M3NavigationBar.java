@@ -17,8 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -758,19 +756,11 @@ public final class M3NavigationBar extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for spacing between adjacent vertical navigation items.
         private static final CssMetaData<M3NavigationBar, Number> ITEM_SPACING =
-                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
-                    /// Returns whether CSS can set the item-spacing property.
-                    @Override
-                    public boolean isSettable(M3NavigationBar control) {
-                        return M3Css.isSettable(control.itemSpacingProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationBar control) {
-                        return control.itemSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-item-spacing",
+                        DEFAULT_ITEM_SPACING,
+                        M3NavigationBar::itemSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

@@ -9,8 +9,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
@@ -39,6 +37,11 @@ import java.util.Objects;
 /// Activating a tab selects it and fires an [ActionEvent]. When the tab belongs to an `M3TabBar`, the bar clears
 /// the previous selection and applies its empty-selection policy. A standalone tab is unselected by default and can
 /// be selected directly through [#selectedProperty()].
+///
+/// Computed minimum width equals the tab-minimum-width token, and computed minimum and preferred heights equal
+/// the container-height token. These are total dimensions, including insets, and are available before skin
+/// installation. Explicit dimensions and bindings remain in effect through token changes; set a dimension to
+/// [#USE_COMPUTED_SIZE] to restore computed sizing. Preferred width follows the skin's content measurements.
 ///
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
@@ -161,11 +164,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `containerHeight` property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
-            containerHeight = createStyleableDoubleProperty(
+            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_CONTAINER_HEIGHT,
+                    this,
                     "containerHeight",
                     StyleableProperties.CONTAINER_HEIGHT,
-                    true
+                    this::requestLayout
             );
         }
         return containerHeight;
@@ -197,11 +201,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `tabMinWidth` property
     public final StyleableDoubleProperty tabMinWidthProperty() {
         if (tabMinWidth == null) {
-            tabMinWidth = createStyleableDoubleProperty(
+            tabMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_TAB_MIN_WIDTH,
+                    this,
                     "tabMinWidth",
                     StyleableProperties.TAB_MIN_WIDTH,
-                    true
+                    this::requestLayout
             );
         }
         return tabMinWidth;
@@ -233,11 +238,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `horizontalPadding` property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
-            horizontalPadding = createStyleableDoubleProperty(
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_HORIZONTAL_PADDING,
+                    this,
                     "horizontalPadding",
                     StyleableProperties.HORIZONTAL_PADDING,
-                    true
+                    this::updatePadding
             );
         }
         return horizontalPadding;
@@ -269,11 +275,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `activeIndicatorHeight` property
     public final StyleableDoubleProperty activeIndicatorHeightProperty() {
         if (activeIndicatorHeight == null) {
-            activeIndicatorHeight = createStyleableDoubleProperty(
+            activeIndicatorHeight = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_ACTIVE_INDICATOR_HEIGHT,
+                    this,
                     "activeIndicatorHeight",
                     StyleableProperties.ACTIVE_INDICATOR_HEIGHT,
-                    false
+                    this::requestLayout
             );
         }
         return activeIndicatorHeight;
@@ -305,11 +312,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `activeIndicatorShape` property
     public final StyleableDoubleProperty activeIndicatorShapeProperty() {
         if (activeIndicatorShape == null) {
-            activeIndicatorShape = createStyleableDoubleProperty(
+            activeIndicatorShape = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_ACTIVE_INDICATOR_SHAPE,
+                    this,
                     "activeIndicatorShape",
                     StyleableProperties.ACTIVE_INDICATOR_SHAPE,
-                    false
+                    this::requestLayout
             );
         }
         return activeIndicatorShape;
@@ -348,11 +356,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `activeIndicatorMinWidth` property
     public final StyleableDoubleProperty activeIndicatorMinWidthProperty() {
         if (activeIndicatorMinWidth == null) {
-            activeIndicatorMinWidth = createStyleableDoubleProperty(
+            activeIndicatorMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH,
+                    this,
                     "activeIndicatorMinWidth",
                     StyleableProperties.ACTIVE_INDICATOR_MIN_WIDTH,
-                    false
+                    this::requestLayout
             );
         }
         return activeIndicatorMinWidth;
@@ -391,11 +400,12 @@ public final class M3Tab extends ButtonBase {
     /// @return the `activeIndicatorHorizontalInset` property
     public final StyleableDoubleProperty activeIndicatorHorizontalInsetProperty() {
         if (activeIndicatorHorizontalInset == null) {
-            activeIndicatorHorizontalInset = createStyleableDoubleProperty(
+            activeIndicatorHorizontalInset = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET,
+                    this,
                     "activeIndicatorHorizontalInset",
                     StyleableProperties.ACTIVE_INDICATOR_HORIZONTAL_INSET,
-                    false
+                    this::requestLayout
             );
         }
         return activeIndicatorHorizontalInset;
@@ -453,16 +463,30 @@ public final class M3Tab extends ButtonBase {
         setAccessibleRole(AccessibleRole.TAB_ITEM);
         setFocusTraversable(true);
         setPickOnBounds(true);
-        updateMetrics();
+        updatePadding();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double height = getContainerHeight();
+    /// Computes minimum total width from the tab-minimum-width token.
+    @Override
+    protected double computeMinWidth(double height) {
+        return getTabMinWidth();
+    }
+
+    /// Computes minimum total height from the container-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Computes preferred total height from the container-height token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerHeight();
+    }
+
+    /// Applies horizontal content padding from its component token.
+    private void updatePadding() {
         double padding = getHorizontalPadding();
-        M3Css.setMinWidthIfUnbound(this, getTabMinWidth());
-        M3Css.setMinHeightIfUnbound(this, height);
-        M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
@@ -474,48 +498,32 @@ public final class M3Tab extends ButtonBase {
         requestLayout();
     }
 
-    /// Creates a non-negative styleable double property.
-    private StyleableDoubleProperty createStyleableDoubleProperty(
-            double initialValue,
-            String name,
-            CssMetaData<M3Tab, Number> cssMetaData,
-            boolean updateMetrics
-    ) {
-        return M3Css.nonNegativeStyleableDoubleProperty(
-                initialValue,
-                this,
-                name,
-                cssMetaData,
-                updateMetrics ? this::updateMetrics : this::requestLayout
-        );
-    }
-
     /// CSS metadata for M3FX tab component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
         private static final CssMetaData<M3Tab, Number> CONTAINER_HEIGHT =
-                createSizeCssMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT, M3Tab::containerHeightProperty);
+                M3Css.sizeMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT, M3Tab::containerHeightProperty);
 
         /// CSS metadata for the tab minimum width token.
         private static final CssMetaData<M3Tab, Number> TAB_MIN_WIDTH =
-                createSizeCssMetaData("-m3-tab-min-width", DEFAULT_TAB_MIN_WIDTH, M3Tab::tabMinWidthProperty);
+                M3Css.sizeMetaData("-m3-tab-min-width", DEFAULT_TAB_MIN_WIDTH, M3Tab::tabMinWidthProperty);
 
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3Tab, Number> HORIZONTAL_PADDING =
-                createSizeCssMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING, M3Tab::horizontalPaddingProperty);
+                M3Css.sizeMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING, M3Tab::horizontalPaddingProperty);
 
         /// CSS metadata for the active indicator height token.
         private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_HEIGHT =
-                createSizeCssMetaData("-m3-active-indicator-height", DEFAULT_ACTIVE_INDICATOR_HEIGHT, M3Tab::activeIndicatorHeightProperty);
+                M3Css.sizeMetaData("-m3-active-indicator-height", DEFAULT_ACTIVE_INDICATOR_HEIGHT, M3Tab::activeIndicatorHeightProperty);
 
         /// CSS metadata for the active indicator shape token.
         private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_SHAPE =
-                createSizeCssMetaData("-m3-active-indicator-shape", DEFAULT_ACTIVE_INDICATOR_SHAPE, M3Tab::activeIndicatorShapeProperty);
+                M3Css.sizeMetaData("-m3-active-indicator-shape", DEFAULT_ACTIVE_INDICATOR_SHAPE, M3Tab::activeIndicatorShapeProperty);
 
         /// CSS metadata for the minimum primary active-indicator length token.
         private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_MIN_WIDTH =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-active-indicator-min-width",
                         DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH,
                         M3Tab::activeIndicatorMinWidthProperty
@@ -523,7 +531,7 @@ public final class M3Tab extends ButtonBase {
 
         /// CSS metadata for the primary active-indicator horizontal inset token.
         private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_HORIZONTAL_INSET =
-                createSizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-active-indicator-horizontal-inset",
                         DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET,
                         M3Tab::activeIndicatorHorizontalInsetProperty
@@ -544,33 +552,5 @@ public final class M3Tab extends ButtonBase {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Creates CSS metadata for a size token.
-        private static CssMetaData<M3Tab, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyProvider provider
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3Tab control) {
-                    return M3Css.isSettable(provider.property(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3Tab control) {
-                    return provider.property(control);
-                }
-            };
-        }
-    }
-
-    /// Provides a styleable double property for a tab.
-    @FunctionalInterface
-    @NotNullByDefault
-    private interface StyleablePropertyProvider {
-        /// Returns the styleable property for a tab.
-        StyleableDoubleProperty property(M3Tab control);
     }
 }

@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.transform.Affine;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -126,12 +127,34 @@ public final class M3ScrollReveal {
         }
 
         Bounds viewportBounds = scrollPane.getViewportBounds();
-        Bounds targetBounds = content.sceneToLocal(target.localToScene(target.getBoundsInLocal()));
+        @Nullable Bounds targetBounds = targetBoundsInContent(content, target);
+        if (targetBounds == null) {
+            return true;
+        }
         boolean needsLayoutRetry = targetBounds.getWidth() <= 0.0 || targetBounds.getHeight() <= 0.0;
         needsLayoutRetry |= hasPendingLayout(scrollPane, content, target);
         needsLayoutRetry |= revealTargetHorizontally(scrollPane, content, viewportBounds, targetBounds);
         needsLayoutRetry |= revealTargetVertically(scrollPane, content, viewportBounds, targetBounds);
         return needsLayoutRetry;
+    }
+
+    /// Measures target bounds in content coordinates without converting ordinary descendants through scene space.
+    ///
+    /// @return the content-local bounds, or `null` if the fallback scene-to-content transform is not invertible
+    private static @Nullable Bounds targetBoundsInContent(Node content, Node target) {
+        Bounds bounds = target.getBoundsInLocal();
+        Affine transform = new Affine();
+        @Nullable Node current = target;
+        // Compose first so intermediate axis-aligned boxes do not inflate the final bounds.
+        while (current != null && current != content) {
+            transform.prepend(current.getLocalToParentTransform());
+            current = current.getParent();
+        }
+        if (current == content) {
+            return transform.transform(bounds);
+        }
+        // Logical containment may cross a boundary that is not exposed through ordinary parent links.
+        return content.sceneToLocal(target.localToScene(bounds));
     }
 
     /// Returns whether the viewport or target hierarchy still has unresolved layout.

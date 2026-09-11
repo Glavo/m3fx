@@ -13,7 +13,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -497,35 +496,19 @@ public final class M3Surface extends Control {
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3Surface, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Surface control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Surface control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3Surface::containerShapeProperty
+                );
 
         /// CSS metadata for the content padding token.
         private static final CssMetaData<M3Surface, Number> CONTENT_PADDING =
-                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Surface control) {
-                        return M3Css.isSettable(control.contentPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Surface control) {
-                        return control.contentPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-padding",
+                        DEFAULT_CONTENT_PADDING,
+                        M3Surface::contentPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

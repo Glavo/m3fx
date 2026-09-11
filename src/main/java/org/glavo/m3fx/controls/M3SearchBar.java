@@ -53,6 +53,10 @@ import java.util.Objects;
 /// Disabled search bars do not fire. The default leading content is a search indicator, the trailing action list is
 /// empty, and the bar is inactive with empty text and prompt text.
 ///
+/// Computed minimum and preferred total heights, including insets, are 56 logical pixels, even before skin
+/// installation. Computed maximum height follows the current preferred height. Explicit dimensions and CSS
+/// rules may override these defaults; set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing.
+///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
 public final class M3SearchBar extends Control {
@@ -403,6 +407,24 @@ public final class M3SearchBar extends Control {
         return new M3SearchBarSkin(this);
     }
 
+    /// Computes the default minimum total height.
+    @Override
+    protected double computeMinHeight(double width) {
+        return DEFAULT_HEIGHT;
+    }
+
+    /// Computes the default preferred total height.
+    @Override
+    protected double computePrefHeight(double width) {
+        return DEFAULT_HEIGHT;
+    }
+
+    /// Limits computed maximum height to the current preferred height.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return prefHeight(width);
+    }
+
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
@@ -413,9 +435,6 @@ public final class M3SearchBar extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, () -> focusAccessibleItem(accessibleFocusNode()), this::showAccessibleItem);
         setFocusTraversable(true);
-        M3Css.setMinHeightIfUnbound(this, DEFAULT_HEIGHT);
-        M3Css.setPrefHeightIfUnbound(this, DEFAULT_HEIGHT);
-        M3Css.setMaxHeightIfUnbound(this, USE_PREF_SIZE);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
 
         setLeading(defaultLeadingNode());

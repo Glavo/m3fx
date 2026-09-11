@@ -17,8 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -1239,42 +1237,42 @@ public final class M3SnackbarPresenter extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3SnackbarPresenter, Number> CONTAINER_SHAPE =
-                new GeometryMetadata("-m3-container-shape", DEFAULT_CONTAINER_SHAPE, Geometry.CONTAINER_SHAPE);
+                M3Css.sizeMetaData("-m3-container-shape", DEFAULT_CONTAINER_SHAPE, M3SnackbarPresenter::containerShapeProperty);
 
         /// CSS metadata for the content padding token.
         private static final CssMetaData<M3SnackbarPresenter, Number> CONTENT_PADDING =
-                new GeometryMetadata("-m3-content-padding", DEFAULT_CONTENT_PADDING, Geometry.CONTENT_PADDING);
+                M3Css.sizeMetaData("-m3-content-padding", DEFAULT_CONTENT_PADDING, M3SnackbarPresenter::contentPaddingProperty);
 
         /// CSS metadata for the minimum container width token.
         private static final CssMetaData<M3SnackbarPresenter, Number> CONTAINER_MIN_WIDTH =
-                new GeometryMetadata("-m3-container-min-width", DEFAULT_CONTAINER_MIN_WIDTH, Geometry.MIN_WIDTH);
+                M3Css.sizeMetaData("-m3-container-min-width", DEFAULT_CONTAINER_MIN_WIDTH, M3SnackbarPresenter::containerMinWidthProperty);
 
         /// CSS metadata for the maximum container width token.
         private static final CssMetaData<M3SnackbarPresenter, Number> CONTAINER_MAX_WIDTH =
-                new GeometryMetadata("-m3-container-max-width", DEFAULT_CONTAINER_MAX_WIDTH, Geometry.MAX_WIDTH);
+                M3Css.sizeMetaData("-m3-container-max-width", DEFAULT_CONTAINER_MAX_WIDTH, M3SnackbarPresenter::containerMaxWidthProperty);
 
         /// CSS metadata for the single-line height token.
         private static final CssMetaData<M3SnackbarPresenter, Number> SINGLE_LINE_CONTAINER_HEIGHT =
-                new GeometryMetadata(
+                M3Css.sizeMetaData(
                         "-m3-single-line-container-height",
                         DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT,
-                        Geometry.SINGLE_LINE_HEIGHT
+                        M3SnackbarPresenter::singleLineContainerHeightProperty
                 );
 
         /// CSS metadata for the two-line height token.
         private static final CssMetaData<M3SnackbarPresenter, Number> TWO_LINE_CONTAINER_HEIGHT =
-                new GeometryMetadata(
+                M3Css.sizeMetaData(
                         "-m3-two-line-container-height",
                         DEFAULT_TWO_LINE_CONTAINER_HEIGHT,
-                        Geometry.TWO_LINE_HEIGHT
+                        M3SnackbarPresenter::twoLineContainerHeightProperty
                 );
 
         /// CSS metadata for the action height token.
         private static final CssMetaData<M3SnackbarPresenter, Number> ACTION_CONTAINER_HEIGHT =
-                new GeometryMetadata(
+                M3Css.sizeMetaData(
                         "-m3-action-container-height",
                         DEFAULT_ACTION_CONTAINER_HEIGHT,
-                        Geometry.ACTION_HEIGHT
+                        M3SnackbarPresenter::actionContainerHeightProperty
                 );
 
         /// Complete immutable metadata list.
@@ -1295,62 +1293,6 @@ public final class M3SnackbarPresenter extends Control {
 
         /// Prevents instantiation of the metadata holder.
         private StyleableProperties() {
-        }
-    }
-
-    /// Selects one presenter geometry property for static CSS metadata.
-    private enum Geometry {
-        /// Container shape property.
-        CONTAINER_SHAPE,
-        /// Content padding property.
-        CONTENT_PADDING,
-        /// Minimum container width property.
-        MIN_WIDTH,
-        /// Maximum container width property.
-        MAX_WIDTH,
-        /// Single-line container height property.
-        SINGLE_LINE_HEIGHT,
-        /// Two-line container height property.
-        TWO_LINE_HEIGHT,
-        /// Action container height property.
-        ACTION_HEIGHT;
-
-        /// Returns the selected property from a presenter.
-        private StyleableDoubleProperty get(M3SnackbarPresenter presenter) {
-            return switch (this) {
-                case CONTAINER_SHAPE -> presenter.containerShapeProperty();
-                case CONTENT_PADDING -> presenter.contentPaddingProperty();
-                case MIN_WIDTH -> presenter.containerMinWidthProperty();
-                case MAX_WIDTH -> presenter.containerMaxWidthProperty();
-                case SINGLE_LINE_HEIGHT -> presenter.singleLineContainerHeightProperty();
-                case TWO_LINE_HEIGHT -> presenter.twoLineContainerHeightProperty();
-                case ACTION_HEIGHT -> presenter.actionContainerHeightProperty();
-            };
-        }
-    }
-
-    /// CSS metadata implementation shared by non-negative presenter geometry tokens.
-    @NotNullByDefault
-    private static final class GeometryMetadata extends CssMetaData<M3SnackbarPresenter, Number> {
-        /// Presenter property selected by this metadata entry.
-        private final Geometry geometry;
-
-        /// Creates one presenter geometry metadata entry.
-        private GeometryMetadata(String property, double initialValue, Geometry geometry) {
-            super(property, SizeConverter.getInstance(), initialValue);
-            this.geometry = geometry;
-        }
-
-        /// Returns whether CSS may update the selected property.
-        @Override
-        public boolean isSettable(M3SnackbarPresenter control) {
-            return M3Css.isSettable(geometry.get(control));
-        }
-
-        /// Returns the selected styleable property.
-        @Override
-        public StyleableProperty<Number> getStyleableProperty(M3SnackbarPresenter control) {
-            return geometry.get(control);
         }
     }
 }

@@ -174,46 +174,22 @@ public final class M3SelectionNavigation {
         return target;
     }
 
-    /// Handles a navigation key event and selects the matching child when a key applies.
-    ///
-    /// @param <T>        the selectable node type
-    /// @param event      the key event to handle
-    /// @param children   the children in traversal order
-    /// @param current    the current selection, or `null`
-    /// @param type       the selectable node type token
-    /// @param horizontal whether Left and Right are handled
-    /// @param vertical   whether Up and Down are handled
-    /// @param selector   the operation that selects the resolved target
-    /// @return `true` when a target was selected and the event was consumed
-    /// @throws NullPointerException if `event`, `children`, `type`, or `selector` is `null`
-    public static <T extends Node> boolean handleKeySelection(
-            KeyEvent event,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical,
-            Consumer<T> selector
-    ) {
-        return handleKeySelectionWithRevealOwner(event, null, children, current, type, horizontal, vertical, false, selector);
-    }
-
     /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
     ///
     /// @param <T>        the selectable node type
     /// @param event      the key event to handle
-    /// @param owner      the selection container used to reveal the target
+    /// @param owner      the selection container used to reveal the target, or `null` to omit explicit scrolling
     /// @param children   the children in traversal order
     /// @param current    the current selection, or `null`
     /// @param type       the selectable node type token
     /// @param horizontal whether Left and Right are handled
     /// @param vertical   whether Up and Down are handled
     /// @param selector   the operation that selects the resolved target
-    /// @return `true` when a target was selected and the event was consumed
+    /// @return `true` when the selector ran for a target and the event was consumed
     /// @throws NullPointerException if any non-nullable argument is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
-            Node owner,
+            @Nullable Node owner,
             List<? extends Node> children,
             @Nullable T current,
             Class<T> type,
@@ -221,16 +197,19 @@ public final class M3SelectionNavigation {
             boolean vertical,
             Consumer<T> selector
     ) {
-        return handleKeySelectionWithRevealOwner(event, owner, children, current, type, horizontal, vertical, false, selector);
+        return handleKeySelection(event, owner, children, current, type, horizontal, vertical, false, selector);
     }
 
-    /// Handles a navigation key event and selects the matching child when a key applies.
+    /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
     /// selection move in the same visual direction as the rendered row.
+    /// A resolved target is passed to `selector` before focus is requested. Failure to acquire focus does not
+    /// prevent the event from being consumed after the selector returns normally.
     ///
     /// @param <T>         the selectable node type
     /// @param event       the key event to handle
+    /// @param owner       the selection container used to reveal the target, or `null` to omit explicit scrolling
     /// @param children    the children in traversal order
     /// @param current     the current selection, or `null`
     /// @param type        the selectable node type token
@@ -238,57 +217,11 @@ public final class M3SelectionNavigation {
     /// @param vertical    whether Up and Down are handled
     /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
     /// @param selector    the operation that selects the resolved target
-    /// @return `true` when a target was selected and the event was consumed
-    /// @throws NullPointerException if `event`, `children`, `type`, or `selector` is `null`
-    public static <T extends Node> boolean handleKeySelection(
-            KeyEvent event,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical,
-            boolean rightToLeft,
-            Consumer<T> selector
-    ) {
-        return handleKeySelectionWithRevealOwner(event, null, children, current, type, horizontal, vertical, rightToLeft, selector);
-    }
-
-    /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
-    ///
-    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
-    /// selection move in the same visual direction as the rendered row.
-    ///
-    /// @param <T>         the selectable node type
-    /// @param event       the key event to handle
-    /// @param owner       the selection container used to reveal the target
-    /// @param children    the children in traversal order
-    /// @param current     the current selection, or `null`
-    /// @param type        the selectable node type token
-    /// @param horizontal  whether Left and Right are handled
-    /// @param vertical    whether Up and Down are handled
-    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
-    /// @param selector    the operation that selects the resolved target
-    /// @return `true` when a target was selected and the event was consumed
+    /// @return `true` when the selector ran for a target and the event was consumed
     /// @throws NullPointerException if any non-nullable argument is `null`
     public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
-            Node owner,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical,
-            boolean rightToLeft,
-            Consumer<T> selector
-    ) {
-        Objects.requireNonNull(owner, "owner");
-        return handleKeySelectionWithRevealOwner(event, owner, children, current, type, horizontal, vertical, rightToLeft, selector);
-    }
-
-    /// Handles a navigation key event and selects the matching child when a key applies.
-    private static <T extends Node> boolean handleKeySelectionWithRevealOwner(
-            KeyEvent event,
-            @Nullable Node revealOwner,
+            @Nullable Node owner,
             List<? extends Node> children,
             @Nullable T current,
             Class<T> type,
@@ -311,15 +244,15 @@ public final class M3SelectionNavigation {
         }
 
         selector.accept(target);
-        focusAndRevealTarget(revealOwner, target);
+        focusAndRevealTarget(owner, target);
         event.consume();
         return true;
     }
 
     /// Handles a page navigation key event and selects the matching child when a key applies.
     ///
-    /// Page Up and Page Down are the only recognized keys. A handled event is consumed after the target is selected,
-    /// focused, and revealed through `owner`.
+    /// Page Up and Page Down are the only recognized keys. A handled event is consumed after the selector returns
+    /// normally and focus is requested for the target. Failure to acquire focus does not prevent consumption.
     ///
     /// @param <T>      the selectable node type
     /// @param event    the key event to handle
@@ -353,77 +286,28 @@ public final class M3SelectionNavigation {
         return true;
     }
 
-    /// Handles a navigation key event and focuses the matching child when a key applies.
-    ///
-    /// @param <T>        the focusable node type
-    /// @param event      the key event to handle
-    /// @param children   the children in traversal order
-    /// @param current    the current focus anchor, or `null`
-    /// @param type       the focusable node type token
-    /// @param horizontal whether Left and Right are handled
-    /// @param vertical   whether Up and Down are handled
-    /// @return `true` when focus moved and the event was consumed
-    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
-    public static <T extends Node> boolean handleKeyFocus(
-            KeyEvent event,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical
-    ) {
-        return handleKeyFocusWithRevealOwner(event, null, children, current, type, horizontal, vertical, false);
-    }
-
     /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
     ///
     /// @param <T>        the focusable node type
     /// @param event      the key event to handle
-    /// @param owner      the container used to reveal the focused target
+    /// @param owner      the container used to reveal the target, or `null` to omit explicit scrolling
     /// @param children   the children in traversal order
     /// @param current    the current focus anchor, or `null`
     /// @param type       the focusable node type token
     /// @param horizontal whether Left and Right are handled
     /// @param vertical   whether Up and Down are handled
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when a target accepted focus and the event was consumed
     /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
-            Node owner,
+            @Nullable Node owner,
             List<? extends Node> children,
             @Nullable T current,
             Class<T> type,
             boolean horizontal,
             boolean vertical
     ) {
-        return handleKeyFocusWithRevealOwner(event, owner, children, current, type, horizontal, vertical, false);
-    }
-
-    /// Handles a navigation key event and focuses the matching child when a key applies.
-    ///
-    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
-    /// same visual direction as the rendered row.
-    ///
-    /// @param <T>         the focusable node type
-    /// @param event       the key event to handle
-    /// @param children    the children in traversal order
-    /// @param current     the current focus anchor, or `null`
-    /// @param type        the focusable node type token
-    /// @param horizontal  whether Left and Right are handled
-    /// @param vertical    whether Up and Down are handled
-    /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
-    /// @return `true` when focus moved and the event was consumed
-    /// @throws NullPointerException if `event`, `children`, or `type` is `null`
-    public static <T extends Node> boolean handleKeyFocus(
-            KeyEvent event,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical,
-            boolean rightToLeft
-    ) {
-        return handleKeyFocusWithRevealOwner(event, null, children, current, type, horizontal, vertical, rightToLeft);
+        return handleKeyFocus(event, owner, children, current, type, horizontal, vertical, false);
     }
 
     /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
@@ -433,32 +317,18 @@ public final class M3SelectionNavigation {
     ///
     /// @param <T>         the focusable node type
     /// @param event       the key event to handle
-    /// @param owner       the container used to reveal the focused target
+    /// @param owner       the container used to reveal the target, or `null` to omit explicit scrolling
     /// @param children    the children in traversal order
     /// @param current     the current focus anchor, or `null`
     /// @param type        the focusable node type token
     /// @param horizontal  whether Left and Right are handled
     /// @param vertical    whether Up and Down are handled
     /// @param rightToLeft whether horizontal traversal follows right-to-left visual order
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when a target accepted focus and the event was consumed
     /// @throws NullPointerException if `event`, `children`, or `type` is `null`
     public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
-            Node owner,
-            List<? extends Node> children,
-            @Nullable T current,
-            Class<T> type,
-            boolean horizontal,
-            boolean vertical,
-            boolean rightToLeft
-    ) {
-        return handleKeyFocusWithRevealOwner(event, owner, children, current, type, horizontal, vertical, rightToLeft);
-    }
-
-    /// Handles a navigation key event and focuses the matching child when a key applies.
-    private static <T extends Node> boolean handleKeyFocusWithRevealOwner(
-            KeyEvent event,
-            @Nullable Node revealOwner,
+            @Nullable Node owner,
             List<? extends Node> children,
             @Nullable T current,
             Class<T> type,
@@ -478,7 +348,7 @@ public final class M3SelectionNavigation {
             return false;
         }
 
-        if (!focusAndRevealTarget(revealOwner, target)) {
+        if (!focusAndRevealTarget(owner, target)) {
             return false;
         }
         event.consume();
@@ -493,7 +363,7 @@ public final class M3SelectionNavigation {
     /// @param children the children in traversal order
     /// @param current  the current focus anchor, or `null`
     /// @param type     the focusable node type token
-    /// @return `true` when focus moved and the event was consumed
+    /// @return `true` when a target accepted focus and the event was consumed
     public static <T extends Node> boolean handlePageKeyFocus(
             KeyEvent event,
             Node owner,

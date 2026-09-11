@@ -11,8 +11,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
@@ -32,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 /// A Material Design 3 switch for turning a single setting on or off.
 ///
@@ -44,6 +41,10 @@ import java.util.function.Function;
 /// A new switch is unselected and has no handle icons. Selected and unselected icons are optional child nodes owned
 /// by the control. Geometry properties use JavaFX logical pixels and are styleable through the control's CSS
 /// metadata.
+///
+/// Computed minimum and preferred total heights, including insets, equal the largest of the touch-target size,
+/// track height, and state-layer size, even before skin installation. Explicit heights and bindings remain in
+/// effect through token changes; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// Use a switch for a setting whose change takes effect immediately. For selection from multiple choices, use
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
@@ -183,14 +184,13 @@ public final class M3Switch extends ButtonBase {
     /// @return the `selectedIcon` property
     public final ObjectProperty<@Nullable Node> selectedIconProperty() {
         if (selectedIcon == null) {
-            selectedIcon = new SimpleObjectProperty<>(this, "selectedIcon") {
-                /// Requests handle content layout when the selected icon changes.
-                @Override
-                protected void invalidated() {
-                    updateIconMetrics();
-                    requestLayout();
+            selectedIcon = new SimpleObjectProperty<>(this, "selectedIcon");
+            selectedIcon.addListener((observable, oldGraphic, newGraphic) -> {
+                if (oldGraphic instanceof M3IconGraphic icon) {
+                    M3Css.clearControlToken(icon.iconSizeProperty());
                 }
-            };
+                updateIconMetrics();
+            });
         }
         return selectedIcon;
     }
@@ -226,14 +226,13 @@ public final class M3Switch extends ButtonBase {
     /// @return the `unselectedIcon` property
     public final ObjectProperty<@Nullable Node> unselectedIconProperty() {
         if (unselectedIcon == null) {
-            unselectedIcon = new SimpleObjectProperty<>(this, "unselectedIcon") {
-                /// Requests handle content layout when the unselected icon changes.
-                @Override
-                protected void invalidated() {
-                    updateIconMetrics();
-                    requestLayout();
+            unselectedIcon = new SimpleObjectProperty<>(this, "unselectedIcon");
+            unselectedIcon.addListener((observable, oldGraphic, newGraphic) -> {
+                if (oldGraphic instanceof M3IconGraphic icon) {
+                    M3Css.clearControlToken(icon.iconSizeProperty());
                 }
-            };
+                updateIconMetrics();
+            });
         }
         return unselectedIcon;
     }
@@ -270,7 +269,7 @@ public final class M3Switch extends ButtonBase {
                     DEFAULT_TOUCH_TARGET_SIZE,
                     "touchTargetSize",
                     StyleableProperties.TOUCH_TARGET_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return touchTargetSize;
@@ -375,7 +374,7 @@ public final class M3Switch extends ButtonBase {
     /// @return the `trackHeight` property
     public final StyleableDoubleProperty trackHeightProperty() {
         if (trackHeight == null) {
-            trackHeight = sizeProperty(DEFAULT_TRACK_HEIGHT, "trackHeight", StyleableProperties.TRACK_HEIGHT, this::updateMetrics);
+            trackHeight = sizeProperty(DEFAULT_TRACK_HEIGHT, "trackHeight", StyleableProperties.TRACK_HEIGHT, this::requestLayout);
         }
         return trackHeight;
     }
@@ -595,6 +594,10 @@ public final class M3Switch extends ButtonBase {
     /// The returned property is observable, bindable, and styleable. It accepts finite, non-negative values and has a
     /// default value of `16.0` logical pixels.
     ///
+    /// Direct [M3Icon] and [M3SVGIcon] graphics use this token unless their icon-size property has an explicit Java
+    /// value or a binding. The container token takes precedence over the graphic's CSS sizing. Removing a graphic
+    /// releases container sizing; the last value remains until the graphic is restyled or explicitly configured.
+    ///
     /// @return the `iconSize` property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
@@ -611,10 +614,10 @@ public final class M3Switch extends ButtonBase {
     /// Applies the switch icon-size token to direct M3FX handle icons and requests layout.
     private void updateIconMetrics() {
         if (getSelectedIcon() instanceof M3IconGraphic icon) {
-            icon.setIconSize(getIconSize());
+            M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
         }
         if (getUnselectedIcon() instanceof M3IconGraphic icon) {
-            icon.setIconSize(getIconSize());
+            M3Css.setControlToken(icon.iconSizeProperty(), getIconSize());
         }
         requestLayout();
     }
@@ -686,14 +689,18 @@ public final class M3Switch extends ButtonBase {
         setFocusTraversable(true);
         setMnemonicParsing(true);
         setPickOnBounds(true);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = Math.max(Math.max(getTouchTargetSize(), getTrackHeight()), getStateLayerSize());
-        M3Css.setMinHeightIfUnbound(this, size);
-        M3Css.setPrefHeightIfUnbound(this, size);
+    /// Computes minimum total height from the touch target, track, and state layer.
+    @Override
+    protected double computeMinHeight(double width) {
+        return Math.max(Math.max(getTouchTargetSize(), getTrackHeight()), getStateLayerSize());
+    }
+
+    /// Computes preferred total height from the same tokens as minimum height.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
     }
 
     /// Creates a non-negative styleable size property for a switch token.
@@ -711,27 +718,27 @@ public final class M3Switch extends ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.
         private static final CssMetaData<M3Switch, Number> TOUCH_TARGET_SIZE =
-                sizeCssMetaData("-m3-touch-target-size", DEFAULT_TOUCH_TARGET_SIZE, M3Switch::touchTargetSizeProperty);
+                M3Css.sizeMetaData("-m3-touch-target-size", DEFAULT_TOUCH_TARGET_SIZE, M3Switch::touchTargetSizeProperty);
 
         /// CSS metadata for the switch track shape token.
         private static final CssMetaData<M3Switch, Number> TRACK_SHAPE =
-                sizeCssMetaData("-m3-track-shape", DEFAULT_TRACK_SHAPE, M3Switch::trackShapeProperty);
+                M3Css.sizeMetaData("-m3-track-shape", DEFAULT_TRACK_SHAPE, M3Switch::trackShapeProperty);
 
         /// CSS metadata for the switch track width token.
         private static final CssMetaData<M3Switch, Number> TRACK_WIDTH =
-                sizeCssMetaData("-m3-track-width", DEFAULT_TRACK_WIDTH, M3Switch::trackWidthProperty);
+                M3Css.sizeMetaData("-m3-track-width", DEFAULT_TRACK_WIDTH, M3Switch::trackWidthProperty);
 
         /// CSS metadata for the switch track height token.
         private static final CssMetaData<M3Switch, Number> TRACK_HEIGHT =
-                sizeCssMetaData("-m3-track-height", DEFAULT_TRACK_HEIGHT, M3Switch::trackHeightProperty);
+                M3Css.sizeMetaData("-m3-track-height", DEFAULT_TRACK_HEIGHT, M3Switch::trackHeightProperty);
 
         /// CSS metadata for the switch state layer size token.
         private static final CssMetaData<M3Switch, Number> STATE_LAYER_SIZE =
-                sizeCssMetaData("-m3-state-layer-size", DEFAULT_STATE_LAYER_SIZE, M3Switch::stateLayerSizeProperty);
+                M3Css.sizeMetaData("-m3-state-layer-size", DEFAULT_STATE_LAYER_SIZE, M3Switch::stateLayerSizeProperty);
 
         /// CSS metadata for the unselected switch handle size token.
         private static final CssMetaData<M3Switch, Number> UNSELECTED_HANDLE_SIZE =
-                sizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-unselected-handle-size",
                         DEFAULT_UNSELECTED_HANDLE_SIZE,
                         M3Switch::unselectedHandleSizeProperty
@@ -739,7 +746,7 @@ public final class M3Switch extends ButtonBase {
 
         /// CSS metadata for the switch handle size token used when an icon is shown.
         private static final CssMetaData<M3Switch, Number> WITH_ICON_HANDLE_SIZE =
-                sizeCssMetaData(
+                M3Css.sizeMetaData(
                         "-m3-with-icon-handle-size",
                         DEFAULT_WITH_ICON_HANDLE_SIZE,
                         M3Switch::withIconHandleSizeProperty
@@ -747,15 +754,15 @@ public final class M3Switch extends ButtonBase {
 
         /// CSS metadata for the selected switch handle size token.
         private static final CssMetaData<M3Switch, Number> SELECTED_HANDLE_SIZE =
-                sizeCssMetaData("-m3-selected-handle-size", DEFAULT_SELECTED_HANDLE_SIZE, M3Switch::selectedHandleSizeProperty);
+                M3Css.sizeMetaData("-m3-selected-handle-size", DEFAULT_SELECTED_HANDLE_SIZE, M3Switch::selectedHandleSizeProperty);
 
         /// CSS metadata for the pressed switch handle size token.
         private static final CssMetaData<M3Switch, Number> PRESSED_HANDLE_SIZE =
-                sizeCssMetaData("-m3-pressed-handle-size", DEFAULT_PRESSED_HANDLE_SIZE, M3Switch::pressedHandleSizeProperty);
+                M3Css.sizeMetaData("-m3-pressed-handle-size", DEFAULT_PRESSED_HANDLE_SIZE, M3Switch::pressedHandleSizeProperty);
 
         /// CSS metadata for the selected or unselected handle icon size token.
         private static final CssMetaData<M3Switch, Number> ICON_SIZE =
-                sizeCssMetaData("-m3-icon-size", DEFAULT_ICON_SIZE, M3Switch::iconSizeProperty);
+                M3Css.sizeMetaData("-m3-icon-size", DEFAULT_ICON_SIZE, M3Switch::iconSizeProperty);
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -775,25 +782,5 @@ public final class M3Switch extends ButtonBase {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Creates CSS metadata for a non-negative switch size token.
-        private static CssMetaData<M3Switch, Number> sizeCssMetaData(
-                String property,
-                double defaultValue,
-                Function<M3Switch, StyleableDoubleProperty> propertyAccessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), defaultValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3Switch control) {
-                    return M3Css.isSettable(propertyAccessor.apply(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3Switch control) {
-                    return propertyAccessor.apply(control);
-                }
-            };
-        }
     }
 }

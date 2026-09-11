@@ -897,19 +897,11 @@ public final class M3SplitButton extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for spacing between the action and menu parts.
         private static final CssMetaData<M3SplitButton, Number> SPACING =
-                new CssMetaData<>("-m3-split-button-spacing", SizeConverter.getInstance(), DEFAULT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3SplitButton control) {
-                        return M3Css.isSettable(control.spacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SplitButton control) {
-                        return control.spacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-split-button-spacing",
+                        DEFAULT_SPACING,
+                        M3SplitButton::spacingProperty
+                );
 
         /// CSS metadata for the outer-corner radius.
         private static final CssMetaData<M3SplitButton, Number> OUTER_CORNER = shapeCssMetaData(

@@ -124,6 +124,9 @@ public abstract class M3OverscrollEffect {
     ///
     /// The default implementation does nothing. An override may install passive observation but should defer
     /// rendering resources until they are needed when practical.
+    /// Changes to the owning pane's configured effect are applied after the current lifecycle callback returns.
+    /// If this callback throws, the effect loses its owner without an invocation of [#onDetached(M3ScrollPane)].
+    /// An override that acquires resources must therefore release them before propagating an attachment failure.
     ///
     /// @param scrollPane the newly attached scroll pane
     protected void onAttached(M3ScrollPane scrollPane) {
@@ -133,6 +136,9 @@ public abstract class M3OverscrollEffect {
     ///
     /// The default implementation does nothing. An override must synchronously stop its animations, remove its
     /// listeners, and undo scene-graph changes associated with the supplied pane.
+    /// Changes to that pane's configured effect are applied after this callback returns. Selecting this instance
+    /// again therefore completes detachment before invoking [#onAttached(M3ScrollPane)] again.
+    /// The effect loses its owner even if this callback throws.
     ///
     /// @param scrollPane the scroll pane being detached
     protected void onDetached(M3ScrollPane scrollPane) {
@@ -141,7 +147,7 @@ public abstract class M3OverscrollEffect {
     /// Attaches this effect to one scroll pane.
     ///
     /// @param scrollPane the scroll pane that will present this effect
-    private void attach(M3ScrollPane scrollPane) {
+    final void attach(M3ScrollPane scrollPane) {
         M3ScrollPane checkedPane = Objects.requireNonNull(scrollPane, "scrollPane");
         checkAttachable(checkedPane);
         if (this.scrollPane == checkedPane) {
@@ -160,7 +166,7 @@ public abstract class M3OverscrollEffect {
     /// Verifies that this effect is detached or already owned by the supplied scroll pane.
     ///
     /// @param scrollPane the prospective owner
-    private void checkAttachable(M3ScrollPane scrollPane) {
+    final void checkAttachable(M3ScrollPane scrollPane) {
         if (this.scrollPane != null && this.scrollPane != scrollPane) {
             throw new IllegalStateException("An M3OverscrollEffect cannot be shared by multiple scroll panes");
         }
@@ -169,7 +175,7 @@ public abstract class M3OverscrollEffect {
     /// Detaches this effect from its current scroll pane.
     ///
     /// @param scrollPane the scroll pane that currently presents this effect
-    private void detach(M3ScrollPane scrollPane) {
+    final void detach(M3ScrollPane scrollPane) {
         if (this.scrollPane != scrollPane) {
             return;
         }
@@ -178,31 +184,5 @@ public abstract class M3OverscrollEffect {
         } finally {
             this.scrollPane = null;
         }
-    }
-
-    /// Connects an effect to an M3 scroll pane.
-    ///
-    /// @param effect     the effect to attach
-    /// @param scrollPane the owning scroll pane
-    static void attach(M3OverscrollEffect effect, M3ScrollPane scrollPane) {
-        Objects.requireNonNull(effect, "effect").attach(scrollPane);
-    }
-
-    /// Verifies that an effect may be connected to an M3 scroll pane.
-    ///
-    /// @param effect     the prospective effect, or `null`
-    /// @param scrollPane the prospective owner
-    static void checkAttachable(@Nullable M3OverscrollEffect effect, M3ScrollPane scrollPane) {
-        if (effect != null) {
-            effect.checkAttachable(Objects.requireNonNull(scrollPane, "scrollPane"));
-        }
-    }
-
-    /// Disconnects an effect from an M3 scroll pane.
-    ///
-    /// @param effect     the effect to detach
-    /// @param scrollPane the owning scroll pane
-    static void detach(M3OverscrollEffect effect, M3ScrollPane scrollPane) {
-        Objects.requireNonNull(effect, "effect").detach(scrollPane);
     }
 }

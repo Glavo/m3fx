@@ -18,8 +18,7 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -520,6 +519,14 @@ public final class M3ChipGroup extends Control {
         selectOnly(null);
     }
 
+    /// Reports horizontal content bias so parents measure wrapped height at the available width.
+    ///
+    /// @return the horizontal orientation
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
+    }
+
     /// Returns the user-agent stylesheet for M3FX chip groups.
     @Override
     public String getUserAgentStylesheet() {
@@ -973,43 +980,19 @@ public final class M3ChipGroup extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the horizontal chip gap.
         private static final CssMetaData<M3ChipGroup, Number> HORIZONTAL_GAP =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-chip-group-horizontal-gap",
-                        SizeConverter.getInstance(),
-                        DEFAULT_HORIZONTAL_GAP
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ChipGroup control) {
-                        return M3Css.isSettable(control.horizontalGapProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ChipGroup control) {
-                        return control.horizontalGapProperty();
-                    }
-                };
+                        DEFAULT_HORIZONTAL_GAP,
+                        M3ChipGroup::horizontalGapProperty
+                );
 
         /// CSS metadata for the vertical chip row gap.
         private static final CssMetaData<M3ChipGroup, Number> VERTICAL_GAP =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-chip-group-vertical-gap",
-                        SizeConverter.getInstance(),
-                        DEFAULT_VERTICAL_GAP
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3ChipGroup control) {
-                        return M3Css.isSettable(control.verticalGapProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3ChipGroup control) {
-                        return control.verticalGapProperty();
-                    }
-                };
+                        DEFAULT_VERTICAL_GAP,
+                        M3ChipGroup::verticalGapProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

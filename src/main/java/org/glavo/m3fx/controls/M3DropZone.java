@@ -12,8 +12,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -56,6 +54,11 @@ import java.util.function.Predicate;
 /// accepted content; it is not changed automatically after a drop. Because pointer drag and drop is not an
 /// accessible replacement for file selection, content should include an equivalent keyboard action when one is
 /// available.
+///
+/// Computed minimum width and height equal the corresponding container tokens before and after skin installation.
+/// These are total dimensions, including insets. Explicit minimum dimensions and bindings remain in effect
+/// through token changes; set a dimension to [#USE_COMPUTED_SIZE] to restore computed sizing. Preferred dimensions
+/// follow the skin's content measurements.
 ///
 /// ```java
 /// M3DropZone zone = new M3DropZone(new M3Text("Drop a file here", M3TextRole.TITLE_MEDIUM));
@@ -315,7 +318,7 @@ public final class M3DropZone extends Control {
                     this,
                     "containerMinWidth",
                     StyleableProperties.CONTAINER_MIN_WIDTH,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerMinWidth;
@@ -355,7 +358,7 @@ public final class M3DropZone extends Control {
                     this,
                     "containerMinHeight",
                     StyleableProperties.CONTAINER_MIN_HEIGHT,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerMinHeight;
@@ -395,7 +398,7 @@ public final class M3DropZone extends Control {
                     this,
                     "contentPadding",
                     StyleableProperties.CONTENT_PADDING,
-                    this::updateMetrics
+                    this::updatePadding
             );
         }
         return contentPadding;
@@ -487,7 +490,7 @@ public final class M3DropZone extends Control {
         addEventFilter(DragEvent.DRAG_DROPPED, event -> clearDragActive());
         addEventFilter(DragEvent.DRAG_DONE, event -> clearDragActive());
         focusNotifier.start();
-        updateMetrics();
+        updatePadding();
     }
 
     /// Accepts a supported drag-over event and updates transient presentation state.
@@ -528,10 +531,20 @@ public final class M3DropZone extends Control {
         dragActive.set(false);
     }
 
-    /// Applies the current minimum size and padding metrics without replacing caller bindings.
-    private void updateMetrics() {
-        M3Css.setMinWidthIfUnbound(this, getContainerMinWidth());
-        M3Css.setMinHeightIfUnbound(this, getContainerMinHeight());
+    /// Computes minimum total width from its container token.
+    @Override
+    protected double computeMinWidth(double height) {
+        return getContainerMinWidth();
+    }
+
+    /// Computes minimum total height from its container token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerMinHeight();
+    }
+
+    /// Applies uniform content padding from its component token.
+    private void updatePadding() {
         M3Css.setPaddingIfUnbound(this, new Insets(getContentPadding()));
         requestLayout();
     }
@@ -590,61 +603,25 @@ public final class M3DropZone extends Control {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the minimum container width.
-        private static final CssMetaData<M3DropZone, Number> CONTAINER_MIN_WIDTH = new CssMetaData<>(
-                "-m3-container-min-width",
-                SizeConverter.getInstance(),
-                DEFAULT_CONTAINER_MIN_WIDTH
-        ) {
-            /// Returns whether CSS may set the property.
-            @Override
-            public boolean isSettable(M3DropZone control) {
-                return M3Css.isSettable(control.containerMinWidthProperty());
-            }
-
-            /// Returns the styleable property for a control.
-            @Override
-            public StyleableProperty<Number> getStyleableProperty(M3DropZone control) {
-                return control.containerMinWidthProperty();
-            }
-        };
+        private static final CssMetaData<M3DropZone, Number> CONTAINER_MIN_WIDTH = M3Css.sizeMetaData(
+                        "-m3-container-min-width",
+                        DEFAULT_CONTAINER_MIN_WIDTH,
+                        M3DropZone::containerMinWidthProperty
+                );
 
         /// CSS metadata for the minimum container height.
-        private static final CssMetaData<M3DropZone, Number> CONTAINER_MIN_HEIGHT = new CssMetaData<>(
-                "-m3-container-min-height",
-                SizeConverter.getInstance(),
-                DEFAULT_CONTAINER_MIN_HEIGHT
-        ) {
-            /// Returns whether CSS may set the property.
-            @Override
-            public boolean isSettable(M3DropZone control) {
-                return M3Css.isSettable(control.containerMinHeightProperty());
-            }
-
-            /// Returns the styleable property for a control.
-            @Override
-            public StyleableProperty<Number> getStyleableProperty(M3DropZone control) {
-                return control.containerMinHeightProperty();
-            }
-        };
+        private static final CssMetaData<M3DropZone, Number> CONTAINER_MIN_HEIGHT = M3Css.sizeMetaData(
+                        "-m3-container-min-height",
+                        DEFAULT_CONTAINER_MIN_HEIGHT,
+                        M3DropZone::containerMinHeightProperty
+                );
 
         /// CSS metadata for uniform content padding.
-        private static final CssMetaData<M3DropZone, Number> CONTENT_PADDING = new CssMetaData<>(
-                "-m3-content-padding",
-                SizeConverter.getInstance(),
-                DEFAULT_CONTENT_PADDING
-        ) {
-            /// Returns whether CSS may set the property.
-            @Override
-            public boolean isSettable(M3DropZone control) {
-                return M3Css.isSettable(control.contentPaddingProperty());
-            }
-
-            /// Returns the styleable property for a control.
-            @Override
-            public StyleableProperty<Number> getStyleableProperty(M3DropZone control) {
-                return control.contentPaddingProperty();
-            }
-        };
+        private static final CssMetaData<M3DropZone, Number> CONTENT_PADDING = M3Css.sizeMetaData(
+                        "-m3-content-padding",
+                        DEFAULT_CONTENT_PADDING,
+                        M3DropZone::contentPaddingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

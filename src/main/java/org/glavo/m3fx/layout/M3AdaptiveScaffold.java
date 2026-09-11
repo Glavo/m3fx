@@ -13,6 +13,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -21,6 +22,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3ScaffoldLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3AdaptiveScaffoldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,6 +31,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static org.glavo.m3fx.internal.M3ScaffoldLayout.validateMetric;
 
 /// Arranges Material bars, navigation regions, rails, and adaptive content panes.
 ///
@@ -846,16 +850,7 @@ public final class M3AdaptiveScaffold extends Control {
     /// @throws NullPointerException if `role` is `null`
     public boolean isPaneVisible(M3PaneRole role) {
         Objects.requireNonNull(role, "role");
-        if (paneForRole(role) == null) {
-            return false;
-        }
-        return switch (getEffectivePaneLayout()) {
-            case ADAPTIVE -> false;
-            case SINGLE -> role == resolveSinglePaneRole();
-            case SPLIT_LEADING, FIXED_LEADING -> role == M3PaneRole.LEADING || role == M3PaneRole.MAIN;
-            case SPLIT_TRAILING, FIXED_TRAILING -> role == M3PaneRole.MAIN || role == M3PaneRole.TRAILING;
-            case THREE_PANE -> true;
-        };
+        return M3ScaffoldLayout.isPaneVisible(this, getEffectivePaneLayout(), role);
     }
 
     /// Returns the effective leading and trailing content margin.
@@ -863,7 +858,7 @@ public final class M3AdaptiveScaffold extends Control {
     /// @return the explicit margin or the current breakpoint's standard margin
     /// @throws IllegalArgumentException if a binding supplied an invalid configured value
     public double getEffectiveContentMargin() {
-        return resolveMetric(getContentMargin(), getBreakpoint().getContentMargin(), "contentMargin");
+        return M3ScaffoldLayout.contentMargin(getContentMargin(), getBreakpoint());
     }
 
     /// Returns the effective spacer between adjacent visible panes.
@@ -871,37 +866,45 @@ public final class M3AdaptiveScaffold extends Control {
     /// @return the explicit spacer or the current breakpoint's standard spacer
     /// @throws IllegalArgumentException if a binding supplied an invalid configured value
     public double getEffectivePaneSpacing() {
-        return resolveMetric(getPaneSpacing(), getBreakpoint().getPaneSpacing(), "paneSpacing");
+        return M3ScaffoldLayout.paneSpacing(getPaneSpacing(), getBreakpoint());
     }
 
     /// Returns the effective fixed leading-pane width.
     ///
     /// The Material default is 360 logical pixels through expanded widths and 412 logical pixels at large and
-    /// extra-large widths. The effective width is reduced when the available pane region is smaller.
+    /// extra-large widths. The skin may assign less width when space is constrained; this method returns the
+    /// configured or default width before that layout adjustment.
     ///
     /// @return the effective fixed leading-pane width
     /// @throws IllegalArgumentException if a binding supplied an invalid configured value
     public double getEffectiveFixedLeadingPaneWidth() {
-        return resolveMetric(
-                getFixedLeadingPaneWidth(),
-                defaultFixedPaneWidth(getBreakpoint()),
-                "fixedLeadingPaneWidth"
-        );
+        return M3ScaffoldLayout.fixedLeadingPaneWidth(getFixedLeadingPaneWidth(), getBreakpoint());
     }
 
     /// Returns the effective fixed trailing-pane width.
     ///
     /// A three-pane layout uses the Material side-sheet maximum of 400 logical pixels by default. Other fixed
     /// trailing layouts use 360 logical pixels at expanded widths and 412 logical pixels at large and extra-large
-    /// widths.
+    /// widths. The skin may assign less width when space is constrained; this method returns the configured or
+    /// default width before that layout adjustment.
     ///
     /// @return the effective fixed trailing-pane width
     /// @throws IllegalArgumentException if a binding supplied an invalid configured value
     public double getEffectiveFixedTrailingPaneWidth() {
-        double defaultWidth = getEffectivePaneLayout() == M3PaneLayout.THREE_PANE
-                ? 400.0
-                : defaultFixedPaneWidth(getBreakpoint());
-        return resolveMetric(getFixedTrailingPaneWidth(), defaultWidth, "fixedTrailingPaneWidth");
+        return M3ScaffoldLayout.fixedTrailingPaneWidth(
+                getFixedTrailingPaneWidth(), getBreakpoint(), getEffectivePaneLayout());
+    }
+
+    /// Returns the horizontal content bias used to measure region heights at their allocated widths.
+    ///
+    /// The default skin resolves adaptive policies and automatic metrics at the width supplied to a height query.
+    /// These queries do not change the assigned breakpoint, effective properties, or rendered region visibility.
+    /// An unconstrained height query uses the assigned width to resolve policies without constraining region widths.
+    ///
+    /// @return [Orientation#HORIZONTAL]
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
     }
 
     /// Returns the user-agent stylesheet for adaptive scaffolds.
@@ -1029,38 +1032,12 @@ public final class M3AdaptiveScaffold extends Control {
         };
     }
 
-    /// Validates a configured metric.
-    private static double validateMetric(double value, String name) {
-        if (Double.compare(value, Region.USE_COMPUTED_SIZE) != 0
-                && (!Double.isFinite(value) || value < 0.0)) {
-            throw new IllegalArgumentException(
-                    name + " must be USE_COMPUTED_SIZE or a finite non-negative value"
-            );
-        }
-        return value;
-    }
-
     /// Validates a finite value in the inclusive unit interval.
     private static double validateUnitInterval(double value, String name) {
         if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
             throw new IllegalArgumentException(name + " must be finite and in the range 0.0 through 1.0");
         }
         return value;
-    }
-
-    /// Resolves an explicit or automatic metric.
-    private static double resolveMetric(double configured, double automatic, String name) {
-        return Double.compare(configured, Region.USE_COMPUTED_SIZE) == 0
-                ? automatic
-                : validateMetric(configured, name);
-    }
-
-    /// Returns the standard fixed-pane width for one breakpoint.
-    private static double defaultFixedPaneWidth(M3Breakpoint breakpoint) {
-        return switch (breakpoint) {
-            case COMPACT, MEDIUM, EXPANDED -> 360.0;
-            case LARGE, EXTRA_LARGE -> 412.0;
-        };
     }
 
     /// Processes state changes synchronously, deferring listener-driven requests until the current pass finishes.
@@ -1086,21 +1063,16 @@ public final class M3AdaptiveScaffold extends Control {
         M3NavigationLayout previousNavigationLayout = getEffectiveNavigationLayout();
         int previousPaneCount = getVisiblePaneCount();
 
-        @Nullable M3Breakpoint nextBreakpoint = getBreakpointOverride();
-        if (nextBreakpoint == null) {
-            nextBreakpoint = M3Breakpoint.forWidth(Math.max(0.0, getWidth()));
-        }
+        M3ScaffoldLayout layout = M3ScaffoldLayout.resolve(this, Math.max(0.0, getWidth()));
+        M3Breakpoint nextBreakpoint = layout.breakpoint();
         breakpoint.set(nextBreakpoint);
 
-        M3PaneLayout requestedPaneLayout = getPaneLayout();
-        M3PaneLayout nextPaneLayout = requestedPaneLayout == M3PaneLayout.ADAPTIVE
-                ? resolveAdaptivePaneLayout(nextBreakpoint)
-                : resolveExplicitPaneLayout(requestedPaneLayout);
+        M3PaneLayout nextPaneLayout = layout.paneLayout();
         effectivePaneLayout.set(nextPaneLayout);
 
-        int nextVisiblePaneCount = countVisiblePanes();
+        int nextVisiblePaneCount = layout.visiblePaneCount();
         visiblePaneCount.set(nextVisiblePaneCount);
-        M3NavigationLayout nextNavigationLayout = resolveNavigationLayout(nextBreakpoint, nextVisiblePaneCount);
+        M3NavigationLayout nextNavigationLayout = layout.navigationLayout();
         effectiveNavigationLayout.set(nextNavigationLayout);
 
         updatePseudoClasses(nextBreakpoint, nextPaneLayout, nextNavigationLayout);
@@ -1111,130 +1083,6 @@ public final class M3AdaptiveScaffold extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         }
         requestLayout();
-    }
-
-    /// Resolves the standard pane total from the breakpoint and installed pane slots.
-    private M3PaneLayout resolveAdaptivePaneLayout(M3Breakpoint currentBreakpoint) {
-        if (currentBreakpoint.getRecommendedPaneCount() <= 1
-                || installedPaneCount() <= 1
-                || getMainPane() == null) {
-            return M3PaneLayout.SINGLE;
-        }
-        if (getActivePane() == M3PaneRole.TRAILING && getMainPane() != null && getTrailingPane() != null) {
-            return M3PaneLayout.SPLIT_TRAILING;
-        }
-        if (getLeadingPane() != null && getMainPane() != null) {
-            return M3PaneLayout.SPLIT_LEADING;
-        }
-        if (getMainPane() != null && getTrailingPane() != null) {
-            return M3PaneLayout.SPLIT_TRAILING;
-        }
-        return M3PaneLayout.SINGLE;
-    }
-
-    /// Resolves an explicit request around empty pane slots without reserving blank regions.
-    private M3PaneLayout resolveExplicitPaneLayout(M3PaneLayout requested) {
-        boolean leadingInstalled = getLeadingPane() != null;
-        boolean mainInstalled = getMainPane() != null;
-        boolean trailingInstalled = getTrailingPane() != null;
-        return switch (requested) {
-            case ADAPTIVE -> throw new IllegalArgumentException("requested must be an explicit pane layout");
-            case SINGLE -> M3PaneLayout.SINGLE;
-            case SPLIT_LEADING -> leadingInstalled && mainInstalled
-                    ? M3PaneLayout.SPLIT_LEADING
-                    : M3PaneLayout.SINGLE;
-            case SPLIT_TRAILING -> mainInstalled && trailingInstalled
-                    ? M3PaneLayout.SPLIT_TRAILING
-                    : M3PaneLayout.SINGLE;
-            case FIXED_LEADING -> leadingInstalled && mainInstalled
-                    ? M3PaneLayout.FIXED_LEADING
-                    : M3PaneLayout.SINGLE;
-            case FIXED_TRAILING -> mainInstalled && trailingInstalled
-                    ? M3PaneLayout.FIXED_TRAILING
-                    : M3PaneLayout.SINGLE;
-            case THREE_PANE -> {
-                if (leadingInstalled && mainInstalled && trailingInstalled) {
-                    yield M3PaneLayout.THREE_PANE;
-                }
-                if (leadingInstalled && mainInstalled) {
-                    yield M3PaneLayout.FIXED_LEADING;
-                }
-                if (mainInstalled && trailingInstalled) {
-                    yield M3PaneLayout.FIXED_TRAILING;
-                }
-                yield M3PaneLayout.SINGLE;
-            }
-        };
-    }
-
-    /// Resolves the requested or breakpoint-selected navigation presentation.
-    private M3NavigationLayout resolveNavigationLayout(M3Breakpoint currentBreakpoint, int paneCount) {
-        M3NavigationLayout requested = getNavigationLayout();
-        if (requested != M3NavigationLayout.ADAPTIVE) {
-            return availableNavigationLayout(requested);
-        }
-
-        M3NavigationLayout preferred = switch (currentBreakpoint) {
-            case COMPACT -> M3NavigationLayout.BAR;
-            case MEDIUM -> paneCount > 1 ? M3NavigationLayout.BAR : M3NavigationLayout.RAIL;
-            case EXPANDED, LARGE, EXTRA_LARGE -> M3NavigationLayout.RAIL;
-        };
-        M3NavigationLayout effective = availableNavigationLayout(preferred);
-        if (effective != M3NavigationLayout.NONE) {
-            return effective;
-        }
-        return availableNavigationLayout(
-                preferred == M3NavigationLayout.BAR ? M3NavigationLayout.RAIL : M3NavigationLayout.BAR
-        );
-    }
-
-    /// Returns a requested navigation presentation only when its slot is populated.
-    private M3NavigationLayout availableNavigationLayout(M3NavigationLayout requested) {
-        return switch (requested) {
-            case BAR -> getNavigationBar() == null ? M3NavigationLayout.NONE : M3NavigationLayout.BAR;
-            case RAIL -> getNavigationRail() == null ? M3NavigationLayout.NONE : M3NavigationLayout.RAIL;
-            case ADAPTIVE, NONE -> M3NavigationLayout.NONE;
-        };
-    }
-
-    /// Returns the installed pane total.
-    private int installedPaneCount() {
-        int count = getLeadingPane() == null ? 0 : 1;
-        count += getMainPane() == null ? 0 : 1;
-        count += getTrailingPane() == null ? 0 : 1;
-        return count;
-    }
-
-    /// Returns the number of installed roles selected by the effective layout.
-    private int countVisiblePanes() {
-        int count = isPaneVisible(M3PaneRole.LEADING) ? 1 : 0;
-        count += isPaneVisible(M3PaneRole.MAIN) ? 1 : 0;
-        count += isPaneVisible(M3PaneRole.TRAILING) ? 1 : 0;
-        return count;
-    }
-
-    /// Returns the installed pane for a logical role.
-    private @Nullable Node paneForRole(M3PaneRole role) {
-        return switch (role) {
-            case LEADING -> getLeadingPane();
-            case MAIN -> getMainPane();
-            case TRAILING -> getTrailingPane();
-        };
-    }
-
-    /// Resolves active-pane fallback when the requested slot is empty.
-    private @Nullable M3PaneRole resolveSinglePaneRole() {
-        M3PaneRole preferred = getActivePane();
-        if (paneForRole(preferred) != null) {
-            return preferred;
-        }
-        if (getMainPane() != null) {
-            return M3PaneRole.MAIN;
-        }
-        if (getLeadingPane() != null) {
-            return M3PaneRole.LEADING;
-        }
-        return getTrailingPane() == null ? null : M3PaneRole.TRAILING;
     }
 
     /// Updates all breakpoint, pane, and navigation pseudo-classes.

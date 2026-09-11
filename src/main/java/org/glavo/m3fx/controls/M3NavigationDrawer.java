@@ -17,8 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -1314,19 +1312,11 @@ public final class M3NavigationDrawer extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the top-level item spacing token.
         private static final CssMetaData<M3NavigationDrawer, Number> ITEM_SPACING =
-                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationDrawer control) {
-                        return M3Css.isSettable(control.itemSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationDrawer control) {
-                        return control.itemSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-item-spacing",
+                        DEFAULT_ITEM_SPACING,
+                        M3NavigationDrawer::itemSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

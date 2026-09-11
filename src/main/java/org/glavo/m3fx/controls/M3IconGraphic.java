@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.css.StyleableDoubleProperty;
+import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines icon sizing shared by M3FX icon graphic controls.
@@ -12,22 +13,13 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// tokens without depending on a particular font or vector representation.
 @NotNullByDefault
 interface M3IconGraphic {
-    /// Returns the effective icon size.
-    ///
-    /// @return the icon size in logical pixels
-    double getIconSize();
-
-    /// Sets an explicit icon size.
-    ///
-    /// @param iconSize the icon size in logical pixels
-    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
-    void setIconSize(double iconSize);
-
     /// Returns the observable, bindable, styleable icon-size property.
     ///
     /// The property represents both rendered dimensions in logical pixels and accepts only finite, non-negative
     /// values. Each implementation initializes it from its current semantic size.
     ///
     /// @return the icon-size property
+    /// @implSpec The property must be created by [M3Css#nonNegativeStyleableDoubleProperty] so containing controls
+    /// can apply and release temporary token values through [M3Css#setControlToken(StyleableDoubleProperty, double)].
     StyleableDoubleProperty iconSizeProperty();
 }

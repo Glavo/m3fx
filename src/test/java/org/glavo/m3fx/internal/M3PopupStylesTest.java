@@ -5,6 +5,9 @@ package org.glavo.m3fx.internal;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
@@ -14,8 +17,12 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +37,38 @@ final class M3PopupStylesTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Retains source edits made by popup stylesheet listeners for the next synchronization pass.
+    @ParameterizedTest
+    @ValueSource(strings = {"append", "replace", "clear"})
+    void sourceChangesDuringCopyAreNotCachedAsAlreadyApplied(String mutation) {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane popup = new Pane();
+            String first = M3Stylesheets.controlStylesheet("button.css");
+            String second = M3Stylesheets.controlStylesheet("text-field.css");
+            ObservableList<String> source = FXCollections.observableArrayList(first);
+            AtomicBoolean changed = new AtomicBoolean();
+            popup.getStylesheets().addListener((ListChangeListener<String>) change -> {
+                if (changed.compareAndSet(false, true)) {
+                    switch (mutation) {
+                        case "append" -> source.add(second);
+                        case "replace" -> source.setAll(second);
+                        case "clear" -> source.clear();
+                        default -> throw new AssertionError(mutation);
+                    }
+                }
+            });
+
+            M3PopupStyles.preparePopupRoot(popup, source, null, null);
+            assertTrue(changed.get());
+            M3PopupStyles.preparePopupRoot(popup, source, null, null);
+
+            List<String> expected = new ArrayList<>();
+            expected.add(M3Stylesheets.fallbackStylesheet());
+            expected.addAll(source);
+            assertEquals(expected, popup.getStylesheets());
+        });
     }
 
     /// Clears copied theme metadata and CSS while preserving a subsequently edited inline style.

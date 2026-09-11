@@ -11,8 +11,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
@@ -33,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 /// A Material Design 3 radio button for selecting one option from a set.
 ///
@@ -46,6 +43,10 @@ import java.util.function.Function;
 /// [#toggleGroupProperty()] properties also implement the standard JavaFX [Toggle] contract, allowing this control to
 /// participate in a group containing other `Toggle` implementations. By default, the radio button is unselected
 /// and is not assigned to a group.
+///
+/// Computed minimum and preferred total heights, including insets, equal the larger of the touch-target and
+/// state-layer sizes, even before skin installation. Explicit heights and bindings remain in effect through
+/// token changes; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
 ///
 /// Use radio buttons when all available options should remain visible. See
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
@@ -277,7 +278,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
                     this,
                     "touchTargetSize",
                     StyleableProperties.TOUCH_TARGET_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return touchTargetSize;
@@ -318,7 +319,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
                     this,
                     "stateLayerSize",
                     StyleableProperties.STATE_LAYER_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return stateLayerSize;
@@ -476,14 +477,18 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         setFocusTraversable(true);
         setMnemonicParsing(true);
         setPickOnBounds(true);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = Math.max(getTouchTargetSize(), getStateLayerSize());
-        M3Css.setMinHeightIfUnbound(this, size);
-        M3Css.setPrefHeightIfUnbound(this, size);
+    /// Computes minimum total height from the touch-target and state-layer sizes.
+    @Override
+    protected double computeMinHeight(double width) {
+        return Math.max(getTouchTargetSize(), getStateLayerSize());
+    }
+
+    /// Computes preferred total height from the same tokens as minimum height.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
     }
 
     /// Creates a non-negative styleable size token property.
@@ -499,28 +504,28 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.
-        private static final CssMetaData<M3RadioButton, Number> TOUCH_TARGET_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3RadioButton, Number> TOUCH_TARGET_SIZE = M3Css.sizeMetaData(
                 "-m3-touch-target-size",
                 DEFAULT_TOUCH_TARGET_SIZE,
                 M3RadioButton::touchTargetSizeProperty
         );
 
         /// CSS metadata for the state layer size token.
-        private static final CssMetaData<M3RadioButton, Number> STATE_LAYER_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3RadioButton, Number> STATE_LAYER_SIZE = M3Css.sizeMetaData(
                 "-m3-state-layer-size",
                 DEFAULT_STATE_LAYER_SIZE,
                 M3RadioButton::stateLayerSizeProperty
         );
 
         /// CSS metadata for the radio indicator container size token.
-        private static final CssMetaData<M3RadioButton, Number> CONTAINER_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3RadioButton, Number> CONTAINER_SIZE = M3Css.sizeMetaData(
                 "-m3-container-size",
                 DEFAULT_CONTAINER_SIZE,
                 M3RadioButton::containerSizeProperty
         );
 
         /// CSS metadata for the selected radio dot size token.
-        private static final CssMetaData<M3RadioButton, Number> SELECTED_DOT_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3RadioButton, Number> SELECTED_DOT_SIZE = M3Css.sizeMetaData(
                 "-m3-selected-dot-size",
                 DEFAULT_SELECTED_DOT_SIZE,
                 M3RadioButton::selectedDotSizeProperty
@@ -538,25 +543,5 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Creates CSS metadata for a non-negative size token.
-        private static CssMetaData<M3RadioButton, Number> sizeCssMetaData(
-                String property,
-                double initialValue,
-                Function<M3RadioButton, StyleableDoubleProperty> accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3RadioButton control) {
-                    return M3Css.isSettable(accessor.apply(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3RadioButton control) {
-                    return accessor.apply(control);
-                }
-            };
-        }
     }
 }

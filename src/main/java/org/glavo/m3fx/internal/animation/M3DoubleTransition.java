@@ -84,6 +84,7 @@ public final class M3DoubleTransition extends M3FiniteTransition {
     /// A running transition contributes its current velocity to the new run. Velocity directed beyond an inclusive
     /// bound is discarded because rendered output cannot continue in that direction. A stopped transition starts
     /// with zero velocity.
+    /// A nested stop or configuration from a stopped-status listener supersedes the configuration that triggered it.
     ///
     /// @param spec        the motion specification for the next run
     /// @param targetValue the value to apply at the end of the next run
@@ -111,7 +112,11 @@ public final class M3DoubleTransition extends M3FiniteTransition {
             }
         }
 
+        long version = getStopVersion() + 1;
         stop();
+        if (version != getStopVersion()) {
+            return;
+        }
         channel.configure(currentValue, targetValue, checkedSpec, previousElapsedSeconds);
         configured = true;
         setCycleDuration(Duration.seconds(channel.getDurationSeconds()));

@@ -43,6 +43,55 @@ final class M3AnimationTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Does not apply stale end values after a stopped-status listener cancels synchronous completion.
+    @Test
+    void stoppedCallbackCanCancelFinish() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane owner = new Pane();
+            DoubleProperty value = new SimpleDoubleProperty();
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            AtomicBoolean finished = new AtomicBoolean();
+            transition.setOnFinished(event -> finished.set(true));
+            M3Animation.playFromStart(owner, transition);
+            transition.statusProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue == Animation.Status.STOPPED) {
+                    transition.stop();
+                    value.set(0.25);
+                }
+            });
+            M3Animation.finish(transition);
+            assertEquals(0.25, value.get());
+            assertFalse(finished.get());
+        }));
+    }
+
+    /// Does not deliver an old completion handler to a run started by end-value notification.
+    @Test
+    void endValueCallbackCanReplaceRunBeforeCompletion() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane owner = new Pane();
+            DoubleProperty value = new SimpleDoubleProperty();
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            AtomicBoolean finished = new AtomicBoolean();
+            AtomicBoolean replaced = new AtomicBoolean();
+            transition.setOnFinished(event -> finished.set(true));
+            value.addListener((observable, oldValue, newValue) -> {
+                if (newValue.doubleValue() == 1.0 && replaced.compareAndSet(false, true)) {
+                    M3Animation.playFromStart(owner, transition);
+                }
+            });
+            try {
+                M3Animation.finish(transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                assertFalse(finished.get());
+            } finally {
+                transition.stop();
+            }
+        }));
+    }
+
     /// Verifies that disabled motion applies custom finite-transition end values and completion handlers.
     @Test
     void disabledMotionFinishesFiniteTransitionImmediately() {

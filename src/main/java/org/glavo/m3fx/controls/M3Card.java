@@ -14,7 +14,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -678,51 +677,27 @@ public final class M3Card extends Control {
 
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3Card, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Card control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Card control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-shape",
+                        DEFAULT_CONTAINER_SHAPE,
+                        M3Card::containerShapeProperty
+                );
 
         /// CSS metadata for the content padding token.
         private static final CssMetaData<M3Card, Number> CONTENT_PADDING =
-                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Card control) {
-                        return M3Css.isSettable(control.contentPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Card control) {
-                        return control.contentPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-padding",
+                        DEFAULT_CONTENT_PADDING,
+                        M3Card::contentPaddingProperty
+                );
 
         /// CSS metadata for the outline width token.
         private static final CssMetaData<M3Card, Number> OUTLINE_WIDTH =
-                new CssMetaData<>("-m3-outline-width", SizeConverter.getInstance(), DEFAULT_OUTLINE_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Card control) {
-                        return M3Css.isSettable(control.outlineWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Card control) {
-                        return control.outlineWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-outline-width",
+                        DEFAULT_OUTLINE_WIDTH,
+                        M3Card::outlineWidthProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

@@ -10,8 +10,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
@@ -30,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 /// A Material Design 3 checkbox for an independent binary or tri-state option.
 ///
@@ -42,6 +39,11 @@ import java.util.function.Function;
 ///
 /// The error property changes presentation only; it does not perform validation or change selection. New checkboxes
 /// are unchecked, determinate, allow two-state user interaction, and are focus traversable with mnemonic parsing.
+///
+/// Computed minimum and preferred total heights, including insets, equal the larger of the touch-target and
+/// state-layer sizes, even before skin installation. Explicit heights and bindings remain in effect through
+/// token changes; set a height to [#USE_COMPUTED_SIZE] to restore computed sizing.
+///
 /// Use checkboxes for independent choices or bulk-selection affordances. See
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
@@ -130,7 +132,7 @@ public final class M3CheckBox extends ButtonBase {
                     this,
                     "touchTargetSize",
                     StyleableProperties.TOUCH_TARGET_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return touchTargetSize;
@@ -171,7 +173,7 @@ public final class M3CheckBox extends ButtonBase {
                     this,
                     "stateLayerSize",
                     StyleableProperties.STATE_LAYER_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return stateLayerSize;
@@ -662,14 +664,18 @@ public final class M3CheckBox extends ButtonBase {
         setMnemonicParsing(true);
         setPickOnBounds(true);
         pseudoClassStateChanged(DETERMINATE_PSEUDO_CLASS, true);
-        updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double size = Math.max(getTouchTargetSize(), getStateLayerSize());
-        M3Css.setMinHeightIfUnbound(this, size);
-        M3Css.setPrefHeightIfUnbound(this, size);
+    /// Computes minimum total height from the touch-target and state-layer sizes.
+    @Override
+    protected double computeMinHeight(double width) {
+        return Math.max(getTouchTargetSize(), getStateLayerSize());
+    }
+
+    /// Computes preferred total height from the same tokens as minimum height.
+    @Override
+    protected double computePrefHeight(double width) {
+        return computeMinHeight(width);
     }
 
     /// Creates a non-negative styleable size token property.
@@ -685,49 +691,49 @@ public final class M3CheckBox extends ButtonBase {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.
-        private static final CssMetaData<M3CheckBox, Number> TOUCH_TARGET_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> TOUCH_TARGET_SIZE = M3Css.sizeMetaData(
                 "-m3-touch-target-size",
                 DEFAULT_TOUCH_TARGET_SIZE,
                 M3CheckBox::touchTargetSizeProperty
         );
 
         /// CSS metadata for the state layer size token.
-        private static final CssMetaData<M3CheckBox, Number> STATE_LAYER_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> STATE_LAYER_SIZE = M3Css.sizeMetaData(
                 "-m3-state-layer-size",
                 DEFAULT_STATE_LAYER_SIZE,
                 M3CheckBox::stateLayerSizeProperty
         );
 
         /// CSS metadata for the checkbox container size token.
-        private static final CssMetaData<M3CheckBox, Number> CONTAINER_SIZE = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> CONTAINER_SIZE = M3Css.sizeMetaData(
                 "-m3-container-size",
                 DEFAULT_CONTAINER_SIZE,
                 M3CheckBox::containerSizeProperty
         );
 
         /// CSS metadata for the selected mark width token.
-        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_WIDTH = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_WIDTH = M3Css.sizeMetaData(
                 "-m3-selected-mark-width",
                 DEFAULT_SELECTED_MARK_WIDTH,
                 M3CheckBox::selectedMarkWidthProperty
         );
 
         /// CSS metadata for the selected mark height token.
-        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_HEIGHT = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_HEIGHT = M3Css.sizeMetaData(
                 "-m3-selected-mark-height",
                 DEFAULT_SELECTED_MARK_HEIGHT,
                 M3CheckBox::selectedMarkHeightProperty
         );
 
         /// CSS metadata for the indeterminate mark width token.
-        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_WIDTH = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_WIDTH = M3Css.sizeMetaData(
                 "-m3-indeterminate-mark-width",
                 DEFAULT_INDETERMINATE_MARK_WIDTH,
                 M3CheckBox::indeterminateMarkWidthProperty
         );
 
         /// CSS metadata for the indeterminate mark height token.
-        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_HEIGHT = sizeCssMetaData(
+        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_HEIGHT = M3Css.sizeMetaData(
                 "-m3-indeterminate-mark-height",
                 DEFAULT_INDETERMINATE_MARK_HEIGHT,
                 M3CheckBox::indeterminateMarkHeightProperty
@@ -748,25 +754,5 @@ public final class M3CheckBox extends ButtonBase {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Creates CSS metadata for a non-negative size token.
-        private static CssMetaData<M3CheckBox, Number> sizeCssMetaData(
-                String property,
-                double initialValue,
-                Function<M3CheckBox, StyleableDoubleProperty> accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3CheckBox control) {
-                    return M3Css.isSettable(accessor.apply(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3CheckBox control) {
-                    return accessor.apply(control);
-                }
-            };
-        }
     }
 }

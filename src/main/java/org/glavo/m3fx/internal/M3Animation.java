@@ -113,13 +113,22 @@ public final class M3Animation {
 
     /// Finishes a finite transition synchronously and invokes its completion handler.
     ///
+    /// A stop or replacement run requested by a stopped-status callback skips end-value assignment. If an end-value
+    /// listener requests a stop or replacement run, this method skips the completion handler.
+    ///
     /// @param transition the transition to settle at its final state
     /// @throws NullPointerException if `transition` is `null`
     public static void finish(M3FiniteTransition transition) {
         Objects.requireNonNull(transition, "transition");
+        long version = transition.getStopVersion() + 1;
         transition.stop();
+        if (version != transition.getStopVersion()) {
+            return;
+        }
         transition.applyEndValues();
-        invokeOnFinished(transition.getOnFinished());
+        if (version == transition.getStopVersion()) {
+            invokeOnFinished(transition.getOnFinished());
+        }
     }
 
     /// Finishes a finite transition only when it is currently running.

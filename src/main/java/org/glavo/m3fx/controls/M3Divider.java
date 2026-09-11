@@ -8,8 +8,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
@@ -249,51 +247,27 @@ public final class M3Divider extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the thickness token.
         private static final CssMetaData<M3Divider, Number> THICKNESS =
-                new CssMetaData<>("-m3-thickness", SizeConverter.getInstance(), DEFAULT_THICKNESS) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Divider control) {
-                        return M3Css.isSettable(control.thicknessProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Divider control) {
-                        return control.thicknessProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-thickness",
+                        DEFAULT_THICKNESS,
+                        M3Divider::thicknessProperty
+                );
 
         /// CSS metadata for the leading inset token.
         private static final CssMetaData<M3Divider, Number> INSET_START =
-                new CssMetaData<>("-m3-inset-start", SizeConverter.getInstance(), DEFAULT_INSET_START) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Divider control) {
-                        return M3Css.isSettable(control.insetStartProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Divider control) {
-                        return control.insetStartProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-inset-start",
+                        DEFAULT_INSET_START,
+                        M3Divider::insetStartProperty
+                );
 
         /// CSS metadata for the trailing inset token.
         private static final CssMetaData<M3Divider, Number> INSET_END =
-                new CssMetaData<>("-m3-inset-end", SizeConverter.getInstance(), DEFAULT_INSET_END) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Divider control) {
-                        return M3Css.isSettable(control.insetEndProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Divider control) {
-                        return control.insetEndProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-inset-end",
+                        DEFAULT_INSET_END,
+                        M3Divider::insetEndProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

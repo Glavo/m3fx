@@ -12,8 +12,6 @@ import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -49,6 +47,10 @@ import java.util.Objects;
 ///
 /// The banner itself is not focus traversable. Keyboard focus and action handling remain with focusable nodes in
 /// the icon and action slots. The no-argument constructor creates an empty banner with no icon or actions.
+///
+/// Computed minimum total height, including insets, equals the container-minimum-height token before and after
+/// skin installation. An explicit minimum height or binding remains in effect through token changes; set it to
+/// [#USE_COMPUTED_SIZE] to restore computed sizing. Preferred dimensions follow the skin's content measurements.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview) and
 /// [Material Design buttons](https://m3.material.io/components/buttons/overview).
@@ -182,7 +184,7 @@ public final class M3Banner extends Control {
                     this,
                     "containerMinHeight",
                     StyleableProperties.CONTAINER_MIN_HEIGHT,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerMinHeight;
@@ -223,7 +225,7 @@ public final class M3Banner extends Control {
                     this,
                     "verticalPadding",
                     StyleableProperties.VERTICAL_PADDING,
-                    this::updateMetrics
+                    this::updatePadding
             );
         }
         return verticalPadding;
@@ -264,7 +266,7 @@ public final class M3Banner extends Control {
                     this,
                     "horizontalPadding",
                     StyleableProperties.HORIZONTAL_PADDING,
-                    this::updateMetrics
+                    this::updatePadding
             );
         }
         return horizontalPadding;
@@ -469,14 +471,19 @@ public final class M3Banner extends Control {
         icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        updateMetrics();
+        updatePadding();
         focusNotifier.start();
         updateAccessibleText();
     }
 
-    /// Updates helper-owned Region metrics from banner tokens.
-    private void updateMetrics() {
-        M3Css.setMinHeightIfUnbound(this, getContainerMinHeight());
+    /// Computes minimum total height from the container-minimum-height token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerMinHeight();
+    }
+
+    /// Applies horizontal and vertical padding from the banner tokens.
+    private void updatePadding() {
         M3Css.setPaddingIfUnbound(
                 this,
                 new Insets(getVerticalPadding(), getHorizontalPadding(), getVerticalPadding(), getHorizontalPadding())
@@ -517,83 +524,43 @@ public final class M3Banner extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the minimum banner container height token.
         private static final CssMetaData<M3Banner, Number> CONTAINER_MIN_HEIGHT =
-                new CssMetaData<>("-m3-container-min-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_MIN_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Banner control) {
-                        return M3Css.isSettable(control.containerMinHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Banner control) {
-                        return control.containerMinHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-container-min-height",
+                        DEFAULT_CONTAINER_MIN_HEIGHT,
+                        M3Banner::containerMinHeightProperty
+                );
 
         /// CSS metadata for the vertical banner padding token.
         private static final CssMetaData<M3Banner, Number> VERTICAL_PADDING =
-                new CssMetaData<>("-m3-vertical-padding", SizeConverter.getInstance(), DEFAULT_VERTICAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Banner control) {
-                        return M3Css.isSettable(control.verticalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Banner control) {
-                        return control.verticalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-vertical-padding",
+                        DEFAULT_VERTICAL_PADDING,
+                        M3Banner::verticalPaddingProperty
+                );
 
         /// CSS metadata for the horizontal banner padding token.
         private static final CssMetaData<M3Banner, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Banner control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Banner control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-horizontal-padding",
+                        DEFAULT_HORIZONTAL_PADDING,
+                        M3Banner::horizontalPaddingProperty
+                );
 
         /// CSS metadata for the banner content spacing token.
         private static final CssMetaData<M3Banner, Number> CONTENT_SPACING =
-                new CssMetaData<>("-m3-content-spacing", SizeConverter.getInstance(), DEFAULT_CONTENT_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Banner control) {
-                        return M3Css.isSettable(control.contentSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Banner control) {
-                        return control.contentSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-content-spacing",
+                        DEFAULT_CONTENT_SPACING,
+                        M3Banner::contentSpacingProperty
+                );
 
         /// CSS metadata for the banner action spacing token.
         private static final CssMetaData<M3Banner, Number> ACTION_SPACING =
-                new CssMetaData<>("-m3-action-spacing", SizeConverter.getInstance(), DEFAULT_ACTION_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Banner control) {
-                        return M3Css.isSettable(control.actionSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Banner control) {
-                        return control.actionSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-action-spacing",
+                        DEFAULT_ACTION_SPACING,
+                        M3Banner::actionSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

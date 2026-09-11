@@ -30,6 +30,7 @@ import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -55,6 +56,11 @@ import java.util.Objects;
 /// managed selection, and permits an empty selection. Item nodes are owned by the menu while displayed and must
 /// not belong to another parent.
 ///
+/// Computed minimum width is 112 logical pixels for an inline menu. While an owned popup is prepared or visible,
+/// its computed minimum width also includes the width of the anchor measured when opening. Closing the popup
+/// clears that additional constraint. Explicit minimum widths and bindings override computed sizing; set the
+/// minimum width to [#USE_COMPUTED_SIZE] to restore it.
+///
 /// A menu with two actions can be created as follows:
 ///
 /// ```java
@@ -67,6 +73,12 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3Menu extends Control {
+    /// The minimum width of a menu without an explicit layout constraint.
+    private static final double DEFAULT_MIN_WIDTH = 112.0;
+
+    /// The additional minimum width supplied by the owning popup while prepared or visible.
+    private double popupMinWidth;
+
     /// The pseudo-class applied when the menu uses the vibrant color style.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
 
@@ -475,6 +487,24 @@ public final class M3Menu extends Control {
             return;
         }
         selectOnly(null);
+    }
+
+    /// Sets the opening anchor width, or zero after the popup closes or fails to open.
+    ///
+    /// @param width the finite, non-negative anchor width in logical pixels
+    /// @throws IllegalArgumentException if the width is negative or non-finite
+    final void setPopupMinWidth(double width) {
+        M3Css.nonNegative(width, "width");
+        if (popupMinWidth != width) {
+            popupMinWidth = width;
+            requestLayout();
+        }
+    }
+
+    /// Computes minimum width from the default menu size and any active popup anchor.
+    @Override
+    protected double computeMinWidth(double height) {
+        return Math.max(DEFAULT_MIN_WIDTH, popupMinWidth);
     }
 
     /// Returns the user-agent stylesheet for M3FX menus.

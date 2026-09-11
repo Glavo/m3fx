@@ -15,7 +15,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.PaintConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
@@ -385,7 +384,6 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     /// Returns the effective rendered icon size.
     ///
     /// @return the rendered width and height in logical pixels
-    @Override
     public double getIconSize() {
         return iconSizeValue == null ? getSize().defaultSize() : iconSizeValue.get();
     }
@@ -394,7 +392,6 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
     ///
     /// @param iconSize the rendered width and height in logical pixels
     /// @throws IllegalArgumentException if `iconSize` is negative or not finite
-    @Override
     public void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
@@ -548,25 +545,11 @@ public final class M3SVGIcon extends Control implements M3IconGraphic {
 
         /// CSS metadata for the icon size token.
         private static final CssMetaData<M3SVGIcon, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether CSS may set the icon size.
-                    ///
-                    /// @param control the target icon
-                    /// @return whether the icon-size property is settable
-                    @Override
-                    public boolean isSettable(M3SVGIcon control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the target icon-size property.
-                    ///
-                    /// @param control the target icon
-                    /// @return the icon-size property
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3SVGIcon control) {
-                        return control.iconSizeProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-icon-size",
+                        DEFAULT_ICON_SIZE,
+                        M3SVGIcon::iconSizeProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

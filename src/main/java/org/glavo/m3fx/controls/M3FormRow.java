@@ -10,8 +10,6 @@ import javafx.beans.property.StringProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -594,51 +592,27 @@ public final class M3FormRow extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the label width token.
         private static final CssMetaData<M3FormRow, Number> LABEL_WIDTH =
-                new CssMetaData<>("-m3-label-width", SizeConverter.getInstance(), DEFAULT_LABEL_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormRow control) {
-                        return M3Css.isSettable(control.labelWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormRow control) {
-                        return control.labelWidthProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-label-width",
+                        DEFAULT_LABEL_WIDTH,
+                        M3FormRow::labelWidthProperty
+                );
 
         /// CSS metadata for the column spacing token.
         private static final CssMetaData<M3FormRow, Number> COLUMN_SPACING =
-                new CssMetaData<>("-m3-column-spacing", SizeConverter.getInstance(), DEFAULT_COLUMN_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormRow control) {
-                        return M3Css.isSettable(control.columnSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormRow control) {
-                        return control.columnSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-column-spacing",
+                        DEFAULT_COLUMN_SPACING,
+                        M3FormRow::columnSpacingProperty
+                );
 
         /// CSS metadata for the row minimum height token.
         private static final CssMetaData<M3FormRow, Number> ROW_MIN_HEIGHT =
-                new CssMetaData<>("-m3-row-min-height", SizeConverter.getInstance(), DEFAULT_ROW_MIN_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3FormRow control) {
-                        return M3Css.isSettable(control.rowMinHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a node.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3FormRow control) {
-                        return control.rowMinHeightProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-row-min-height",
+                        DEFAULT_ROW_MIN_HEIGHT,
+                        M3FormRow::rowMinHeightProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

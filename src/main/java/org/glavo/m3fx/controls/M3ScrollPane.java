@@ -46,6 +46,9 @@ import java.util.function.DoubleUnaryOperator;
 /// the M3FX scroll stylesheet and installs decorated scroll handling. Fit policies, scrollbar policies, pannability,
 /// focus traversal, and content sizing retain their inherited JavaFX defaults. Logical horizontal and vertical values
 /// remain bounded; overscroll is rendered independently by [#getOverscrollEffect()].
+/// The effect and input mode are resolved separately for each axis. A replacement or policy change made by a
+/// horizontal-scroll callback therefore applies to subsequent vertical scrolling in the same event. Event completion
+/// releases only the effect used for the last nonempty axis, and only if that instance is still attached to this pane.
 ///
 /// The static methods apply Material presentation and smooth wheel behavior to existing JavaFX [ScrollPane]
 /// instances and style standalone [ScrollBar] instances. Overscroll effects are specific to this subtype. Styling
@@ -93,6 +96,12 @@ public final class M3ScrollPane extends ScrollPane {
 
     /// The effect attached to this pane and used by the installed scroll input behavior.
     private @Nullable M3OverscrollEffect attachedOverscrollEffect;
+
+    /// The latest requested effect while lifecycle callbacks are being dispatched.
+    private @Nullable M3OverscrollEffect pendingOverscrollEffect;
+
+    /// Whether an effect replacement is dispatching lifecycle callbacks for this pane.
+    private boolean updatingOverscrollEffect;
 
     /// Whether the default stretch effect has not yet been requested or replaced.
     private boolean defaultOverscrollEffectPending = true;
@@ -199,23 +208,38 @@ public final class M3ScrollPane extends ScrollPane {
     /// The default is a pane-owned [M3StretchOverscrollEffect]. An effect instance is stateful and must not be shared
     /// by multiple panes.
     ///
-    /// @return the attached effect, or `null` when overscroll is disabled
+    /// During an effect lifecycle callback, this returns the latest requested effect, whose attachment may still
+    /// be pending.
+    ///
+    /// @return the configured effect, or `null` when overscroll is disabled
     public @Nullable M3OverscrollEffect getOverscrollEffect() {
         @Nullable ObjectProperty<@Nullable M3OverscrollEffect> property = overscrollEffect;
-        return property == null ? resolveOverscrollEffect() : property.get();
+        if (property != null) {
+            return property.get();
+        }
+        return updatingOverscrollEffect ? pendingOverscrollEffect : resolveOverscrollEffect();
     }
 
     /// Sets the effect that decorates bounded user scrolling.
     ///
     /// Replacing an effect synchronously settles and detaches the previous instance. Setting `null` disables
     /// overscroll while retaining smooth bounded scrolling.
+    /// A replacement requested from an effect lifecycle callback updates the configured value immediately;
+    /// its lifecycle callbacks are deferred until the current replacement finishes. If several such requests
+    /// occur, the latest is applied before the outermost replacement returns normally.
+    ///
+    /// If attachment fails, the previous effect remains attached. If detachment fails, the replacement remains
+    /// attached. A materialized [#overscrollEffectProperty()] retains its requested value after either failure;
+    /// a later replacement may be used to restore a consistent configuration.
     ///
     /// @param effect the pane-owned effect, or `null` to disable overscroll
     /// @throws IllegalStateException if `effect` is already attached to another scroll pane
     public void setOverscrollEffect(@Nullable M3OverscrollEffect effect) {
         @Nullable ObjectProperty<@Nullable M3OverscrollEffect> property = overscrollEffect;
         if (property == null) {
-            M3OverscrollEffect.checkAttachable(effect, this);
+            if (effect != null) {
+                effect.checkAttachable(this);
+            }
             defaultOverscrollEffectPending = false;
             updateOverscrollEffect(effect);
         } else {
@@ -229,10 +253,12 @@ public final class M3ScrollPane extends ScrollPane {
     public ObjectProperty<@Nullable M3OverscrollEffect> overscrollEffectProperty() {
         @Nullable ObjectProperty<@Nullable M3OverscrollEffect> property = overscrollEffect;
         if (property == null) {
-            property = new ObjectPropertyBase<>(resolveOverscrollEffect()) {
+            property = new ObjectPropertyBase<>(getOverscrollEffect()) {
                 @Override
                 public void set(@Nullable M3OverscrollEffect value) {
-                    M3OverscrollEffect.checkAttachable(value, M3ScrollPane.this);
+                    if (value != null) {
+                        value.checkAttachable(M3ScrollPane.this);
+                    }
                     super.set(value);
                 }
 
@@ -267,20 +293,31 @@ public final class M3ScrollPane extends ScrollPane {
         return attachedOverscrollEffect;
     }
 
-    /// Attaches a replacement effect and detaches the previously active instance.
+    /// Applies effect replacements without interleaving their lifecycle callbacks.
     ///
     /// @param effect the replacement effect, or `null`
     private void updateOverscrollEffect(@Nullable M3OverscrollEffect effect) {
-        @Nullable M3OverscrollEffect previousEffect = attachedOverscrollEffect;
-        if (effect == previousEffect) {
+        pendingOverscrollEffect = effect;
+        if (updatingOverscrollEffect) {
             return;
         }
-        if (effect != null) {
-            M3OverscrollEffect.attach(effect, this);
-        }
-        attachedOverscrollEffect = effect;
-        if (previousEffect != null) {
-            M3OverscrollEffect.detach(previousEffect, this);
+        updatingOverscrollEffect = true;
+        try {
+            while (attachedOverscrollEffect != pendingOverscrollEffect) {
+                @Nullable M3OverscrollEffect replacement = pendingOverscrollEffect;
+                @Nullable M3OverscrollEffect previous = attachedOverscrollEffect;
+                if (replacement != null) {
+                    replacement.attach(this);
+                }
+                attachedOverscrollEffect = replacement;
+                if (previous != null) {
+                    previous.detach(this);
+                }
+                // Callbacks may have selected another effect; finish cleanup before applying that request.
+            }
+        } finally {
+            updatingOverscrollEffect = false;
+            pendingOverscrollEffect = null;
         }
     }
 
@@ -1018,7 +1055,6 @@ public final class M3ScrollPane extends ScrollPane {
 
             double previousHValue = targetHValue;
             double previousVValue = targetVValue;
-            synchronousScrollOperation = event.isDirect();
             double consumedHorizontally = applyScrollOperation(
                     effect,
                     Orientation.HORIZONTAL,
@@ -1026,6 +1062,9 @@ public final class M3ScrollPane extends ScrollPane {
                     event,
                     horizontalScrollOperation
             );
+            if (Math.abs(verticalDelta) > EPSILON) {
+                effect = scrollOverscrollEffect(event);
+            }
             double consumedVertically = applyScrollOperation(
                     effect,
                     Orientation.VERTICAL,
@@ -1045,7 +1084,8 @@ public final class M3ScrollPane extends ScrollPane {
             if (consumeEvent && lastScrollConsumed) {
                 event.consume();
             }
-            if (!event.isDirect() && !scrollGestureActive && effect != null) {
+            if (!event.isDirect() && !scrollGestureActive
+                    && effect != null && effect == attachedOverscrollEffect()) {
                 effect.release();
             }
         }
@@ -1081,6 +1121,7 @@ public final class M3ScrollPane extends ScrollPane {
         }
 
         /// Applies an optional overscroll decorator around one bounded axis operation.
+        /// Nested input temporarily replaces the callback state and restores it before the outer operation resumes.
         ///
         /// @param effect      the effect to apply, or `null`
         /// @param orientation the affected axis
@@ -1099,8 +1140,12 @@ public final class M3ScrollPane extends ScrollPane {
                 return 0.0;
             }
 
+            double previousAvailableDelta = scrollOperationAvailableDelta;
+            boolean previousInvoked = scrollOperationInvoked;
+            boolean previousSynchronous = synchronousScrollOperation;
             scrollOperationAvailableDelta = delta;
             scrollOperationInvoked = false;
+            synchronousScrollOperation = event.isDirect();
             try {
                 if (effect == null) {
                     double consumed = operation.applyAsDouble(delta);
@@ -1115,8 +1160,10 @@ public final class M3ScrollPane extends ScrollPane {
                 validateConsumedDelta(delta, consumed, "M3OverscrollEffect return value");
                 return consumed;
             } finally {
-                scrollOperationAvailableDelta = 0.0;
-                scrollOperationInvoked = false;
+                // A value or effect callback may have delivered this operation inside another scroll event.
+                scrollOperationAvailableDelta = previousAvailableDelta;
+                scrollOperationInvoked = previousInvoked;
+                synchronousScrollOperation = previousSynchronous;
             }
         }
 

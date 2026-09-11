@@ -55,6 +55,9 @@ public final class M3PopupContextSynchronizer {
     /// Whether listeners are currently registered.
     private boolean running;
 
+    /// Identifies the observation run so callbacks cannot resume or tear down a superseded run.
+    private long observationEpoch;
+
     /// Whether a synchronization pass is already in progress.
     private boolean syncing;
 
@@ -150,8 +153,10 @@ public final class M3PopupContextSynchronizer {
 
     /// Starts observing owner context and immediately synchronizes the popup root.
     ///
-    /// Calling this method while the synchronizer is running performs an immediate synchronization without adding
-    /// duplicate listeners.
+    /// Calling this method while the synchronizer is running requests synchronization through [sync] without adding
+    /// duplicate listeners. A callback may stop or restart observation; the superseded startup does not resume it
+    /// or remove listeners installed by the replacement run if that startup fails. Failure to start a new run removes
+    /// that run's listeners without rolling back popup state already copied.
     public void start() {
         if (running) {
             sync();
@@ -159,8 +164,9 @@ public final class M3PopupContextSynchronizer {
         }
 
         running = true;
+        long epoch = ++observationEpoch;
         hasSyncedAttachedOwnerContext = false;
-        Observation currentObservation = observation;
+        @Nullable Observation currentObservation = observation;
         if (currentObservation == null) {
             currentObservation = new Observation();
             observation = currentObservation;
@@ -168,11 +174,13 @@ public final class M3PopupContextSynchronizer {
         try {
             currentObservation.start();
             sync();
-            currentObservation.startMotionObservation();
+            if (epoch == observationEpoch && running) {
+                currentObservation.motionSettingsObserver.start();
+            }
         } catch (RuntimeException | Error exception) {
-            running = false;
-            currentObservation.stop();
-            clearSyncedMotionContext();
+            if (epoch == observationEpoch) {
+                stop();
+            }
             throw exception;
         }
     }
@@ -180,57 +188,73 @@ public final class M3PopupContextSynchronizer {
     /// Stops observing owner context while leaving the popup root styled with its last synchronized values.
     ///
     /// Calling this method while the synchronizer is stopped has no effect. A stopped synchronizer may be started
-    /// again.
+    /// again. If called from a synchronization callback, the current copying step may finish notifying listeners,
+    /// but subsequent copying, CSS, and layout steps from that pass are skipped.
     public void stop() {
         if (!running) {
             return;
         }
 
         running = false;
-        Observation currentObservation = observation;
+        observationEpoch++;
+        cancelPendingSync();
+        hasSyncedAttachedOwnerContext = false;
+        hasSyncedMotionContext = false;
+        @Nullable Observation currentObservation = observation;
         if (currentObservation != null) {
             currentObservation.stop();
         }
-        cancelPendingSync();
-        hasSyncedAttachedOwnerContext = false;
-        clearSyncedMotionContext();
     }
 
     /// Copies the latest owner stylesheet, theme, orientation, and motion context into the popup root.
     ///
-    /// Reentrant calls have no effect. Suppliers are evaluated during the synchronization pass and may return
-    /// `null` as declared by their types.
+    /// While observation is running, calls and observed context changes made during a synchronization pass are
+    /// coalesced into a later application-thread pass. Reentrant calls while stopped have no effect. Suppliers are
+    /// evaluated during the synchronization pass and may return `null` as declared by their types.
     public void sync() {
-        cancelPendingSync();
         if (syncing) {
+            requestSync();
             return;
         }
+        cancelPendingSync();
         if (running && owner.getScene() == null && hasSyncedAttachedOwnerContext) {
             return;
         }
 
         syncing = true;
+        long epoch = observationEpoch;
         try {
             @Nullable ObservableList<String> stylesheetSource = stylesheetSourceSupplier.get();
+            if (epoch != observationEpoch) {
+                return;
+            }
             @Nullable Parent themeRoot = themeRootSupplier.get();
+            if (epoch != observationEpoch) {
+                return;
+            }
             if (running) {
-                Observation currentObservation = observation;
+                @Nullable Observation currentObservation = observation;
                 if (currentObservation != null) {
                     currentObservation.refreshThemeRoots(stylesheetSource, themeRoot);
                 }
             }
 
             syncNodeOrientation();
+            if (epoch != observationEpoch) {
+                return;
+            }
             syncMotionContext();
+            if (epoch != observationEpoch) {
+                return;
+            }
             M3PopupStyles.preparePopupRoot(
                     popupRoot,
                     stylesheetSource == null ? List.of() : stylesheetSource,
                     themeRoot,
                     controlStylesheet
             );
-            popupRoot.applyCss();
-            popupRoot.layout();
-            if (owner.getScene() != null) {
+            applyCssAndLayout(epoch);
+            if (epoch == observationEpoch && owner.getScene() != null) {
                 hasSyncedAttachedOwnerContext = true;
             }
         } finally {
@@ -252,17 +276,32 @@ public final class M3PopupContextSynchronizer {
 
     /// Updates orientation-dependent popup CSS and layout without rebuilding unrelated theme context.
     private void syncNodeOrientationAndLayout() {
+        if (!running) {
+            return;
+        }
         if (syncing) {
+            requestSync();
             return;
         }
 
         syncing = true;
+        long epoch = observationEpoch;
         try {
             syncNodeOrientation();
-            popupRoot.applyCss();
-            popupRoot.layout();
+            applyCssAndLayout(epoch);
         } finally {
             syncing = false;
+        }
+    }
+
+    /// Applies CSS and layout unless a callback has stopped or replaced the observation run.
+    private void applyCssAndLayout(long epoch) {
+        if (epoch != observationEpoch) {
+            return;
+        }
+        popupRoot.applyCss();
+        if (epoch == observationEpoch) {
+            popupRoot.layout();
         }
     }
 
@@ -273,13 +312,18 @@ public final class M3PopupContextSynchronizer {
 
     /// Copies an already resolved reduced-motion setting into the popup root.
     private void syncMotionContext(boolean reducedMotionRequested) {
-        cacheSyncedMotionContext(reducedMotionRequested);
+        hasSyncedMotionContext = true;
+        syncedReducedMotionRequested = reducedMotionRequested;
         M3MotionSettings.setReducedMotionRequested(popupRoot, reducedMotionRequested);
     }
 
     /// Synchronizes only when a settings notification changes this owner's resolved motion context.
     private void syncIfMotionContextChanged() {
+        if (!running) {
+            return;
+        }
         if (syncing) {
+            requestSync();
             return;
         }
 
@@ -322,17 +366,6 @@ public final class M3PopupContextSynchronizer {
             syncPending = false;
             syncRequestEpoch++;
         }
-    }
-
-    /// Records the owner-resolved motion settings copied during the latest synchronization pass.
-    private void cacheSyncedMotionContext(boolean reducedMotionRequested) {
-        hasSyncedMotionContext = true;
-        syncedReducedMotionRequested = reducedMotionRequested;
-    }
-
-    /// Clears the cached owner-resolved motion context after listener teardown.
-    private void clearSyncedMotionContext() {
-        hasSyncedMotionContext = false;
     }
 
     /// Owns listeners and mutable lookup caches used only while popup context is observed.
@@ -406,22 +439,18 @@ public final class M3PopupContextSynchronizer {
             owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
         }
 
-        /// Starts shared motion observation after the initial resolved context has been cached.
-        private void startMotionObservation() {
-            motionSettingsObserver.start();
-        }
-
         /// Removes every external listener and clears observed object references.
         private void stop() {
             owner.sceneProperty().removeListener(ownerSceneListener);
             owner.parentProperty().removeListener(ownerParentListener);
             owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
-            motionSettingsObserver.stop();
             updateObservedStylesheetSource(null);
             updateObservedScene(null);
             updateObservedSceneRoot(null);
             updateObservedThemeRoot(null);
             clearObservedAncestorThemeRoots();
+            // Coordinator removal can notify property listeners that start a new observation run.
+            motionSettingsObserver.stop();
         }
 
         /// Handles installed-theme metadata changes on observed roots.

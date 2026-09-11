@@ -12,7 +12,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.FontConverter;
-import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Labeled;
@@ -415,23 +414,11 @@ public class M3Text extends Labeled {
 
         /// CSS metadata for the typography font size token.
         private static final CssMetaData<M3Text, Number> TYPOGRAPHY_FONT_SIZE =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-typography-font-size",
-                        SizeConverter.getInstance(),
-                        DEFAULT_TYPOGRAPHY_FONT_SIZE
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Text control) {
-                        return M3Css.isSettable(control.typographyFontSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
-                        return control.typographyFontSizeProperty();
-                    }
-                };
+                        DEFAULT_TYPOGRAPHY_FONT_SIZE,
+                        M3Text::typographyFontSizeProperty
+                );
 
         /// CSS metadata for the typography font weight token.
         private static final CssMetaData<M3Text, @Nullable FontWeight> TYPOGRAPHY_FONT_WEIGHT =
@@ -455,23 +442,11 @@ public class M3Text extends Labeled {
 
         /// CSS metadata for the typography line height token.
         private static final CssMetaData<M3Text, Number> TYPOGRAPHY_LINE_HEIGHT =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-typography-line-height",
-                        SizeConverter.getInstance(),
-                        DEFAULT_TYPOGRAPHY_LINE_HEIGHT
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Text control) {
-                        return M3Css.isSettable(control.typographyLineHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
-                        return control.typographyLineHeightProperty();
-                    }
-                };
+                        DEFAULT_TYPOGRAPHY_LINE_HEIGHT,
+                        M3Text::typographyLineHeightProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

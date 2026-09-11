@@ -33,6 +33,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3SliderMath;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -639,22 +640,22 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     ) {
         M3RangeSlider slider = getSkinnable();
         stepIndicatorLayer.resizeRelocate(0.0, 0.0, slider.getWidth(), slider.getHeight());
-        double range = slider.getMax() - slider.getMin();
+        double stepFraction = M3SliderMath.stepFraction(slider.getStepSize(), slider.getMin(), slider.getMax());
         double step = slider.getStepSize();
         double size = slider.getStopIndicatorSize();
         double trackLength = trackEnd - trackStart;
-        if (!(range > 0.0) || !(step > 0.0) || !(size > 0.0) || !(trackLength > 0.0)) {
+        if (!(slider.getMax() > slider.getMin()) || !(step > 0.0) || !(size > 0.0) || !(trackLength > 0.0)) {
             hideUnusedStepIndicators(0);
             return;
         }
 
-        double stepCountValue = Math.floor(range / step + 1.0e-9);
+        double stepCountValue = Math.floor(1.0 / stepFraction + 1.0e-9);
         if (!Double.isFinite(stepCountValue) || stepCountValue > MAX_STEP_INDICATORS + 1.0) {
             hideUnusedStepIndicators(0);
             return;
         }
         int maximumStepIndex = (int) stepCountValue;
-        double spacing = trackLength * step / range;
+        double spacing = trackLength * stepFraction;
         if (spacing < size * 2.0) {
             hideUnusedStepIndicators(0);
             return;
@@ -663,9 +664,11 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         double radius = size / 2.0;
         double lowExclusion = lowShortSide / 2.0 + slider.getThumbTrackGap() + radius;
         double highExclusion = highShortSide / 2.0 + slider.getThumbTrackGap() + radius;
+        double lowPosition = valueToPosition(slider.getLowValue());
+        double highPosition = valueToPosition(slider.getHighValue());
         int used = 0;
         for (int index = 1; index < maximumStepIndex; index++) {
-            double fraction = Math.min(1.0, index * step / range);
+            double fraction = Math.min(1.0, index * stepFraction);
             double center;
             if (vertical) {
                 center = trackEnd - trackLength * fraction;
@@ -678,10 +681,9 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
             }
 
             Region indicator = stepIndicator(used++);
-            double value = slider.getMin() + range * fraction;
             indicator.pseudoClassStateChanged(
                     ACTIVE_PSEUDO_CLASS,
-                    value >= slider.getLowValue() && value <= slider.getHighValue()
+                    fraction >= lowPosition && fraction <= highPosition
             );
             if (vertical) {
                 indicator.resizeRelocate(
@@ -988,17 +990,13 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Converts a numeric value to a normalized position.
     private double valueToPosition(double value) {
         M3RangeSlider slider = getSkinnable();
-        double range = slider.getMax() - slider.getMin();
-        if (!(range > 0.0)) {
-            return 0.0;
-        }
-        return clamp((value - slider.getMin()) / range);
+        return M3SliderMath.position(value, slider.getMin(), slider.getMax());
     }
 
     /// Converts a normalized position to a numeric value.
     private double positionToValue(double position) {
         M3RangeSlider slider = getSkinnable();
-        return slider.getMin() + (slider.getMax() - slider.getMin()) * clamp(position);
+        return M3SliderMath.valueAt(position, slider.getMin(), slider.getMax());
     }
 
     /// Returns whether horizontal value geometry is mirrored.

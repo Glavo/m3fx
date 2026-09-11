@@ -18,8 +18,6 @@ import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -1310,115 +1308,51 @@ public final class M3NavigationRail extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for the item spacing token.
         private static final CssMetaData<M3NavigationRail, Number> ITEM_SPACING =
-                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.itemSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.itemSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-item-spacing",
+                        DEFAULT_ITEM_SPACING,
+                        M3NavigationRail::itemSpacingProperty
+                );
 
         /// CSS metadata for the collapsed container width token.
         private static final CssMetaData<M3NavigationRail, Number> COLLAPSED_CONTAINER_WIDTH =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-collapsed-container-width",
-                        SizeConverter.getInstance(),
-                        DEFAULT_COLLAPSED_CONTAINER_WIDTH
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.collapsedContainerWidthProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.collapsedContainerWidthProperty();
-                    }
-                };
+                        DEFAULT_COLLAPSED_CONTAINER_WIDTH,
+                        M3NavigationRail::collapsedContainerWidthProperty
+                );
 
         /// CSS metadata for the minimum expanded container width token.
         private static final CssMetaData<M3NavigationRail, Number> EXPANDED_MINIMUM_CONTAINER_WIDTH =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-expanded-minimum-container-width",
-                        SizeConverter.getInstance(),
-                        DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.expandedMinimumContainerWidthProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.expandedMinimumContainerWidthProperty();
-                    }
-                };
+                        DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH,
+                        M3NavigationRail::expandedMinimumContainerWidthProperty
+                );
 
         /// CSS metadata for the expanded container width token.
         private static final CssMetaData<M3NavigationRail, Number> EXPANDED_CONTAINER_WIDTH =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-expanded-container-width",
-                        SizeConverter.getInstance(),
-                        DEFAULT_EXPANDED_CONTAINER_WIDTH
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.expandedContainerWidthProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.expandedContainerWidthProperty();
-                    }
-                };
+                        DEFAULT_EXPANDED_CONTAINER_WIDTH,
+                        M3NavigationRail::expandedContainerWidthProperty
+                );
 
         /// CSS metadata for the maximum expanded container width token.
         private static final CssMetaData<M3NavigationRail, Number> EXPANDED_MAXIMUM_CONTAINER_WIDTH =
-                new CssMetaData<>(
+                M3Css.sizeMetaData(
                         "-m3-expanded-maximum-container-width",
-                        SizeConverter.getInstance(),
-                        DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.expandedMaximumContainerWidthProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.expandedMaximumContainerWidthProperty();
-                    }
-                };
+                        DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH,
+                        M3NavigationRail::expandedMaximumContainerWidthProperty
+                );
 
         /// CSS metadata for the spacing between the optional header and destination items.
         private static final CssMetaData<M3NavigationRail, Number> HEADER_SPACING =
-                new CssMetaData<>("-m3-header-spacing", SizeConverter.getInstance(), DEFAULT_HEADER_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3NavigationRail control) {
-                        return M3Css.isSettable(control.headerSpacingProperty());
-                    }
-
-                    /// Returns the corresponding styleable property.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
-                        return control.headerSpacingProperty();
-                    }
-                };
+                M3Css.sizeMetaData(
+                        "-m3-header-spacing",
+                        DEFAULT_HEADER_SPACING,
+                        M3NavigationRail::headerSpacingProperty
+                );
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;

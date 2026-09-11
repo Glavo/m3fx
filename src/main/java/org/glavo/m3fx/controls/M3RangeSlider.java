@@ -13,8 +13,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
@@ -22,6 +20,7 @@ import javafx.scene.control.Skin;
 import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3SliderMath;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3RangeSliderSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -44,6 +43,11 @@ import java.util.Objects;
 /// JavaFX properties; direct assignments are normalized in the same way as values supplied through the setters.
 /// The `lowValueChanging` and `highValueChanging` properties identify direct manipulation and are intended for
 /// coordinating application work that should be deferred until a drag completes.
+///
+/// Endpoint changes are notified separately, so listeners may observe an interval that is still being normalized.
+/// If an endpoint listener changes a bound or the step size, normalization repeats with the current settings before
+/// the outer update returns successfully. Endpoint assignments made by listeners are normalized as usual; an earlier
+/// calculation does not overwrite a newer endpoint assignment.
 ///
 /// Range sliders are normally horizontal. Vertical orientation is supported for application-specific layouts, but
 /// Material Design recommends a horizontal range slider because two vertically arranged values impose additional
@@ -110,8 +114,11 @@ public final class M3RangeSlider extends Control {
     /// The default distance between a handle and its value indicator.
     private static final double DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE = 12.0;
 
-    /// Prevents recursive value normalization while a range update is in progress.
+    /// Defers nested range normalization until the active pass finishes its current endpoint write.
     private boolean normalizingValues;
+
+    /// Records bounds or step-size changes that require another normalization pass.
+    private boolean normalizationRequested;
 
     /// Creates a horizontal, continuous range slider with the range `0` through `100` fully selected.
     public M3RangeSlider() {
@@ -286,10 +293,7 @@ public final class M3RangeSlider extends Control {
                 /// Preserves the selected-value ordering invariant.
                 @Override
                 protected void invalidated() {
-                    if (normalizingValues) {
-                        return;
-                    }
-                    double normalized = Math.min(normalizeValue(get()), getHighValue());
+                    double normalized = Math.min(normalizeValue(get()), normalizeValue(getHighValue()));
                     if (Double.compare(normalized, get()) != 0) {
                         set(normalized);
                         return;
@@ -351,10 +355,7 @@ public final class M3RangeSlider extends Control {
                 /// Preserves the selected-value ordering invariant.
                 @Override
                 protected void invalidated() {
-                    if (normalizingValues) {
-                        return;
-                    }
-                    double normalized = Math.max(normalizeValue(get()), getLowValue());
+                    double normalized = Math.max(normalizeValue(get()), normalizeValue(getLowValue()));
                     if (Double.compare(normalized, get()) != 0) {
                         set(normalized);
                         return;
@@ -572,6 +573,10 @@ public final class M3RangeSlider extends Control {
     }
 
     /// Sets the discrete interval.
+    ///
+    /// Positive intervals snap values to steps measured from the minimum. Half-step ties select the even step
+    /// index, counting the minimum as index zero. The snapped values are clamped to the range and constrained by
+    /// the opposite endpoint.
     ///
     /// @param value the non-negative interval, where zero selects continuous behavior
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
@@ -1247,31 +1252,37 @@ public final class M3RangeSlider extends Control {
         );
     }
 
-    /// Normalizes both selected values after a bound or step-size change.
+    /// Normalizes both selected values, repeating when callbacks change the bounds or step size.
     private void normalizeSelectedValues() {
+        normalizationRequested = true;
         if (normalizingValues) {
             return;
         }
         normalizingValues = true;
         try {
-            double normalizedLow = normalizeValue(getLowValue());
-            double normalizedHigh = normalizeValue(getHighValue());
-            if (normalizedLow > normalizedHigh) {
-                normalizedLow = normalizedHigh;
-            }
-            DoubleProperty lowProperty = lowValueProperty();
-            DoubleProperty highProperty = highValueProperty();
-            boolean lowChanged = Double.compare(normalizedLow, lowProperty.get()) != 0;
-            boolean highChanged = Double.compare(normalizedHigh, highProperty.get()) != 0;
-            if ((lowChanged && lowProperty.isBound()) || (highChanged && highProperty.isBound())) {
-                throw new RuntimeException("A bound range endpoint cannot be normalized");
-            }
-            if (lowChanged) {
-                lowProperty.set(normalizedLow);
-            }
-            if (highChanged) {
-                highProperty.set(normalizedHigh);
-            }
+            do {
+                normalizationRequested = false;
+                double normalizedHigh = normalizeValue(getHighValue());
+                double normalizedLow = Math.min(normalizeValue(getLowValue()), normalizedHigh);
+                DoubleProperty lowProperty = lowValueProperty();
+                DoubleProperty highProperty = highValueProperty();
+                boolean lowChanged = Double.compare(normalizedLow, lowProperty.get()) != 0;
+                boolean highChanged = Double.compare(normalizedHigh, highProperty.get()) != 0;
+                if ((lowChanged && lowProperty.isBound()) || (highChanged && highProperty.isBound())) {
+                    throw new RuntimeException("A bound range endpoint cannot be normalized");
+                }
+                if (lowChanged) {
+                    lowProperty.set(normalizedLow);
+                }
+                if (normalizationRequested) {
+                    continue;
+                }
+                // Lower-endpoint listeners may have replaced the upper value or its binding.
+                normalizedHigh = normalizeValue(getHighValue());
+                if (Double.compare(normalizedHigh, highProperty.get()) != 0) {
+                    highProperty.set(normalizedHigh);
+                }
+            } while (normalizationRequested);
         } finally {
             normalizingValues = false;
         }
@@ -1292,7 +1303,7 @@ public final class M3RangeSlider extends Control {
         if (!(step > 0.0) || !(max > min)) {
             return clamped;
         }
-        return Math.max(min, Math.min(max, min + Math.rint((clamped - min) / step) * step));
+        return Math.max(min, Math.min(max, M3SliderMath.snap(clamped, min, step)));
     }
 
     /// Creates a direct-manipulation state property.
@@ -1320,15 +1331,15 @@ public final class M3RangeSlider extends Control {
     private static final class StyleableProperties {
         /// CSS metadata for track thickness.
         private static final CssMetaData<M3RangeSlider, Number> TRACK_THICKNESS =
-                metric("-m3-track-thickness", DEFAULT_TRACK_THICKNESS, M3RangeSlider::trackThicknessProperty);
+                M3Css.sizeMetaData("-m3-track-thickness", DEFAULT_TRACK_THICKNESS, M3RangeSlider::trackThicknessProperty);
 
         /// CSS metadata for track shape.
         private static final CssMetaData<M3RangeSlider, Number> TRACK_SHAPE =
-                metric("-m3-track-shape", DEFAULT_TRACK_SHAPE, M3RangeSlider::trackShapeProperty);
+                M3Css.sizeMetaData("-m3-track-shape", DEFAULT_TRACK_SHAPE, M3RangeSlider::trackShapeProperty);
 
         /// CSS metadata for stop-indicator size.
         private static final CssMetaData<M3RangeSlider, Number> STOP_INDICATOR_SIZE =
-                metric(
+                M3Css.sizeMetaData(
                         "-m3-stop-indicator-size",
                         DEFAULT_STOP_INDICATOR_SIZE,
                         M3RangeSlider::stopIndicatorSizeProperty
@@ -1336,7 +1347,7 @@ public final class M3RangeSlider extends Control {
 
         /// CSS metadata for stop-indicator trailing space.
         private static final CssMetaData<M3RangeSlider, Number> STOP_INDICATOR_TRAILING_SPACE =
-                metric(
+                M3Css.sizeMetaData(
                         "-m3-stop-indicator-trailing-space",
                         DEFAULT_STOP_INDICATOR_TRAILING_SPACE,
                         M3RangeSlider::stopIndicatorTrailingSpaceProperty
@@ -1344,15 +1355,15 @@ public final class M3RangeSlider extends Control {
 
         /// CSS metadata for handle size.
         private static final CssMetaData<M3RangeSlider, Number> THUMB_SIZE =
-                metric("-m3-thumb-size", DEFAULT_THUMB_SIZE, M3RangeSlider::thumbSizeProperty);
+                M3Css.sizeMetaData("-m3-thumb-size", DEFAULT_THUMB_SIZE, M3RangeSlider::thumbSizeProperty);
 
         /// CSS metadata for enabled handle width.
         private static final CssMetaData<M3RangeSlider, Number> THUMB_WIDTH =
-                metric("-m3-thumb-width", DEFAULT_THUMB_WIDTH, M3RangeSlider::thumbWidthProperty);
+                M3Css.sizeMetaData("-m3-thumb-width", DEFAULT_THUMB_WIDTH, M3RangeSlider::thumbWidthProperty);
 
         /// CSS metadata for focused handle width.
         private static final CssMetaData<M3RangeSlider, Number> FOCUSED_THUMB_WIDTH =
-                metric(
+                M3Css.sizeMetaData(
                         "-m3-focused-thumb-width",
                         DEFAULT_FOCUSED_THUMB_WIDTH,
                         M3RangeSlider::focusedThumbWidthProperty
@@ -1360,7 +1371,7 @@ public final class M3RangeSlider extends Control {
 
         /// CSS metadata for pressed handle width.
         private static final CssMetaData<M3RangeSlider, Number> PRESSED_THUMB_WIDTH =
-                metric(
+                M3Css.sizeMetaData(
                         "-m3-pressed-thumb-width",
                         DEFAULT_PRESSED_THUMB_WIDTH,
                         M3RangeSlider::pressedThumbWidthProperty
@@ -1368,15 +1379,15 @@ public final class M3RangeSlider extends Control {
 
         /// CSS metadata for handle-to-track gap.
         private static final CssMetaData<M3RangeSlider, Number> THUMB_TRACK_GAP =
-                metric("-m3-thumb-track-gap", DEFAULT_THUMB_TRACK_GAP, M3RangeSlider::thumbTrackGapProperty);
+                M3Css.sizeMetaData("-m3-thumb-track-gap", DEFAULT_THUMB_TRACK_GAP, M3RangeSlider::thumbTrackGapProperty);
 
         /// CSS metadata for touch-target size.
         private static final CssMetaData<M3RangeSlider, Number> TOUCH_TARGET_SIZE =
-                metric("-m3-touch-target-size", DEFAULT_TOUCH_TARGET_SIZE, M3RangeSlider::touchTargetSizeProperty);
+                M3Css.sizeMetaData("-m3-touch-target-size", DEFAULT_TOUCH_TARGET_SIZE, M3RangeSlider::touchTargetSizeProperty);
 
         /// CSS metadata for value-indicator spacing.
         private static final CssMetaData<M3RangeSlider, Number> VALUE_INDICATOR_BOTTOM_SPACE =
-                metric(
+                M3Css.sizeMetaData(
                         "-m3-value-indicator-bottom-space",
                         DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE,
                         M3RangeSlider::valueIndicatorBottomSpaceProperty
@@ -1402,31 +1413,6 @@ public final class M3RangeSlider extends Control {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
-        /// Creates CSS metadata for one range-slider metric.
-        ///
-        /// @param property the CSS property name
-        /// @param fallback the fallback value
-        /// @param accessor the styleable-property accessor
-        /// @return the CSS metadata
-        private static CssMetaData<M3RangeSlider, Number> metric(
-                String property,
-                double fallback,
-                java.util.function.Function<M3RangeSlider, StyleableDoubleProperty> accessor
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), fallback) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3RangeSlider control) {
-                    return M3Css.isSettable(accessor.apply(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3RangeSlider control) {
-                    return accessor.apply(control);
-                }
-            };
-        }
 
         /// Prevents utility-class instantiation.
         private StyleableProperties() {
