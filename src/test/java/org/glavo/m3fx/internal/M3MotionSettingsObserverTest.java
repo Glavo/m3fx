@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,6 +41,89 @@ final class M3MotionSettingsObserverTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// A failing animation refresh does not block later features on the same owner or other owners.
+    @Test
+    void runtimeFailuresDoNotBlockOtherSubscriptions() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane first = new Pane();
+            Pane second = new Pane();
+            Pane root = new Pane(first, second);
+            Scene scene = new Scene(root);
+            int sceneProperties = scene.getProperties().size();
+            RuntimeException primary = new IllegalArgumentException("first motion callback failed");
+            RuntimeException secondary = new IllegalStateException("second motion callback failed");
+            AtomicBoolean firstReduced = new AtomicBoolean();
+            AtomicBoolean secondReduced = new AtomicBoolean();
+            M3MotionSettingsObserver failingFirst = new M3MotionSettingsObserver(first, () -> {
+                if (M3MotionSettings.shouldReduceMotion(first)) {
+                    throw primary;
+                }
+            });
+            M3MotionSettingsObserver healthyFirst = new M3MotionSettingsObserver(first,
+                    () -> firstReduced.set(M3MotionSettings.shouldReduceMotion(first)));
+            M3MotionSettingsObserver failingSecond = new M3MotionSettingsObserver(second, () -> {
+                if (M3MotionSettings.shouldReduceMotion(second)) {
+                    throw secondary;
+                }
+            });
+            M3MotionSettingsObserver healthySecond = new M3MotionSettingsObserver(second,
+                    () -> secondReduced.set(M3MotionSettings.shouldReduceMotion(second)));
+            try {
+                assertSame(primary, assertThrows(RuntimeException.class,
+                        () -> M3MotionSettings.setReducedMotionRequested(root, true)));
+                assertArrayEquals(new Throwable[]{secondary}, primary.getSuppressed());
+                assertTrue(firstReduced.get());
+                assertTrue(secondReduced.get());
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                assertFalse(firstReduced.get());
+                assertFalse(secondReduced.get());
+            } finally {
+                failingFirst.dispose();
+                healthyFirst.dispose();
+                failingSecond.dispose();
+                healthySecond.dispose();
+            }
+            assertEquals(sceneProperties, scene.getProperties().size());
+            assertTrue(first.getProperties().isEmpty());
+            assertTrue(second.getProperties().isEmpty());
+        }));
+    }
+
+    /// A nested settings change still receives its deferred refresh after the initiating callback fails.
+    @Test
+    void failureDoesNotDiscardPendingRefresh() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane owner = new Pane();
+            new Scene(owner);
+            AtomicBoolean finalReduced = new AtomicBoolean();
+            AtomicInteger refreshes = new AtomicInteger();
+            M3MotionSettingsObserver redirect = new M3MotionSettingsObserver(owner, () -> {
+                if (M3MotionSettings.shouldReduceMotion(owner)) {
+                    M3MotionSettings.setReducedMotionRequested(owner, false);
+                    throw new IllegalStateException("motion callback failed after replacement");
+                }
+            });
+            M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, () -> {
+                finalReduced.set(M3MotionSettings.shouldReduceMotion(owner));
+                refreshes.incrementAndGet();
+            });
+            try {
+                int initialRefreshes = refreshes.get();
+                assertThrows(IllegalStateException.class,
+                        () -> M3MotionSettings.setReducedMotionRequested(owner, true));
+                assertTrue(refreshes.get() > initialRefreshes);
+                assertFalse(finalReduced.get());
+                assertFalse(M3MotionSettings.shouldReduceMotion(owner));
+            } finally {
+                redirect.dispose();
+                observer.dispose();
+            }
+            assertTrue(owner.getProperties().isEmpty());
+        }));
     }
 
     /// Verifies that observer refreshes caused by background settings changes run on the JavaFX thread.

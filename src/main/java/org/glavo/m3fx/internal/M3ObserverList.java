@@ -60,7 +60,7 @@ final class M3ObserverList<T> {
         }
         if (slots == entries.length) {
             int capacity = entries.length;
-            entries = Arrays.copyOf(entries, capacity == 0 ? 4 : capacity + (capacity >> 1));
+            entries = Arrays.copyOf(entries, capacity + (capacity >> 1));
         }
         entries[slots++] = observer;
         size++;

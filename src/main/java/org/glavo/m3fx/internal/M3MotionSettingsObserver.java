@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /// callbacks dispose subscriptions or move their owner to another scene.
 /// Application-wide motion settings are not observed while the presenting window is hidden or iconified; restoring
 /// the presentation refreshes subscribers against the latest setting.
+/// Runtime callback failures are rethrown after notifying the remaining subscribers, with further failures suppressed.
 ///
 /// Construction and lifecycle methods must be invoked on the JavaFX application thread. A disposed observer cannot
 /// be restarted. Calling [stop] or [dispose] more than once has no effect.
@@ -446,6 +447,7 @@ public final class M3MotionSettingsObserver {
                 return;
             }
 
+            @Nullable RuntimeException failure = null;
             do {
                 refreshRequested = false;
                 long dispatchRegistrationVersion = registrationVersion;
@@ -454,7 +456,15 @@ public final class M3MotionSettingsObserver {
                     for (int index = 0; index < dispatchLimit; index++) {
                         @Nullable M3MotionSettingsObserver observer = observers.get(index);
                         if (observer != null) {
-                            observer.refresh();
+                            try {
+                                observer.refresh();
+                            } catch (RuntimeException exception) {
+                                if (failure == null) {
+                                    failure = exception;
+                                } else if (failure != exception) {
+                                    failure.addSuppressed(exception);
+                                }
+                            }
                         }
                         if (registrationVersion != dispatchRegistrationVersion) {
                             break;
@@ -464,6 +474,9 @@ public final class M3MotionSettingsObserver {
                     observers.endDispatch();
                 }
             } while (refreshRequested && !observers.isEmpty());
+            if (failure != null) {
+                throw failure;
+            }
         }
     }
 
@@ -644,16 +657,28 @@ public final class M3MotionSettingsObserver {
             if (source != null && source.getScene() != scene) {
                 return;
             }
+            @Nullable RuntimeException failure = null;
             int dispatchLimit = owners.beginDispatch();
             try {
                 for (int index = 0; index < dispatchLimit; index++) {
                     @Nullable OwnerObserver ownerObserver = owners.get(index);
                     if (ownerObserver != null && (source == null || contains(source, ownerObserver.owner))) {
-                        ownerObserver.refreshFrom(this);
+                        try {
+                            ownerObserver.refreshFrom(this);
+                        } catch (RuntimeException exception) {
+                            if (failure == null) {
+                                failure = exception;
+                            } else if (failure != exception) {
+                                failure.addSuppressed(exception);
+                            }
+                        }
                     }
                 }
             } finally {
                 owners.endDispatch();
+            }
+            if (failure != null) {
+                throw failure;
             }
         }
 
@@ -668,6 +693,5 @@ public final class M3MotionSettingsObserver {
             }
             return false;
         }
-
     }
 }

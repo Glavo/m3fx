@@ -71,10 +71,13 @@ public class M3Localizer {
     ///
     /// Installing the same instance again has no effect. Existing controls retain application-supplied text and
     /// formatting overrides. To change translations, install a new instance rather than mutating an existing one.
+    /// If a control refresh throws a runtime exception, other affected controls are still notified. The new
+    /// installation remains in place; the first failure is rethrown with subsequent failures suppressed.
     ///
     /// @param node the root of the localized subtree
     /// @param localizer the replacement localizer
     /// @throws NullPointerException if either argument is `null`
+    /// @throws RuntimeException if a control fails to refresh its localized content
     public static void install(Node node, M3Localizer localizer) {
         M3LocalizerObserver.install(Objects.requireNonNull(node, "node"),
                 Objects.requireNonNull(localizer, "localizer"));
@@ -83,9 +86,12 @@ public class M3Localizer {
     /// Removes a node's installation and restores inheritance from its parent.
     ///
     /// Descendant installations are not removed. Calling this method without a direct installation has no effect.
+    /// If a control refresh throws a runtime exception, other affected controls are still notified. The installation
+    /// remains removed; the first failure is rethrown with subsequent failures suppressed.
     ///
     /// @param node the root whose direct installation is removed
     /// @throws NullPointerException if `node` is `null`
+    /// @throws RuntimeException if a control fails to refresh its localized content
     public static void uninstall(Node node) {
         M3LocalizerObserver.install(Objects.requireNonNull(node, "node"), null);
     }

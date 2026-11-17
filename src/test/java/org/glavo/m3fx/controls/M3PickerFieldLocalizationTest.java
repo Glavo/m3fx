@@ -35,6 +35,36 @@ final class M3PickerFieldLocalizationTest {
         Platform.setImplicitExit(false);
     }
 
+    /// A malformed translation for one control does not prevent unrelated control defaults from updating.
+    @Test
+    void translationFailureIsIsolatedAndCanBeRecovered() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePickerField date = new M3DatePickerField();
+            M3TimePickerField time = new M3TimePickerField();
+            VBox root = new VBox(date, time);
+            M3Localizer broken = new M3Localizer(Locale.GERMANY) {
+                /// Models a failing application translation lookup.
+                @Override
+                public String getInvalidDateText() {
+                    throw new IllegalArgumentException("missing date translation");
+                }
+
+                /// Supplies an independent translation that remains usable.
+                @Override
+                public String getInvalidTimeText() {
+                    return "Invalid translated time";
+                }
+            };
+            assertThrows(IllegalArgumentException.class, () -> M3Localizer.install(root, broken));
+            assertEquals("Invalid translated time", time.getInvalidTextErrorText());
+            assertSame(broken, M3Localizer.getEffectiveLocalizer(date));
+            TaggedLocalizer recovered = new TaggedLocalizer("recovered");
+            M3Localizer.install(root, recovered);
+            assertEquals(recovered.getInvalidDateText(), date.getInvalidTextErrorText());
+            assertEquals(recovered.getInvalidTimeText(), time.getInvalidTextErrorText());
+        });
+    }
+
     /// Reparenting and nearer installations refresh active errors without changing raw text or formatters.
     @Test
     void pickerFieldsFollowScopeAndPreserveEditing() {

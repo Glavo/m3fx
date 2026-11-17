@@ -287,6 +287,76 @@ final class M3LocalizationTest {
         });
     }
 
+    /// Runtime failures are reported only after siblings and later branches receive the replacement.
+    @Test
+    void failingCallbacksDoNotBlockOtherBranches() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane first = new Pane();
+            Pane second = new Pane();
+            Pane third = new Pane();
+            Pane root = new Pane(first, second, third);
+            M3Localizer rejected = new M3Localizer(Locale.GERMANY);
+            M3Localizer recovered = new M3Localizer(Locale.US);
+            RuntimeException primaryFailure = new IllegalArgumentException("first translation failed");
+            RuntimeException secondaryFailure = new IllegalStateException("second translation failed");
+            AtomicReference<M3Localizer> firstValue = new AtomicReference<>();
+            AtomicReference<M3Localizer> lastValue = new AtomicReference<>();
+            try (M3LocalizerObserver failingFirst = new M3LocalizerObserver(first, value -> {
+                if (value == rejected) {
+                    throw primaryFailure;
+                }
+            }); M3LocalizerObserver healthyFirst = new M3LocalizerObserver(first, firstValue::set);
+                 M3LocalizerObserver failingSecond = new M3LocalizerObserver(second, value -> {
+                     if (value == rejected) {
+                         throw secondaryFailure;
+                     }
+                 }); M3LocalizerObserver failingThird = new M3LocalizerObserver(third, value -> {
+                     if (value == rejected) {
+                         throw primaryFailure;
+                     }
+                 }); M3LocalizerObserver healthyLast = new M3LocalizerObserver(third, lastValue::set)) {
+                assertSame(primaryFailure, assertThrows(RuntimeException.class,
+                        () -> M3Localizer.install(root, rejected)));
+                assertArrayEquals(new Throwable[]{secondaryFailure}, primaryFailure.getSuppressed());
+                assertSame(rejected, firstValue.get());
+                assertSame(rejected, lastValue.get());
+                assertSame(rejected, M3Localizer.getEffectiveLocalizer(third));
+                M3Localizer.install(root, recovered);
+                assertSame(recovered, firstValue.get());
+                assertSame(recovered, lastValue.get());
+            }
+            M3Localizer.uninstall(root);
+            assertTrue(root.getProperties().isEmpty());
+            assertTrue(first.getProperties().isEmpty());
+            assertTrue(second.getProperties().isEmpty());
+            assertTrue(third.getProperties().isEmpty());
+        });
+    }
+
+    /// A failing callback cannot revert consumers to a value superseded by a nested replacement.
+    @Test
+    void failureAfterNestedReplacementPreservesLatestValue() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane leaf = new Pane();
+            Pane root = new Pane(leaf);
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.GERMANY);
+            List<M3Localizer> delivered = new ArrayList<>();
+            try (M3LocalizerObserver redirect = new M3LocalizerObserver(root, value -> {
+                if (value == first) {
+                    M3Localizer.install(root, second);
+                    throw new IllegalStateException("replacement callback failed");
+                }
+            }); M3LocalizerObserver observer = new M3LocalizerObserver(leaf, delivered::add)) {
+                delivered.clear();
+                assertThrows(IllegalStateException.class, () -> M3Localizer.install(root, first));
+                assertEquals(List.of(second), delivered);
+                assertSame(second, M3Localizer.getEffectiveLocalizer(leaf));
+            }
+            assertTrue(leaf.getProperties().isEmpty());
+        });
+    }
+
     /// Models an application localizer with value equality rather than identity equality.
     @NotNullByDefault
     private static final class EqualLocalizer extends M3Localizer {

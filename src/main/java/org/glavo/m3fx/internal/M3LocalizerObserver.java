@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 /// Only subscribed nodes and their unoverridden ancestor paths allocate contexts. Reparenting reconnects the path;
 /// releasing the final subscription removes all listeners and property entries on unused ancestors. There is no
 /// application-wide registry retaining scenes or controls. Construct and close observers on the JavaFX thread.
+/// Runtime failures during replacement do not prevent other subscriptions from being notified; the first failure
+/// is rethrown after dispatch with subsequent failures suppressed. Initial callback failures close the subscription.
 @NotNullByDefault
 public final class M3LocalizerObserver implements AutoCloseable {
     /// Stores a directly installed localizer without allocating a JavaFX property.
@@ -203,7 +205,7 @@ public final class M3LocalizerObserver implements AutoCloseable {
                     previous.close();
                 }
                 if (nextParent != null) {
-                    M3LocalizerObserver replacement = new M3LocalizerObserver(nextParent, ignored -> refresh(), false);
+                    M3LocalizerObserver replacement = new M3LocalizerObserver(nextParent, this::refresh, false);
                     // Installing node metadata can invoke application map listeners that dispose or reparent us.
                     if (started && observedParent == nextParent && parentObserver == null) {
                         parentObserver = replacement;
@@ -212,19 +214,28 @@ public final class M3LocalizerObserver implements AutoCloseable {
                     }
                 }
             }
-            refresh();
+            refresh(resolve(node));
         }
 
-        /// Resolves once per notification and tolerates subscription changes without copying the observer list.
-        private void refresh() {
-            dispatchValue = resolve(node);
+        /// Propagates the parent's resolved value without walking the same ancestor path again.
+        private void refresh(M3Localizer localizer) {
+            dispatchValue = localizer;
+            @Nullable RuntimeException failure = null;
             int limit = observers.beginDispatch();
             try {
                 for (int index = 0; index < limit; index++) {
                     @Nullable M3LocalizerObserver observer = observers.get(index);
                     @Nullable M3Localizer value = dispatchValue;
                     if (observer != null && value != null) {
-                        observer.refresh(value);
+                        try {
+                            observer.refresh(value);
+                        } catch (RuntimeException exception) {
+                            if (failure == null) {
+                                failure = exception;
+                            } else if (failure != exception) {
+                                failure.addSuppressed(exception);
+                            }
+                        }
                     }
                 }
             } finally {
@@ -232,6 +243,9 @@ public final class M3LocalizerObserver implements AutoCloseable {
                 if (!observers.isDispatching()) {
                     dispatchValue = null;
                 }
+            }
+            if (failure != null) {
+                throw failure;
             }
         }
 
