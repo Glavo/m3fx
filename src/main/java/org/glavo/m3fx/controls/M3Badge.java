@@ -16,9 +16,9 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -43,33 +43,6 @@ import java.util.Objects;
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public final class M3Badge extends Control implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-badge";
@@ -398,6 +371,33 @@ public final class M3Badge extends Control implements M3Animated {
             );
         }
         return horizontalPadding;
+    }
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
     }
 
     /// Returns the text representation of a non-negative count.

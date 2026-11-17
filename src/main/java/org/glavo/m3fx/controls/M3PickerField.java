@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.animation.Animation;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -20,6 +16,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -32,29 +32,29 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
-import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3NodeTransition;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
-import org.glavo.m3fx.localization.M3Localizer;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3MotionProperties;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
-import org.jetbrains.annotations.Unmodifiable;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.ArrayList;
 import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -93,33 +93,6 @@ import java.util.function.Function;
 @NotNullByDefault
 public abstract sealed class M3PickerField<T, P extends Control> extends Control implements M3Animated, M3FormInput
         permits M3DatePickerField, M3TimePickerField {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-picker-field";
@@ -830,6 +803,33 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     @Override
     public final ObservableValue<? extends @Nullable Node> validationFocusTargetProperty() {
         return inputLayout.inputProperty();
+    }
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
     }
 
     /// Returns the Material text input layout used by this picker field.
@@ -1555,6 +1555,26 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return popup;
     }
 
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3PickerField<?, ?>, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
+    }
+
     /// Owns the popup window and collaborators needed only while picker presentation is available.
     @NotNullByDefault
     private final class PickerPopup {
@@ -1642,25 +1662,5 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     @Override
     public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
-    }
-
-    /// CSS metadata for this component.
-    @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the inheritable animation setting.
-        private static final CssMetaData<M3PickerField<?, ?>, Boolean> ANIMATIONS_ENABLED =
-                M3MotionProperties.cssMetaData(
-                        c -> c.animationsEnabledProperty(),
-                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
-
-        /// The complete immutable CSS metadata list.
-        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
-
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables =
-                    new ArrayList<>(Control.getClassCssMetaData());
-            styleables.add(ANIMATIONS_ENABLED);
-            STYLEABLES = List.copyOf(styleables);
-        }
     }
 }

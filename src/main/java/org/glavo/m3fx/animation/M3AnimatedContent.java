@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.animation;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.beans.property.BooleanProperty;
@@ -15,6 +11,10 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.geometry.HPos;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
@@ -26,18 +26,18 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.animation.M3DelayedScalarChannel;
 import org.glavo.m3fx.internal.animation.M3EnterTransitionImpl;
 import org.glavo.m3fx.internal.animation.M3ExitTransitionImpl;
 import org.glavo.m3fx.internal.animation.M3ScalarChannel;
 import org.glavo.m3fx.internal.animation.M3TransitionEffect;
 import org.glavo.m3fx.internal.animation.M3TransitionEffectKind;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,33 +67,6 @@ import java.util.Objects;
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3AnimatedContent extends Region implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-animated-content";
@@ -398,6 +371,33 @@ public final class M3AnimatedContent extends Region implements M3Animated {
         return transitioning.getReadOnlyProperty();
     }
 
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// Creates an empty animated-content region.
     public M3AnimatedContent() {
         getStyleClass().setAll(DEFAULT_STYLE_CLASS);
@@ -477,6 +477,17 @@ public final class M3AnimatedContent extends Region implements M3Animated {
         return snappedTopInset()
                 + alignedOffset(availableHeight, contentHeight, getAlignment().getVpos())
                 + baseline;
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns the animated minimum width including snapped insets.
@@ -820,6 +831,26 @@ public final class M3AnimatedContent extends Region implements M3Animated {
             case BOTTOM -> effect.value();
             case START, END -> 0.0;
         };
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3AnimatedContent, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Region.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
     }
 
     /// Stores one reusable holder and its fixed visual animation channels.
@@ -1381,38 +1412,6 @@ public final class M3AnimatedContent extends Region implements M3Animated {
             return entering
                     ? M3Animation.defaultSpatial(M3AnimatedContent.this)
                     : M3Animation.fastSpatial(M3AnimatedContent.this);
-        }
-    }
-
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
-        return getClassCssMetaData();
-    }
-
-    /// CSS metadata for this component.
-    @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the inheritable animation setting.
-        private static final CssMetaData<M3AnimatedContent, Boolean> ANIMATIONS_ENABLED =
-                M3MotionProperties.cssMetaData(
-                        c -> c.animationsEnabledProperty(),
-                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
-
-        /// The complete immutable CSS metadata list.
-        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
-
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables =
-                    new ArrayList<>(Region.getClassCssMetaData());
-            styleables.add(ANIMATIONS_ENABLED);
-            STYLEABLES = List.copyOf(styleables);
         }
     }
 }

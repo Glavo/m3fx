@@ -3,8 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.StyleableBooleanProperty;
 import javafx.animation.Animation;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -12,7 +10,9 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -27,7 +27,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -37,9 +36,10 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PresentationActivity;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -77,33 +77,6 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3FabMenu extends Control implements M3Animated {
 
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
-
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-fab-menu";
 
@@ -115,12 +88,12 @@ public final class M3FabMenu extends Control implements M3Animated {
 
     /// The style class applied to the menu toggle floating action button.
     private static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
+
     /// The style class applied to the menu close floating action button.
     private static final String CLOSE_STYLE_CLASS = "m3-fab-menu-close";
 
     /// The expanded pseudo-class.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
-
 
     /// The default spacing between expanded action items.
     private static final double DEFAULT_ACTION_SPACING = 4.0;
@@ -266,6 +239,33 @@ public final class M3FabMenu extends Control implements M3Animated {
     /// @return the expanded-state property
     public final BooleanProperty expandedProperty() {
         return expanded;
+    }
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
     }
 
     /// The action item container.
@@ -609,7 +609,6 @@ public final class M3FabMenu extends Control implements M3Animated {
         }
         return shown;
     }
-
 
     /// Returns whether an action item exposes the requested nested accessibility target.
     private boolean containsNestedAccessibleActionTarget(Object... parameters) {
@@ -1011,7 +1010,6 @@ public final class M3FabMenu extends Control implements M3Animated {
     protected Skin<?> createDefaultSkin() {
         return new M3FabMenuSkin(this, actions, toggleButton, closeButton);
     }
-
 
     /// CSS metadata for FAB menu layout tokens.
     @NotNullByDefault

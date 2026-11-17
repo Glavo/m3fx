@@ -3,16 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -23,18 +23,18 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
-import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.localization.M3Localizer;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,33 +53,6 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) for modal surface and overlay behavior.
 @NotNullByDefault
 public final class M3Scrim extends Region implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-scrim";
@@ -286,6 +259,33 @@ public final class M3Scrim extends Region implements M3Animated {
         return onAction;
     }
 
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// Fires this scrim's action event unless the scrim is disabled.
     ///
     /// This method does not change [#shownProperty()].
@@ -315,6 +315,17 @@ public final class M3Scrim extends Region implements M3Animated {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("scrim.css");
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for scrim visibility state.
@@ -440,17 +451,6 @@ public final class M3Scrim extends Region implements M3Animated {
             throw new IllegalArgumentException("visibleOpacity must be finite and between 0.0 and 1.0");
         }
         return opacity;
-    }
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
-        return getClassCssMetaData();
     }
 
     /// CSS metadata for this component.

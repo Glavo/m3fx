@@ -3,18 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.StyleableBooleanProperty;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -25,7 +23,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -39,19 +39,19 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
-import org.glavo.m3fx.internal.M3SelectionNavigation;
-import org.glavo.m3fx.internal.M3FocusTraversal;
-import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3FocusGuards;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.internal.M3ListViewPresentation;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListViewSkin;
-import org.glavo.m3fx.internal.M3KeyEvents;
-import org.glavo.m3fx.internal.M3ListViewPresentation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -89,33 +89,6 @@ import java.util.Objects;
 /// @param <T> the item type rendered by this list view
 @NotNullByDefault
 public final class M3ListView<T> extends Control implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-list-view";
@@ -525,6 +498,33 @@ public final class M3ListView<T> extends Control implements M3Animated {
     /// @return the keyboard-focused item property
     public final ReadOnlyObjectProperty<@Nullable T> focusedItemProperty() {
         return focusedItem.getReadOnlyProperty();
+    }
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
     }
 
     /// The live, mutable, ordered data list rendered by this view.
@@ -2004,7 +2004,6 @@ public final class M3ListView<T> extends Control implements M3Animated {
         return getSkin() instanceof M3ListViewPresentation presentation ? presentation : null;
     }
 
-
     /// Verifies that an index belongs to the backing data list.
     private void checkItemIndex(int index) {
         if (index < 0 || index >= getItems().size()) {
@@ -2036,5 +2035,4 @@ public final class M3ListView<T> extends Control implements M3Animated {
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
-
 }

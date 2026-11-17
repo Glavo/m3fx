@@ -4,10 +4,10 @@
 package org.glavo.m3fx.controls;
 
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
-import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
@@ -18,9 +18,9 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +44,37 @@ import java.util.Objects;
 /// @param <T> the item type rendered by this cell
 @NotNullByDefault
 public class M3ListCell<T> extends IndexedCell<T> implements M3Animated {
+
+    /// The default style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-list-view-cell";
+
+    /// The pseudo-class used when this virtualized row owns logical keyboard focus.
+    private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
+
+    /// The owning virtualized list view.
+    private final M3ListView<T> listView;
+
+    /// Routes list item actions back into the list view selection policy.
+    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
+
+    /// The rendered list item currently owned by this cell.
+    private @Nullable M3ListItem listItem;
+
+    /// Creates a reusable list view cell.
+    ///
+    /// @param listView the owning virtualized list view
+    /// @throws NullPointerException if `listView` is `null`
+    public M3ListCell(M3ListView<T> listView) {
+        this.listView = Objects.requireNonNull(listView, "listView");
+        if (!getStyleClass().contains(DEFAULT_STYLE_CLASS)) {
+            getStyleClass().add(DEFAULT_STYLE_CLASS);
+        }
+
+        setAccessibleRole(AccessibleRole.LIST_ITEM);
+        setFocusTraversable(false);
+        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        setText(null);
+    }
 
     /// The animation setting, or `null` until the property is first requested.
     private @Nullable StyleableBooleanProperty animationsEnabled;
@@ -70,39 +101,6 @@ public class M3ListCell<T> extends IndexedCell<T> implements M3Animated {
                     StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
         }
         return animationsEnabled;
-    }
-
-    /// The default style class.
-    private static final String DEFAULT_STYLE_CLASS = "m3-list-view-cell";
-
-
-    /// The pseudo-class used when this virtualized row owns logical keyboard focus.
-    private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
-
-    /// The owning virtualized list view.
-    private final M3ListView<T> listView;
-
-    /// Routes list item actions back into the list view selection policy.
-    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
-
-
-    /// The rendered list item currently owned by this cell.
-    private @Nullable M3ListItem listItem;
-
-    /// Creates a reusable list view cell.
-    ///
-    /// @param listView the owning virtualized list view
-    /// @throws NullPointerException if `listView` is `null`
-    public M3ListCell(M3ListView<T> listView) {
-        this.listView = Objects.requireNonNull(listView, "listView");
-        if (!getStyleClass().contains(DEFAULT_STYLE_CLASS)) {
-            getStyleClass().add(DEFAULT_STYLE_CLASS);
-        }
-
-        setAccessibleRole(AccessibleRole.LIST_ITEM);
-        setFocusTraversable(false);
-        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        setText(null);
     }
 
     /// Returns the owning virtualized list view.
@@ -185,6 +183,17 @@ public class M3ListCell<T> extends IndexedCell<T> implements M3Animated {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ListViewCellSkin<>(this);
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Creates the row node used by this cell across virtualized item updates.
@@ -273,17 +282,6 @@ public class M3ListCell<T> extends IndexedCell<T> implements M3Animated {
             }
         }
         event.consume();
-    }
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
     }
 
     /// CSS metadata for this component.

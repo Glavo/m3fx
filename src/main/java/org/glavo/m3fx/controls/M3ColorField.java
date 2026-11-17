@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -14,21 +10,26 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
-import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3ColorMath;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ColorFieldSkin;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.jetbrains.annotations.Nullable;
 
 /// Provides a single-line hexadecimal editor for an [M3Color].
 ///
@@ -47,33 +48,6 @@ import org.jetbrains.annotations.Nullable;
 /// This is an M3FX color-selection extension. Material Design 3 does not define a corresponding standard component.
 @NotNullByDefault
 public final class M3ColorField extends Control implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-color-field";
@@ -323,6 +297,33 @@ public final class M3ColorField extends Control implements M3Animated {
         return promptText;
     }
 
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// Parses and, if valid, commits the current transient text.
     ///
     /// A successful commit preserves the color space of the previously committed value. Three- and six-digit forms
@@ -376,6 +377,17 @@ public final class M3ColorField extends Control implements M3Animated {
         return M3Stylesheets.controlStylesheet("color-field.css");
     }
 
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
     /// Initializes style and accessibility state.
     private void initialize() {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
@@ -415,17 +427,6 @@ public final class M3ColorField extends Control implements M3Animated {
     private static int hexadecimalDigitCount(String text) {
         String trimmed = text.trim();
         return trimmed.startsWith("#") ? trimmed.length() - 1 : trimmed.length();
-    }
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
     }
 
     /// CSS metadata for this component.

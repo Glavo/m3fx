@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -15,6 +11,10 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -26,25 +26,25 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
-import org.glavo.m3fx.internal.M3FocusTraversal;
-import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
-import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3BottomSheetPresentation;
-import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 surface that presents supporting content from the bottom edge of a view.
@@ -62,33 +62,6 @@ import java.util.Objects;
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
 public final class M3BottomSheet extends Control implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-bottom-sheet";
@@ -378,6 +351,33 @@ public final class M3BottomSheet extends Control implements M3Animated {
         return dragHandleActionHandler;
     }
 
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The live, mutable list of trailing action nodes.
     ///
     /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
@@ -452,6 +452,17 @@ public final class M3BottomSheet extends Control implements M3Animated {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("sheet.css");
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for the sheet state and content.
@@ -752,18 +763,6 @@ public final class M3BottomSheet extends Control implements M3Animated {
                 M3SheetVariant.STANDARD.styleClass(),
                 M3SheetVariant.MODAL.styleClass()
         );
-    }
-
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
     }
 
     /// CSS metadata for this component.

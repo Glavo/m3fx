@@ -4,19 +4,19 @@
 package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
-import javafx.collections.ListChangeListener;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.css.StyleableBooleanProperty;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.stage.Window;
-import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
+import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,24 +28,6 @@ import org.jetbrains.annotations.Nullable;
 /// CSS has been applied. Disposal releases the local installation while preserving application-owned stylesheets.
 @NotNullByDefault
 public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> implements M3Animated {
-    /// Returns the tooltip's resolved local animation preference.
-    @Override
-    public boolean isAnimationsEnabled() {
-        return getSkinnable().isAnimationsEnabled();
-    }
-
-    /// Updates the tooltip's animation preference.
-    @Override
-    public void setAnimationsEnabled(boolean enabled) {
-        getSkinnable().setAnimationsEnabled(enabled);
-    }
-
-    /// Shares the tooltip property so presentation transitions observe the same setting.
-    @Override
-    public StyleableBooleanProperty animationsEnabledProperty() {
-        return getSkinnable().animationsEnabledProperty();
-    }
-
     /// The minimum plain tooltip container height from the Material specification.
     private static final double MIN_CONTAINER_HEIGHT = 24.0;
 
@@ -91,6 +73,24 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> implements M
         root.minHeightProperty().bind(tooltip.minHeightProperty());
         root.maxHeightProperty().bind(tooltip.maxHeightProperty());
         updateTheme();
+    }
+
+    /// Returns the tooltip's resolved local animation preference.
+    @Override
+    public boolean isAnimationsEnabled() {
+        return getSkinnable().isAnimationsEnabled();
+    }
+
+    /// Updates the tooltip's animation preference.
+    @Override
+    public void setAnimationsEnabled(boolean enabled) {
+        getSkinnable().setAnimationsEnabled(enabled);
+    }
+
+    /// Shares the tooltip property so presentation transitions observe the same setting.
+    @Override
+    public StyleableBooleanProperty animationsEnabledProperty() {
+        return getSkinnable().animationsEnabledProperty();
     }
 
     /// Returns the preferred width of the rendered tooltip content.

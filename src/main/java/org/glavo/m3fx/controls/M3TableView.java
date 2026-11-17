@@ -3,22 +3,22 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
-import javafx.collections.ObservableList;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TableView;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TableViewSkin;
-import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +44,26 @@ import java.util.Objects;
 /// @param <T> the row-item type
 @NotNullByDefault
 public final class M3TableView<T> extends TableView<T> implements M3Animated {
+
+    /// The default root style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-table-view";
+
+    /// Creates an empty table with a Material row factory.
+    public M3TableView() {
+        initialize();
+    }
+
+    /// Creates a table backed by the specified observable item list.
+    ///
+    /// The list instance is retained by the inherited items property. Subsequent list mutations are reflected by
+    /// the table. Replacing the inherited items property later remains supported.
+    ///
+    /// @param items the observable row items
+    /// @throws NullPointerException if `items` is `null`
+    public M3TableView(ObservableList<T> items) {
+        super(Objects.requireNonNull(items, "items"));
+        initialize();
+    }
 
     /// The animation setting, or `null` until the property is first requested.
     private @Nullable StyleableBooleanProperty animationsEnabled;
@@ -72,32 +92,23 @@ public final class M3TableView<T> extends TableView<T> implements M3Animated {
         return animationsEnabled;
     }
 
-    /// The default root style class.
-    private static final String DEFAULT_STYLE_CLASS = "m3-table-view";
-
-    /// Creates an empty table with a Material row factory.
-    public M3TableView() {
-        initialize();
-    }
-
-    /// Creates a table backed by the specified observable item list.
-    ///
-    /// The list instance is retained by the inherited items property. Subsequent list mutations are reflected by
-    /// the table. Replacing the inherited items property later remains supported.
-    ///
-    /// @param items the observable row items
-    /// @throws NullPointerException if `items` is `null`
-    public M3TableView(ObservableList<T> items) {
-        super(Objects.requireNonNull(items, "items"));
-        initialize();
-    }
-
     /// Returns the user-agent stylesheet for Material tables.
     ///
     /// @return the table-view stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("table-view.css");
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Creates the default Material table-view skin.
@@ -137,17 +148,6 @@ public final class M3TableView<T> extends TableView<T> implements M3Animated {
         @Nullable TableViewSelectionModel<T> selectionModel = getSelectionModel();
         int selectedIndex = selectionModel == null ? -1 : selectionModel.getSelectedIndex();
         focusModel.focus(selectedIndex >= 0 && selectedIndex < itemCount ? selectedIndex : 0);
-    }
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
     }
 
     /// CSS metadata for this component.

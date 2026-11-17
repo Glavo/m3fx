@@ -65,12 +65,6 @@ import java.util.Objects;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public final class M3DialogWindow {
-    /// Mirrors the owner's localization only for the lifetime of a presentation.
-    private @Nullable M3LocalizerObserver localizerObserver;
-
-    /// Supplies local owner motion to the detached dialog through CSS for one presentation.
-    private @Nullable M3PopupContextSynchronizer.MotionContext motionContext;
-
     /// The style class installed on the dedicated scene root.
     private static final String DEFAULT_ROOT_STYLE_CLASS = "m3-dialog-window-root";
 
@@ -197,6 +191,12 @@ public final class M3DialogWindow {
 
     /// The presentation currently reserved for this host, including its showing callback phase.
     private @Nullable M3DialogPresentation activePresentation;
+
+    /// Mirrors the owner's localization only for the lifetime of a presentation.
+    private @Nullable M3LocalizerObserver localizerObserver;
+
+    /// Supplies local owner motion to the detached dialog through CSS for one presentation.
+    private @Nullable M3PopupContextSynchronizer.MotionContext motionContext;
 
     /// Returns the native owner initialized for this dialog window.
     ///

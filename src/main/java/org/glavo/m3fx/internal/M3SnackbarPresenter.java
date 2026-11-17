@@ -31,8 +31,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -51,31 +51,6 @@ import java.util.Objects;
 /// accessibility therefore remain stable while the current model or its properties change.
 @NotNullByDefault
 public final class M3SnackbarPresenter extends Control implements M3Animated {
-    /// Lazily allocated, inheritable local animation preference.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this presenter permits local animations.
-    @Override
-    public boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets the local animation preference without changing global reduced motion.
-    @Override
-    public void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the property styled by `-m3-animations-enabled`.
-    @Override
-    public StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
-
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-snackbar-presenter";
 
@@ -583,6 +558,31 @@ public final class M3SnackbarPresenter extends Control implements M3Animated {
             );
         }
         return actionContainerHeight;
+    }
+
+    /// Lazily allocated, inheritable local animation preference.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this presenter permits local animations.
+    @Override
+    public boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets the local animation preference without changing global reduced motion.
+    @Override
+    public void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the property styled by `-m3-animations-enabled`.
+    @Override
+    public StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
     }
 
     /// Creates one non-negative styleable geometry property.

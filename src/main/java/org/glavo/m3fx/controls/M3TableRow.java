@@ -11,14 +11,15 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TableRow;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.skins.M3TableRowSkin;
-import java.util.ArrayList;
-import java.util.List;
+import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
-import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /// Renders one reusable Material row for an [M3TableView].
 ///
@@ -30,6 +31,15 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// @param <T> the row-item type
 @NotNullByDefault
 public class M3TableRow<T> extends TableRow<T> implements M3Animated {
+
+    /// The default row style class.
+    private static final String DEFAULT_STYLE_CLASS = "m3-table-row";
+
+    /// Creates an empty reusable Material table row.
+    public M3TableRow() {
+        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TABLE_ROW);
+    }
 
     /// The animation setting, or `null` until the property is first requested.
     private @Nullable StyleableBooleanProperty animationsEnabled;
@@ -56,15 +66,6 @@ public class M3TableRow<T> extends TableRow<T> implements M3Animated {
                     StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
         }
         return animationsEnabled;
-    }
-
-    /// The default row style class.
-    private static final String DEFAULT_STYLE_CLASS = "m3-table-row";
-
-    /// Creates an empty reusable Material table row.
-    public M3TableRow() {
-        M3ControlStyles.add(this, DEFAULT_STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.TABLE_ROW);
     }
 
     /// Creates the Material table-row skin with bounded state-layer and ripple feedback.

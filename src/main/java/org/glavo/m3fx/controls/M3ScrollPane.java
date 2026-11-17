@@ -3,16 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.css.CssMetaData;
-import javafx.css.SimpleStyleableBooleanProperty;
-import javafx.css.Styleable;
-import javafx.css.StyleableBooleanProperty;
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.beans.value.ChangeListener;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
@@ -31,17 +31,17 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3Animated;
-import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.IdentityKey;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PresentationActivity;
-import org.jetbrains.annotations.Unmodifiable;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,33 +80,6 @@ import java.util.function.DoubleUnaryOperator;
 /// See [Material Design scrolling behavior](https://m3.material.io/).
 @NotNullByDefault
 public final class M3ScrollPane extends ScrollPane implements M3Animated {
-
-    /// The animation setting, or `null` until the property is first requested.
-    private @Nullable StyleableBooleanProperty animationsEnabled;
-
-    /// Returns whether this component permits optional animations.
-    @Override
-    public final boolean isAnimationsEnabled() {
-        return animationsEnabled == null || animationsEnabled.get();
-    }
-
-    /// Sets whether this component permits optional animations.
-    @Override
-    public final void setAnimationsEnabled(boolean enabled) {
-        animationsEnabledProperty().set(enabled);
-    }
-
-    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
-    ///
-    /// The default value is `true`; CSS inherits this setting from ancestor styles.
-    @Override
-    public final StyleableBooleanProperty animationsEnabledProperty() {
-        if (animationsEnabled == null) {
-            animationsEnabled = new SimpleStyleableBooleanProperty(
-                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
-        }
-        return animationsEnabled;
-    }
 
     /// The node property key used to store the installed smooth scroll state.
     private static final IdentityKey SMOOTH_SCROLL_STATE_KEY =
@@ -319,6 +292,33 @@ public final class M3ScrollPane extends ScrollPane implements M3Animated {
         return property;
     }
 
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// Returns the configured effect, creating and attaching the default on first demand.
     ///
     /// @return the attached effect, or `null` after explicit disablement
@@ -356,6 +356,17 @@ public final class M3ScrollPane extends ScrollPane implements M3Animated {
             updatingOverscrollEffect = false;
             pendingOverscrollEffect = null;
         }
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Applies Material visual styling to a JavaFX scroll pane and its scroll bars.
@@ -482,6 +493,26 @@ public final class M3ScrollPane extends ScrollPane implements M3Animated {
                 || node instanceof TreeView<?>
                 || node instanceof TableView<?>
                 || node instanceof TreeTableView<?>;
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3ScrollPane, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(ScrollPane.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
     }
 
     /// Routes direct input and post-scroll remainder through M3 owners before control skins process it.
@@ -1647,36 +1678,5 @@ public final class M3ScrollPane extends ScrollPane implements M3Animated {
     /// Interpolates linearly between two scalar values.
     private static double interpolate(double start, double end, double fraction) {
         return start + (end - start) * fraction;
-    }
-
-    /// Returns the immutable CSS metadata for this component class.
-    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this component.
-    @Override
-    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
-    }
-
-    /// CSS metadata for this component.
-    @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the inheritable animation setting.
-        private static final CssMetaData<M3ScrollPane, Boolean> ANIMATIONS_ENABLED =
-                M3MotionProperties.cssMetaData(
-                        c -> c.animationsEnabledProperty(),
-                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
-
-        /// The complete immutable CSS metadata list.
-        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
-
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables =
-                    new ArrayList<>(ScrollPane.getClassCssMetaData());
-            styleables.add(ANIMATIONS_ENABLED);
-            STYLEABLES = List.copyOf(styleables);
-        }
     }
 }
