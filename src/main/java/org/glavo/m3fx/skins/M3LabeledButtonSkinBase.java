@@ -204,6 +204,17 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         stateLayer.setContainerPaint(paint);
     }
 
+    /// Retains the interaction and animated paint layers when labeled content is rebuilt.
+    @Override
+    protected void updateChildren() {
+        super.updateChildren();
+        // LabeledSkinBase also calls this method before this skin's fields are initialized.
+        @Nullable M3StateLayer layer = stateLayer;
+        if (layer != null && !getChildren().contains(layer)) {
+            getChildren().add(0, layer);
+        }
+    }
+
     /// Stops the animation before the skin is disposed.
     @Override
     public void dispose() {

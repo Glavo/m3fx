@@ -4,6 +4,7 @@
 package org.glavo.m3fx.demo;
 
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -21,12 +22,14 @@ import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
 import org.glavo.m3fx.animation.M3LayoutTransition;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3StateTransition;
 import org.glavo.m3fx.animation.M3TransitionAxis;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VectorConverters;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.layout.M3AdaptiveScaffold;
@@ -35,6 +38,7 @@ import org.glavo.m3fx.layout.M3PaneLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /// Builds the Motion component showcase page.
@@ -281,12 +285,25 @@ final class MotionDemoPage extends DemoPageSupport {
         configureResponsiveWidth(layoutTrack, 560.0);
 
         M3LayoutTransition layoutTransition = new M3LayoutTransition(layoutTrack);
-        layoutTrack.sceneProperty().addListener((observable, oldScene, newScene) -> {
-            if (newScene == null) {
+        M3OverlayPane motionOwner = Objects.requireNonNull(context.overlayPane(), "motion owner");
+        Runnable updateLayoutMotion = () -> {
+            if (layoutTrack.getScene() == null || M3MotionSettings.shouldReduceMotion(motionOwner)) {
                 layoutTransition.stop();
             } else {
                 layoutTransition.start();
             }
+        };
+        ChangeListener<Boolean> layoutMotionListener = (observable, oldValue, newValue) -> updateLayoutMotion.run();
+        layoutTrack.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (oldScene != null) {
+                motionOwner.animationsEnabledProperty().removeListener(layoutMotionListener);
+                M3MotionSettings.globalReducedMotionRequestedProperty().removeListener(layoutMotionListener);
+            }
+            if (newScene != null) {
+                motionOwner.animationsEnabledProperty().addListener(layoutMotionListener);
+                M3MotionSettings.globalReducedMotionRequestedProperty().addListener(layoutMotionListener);
+            }
+            updateLayoutMotion.run();
         });
 
         M3Button changeLayout = new M3Button("Change alignment", M3ButtonVariant.FILLED);

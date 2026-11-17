@@ -7,6 +7,9 @@ import javafx.animation.Animation;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
+import javafx.css.PseudoClass;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -773,6 +776,9 @@ public final class M3FXDemoApp extends Application {
         host.setMaxHeight(Double.MAX_VALUE);
         host.setFitToWidth(true);
         host.setFitToHeight(true);
+        ChangeListener<Boolean> motionListener = (observable, oldValue, newValue) -> updatePageAnimations();
+        host.animationsEnabledProperty().addListener(motionListener);
+        M3MotionSettings.globalReducedMotionRequestedProperty().addListener(new WeakChangeListener<>(motionListener));
         pageHost = host;
         return host;
     }
@@ -1048,20 +1054,26 @@ public final class M3FXDemoApp extends Application {
     void registerPageAnimation(Animation animation) {
         Objects.requireNonNull(animation, "animation");
         animations.add(animation);
-        if (animationsEnabled && !windowIconified) {
+        if (canPlayPageAnimations()) {
             animation.play();
         }
     }
 
-    /// Applies the current demo animation switch and window state to page-owned animations.
+    /// Applies the page host's effective motion setting and window state to page-owned animations.
     private void updatePageAnimations() {
         for (Animation animation : animations) {
-            if (animationsEnabled && !windowIconified) {
+            if (canPlayPageAnimations()) {
                 animation.play();
             } else {
                 animation.pause();
             }
         }
+    }
+
+    /// Returns whether the page host permits motion while the window is active.
+    private boolean canPlayPageAnimations() {
+        @Nullable M3AnimatedContent host = pageHost;
+        return host != null && !windowIconified && !M3MotionSettings.shouldReduceMotion(host);
     }
 
     /// Presents a dialog in an ownerless native window using the current demo theme.
@@ -1125,7 +1137,8 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        M3MotionSettings.setReducedMotionRequested(activeScene.getRoot(), !animationsEnabled);
+        activeScene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), !animationsEnabled);
+        activeScene.getRoot().applyCss();
         updatePageAnimations();
     }
 

@@ -11,6 +11,7 @@ import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -57,27 +58,30 @@ final class M3MotionSettingsObserverTest {
             RuntimeException secondary = new IllegalStateException("second motion callback failed");
             AtomicBoolean firstReduced = new AtomicBoolean();
             AtomicBoolean secondReduced = new AtomicBoolean();
+            AtomicBoolean reduced = new AtomicBoolean();
             M3MotionSettingsObserver failingFirst = new M3MotionSettingsObserver(first, () -> {
-                if (M3MotionSettings.shouldReduceMotion(first)) {
+                if (reduced.get()) {
                     throw primary;
                 }
             });
             M3MotionSettingsObserver healthyFirst = new M3MotionSettingsObserver(first,
-                    () -> firstReduced.set(M3MotionSettings.shouldReduceMotion(first)));
+                    () -> firstReduced.set(reduced.get()));
             M3MotionSettingsObserver failingSecond = new M3MotionSettingsObserver(second, () -> {
-                if (M3MotionSettings.shouldReduceMotion(second)) {
+                if (reduced.get()) {
                     throw secondary;
                 }
             });
             M3MotionSettingsObserver healthySecond = new M3MotionSettingsObserver(second,
-                    () -> secondReduced.set(M3MotionSettings.shouldReduceMotion(second)));
+                    () -> secondReduced.set(reduced.get()));
             try {
+                reduced.set(true);
                 assertSame(primary, assertThrows(RuntimeException.class,
-                        () -> M3MotionSettings.setReducedMotionRequested(root, true)));
+                        () -> M3MotionSettingsObserver.motionContextChanged(root)));
                 assertArrayEquals(new Throwable[]{secondary}, primary.getSuppressed());
                 assertTrue(firstReduced.get());
                 assertTrue(secondReduced.get());
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                reduced.set(false);
+                M3MotionSettingsObserver.motionContextChanged(root);
                 assertFalse(firstReduced.get());
                 assertFalse(secondReduced.get());
             } finally {
@@ -101,23 +105,26 @@ final class M3MotionSettingsObserverTest {
             new Scene(owner);
             AtomicBoolean finalReduced = new AtomicBoolean();
             AtomicInteger refreshes = new AtomicInteger();
+            AtomicBoolean reduced = new AtomicBoolean();
             M3MotionSettingsObserver redirect = new M3MotionSettingsObserver(owner, () -> {
-                if (M3MotionSettings.shouldReduceMotion(owner)) {
-                    M3MotionSettings.setReducedMotionRequested(owner, false);
+                if (reduced.get()) {
+                    reduced.set(false);
+                    M3MotionSettingsObserver.motionContextChanged(owner);
                     throw new IllegalStateException("motion callback failed after replacement");
                 }
             });
             M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, () -> {
-                finalReduced.set(M3MotionSettings.shouldReduceMotion(owner));
+                finalReduced.set(reduced.get());
                 refreshes.incrementAndGet();
             });
             try {
                 int initialRefreshes = refreshes.get();
+                reduced.set(true);
                 assertThrows(IllegalStateException.class,
-                        () -> M3MotionSettings.setReducedMotionRequested(owner, true));
+                        () -> M3MotionSettingsObserver.motionContextChanged(owner));
                 assertTrue(refreshes.get() > initialRefreshes);
                 assertFalse(finalReduced.get());
-                assertFalse(M3MotionSettings.shouldReduceMotion(owner));
+                assertFalse(reduced.get());
             } finally {
                 redirect.dispose();
                 observer.dispose();
@@ -469,11 +476,13 @@ final class M3MotionSettingsObserverTest {
     @Test
     void targetsLocalChangesAndTracksSameSceneReparenting() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane firstOwner = new Pane();
-            Pane secondOwner = new Pane();
+            M3Button firstOwner = new M3Button();
+            M3Button secondOwner = new M3Button();
             Pane firstScope = new Pane(firstOwner);
             Pane secondScope = new Pane(secondOwner);
-            new Scene(new Pane(firstScope, secondScope));
+            Pane root = new Pane(firstScope, secondScope);
+            new Scene(root);
+            root.applyCss();
             AtomicInteger firstRefreshes = new AtomicInteger();
             AtomicInteger secondRefreshes = new AtomicInteger();
             M3MotionSettingsObserver first =
@@ -485,25 +494,27 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(1, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3MotionSettings.setReducedMotionRequested(firstScope, true);
+                firstScope.setStyle("-m3-animations-enabled: false;");
+                root.applyCss();
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3MotionSettings.setReducedMotionRequested(firstScope, false);
+                firstScope.setStyle("");
+                root.applyCss();
                 int beforeReparent = firstRefreshes.get();
                 firstScope.getChildren().clear();
                 secondScope.getChildren().add(firstOwner);
+                root.applyCss();
                 assertTrue(firstRefreshes.get() > beforeReparent);
 
                 int firstBeforeSecondScopeChange = firstRefreshes.get();
-                M3MotionSettings.setReducedMotionRequested(secondScope, true);
+                secondScope.setStyle("-m3-animations-enabled: false;");
+                root.applyCss();
                 assertEquals(firstBeforeSecondScopeChange + 1, firstRefreshes.get());
                 assertEquals(2, secondRefreshes.get());
             } finally {
                 first.dispose();
                 second.dispose();
-                M3MotionSettings.setReducedMotionRequested(firstScope, false);
-                M3MotionSettings.setReducedMotionRequested(secondScope, false);
             }
         }));
     }

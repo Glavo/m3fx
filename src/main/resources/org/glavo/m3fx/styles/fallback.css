@@ -1,3 +1,8 @@
+/* JavaFX 17/21 require each styled ancestor to forward custom inherited properties. */
+* {
+    -m3-animations-enabled: inherit;
+}
+
 .root,
 .m3-fallback-root {
     -monet-primary: rgb(101,85,143);

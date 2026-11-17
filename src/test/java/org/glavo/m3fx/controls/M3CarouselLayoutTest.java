@@ -15,7 +15,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -272,7 +271,7 @@ final class M3CarouselLayoutTest {
             M3Carousel carousel = carousel(260.0, 260.0, 260.0, 260.0);
             carousel.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
             carousel.selectIndex(1);
-            M3MotionSettings.setReducedMotionRequested(carousel, true);
+            carousel.setAnimationsEnabled(false);
             Stage stage = show(carousel, 500.0, 150.0);
             try {
                 layout(stage, carousel, 500.0, 120.0);
@@ -289,7 +288,7 @@ final class M3CarouselLayoutTest {
                     assertEquals(expectedWidth, renderedWidth(item), GEOMETRY_TOLERANCE);
                 }
             } finally {
-                M3MotionSettings.setReducedMotionRequested(carousel, false);
+                carousel.setAnimationsEnabled(true);
                 stage.close();
             }
         });

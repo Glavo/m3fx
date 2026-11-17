@@ -18,7 +18,6 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -277,7 +276,7 @@ final class M3TooltipMotionTest {
                         fixture.tooltip().setHideDelay(Duration.ZERO);
                         M3Tooltip.install(fixture.owner(), fixture.tooltip());
                         fixtureReference.set(fixture);
-                        M3MotionSettings.setReducedMotionRequested(fixture.root(), true);
+                        FxTestUtils.setCssAnimationsEnabled(fixture.root(), false);
                         fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_ENTERED));
                     },
                     () -> {
@@ -325,7 +324,7 @@ final class M3TooltipMotionTest {
                         fixture.tooltip().setShowDelay(Duration.ZERO);
                         M3Tooltip.install(fixture.owner(), fixture.tooltip());
                         fixtureReference.set(fixture);
-                        M3MotionSettings.setReducedMotionRequested(fixture.root(), true);
+                        FxTestUtils.setCssAnimationsEnabled(fixture.root(), false);
                         fixture.owner().fireEvent(pointerEvent(MouseEvent.MOUSE_ENTERED));
                     },
                     () -> {
@@ -483,11 +482,11 @@ final class M3TooltipMotionTest {
             );
 
             if (initiallyVisible) {
-                M3MotionSettings.setReducedMotionRequested(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
                 try {
                     showTooltip(fixture);
                 } finally {
-                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.setCssAnimationsEnabled(root, true);
                 }
                 assertTrue(tooltip.isShowing());
                 assertNeutralTransform(visibilityState(fixture));
@@ -642,7 +641,7 @@ final class M3TooltipMotionTest {
         }
         FxTestUtils.runOnFxThread(() -> {
             fixture.stage().close();
-            M3MotionSettings.setReducedMotionRequested(fixture.root(), false);
+            FxTestUtils.setCssAnimationsEnabled(fixture.root(), true);
             FxTestUtils.clearMotionScheme(fixture.root());
         });
     }

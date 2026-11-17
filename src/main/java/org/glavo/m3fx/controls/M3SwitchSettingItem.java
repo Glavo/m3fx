@@ -52,6 +52,7 @@ public final class M3SwitchSettingItem extends M3SettingItemBase {
         super(headlineText, AccessibleRole.CHECK_BOX);
         addSettingStyleClass(DEFAULT_STYLE_CLASS);
         installTrailingControl(switchControl, true);
+        switchControl.animationsEnabledProperty().bind(animationsEnabledProperty());
         switchControl.selectedProperty().bindBidirectional(selectedProperty());
         selectedProperty().addListener((observable, oldValue, newValue) ->
                 M3Accessible.notifyToggleStateChanged(this));

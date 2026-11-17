@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -14,9 +18,13 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import java.util.Objects;
 
 /// Presents or hides one content node with an interruptible Material visibility transition.
@@ -44,7 +52,35 @@ import java.util.Objects;
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
-public final class M3AnimatedVisibility extends Region {
+public final class M3AnimatedVisibility extends Region implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-animated-visibility";
 
@@ -412,6 +448,7 @@ public final class M3AnimatedVisibility extends Region {
 
     /// Creates an empty animated-visibility region whose showing target is initially enabled.
     public M3AnimatedVisibility() {
+        animatedContent.animationsEnabledProperty().bind(animationsEnabledProperty());
         getStyleClass().setAll(DEFAULT_STYLE_CLASS);
         setPickOnBounds(false);
 
@@ -604,4 +641,35 @@ public final class M3AnimatedVisibility extends Region {
         return width < 0.0 ? width : Math.max(0.0, width - horizontalInsets());
     }
 
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3AnimatedVisibility, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Region.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
+    }
 }

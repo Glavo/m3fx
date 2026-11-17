@@ -11,7 +11,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -169,7 +168,7 @@ final class M3StretchOverscrollEffectReentrancyTest {
     void releaseCleanupCanStartAnotherPull() {
         FxTestUtils.runOnFxThread(() -> {
             M3ScrollPane pane = pane();
-            M3MotionSettings.setReducedMotionRequested(pane, true);
+            pane.setAnimationsEnabled(false);
             M3StretchOverscrollEffect effect = effect(pane);
             pull(effect, Orientation.VERTICAL, 80);
             Scale previous = scale(pane);

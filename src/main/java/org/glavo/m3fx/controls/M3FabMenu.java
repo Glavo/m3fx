@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.animation.Animation;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -24,6 +26,8 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -71,7 +75,35 @@ import java.util.Objects;
 ///
 /// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
-public final class M3FabMenu extends Control {
+public final class M3FabMenu extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-fab-menu";
 
@@ -105,6 +137,7 @@ public final class M3FabMenu extends Control {
     /// Creates a collapsed menu with a default regular primary-container toggle button and no action items.
     public M3FabMenu() {
         this(createDefaultToggleButton());
+        toggleButton.animationsEnabledProperty().bind(animationsEnabledProperty());
     }
 
     /// Creates a collapsed menu using the specified toggle button.
@@ -392,6 +425,7 @@ public final class M3FabMenu extends Control {
 
     /// Adds style classes, child structure, and default action behavior.
     private void initialize() {
+        closeButton.animationsEnabledProperty().bind(animationsEnabledProperty());
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
@@ -982,6 +1016,12 @@ public final class M3FabMenu extends Control {
     /// CSS metadata for FAB menu layout tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3FabMenu, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for expanded action item spacing.
         private static final CssMetaData<M3FabMenu, Number> ACTION_SPACING =
                 M3Css.sizeMetaData(
@@ -1003,6 +1043,7 @@ public final class M3FabMenu extends Control {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(ACTION_SPACING);
             styleables.add(CLOSE_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);

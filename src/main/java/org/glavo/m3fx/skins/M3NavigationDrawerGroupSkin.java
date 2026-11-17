@@ -111,6 +111,11 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         super.dispose();
     }
 
+    /// Settles the child viewport at the current expanded state without changing animation preferences.
+    public void finishExpansion() {
+        setExpandedState(getSkinnable().isExpanded(), false);
+    }
+
     /// Returns whether the child viewport is currently moving between collapsed and expanded geometry.
     ///
     /// @return `true` while the reusable expansion animation is running

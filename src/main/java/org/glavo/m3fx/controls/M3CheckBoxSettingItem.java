@@ -201,6 +201,7 @@ public final class M3CheckBoxSettingItem extends M3SettingItemBase {
         super(headlineText, AccessibleRole.CHECK_BOX);
         addSettingStyleClass(DEFAULT_STYLE_CLASS);
         installTrailingIndicator(indicator);
+        indicator.animationsEnabledProperty().bind(animationsEnabledProperty());
         indicator.selectedProperty().bindBidirectional(selectedProperty());
         indicator.indeterminateProperty().bindBidirectional(indeterminateProperty());
         indicator.allowIndeterminateProperty().bindBidirectional(allowIndeterminateProperty());

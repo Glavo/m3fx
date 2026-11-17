@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -18,6 +20,8 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -41,7 +45,35 @@ import java.util.Objects;
 /// See [Material Design typography](https://m3.material.io/styles/typography/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
-public class M3Text extends Labeled {
+public class M3Text extends Labeled implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-text";
 
@@ -392,6 +424,12 @@ public class M3Text extends Labeled {
     /// CSS metadata for M3FX text typography tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3Text, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the typography font family token.
         private static final CssMetaData<M3Text, @Nullable String> TYPOGRAPHY_FONT_FAMILY =
                 new CssMetaData<>(
@@ -453,6 +491,7 @@ public class M3Text extends Labeled {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Labeled.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(TYPOGRAPHY_FONT_FAMILY);
             styleables.add(TYPOGRAPHY_FONT_SIZE);
             styleables.add(TYPOGRAPHY_LINE_HEIGHT);

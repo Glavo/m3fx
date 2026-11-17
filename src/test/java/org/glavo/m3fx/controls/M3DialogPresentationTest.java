@@ -794,7 +794,7 @@ final class M3DialogPresentationTest {
             StackPane ownerContent = new StackPane(new M3Button("Owner"));
             M3OverlayPane overlayRoot = createOverlayRoot(ownerContent);
             overlayRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            M3MotionSettings.setReducedMotionRequested(overlayRoot, true);
+            FxTestUtils.setCssAnimationsEnabled(overlayRoot, false);
             Scene scene = new Scene(overlayRoot, 520.0, 340.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -814,21 +814,30 @@ final class M3DialogPresentationTest {
                 assertTrue(M3MotionSettings.shouldReduceMotion(dialog.getDialogPane()));
 
                 overlayRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-                M3MotionSettings.setReducedMotionRequested(overlayRoot, false);
+                FxTestUtils.setCssAnimationsEnabled(overlayRoot, true);
 
                 assertEquals(NodeOrientation.INHERIT, layer.getNodeOrientation());
                 assertEquals(NodeOrientation.LEFT_TO_RIGHT, layer.getEffectiveNodeOrientation());
                 assertFalse(M3MotionSettings.shouldReduceMotion(dialog.getDialogPane()));
 
-                M3MotionSettings.setReducedMotionRequested(overlayRoot, true);
+                FxTestUtils.setCssAnimationsEnabled(overlayRoot, false);
                 handle.requestClose();
 
                 assertEquals(NodeOrientation.INHERIT, layer.getNodeOrientation());
-                assertFalse(M3MotionSettings.isReducedMotionRequested(layer));
+                assertNull(dialog.getDialogPane().getParent());
+                StackPane nextRoot = new StackPane(dialog.getDialogPane());
+                new Scene(nextRoot);
+                try {
+                    nextRoot.applyCss();
+                    assertTrue(dialog.getDialogPane().isAnimationsEnabled());
+                    assertTrue(okAction.isAnimationsEnabled());
+                } finally {
+                    nextRoot.getChildren().clear();
+                }
             } finally {
-                M3MotionSettings.setReducedMotionRequested(overlayRoot, true);
+                FxTestUtils.setCssAnimationsEnabled(overlayRoot, false);
                 handle.requestClose();
-                M3MotionSettings.setReducedMotionRequested(overlayRoot, false);
+                FxTestUtils.setCssAnimationsEnabled(overlayRoot, true);
                 stage.close();
             }
         });

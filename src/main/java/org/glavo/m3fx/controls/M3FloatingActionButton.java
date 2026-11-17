@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
@@ -16,6 +18,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -47,7 +51,35 @@ import java.util.Objects;
 /// Use one floating action button for the most important screen-level action. See
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
-public final class M3FloatingActionButton extends ButtonBase {
+public final class M3FloatingActionButton extends ButtonBase implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-fab";
 
@@ -534,6 +566,12 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// CSS metadata for M3FX floating action button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3FloatingActionButton, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the container size token.
         private static final CssMetaData<M3FloatingActionButton, Number> CONTAINER_SIZE =
                 M3Css.sizeMetaData(
@@ -579,6 +617,7 @@ public final class M3FloatingActionButton extends ButtonBase {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(CONTAINER_SIZE);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);

@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -14,7 +15,6 @@ import javafx.scene.input.ScrollEvent;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
@@ -82,7 +82,8 @@ final class M3FXCatalogSnapshotTest {
                     appReference.set(app);
                     Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
                     sceneReference.set(scene);
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                    scene.getRoot().applyCss();
 
                     writeSnapshot(scene, "home.png");
                     M3SearchBar homeSearch = assertInstanceOf(

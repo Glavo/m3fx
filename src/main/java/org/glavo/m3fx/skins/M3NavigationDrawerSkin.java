@@ -55,6 +55,7 @@ public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3Navi
     /// @param control the skinned navigation drawer
     public M3NavigationDrawerSkin(M3NavigationDrawer control) {
         super(control, control.getItems(), new VBox());
+        viewport.animationsEnabledProperty().bind(control.animationsEnabledProperty());
         VBox container = getContainer();
         container.spacingProperty().bind(control.itemSpacingProperty());
 
@@ -88,6 +89,7 @@ public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3Navi
     /// Removes viewport behavior, bindings, and content references before disposal.
     @Override
     public void dispose() {
+        viewport.animationsEnabledProperty().unbind();
         clearPendingReveal();
         getSkinnable().sceneProperty().removeListener(sceneListener);
         viewport.removeEventFilter(ScrollEvent.SCROLL, userScrollHandler);

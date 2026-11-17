@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -123,6 +124,14 @@ final class M3DatePickerHeader extends HBox {
         this.displayedMonth = Objects.requireNonNull(displayedMonth, "displayedMonth");
         this.minDate = Objects.requireNonNull(minDate, "minDate");
         this.maxDate = Objects.requireNonNull(maxDate, "maxDate");
+        if (owner instanceof M3Animated animated) {
+            previousMonthButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+            monthButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+            nextMonthButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+            previousYearButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+            yearButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+            nextYearButton.animationsEnabledProperty().bind(animated.animationsEnabledProperty());
+        }
 
         getStyleClass().add(HEADER_STYLE_CLASS);
         nodeOrientationProperty().bind(owner.effectiveNodeOrientationProperty());
@@ -158,15 +167,23 @@ final class M3DatePickerHeader extends HBox {
 
     /// Releases bindings and listeners owned by this header.
     void dispose() {
+        previousMonthButton.animationsEnabledProperty().unbind();
+        monthButton.animationsEnabledProperty().unbind();
+        nextMonthButton.animationsEnabledProperty().unbind();
+        previousYearButton.animationsEnabledProperty().unbind();
+        yearButton.animationsEnabledProperty().unbind();
+        nextYearButton.animationsEnabledProperty().unbind();
         localizerObserver.close();
         displayedMonth.removeListener(stateInvalidation);
         minDate.removeListener(stateInvalidation);
         maxDate.removeListener(stateInvalidation);
         owner.effectiveNodeOrientationProperty().removeListener(stateInvalidation);
         for (M3MenuItem item : monthItems) {
+            item.animationsEnabledProperty().unbind();
             item.setOnAction(null);
         }
         for (M3MenuItem item : yearItems) {
+            item.animationsEnabledProperty().unbind();
             item.setOnAction(null);
         }
         nodeOrientationProperty().unbind();
@@ -263,6 +280,7 @@ final class M3DatePickerHeader extends HBox {
         monthButton.getMenu().setAllowEmptySelection(false);
         for (Month month : Month.values()) {
             M3MenuItem item = new M3MenuItem();
+            item.animationsEnabledProperty().bind(monthButton.animationsEnabledProperty());
             item.setUserData(month);
             item.setOnAction(menuItemActionHandler);
             monthItems.add(item);
@@ -273,6 +291,7 @@ final class M3DatePickerHeader extends HBox {
         yearButton.getMenu().setAllowEmptySelection(false);
         for (int index = 0; index < YEAR_MENU_ITEM_COUNT; index++) {
             M3MenuItem item = new M3MenuItem();
+            item.animationsEnabledProperty().bind(yearButton.animationsEnabledProperty());
             item.setOnAction(menuItemActionHandler);
             yearItems.add(item);
         }

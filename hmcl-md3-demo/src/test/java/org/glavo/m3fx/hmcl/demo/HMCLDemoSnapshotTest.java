@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.hmcl.demo;
 
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -68,11 +69,13 @@ final class HMCLDemoSnapshotTest {
                     app.start(stage);
                     stageReference.set(stage);
                     Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                    scene.getRoot().applyCss();
                     M3MotionSettings.setGlobalReducedMotionRequested(true);
 
                     M3OverlayPaneRoot shell = resolveShell(scene);
                     shell.controller().state().setAnimationDisabled(true);
+                    scene.getRoot().applyCss();
                     assertRouteHostClipsContent(scene);
                     assertPrimaryNavigationItemsAreContained(scene);
                     writeSnapshot(scene, "01-home.png");
@@ -239,13 +242,19 @@ final class HMCLDemoSnapshotTest {
                 M3OverlayPaneRoot shell = resolveShell(scene);
 
                 shell.controller().state().setAnimationDisabled(true);
+                scene.getRoot().applyCss();
 
                 assertFalse(M3MotionSettings.isGlobalReducedMotionRequested());
-                assertTrue(M3MotionSettings.isReducedMotionRequested(scene.getRoot()));
+                assertTrue(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                M3AnimatedContent routeHost = (M3AnimatedContent) Objects.requireNonNull(
+                        scene.lookup(".hmcl-route-host"), "route host");
+                assertFalse(routeHost.isAnimationsEnabled());
 
                 shell.controller().state().setAnimationDisabled(false);
+                scene.getRoot().applyCss();
 
-                assertFalse(M3MotionSettings.isReducedMotionRequested(scene.getRoot()));
+                assertFalse(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                assertTrue(routeHost.isAnimationsEnabled());
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -282,7 +291,8 @@ final class HMCLDemoSnapshotTest {
                         stageReference.set(stage);
 
                         Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
-                        M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+                        scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                        scene.getRoot().applyCss();
                         M3OverlayPaneRoot shell = resolveShell(scene);
                         shell.controller().state().setLanguage(HMCLDemoStrings.SIMPLIFIED_CHINESE);
                         shell.controller().state().setBrightness(HMCLDemoState.Brightness.LIGHT);

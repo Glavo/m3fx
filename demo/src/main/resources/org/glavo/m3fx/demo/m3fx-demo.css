@@ -1,3 +1,7 @@
+.demo-root:reduced-motion {
+    -m3-animations-enabled: false;
+}
+
 .demo-root {
     -fx-background-color: -m3-color-surface;
 }

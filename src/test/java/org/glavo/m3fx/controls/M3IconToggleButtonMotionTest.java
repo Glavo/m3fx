@@ -17,7 +17,6 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3IconPaints;
 import org.glavo.m3fx.theme.M3Theme;
@@ -170,7 +169,7 @@ final class M3IconToggleButtonMotionTest {
                     M3Profile.EXPRESSIVE_2025,
                     Brightness.LIGHT
             ));
-            M3MotionSettings.setReducedMotionRequested(root, reducedMotion);
+            FxTestUtils.setCssAnimationsEnabled(root, !reducedMotion);
             FxTestUtils.setMotionScheme(root, observableMotionScheme());
             root.applyCss();
             root.layout();
@@ -185,7 +184,7 @@ final class M3IconToggleButtonMotionTest {
     /// @param fixture the fixture to dispose
     private static void disposeFixture(MotionFixture fixture) {
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(fixture.root, false);
+            FxTestUtils.setCssAnimationsEnabled(fixture.root, true);
             FxTestUtils.clearMotionScheme(fixture.root);
             Scene scene = Objects.requireNonNull(fixture.root.getScene(), "fixture scene");
             scene.setRoot(new Region());

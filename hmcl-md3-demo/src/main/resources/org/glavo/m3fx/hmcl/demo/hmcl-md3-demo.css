@@ -1,6 +1,10 @@
 /* HMCL MD3 demo chrome only.
  * List geometry and body type come from HMCLDemoTheme tokens; avoid re-stating density here. */
 
+.hmcl-demo-root:reduced-motion {
+    -m3-animations-enabled: false;
+}
+
 /* Transparent stage / wallpaper host */
 .m3-root,
 .m3-overlay-pane,

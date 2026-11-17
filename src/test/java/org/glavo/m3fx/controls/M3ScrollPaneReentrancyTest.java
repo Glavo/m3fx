@@ -8,7 +8,6 @@ import javafx.scene.Scene;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -137,7 +136,7 @@ final class M3ScrollPaneReentrancyTest {
         content.setPrefSize(320, 480);
         M3ScrollPane pane = new M3ScrollPane(content);
         pane.setOverscrollInputMode(M3OverscrollInputMode.ALL);
-        M3MotionSettings.setReducedMotionRequested(pane, true);
+        pane.setAnimationsEnabled(false);
         new Scene(pane, 180, 120);
         pane.applyCss();
         pane.resize(180, 120);

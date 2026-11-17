@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -26,6 +30,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -34,9 +40,12 @@ import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3NumberFieldSkin;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.util.Locale;
@@ -70,7 +79,35 @@ import java.util.Objects;
 /// See [Adobe Spectrum 2 NumberField](https://react-spectrum.adobe.com/NumberField) and
 /// [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
-public final class M3NumberField extends javafx.scene.control.Control implements M3FormInput {
+public final class M3NumberField extends javafx.scene.control.Control implements M3Animated, M3FormInput {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-number-field";
 
@@ -1145,6 +1182,10 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// Adds style identity, property wiring, actions, and input handlers.
     private void initialize() {
+        editor.animationsEnabledProperty().bind(animationsEnabledProperty());
+        inputLayout.animationsEnabledProperty().bind(animationsEnabledProperty());
+        decrementButton.animationsEnabledProperty().bind(animationsEnabledProperty());
+        incrementButton.animationsEnabledProperty().bind(animationsEnabledProperty());
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.SPINNER);
         setFocusTraversable(false);
@@ -1544,5 +1585,36 @@ public final class M3NumberField extends javafx.scene.control.Control implements
             throw new IllegalArgumentException("max must be finite or positive infinity");
         }
         return value;
+    }
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3NumberField, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(javafx.scene.control.Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
     }
 }

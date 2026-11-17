@@ -4,6 +4,7 @@
 package org.glavo.m3fx.catalog;
 
 import javafx.application.Application;
+import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
@@ -19,7 +20,6 @@ import org.glavo.m3fx.animation.M3AnimatedVisibility;
 import org.glavo.m3fx.animation.M3ContentTransform;
 import org.glavo.m3fx.animation.M3EnterTransition;
 import org.glavo.m3fx.animation.M3ExitTransition;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3TransitionAxis;
 import org.glavo.m3fx.animation.M3TransitionEdge;
 import org.glavo.m3fx.animation.M3VisibilityState;
@@ -809,7 +809,8 @@ public final class M3FXCatalogApp extends Application {
         root.setNodeOrientation(rightToLeft
                 ? NodeOrientation.RIGHT_TO_LEFT
                 : NodeOrientation.LEFT_TO_RIGHT);
-        M3MotionSettings.setReducedMotionRequested(root, reducedMotion);
+        root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), reducedMotion);
+        root.applyCss();
     }
 
     /// Opens a document using the host platform.

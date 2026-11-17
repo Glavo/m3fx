@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -26,6 +30,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -36,9 +42,12 @@ import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 search view for entering a query and presenting results.
@@ -53,7 +62,35 @@ import java.util.Objects;
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
-public final class M3SearchView extends Control {
+public final class M3SearchView extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-search-view";
 
@@ -497,6 +534,7 @@ public final class M3SearchView extends Control {
 
     /// Adds base style classes and configures search result behavior.
     private void initialize() {
+        searchBar.animationsEnabledProperty().bind(animationsEnabledProperty());
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         searchBar.leadingProperty().bindBidirectional(leading);
         searchBar.textProperty().bindBidirectional(text);
@@ -549,6 +587,7 @@ public final class M3SearchView extends Control {
                 M3InternalIcon.ColorRole.ON_SURFACE
         );
         M3IconButton backButton = new M3IconButton(icon);
+        backButton.animationsEnabledProperty().bind(animationsEnabledProperty());
         backButton.setContainerWidth(48.0);
         backButton.setContainerHeight(48.0);
         new M3LocalizerObserver(backButton, localizer -> backButton.setAccessibleText(localizer.getBackText()));
@@ -1035,4 +1074,35 @@ public final class M3SearchView extends Control {
         resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
     }
 
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3SearchView, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
+    }
 }

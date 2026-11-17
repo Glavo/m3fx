@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -25,6 +27,8 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -56,7 +60,35 @@ import java.util.Objects;
 ///
 /// See [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
-public final class M3SplitButton extends Control {
+public final class M3SplitButton extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-split-button";
 
@@ -700,9 +732,12 @@ public final class M3SplitButton extends Control {
 
     /// Adds base style classes, child buttons, and popup state forwarding.
     private void initialize() {
+        actionButton.animationsEnabledProperty().bind(animationsEnabledProperty());
+        menuButton.animationsEnabledProperty().bind(animationsEnabledProperty());
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
+        menuIndicator.animationsEnabledProperty().bind(animationsEnabledProperty());
         menuIndicator.setMouseTransparent(true);
         menuIndicator.setVertical(true);
         menuIndicator.expandedProperty().bind(menuButton.showingProperty());
@@ -895,6 +930,12 @@ public final class M3SplitButton extends Control {
     /// CSS metadata for split button layout tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3SplitButton, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for spacing between the action and menu parts.
         private static final CssMetaData<M3SplitButton, Number> SPACING =
                 M3Css.sizeMetaData(
@@ -943,6 +984,7 @@ public final class M3SplitButton extends Control {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(SPACING);
             styleables.add(OUTER_CORNER);
             styleables.add(INNER_CORNER);

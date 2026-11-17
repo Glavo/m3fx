@@ -488,6 +488,8 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Installs trailing presentation, popup behavior, and property listeners.
     private void initialize() {
+        menu.animationsEnabledProperty().bind(animationsEnabledProperty());
+        disclosureIcon.animationsEnabledProperty().bind(animationsEnabledProperty());
         disclosureIcon.setVertical(true);
         disclosureIcon.setFocusTraversable(false);
         disclosureIcon.setMouseTransparent(true);
@@ -602,12 +604,14 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
                 for (int index = 0; index < renderedChoices.size(); index++) {
                     M3MenuItem previous = renderedChoices.get(index).item();
                     if (index >= next.size() || previous != next.get(index).item()) {
+                        previous.animationsEnabledProperty().unbind();
                         previous.removeEventFilter(ActionEvent.ACTION, choiceActionFilter);
                     }
                 }
                 renderedChoices = List.copyOf(next);
                 List<Node> nodes = new ArrayList<>(next.size());
                 for (MenuChoice<T> choice : next) {
+                    choice.item().animationsEnabledProperty().bind(animationsEnabledProperty());
                     choice.item().setHeadlineText(choice.label());
                     choice.item().setSupportingText(choice.description());
                     nodes.add(choice.item());

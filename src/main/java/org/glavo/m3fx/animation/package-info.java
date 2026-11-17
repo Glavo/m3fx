@@ -8,8 +8,10 @@
 /// control delays and repeating cycle periods. Applications normally consume these values through the active
 /// theme rather than selecting constants directly.
 ///
-/// [M3MotionSettings] can request reduced motion globally or for a node subtree. Effective node settings are
-/// inherited through the JavaFX parent chain; a descendant cannot cancel an ancestor request.
+/// [M3Animated] components expose an `animationsEnabled` property. Its CSS counterpart,
+/// `-m3-animations-enabled`, inherits from ancestor styles and allows nearer declarations to override them.
+/// [M3MotionSettings] provides an independent application-wide reduced-motion request that takes precedence
+/// over component settings. Ordinary JavaFX nodes used as animation owners follow only the global request.
 ///
 /// [M3DoubleAnimatable] provides interruptible animation of a writable double property, while [M3StateTransition]
 /// coordinates primitive doubles and immutable values through one typed, seekable transition. [M3VectorConverter]

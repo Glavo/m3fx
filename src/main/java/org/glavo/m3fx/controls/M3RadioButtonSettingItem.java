@@ -52,6 +52,7 @@ public final class M3RadioButtonSettingItem extends M3SettingItemBase implements
         super(headlineText, AccessibleRole.RADIO_BUTTON);
         addSettingStyleClass(DEFAULT_STYLE_CLASS);
         installTrailingIndicator(indicator);
+        indicator.animationsEnabledProperty().bind(animationsEnabledProperty());
         indicator.selectedProperty().bindBidirectional(selectedProperty());
         selectedProperty().addListener((observable, oldValue, newValue) -> {
             M3Accessible.notifyToggleStateChanged(this);

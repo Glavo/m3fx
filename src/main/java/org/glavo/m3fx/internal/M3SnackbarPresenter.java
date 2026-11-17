@@ -15,7 +15,9 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -30,9 +32,11 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
@@ -46,7 +50,32 @@ import java.util.Objects;
 /// models and never enter the JavaFX scene graph. Queueing, automatic timeout, motion, focus routing, and
 /// accessibility therefore remain stable while the current model or its properties change.
 @NotNullByDefault
-public final class M3SnackbarPresenter extends Control {
+public final class M3SnackbarPresenter extends Control implements M3Animated {
+    /// Lazily allocated, inheritable local animation preference.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this presenter permits local animations.
+    @Override
+    public boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets the local animation preference without changing global reduced motion.
+    @Override
+    public void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the property styled by `-m3-animations-enabled`.
+    @Override
+    public StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-snackbar-presenter";
 
@@ -1235,6 +1264,11 @@ public final class M3SnackbarPresenter extends Control {
     /// CSS metadata for internal snackbar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// Inheritable local animation preference.
+        private static final CssMetaData<M3SnackbarPresenter, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(M3SnackbarPresenter::animationsEnabledProperty,
+                        node -> node.animationsEnabled == null || !node.animationsEnabled.isBound());
+
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3SnackbarPresenter, Number> CONTAINER_SHAPE =
                 M3Css.sizeMetaData("-m3-container-shape", DEFAULT_CONTAINER_SHAPE, M3SnackbarPresenter::containerShapeProperty);
@@ -1276,11 +1310,12 @@ public final class M3SnackbarPresenter extends Control {
                 );
 
         /// Complete immutable metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
                     new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(CONTENT_PADDING);
             styleables.add(CONTAINER_MIN_WIDTH);

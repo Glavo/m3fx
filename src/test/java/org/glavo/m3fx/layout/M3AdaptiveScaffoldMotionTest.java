@@ -9,7 +9,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -177,7 +176,7 @@ final class M3AdaptiveScaffoldMotionTest {
             FxTestUtils.runOnFxThread(() -> {
                 ScaffoldFixture fixture = createFixture();
                 fixtureReference.set(fixture);
-                M3MotionSettings.setReducedMotionRequested(fixture.scaffold(), true);
+                fixture.scaffold().setAnimationsEnabled(false);
                 fixture.scaffold().setPaneLayout(M3PaneLayout.SINGLE);
                 fixture.scaffold().layout();
 
@@ -204,7 +203,7 @@ final class M3AdaptiveScaffoldMotionTest {
                     },
                     () -> {
                         ScaffoldFixture fixture = Objects.requireNonNull(fixtureReference.get(), "fixture");
-                        M3MotionSettings.setReducedMotionRequested(fixture.scaffold(), true);
+                        fixture.scaffold().setAnimationsEnabled(false);
                     }
             );
 
@@ -368,7 +367,7 @@ final class M3AdaptiveScaffoldMotionTest {
             return;
         }
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(fixture.scaffold(), false);
+            fixture.scaffold().setAnimationsEnabled(true);
             fixture.stage().hide();
         });
     }

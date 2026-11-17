@@ -20,6 +20,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3DialogPresentation;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3WindowDialogPresentation;
 import org.glavo.m3fx.theme.M3Theme;
@@ -47,6 +48,11 @@ import java.util.Objects;
 /// scene theme when available, otherwise [M3Theme#defaultTheme()] is used. Setting an explicit theme while the
 /// dialog is visible updates the dedicated scene immediately.
 ///
+/// Local animation preferences are mirrored when the owner scene root implements
+/// [org.glavo.m3fx.animation.M3Animated]. Unlike popup controls, a native dialog window has no CSS parent link to
+/// its owner. Arbitrary CSS declarations on an ordinary owner root are not copied; configure the dialog pane's
+/// animation property or styles directly in that case. Application-wide reduced motion still applies.
+///
 /// ```java
 /// M3Dialog dialog = new M3Dialog();
 /// dialog.getDialogPane().setHeaderText("Settings");
@@ -61,6 +67,9 @@ import java.util.Objects;
 public final class M3DialogWindow {
     /// Mirrors the owner's localization only for the lifetime of a presentation.
     private @Nullable M3LocalizerObserver localizerObserver;
+
+    /// Supplies local owner motion to the detached dialog through CSS for one presentation.
+    private @Nullable M3PopupContextSynchronizer.MotionContext motionContext;
 
     /// The style class installed on the dedicated scene root.
     private static final String DEFAULT_ROOT_STYLE_CLASS = "m3-dialog-window-root";
@@ -295,6 +304,10 @@ public final class M3DialogWindow {
 
     /// Releases the host reservation after its exact presentation has disposed.
     private void releasePresentation() {
+        if (motionContext != null) {
+            motionContext.stop();
+            motionContext = null;
+        }
         if (localizerObserver != null) {
             localizerObserver.close();
             localizerObserver = null;
@@ -304,10 +317,18 @@ public final class M3DialogWindow {
 
     /// Installs the effective theme and owner direction before a dialog enters this scene.
     private void preparePresentationContext() {
+        if (motionContext != null) {
+            motionContext.stop();
+            motionContext = null;
+        }
         installEffectiveTheme();
         @Nullable Window owner = stage.getOwner();
         if (owner != null && owner.getScene() != null) {
             root.setNodeOrientation(owner.getScene().getRoot().getEffectiveNodeOrientation());
+            M3PopupContextSynchronizer.MotionContext context =
+                    new M3PopupContextSynchronizer.MotionContext(owner.getScene().getRoot(), root, null);
+            motionContext = context;
+            context.start();
             if (localizerObserver != null) {
                 localizerObserver.close();
                 localizerObserver = null;

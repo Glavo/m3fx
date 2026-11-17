@@ -13,6 +13,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -95,8 +96,8 @@ final class M3AnimationTest {
     /// Verifies that disabled motion applies custom finite-transition end values and completion handlers.
     @Test
     void disabledMotionFinishesFiniteTransitionImmediately() {
-        Pane owner = new Pane();
-        M3MotionSettings.setReducedMotionRequested(owner, true);
+        M3Scrim owner = new M3Scrim();
+        owner.setAnimationsEnabled(false);
         DoubleProperty value = new SimpleDoubleProperty(0.0);
         AtomicBoolean animationFinished = new AtomicBoolean(false);
         TestFiniteTransition transition = new TestFiniteTransition(value);
@@ -109,11 +110,53 @@ final class M3AnimationTest {
         assertEquals(Animation.Status.STOPPED, transition.getStatus());
     }
 
+    /// Ordinary JavaFX owners ignore local CSS but still settle and complete under the global request.
+    @Test
+    void ordinaryPaneMotionUsesOnlyGlobalPreference() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane owner = new Pane();
+            M3Scrim supportedSibling = new M3Scrim();
+            Pane root = new Pane(owner, supportedSibling);
+            new Scene(root);
+            FxTestUtils.setCssAnimationsEnabled(root, false);
+            assertFalse(supportedSibling.isAnimationsEnabled());
+            assertFalse(M3MotionSettings.shouldReduceMotion(owner));
+
+            DoubleProperty value = new SimpleDoubleProperty();
+            AtomicBoolean finished = new AtomicBoolean();
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+            transition.setOnFinished(event -> finished.set(true));
+            try {
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                FxTestUtils.setCssAnimationsEnabled(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                assertFalse(finished.get());
+
+                M3MotionSettings.setGlobalReducedMotionRequested(true);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+                assertTrue(finished.get());
+
+                value.set(0.0);
+                finished.set(false);
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get(), 0.0001);
+                assertTrue(finished.get());
+            } finally {
+                transition.stop();
+            }
+        }));
+    }
+
     /// Verifies finite transitions observe motion settings only for the duration of an active run.
     @Test
     void finiteTransitionObservesMotionSettingsOnlyWhileRunning() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             Scene scene = new Scene(owner);
             int ownerPropertyCount = owner.getProperties().size();
             int scenePropertyCount = scene.getProperties().size();
@@ -126,11 +169,11 @@ final class M3AnimationTest {
             assertTrue(owner.getProperties().size() > ownerPropertyCount);
             assertTrue(scene.getProperties().size() > scenePropertyCount);
 
-            M3MotionSettings.setReducedMotionRequested(owner, true);
+            owner.setAnimationsEnabled(false);
 
             assertEquals(Animation.Status.STOPPED, transition.getStatus());
             assertEquals(1.0, value.get(), 0.0001);
-            M3MotionSettings.setReducedMotionRequested(owner, false);
+            owner.setAnimationsEnabled(true);
             assertEquals(ownerPropertyCount, owner.getProperties().size());
             assertEquals(scenePropertyCount, scene.getProperties().size());
         }));
@@ -322,7 +365,7 @@ final class M3AnimationTest {
     @Test
     void restartingFiniteTransitionStillObservesReducedMotion() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             Scene scene = new Scene(owner);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
             TestFiniteTransition transition = new TestFiniteTransition(value);
@@ -330,7 +373,7 @@ final class M3AnimationTest {
                 M3Animation.playFromStart(owner, transition);
                 M3Animation.playFromStart(owner, transition);
                 assertEquals(Animation.Status.RUNNING, transition.getStatus());
-                M3MotionSettings.setReducedMotionRequested(owner, true);
+                owner.setAnimationsEnabled(false);
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
                 assertEquals(1.0, value.get(), 0.0001);
             } finally {

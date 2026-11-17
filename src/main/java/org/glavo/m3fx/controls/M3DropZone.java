@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -21,6 +23,8 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.TransferMode;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -72,7 +76,35 @@ import java.util.function.Predicate;
 ///
 /// See [Spectrum Web Components drop zones](https://opensource.adobe.com/spectrum-web-components/components/dropzone/).
 @NotNullByDefault
-public final class M3DropZone extends Control {
+public final class M3DropZone extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default root style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-drop-zone";
 
@@ -602,6 +634,12 @@ public final class M3DropZone extends Control {
     /// CSS metadata for drop-zone component metrics.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3DropZone, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the minimum container width.
         private static final CssMetaData<M3DropZone, Number> CONTAINER_MIN_WIDTH = M3Css.sizeMetaData(
                         "-m3-container-min-width",
@@ -628,6 +666,7 @@ public final class M3DropZone extends Control {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(CONTAINER_MIN_WIDTH);
             styleables.add(CONTAINER_MIN_HEIGHT);
             styleables.add(CONTENT_PADDING);

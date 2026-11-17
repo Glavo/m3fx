@@ -8,17 +8,22 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +42,35 @@ import java.util.Objects;
 ///
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
-public final class M3Badge extends Control {
+public final class M3Badge extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-badge";
 
@@ -404,13 +437,13 @@ public final class M3Badge extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -423,6 +456,12 @@ public final class M3Badge extends Control {
     /// CSS metadata for M3FX badge component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3Badge, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the small size token.
         private static final CssMetaData<M3Badge, Number> SMALL_SIZE =
                 M3Css.sizeMetaData(
@@ -464,10 +503,11 @@ public final class M3Badge extends Control {
                 );
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(SMALL_SIZE);
             styleables.add(LARGE_HEIGHT);
             styleables.add(LARGE_MIN_WIDTH);

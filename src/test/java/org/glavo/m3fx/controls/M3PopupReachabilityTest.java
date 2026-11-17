@@ -16,7 +16,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -129,7 +128,7 @@ final class M3PopupReachabilityTest {
                     "JavaFX does not expose visibility across the SubScene boundary");
             subScene.setVisible(true);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setReducedMotionRequested(menuButton, true);
+            menuButton.setAnimationsEnabled(false);
             Stage stage = new Stage();
             try {
                 stage.setScene(scene);
@@ -183,7 +182,7 @@ final class M3PopupReachabilityTest {
             try {
                 Scene scene = new Scene(root, 820.0, 620.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setReducedMotionRequested(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -247,7 +246,7 @@ final class M3PopupReachabilityTest {
                 dateField.hidePicker();
                 timeField.hidePicker();
                 rangeField.hidePicker();
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             }
         });

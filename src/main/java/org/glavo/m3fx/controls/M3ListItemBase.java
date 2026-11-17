@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -29,6 +31,8 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -65,7 +69,35 @@ import java.util.function.Function;
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
-public abstract sealed class M3ListItemBase extends Control permits M3ListItem, M3MenuItem, M3SettingItemBase {
+public abstract sealed class M3ListItemBase extends Control implements M3Animated permits M3ListItem, M3MenuItem, M3SettingItemBase {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-list-item";
 
@@ -1283,6 +1315,12 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// CSS metadata for M3FX list item component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3ListItemBase, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the ordinary headline paint.
         private static final CssMetaData<M3ListItemBase, @Nullable Paint> HEADLINE_COLOR =
                 createPaintCssMetaData(
@@ -1351,6 +1389,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(HEADLINE_COLOR);
             styleables.add(SUPPORTING_COLOR);
             styleables.add(SELECTED_HEADLINE_COLOR);

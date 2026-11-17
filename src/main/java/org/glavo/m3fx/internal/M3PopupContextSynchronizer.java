@@ -4,20 +4,27 @@
 package org.glavo.m3fx.internal;
 
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.StyleOrigin;
+import javafx.css.StyleableBooleanProperty;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import javafx.scene.control.PopupControl;
+import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -26,11 +33,10 @@ import java.util.function.Supplier;
 ///
 /// JavaFX popup content lives in a separate scene after it is shown, so ordinary scene inheritance is not enough
 /// for Material token lookups. This helper mirrors the owner scene stylesheet list, nearest M3FX theme root,
-/// effective node orientation, and resolved reduced-motion request into a detached popup root, then keeps that copy fresh
+/// effective node orientation, and local animation preference into a detached popup root, then keeps that copy fresh
 /// when owner scene, stylesheet, theme, orientation, or motion settings change during the popup lifetime.
 ///
-/// Construction, [start], [stop], and [sync] must be performed on the JavaFX application thread. Motion-setting
-/// notifications received on another thread are coalesced onto that thread before scene-graph state is updated.
+/// Construction, [start], [stop], [sync], and local property changes require the JavaFX application thread.
 /// Consecutive stylesheet-list mutations in one application-thread turn produce one synchronization pass.
 @NotNullByDefault
 public final class M3PopupContextSynchronizer {
@@ -70,11 +76,8 @@ public final class M3PopupContextSynchronizer {
     /// Whether the current observation run has copied context from an attached owner scene.
     private boolean hasSyncedAttachedOwnerContext;
 
-    /// Whether [syncedReducedMotionRequested] contains a snapshot.
-    private boolean hasSyncedMotionContext;
-
-    /// Last owner-resolved reduced-motion request copied to the popup root.
-    private boolean syncedReducedMotionRequested;
+    /// Bridges local motion context without copying application-wide reduced-motion settings.
+    private final MotionContext motionContext;
 
     /// Creates a synchronizer that mirrors the owner scene stylesheets and nearest theme root.
     ///
@@ -144,11 +147,25 @@ public final class M3PopupContextSynchronizer {
             Supplier<@Nullable Parent> themeRootSupplier,
             @Nullable String controlStylesheet
     ) {
+        this(owner, popupRoot, stylesheetSourceSupplier, themeRootSupplier, controlStylesheet,
+                popupRoot instanceof M3Animated animated ? animated : null);
+    }
+
+    /// Creates a synchronizer whose popup animation property may belong to a separate popup control.
+    public M3PopupContextSynchronizer(
+            Node owner,
+            Parent popupRoot,
+            Supplier<@Nullable ObservableList<String>> stylesheetSourceSupplier,
+            Supplier<@Nullable Parent> themeRootSupplier,
+            @Nullable String controlStylesheet,
+            @Nullable M3Animated popupControl
+    ) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.popupRoot = Objects.requireNonNull(popupRoot, "popupRoot");
         this.stylesheetSourceSupplier = Objects.requireNonNull(stylesheetSourceSupplier, "stylesheetSourceSupplier");
         this.themeRootSupplier = Objects.requireNonNull(themeRootSupplier, "themeRootSupplier");
         this.controlStylesheet = controlStylesheet;
+        motionContext = new MotionContext(owner, popupRoot, popupControl);
     }
 
     /// Starts observing owner context and immediately synchronizes the popup root.
@@ -175,7 +192,7 @@ public final class M3PopupContextSynchronizer {
             currentObservation.start();
             sync();
             if (epoch == observationEpoch && running) {
-                currentObservation.motionSettingsObserver.start();
+                motionContext.start();
             }
         } catch (RuntimeException | Error exception) {
             if (epoch == observationEpoch) {
@@ -185,7 +202,7 @@ public final class M3PopupContextSynchronizer {
         }
     }
 
-    /// Stops observing owner context while leaving the popup root styled with its last synchronized values.
+    /// Stops observing owner context and removes the temporary motion fallback.
     ///
     /// Calling this method while the synchronizer is stopped has no effect. A stopped synchronizer may be started
     /// again. If called from a synchronization callback, the current copying step may finish notifying listeners,
@@ -199,11 +216,11 @@ public final class M3PopupContextSynchronizer {
         observationEpoch++;
         cancelPendingSync();
         hasSyncedAttachedOwnerContext = false;
-        hasSyncedMotionContext = false;
         @Nullable Observation currentObservation = observation;
         if (currentObservation != null) {
             currentObservation.stop();
         }
+        motionContext.stop();
     }
 
     /// Copies the latest owner stylesheet, theme, orientation, and motion context into the popup root.
@@ -243,10 +260,6 @@ public final class M3PopupContextSynchronizer {
             if (epoch != observationEpoch) {
                 return;
             }
-            syncMotionContext();
-            if (epoch != observationEpoch) {
-                return;
-            }
             M3LocalizerObserver.inherit(popupRoot, M3LocalizerObserver.resolve(owner));
             if (epoch != observationEpoch) {
                 return;
@@ -257,6 +270,9 @@ public final class M3PopupContextSynchronizer {
                     themeRoot,
                     controlStylesheet
             );
+            if (epoch == observationEpoch) {
+                motionContext.sync();
+            }
             applyCssAndLayout(epoch);
             if (epoch == observationEpoch && owner.getScene() != null) {
                 hasSyncedAttachedOwnerContext = true;
@@ -309,42 +325,6 @@ public final class M3PopupContextSynchronizer {
         }
     }
 
-    /// Copies the owner's resolved motion settings into the popup root and records the copied context.
-    private void syncMotionContext() {
-        syncMotionContext(M3MotionSettings.shouldReduceMotion(owner));
-    }
-
-    /// Copies an already resolved reduced-motion setting into the popup root.
-    private void syncMotionContext(boolean reducedMotionRequested) {
-        hasSyncedMotionContext = true;
-        syncedReducedMotionRequested = reducedMotionRequested;
-        M3MotionSettings.setReducedMotionRequested(popupRoot, reducedMotionRequested);
-    }
-
-    /// Synchronizes only when a settings notification changes this owner's resolved motion context.
-    private void syncIfMotionContextChanged() {
-        if (!running) {
-            return;
-        }
-        if (syncing) {
-            requestSync();
-            return;
-        }
-
-        boolean reducedMotionRequested = M3MotionSettings.shouldReduceMotion(owner);
-        if (hasSyncedMotionContext
-                && syncedReducedMotionRequested == reducedMotionRequested) {
-            return;
-        }
-
-        syncing = true;
-        try {
-            syncMotionContext(reducedMotionRequested);
-        } finally {
-            syncing = false;
-        }
-    }
-
     /// Coalesces related stylesheet and theme notifications into one JavaFX application-thread synchronization.
     private void requestSync() {
         if (!running || syncPending) {
@@ -372,6 +352,249 @@ public final class M3PopupContextSynchronizer {
         }
     }
 
+    /// Supplies an inheritable CSS fallback for detached content without changing application styles or bindings.
+    /// Global reduced motion is deliberately resolved only when an animation is played.
+    /// Owners without [M3Animated] provide no readable preference, so no fallback is synthesized for them.
+    /// A popup's bound or programmatically assigned preference can still supply the fallback. Popup controls also
+    /// retain their resolved CSS preference, including native inheritance through their styleable parent.
+    @NotNullByDefault
+    public static final class MotionContext {
+        /// Root-only scope attached to each private popup host.
+        private static final String SCOPE = "m3-popup-motion-context";
+
+        /// Shared fallback enabling local animations.
+        private static final String ENABLED_STYLESHEET = stylesheet(true);
+
+        /// Shared fallback disabling local animations.
+        private static final String DISABLED_STYLESHEET = stylesheet(false);
+
+        /// The node supplying the local animation preference.
+        private final Node owner;
+
+        /// The detached content root.
+        private final Parent root;
+
+        /// The popup's own animation preference, when available.
+        private final @Nullable M3Animated popupControl;
+
+        /// Refreshes local context after a property or parent change.
+        private final InvalidationListener listener = observable -> sync();
+
+        /// Waits until StyleableBooleanProperty has assigned the new style origin after notifying listeners.
+        private final InvalidationListener popupListener = observable -> requestSync();
+
+        /// Invalidates deferred work when observation stops.
+        private long epoch;
+
+        /// Whether one deferred property refresh is queued.
+        private boolean syncPending;
+
+        /// The ordinary ancestor carrying the fallback declaration.
+        private @Nullable Parent stylesheetRoot;
+
+        /// Whether this context added the host's scope class.
+        private boolean scopeAdded;
+
+        /// Whether listeners are registered.
+        private boolean observing;
+
+        /// Prevents CSS application from recursively refreshing the same context.
+        private boolean syncing;
+
+        /// The property that received this bridge's temporary user-agent fallback.
+        private @Nullable StyleableBooleanProperty fallbackProperty;
+
+        /// Creates a motion-only bridge; call [start] and [stop] with the presentation lifecycle.
+        public MotionContext(Node owner, Parent root, @Nullable M3Animated popupControl) {
+            this.owner = Objects.requireNonNull(owner, "owner");
+            this.root = Objects.requireNonNull(root, "root");
+            this.popupControl = popupControl;
+        }
+
+        /// Observes local properties and installs the current fallback.
+        public void start() {
+            if (!observing) {
+                observing = true;
+                epoch++;
+                root.parentProperty().addListener(listener);
+                if (owner instanceof M3Animated animated) {
+                    animated.animationsEnabledProperty().addListener(listener);
+                }
+                if (popupControl != null && popupControl != owner) {
+                    popupControl.animationsEnabledProperty().addListener(popupListener);
+                }
+                if (popupControl instanceof PopupControl popup) {
+                    popup.skinProperty().addListener(listener);
+                }
+            }
+            sync();
+        }
+
+        /// Removes listeners and temporary declarations without altering application-owned values.
+        public void stop() {
+            observing = false;
+            long currentEpoch = ++epoch;
+            syncPending = false;
+            root.parentProperty().removeListener(listener);
+            if (owner instanceof M3Animated animated) {
+                animated.animationsEnabledProperty().removeListener(listener);
+            }
+            if (popupControl != null && popupControl != owner) {
+                popupControl.animationsEnabledProperty().removeListener(popupListener);
+            }
+            if (popupControl instanceof PopupControl popup) {
+                popup.skinProperty().removeListener(listener);
+            }
+            clearStylesheet();
+            if (currentEpoch == epoch) {
+                clearPropertyFallback();
+            }
+        }
+
+        /// Restores the fallback after stylesheet replacement and applies it through normal CSS inheritance.
+        public void sync() {
+            if (syncing) {
+                return;
+            }
+            syncing = true;
+            long currentEpoch = epoch;
+            try {
+                @Nullable Boolean enabled = owner instanceof M3Animated animated
+                        ? animated.isAnimationsEnabled() : null;
+                if (popupControl != null) {
+                    StyleableBooleanProperty property = popupControl.animationsEnabledProperty();
+                    boolean popupEnabled = property.get();
+                    @Nullable StyleOrigin origin = property.getStyleOrigin();
+                    if (property.isBound() || origin == StyleOrigin.USER
+                            || popupControl instanceof PopupControl
+                            && (origin == StyleOrigin.AUTHOR || origin == StyleOrigin.INLINE)) {
+                        enabled = popupEnabled;
+                    }
+                }
+
+                if (enabled == null) {
+                    @Nullable Parent previousHost = stylesheetRoot;
+                    clearStylesheet();
+                    if (currentEpoch == epoch) {
+                        clearPropertyFallback();
+                        if (previousHost != null && currentEpoch == epoch) {
+                            previousHost.applyCss();
+                        }
+                    }
+                    return;
+                }
+
+                if (popupControl instanceof PopupControl) {
+                    StyleableBooleanProperty property = popupControl.animationsEnabledProperty();
+                    @Nullable StyleOrigin origin = property.getStyleOrigin();
+                    if (!property.isBound() && property.get() != enabled
+                            && (origin == null || origin == StyleOrigin.USER_AGENT)) {
+                        fallbackProperty = property;
+                        property.applyStyle(StyleOrigin.USER_AGENT, enabled);
+                    }
+                    if (currentEpoch != epoch) {
+                        return;
+                    }
+                }
+
+                // An animated root inherits from its popup container, preserving its own CSS and USER values.
+                @Nullable Parent host = root instanceof M3Animated ? root.getParent() : root;
+                if (popupControl instanceof PopupControl popup) {
+                    @Nullable Skin<?> skin = popup.getSkin();
+                    if (skin != null && skin.getNode() instanceof Parent skinRoot) {
+                        // PopupControl's CSS bridge uses its owner as styleable parent, bypassing the scene root.
+                        host = skinRoot;
+                    }
+                }
+                if (stylesheetRoot != host) {
+                    clearStylesheet();
+                    if (currentEpoch != epoch) {
+                        return;
+                    }
+                    stylesheetRoot = host;
+                }
+                if (host != null) {
+                    boolean changed = false;
+                    if (!host.getStyleClass().contains(SCOPE)) {
+                        scopeAdded = true;
+                        host.getStyleClass().add(SCOPE);
+                        changed = true;
+                    }
+                    if (currentEpoch != epoch) {
+                        return;
+                    }
+                    String stylesheet = enabled ? ENABLED_STYLESHEET : DISABLED_STYLESHEET;
+                    changed |= host.getStylesheets().remove(enabled ? DISABLED_STYLESHEET : ENABLED_STYLESHEET);
+                    if (currentEpoch != epoch) {
+                        return;
+                    }
+                    if (!host.getStylesheets().contains(stylesheet)) {
+                        host.getStylesheets().add(0, stylesheet);
+                        changed = true;
+                    }
+                    if (changed && currentEpoch == epoch) {
+                        host.applyCss();
+                    }
+                } else if (root instanceof M3Animated animated) {
+                    StyleableBooleanProperty property = animated.animationsEnabledProperty();
+                    @Nullable StyleOrigin origin = property.getStyleOrigin();
+                    if (!property.isBound() && property.get() != enabled
+                            && (origin == null || origin == StyleOrigin.USER_AGENT)) {
+                        fallbackProperty = property;
+                        property.applyStyle(StyleOrigin.USER_AGENT, enabled);
+                    }
+                }
+            } finally {
+                syncing = false;
+            }
+        }
+
+        /// Coalesces popup-property changes without observing any descendants or global settings.
+        private void requestSync() {
+            if (!observing || syncPending) {
+                return;
+            }
+            syncPending = true;
+            long currentEpoch = epoch;
+            Platform.runLater(() -> {
+                if (currentEpoch == epoch && observing) {
+                    syncPending = false;
+                    sync();
+                }
+            });
+        }
+
+        /// Removes only resources installed by this bridge.
+        private void clearStylesheet() {
+            @Nullable Parent host = stylesheetRoot;
+            stylesheetRoot = null;
+            boolean removeScope = scopeAdded;
+            scopeAdded = false;
+            long currentEpoch = epoch;
+            if (host != null) {
+                host.getStylesheets().removeAll(ENABLED_STYLESHEET, DISABLED_STYLESHEET);
+                if (removeScope && currentEpoch == epoch) {
+                    host.getStyleClass().remove(SCOPE);
+                }
+            }
+        }
+
+        /// Releases only a user-agent fallback still owned by this bridge.
+        private void clearPropertyFallback() {
+            @Nullable StyleableBooleanProperty property = fallbackProperty;
+            fallbackProperty = null;
+            if (property != null && !property.isBound() && property.getStyleOrigin() == StyleOrigin.USER_AGENT) {
+                property.applyStyle(null, true);
+            }
+        }
+
+        /// Encodes a root-only declaration; descendants inherit it without selector enumeration.
+        private static String stylesheet(boolean enabled) {
+            String css = "." + SCOPE + " { -m3-animations-enabled: " + enabled + "; }";
+            return "data:text/css;base64," + Base64.getEncoder().encodeToString(css.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     /// Owns listeners and mutable lookup caches used only while popup context is observed.
     @NotNullByDefault
     private final class Observation {
@@ -389,14 +612,6 @@ public final class M3PopupContextSynchronizer {
         /// Handles owner effective orientation changes.
         private final ChangeListener<NodeOrientation> ownerOrientationListener =
                 (observable, oldValue, newValue) -> syncNodeOrientationAndLayout();
-
-        /// Shares scene-scoped motion observation with other animated owners.
-        private final M3MotionSettingsObserver motionSettingsObserver =
-                new M3MotionSettingsObserver(
-                        owner,
-                        M3PopupContextSynchronizer.this::syncIfMotionContextChanged,
-                        false
-                );
 
         /// Handles root changes on the current owner scene.
         private final ChangeListener<Parent> sceneRootListener =
@@ -469,8 +684,6 @@ public final class M3PopupContextSynchronizer {
             updateObservedSceneRoot(null);
             updateObservedThemeRoot(null);
             clearObservedAncestorThemeRoots();
-            // Coordinator removal can notify property listeners that start a new observation run.
-            motionSettingsObserver.stop();
         }
 
         /// Handles installed-theme metadata changes on observed roots.

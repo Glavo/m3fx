@@ -4,12 +4,12 @@
 package org.glavo.m3fx.hmcl.demo;
 
 import javafx.application.Application;
+import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.monetfx.Brightness;
@@ -73,9 +73,11 @@ public final class HMCLM3DemoApp extends Application {
         state.themeColorProperty().addListener((observable, oldColor, newColor) -> applyTheme.run());
         state.brightnessProperty().addListener((observable, oldBrightness, newBrightness) -> applyTheme.run());
         state.profileProperty().addListener((observable, oldProfile, newProfile) -> applyTheme.run());
-        state.animationDisabledProperty().addListener((observable, oldValue, newValue) ->
-                M3MotionSettings.setReducedMotionRequested(root, Boolean.TRUE.equals(newValue)));
-        M3MotionSettings.setReducedMotionRequested(root, state.isAnimationDisabled());
+        state.animationDisabledProperty().addListener((observable, oldValue, newValue) -> {
+            root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), Boolean.TRUE.equals(newValue));
+            root.applyCss();
+        });
+        root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), state.isAnimationDisabled());
         applyTheme.run();
 
         stage.setScene(activeScene);

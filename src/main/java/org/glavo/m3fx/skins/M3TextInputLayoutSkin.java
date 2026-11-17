@@ -374,6 +374,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     /// @throws NullPointerException if control is null
     public M3TextInputLayoutSkin(M3TextInputLayout control) {
         super(Objects.requireNonNull(control, "control"));
+        clearButton.animationsEnabledProperty().bind(control.animationsEnabledProperty());
         initializeNodes();
         localizerObserver = new M3LocalizerObserver(control, localizer -> {
             if (!clearButton.accessibleTextProperty().isBound()) {
@@ -484,6 +485,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     /// Releases all presentation resources and restores the wrapped input.
     @Override
     public void dispose() {
+        clearButton.animationsEnabledProperty().unbind();
         localizerObserver.close();
         uninstallControlListeners();
         labelProgressAnimation.stop();

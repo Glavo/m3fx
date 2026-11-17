@@ -17,6 +17,7 @@ import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -230,8 +231,8 @@ final class M3LayoutAnimationTest {
             assertFalse(transition.getCurrentState());
             assertEquals(8.0, second.get(), 0.0);
 
-            Pane reducedOwner = new Pane();
-            M3MotionSettings.setReducedMotionRequested(reducedOwner, true);
+            M3Scrim reducedOwner = new M3Scrim();
+            reducedOwner.setAnimationsEnabled(false);
             SimpleDoubleProperty reducedValue = new SimpleDoubleProperty();
             M3StateTransition<Boolean> reduced = new M3StateTransition<>(reducedOwner, false);
             reduced.addDouble(reducedValue, expanded -> expanded ? 24.0 : 0.0, 0.5);
@@ -354,7 +355,7 @@ final class M3LayoutAnimationTest {
             new Scene(root);
             root.applyCss();
             root.layout();
-            M3MotionSettings.setReducedMotionRequested(root, true);
+            FxTestUtils.setCssAnimationsEnabled(root, false);
             visibility.setShowing(true);
 
             assertTrue(visibility.isShowing());
@@ -711,7 +712,7 @@ final class M3LayoutAnimationTest {
 
             Pane nextRoot = new Pane(animatedContent);
             scene.setRoot(nextRoot);
-            M3MotionSettings.setReducedMotionRequested(nextRoot, true);
+            FxTestUtils.setCssAnimationsEnabled(nextRoot, false);
             Region second = fixedRegion(144.0, 52.0);
             animatedContent.setContent(second);
 

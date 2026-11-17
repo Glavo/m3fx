@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
@@ -36,6 +38,8 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3FocusGuards;
@@ -84,7 +88,35 @@ import java.util.Objects;
 ///
 /// @param <T> the item type rendered by this list view
 @NotNullByDefault
-public final class M3ListView<T> extends Control {
+public final class M3ListView<T> extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-list-view";
 
@@ -1983,6 +2015,12 @@ public final class M3ListView<T> extends Control {
     /// CSS metadata for virtualized list layout tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3ListView<?>, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the gap between adjacent virtualized items.
         private static final CssMetaData<M3ListView<?>, Number> ITEM_SPACING =
                 M3Css.sizeMetaData("-m3-list-item-spacing", DEFAULT_ITEM_SPACING, M3ListView::itemSpacingProperty);
@@ -1993,6 +2031,7 @@ public final class M3ListView<T> extends Control {
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
                     new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(ITEM_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

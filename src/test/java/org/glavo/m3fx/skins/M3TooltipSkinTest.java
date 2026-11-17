@@ -4,12 +4,14 @@
 package org.glavo.m3fx.skins;
 
 import javafx.scene.Scene;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.theme.M3Theme;
@@ -40,6 +42,83 @@ final class M3TooltipSkinTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Local popup preferences can override their owner without overriding the global constraint.
+    @Test
+    void nativePopupResolvesOwnerAndExplicitMotionSettings() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            M3Button owner = new M3Button("Owner");
+            Pane parent = new Pane(owner);
+            Stage stage = new Stage();
+            M3Tooltip tooltip = new M3Tooltip("Motion settings");
+            try {
+                stage.setScene(new Scene(parent, 300.0, 160.0));
+                stage.show();
+                owner.setAnimationsEnabled(false);
+                tooltip.show(owner, stage.getX() + 20.0, stage.getY() + 50.0);
+                tooltip.getScene().getRoot().applyCss();
+                M3TooltipSkin skin = (M3TooltipSkin) tooltip.getSkin();
+                assertFalse(tooltip.isAnimationsEnabled());
+                assertFalse(skin.isAnimationsEnabled());
+                assertEquals(1.0, skin.getOpacity());
+
+                owner.setAnimationsEnabled(true);
+                tooltip.getScene().getRoot().applyCss();
+                assertTrue(tooltip.isAnimationsEnabled());
+                owner.setAnimationsEnabled(false);
+                tooltip.getScene().getRoot().applyCss();
+                assertFalse(tooltip.isAnimationsEnabled());
+
+                SimpleBooleanProperty enabled = new SimpleBooleanProperty(true);
+                tooltip.animationsEnabledProperty().bind(enabled);
+                assertTrue(skin.isAnimationsEnabled());
+                assertFalse(M3MotionSettings.shouldReduceMotion(skin));
+                M3MotionSettings.setGlobalReducedMotionRequested(true);
+                assertTrue(tooltip.isAnimationsEnabled());
+                assertTrue(M3MotionSettings.shouldReduceMotion(skin));
+                enabled.set(false);
+                assertFalse(skin.isAnimationsEnabled());
+            } finally {
+                tooltip.animationsEnabledProperty().unbind();
+                tooltip.setAnimationsEnabled(false);
+                tooltip.hide();
+                stage.close();
+            }
+        }));
+    }
+
+    /// Native popup CSS inherits through an ordinary JavaFX owner with its own unrelated style.
+    @Test
+    void nativePopupInheritsCssThroughOrdinaryOwner() {
+        FxTestUtils.runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            owner.setStyle("-fx-opacity: 0.9;");
+            Pane parent = new Pane(owner);
+            parent.setStyle("-m3-animations-enabled: false;");
+            Stage stage = new Stage();
+            M3Tooltip tooltip = new M3Tooltip("CSS motion");
+            try {
+                Scene scene = new Scene(parent, 300.0, 160.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                tooltip.show(owner, stage.getX() + 20.0, stage.getY() + 50.0);
+                tooltip.getScene().getRoot().applyCss();
+                assertFalse(tooltip.isAnimationsEnabled());
+                tooltip.setStyle("-m3-animations-enabled: true;");
+                tooltip.getScene().getRoot().applyCss();
+                assertTrue(tooltip.isAnimationsEnabled());
+                tooltip.setStyle("");
+                tooltip.getScene().getRoot().applyCss();
+                assertFalse(tooltip.isAnimationsEnabled());
+            } finally {
+                tooltip.setAnimationsEnabled(false);
+                tooltip.hide();
+                stage.close();
+            }
+        });
     }
 
     /// Does not install tooltip token declarations into the containing scene.
@@ -128,8 +207,8 @@ final class M3TooltipSkinTest {
             Stage stage = new Stage();
             Label owner = new Label("Owner");
             Pane parent = new Pane(owner);
-            M3MotionSettings.setReducedMotionRequested(parent, true);
             M3Tooltip tooltip = new M3Tooltip("Theme changes");
+            tooltip.setAnimationsEnabled(false);
             try {
                 stage.setScene(new Scene(parent, 300.0, 160.0));
                 stage.show();
@@ -174,10 +253,10 @@ final class M3TooltipSkinTest {
                 Pane localRoot = new Pane(owner);
                 Pane replacementRoot = new Pane();
                 Pane root = new Pane(localRoot, replacementRoot);
-                M3MotionSettings.setReducedMotionRequested(root, true);
                 M3ThemeManager.install(localRoot, M3Theme.defaultTheme());
                 M3ThemeManager.install(replacementRoot, dark);
                 M3Tooltip tooltip = new M3Tooltip("Inherited theme");
+                tooltip.setAnimationsEnabled(false);
                 reference.set(new InheritedThemeFixture(stage, owner, tooltip));
                 M3Tooltip.install(owner, tooltip);
                 stage.setScene(new Scene(root, 300.0, 160.0));

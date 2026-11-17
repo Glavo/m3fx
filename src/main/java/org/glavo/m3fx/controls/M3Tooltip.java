@@ -10,6 +10,10 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.beans.property.SimpleObjectProperty;
@@ -38,9 +42,12 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupWindows;
@@ -55,9 +62,11 @@ import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 tooltip.
@@ -65,6 +74,9 @@ import java.util.Objects;
 /// `M3Tooltip` is a [PopupControl] that can be installed on any JavaFX node. It manages show and hide delays,
 /// pointer and keyboard triggers, owner-window tracking, theme inheritance for popup content, accessible help
 /// text, and Material entrance and exit motion.
+/// Custom skin nodes own presentation-transition observation. The default skin delegates [M3Animated] to this
+/// tooltip; custom animated nodes should do the same. Non-animated custom nodes still observe global motion,
+/// and disabling this tooltip's animation property settles its running transition.
 ///
 /// The static installation methods manage pointer and keyboard activation for an owner node. Installing another
 /// M3FX tooltip on the same node replaces the previous installation; uninstall the same tooltip instance when the
@@ -82,7 +94,86 @@ import java.util.Objects;
 /// Use [M3RichTooltip] when the popup needs a title, supporting text, or action row. See
 /// [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
-public class M3Tooltip extends PopupControl {
+public class M3Tooltip extends PopupControl implements M3Animated {
+    /// Lazily allocated, inheritable local animation preference.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this tooltip permits local animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets the local animation preference without changing global reduced motion.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the property styled by `-m3-animations-enabled`.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+            animationsEnabled.addListener(observable -> {
+                if (!isAnimationsEnabled() && visibilityAnimation != null) {
+                    M3Animation.finishIfRunning(visibilityAnimation);
+                }
+            });
+        }
+        return animationsEnabled;
+    }
+
+    /// Returns the immutable tooltip CSS metadata.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns CSS metadata used by the popup's styleable bridge.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// Lazily initialized tooltip CSS metadata.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// Inheritable local animation preference.
+        private static final CssMetaData<Styleable, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(styleable -> tooltip(styleable).animationsEnabledProperty(),
+                        styleable -> {
+                            M3Tooltip tooltip = tooltip(styleable);
+                            return tooltip.animationsEnabled == null || !tooltip.animationsEnabled.isBound();
+                        });
+
+        /// Complete immutable tooltip metadata.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(PopupControl.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
+
+        /// Prevents instantiation of the metadata holder.
+        private StyleableProperties() {
+        }
+
+        /// Resolves either the public popup or the JavaFX CSS bridge hosted in its scene.
+        private static M3Tooltip tooltip(Styleable styleable) {
+            if (styleable instanceof M3Tooltip tooltip) {
+                return tooltip;
+            }
+            if (styleable instanceof Node node && node.getScene() != null
+                    && node.getScene().getWindow() instanceof M3Tooltip tooltip) {
+                return tooltip;
+            }
+            throw new IllegalArgumentException("Not an M3Tooltip CSS bridge");
+        }
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-tooltip";
 
@@ -521,7 +612,7 @@ public class M3Tooltip extends PopupControl {
             cancelHideAnimation();
         }
         if (!wasShowing) {
-            prepareShowAnimation(ownerNode);
+            prepareShowAnimation();
         }
         try {
             super.show(ownerNode, anchorX, anchorY);
@@ -561,7 +652,7 @@ public class M3Tooltip extends PopupControl {
 
         @Nullable Node owner = popupContextOwner;
         @Nullable Node node = animatedSkinNode();
-        if (owner == null || node == null || !M3Animation.areAnimationsEnabled(owner)) {
+        if (owner == null || node == null || !arePresentationAnimationsEnabled()) {
             hideSynchronously();
             return;
         }
@@ -577,7 +668,7 @@ public class M3Tooltip extends PopupControl {
                 node.getTranslateX(),
                 node.getTranslateY()
         );
-        M3Animation.playFromStart(owner, animation);
+        M3Animation.playFromStart(node, animation);
     }
 
     /// Adds base style classes and Material timing defaults.
@@ -601,7 +692,7 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Places the popup content at the Material entrance origin before the popup becomes visible.
-    private void prepareShowAnimation(Node owner) {
+    private void prepareShowAnimation() {
         hidingAfterAnimation = false;
         @Nullable Node node = animatedSkinNode();
         if (node == null) {
@@ -611,7 +702,7 @@ public class M3Tooltip extends PopupControl {
         M3NodeTransition animation = visibilityTransition(node);
         animation.stop();
         animation.setOnFinished(null);
-        if (M3Animation.areAnimationsEnabled(owner)) {
+        if (arePresentationAnimationsEnabled()) {
             node.setOpacity(0.0);
             node.setScaleX(0.8);
             node.setScaleY(0.8);
@@ -626,7 +717,7 @@ public class M3Tooltip extends PopupControl {
         if (node == null) {
             return;
         }
-        if (!M3Animation.areAnimationsEnabled(owner)) {
+        if (!arePresentationAnimationsEnabled()) {
             resetVisibilityNode(node);
             return;
         }
@@ -645,7 +736,7 @@ public class M3Tooltip extends PopupControl {
                 node.getTranslateX(),
                 node.getTranslateY()
         );
-        M3Animation.playFromStart(owner, animation);
+        M3Animation.playFromStart(node, animation);
     }
 
     /// Reverses a running exit transition without closing or recreating the popup.
@@ -657,7 +748,7 @@ public class M3Tooltip extends PopupControl {
         hidingAfterAnimation = false;
         @Nullable Node owner = popupContextOwner;
         @Nullable Node node = visibilityNode;
-        if (owner == null || node == null || !M3Animation.areAnimationsEnabled(owner)) {
+        if (owner == null || node == null || !arePresentationAnimationsEnabled()) {
             if (node != null) {
                 resetVisibilityNode(node);
             }
@@ -665,6 +756,11 @@ public class M3Tooltip extends PopupControl {
         }
 
         playShowAnimation(owner);
+    }
+
+    /// Applies only the global constraint to the popup's resolved local preference.
+    private boolean arePresentationAnimationsEnabled() {
+        return isAnimationsEnabled() && !M3MotionSettings.isGlobalReducedMotionRequested();
     }
 
     /// Returns the node used to animate tooltip visibility.
@@ -928,7 +1024,8 @@ public class M3Tooltip extends PopupControl {
                 popupRoot,
                 () -> popupStylesheetSource(ownerNode),
                 () -> popupThemeSource(ownerNode),
-                M3Stylesheets.controlStylesheet("tooltip.css")
+                M3Stylesheets.controlStylesheet("tooltip.css"),
+                this
         );
         popupContextOwner = ownerNode;
         popupContextSynchronizer = synchronizer;

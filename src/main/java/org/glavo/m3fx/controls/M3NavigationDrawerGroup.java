@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -18,17 +22,21 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A collapsible Material Design 3 navigation drawer destination group.
@@ -49,7 +57,35 @@ import java.util.Objects;
 ///
 /// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
-public final class M3NavigationDrawerGroup extends Control {
+public final class M3NavigationDrawerGroup extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-navigation-drawer-group";
 
@@ -278,9 +314,11 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Adds base style classes and connects the header row with the group state.
     private void initialize() {
+        headerItem.animationsEnabledProperty().bind(animationsEnabledProperty());
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(headerItem, HEADER_STYLE_CLASS);
         headerItem.headlineTextProperty().bind(title);
+        disclosureIcon.animationsEnabledProperty().bind(animationsEnabledProperty());
         disclosureIcon.setMouseTransparent(true);
         headerItem.setTrailingMedia(disclosureIcon, M3ListItemSlotSize.ICON);
         headerItem.setOnAction(event -> {
@@ -346,17 +384,14 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Expands this group without leaving an in-flight reveal animation before an accessibility focus request.
     void expandForAccessibleReveal() {
-        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(this);
-        M3MotionSettings.setReducedMotionRequested(this, true);
-        try {
-            setExpanded(true);
-            if (getScene() != null) {
-                applyCss();
-            }
-            layout();
-        } finally {
-            M3MotionSettings.setReducedMotionRequested(this, previousReducedMotionRequested);
+        setExpanded(true);
+        if (getScene() != null) {
+            applyCss();
         }
+        if (getSkin() instanceof M3NavigationDrawerGroupSkin skin) {
+            skin.finishExpansion();
+        }
+        layout();
     }
 
 
@@ -399,4 +434,35 @@ public final class M3NavigationDrawerGroup extends Control {
         focusNotifier.refresh();
     }
 
+
+    /// Returns the immutable CSS metadata for this component class.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this component.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// CSS metadata for this component.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3NavigationDrawerGroup, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
+            STYLEABLES = List.copyOf(styleables);
+        }
+    }
 }

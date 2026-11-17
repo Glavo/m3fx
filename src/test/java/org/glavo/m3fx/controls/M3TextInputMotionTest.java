@@ -759,7 +759,7 @@ final class M3TextInputMotionTest {
                     profile,
                     Brightness.LIGHT
             ));
-            M3MotionSettings.setReducedMotionRequested(root, false);
+            FxTestUtils.setCssAnimationsEnabled(root, true);
             stage.show();
             initialFocus.requestFocus();
             root.applyCss();
@@ -890,7 +890,7 @@ final class M3TextInputMotionTest {
         /// Closes the window and clears its local motion override.
         private void close() {
             FxTestUtils.runOnFxThread(() -> {
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             });
         }

@@ -437,9 +437,39 @@ buttonRow.setAlignment(Pos.CENTER_RIGHT);
 placement.dispose();
 ```
 
-All animation APIs and adaptive-scaffold transitions honor `M3MotionSettings`. A disabled or reduced-motion subtree
-reaches its target synchronously. Layout transitions animate placement only; shared elements and general child
-entry, removal, or remeasurement remain separate concerns rather than implicit behavior of every layout pane.
+Animated M3FX components implement `M3Animated`, exposing `isAnimationsEnabled()`, `setAnimationsEnabled(boolean)`, and
+the writable `StyleableBooleanProperty` returned by `animationsEnabledProperty()`. Its CSS property,
+`-m3-animations-enabled`, defaults to `true` and inherits from ancestor CSS declarations. A root-scoped switch is:
+
+```css
+.app-root:reduced-motion {
+    -m3-animations-enabled: false;
+}
+```
+
+```java
+root.getStyleClass().add("app-root");
+root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), reducedMotion);
+```
+
+Removing the pseudo-class restores inheritance. Applications need no marker class or descendant selector.
+The bundled stylesheet forwards `inherit` through intermediate styled nodes, as required by JavaFX 17 and 21
+for custom inherited properties; it does not declare a default `true` value. Descendant declarations follow
+normal JavaFX CSS precedence.
+
+Inherited values resolve during CSS processing. For nodes attached to a `Scene`, `scene.getRoot().applyCss()` makes
+pending styles effective synchronously. Direct setters update only the control's own property immediately, subject
+to normal CSS precedence. Binding prevents CSS assignment; direct writes to a unidirectionally bound property fail.
+
+`M3MotionSettings` provides the application-wide `globalReducedMotionRequestedProperty()` and
+`setGlobalReducedMotionRequested(boolean)`. `shouldReduceMotion(node)` combines that global request with an
+`M3Animated` node's own resolved property. The global request constrains motion even when the local property is
+enabled or bound, without changing its value. Ordinary JavaFX nodes expose only the global request through this
+method. The demos' custom animations use their owning M3FX container's property together with that global constraint.
+
+Disabling optional motion settles finite transitions; indeterminate activity indicators may retain simple movement.
+Layout transitions animate placement only; shared elements and general child entry, removal, or remeasurement remain
+separate concerns rather than implicit behavior of every layout pane.
 
 ## Per-Control Configuration
 

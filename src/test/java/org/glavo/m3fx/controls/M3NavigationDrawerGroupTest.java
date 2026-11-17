@@ -16,7 +16,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -58,7 +57,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().add(child);
             group.setExpanded(true);
             M3NavigationDrawer drawer = navigationDrawer(group);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
@@ -79,7 +78,7 @@ final class M3NavigationDrawerGroupTest {
                 assertTrue(editor.isFocused(), () -> "focused=" + scene.getFocusOwner());
             } finally {
                 stage.close();
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }
@@ -94,7 +93,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().add(child);
             group.setExpanded(false);
             M3NavigationDrawer drawer = navigationDrawer(group);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
@@ -124,7 +123,7 @@ final class M3NavigationDrawerGroupTest {
                 assertFalse(event.isConsumed());
             } finally {
                 stage.close();
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }
@@ -139,7 +138,7 @@ final class M3NavigationDrawerGroupTest {
             editable.setTrailingMedia(editor, M3ListItemSlotSize.WIDE_THUMBNAIL);
             M3ListItem archive = new M3ListItem("Archive");
             M3NavigationDrawer drawer = navigationDrawer(editable, archive);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
@@ -170,7 +169,7 @@ final class M3NavigationDrawerGroupTest {
                 assertFalse(typedEvent.isConsumed());
             } finally {
                 stage.close();
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }
@@ -210,7 +209,7 @@ final class M3NavigationDrawerGroupTest {
         FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
             group.getItems().addAll(new M3ListItem("Bottom sheets"), new M3ListItem("Side sheets"));
-            M3MotionSettings.setReducedMotionRequested(group, true);
+            group.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(group);
             Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
@@ -237,7 +236,7 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(scene, group.getHeaderItem().getScene());
                 assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
             } finally {
-                M3MotionSettings.setReducedMotionRequested(group, false);
+                group.setAnimationsEnabled(true);
             }
         });
     }
@@ -261,7 +260,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().addAll(inheritedChild, boundChild);
             group.setExpanded(true);
             group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            M3MotionSettings.setReducedMotionRequested(group, true);
+            group.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(group);
             Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
@@ -301,7 +300,7 @@ final class M3NavigationDrawerGroupTest {
                 assertTrue(boundChild.nodeOrientationProperty().isBound());
             } finally {
                 boundChild.nodeOrientationProperty().unbind();
-                M3MotionSettings.setReducedMotionRequested(group, false);
+                group.setAnimationsEnabled(true);
             }
         });
     }
@@ -316,7 +315,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().add(child);
             group.setExpanded(true);
             M3NavigationDrawer drawer = navigationDrawer(group);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
@@ -342,7 +341,7 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(group.getHeaderItem(), drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }
@@ -405,7 +404,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().add(bottomSheets);
             group.setExpanded(false);
             M3NavigationDrawer drawer = navigationDrawer(group);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
@@ -449,7 +448,7 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(baselineSelection, drawer.getSelectedItem());
                 assertSame(baselineFocusOwner, scene.getFocusOwner());
             } finally {
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }
@@ -464,7 +463,7 @@ final class M3NavigationDrawerGroupTest {
             group.getItems().add(bottomSheets);
             group.setExpanded(false);
             M3NavigationDrawer drawer = navigationDrawer(group);
-            M3MotionSettings.setReducedMotionRequested(drawer, true);
+            drawer.setAnimationsEnabled(false);
 
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
@@ -483,7 +482,7 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(bottomSheets, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setReducedMotionRequested(drawer, false);
+                drawer.setAnimationsEnabled(true);
             }
         });
     }

@@ -229,12 +229,6 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Observes runtime motion settings while the owner is attached to a scene.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
 
-    /// The resolved animation setting cached for [motionSettingsRevision].
-    private boolean cachedAnimationsEnabled;
-
-    /// The motion-settings revision represented by [cachedAnimationsEnabled].
-    private long motionSettingsRevision = Long.MIN_VALUE;
-
     /// The width currently applied to the focus indicator.
     private double focusIndicatorWidth = Double.NaN;
 
@@ -410,8 +404,6 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         delegatedFocusVisible = false;
         modalInteractionBlocked = false;
         hoverSuppressedUntilPointerInput = false;
-        cachedAnimationsEnabled = false;
-        motionSettingsRevision = Long.MIN_VALUE;
         stopStateOpacityAnimation();
         setFocusIndicatorOpacity(0.0);
         stopRippleAnimation();
@@ -936,14 +928,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
     }
 
-    /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
+    /// Reads the owner's current animation property and the global reduced-motion preference.
     private boolean animationsDisabled(Node owner) {
-        long revision = M3MotionSettingsObserver.reducedMotionRevision();
-        if (motionSettingsRevision != revision) {
-            cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
-            motionSettingsRevision = revision;
-        }
-        return !cachedAnimationsEnabled;
+        return !M3Animation.areAnimationsEnabled(owner);
     }
 
     /// Returns whether the owner cannot currently receive rendered pulses.

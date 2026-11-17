@@ -81,6 +81,13 @@ public final class M3ColorPickerSkin extends SkinBase<M3ColorPicker> {
     /// @throws NullPointerException if `control` is `null`
     public M3ColorPickerSkin(M3ColorPicker control) {
         super(control);
+        area.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        wheel.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        hueSlider.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        alphaSlider.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        preview.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        field.animationsEnabledProperty().bind(control.animationsEnabledProperty());
+        presetPicker.animationsEnabledProperty().bind(control.animationsEnabledProperty());
 
         area.getStyleClass().add("m3-color-picker-area");
         wheel.getStyleClass().add("m3-color-picker-wheel");
@@ -134,6 +141,13 @@ public final class M3ColorPickerSkin extends SkinBase<M3ColorPicker> {
     /// Releases bindings and listeners installed by this skin.
     @Override
     public void dispose() {
+        area.animationsEnabledProperty().unbind();
+        wheel.animationsEnabledProperty().unbind();
+        hueSlider.animationsEnabledProperty().unbind();
+        alphaSlider.animationsEnabledProperty().unbind();
+        preview.animationsEnabledProperty().unbind();
+        field.animationsEnabledProperty().unbind();
+        presetPicker.animationsEnabledProperty().unbind();
         M3ColorPicker control = getSkinnable();
         control.getPresets().removeListener(presetsListener);
         control.valueProperty().removeListener(valueListener);

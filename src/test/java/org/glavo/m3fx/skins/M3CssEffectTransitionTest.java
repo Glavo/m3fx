@@ -13,7 +13,7 @@ import javafx.scene.effect.GaussianBlur;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -97,10 +97,10 @@ final class M3CssEffectTransitionTest {
     @Test
     void disabledMotionAppliesCssResolvedDropShadowImmediately() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
+            M3OverlayPane owner = new M3OverlayPane();
             Region target = new Region();
             owner.getChildren().add(target);
-            M3MotionSettings.setReducedMotionRequested(owner, true);
+            owner.setAnimationsEnabled(false);
             new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
@@ -121,7 +121,7 @@ final class M3CssEffectTransitionTest {
     @Test
     void runningCssResolvedDropShadowSettlesWhenAnimationsAreDisabledAtRuntime() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
+            M3OverlayPane owner = new M3OverlayPane();
             Region target = new Region();
             owner.getChildren().add(target);
             new Scene(owner, 100.0, 40.0);
@@ -129,7 +129,7 @@ final class M3CssEffectTransitionTest {
 
             owner.applyCss();
             transition.install();
-            M3MotionSettings.setReducedMotionRequested(owner, false);
+            owner.setAnimationsEnabled(true);
             try {
                 target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
                 transition.animateEffectFromCss();
@@ -138,14 +138,14 @@ final class M3CssEffectTransitionTest {
                 assertEquals(0.0, animated.getRadius(), 0.0001);
                 assertTrue(transition.isRunning());
 
-                M3MotionSettings.setReducedMotionRequested(owner, true);
+                owner.setAnimationsEnabled(false);
 
                 DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
                 assertEquals(8.0, settled.getRadius(), 0.0001);
                 assertEquals(3.0, settled.getOffsetY(), 0.0001);
                 assertFalse(transition.isRunning());
             } finally {
-                M3MotionSettings.setReducedMotionRequested(owner, false);
+                owner.setAnimationsEnabled(true);
                 transition.uninstall();
             }
         });
@@ -155,14 +155,14 @@ final class M3CssEffectTransitionTest {
     @Test
     void animatedShadowRetainsCssOriginAndIsReused() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
+            M3OverlayPane owner = new M3OverlayPane();
             Region target = new Region();
             owner.getChildren().add(target);
             new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
             transition.install();
-            M3MotionSettings.setReducedMotionRequested(owner, false);
+            owner.setAnimationsEnabled(true);
             try {
                 target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
                 transition.animateEffectFromCss();
@@ -178,14 +178,14 @@ final class M3CssEffectTransitionTest {
                 assertSame(firstAnimated, target.getEffect());
                 assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
 
-                M3MotionSettings.setReducedMotionRequested(owner, true);
+                owner.setAnimationsEnabled(false);
 
                 DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
                 assertEquals(12.0, settled.getRadius(), 0.0001);
                 assertEquals(5.0, settled.getOffsetY(), 0.0001);
                 assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
             } finally {
-                M3MotionSettings.setReducedMotionRequested(owner, false);
+                owner.setAnimationsEnabled(true);
                 transition.uninstall();
             }
         });

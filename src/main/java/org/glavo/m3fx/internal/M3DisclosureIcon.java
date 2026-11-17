@@ -6,14 +6,18 @@ package org.glavo.m3fx.internal;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.skins.M3DisclosureIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +31,35 @@ import java.util.List;
 /// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview) and
 /// [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
-public final class M3DisclosureIcon extends Control {
+public final class M3DisclosureIcon extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-disclosure-icon";
 
@@ -155,7 +187,7 @@ public final class M3DisclosureIcon extends Control {
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the disclosure icon CSS metadata
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
@@ -163,7 +195,7 @@ public final class M3DisclosureIcon extends Control {
     ///
     /// @return the disclosure icon CSS metadata
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -182,6 +214,12 @@ public final class M3DisclosureIcon extends Control {
     /// CSS metadata for disclosure icon metrics.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3DisclosureIcon, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the icon viewport size.
         private static final CssMetaData<M3DisclosureIcon, Number> ICON_SIZE =
                 M3Css.sizeMetaData(
@@ -191,11 +229,12 @@ public final class M3DisclosureIcon extends Control {
                 );
 
         /// The immutable disclosure icon CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
                     new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

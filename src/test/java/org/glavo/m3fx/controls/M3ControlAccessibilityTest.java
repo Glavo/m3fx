@@ -17,7 +17,6 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -586,7 +585,7 @@ final class M3ControlAccessibilityTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setReducedMotionRequested(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
                 stage.setScene(new Scene(root, 520.0, 160.0));
                 stage.show();
                 root.applyCss();
@@ -602,7 +601,7 @@ final class M3ControlAccessibilityTest {
                 subMenuItem.hideSubMenu();
                 splitButton.hideMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             }
         });
@@ -633,7 +632,7 @@ final class M3ControlAccessibilityTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setReducedMotionRequested(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
                 stage.setScene(new Scene(root, 560.0, 160.0));
                 stage.show();
                 root.applyCss();
@@ -650,7 +649,7 @@ final class M3ControlAccessibilityTest {
                 subMenuItem.hideSubMenu();
                 splitButton.hideMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             }
         });

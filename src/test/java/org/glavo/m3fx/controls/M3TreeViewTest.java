@@ -457,7 +457,7 @@ final class M3TreeViewTest {
                     );
                     assertTrue(clip.getHeight() > 0.5 && clip.getHeight() < nestedCell.getHeight() - 0.5);
                     assertTrue(rowMotionOffset(siblingCell) < -1.0);
-                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    treeView.setAnimationsEnabled(false);
                     assertFalse(hasMotionStyle(nestedCell));
                     assertFalse(hasMotionStyle(siblingCell));
                     assertNull(nestedCell.getClip());
@@ -535,7 +535,7 @@ final class M3TreeViewTest {
                                     || branchCell.getBackground().getFills().stream().allMatch(fill ->
                                     fill.getFill() instanceof Color color && color.getOpacity() <= 0.001),
                             "checkbox selection should not render a row background");
-                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    treeView.setAnimationsEnabled(false);
                     assertNull(nestedCell.getClip());
                 }
         );
@@ -586,7 +586,7 @@ final class M3TreeViewTest {
                     );
                     assertTrue(rowMotionOffset(siblingCell) > 1.0);
                     assertTrue(hasMotionStyle(siblingCell));
-                    M3MotionSettings.setReducedMotionRequested(treeView, true);
+                    treeView.setAnimationsEnabled(false);
                     assertFalse(hasMotionStyle(siblingCell));
                     assertEquals(0.0, rowMotionOffset(siblingCell), 0.001);
                 }

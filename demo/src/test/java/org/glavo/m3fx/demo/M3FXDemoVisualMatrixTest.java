@@ -1218,7 +1218,8 @@ final class M3FXDemoVisualMatrixTest {
             stage.setHeight(900.0);
 
             Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+            scene.getRoot().applyCss();
             app.showPageByTitle("Tree Views");
             applySceneCssAndLayout(scene);
             M3TreeView<?> treeView = treeViewWithStyle(
@@ -1238,7 +1239,8 @@ final class M3FXDemoVisualMatrixTest {
             followingCell.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, true);
             treeView.applyCss();
 
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+            scene.getRoot().applyCss();
             firePrimaryMouseEvent(followingCell, MouseEvent.MOUSE_PRESSED, true);
             stageReference.set(stage);
             treeReference.set(treeView);
@@ -1272,8 +1274,8 @@ final class M3FXDemoVisualMatrixTest {
                                 "pressed"
                         );
                         firePrimaryMouseEvent(cell, MouseEvent.MOUSE_RELEASED, false);
-                        M3MotionSettings.setReducedMotionRequested(cell, true);
-                        M3MotionSettings.setReducedMotionRequested(cell, false);
+                        setAnimationsDisabled(cell, true);
+                        setAnimationsDisabled(cell, false);
                         M3TreeView<?> treeView = Objects.requireNonNull(treeReference.get(), "tree view");
                         TreeItem<?> branchItem = Objects.requireNonNull(branchReference.get(), "tree branch");
                         int branchRow = materializedTreeCells(treeView).stream()
@@ -1293,7 +1295,7 @@ final class M3FXDemoVisualMatrixTest {
                         treeView.applyCss();
                         assertTreeMotionCellsHaveNoTransientSurface(treeView);
                         writeAnimationSnapshot(treeView.snapshot(null, null), "tree-view", "expanding");
-                        M3MotionSettings.setReducedMotionRequested(treeView, true);
+                        setAnimationsDisabled(treeView, true);
                         assertFalse(hasTreeRowMotionStyle(treeView), "expansion motion style should be removed");
                     }
             );
@@ -1305,7 +1307,7 @@ final class M3FXDemoVisualMatrixTest {
                         for (M3TreeCell<?> cell : materializedTreeCells(treeView)) {
                             cell.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, false);
                         }
-                        M3MotionSettings.setReducedMotionRequested(treeView, false);
+                        setAnimationsDisabled(treeView, false);
                         Objects.requireNonNull(branchReference.get(), "tree branch").setExpanded(false);
                     },
                     () -> {
@@ -1313,7 +1315,7 @@ final class M3FXDemoVisualMatrixTest {
                         treeView.applyCss();
                         assertTreeMotionCellsHaveNoTransientSurface(treeView);
                         writeAnimationSnapshot(treeView.snapshot(null, null), "tree-view", "collapsing");
-                        M3MotionSettings.setReducedMotionRequested(treeView, true);
+                        setAnimationsDisabled(treeView, true);
                         assertFalse(hasTreeRowMotionStyle(treeView), "collapse motion style should be removed");
                     }
             );
@@ -1342,7 +1344,8 @@ final class M3FXDemoVisualMatrixTest {
             stage.setHeight(900.0);
 
             Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+            scene.getRoot().applyCss();
             app.showPageByTitle("Tree Views");
             applySceneCssAndLayout(scene);
             M3TreeView<?> treeView = treeViewWithStyle(
@@ -1360,7 +1363,8 @@ final class M3FXDemoVisualMatrixTest {
                     .findFirst()
                     .orElseThrow(() -> new AssertionError("checkbox tree selected branch row was not materialized"));
             treeView.getSelectionModel().select(branchRow);
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+            scene.getRoot().applyCss();
 
             stageReference.set(stage);
             treeReference.set(treeView);
@@ -1372,7 +1376,7 @@ final class M3FXDemoVisualMatrixTest {
                     () -> hasActiveTreeRowMotion(treeReference.get()),
                     () -> {
                         M3TreeView<?> treeView = Objects.requireNonNull(treeReference.get(), "tree view");
-                        M3MotionSettings.setReducedMotionRequested(treeView, false);
+                        setAnimationsDisabled(treeView, false);
                         Objects.requireNonNull(branchReference.get(), "tree branch").setExpanded(false);
                     },
                     () -> {
@@ -1409,7 +1413,7 @@ final class M3FXDemoVisualMatrixTest {
                                 "tree-view-checkbox",
                                 "collapsing"
                         );
-                        M3MotionSettings.setReducedMotionRequested(treeView, true);
+                        setAnimationsDisabled(treeView, true);
                     }
             );
 
@@ -2862,7 +2866,7 @@ final class M3FXDemoVisualMatrixTest {
             }, SETTLED_STATE_PULSES, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
-                M3MotionSettings.setReducedMotionRequested(multiBrowse, true);
+                setAnimationsDisabled(multiBrowse, true);
                 multiBrowse.setAnimatedScroll(false);
                 multiBrowse.selectNext();
                 scene.getRoot().applyCss();
@@ -2891,7 +2895,7 @@ final class M3FXDemoVisualMatrixTest {
                 @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
                 if (multiBrowse != null) {
                     multiBrowse.setAnimatedScroll(true);
-                    M3MotionSettings.setReducedMotionRequested(multiBrowse, false);
+                    setAnimationsDisabled(multiBrowse, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -3505,7 +3509,7 @@ final class M3FXDemoVisualMatrixTest {
                             firstVisibleMenuButtonWithText(page, "Open menu"),
                             "menu button"
                     );
-                    M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                    setAnimationsDisabled(menuButton, true);
                     menuButtonReference.set(menuButton);
                 });
 
@@ -3547,7 +3551,7 @@ final class M3FXDemoVisualMatrixTest {
                             firstVisibleSubMenuItemWithText(ownerMenu, "Move to"),
                             "submenu item"
                     );
-                    M3MotionSettings.setReducedMotionRequested(subMenuItem, true);
+                    setAnimationsDisabled(subMenuItem, true);
                     subMenuItem.showSubMenu();
                     layoutPopupRoot(subMenuItem.getSubMenu());
                     subMenuItemReference.set(subMenuItem);
@@ -3600,12 +3604,12 @@ final class M3FXDemoVisualMatrixTest {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
-                    M3MotionSettings.setReducedMotionRequested(subMenuItem, false);
+                    setAnimationsDisabled(subMenuItem, false);
                 }
                 @Nullable M3MenuButton menuButton = menuButtonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
-                    M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                    setAnimationsDisabled(menuButton, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -3653,7 +3657,7 @@ final class M3FXDemoVisualMatrixTest {
                             firstVisibleMenuButtonWithText(page, "Open menu"),
                             "RTL menu button"
                     );
-                    M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                    setAnimationsDisabled(menuButton, true);
                     menuButtonReference.set(menuButton);
                 });
 
@@ -3678,7 +3682,7 @@ final class M3FXDemoVisualMatrixTest {
                             firstVisibleSubMenuItemWithText(ownerMenu, "Move to"),
                             "RTL submenu item"
                     );
-                    M3MotionSettings.setReducedMotionRequested(subMenuItem, true);
+                    setAnimationsDisabled(subMenuItem, true);
                     subMenuItem.showSubMenu();
                     layoutPopupRoot(subMenuItem.getSubMenu());
                     subMenuItemReference.set(subMenuItem);
@@ -3717,12 +3721,12 @@ final class M3FXDemoVisualMatrixTest {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
-                    M3MotionSettings.setReducedMotionRequested(subMenuItem, false);
+                    setAnimationsDisabled(subMenuItem, false);
                 }
                 @Nullable M3MenuButton menuButton = menuButtonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
-                    M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                    setAnimationsDisabled(menuButton, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -4107,8 +4111,10 @@ final class M3FXDemoVisualMatrixTest {
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Mirrored Text Fields");
 
         Node root = scene.getRoot();
-        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(root);
-        M3MotionSettings.setReducedMotionRequested(root, true);
+        boolean previousReducedMotionRequested = root.getPseudoClassStates().contains(
+                PseudoClass.getPseudoClass("reduced-motion"));
+        root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+        root.applyCss();
         try {
             TextInputControl outlinedInput = Objects.requireNonNull(
                     outlinedLayout.getInput(),
@@ -4182,7 +4188,8 @@ final class M3FXDemoVisualMatrixTest {
             );
             assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
         } finally {
-            M3MotionSettings.setReducedMotionRequested(root, previousReducedMotionRequested);
+            root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), previousReducedMotionRequested);
+            root.applyCss();
         }
     }
 
@@ -4193,8 +4200,10 @@ final class M3FXDemoVisualMatrixTest {
             String modeName
     ) {
         Node root = scene.getRoot();
-        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(root);
-        M3MotionSettings.setReducedMotionRequested(root, true);
+        boolean previousReducedMotionRequested = root.getPseudoClassStates().contains(
+                PseudoClass.getPseudoClass("reduced-motion"));
+        root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+        root.applyCss();
         int focusedLayouts = 0;
         try {
             for (M3TextInputLayout layout : layouts) {
@@ -4229,7 +4238,8 @@ final class M3FXDemoVisualMatrixTest {
                 focusedLayouts++;
             }
         } finally {
-            M3MotionSettings.setReducedMotionRequested(root, previousReducedMotionRequested);
+            root.pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), previousReducedMotionRequested);
+            root.applyCss();
         }
 
         int checkedLayouts = focusedLayouts;
@@ -5403,7 +5413,7 @@ final class M3FXDemoVisualMatrixTest {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageByTitle(pageTitle);
-                        M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                        scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                         Node page = currentDemoPage(scene, pageTitle);
@@ -5455,7 +5465,8 @@ final class M3FXDemoVisualMatrixTest {
             FxTestUtils.runOnFxThread(() -> {
                 Scene scene = sceneReference.get();
                 if (scene != null) {
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                    scene.getRoot().applyCss();
                 }
             });
         }
@@ -6196,7 +6207,7 @@ final class M3FXDemoVisualMatrixTest {
         );
 
         runOnFxThreadWhenNodeAreaChanged(targetReference, settledReference, sceneReference, focusedReference, () -> {
-            M3MotionSettings.setReducedMotionRequested(target, true);
+            setAnimationsDisabled(target, true);
             target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         }, () -> {
             WritableImage focused = Objects.requireNonNull(focusedReference.get(), "focused switch snapshot");
@@ -6206,7 +6217,7 @@ final class M3FXDemoVisualMatrixTest {
 
         runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, draggedReference, target::isArmed, () -> {
             target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
-            M3MotionSettings.setReducedMotionRequested(target, false);
+            setAnimationsDisabled(target, false);
             Node track = Objects.requireNonNull(target.lookup(".m3-switch-track"), "switch track");
             fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_PRESSED, 1.0, true);
             fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_DRAGGED, 0.0, true);
@@ -6275,7 +6286,7 @@ final class M3FXDemoVisualMatrixTest {
                     "normal"
             );
 
-            M3MotionSettings.setReducedMotionRequested(target, true);
+            setAnimationsDisabled(target, true);
             target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
@@ -6296,7 +6307,7 @@ final class M3FXDemoVisualMatrixTest {
                     "Slider focus indicator should not outline the circular touch target");
             writeInteractionSnapshot(snapshot(scene), "slider-drag", "focused");
             target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
-            M3MotionSettings.setReducedMotionRequested(target, false);
+            setAnimationsDisabled(target, false);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6956,11 +6967,11 @@ final class M3FXDemoVisualMatrixTest {
                             .filter(rail -> rail.getVariant() == M3NavigationRailVariant.STANDARD)
                             .findFirst()
                             .orElseThrow();
-                    M3MotionSettings.setReducedMotionRequested(target, true);
+                    setAnimationsDisabled(target, true);
                     target.setExpanded(false);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
-                    M3MotionSettings.setReducedMotionRequested(target, false);
+                    setAnimationsDisabled(target, false);
                     FxTestUtils.setMotionScheme(target, visualNavigationMotionScheme());
 
                     targetReference.set(target);
@@ -7160,9 +7171,9 @@ final class M3FXDemoVisualMatrixTest {
                     scene.getRoot(),
                     "Buttons"
             ), "sidebar drawer group");
-            M3MotionSettings.setReducedMotionRequested(target, true);
+            setAnimationsDisabled(target, true);
             target.setExpanded(false);
-            M3MotionSettings.setReducedMotionRequested(target, false);
+            setAnimationsDisabled(target, false);
             FxTestUtils.setMotionScheme(target, visualNavigationMotionScheme());
             scene.getRoot().applyCss();
             scene.getRoot().layout();
@@ -7842,7 +7853,7 @@ final class M3FXDemoVisualMatrixTest {
             writeAnimationSnapshot(normalActionFrame, "rich-tooltip", "shown");
             writeInteractionSnapshot(normalActionFrame, "rich-tooltip-action", "normal");
             assertSnapshotHasVisibleContent(normalActionFrame, "rich tooltip");
-            M3MotionSettings.setReducedMotionRequested(action, true);
+            setAnimationsDisabled(action, true);
             try {
                 applyHoverPseudoState(action);
                 layoutPopupRoot(popupRoot);
@@ -7853,7 +7864,7 @@ final class M3FXDemoVisualMatrixTest {
                 writeInteractionSnapshot(hoverActionFrame, "rich-tooltip-action", "hover");
                 assertNodeAreaChanged(actionBounds, normalActionFrame, hoverActionFrame, "rich tooltip action hover");
             } finally {
-                M3MotionSettings.setReducedMotionRequested(action, false);
+                setAnimationsDisabled(action, false);
             }
             firePrimaryMouseEvent(owner, MouseEvent.MOUSE_EXITED, false);
             firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
@@ -8394,7 +8405,8 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
 
         showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Buttons", scene -> {
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+            scene.getRoot().applyCss();
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             try {
@@ -8409,7 +8421,8 @@ final class M3FXDemoVisualMatrixTest {
                 scene.getRoot().layout();
                 hoverReference.set(snapshot(scene));
             } finally {
-                M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+                scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                scene.getRoot().applyCss();
                 @Nullable Node target = targetReference.get();
                 if (target != null) {
                     clearHoverPseudoState(target);
@@ -14014,7 +14027,7 @@ final class M3FXDemoVisualMatrixTest {
                 .filter(button -> "Expand navigation rail".equals(button.getAccessibleText()))
                 .findFirst()
                 .orElseThrow();
-        M3MotionSettings.setReducedMotionRequested(collapsed, true);
+        setAnimationsDisabled(collapsed, true);
         try {
             toggle.fire();
             applySceneCssAndLayout(scene);
@@ -14041,7 +14054,7 @@ final class M3FXDemoVisualMatrixTest {
             if (collapsed.isExpanded()) {
                 collapsed.setExpanded(false);
             }
-            M3MotionSettings.setReducedMotionRequested(collapsed, false);
+            setAnimationsDisabled(collapsed, false);
             applySceneCssAndLayout(scene);
         }
     }
@@ -15986,8 +15999,8 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(overlay.getSnackbarQueue().isEmpty(), "snackbar queue should start empty");
 
         @Nullable Duration previousDisplayDuration = overlay.snackbarDisplayDurationProperty().get();
-        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(overlay);
-        M3MotionSettings.setReducedMotionRequested(overlay, true);
+        String previousStyle = overlay.getStyle();
+        setAnimationsDisabled(overlay, true);
         overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
         try {
             M3Button messageButton = Objects.requireNonNull(
@@ -16070,7 +16083,8 @@ final class M3FXDemoVisualMatrixTest {
         } finally {
             overlay.dismissAllSnackbars();
             overlay.snackbarDisplayDurationProperty().set(previousDisplayDuration);
-            M3MotionSettings.setReducedMotionRequested(overlay, previousReducedMotionRequested);
+            overlay.setStyle(previousStyle);
+            overlay.applyCss();
             applySceneCssAndLayout(scene);
         }
     }
@@ -23220,5 +23234,16 @@ final class M3FXDemoVisualMatrixTest {
         tooltip.getActions().addAll(actions);
         M3Tooltip.install(node, tooltip);
         return tooltip;
+    }
+
+    /// Applies a temporary inline motion scope without replacing existing style declarations.
+    private static void setAnimationsDisabled(Node node, boolean disabled) {
+        String declaration = "; -m3-animations-enabled: false;";
+        String style = node.getStyle();
+        if (style.endsWith(declaration)) {
+            style = style.substring(0, style.length() - declaration.length());
+        }
+        node.setStyle(disabled ? style + declaration : style);
+        node.applyCss();
     }
 }

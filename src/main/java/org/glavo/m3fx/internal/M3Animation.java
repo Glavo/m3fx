@@ -36,7 +36,7 @@ public final class M3Animation {
 
     /// Returns whether animations are enabled for the supplied owner.
     ///
-    /// @param owner the node whose local, inherited, or global motion settings should be resolved
+    /// @param owner the component whose current animation property and global motion preference are inspected
     /// @return `true` when animations should play for the owner
     /// @throws NullPointerException if `owner` is `null`
     public static boolean areAnimationsEnabled(Node owner) {

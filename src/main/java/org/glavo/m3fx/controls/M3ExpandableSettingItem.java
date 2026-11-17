@@ -60,6 +60,7 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
     public M3ExpandableSettingItem(String headlineText) {
         super(headlineText, AccessibleRole.BUTTON);
         addSettingStyleClass(DEFAULT_STYLE_CLASS);
+        disclosureIcon.animationsEnabledProperty().bind(animationsEnabledProperty());
         disclosureIcon.setVertical(true);
         installTrailingIndicator(disclosureIcon);
         disclosureIcon.expandedProperty().bind(expandedProperty());

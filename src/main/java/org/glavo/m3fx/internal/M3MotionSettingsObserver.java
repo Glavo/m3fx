@@ -5,22 +5,22 @@ package org.glavo.m3fx.internal;
 
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
-import javafx.beans.WeakInvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.beans.value.WeakChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3Animated;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
-/// Observes resolved M3FX motion context and presentation activity while an owner node is attached to a scene.
+/// Observes an owner's animation property and, while attached, its motion context and presentation activity.
 ///
 /// Observers that share an owner also share one owner coordinator and one tree-visible observation. The native JavaFX
 /// property is preferred; the public parent chain is observed when that property is inaccessible. Scene dispatchers
@@ -43,9 +43,6 @@ public final class M3MotionSettingsObserver {
     /// Opaque scene property key for the shared motion-settings dispatcher.
     private static final IdentityKey SCENE_OBSERVER_KEY =
             new IdentityKey(M3MotionSettingsObserver.class.getName() + ".sceneObserver");
-
-    /// Changes whenever global or node-local reduced-motion settings change.
-    private static final AtomicLong REDUCED_MOTION_REVISION = new AtomicLong();
 
     /// Empty nullable node storage reused before the first ancestor-chain observation.
     private static final @Nullable Node[] EMPTY_NODES = new Node[0];
@@ -180,24 +177,7 @@ public final class M3MotionSettingsObserver {
         return observer;
     }
 
-    /// Returns the current internal reduced-motion revision.
-    ///
-    /// @return the revision used to invalidate resolved-setting caches
-    public static long reducedMotionRevision() {
-        return REDUCED_MOTION_REVISION.get();
-    }
-
-    /// Notifies internal observers after a reduced-motion setting changes.
-    ///
-    /// @param source the root of the affected subtree, or null for a global change
-    public static void reducedMotionChanged(@Nullable Node source) {
-        REDUCED_MOTION_REVISION.incrementAndGet();
-        if (source != null) {
-            motionContextChanged(source);
-        }
-    }
-
-    /// Notifies internal motion observers after one subtree's reduced-motion settings or theme motion tokens change.
+    /// Notifies internal motion observers after one subtree's theme motion tokens change.
     ///
     /// Global reduced-motion changes are delivered by the global property's weak per-scene listeners instead.
     /// Detached subtrees have no active scene dispatcher and require no notification.
@@ -226,6 +206,10 @@ public final class M3MotionSettingsObserver {
 
         /// Re-registers this coordinator when the owner moves between scenes.
         private final InvalidationListener sceneListener = observable -> updateRegistration();
+
+        /// Receives local Java or CSS animation-property changes without observing ancestor settings.
+        private final ChangeListener<Boolean> animationsEnabledListener =
+                (observable, oldValue, newValue) -> requestRefresh();
 
         /// Refreshes presentation activity when the owner or one of its ancestors changes visibility.
         private final InvalidationListener visibilityListener = observable -> refreshAfterVisibilityChange();
@@ -269,6 +253,9 @@ public final class M3MotionSettingsObserver {
             observers.add(observer);
             if (wasEmpty) {
                 owner.sceneProperty().addListener(sceneListener);
+                if (owner instanceof M3Animated animated) {
+                    animated.animationsEnabledProperty().addListener(animationsEnabledListener);
+                }
                 installTreeVisibilityObservation();
                 updateRegistration();
                 return;
@@ -291,6 +278,9 @@ public final class M3MotionSettingsObserver {
                 refreshRequested = false;
                 unregisterSceneObserver();
                 owner.sceneProperty().removeListener(sceneListener);
+                if (owner instanceof M3Animated animated) {
+                    animated.animationsEnabledProperty().removeListener(animationsEnabledListener);
+                }
                 releaseTreeVisibilityObservation();
                 if (owner.getProperties().get(OWNER_OBSERVER_KEY) == this) {
                     owner.getProperties().remove(OWNER_OBSERVER_KEY);
@@ -490,11 +480,12 @@ public final class M3MotionSettingsObserver {
         private final M3ObserverList<OwnerObserver> owners = new M3ObserverList<>();
 
         /// Receives global reduced-motion changes without retaining this scene from the static property.
-        private final InvalidationListener globalSettingsListener = observable -> requestRefresh(null);
+        private final ChangeListener<Boolean> globalSettingsListener =
+                (observable, oldValue, newValue) -> requestRefresh(null);
 
         /// Weak wrapper registered with the application-wide reduced-motion property.
-        private final WeakInvalidationListener weakGlobalSettingsListener =
-                new WeakInvalidationListener(globalSettingsListener);
+        private final WeakChangeListener<Boolean> weakGlobalSettingsListener =
+                new WeakChangeListener<>(globalSettingsListener);
 
         /// Receives changes to the window that presents the scene.
         private final ChangeListener<@Nullable Window> windowListener =

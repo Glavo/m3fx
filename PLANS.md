@@ -50,6 +50,14 @@ uses the same channel engine for reversible pane and navigation transitions. Gen
 orchestration, key-frame and repetition specifications, decay animation, and shared-element overlay transitions
 remain future layers rather than responsibilities of specialized layout panes.
 
+Animated M3FX components expose the styleable `M3Animated.animationsEnabledProperty()`. The
+`-m3-animations-enabled` CSS property defaults to `true` and inherits through CSS processing, with a bundled
+`inherit` rule forwarding the value through styled intermediate nodes on JavaFX 17 and 21. Demo, Catalog, and
+HMCL demo switches declare `false` only on their root's reduced-motion pseudo-class; clearing it restores inheritance.
+Direct setters follow normal CSS precedence, bound properties remain application-owned, and the global
+reduced-motion request constrains motion independently of local values. Custom animations on ordinary JavaFX nodes
+use an owning M3FX container and the global setting.
+
 The exported API has undergone structural review. Public theme and token types are immutable data
 models with internal implementations, rendering compilers remain internal, configurable token groups use copyable
 builders, and composite controls own the properties and events they expose. The API remains subject to change until

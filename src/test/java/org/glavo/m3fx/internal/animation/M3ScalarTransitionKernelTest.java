@@ -10,9 +10,9 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.animation.M3SpringParameters;
 import org.glavo.m3fx.internal.M3Animation;
@@ -224,19 +224,19 @@ final class M3ScalarTransitionKernelTest {
     @Test
     void scalarBackedTransitionsHonorMotionAndSceneLifecycle() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             Scene scene = new Scene(owner, 120.0, 48.0);
             M3MotionSpec slow = M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
             M3DoubleTransition propertyTransition = new M3DoubleTransition(value, 1.0e-3);
 
-            M3MotionSettings.setReducedMotionRequested(owner, true);
+            owner.setAnimationsEnabled(false);
             propertyTransition.configure(slow, 1.0);
             M3Animation.playFromStart(owner, propertyTransition);
             assertEquals(Animation.Status.STOPPED, propertyTransition.getStatus());
             assertEquals(1.0, value.get(), 0.0);
 
-            M3MotionSettings.setReducedMotionRequested(owner, false);
+            owner.setAnimationsEnabled(true);
             value.set(0.0);
             propertyTransition.configure(slow, 1.0);
             M3Animation.playFromStart(owner, propertyTransition);
@@ -246,10 +246,10 @@ final class M3ScalarTransitionKernelTest {
             assertEquals(Animation.Status.STOPPED, propertyTransition.getStatus());
             assertEquals(1.0, value.get(), 0.0);
 
-            Pane node = new Pane();
+            M3Scrim node = new M3Scrim();
             Pane nodeRoot = new Pane(node);
             new Scene(nodeRoot, 120.0, 48.0);
-            M3MotionSettings.setReducedMotionRequested(nodeRoot, true);
+            FxTestUtils.setCssAnimationsEnabled(nodeRoot, false);
             M3NodeTransition nodeTransition = new M3NodeTransition(node);
             nodeTransition.configure(slow, 0.3, 0.8, 0.9, 12.0, -8.0);
             M3Animation.playFromStart(node, nodeTransition);

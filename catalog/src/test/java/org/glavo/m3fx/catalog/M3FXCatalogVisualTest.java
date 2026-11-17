@@ -19,7 +19,6 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3AnimatedContent;
 import org.glavo.m3fx.animation.M3AnimatedVisibility;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3VisibilityState;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Banner;
@@ -148,7 +147,8 @@ final class M3FXCatalogVisualTest {
     /// @param app the running Catalog application
     private static void assertRouteTransitionsAndSmoothScrolling(Scene scene, M3FXCatalogApp app) {
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+            scene.getRoot().applyCss();
             app.navigateHome();
             layout(scene);
 
@@ -178,7 +178,8 @@ final class M3FXCatalogVisualTest {
             assertTrue(routeHost.isTransitioning(), "back navigation should animate route replacement");
             routeHost.finish();
 
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+            scene.getRoot().applyCss();
             layout(scene);
         });
     }
@@ -1107,7 +1108,8 @@ final class M3FXCatalogVisualTest {
     /// @param app the running Catalog application
     private static void assertProfileSwitchPreservesRoute(Scene scene, M3FXCatalogApp app) {
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+            scene.getRoot().applyCss();
             CatalogComponent buttons = componentNamed(app.components(), "Buttons");
             app.navigate(new CatalogRoute.Component(buttons));
             layout(scene);
@@ -1161,7 +1163,8 @@ final class M3FXCatalogVisualTest {
         AtomicBoolean detachedBeforeBothExitsFinished = new AtomicBoolean();
 
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+            scene.getRoot().applyCss();
             M3OverlayPane overlay = assertInstanceOf(
                     M3OverlayPane.class,
                     scene.getRoot(),
@@ -1313,7 +1316,8 @@ final class M3FXCatalogVisualTest {
                     assertNull(scene.lookup(".catalog-settings-scrim"));
                     assertSame(previousFocus, scene.getFocusOwner(),
                             "closing settings should restore the previous Catalog focus owner");
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                    scene.getRoot().applyCss();
                 }
         );
     }
@@ -1728,7 +1732,8 @@ final class M3FXCatalogVisualTest {
                     CatalogComponent buttons = componentNamed(app.components(), "Buttons");
                     app.navigate(new CatalogRoute.Component(buttons));
                     layout(scene);
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                    scene.getRoot().applyCss();
                     M3IconButton browseButton = assertInstanceOf(
                             M3IconButton.class,
                             Objects.requireNonNull(
@@ -1787,7 +1792,8 @@ final class M3FXCatalogVisualTest {
                     assertEquals("Cards", cardsRoute.component().name());
                     assertEquals(M3VisibilityState.EXITING, visibility.getState());
                     assertTrue(visibility.isTransitioning(), "modal drawer exit should animate");
-                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
+                    scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                    scene.getRoot().applyCss();
                     layout(scene);
                     assertNull(scene.lookup(".catalog-sidebar-drawer"));
                     assertNull(scene.lookup(".catalog-sidebar-scrim"));

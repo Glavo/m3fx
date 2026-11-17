@@ -193,6 +193,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     public M3CarouselSkin(M3Carousel control) {
         super(control);
         motionSettingsObserver = new M3MotionSettingsObserver(control, this::refreshMotionSettings);
+        viewport.animationsEnabledProperty().bind(control.animationsEnabledProperty());
         installViewport();
         getChildren().setAll(viewport);
         control.getItems().addListener(itemsListener);
@@ -212,6 +213,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Removes listeners, animations, and child references before disposal.
     @Override
     public void dispose() {
+        viewport.animationsEnabledProperty().unbind();
         cancelViewportInteraction();
         scrollSettleDelay.stop();
         scrollSettleDelay.setOnFinished(null);

@@ -5,10 +5,12 @@ package org.glavo.m3fx.internal;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3Theme;
@@ -33,14 +35,69 @@ final class M3PopupContextSynchronizerTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Applies popup context to actual descendants while preserving overrides and clearing it on stop.
+    @Test
+    void ordinaryPopupRootPropagatesMotionToContent() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            M3Scrim owner = new M3Scrim();
+            new Scene(new Pane(owner));
+            M3Scrim inherited = new M3Scrim();
+            M3Scrim styled = new M3Scrim();
+            styled.setStyle("-m3-animations-enabled: true;");
+            M3Scrim bound = new M3Scrim();
+            bound.animationsEnabledProperty().bind(new SimpleBooleanProperty(true));
+            Pane popup = new Pane(new Pane(inherited, styled, bound));
+            popup.setStyle("-fx-opacity: 0.75;");
+            new Scene(popup);
+            M3Scrim unrelated = new M3Scrim();
+            new Scene(new Pane(unrelated));
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popup);
+            try {
+                owner.setAnimationsEnabled(false);
+                synchronizer.start();
+                popup.applyCss();
+                assertFalse(inherited.isAnimationsEnabled());
+                assertTrue(styled.isAnimationsEnabled());
+                assertTrue(bound.isAnimationsEnabled());
+                assertTrue(bound.animationsEnabledProperty().isBound());
+                assertTrue(unrelated.isAnimationsEnabled());
+                assertFalse(M3MotionSettings.shouldReduceMotion(popup));
+                assertTrue(M3MotionSettings.shouldReduceMotion(inherited));
+                assertEquals("-fx-opacity: 0.75;", popup.getStyle());
+
+                owner.setAnimationsEnabled(true);
+                popup.applyCss();
+                assertTrue(inherited.isAnimationsEnabled());
+                owner.setAnimationsEnabled(false);
+                popup.applyCss();
+                assertFalse(inherited.isAnimationsEnabled());
+
+                synchronizer.stop();
+                popup.applyCss();
+                assertTrue(inherited.isAnimationsEnabled());
+                owner.setAnimationsEnabled(true);
+                owner.setAnimationsEnabled(false);
+                popup.applyCss();
+                assertTrue(inherited.isAnimationsEnabled());
+                assertTrue(styled.isAnimationsEnabled());
+                assertTrue(bound.isAnimationsEnabled());
+                assertTrue(unrelated.isAnimationsEnabled());
+            } finally {
+                synchronizer.stop();
+                bound.animationsEnabledProperty().unbind();
+            }
+        }));
+    }
+
     /// Keeps observation stopped when a popup stylesheet callback stops the initial synchronization.
     @Test
     void stoppingDuringStartDoesNotInstallMotionObservation() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setGlobalReducedMotionRequested(false);
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             new Scene(owner);
-            Pane popup = new Pane();
+            M3Scrim popup = new M3Scrim();
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popup);
             AtomicBoolean stop = new AtomicBoolean(true);
             popup.getStylesheets().addListener((ListChangeListener<String>) change -> {
@@ -52,17 +109,17 @@ final class M3PopupContextSynchronizerTest {
             try {
                 synchronizer.start();
                 assertFalse(stop.get());
-                M3MotionSettings.setReducedMotionRequested(owner, true);
-                assertFalse(M3MotionSettings.isReducedMotionRequested(popup));
+                owner.setAnimationsEnabled(false);
+                assertTrue(popup.isAnimationsEnabled());
 
                 synchronizer.start();
-                assertTrue(M3MotionSettings.isReducedMotionRequested(popup));
-                M3MotionSettings.setReducedMotionRequested(owner, false);
-                assertFalse(M3MotionSettings.isReducedMotionRequested(popup));
+                assertFalse(popup.isAnimationsEnabled());
+                owner.setAnimationsEnabled(true);
+                assertTrue(popup.isAnimationsEnabled());
             } finally {
                 synchronizer.start();
                 synchronizer.stop();
-                M3MotionSettings.setReducedMotionRequested(owner, false);
+                owner.setAnimationsEnabled(true);
             }
         }));
     }
@@ -122,20 +179,20 @@ final class M3PopupContextSynchronizerTest {
     @Test
     void stoppingDuringOrientationSkipsMotionAndStylesheetCopy() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             new Scene(owner);
-            M3MotionSettings.setReducedMotionRequested(owner, true);
-            Pane popup = new Pane();
+            owner.setAnimationsEnabled(false);
+            M3Scrim popup = new M3Scrim();
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popup);
             popup.nodeOrientationProperty().addListener(observable -> synchronizer.stop());
 
             try {
                 synchronizer.start();
-                assertFalse(M3MotionSettings.isReducedMotionRequested(popup));
+                assertTrue(popup.isAnimationsEnabled());
                 assertTrue(popup.getStylesheets().isEmpty());
             } finally {
                 synchronizer.stop();
-                M3MotionSettings.setReducedMotionRequested(owner, false);
+                owner.setAnimationsEnabled(true);
             }
         });
     }
@@ -178,8 +235,8 @@ final class M3PopupContextSynchronizerTest {
     @Test
     void motionChangedDuringOrientationSynchronizationIsEventuallyCopied() {
         FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane owner = new Pane();
-            Pane popup = new Pane();
+            M3Scrim owner = new M3Scrim();
+            M3Scrim popup = new M3Scrim();
             M3PopupContextSynchronizer synchronizer = FxTestUtils.callOnFxThread(() ->
                     new M3PopupContextSynchronizer(owner, popup));
             try {
@@ -188,14 +245,14 @@ final class M3PopupContextSynchronizerTest {
                     new Scene(owner);
                     synchronizer.start();
                     popup.nodeOrientationProperty().addListener(observable ->
-                            M3MotionSettings.setReducedMotionRequested(owner, true));
+                            owner.setAnimationsEnabled(false));
                     owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                 });
-                FxTestUtils.runOnFxThread(() -> assertTrue(M3MotionSettings.isReducedMotionRequested(popup)));
+                FxTestUtils.runOnFxThread(() -> assertFalse(popup.isAnimationsEnabled()));
             } finally {
                 FxTestUtils.runOnFxThread(() -> {
                     synchronizer.stop();
-                    M3MotionSettings.setReducedMotionRequested(owner, false);
+                    owner.setAnimationsEnabled(true);
                 });
             }
         });

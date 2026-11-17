@@ -14,6 +14,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -366,8 +367,8 @@ final class M3StateTransitionTest {
     @Test
     void reducedMotionPreservesDirectSeekAndSettlesContinuation() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            Pane owner = new Pane();
-            M3MotionSettings.setReducedMotionRequested(owner, true);
+            M3Scrim owner = new M3Scrim();
+            owner.setAnimationsEnabled(false);
             SimpleObjectProperty<Point2D> point = new SimpleObjectProperty<>(Point2D.ZERO);
             M3StateTransition<Boolean> transition = new M3StateTransition<>(owner, false);
             transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(1.0), M3MotionEasing.LINEAR));

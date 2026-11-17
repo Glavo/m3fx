@@ -5,6 +5,7 @@ package org.glavo.m3fx;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -129,6 +130,32 @@ public final class FxTestUtils {
         runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setGlobalReducedMotionRequested(true);
             task.run();
+        });
+    }
+
+    /// Applies an inheritable motion declaration to a test scope without changing other inline declarations.
+    /// Detached trees temporarily use a test scene so CSS runs; no window is created or shown.
+    public static void setCssAnimationsEnabled(Node scope, boolean enabled) {
+        runOnFxThread(() -> {
+            Node root = scope;
+            while (root.getParent() != null) {
+                root = root.getParent();
+            }
+            @Nullable Scene temporaryScene = null;
+            if (root.getScene() == null) {
+                if (!(root instanceof Parent parent)) {
+                    throw new IllegalArgumentException("CSS motion scope requires a Parent root");
+                }
+                temporaryScene = new Scene(parent);
+            }
+            try {
+                scope.setStyle(scope.getStyle() + "; -m3-animations-enabled: " + enabled + ";");
+                Objects.requireNonNull(root.getScene()).getRoot().applyCss();
+            } finally {
+                if (temporaryScene != null) {
+                    temporaryScene.setRoot(new Group());
+                }
+            }
         });
     }
 

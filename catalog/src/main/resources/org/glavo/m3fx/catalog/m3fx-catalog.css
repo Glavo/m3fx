@@ -1,3 +1,7 @@
+.catalog-root:reduced-motion {
+    -m3-animations-enabled: false;
+}
+
 .catalog-root,
 .catalog-scaffold,
 .catalog-route-host,

@@ -135,6 +135,8 @@ final class M3FXDemoPageTransitionTest {
                 layout(scene);
                 assertFalse(animationsSwitch.isSelected());
                 assertTrue(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                assertFalse(host.isAnimationsEnabled());
+                assertFalse(animationsSwitch.isAnimationsEnabled());
                 assertSame(viewport, currentPageScrollPane(host));
                 assertSame(pageContent, viewport.getContent());
                 assertEquals(0.75, viewport.getVvalue(), 0.001);
@@ -143,6 +145,8 @@ final class M3FXDemoPageTransitionTest {
                 layout(scene);
                 assertTrue(animationsSwitch.isSelected());
                 assertFalse(M3MotionSettings.shouldReduceMotion(scene.getRoot()));
+                assertTrue(host.isAnimationsEnabled());
+                assertTrue(animationsSwitch.isAnimationsEnabled());
                 assertSame(viewport, currentPageScrollPane(host));
                 assertSame(pageContent, viewport.getContent());
                 assertEquals(0.75, viewport.getVvalue(), 0.001);

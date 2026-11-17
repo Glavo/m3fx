@@ -7,7 +7,6 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -41,7 +40,7 @@ final class M3FabMenuMotionTest {
 
             try {
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -52,7 +51,7 @@ final class M3FabMenuMotionTest {
 
                 assertTrue(action.getOpacity() < 1.0, "expansion should start from an intermediate state");
 
-                M3MotionSettings.setReducedMotionRequested(root, true);
+                FxTestUtils.setCssAnimationsEnabled(root, false);
 
                 assertTrue(menu.isExpanded());
                 assertEquals(1.0, action.getOpacity(), 0.0001);
@@ -60,7 +59,7 @@ final class M3FabMenuMotionTest {
                 assertEquals(1.0, action.getScaleY(), 0.0001);
                 assertEquals(0.0, action.getTranslateY(), 0.0001);
             } finally {
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             }
         });

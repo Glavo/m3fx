@@ -316,6 +316,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
                     M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
             );
             modeButton = new M3IconButton(modeIcon);
+            modeButton.animationsEnabledProperty().bind(control.animationsEnabledProperty());
         }
         selectorTransition = new DialSelectorTransition();
         layoutPane = new PickerLayoutPane();
@@ -424,6 +425,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         periodSelector.dispose();
         M3IconButton standaloneModeButton = modeButton;
         if (standaloneModeButton != null) {
+            standaloneModeButton.animationsEnabledProperty().unbind();
             standaloneModeButton.setOnAction(null);
         }
 

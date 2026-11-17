@@ -20,7 +20,6 @@ import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -239,7 +238,7 @@ final class M3ButtonShapeMotionTest {
         ShapeMotionScene scene = showShapeMotionScene();
         testScene = scene;
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.setReducedMotionRequested(scene.root, true);
+            FxTestUtils.setCssAnimationsEnabled(scene.root, false);
             scene.toggleButton.setSelected(true);
             applyShapeCss(scene, scene.toggleButton);
             assertNull(scene.toggleButton.getShape());
@@ -277,7 +276,7 @@ final class M3ButtonShapeMotionTest {
                     M3Profile.EXPRESSIVE_2025,
                     Brightness.LIGHT
             ));
-            M3MotionSettings.setReducedMotionRequested(root, false);
+            FxTestUtils.setCssAnimationsEnabled(root, true);
             FxTestUtils.setMotionScheme(root, observableMotionScheme());
             stage.setScene(scene);
             stage.show();
@@ -546,7 +545,7 @@ final class M3ButtonShapeMotionTest {
         /// Closes the window and removes local motion overrides.
         private void close() {
             FxTestUtils.runOnFxThread(() -> {
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 FxTestUtils.clearMotionScheme(root);
                 stage.close();
             });

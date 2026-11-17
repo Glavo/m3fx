@@ -7,6 +7,8 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -258,11 +260,13 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         StackPane.setAlignment(body, Pos.CENTER);
 
         state.wallpaperProperty().addListener((observable, oldValue, newValue) -> updateWallpaper());
-        state.animationDisabledProperty().addListener((observable, oldValue, newValue) -> {
-            if (Boolean.TRUE.equals(newValue)) {
+        ChangeListener<Boolean> motionListener = (observable, oldValue, newValue) -> {
+            if (M3MotionSettings.shouldReduceMotion(pageHost)) {
                 stopNavigationSplitAnimation();
             }
-        });
+        };
+        pageHost.animationsEnabledProperty().addListener(motionListener);
+        M3MotionSettings.globalReducedMotionRequestedProperty().addListener(new WeakChangeListener<>(motionListener));
         strings.localeProperty().addListener((observable, oldLocale, newLocale) -> refreshLocale());
         installWindowResizeSupport();
         updateWallpaper();
@@ -534,7 +538,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         pageHost.setContentTransform(transformFor(kind));
         pageHost.setContent(page);
         if (kind == TransitionKind.IMMEDIATE
-                || state.isAnimationDisabled()
                 || M3MotionSettings.shouldReduceMotion(pageHost)) {
             pageHost.snapToCurrentState();
         } else if (kind == TransitionKind.NAVIGATION || kind == TransitionKind.NAVIGATION_BACK) {
@@ -572,7 +575,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param page the incoming page root
     private void playNavigationSplitEnter(Node page) {
         if (!(page instanceof BorderPane borderPane)
-                || state.isAnimationDisabled()
                 || M3MotionSettings.shouldReduceMotion(pageHost)) {
             return;
         }
@@ -639,8 +641,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param kind the transition kind
     /// @return the content transform
     private M3ContentTransform transformFor(TransitionKind kind) {
-        if (state.isAnimationDisabled()
-                || M3MotionSettings.shouldReduceMotion(pageHost)
+        if (M3MotionSettings.shouldReduceMotion(pageHost)
                 || kind == TransitionKind.IMMEDIATE) {
             return HMCLDemoTransitions.none();
         }
@@ -812,7 +813,6 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
         titleNavHost.setContentTransform(titleTransformFor(kind));
         titleNavHost.setContent(createTitleNavContent());
         if (kind == TransitionKind.IMMEDIATE
-                || state.isAnimationDisabled()
                 || M3MotionSettings.shouldReduceMotion(titleNavHost)) {
             titleNavHost.snapToCurrentState();
         }
@@ -823,8 +823,7 @@ final class HMCLDemoShell extends StackPane implements HMCLDemoController {
     /// @param kind the page transition kind
     /// @return the title navigation transform
     private M3ContentTransform titleTransformFor(TransitionKind kind) {
-        if (state.isAnimationDisabled()
-                || M3MotionSettings.shouldReduceMotion(titleNavHost)
+        if (M3MotionSettings.shouldReduceMotion(titleNavHost)
                 || kind == TransitionKind.IMMEDIATE) {
             return HMCLDemoTransitions.none();
         }

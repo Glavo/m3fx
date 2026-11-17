@@ -13,7 +13,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -61,7 +60,7 @@ final class M3SegmentedButtonSkinTest {
             HBox root = new HBox(button, textOnlyButton);
             Scene scene = new Scene(root, 240.0, 80.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setReducedMotionRequested(root, true);
+            FxTestUtils.setCssAnimationsEnabled(root, false);
             root.applyCss();
             root.layout();
             button.layout();
@@ -366,7 +365,7 @@ final class M3SegmentedButtonSkinTest {
         /// Closes the test window and restores motion settings.
         private void close() {
             FxTestUtils.runOnFxThread(() -> {
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             });
         }
@@ -389,7 +388,7 @@ final class M3SegmentedButtonSkinTest {
         /// Closes the test window and detaches its scene content.
         private void close() {
             FxTestUtils.runOnFxThread(() -> {
-                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setCssAnimationsEnabled(root, true);
                 stage.close();
             });
         }

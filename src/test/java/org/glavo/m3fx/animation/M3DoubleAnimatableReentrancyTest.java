@@ -6,9 +6,9 @@ package org.glavo.m3fx.animation;
 import javafx.animation.Animation;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -141,7 +141,7 @@ final class M3DoubleAnimatableReentrancyTest {
                     animatable.snapTo(20.0);
                 }
             });
-            M3MotionSettings.setReducedMotionRequested(animatable.getOwner(), true);
+            ((M3Scrim) animatable.getOwner()).setAnimationsEnabled(false);
             assertEquals(20.0, animatable.getTargetValue());
             assertEquals(20.0, animatable.getValue());
             assertEquals(Animation.Status.STOPPED, animatable.getStatus());
@@ -161,7 +161,7 @@ final class M3DoubleAnimatableReentrancyTest {
     private static void withAnimatable(Consumer<M3DoubleAnimatable> task) {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setGlobalReducedMotionRequested(false);
-            Pane owner = new Pane();
+            M3Scrim owner = new M3Scrim();
             new Scene(owner);
             M3DoubleAnimatable animatable = new M3DoubleAnimatable(owner, new SimpleDoubleProperty(), 0.01);
             try {

@@ -72,6 +72,7 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
     /// @param control the breadcrumbs control represented by this skin
     public M3BreadcrumbsSkin(M3Breadcrumbs control) {
         super(control);
+        overflowButton.animationsEnabledProperty().bind(control.animationsEnabledProperty());
         row.getStyleClass().add("m3-breadcrumbs-row");
         row.setAlignment(Pos.CENTER_LEFT);
         row.setFillHeight(true);
@@ -98,6 +99,8 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
     /// Removes listeners and retained child references before disposal.
     @Override
     public void dispose() {
+        clearOverflowMenu();
+        overflowButton.animationsEnabledProperty().unbind();
         localizerObserver.close();
         M3Breadcrumbs control = getSkinnable();
         control.getItems().removeListener(itemsListener);
@@ -225,15 +228,28 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
 
     /// Mirrors the complete logical hierarchy into the overflow menu.
     private void rebuildOverflowMenu() {
+        clearOverflowMenu();
         List<Node> menuItems = new ArrayList<>(getSkinnable().getItems().size());
         for (M3BreadcrumbItem item : getSkinnable().getItems()) {
             M3MenuItem menuItem = new M3MenuItem(Objects.requireNonNullElse(item.getText(), ""));
+            menuItem.animationsEnabledProperty().bind(getSkinnable().animationsEnabledProperty());
             menuItem.setDisable(item.isDisabled());
             menuItem.setSelected(item.isCurrent());
             menuItem.setOnAction(event -> item.fire());
             menuItems.add(menuItem);
         }
         overflowButton.getItems().setAll(menuItems);
+    }
+
+    /// Releases generated overflow actions and their animation bindings.
+    private void clearOverflowMenu() {
+        for (Node node : overflowButton.getItems()) {
+            if (node instanceof M3MenuItem item) {
+                item.animationsEnabledProperty().unbind();
+                item.setOnAction(null);
+            }
+        }
+        overflowButton.getItems().clear();
     }
 
     /// Applies the compact or default interaction target used by the overflow control.

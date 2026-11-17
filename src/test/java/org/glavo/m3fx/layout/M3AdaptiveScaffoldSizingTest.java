@@ -13,7 +13,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3AdaptiveScaffoldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
@@ -298,7 +297,7 @@ final class M3AdaptiveScaffoldSizingTest {
         scaffold.setTrailingRail(fixedRegion(60, 0));
         scaffold.setTopBar(fixedRegion(0, 20));
         scaffold.setBottomBar(fixedRegion(0, 10));
-        M3MotionSettings.setReducedMotionRequested(scaffold, true);
+        scaffold.setAnimationsEnabled(false);
         scaffold.setSkin(new M3AdaptiveScaffoldSkin(scaffold));
         return scaffold;
     }

@@ -195,7 +195,7 @@ final class M3RevealTransitionTest {
             assertFalse(animatedContent.isTransitioning());
             assertNull(holderOf(second).getClip());
 
-            M3MotionSettings.setReducedMotionRequested(root, true);
+            FxTestUtils.setCssAnimationsEnabled(root, false);
             animatedContent.setContent(first);
             assertFalse(animatedContent.isTransitioning());
             assertNull(holderOf(first).getClip());

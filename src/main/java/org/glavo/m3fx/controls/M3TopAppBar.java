@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -24,6 +26,8 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -59,7 +63,35 @@ import java.util.Objects;
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
-public final class M3TopAppBar extends Control {
+public final class M3TopAppBar extends Control implements M3Animated {
+
+    /// The animation setting, or `null` until the property is first requested.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether this component permits optional animations.
+    @Override
+    public final boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Sets whether this component permits optional animations.
+    @Override
+    public final void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// Returns the bindable animation setting styled by `-m3-animations-enabled`.
+    ///
+    /// The default value is `true`; CSS inherits this setting from ancestor styles.
+    @Override
+    public final StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
     /// The pseudo-class applied while content is scrolled beneath the app bar.
     private static final PseudoClass SCROLLED_UNDER_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrolled-under");
 
@@ -1200,6 +1232,12 @@ public final class M3TopAppBar extends Control {
     /// CSS metadata for M3FX top app bar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
+        /// CSS metadata for the inheritable animation setting.
+        private static final CssMetaData<M3TopAppBar, Boolean> ANIMATIONS_ENABLED =
+                M3MotionProperties.cssMetaData(
+                        c -> c.animationsEnabledProperty(),
+                        c -> c.animationsEnabled == null || !c.animationsEnabled.isBound());
+
         /// CSS metadata for the small and centered container height token.
         private static final CssMetaData<M3TopAppBar, Number> CONTAINER_HEIGHT =
                 M3Css.sizeMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
@@ -1289,6 +1327,7 @@ public final class M3TopAppBar extends Control {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ANIMATIONS_ENABLED);
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(MEDIUM_CONTAINER_HEIGHT);
             styleables.add(LARGE_CONTAINER_HEIGHT);

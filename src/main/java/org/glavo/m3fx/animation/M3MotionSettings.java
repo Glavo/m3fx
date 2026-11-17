@@ -6,19 +6,15 @@ package org.glavo.m3fx.animation;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Node;
-import org.glavo.m3fx.internal.IdentityKey;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Provides application-wide and scene-graph-scoped reduced-motion requests for M3FX controls.
+/// Provides the application-wide reduced-motion preference for M3FX components.
 ///
-/// The global property requests reduced motion for the complete application. A node may make the same request for
-/// itself and its descendants. A node's effective value is the logical OR of the global request and every direct
-/// request from that node through its parent chain. Consequently, clearing a descendant request cannot override a
-/// request made by an ancestor.
+/// The global property requests reduced motion for the complete application. Individual components expose
+/// [M3Animated#animationsEnabledProperty()], whose CSS property `-m3-animations-enabled` supports inheritance.
+/// A component cannot override the global request by enabling its own animations.
 ///
 /// Controls use these settings for state-layer fades, ripple release, popup entrance and exit, smooth scrolling,
 /// and progress motion. Requesting reduced motion makes finite transitions settle immediately,
@@ -30,16 +26,12 @@ import java.util.Objects;
 ///
 /// The global property is writable and may be observed or bound like any other JavaFX [BooleanProperty]. Calling
 /// [setGlobalReducedMotionRequested] delegates to that property; if it is unidirectionally bound, direct writes
-/// follow the failure behavior defined by [BooleanProperty]. Node-local requests are not JavaFX properties.
+/// follow the failure behavior defined by [BooleanProperty].
 ///
 /// Methods that inspect or mutate a live [Node] follow JavaFX scene-graph threading rules. The global property
 /// should likewise be changed on the JavaFX Application Thread while controls are observing it.
 @NotNullByDefault
 public final class M3MotionSettings {
-    /// The key used to store node-local reduced-motion requests.
-    private static final IdentityKey REDUCED_MOTION_REQUEST_KEY =
-            new IdentityKey(M3MotionSettings.class.getName() + ".reducedMotionRequest");
-
     /// Prevents instantiation.
     private M3MotionSettings() {
     }
@@ -78,73 +70,18 @@ public final class M3MotionSettings {
         return globalReducedMotionRequest;
     }
 
-    static {
-        globalReducedMotionRequest.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
-    }
-
-    /// Returns whether a node should use reduced motion after resolving global and inherited requests.
+    /// Returns whether a node should use reduced motion under the application and component settings.
     ///
-/// Resolution includes `node` itself and then its current parent chain. Moving a node to a different parent can
-/// therefore change the result of a subsequent call.
+    /// For an [M3Animated] component, the current value of its animation property is combined with the global
+    /// request. Other nodes use only the global request. This method does not walk the parent chain or apply CSS;
+    /// inherited CSS changes become observable after the normal CSS pass.
     ///
-    /// @param node the node used to resolve inherited motion settings
+    /// @param node the animation owner
     /// @return `true` when finite motion should settle immediately for the node
     /// @throws NullPointerException if `node` is `null`
     public static boolean shouldReduceMotion(Node node) {
         Objects.requireNonNull(node, "node");
-        if (isGlobalReducedMotionRequested()) {
-            return true;
-        }
-
-        @Nullable Node current = node;
-        while (current != null) {
-            if (isReducedMotionRequested(current)) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
-    /// Returns whether this node directly requests reduced motion for its subtree.
-    ///
-    /// This method does not inspect ancestors or the application-wide property. Use [shouldReduceMotion] for the
-    /// effective value.
-    ///
-    /// @param node the node to query
-    /// @return `true` when this node directly requests reduced motion
-    /// @throws NullPointerException if `node` is `null`
-    public static boolean isReducedMotionRequested(Node node) {
-        Objects.requireNonNull(node, "node");
-        if (!node.hasProperties()) {
-            return false;
-        }
-        return Boolean.TRUE.equals(node.getProperties().get(REDUCED_MOTION_REQUEST_KEY));
-    }
-
-    /// Sets whether this node requests reduced motion for itself and its descendants.
-    ///
-    /// Clearing the request restores inherited behavior but cannot override a request made by an ancestor or the
-    /// application-wide reduced-motion setting. Setting the node to its current direct value has no effect.
-    ///
-    /// @param node      the node to update
-    /// @param requested whether this node should directly request reduced motion
-    /// @throws NullPointerException if `node` is `null`
-    public static void setReducedMotionRequested(Node node, boolean requested) {
-        Objects.requireNonNull(node, "node");
-        if (isReducedMotionRequested(node) == requested) {
-            return;
-        }
-        if (requested) {
-            node.getProperties().put(REDUCED_MOTION_REQUEST_KEY, Boolean.TRUE);
-        } else if (node.hasProperties()) {
-            node.getProperties().remove(REDUCED_MOTION_REQUEST_KEY);
-        }
-        markSettingsChanged(node);
-    }
-
-    /// Notifies internal observers of a changed reduced-motion context.
-    private static void markSettingsChanged(@Nullable Node source) {
-        M3MotionSettingsObserver.reducedMotionChanged(source);
+        return isGlobalReducedMotionRequested()
+                || node instanceof M3Animated animated && !animated.isAnimationsEnabled();
     }
 }
