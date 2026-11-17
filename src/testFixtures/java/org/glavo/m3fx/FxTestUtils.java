@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -171,11 +172,11 @@ public final class FxTestUtils {
 
     /// Runs a task with global Material motion settings restored afterward.
     private static void runWithMotionSettingsPreservedChecked(CheckedRunnable task) throws InterruptedException {
-        boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
+        boolean previousReducedMotionRequested = callOnFxThread(M3MotionSettings::isGlobalReducedMotionRequested);
         try {
             task.run();
         } finally {
-            M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
+            runOnFxThread(() -> M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested));
         }
     }
 
@@ -504,6 +505,7 @@ public final class FxTestUtils {
                 () -> runWithMotionSettingsPreservedChecked(
                         () -> runOnFxThreadWhenWithoutCssCapture(
                                 condition,
+                                0,
                                 timeoutMessage,
                                 setup,
                                 verification,
@@ -553,10 +555,13 @@ public final class FxTestUtils {
             long timeoutNanos
     ) {
         requirePositiveTimeout(timeoutNanos);
+        if (stablePulseCount < 1) {
+            throw new IllegalArgumentException("stablePulseCount must be positive");
+        }
         List<LogRecord> warnings = captureWarningsChecked(
                 () -> runWithMotionSettingsPreservedChecked(
                         () -> {
-                            runOnFxThreadWhenStableWithoutCssCapture(
+                            runOnFxThreadWhenWithoutCssCapture(
                                     condition,
                                     stablePulseCount,
                                     timeoutMessage,
@@ -573,65 +578,8 @@ public final class FxTestUtils {
         assertTrue(warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning), () -> formatLogRecords(warnings));
     }
 
-    /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
+    /// Waits for a condition, optionally requiring consecutive pulses, and cancels pending work on exit.
     private static void runOnFxThreadWhenWithoutCssCapture(
-            BooleanSupplier condition,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification,
-            long timeoutNanos
-    ) throws InterruptedException {
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        WaitDiagnostics diagnostics = new WaitDiagnostics(1, timeoutNanos);
-
-        Platform.runLater(() -> {
-            try {
-                setup.run();
-                long startNanos = System.nanoTime();
-                long deadlineNanos = startNanos + timeoutNanos;
-                diagnostics.start(startNanos);
-                AnimationTimer timer = new AnimationTimer() {
-                    /// Checks the readiness condition on each JavaFX pulse.
-                    @Override
-                    public void handle(long now) {
-                        diagnostics.recordPulse(now);
-                        try {
-                            if (diagnostics.evaluate(condition)) {
-                                stop();
-                                verification.run();
-                                latch.countDown();
-                            } else if (System.nanoTime() >= deadlineNanos) {
-                                stop();
-                                failure.set(timeoutAssertion(timeoutMessage, diagnostics));
-                                latch.countDown();
-                            }
-                        } catch (Throwable e) {
-                            stop();
-                            failure.set(e);
-                            latch.countDown();
-                        }
-                    }
-                };
-
-                if (diagnostics.evaluate(condition)) {
-                    verification.run();
-                    latch.countDown();
-                } else {
-                    timer.start();
-                }
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
-        throwIfFailed(failure.get());
-    }
-
-    /// Runs setup on the FX application thread and verifies after a condition remains true across pulses.
-    private static void runOnFxThreadWhenStableWithoutCssCapture(
             BooleanSupplier condition,
             int stablePulseCount,
             Supplier<String> timeoutMessage,
@@ -639,20 +587,34 @@ public final class FxTestUtils {
             Runnable verification,
             long timeoutNanos
     ) throws InterruptedException {
-        if (stablePulseCount < 1) {
-            throw new IllegalArgumentException("stablePulseCount must be positive");
+        if (Platform.isFxApplicationThread()) {
+            throw new IllegalStateException("Cannot wait for JavaFX pulses on the FX application thread");
         }
-
         AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+        AtomicReference<@Nullable AnimationTimer> timerReference = new AtomicReference<>();
+        AtomicBoolean cancelled = new AtomicBoolean();
         CountDownLatch latch = new CountDownLatch(1);
         WaitDiagnostics diagnostics = new WaitDiagnostics(stablePulseCount, timeoutNanos);
 
         Platform.runLater(() -> {
+            if (cancelled.get()) {
+                return;
+            }
             try {
                 setup.run();
+                if (cancelled.get()) {
+                    return;
+                }
                 long startNanos = System.nanoTime();
                 long deadlineNanos = startNanos + timeoutNanos;
                 diagnostics.start(startNanos);
+                if (stablePulseCount == 0 && diagnostics.evaluate(condition)) {
+                    if (!cancelled.get()) {
+                        verification.run();
+                    }
+                    latch.countDown();
+                    return;
+                }
                 AnimationTimer timer = new AnimationTimer() {
                     /// The number of consecutive pulses where the condition has been true.
                     private int stablePulses;
@@ -660,6 +622,10 @@ public final class FxTestUtils {
                     /// Checks the readiness condition and waits for the requested stable pulse count.
                     @Override
                     public void handle(long now) {
+                        if (cancelled.get()) {
+                            stop();
+                            return;
+                        }
                         diagnostics.recordPulse(now);
                         try {
                             if (diagnostics.evaluate(condition)) {
@@ -667,7 +633,9 @@ public final class FxTestUtils {
                                 diagnostics.recordStablePulses(stablePulses);
                                 if (stablePulses >= stablePulseCount) {
                                     stop();
-                                    verification.run();
+                                    if (!cancelled.get()) {
+                                        verification.run();
+                                    }
                                     latch.countDown();
                                     return;
                                 }
@@ -687,6 +655,7 @@ public final class FxTestUtils {
                         }
                     }
                 };
+                timerReference.set(timer);
                 timer.start();
             } catch (Throwable e) {
                 failure.set(e);
@@ -694,7 +663,21 @@ public final class FxTestUtils {
             }
         });
 
-        awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
+        try {
+            if (!latch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                // The FX thread may be blocked; diagnostic suppliers can access live nodes and must not run here.
+                failure.compareAndSet(null, new AssertionError("Timed out waiting for JavaFX work after "
+                        + FX_TIMEOUT_SECONDS + " seconds"));
+            }
+        } finally {
+            cancelled.set(true);
+            Platform.runLater(() -> {
+                @Nullable AnimationTimer timer = timerReference.getAndSet(null);
+                if (timer != null) {
+                    timer.stop();
+                }
+            });
+        }
         throwIfFailed(failure.get());
     }
 
@@ -720,18 +703,6 @@ public final class FxTestUtils {
     /// Appends pulse and condition diagnostics to a timeout message.
     private static String withWaitDiagnostics(String message, WaitDiagnostics diagnostics) {
         return message + "\n" + diagnostics.describe();
-    }
-
-    /// Waits for a condition latch and reports the condition-specific timeout message if pulses stop.
-    private static void awaitFxConditionLatch(
-            CountDownLatch latch,
-            AtomicReference<@Nullable Throwable> failure,
-            Supplier<String> timeoutMessage,
-            WaitDiagnostics diagnostics
-    ) throws InterruptedException {
-        if (!latch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS) && failure.get() == null) {
-            failure.set(timeoutAssertion(timeoutMessage, diagnostics));
-        }
     }
 
     /// Verifies that a pulse-driven wait timeout is positive.

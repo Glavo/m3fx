@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -706,9 +707,11 @@ final class M3SelectionControlContractTest {
         radioButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
         assertTrue(nextRadioButton.isSelected(), "right must move backward in RTL orientation");
 
+        List<KeyCode> unhandledKeys = new ArrayList<>();
+        root.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
         KeyEvent enter = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER);
         radioButton.fireEvent(enter);
-        assertFalse(enter.isConsumed());
+        assertEquals(List.of(KeyCode.ENTER), unhandledKeys, "Radio buttons must let Enter reach application handlers");
         assertFalse(radioButton.isSelected(), "Material radio buttons use Space rather than Enter for activation");
 
         switchControl.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));

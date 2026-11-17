@@ -6,13 +6,15 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /// Tests density-sensitive component token generation.
 @NotNullByDefault
 final class M3DensityComponentTokensTest {
-    /// Verifies the compactness calculation and its finite-input requirement.
+    /// Verifies compactness, clamping, and finite inputs for density creation and compaction.
     @Test
     void compactsEligibleMetricsWithoutProducingNegativeValues() {
         M3Density compact = M3Density.of(-1.0);
@@ -20,7 +22,11 @@ final class M3DensityComponentTokensTest {
 
         assertEquals(36.0, compact.compact(40.0));
         assertEquals(0.0, minimum.compact(8.0));
-        assertThrows(IllegalArgumentException.class, () -> compact.compact(Double.NaN));
+        for (double invalid : List.of(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)) {
+            assertThrows(IllegalArgumentException.class, () -> M3Density.of(invalid));
+            assertThrows(IllegalArgumentException.class, () -> M3Density.standard().compact(invalid));
+            assertThrows(IllegalArgumentException.class, () -> compact.compact(invalid));
+        }
     }
 
     /// Verifies that density changes only generated component metrics which support compact layouts.

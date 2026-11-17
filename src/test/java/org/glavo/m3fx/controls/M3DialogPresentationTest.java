@@ -1436,6 +1436,8 @@ final class M3DialogPresentationTest {
                 assertTrue(content.isFocused());
                 assertFalse(outside.isFocused());
 
+                List<KeyCode> unhandledKeys = new ArrayList<>();
+                overlayRoot.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
                 KeyEvent controlTab = new KeyEvent(
                         KeyEvent.KEY_PRESSED,
                         "",
@@ -1446,8 +1448,8 @@ final class M3DialogPresentationTest {
                         false,
                         false
                 );
-                content.fireEvent(controlTab);
-                assertFalse(controlTab.isConsumed(), "Ctrl+Tab should remain available to application shortcuts");
+                dialog.getDialogPane().fireEvent(controlTab);
+                assertEquals(List.of(KeyCode.TAB), unhandledKeys, "Ctrl+Tab should reach application shortcuts");
 
                 KeyEvent altF6 = new KeyEvent(
                         KeyEvent.KEY_PRESSED,
@@ -1459,8 +1461,8 @@ final class M3DialogPresentationTest {
                         true,
                         false
                 );
-                content.fireEvent(altF6);
-                assertFalse(altF6.isConsumed(), "Alt+F6 should remain available to platform shortcuts");
+                dialog.getDialogPane().fireEvent(altF6);
+                assertEquals(List.of(KeyCode.TAB, KeyCode.F6), unhandledKeys, "Alt+F6 should reach application shortcuts");
 
                 content.fireEvent(keyPressed(KeyCode.ESCAPE));
 

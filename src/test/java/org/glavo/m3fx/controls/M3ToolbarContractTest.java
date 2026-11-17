@@ -78,7 +78,7 @@ final class M3ToolbarContractTest {
 
     /// Verifies that toolbar position variants and color styles update independently.
     @Test
-    void toolbarVariantsAndAccessibilityAreStable() {
+    void toolbarVariantsAndActionStylesUpdateIndependently() {
         M3Button first = new M3Button("Archive");
         M3Button second = new M3Button("Share");
         M3Toolbar toolbar = toolbar(first, second);
@@ -102,10 +102,6 @@ final class M3ToolbarContractTest {
         assertEquals(16.0, toolbar.getPadding().getRight(), 0.0001);
         assertEquals(8.0, toolbar.getPadding().getBottom(), 0.0001);
         assertEquals(16.0, toolbar.getPadding().getLeft(), 0.0001);
-
-        assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-        assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-        assertSame(second, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
 
         assertTrue(first.getPseudoClassStates().stream()
                 .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("toolbar-action")));
@@ -382,8 +378,11 @@ final class M3ToolbarContractTest {
                 assertFalse(menuButton.isShowing());
                 assertTrue(outside.isFocused());
             } finally {
-                menuButton.setAnimationsEnabled(true);
-                stage.close();
+                try {
+                    menuButton.hideMenu();
+                } finally {
+                    stage.close();
+                }
             }
         });
     }
@@ -442,7 +441,7 @@ final class M3ToolbarContractTest {
         });
     }
 
-    /// Verifies that toolbar item mutations rebuild generated slots without retaining removed nodes.
+    /// Verifies item mutations update accessible indices and generated slots without retaining removed nodes.
     @Test
     void toolbarItemMutationsRebuildGeneratedSlots() {
         FxTestUtils.runOnFxThread(() -> {
@@ -463,6 +462,9 @@ final class M3ToolbarContractTest {
                 toolbar.layout();
 
                 assertEquals(2, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
+                assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(second, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertTrue(first.getParent() != null);
                 assertTrue(second.getParent() != null);
 
@@ -472,6 +474,8 @@ final class M3ToolbarContractTest {
                 toolbar.layout();
 
                 assertEquals(3, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
+                assertEquals(3, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(third, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
                 assertTrue(third.getParent() != null);
 
                 assertTrue(toolbar.getItems().remove(second));
@@ -481,6 +485,9 @@ final class M3ToolbarContractTest {
 
                 assertEquals(2, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
                 assertNull(second.getParent());
+                assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(third, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertTrue(first.getParent() != null);
                 assertTrue(third.getParent() != null);
 
@@ -490,6 +497,7 @@ final class M3ToolbarContractTest {
                 toolbar.layout();
 
                 assertEquals(0, toolbar.lookupAll("." + "m3-toolbar-item-slot").size());
+                assertEquals(0, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertNull(first.getParent());
                 assertNull(third.getParent());
             } finally {

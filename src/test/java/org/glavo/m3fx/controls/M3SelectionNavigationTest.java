@@ -16,7 +16,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tier2Test
 @NotNullByDefault
 final class M3SelectionNavigationTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit for Material control construction.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -48,15 +51,14 @@ final class M3SelectionNavigationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes real windows created by selection navigation reveal tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -486,7 +488,7 @@ final class M3SelectionNavigationTest {
     }
 
     /// Verifies the same typed input through all four public container event paths.
-    private static void assertTypeAheadSelects(String character, String headline) {
+    private void assertTypeAheadSelects(String character, String headline) {
         M3ListItem listTarget = new M3ListItem(headline);
         M3ListPane list = listPane(new M3ListItem("Archive"), listTarget);
         list.setSelectionMode(M3SelectionMode.SINGLE);
@@ -866,8 +868,9 @@ final class M3SelectionNavigationTest {
     }
 
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
-    private static void show(ScrollPane scrollPane, double width, double height) {
+    private void show(ScrollPane scrollPane, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(scrollPane, width, height);
         stage.setScene(scene);
         stage.show();
@@ -1112,8 +1115,9 @@ final class M3SelectionNavigationTest {
     }
 
     /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
-    private static void show(Parent root) {
+    private void show(Parent root) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(root, 360.0, 240.0);
         stage.setScene(scene);
         stage.show();
@@ -1125,7 +1129,7 @@ final class M3SelectionNavigationTest {
     }
 
     /// Creates a scene and lays out the supplied root for focus tests.
-    private static void layout(Parent root) {
+    private void layout(Parent root) {
         show(root);
     }
 

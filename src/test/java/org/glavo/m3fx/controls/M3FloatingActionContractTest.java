@@ -19,7 +19,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -70,20 +69,7 @@ final class M3FloatingActionContractTest {
         );
     }
 
-    /// Verifies that m3fx floating action buttons create the animated floating action button skin.
-    @Test
-    void floatingActionButtonCreatesAnimatedSkin() {
-        M3FloatingActionButton button = new M3FloatingActionButton();
-        Pane root = new Pane(button);
-        Scene scene = new Scene(root);
-
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.applyCss();
-
-        assertInstanceOf(M3FloatingActionButtonSkin.class, button.getSkin());
-    }
-
-    /// Verifies that the floating action button skin handles mouse and keyboard activation.
+    /// Verifies that the default floating action button skin handles mouse and keyboard activation.
     @Test
     void floatingActionButtonSkinHandlesActivationEvents() {
         M3FloatingActionButton button = new M3FloatingActionButton();
@@ -96,6 +82,7 @@ final class M3FloatingActionContractTest {
         root.applyCss();
         button.resize(56.0, 56.0);
 
+        assertInstanceOf(M3FloatingActionButtonSkin.class, button.getSkin());
         button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
         assertTrue(button.isArmed());
         button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
@@ -243,6 +230,8 @@ final class M3FloatingActionContractTest {
 
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.TERTIARY.styleClass()));
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.LARGE.styleClass()));
+        assertFalse(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
+        assertFalse(button.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
     }
 
     /// Verifies that floating action button menus expand, collapse, and manage action item state.
@@ -628,6 +617,8 @@ final class M3FloatingActionContractTest {
                         Pane root = new Pane(menu);
                         Scene scene = new Scene(root, 220.0, 220.0);
                         Stage stage = new Stage();
+                        stageReference.set(stage);
+                        rootReference.set(root);
 
                         FxTestUtils.setCssAnimationsEnabled(root, true);
                         FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
@@ -638,8 +629,6 @@ final class M3FloatingActionContractTest {
                         menu.resizeRelocate(24.0, 24.0, 120.0, 160.0);
                         root.layout();
 
-                        stageReference.set(stage);
-                        rootReference.set(root);
                         menuReference.set(menu);
                         actionReference.set(action);
                         menu.show();
@@ -814,7 +803,7 @@ final class M3FloatingActionContractTest {
 
     /// Applies CSS and layouts the visible parent chain for a tested node.
     private static void layoutNodeTree(Node node) {
-        Node current = node;
+        @Nullable Node current = node;
         while (current != null) {
             current.applyCss();
             if (current instanceof Parent parent) {

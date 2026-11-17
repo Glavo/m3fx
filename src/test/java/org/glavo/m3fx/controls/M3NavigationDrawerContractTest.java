@@ -22,11 +22,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
-import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -105,65 +103,6 @@ final class M3NavigationDrawerContractTest {
         });
     }
 
-    /// Verifies that drawer group disclosure keys keep focus on visible rows.
-    @Test
-    void navigationDrawerGroupDisclosureKeysRestoreHeaderFocus() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
-            M3ListItem buttons = new M3ListItem("Buttons");
-            M3ListItem iconButtons = new M3ListItem("Icon buttons");
-            group.getItems().addAll(buttons, iconButtons);
-            group.setExpanded(true);
-            M3NavigationDrawer drawer = navigationDrawer(group);
-            drawer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            Pane root = new Pane(drawer);
-            Stage stage = new Stage();
-            try {
-                Scene scene = new Scene(root, 360.0, 260.0);
-
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.layout();
-
-                iconButtons.requestFocus();
-                assertTrue(iconButtons.isFocused());
-
-                iconButtons.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
-
-                assertFalse(group.isExpanded());
-                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
-                assertTrue(group.getHeaderItem().isFocused());
-                assertSame(group.getHeaderItem(), drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                group.getHeaderItem().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
-
-                assertTrue(group.isExpanded());
-                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
-                assertTrue(group.getHeaderItem().isFocused());
-
-                drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                iconButtons.requestFocus();
-                drawer.select(iconButtons);
-
-                iconButtons.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
-
-                assertFalse(group.isExpanded());
-                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
-                assertTrue(group.getHeaderItem().isFocused());
-
-                group.getHeaderItem().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
-
-                assertTrue(group.isExpanded());
-                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
-                assertTrue(group.getHeaderItem().isFocused());
-            } finally {
-                stage.close();
-            }
-        });
-    }
-
     /// Verifies that mouse selection keeps ripple feedback while the selected container transitions.
     @Tier2Test
     @Test
@@ -184,6 +123,8 @@ final class M3NavigationDrawerContractTest {
                 root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
                 Scene scene = new Scene(root, 380.0, 180.0);
                 Stage stage = new Stage();
+                stageReference.set(stage);
+                rootReference.set(root);
 
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 FxTestUtils.setCssAnimationsEnabled(root, true);
@@ -207,8 +148,6 @@ final class M3NavigationDrawerContractTest {
                 second.fire();
                 second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, clickX, clickY, false));
 
-                stageReference.set(stage);
-                rootReference.set(root);
                 selectedItemReference.set(second);
             });
 
@@ -248,7 +187,7 @@ final class M3NavigationDrawerContractTest {
             );
             FxTestUtils.runOnFxThreadWhen(
                     () -> {
-                        M3ListItem selectedItem = selectedItemReference.get();
+                        @Nullable M3ListItem selectedItem = selectedItemReference.get();
                         if (selectedItem == null || observableRootUnavailable(rootReference)) {
                             return false;
                         }
@@ -442,7 +381,7 @@ final class M3NavigationDrawerContractTest {
         assertTrue(group.isExpanded());
     }
 
-    /// Verifies that navigation drawers expand and collapse destination groups from keyboard disclosure keys.
+    /// Verifies logical disclosure keys and subsequent row navigation without a scene in both directions.
     @Test
     void navigationDrawerHandlesGroupDisclosureKeys() {
         M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
@@ -452,49 +391,28 @@ final class M3NavigationDrawerContractTest {
         M3ListItem overview = new M3ListItem("Overview");
         M3NavigationDrawer navigationDrawer = navigationDrawer(group, overview);
 
-        KeyEvent expandEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
-        navigationDrawer.fireEvent(expandEvent);
+        for (NodeOrientation orientation : List.of(NodeOrientation.LEFT_TO_RIGHT, NodeOrientation.RIGHT_TO_LEFT)) {
+            navigationDrawer.setNodeOrientation(orientation);
+            navigationDrawer.select(group.getHeaderItem());
+            KeyCode expandKey = orientation == NodeOrientation.LEFT_TO_RIGHT ? KeyCode.RIGHT : KeyCode.LEFT;
+            KeyCode collapseKey = orientation == NodeOrientation.LEFT_TO_RIGHT ? KeyCode.LEFT : KeyCode.RIGHT;
+            navigationDrawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, expandKey));
 
-        assertTrue(group.isExpanded());
-        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
-        assertEquals(4, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertTrue(group.isExpanded());
+            assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+            assertEquals(4, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
 
-        navigationDrawer.select(commonButtons);
-        KeyEvent collapseFromChildEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT);
-        navigationDrawer.fireEvent(collapseFromChildEvent);
+            navigationDrawer.select(commonButtons);
+            navigationDrawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, collapseKey));
 
-        assertFalse(group.isExpanded());
-        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
-        assertEquals(2, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertFalse(group.isExpanded());
+            assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+            assertEquals(2, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
 
-        KeyEvent nextEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
-        navigationDrawer.fireEvent(nextEvent);
+            navigationDrawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
 
-        assertEquals(overview, navigationDrawer.getSelectedItem());
-    }
-
-    /// Verifies that right-to-left navigation drawers mirror disclosure arrow keys.
-    @Test
-    void navigationDrawerMirrorsGroupDisclosureKeysForRightToLeft() {
-        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
-        M3ListItem commonButtons = new M3ListItem("Common buttons");
-        M3ListItem floatingActions = new M3ListItem("Floating actions");
-        group.getItems().addAll(commonButtons, floatingActions);
-        M3NavigationDrawer navigationDrawer = navigationDrawer(group);
-        navigationDrawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-
-        KeyEvent expandEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT);
-        navigationDrawer.fireEvent(expandEvent);
-
-        assertTrue(group.isExpanded());
-        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
-
-        navigationDrawer.select(commonButtons);
-        KeyEvent collapseFromChildEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
-        navigationDrawer.fireEvent(collapseFromChildEvent);
-
-        assertFalse(group.isExpanded());
-        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+            assertEquals(overview, navigationDrawer.getSelectedItem());
+        }
     }
 
     /// Verifies that navigation drawer groups expose disclosure accessibility state and actions.
@@ -625,33 +543,7 @@ final class M3NavigationDrawerContractTest {
         });
     }
 
-    /// Verifies that navigation drawer groups expose their skin and visible child structure.
-    @Test
-    void navigationDrawerGroupCreatesMaterialSkinAndTogglesChildren() {
-        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
-        M3ListItem buttons = new M3ListItem("Buttons");
-        M3ListItem fabs = new M3ListItem("FABs");
-        group.getItems().addAll(buttons, fabs);
-        Pane root = new Pane(group);
-        Scene scene = new Scene(root);
-
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.applyCss();
-
-        assertInstanceOf(M3NavigationDrawerGroupSkin.class, group.getSkin());
-        assertEquals(0, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
-
-        group.setExpanded(true);
-        root.applyCss();
-        group.layout();
-
-        assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
-        assertEquals(56.0, group.getHeaderItem().getOneLineHeight(), 0.0001);
-        assertEquals(56.0, buttons.getOneLineHeight(), 0.0001);
-        assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
-    }
-
-    /// Verifies that selected child rows indent from the parent while aligning their right edge.
+    /// Verifies selected child indentation, rendered selection, and runtime direction changes.
     @Test
     void navigationDrawerGroupChildSelectionPillIndentsAndAlignsRight() {
         FxTestUtils.runOnFxThread(() -> {
@@ -692,6 +584,21 @@ final class M3NavigationDrawerContractTest {
                     "m3fx-visual",
                     "visual-navigation-drawer-child-selection.png"
             ));
+            drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            assertDrawerGroupChildIndentUsesRightToLeftGeometry(group, bottomSheets);
+
+            drawer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
         });
     }
 
@@ -734,50 +641,6 @@ final class M3NavigationDrawerContractTest {
                     "m3fx-visual",
                     "visual-navigation-drawer-child-selection-rtl.png"
             ));
-        });
-    }
-
-    /// Verifies that selected child rows mirror their indentation after runtime orientation changes.
-    @Test
-    void navigationDrawerGroupChildSelectionPillReflowsAfterRuntimeOrientationChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
-            M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
-            M3ListItem sideSheets = new M3ListItem("Side sheets");
-            group.getItems().addAll(bottomSheets, sideSheets);
-            group.setExpanded(true);
-            M3NavigationDrawer drawer = navigationDrawer(group);
-            drawer.select(bottomSheets);
-            drawer.setPrefWidth(320.0);
-
-            StackPane root = new StackPane(drawer);
-            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 380.0, 260.0);
-
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(380.0, 260.0);
-            root.layout();
-            group.layout();
-            bottomSheets.layout();
-
-            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
-
-            drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            root.applyCss();
-            root.layout();
-            group.layout();
-            bottomSheets.layout();
-
-            assertDrawerGroupChildIndentUsesRightToLeftGeometry(group, bottomSheets);
-
-            drawer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            root.applyCss();
-            root.layout();
-            group.layout();
-            bottomSheets.layout();
-
-            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
         });
     }
 
@@ -975,6 +838,7 @@ final class M3NavigationDrawerContractTest {
     /// Verifies that a constrained drawer owns vertical scrolling and reveals requested destinations.
     @Test
     void navigationDrawerScrollsContentAndRevealsRequestedDestinations() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable DrawerScrollFixture> fixtureReference = new AtomicReference<>();
         try {
             FxTestUtils.runOnFxThreadWhen(() -> {
@@ -1007,6 +871,7 @@ final class M3NavigationDrawerContractTest {
                 Pane root = new Pane(drawer);
                 Scene scene = new Scene(root, 360.0, 180.0);
                 Stage stage = new Stage();
+                stageReference.set(stage);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
                 stage.show();
@@ -1032,7 +897,7 @@ final class M3NavigationDrawerContractTest {
                         () -> "content=" + viewport.getContent().getLayoutBounds()
                                 + ", viewport=" + viewport.getViewportBounds());
                 assertTrue(M3ScrollPane.isSmoothScrollingEnabled(viewport));
-                fixtureReference.set(new DrawerScrollFixture(stage, root, drawer, trash, viewport));
+                fixtureReference.set(new DrawerScrollFixture(root, drawer, trash, viewport));
             }, () -> {
                 DrawerScrollFixture fixture = Objects.requireNonNull(fixtureReference.get());
                 Pane root = fixture.root();
@@ -1064,13 +929,16 @@ final class M3NavigationDrawerContractTest {
                 root.layout();
                 assertTrue(trash.isFocused());
                 assertTrue(viewport.getVvalue() > 0.5, () -> "vvalue=" + viewport.getVvalue());
-                drawer.setAnimationsEnabled(true);
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable DrawerScrollFixture fixture = fixtureReference.get();
                 if (fixture != null) {
-                    fixture.stage().close();
+                    fixture.drawer().setAnimationsEnabled(true);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
                 }
             });
         }
@@ -1249,6 +1117,8 @@ final class M3NavigationDrawerContractTest {
                         Pane root = new Pane(drawer);
                         Scene scene = new Scene(root, 360.0, 160.0);
                         Stage stage = new Stage();
+                        stageReference.set(stage);
+                        rootReference.set(root);
 
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         FxTestUtils.setCssAnimationsEnabled(root, true);
@@ -1263,8 +1133,6 @@ final class M3NavigationDrawerContractTest {
                         assertFalse(headline.getFont().getStyle().contains("Bold"),
                                 () -> "unselected drawer label style=" + headline.getFont().getStyle());
 
-                        stageReference.set(stage);
-                        rootReference.set(root);
                         archiveReference.set(archive);
                         headlineReference.set(headline);
                         selectionContainerReference.set(
@@ -1530,14 +1398,12 @@ final class M3NavigationDrawerContractTest {
 
     /// Retains the nodes used while a drawer reveal waits for a real layout pulse.
     ///
-    /// @param stage the stage owning the rendered drawer
     /// @param root the scene root
     /// @param drawer the drawer under test
     /// @param trash the destination requested before skin creation
     /// @param viewport the drawer-owned scroll viewport
     @NotNullByDefault
     private record DrawerScrollFixture(
-            Stage stage,
             Pane root,
             M3NavigationDrawer drawer,
             M3ListItem trash,

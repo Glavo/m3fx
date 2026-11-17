@@ -19,7 +19,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
@@ -45,6 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tier2Test
 @NotNullByDefault
 final class M3TableViewFocusTraversalTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit before creating controls or windows.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -52,16 +54,15 @@ final class M3TableViewFocusTraversalTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes windows created by focus traversal tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.setScene(null);
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.setScene(null);
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -209,10 +210,11 @@ final class M3TableViewFocusTraversalTest {
     ///
     /// @param root the scene content
     /// @return the shown scene
-    private static Scene show(Parent root) {
+    private Scene show(Parent root) {
         Scene scene = new Scene(root, 320.0, 360.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         Stage stage = new Stage();
+        stages.add(stage);
         stage.setScene(scene);
         stage.show();
         stage.requestFocus();

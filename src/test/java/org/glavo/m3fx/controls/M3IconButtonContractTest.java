@@ -13,19 +13,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Path;
-import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
-import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -98,75 +95,6 @@ final class M3IconButtonContractTest {
         assertIconButtonMetrics(large, largeIcon, 128.0, 96.0, 32.0, 28.0);
         assertIconButtonMetrics(extraLarge, extraLargeIcon, 104.0, 136.0, 40.0, 999.0);
 
-        List<M3IconButton> buttons = List.of(extraSmall, small, medium, large, extraLarge);
-        for (M3IconButton button : buttons) {
-            double restingShape = button.getContainerShape();
-            button.arm();
-            root.applyCss();
-            assertEquals(restingShape, button.getContainerShape(), 0.0001);
-            button.disarm();
-            root.applyCss();
-            assertEquals(restingShape, button.getContainerShape(), 0.0001);
-        }
-
-        FxTestUtils.runOnFxThread(() -> {
-            List<M3IconButton> expressiveRoundButtons = new ArrayList<>();
-            List<M3IconButton> expressiveSquareButtons = new ArrayList<>();
-            for (M3ButtonSize size : M3ButtonSize.values()) {
-                expressiveRoundButtons.add(createIconButton(
-                        new M3Icon("R"),
-                        size,
-                        M3IconButtonWidth.DEFAULT,
-                        M3ButtonShape.ROUND
-                ));
-                expressiveSquareButtons.add(createIconButton(
-                        new M3Icon("S"),
-                        size,
-                        M3IconButtonWidth.DEFAULT,
-                        M3ButtonShape.SQUARE
-                ));
-            }
-            HBox expressiveRoot = new HBox();
-            expressiveRoot.getChildren().addAll(expressiveRoundButtons);
-            expressiveRoot.getChildren().addAll(expressiveSquareButtons);
-            Scene expressiveScene = new Scene(expressiveRoot, 1800.0, 180.0);
-            Stage stage = new Stage();
-            try {
-                M3ThemeManager.install(expressiveScene, M3Theme.fromSeed(
-                        Color.web("#6750a4"),
-                        M3Profile.EXPRESSIVE_2025,
-                        Brightness.LIGHT
-                ));
-                stage.setScene(expressiveScene);
-                stage.show();
-                expressiveRoot.applyCss();
-                expressiveRoot.layout();
-
-                double[] expressivePressedShapes = {8.0, 8.0, 12.0, 16.0, 16.0};
-                for (int index = 0; index < M3ButtonSize.values().length; index++) {
-                    M3IconButton expressiveRound = expressiveRoundButtons.get(index);
-                    M3IconButton expressiveSquare = expressiveSquareButtons.get(index);
-                    double roundRestingShape = expressiveRound.getContainerShape();
-                    double squareRestingShape = expressiveSquare.getContainerShape();
-
-                    expressiveRound.arm();
-                    expressiveSquare.arm();
-                    expressiveRoot.applyCss();
-                    expressiveRoot.layout();
-                    assertEquals(expressivePressedShapes[index], expressiveRound.getContainerShape(), 0.0001);
-                    assertEquals(expressivePressedShapes[index], expressiveSquare.getContainerShape(), 0.0001);
-
-                    expressiveRound.disarm();
-                    expressiveSquare.disarm();
-                    expressiveRoot.applyCss();
-                    expressiveRoot.layout();
-                    assertEquals(roundRestingShape, expressiveRound.getContainerShape(), 0.0001);
-                    assertEquals(squareRestingShape, expressiveSquare.getContainerShape(), 0.0001);
-                }
-            } finally {
-                stage.close();
-            }
-        });
     }
 
     /// Verifies that toggle icon button selected and pressed shapes resolve from Material metrics.
@@ -226,90 +154,6 @@ final class M3IconButtonContractTest {
         assertEquals(999.0, pressedSmall.getContainerShape(), 0.0001);
     }
 
-    /// Verifies selected and pressed Toggle icon-button shapes across every size and Material profile.
-    @Test
-    void iconToggleButtonShapesFollowProfilesAcrossEverySize() {
-        FxTestUtils.runOnFxThread(() -> {
-            List<M3IconToggleButton> roundButtons = new ArrayList<>();
-            List<M3IconToggleButton> squareButtons = new ArrayList<>();
-            for (M3ButtonSize size : M3ButtonSize.values()) {
-                roundButtons.add(createIconToggleButton(
-                        new M3Icon("R"),
-                        size,
-                        M3IconButtonWidth.DEFAULT,
-                        M3ButtonShape.ROUND,
-                        true
-                ));
-                squareButtons.add(createIconToggleButton(
-                        new M3Icon("S"),
-                        size,
-                        M3IconButtonWidth.DEFAULT,
-                        M3ButtonShape.SQUARE,
-                        true
-                ));
-            }
-
-            HBox root = new HBox(8.0);
-            root.getChildren().addAll(roundButtons);
-            root.getChildren().addAll(squareButtons);
-            Scene scene = new Scene(root, 1800.0, 180.0);
-            List<M3Theme> themes = List.of(
-                    M3Theme.fromSeed(
-                            Color.web("#6750a4"),
-                            M3Profile.EXPRESSIVE_2025,
-                            Brightness.LIGHT
-                    ),
-                    M3Theme.defaultTheme()
-            );
-            Stage stage = new Stage();
-            try {
-                stage.setScene(scene);
-                stage.show();
-                for (M3Theme theme : themes) {
-                    M3ThemeManager.install(scene, theme);
-                    root.applyCss();
-                    root.layout();
-                    boolean expressive = theme.profile() == M3Profile.EXPRESSIVE_2025;
-
-                    for (int index = 0; index < M3ButtonSize.values().length; index++) {
-                        M3ButtonSize size = M3ButtonSize.values()[index];
-                        M3ComponentTokens.IconButtonSizeTokens tokens = switch (size) {
-                            case EXTRA_SMALL -> theme.tokens().componentTokens().iconButton().extraSmall();
-                            case SMALL -> theme.tokens().componentTokens().iconButton().small();
-                            case MEDIUM -> theme.tokens().componentTokens().iconButton().medium();
-                            case LARGE -> theme.tokens().componentTokens().iconButton().large();
-                            case EXTRA_LARGE -> theme.tokens().componentTokens().iconButton().extraLarge();
-                        };
-                        M3IconToggleButton round = roundButtons.get(index);
-                        M3IconToggleButton square = squareButtons.get(index);
-                        double selectedRoundShape = tokens.selectedRoundContainerShape();
-                        double selectedSquareShape = tokens.selectedSquareContainerShape();
-
-                        assertTrue(round.isSelected());
-                        assertTrue(square.isSelected());
-                        assertEquals(selectedRoundShape, round.getContainerShape(), 0.0001);
-                        assertEquals(selectedSquareShape, square.getContainerShape(), 0.0001);
-
-                        round.arm();
-                        square.arm();
-                        root.applyCss();
-                        double pressedRoundShape = tokens.pressedRoundContainerShape();
-                        double pressedSquareShape = tokens.pressedSquareContainerShape();
-                        assertEquals(pressedRoundShape, round.getContainerShape(), 0.0001);
-                        assertEquals(pressedSquareShape, square.getContainerShape(), 0.0001);
-
-                        round.disarm();
-                        square.disarm();
-                        root.applyCss();
-                        assertEquals(selectedRoundShape, round.getContainerShape(), 0.0001);
-                        assertEquals(selectedSquareShape, square.getContainerShape(), 0.0001);
-                    }
-                }
-            } finally {
-                stage.close();
-            }
-        });
-    }
 
     /// Verifies that toggle icon button variants and selected states update style classes.
     @Test

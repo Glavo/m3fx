@@ -69,18 +69,21 @@ final class M3FloatingActionButtonTest {
             button.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
             assertDimensions(button, 64.0);
             button.setSkin(new M3FloatingActionButtonSkin(button));
-            assertDimensions(button, 64.0);
-            button.setText("Create a new workspace");
-            double extendedWidth = button.prefWidth(-1);
-            assertTrue(extendedWidth > 64.0);
-            assertEquals(64.0, button.prefHeight(-1));
-            button.setText("Go");
-            assertTrue(button.prefWidth(-1) < extendedWidth);
-            button.setText(" \t\n");
-            assertDimensions(button, 64.0);
-            button.setText(null);
-            assertDimensions(button, 64.0);
-            button.setSkin(null);
+            try {
+                assertDimensions(button, 64.0);
+                button.setText("Create a new workspace");
+                double extendedWidth = button.prefWidth(-1);
+                assertTrue(extendedWidth > 64.0);
+                assertEquals(64.0, button.prefHeight(-1));
+                button.setText("Go");
+                assertTrue(button.prefWidth(-1) < extendedWidth);
+                button.setText(" \t\n");
+                assertDimensions(button, 64.0);
+                button.setText(null);
+                assertDimensions(button, 64.0);
+            } finally {
+                button.setSkin(null);
+            }
         });
     }
 

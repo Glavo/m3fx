@@ -28,6 +28,11 @@ API-name whitelists, or tests of documentation and test infrastructure. Test obs
 Use bounded waits for asynchronous behavior, restore global settings, and close windows in `finally`, including
 when initialization fails. A snapshot should support a behavioral or pixel assertion, not merely create a file.
 
+Register windows as test-owned before showing them and close only those windows, including hidden ones. Cancel
+pulse callbacks on timeout or interruption. Make global motion changes on the FX thread and restore the previous
+value. For dispatched input, verify delivery to an application handler rather than the consumed flag of an event
+that JavaFX may have copied. Assert visible geometry and state instead of scheduler-dependent layout-pass counts.
+
 ## Running Locally
 
 Run commands from the repository root. Unqualified task selectors include matching tasks in the library, demo,

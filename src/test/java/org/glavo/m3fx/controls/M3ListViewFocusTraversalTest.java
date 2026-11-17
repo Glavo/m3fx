@@ -15,7 +15,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -40,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tier2Test
 @NotNullByDefault
 final class M3ListViewFocusTraversalTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// The pseudo-class used to expose keyboard-visible logical row focus.
     private static final PseudoClass FOCUS_VISIBLE = PseudoClass.getPseudoClass("focus-visible");
 
@@ -50,16 +52,15 @@ final class M3ListViewFocusTraversalTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes windows created by focus traversal tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.setScene(null);
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.setScene(null);
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -232,10 +233,11 @@ final class M3ListViewFocusTraversalTest {
     }
 
     /// Shows a focus test scene and performs its initial CSS and layout pass.
-    private static void show(Parent root) {
+    private void show(Parent root) {
         Scene scene = new Scene(root, 320.0, 260.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         Stage stage = new Stage();
+        stages.add(stage);
         stage.setScene(scene);
         stage.show();
         stage.requestFocus();

@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -13,7 +12,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,22 +30,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests focus-visible modality tracking across native, fallback, and custom traversal paths.
 @NotNullByDefault
 final class M3FocusVisibleTrackerTest {
+    /// Stages owned by the current test, including stages hidden before cleanup.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit for focus-visible tracker tests.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Closes real stages opened by focus tests.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : java.util.List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -386,8 +386,9 @@ final class M3FocusVisibleTrackerTest {
     }
 
     /// Shows and lays out a root in a real stage.
-    private static Scene show(HBox root, double width, double height) {
+    private Scene show(HBox root, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);
         stage.show();

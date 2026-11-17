@@ -18,7 +18,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3PresetNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.FxTestUtils;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tier2Test
 @NotNullByDefault
 final class M3FocusTraversalTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit for focus traversal tests.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -46,15 +49,14 @@ final class M3FocusTraversalTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes real windows created by focus traversal tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -747,8 +749,9 @@ final class M3FocusTraversalTest {
     }
 
     /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(Parent root, double width, double height) {
+    private Scene show(Parent root, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);
         stage.show();

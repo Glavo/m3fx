@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
@@ -21,18 +20,22 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies navigation drawer group layout behavior.
+/// Verifies drawer group sizing, property ownership, and accessible keyboard focus.
 @NotNullByDefault
 final class M3NavigationDrawerGroupTest {
     /// The width used for drawer group preferred-height measurement.
@@ -42,7 +45,6 @@ final class M3NavigationDrawerGroupTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Verifies drawer disclosure keys do not steal focus from an embedded text input.
@@ -106,6 +108,8 @@ final class M3NavigationDrawerGroupTest {
                 root.layout();
 
                 drawer.select(group.getHeaderItem());
+                AtomicBoolean bubbled = new AtomicBoolean();
+                root.addEventHandler(KeyEvent.KEY_PRESSED, ignored -> bubbled.set(true));
                 KeyEvent event = new KeyEvent(
                         KeyEvent.KEY_PRESSED,
                         KeyCode.RIGHT.getName(),
@@ -120,7 +124,7 @@ final class M3NavigationDrawerGroupTest {
 
                 assertFalse(group.isExpanded());
                 assertSame(group.getHeaderItem(), drawer.getSelectedItem());
-                assertFalse(event.isConsumed());
+                assertTrue(bubbled.get(), "Modified disclosure keys must reach application handlers");
             } finally {
                 stage.close();
                 drawer.setAnimationsEnabled(true);
@@ -152,6 +156,9 @@ final class M3NavigationDrawerGroupTest {
 
                 drawer.select(editable);
                 editor.requestFocus();
+                assertTrue(editor.isFocused(), () -> "focused=" + scene.getFocusOwner());
+                AtomicBoolean bubbled = new AtomicBoolean();
+                root.addEventHandler(KeyEvent.KEY_TYPED, ignored -> bubbled.set(true));
                 KeyEvent typedEvent = new KeyEvent(
                         KeyEvent.KEY_TYPED,
                         "a",
@@ -166,7 +173,7 @@ final class M3NavigationDrawerGroupTest {
 
                 assertSame(editable, drawer.getSelectedItem());
                 assertTrue(editor.isFocused(), () -> "focused=" + scene.getFocusOwner());
-                assertFalse(typedEvent.isConsumed());
+                assertTrue(bubbled.get(), "Text input keys must reach application handlers");
             } finally {
                 stage.close();
                 drawer.setAnimationsEnabled(true);
@@ -198,12 +205,12 @@ final class M3NavigationDrawerGroupTest {
             root.applyCss();
             root.layout();
 
-            Node disclosureIcon = group.lookup(".m3-disclosure-icon");
+            @Nullable Node disclosureIcon = group.lookup(".m3-disclosure-icon");
             assertTrue(disclosureIcon != null && disclosureIcon.isMouseTransparent());
         });
     }
 
-    /// Verifies expanded child rows contribute to preferred height for scroll pane content sizing.
+    /// Verifies the default skin exposes child metrics and includes expanded rows in preferred height.
     @Test
     void expandedChildRowsContributeToPreferredHeight() {
         FxTestUtils.runOnFxThread(() -> {
@@ -218,6 +225,8 @@ final class M3NavigationDrawerGroupTest {
             root.layout();
 
             try {
+                assertInstanceOf(M3NavigationDrawerGroupSkin.class, group.getSkin());
+                assertEquals(0, group.lookupAll(".m3-navigation-drawer-group-child").size());
                 double collapsedHeight = group.prefHeight(GROUP_WIDTH);
 
                 group.setExpanded(true);
@@ -228,6 +237,9 @@ final class M3NavigationDrawerGroupTest {
                 assertTrue(expandedHeight > collapsedHeight, () -> "collapsed=" + collapsedHeight
                         + ", expanded=" + expandedHeight);
                 assertEquals(2, group.lookupAll("." + "m3-navigation-drawer-group-child").size());
+                assertEquals(56.0, group.getHeaderItem().getOneLineHeight(), 0.0001);
+                assertEquals(56.0, group.getItems().get(0).getOneLineHeight(), 0.0001);
+                assertEquals(32.0, group.getItems().get(0).getHorizontalPadding(), 0.0001);
 
                 FxTestUtils.replaceSkin(group, M3NavigationDrawerGroupSkin::new);
                 root.applyCss();
@@ -305,14 +317,15 @@ final class M3NavigationDrawerGroupTest {
         });
     }
 
-    /// Verifies collapsing a focused drawer child reports the group header as the active focus node.
+    /// Verifies disclosure keys restore header focus from selected or focused children in both directions.
     @Tier2Test
     @Test
     void collapsingFocusedChildReportsHeaderFocus() {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem child = new M3ListItem("Invoices");
+            M3ListItem focusedChild = new M3ListItem("Details");
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Workspaces");
-            group.getItems().add(child);
+            group.getItems().addAll(child, focusedChild);
             group.setExpanded(true);
             M3NavigationDrawer drawer = navigationDrawer(group);
             drawer.setAnimationsEnabled(false);
@@ -339,6 +352,35 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(group.getHeaderItem(), drawer.getSelectedItem());
                 assertTrue(group.getHeaderItem().isFocused(), () -> "focused=" + scene.getFocusOwner());
                 assertSame(group.getHeaderItem(), drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                group.getHeaderItem().fireEvent(keyPressed(KeyCode.RIGHT));
+                assertTrue(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+
+                focusedChild.requestFocus();
+                assertTrue(focusedChild.isFocused());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                focusedChild.fireEvent(keyPressed(KeyCode.LEFT));
+                assertFalse(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+                assertSame(group.getHeaderItem(), drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                group.getHeaderItem().fireEvent(keyPressed(KeyCode.RIGHT));
+                drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                focusedChild.requestFocus();
+                drawer.select(focusedChild);
+                assertTrue(focusedChild.isFocused());
+                focusedChild.fireEvent(keyPressed(KeyCode.RIGHT));
+                assertFalse(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+
+                group.getHeaderItem().fireEvent(keyPressed(KeyCode.LEFT));
+                assertTrue(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
             } finally {
                 stage.close();
                 drawer.setAnimationsEnabled(true);
@@ -413,8 +455,8 @@ final class M3NavigationDrawerGroupTest {
                 root.applyCss();
                 root.layout();
                 drawer.clearSelection();
-                M3ListItem baselineSelection = drawer.getSelectedItem();
-                Node baselineFocusOwner = scene.getFocusOwner();
+                @Nullable M3ListItem baselineSelection = drawer.getSelectedItem();
+                @Nullable Node baselineFocusOwner = scene.getFocusOwner();
 
                 assertFalse(M3Accessible.showAccessibleActionTarget(group, hiddenAction));
                 assertFalse(group.isExpanded());

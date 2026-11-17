@@ -14,7 +14,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3PresentationActivity;
 import org.glavo.m3fx.testing.Tier2Test;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -40,6 +40,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @NotNullByDefault
 @Tier2Test
 final class M3PopupReachabilityTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts JavaFX before popup reachability tests create windows.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -47,13 +50,14 @@ final class M3PopupReachabilityTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes windows left by popup reachability tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeWindows() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -81,6 +85,7 @@ final class M3PopupReachabilityTest {
                     tooltipOwner
             );
             Stage stage = new Stage();
+            stages.add(stage);
 
             try {
                 stage.setScene(new Scene(root, 640.0, 480.0));
@@ -130,6 +135,7 @@ final class M3PopupReachabilityTest {
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             menuButton.setAnimationsEnabled(false);
             Stage stage = new Stage();
+            stages.add(stage);
             try {
                 stage.setScene(scene);
                 stage.show();
@@ -146,6 +152,7 @@ final class M3PopupReachabilityTest {
                         menuButton::showMenu, menuButton::isShowing,
                         () -> subScene.setDisable(true), "Menu", "SubScene becomes disabled");
             } finally {
+                menuButton.hideMenu();
                 stage.close();
             }
         });
@@ -178,6 +185,7 @@ final class M3PopupReachabilityTest {
             VBox root = new VBox(16.0, menuOwner, nestedMenuOwner, dateOwner, timeOwner, rangeOwner);
             root.setPadding(new Insets(24.0));
             Stage stage = new Stage();
+            stages.add(stage);
 
             try {
                 Scene scene = new Scene(root, 820.0, 620.0);

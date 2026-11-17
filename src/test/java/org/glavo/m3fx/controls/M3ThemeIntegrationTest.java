@@ -219,298 +219,302 @@ final class M3ThemeIntegrationTest {
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneControlSceneReady(
-                stageReference
-        ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
-            M3Button filledButton = new M3Button("Filled");
-            M3Button tonalButton = new M3Button("Tonal", M3ButtonVariant.TONAL);
-            M3Button outlinedButton = new M3Button("Outlined", M3ButtonVariant.OUTLINED);
-            M3Button textButton = new M3Button("Text", M3ButtonVariant.TEXT);
-            M3Button elevatedButton = new M3Button("Elevated", M3ButtonVariant.ELEVATED);
-            M3IconButton iconButton = new M3IconButton(new M3Icon("I"));
-            M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
-            iconToggleButton.setSelected(true);
-            M3ButtonGroup buttonGroup = buttonGroup(
-                    new M3Button("One", M3ButtonVariant.TONAL),
-                    new M3Button("Two", M3ButtonVariant.TONAL)
-            );
-            M3SplitButton splitButton = splitButton("Split", new M3MenuItem("Split item"));
-            M3FloatingActionButton smallFab = new M3FloatingActionButton(new M3Icon("+"));
-            smallFab.setSize(M3FloatingActionButtonSize.SMALL);
-            M3FloatingActionButton largeFab = new M3FloatingActionButton(new M3Icon("*"));
-            largeFab.setSize(M3FloatingActionButtonSize.LARGE);
-            largeFab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
-            M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.getItems().addAll(new M3FloatingActionButton("A"), new M3FloatingActionButton("B"));
-            fabMenu.show();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(() -> standaloneControlSceneReady(
+                    stageReference
+            ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
+                M3Button filledButton = new M3Button("Filled");
+                M3Button tonalButton = new M3Button("Tonal", M3ButtonVariant.TONAL);
+                M3Button outlinedButton = new M3Button("Outlined", M3ButtonVariant.OUTLINED);
+                M3Button textButton = new M3Button("Text", M3ButtonVariant.TEXT);
+                M3Button elevatedButton = new M3Button("Elevated", M3ButtonVariant.ELEVATED);
+                M3IconButton iconButton = new M3IconButton(new M3Icon("I"));
+                M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
+                iconToggleButton.setSelected(true);
+                M3ButtonGroup buttonGroup = buttonGroup(
+                        new M3Button("One", M3ButtonVariant.TONAL),
+                        new M3Button("Two", M3ButtonVariant.TONAL)
+                );
+                M3SplitButton splitButton = splitButton("Split", new M3MenuItem("Split item"));
+                M3FloatingActionButton smallFab = new M3FloatingActionButton(new M3Icon("+"));
+                smallFab.setSize(M3FloatingActionButtonSize.SMALL);
+                M3FloatingActionButton largeFab = new M3FloatingActionButton(new M3Icon("*"));
+                largeFab.setSize(M3FloatingActionButtonSize.LARGE);
+                largeFab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+                M3FabMenu fabMenu = new M3FabMenu();
+                fabMenu.getItems().addAll(new M3FloatingActionButton("A"), new M3FloatingActionButton("B"));
+                fabMenu.show();
 
-            M3CheckBox checkBox = new M3CheckBox("Check");
-            checkBox.setSelected(true);
-            M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
-            indeterminateCheckBox.setIndeterminate(true);
-            M3RadioButton radioButton = new M3RadioButton("Radio");
-            radioButton.setSelected(true);
-            M3Switch switchControl = new M3Switch("Switch");
-            switchControl.setSelected(true);
-            M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
-            slider.setPrefWidth(220.0);
-            M3SegmentedButton segmentedDay = new M3SegmentedButton("Day");
-            M3SegmentedButton segmentedWeek = new M3SegmentedButton("Week");
-            M3SegmentedButton segmentedMonth = new M3SegmentedButton("Month");
-            M3SegmentedButtonGroup segmentedButtonGroup = segmentedButtonGroup(
-                    segmentedDay,
-                    segmentedWeek,
-                    segmentedMonth
-            );
-            segmentedButtonGroup.selectIndex(1);
-            M3FilterChip filterChip = new M3FilterChip("Filter");
-            filterChip.setSelected(true);
-            M3ChipGroup chipGroup = chipGroup(
-                    new M3AssistChip("Assist"),
-                    filterChip,
-                    new M3InputChip("Input")
-            );
-            M3IconToggleButtonGroup iconToggleButtonGroup = iconToggleButtonGroup(
-                    new M3IconToggleButton("A"),
-                    new M3IconToggleButton("B"),
-                    new M3IconToggleButton("C")
-            );
-            iconToggleButtonGroup.selectIndex(0);
+                M3CheckBox checkBox = new M3CheckBox("Check");
+                checkBox.setSelected(true);
+                M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
+                indeterminateCheckBox.setIndeterminate(true);
+                M3RadioButton radioButton = new M3RadioButton("Radio");
+                radioButton.setSelected(true);
+                M3Switch switchControl = new M3Switch("Switch");
+                switchControl.setSelected(true);
+                M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
+                slider.setPrefWidth(220.0);
+                M3SegmentedButton segmentedDay = new M3SegmentedButton("Day");
+                M3SegmentedButton segmentedWeek = new M3SegmentedButton("Week");
+                M3SegmentedButton segmentedMonth = new M3SegmentedButton("Month");
+                M3SegmentedButtonGroup segmentedButtonGroup = segmentedButtonGroup(
+                        segmentedDay,
+                        segmentedWeek,
+                        segmentedMonth
+                );
+                segmentedButtonGroup.selectIndex(1);
+                M3FilterChip filterChip = new M3FilterChip("Filter");
+                filterChip.setSelected(true);
+                M3ChipGroup chipGroup = chipGroup(
+                        new M3AssistChip("Assist"),
+                        filterChip,
+                        new M3InputChip("Input")
+                );
+                M3IconToggleButtonGroup iconToggleButtonGroup = iconToggleButtonGroup(
+                        new M3IconToggleButton("A"),
+                        new M3IconToggleButton("B"),
+                        new M3IconToggleButton("C")
+                );
+                iconToggleButtonGroup.selectIndex(0);
 
-            M3ListItem listItem = new M3ListItem("List item");
-            listItem.setOverlineText("Overline");
-            listItem.setSupportingText("Supporting");
-            listItem.setTrailingIcon("T");
-            listItem.setSelected(true);
-            M3ListPane listPane = listPane(new M3ListItem("Alpha"), new M3ListItem("Beta"));
-            listPane.setSelectionMode(M3SelectionMode.SINGLE);
-            listPane.selectIndex(0);
-            M3ListView<String> listView = listView("Alpha", "Beta", "Gamma", "Delta");
-            listView.setSelectionMode(M3SelectionMode.SINGLE);
-            listView.selectIndex(1);
-            listView.setPrefSize(240.0, 160.0);
-            M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
-            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
-            M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
+                M3ListItem listItem = new M3ListItem("List item");
+                listItem.setOverlineText("Overline");
+                listItem.setSupportingText("Supporting");
+                listItem.setTrailingIcon("T");
+                listItem.setSelected(true);
+                M3ListPane listPane = listPane(new M3ListItem("Alpha"), new M3ListItem("Beta"));
+                listPane.setSelectionMode(M3SelectionMode.SINGLE);
+                listPane.selectIndex(0);
+                M3ListView<String> listView = listView("Alpha", "Beta", "Gamma", "Delta");
+                listView.setSelectionMode(M3SelectionMode.SINGLE);
+                listView.selectIndex(1);
+                listView.setPrefSize(240.0, 160.0);
+                M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
+                M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+                M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
 
-            M3NavigationItem navigationHome = new M3NavigationItem("Home", new M3Icon("H"));
-            M3NavigationItem navigationSettings = new M3NavigationItem("Settings", new M3Icon("S"));
-            M3NavigationBar navigationBar = navigationBar(navigationHome, navigationSettings);
-            navigationBar.selectIndex(0);
-            M3NavigationRail navigationRail = navigationRail(
-                    new M3NavigationItem("Mail", new M3Icon("M")),
-                    new M3NavigationItem("Tasks", new M3Icon("T"))
-            );
-            navigationRail.selectIndex(1);
-            M3NavigationDrawerGroup navigationDrawerGroup = new M3NavigationDrawerGroup("Group");
-            navigationDrawerGroup.getItems().setAll(new M3ListItem("Child A"), new M3ListItem("Child B"));
-            navigationDrawerGroup.setExpanded(true);
-            M3NavigationDrawer navigationDrawer = navigationDrawer(
-                    new M3ListItem("Inbox"),
-                    navigationDrawerGroup,
-                    new M3ListItem("Archive")
-            );
-            navigationDrawer.selectIndex(0);
-            M3TabBar tabBar = tabBar(new M3Tab("Tab A"), new M3Tab("Tab B"), new M3Tab("Tab C"));
-            tabBar.selectIndex(1);
-            M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("List section");
-            M3MenuSectionHeader menuSectionHeader = new M3MenuSectionHeader("Menu section");
+                M3NavigationItem navigationHome = new M3NavigationItem("Home", new M3Icon("H"));
+                M3NavigationItem navigationSettings = new M3NavigationItem("Settings", new M3Icon("S"));
+                M3NavigationBar navigationBar = navigationBar(navigationHome, navigationSettings);
+                navigationBar.selectIndex(0);
+                M3NavigationRail navigationRail = navigationRail(
+                        new M3NavigationItem("Mail", new M3Icon("M")),
+                        new M3NavigationItem("Tasks", new M3Icon("T"))
+                );
+                navigationRail.selectIndex(1);
+                M3NavigationDrawerGroup navigationDrawerGroup = new M3NavigationDrawerGroup("Group");
+                navigationDrawerGroup.getItems().setAll(new M3ListItem("Child A"), new M3ListItem("Child B"));
+                navigationDrawerGroup.setExpanded(true);
+                M3NavigationDrawer navigationDrawer = navigationDrawer(
+                        new M3ListItem("Inbox"),
+                        navigationDrawerGroup,
+                        new M3ListItem("Archive")
+                );
+                navigationDrawer.selectIndex(0);
+                M3TabBar tabBar = tabBar(new M3Tab("Tab A"), new M3Tab("Tab B"), new M3Tab("Tab C"));
+                tabBar.selectIndex(1);
+                M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("List section");
+                M3MenuSectionHeader menuSectionHeader = new M3MenuSectionHeader("Menu section");
 
-            M3Text text = new M3Text("Text", M3TextRole.BODY_LARGE);
-            M3Avatar avatar = new M3Avatar("A");
-            M3Badge badge = new M3Badge("7");
-            M3BadgedBox badgedBox = new M3BadgedBox(new M3Icon("N"), new M3Badge("3"));
-            M3Divider horizontalDivider = new M3Divider();
-            horizontalDivider.setPrefWidth(180.0);
-            M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
-            verticalDivider.setPrefHeight(80.0);
-            M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
-            M3Surface surface = surface(new Label("Surface"));
-            surface.setVariant(M3SurfaceVariant.CONTAINER);
-            M3Card card = new M3Card(new Label("Card"), M3CardVariant.FILLED);
-            M3Scrim scrim = new M3Scrim();
-            scrim.setPrefSize(120.0, 80.0);
-            M3BottomSheet bottomSheet = bottomSheet("Bottom sheet", new Label("Sheet content"), new M3Button("Done"));
-            M3SideSheet sideSheet = sideSheet("Side sheet", new Label("Sheet content"), new M3Button("Close"));
-            M3Carousel carousel = carousel(
-                    new M3Card(new Label("One")),
-                    new M3Card(new Label("Two")),
-                    new M3Card(new Label("Three"))
-            );
-            carousel.selectIndex(1);
-            carousel.setPrefSize(360.0, 150.0);
+                M3Text text = new M3Text("Text", M3TextRole.BODY_LARGE);
+                M3Avatar avatar = new M3Avatar("A");
+                M3Badge badge = new M3Badge("7");
+                M3BadgedBox badgedBox = new M3BadgedBox(new M3Icon("N"), new M3Badge("3"));
+                M3Divider horizontalDivider = new M3Divider();
+                horizontalDivider.setPrefWidth(180.0);
+                M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
+                verticalDivider.setPrefHeight(80.0);
+                M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
+                M3Surface surface = surface(new Label("Surface"));
+                surface.setVariant(M3SurfaceVariant.CONTAINER);
+                M3Card card = new M3Card(new Label("Card"), M3CardVariant.FILLED);
+                M3Scrim scrim = new M3Scrim();
+                scrim.setPrefSize(120.0, 80.0);
+                M3BottomSheet bottomSheet = bottomSheet("Bottom sheet", new Label("Sheet content"), new M3Button("Done"));
+                M3SideSheet sideSheet = sideSheet("Side sheet", new Label("Sheet content"), new M3Button("Close"));
+                M3Carousel carousel = carousel(
+                        new M3Card(new Label("One")),
+                        new M3Card(new Label("Two")),
+                        new M3Card(new Label("Three"))
+                );
+                carousel.selectIndex(1);
+                carousel.setPrefSize(360.0, 150.0);
 
-            M3TextField textField = new M3TextField("Text");
-            M3PasswordField passwordField = new M3PasswordField("Secret");
-            M3TextArea textArea = new M3TextArea("Multiline");
-            textArea.setPrefRowCount(3);
-            M3TextInputLayout textInputLayout = new M3TextInputLayout(new M3TextField("Wrapped"));
-            textInputLayout.setLabelText("Label");
-            textInputLayout.setSupportingText("Supporting");
-            M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setText("Query");
-            searchBar.setActive(true);
-            M3SearchView searchView = searchView(
-                    "Search view",
-                    new M3ListItem("Result A"),
-                    new M3ListItem("Result B")
-            );
-            searchView.setActive(true);
-            searchView.setPrefSize(320.0, 180.0);
-            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 6, 27));
-            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
-                    LocalDate.of(2026, 6, 27),
-                    LocalDate.of(2026, 6, 29)
-            );
-            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
-            M3DatePickerField datePickerField = new M3DatePickerField();
-            M3TimePickerField timePickerField = new M3TimePickerField();
-            M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
+                M3TextField textField = new M3TextField("Text");
+                M3PasswordField passwordField = new M3PasswordField("Secret");
+                M3TextArea textArea = new M3TextArea("Multiline");
+                textArea.setPrefRowCount(3);
+                M3TextInputLayout textInputLayout = new M3TextInputLayout(new M3TextField("Wrapped"));
+                textInputLayout.setLabelText("Label");
+                textInputLayout.setSupportingText("Supporting");
+                M3SearchBar searchBar = new M3SearchBar("Search");
+                searchBar.setText("Query");
+                searchBar.setActive(true);
+                M3SearchView searchView = searchView(
+                        "Search view",
+                        new M3ListItem("Result A"),
+                        new M3ListItem("Result B")
+                );
+                searchView.setActive(true);
+                searchView.setPrefSize(320.0, 180.0);
+                M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 6, 27));
+                M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                        LocalDate.of(2026, 6, 27),
+                        LocalDate.of(2026, 6, 29)
+                );
+                M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
+                M3DatePickerField datePickerField = new M3DatePickerField();
+                M3TimePickerField timePickerField = new M3TimePickerField();
+                M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
 
-            M3ProgressBar determinateProgressBar = new M3ProgressBar(0.62);
-            determinateProgressBar.setPrefWidth(220.0);
-            M3ProgressBar indeterminateProgressBar = new M3ProgressBar();
-            indeterminateProgressBar.setPrefWidth(220.0);
-            M3ProgressIndicator determinateProgressIndicator = new M3ProgressIndicator(0.62);
-            M3ProgressIndicator indeterminateProgressIndicator = new M3ProgressIndicator();
-            M3LoadingIndicator defaultLoadingIndicator = new M3LoadingIndicator();
-            M3LoadingIndicator containedLoadingIndicator = new M3LoadingIndicator();
-            containedLoadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
+                M3ProgressBar determinateProgressBar = new M3ProgressBar(0.62);
+                determinateProgressBar.setPrefWidth(220.0);
+                M3ProgressBar indeterminateProgressBar = new M3ProgressBar();
+                indeterminateProgressBar.setPrefWidth(220.0);
+                M3ProgressIndicator determinateProgressIndicator = new M3ProgressIndicator(0.62);
+                M3ProgressIndicator indeterminateProgressIndicator = new M3ProgressIndicator();
+                M3LoadingIndicator defaultLoadingIndicator = new M3LoadingIndicator();
+                M3LoadingIndicator containedLoadingIndicator = new M3LoadingIndicator();
+                containedLoadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
 
-            M3Banner banner = banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
-            M3OverlayPane overlayPane = new M3OverlayPane();
-            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
-            M3DialogPane dialogPane = new M3DialogPane();
-            dialogPane.setHeaderText("Dialog");
-            dialogPane.setContentText("Dialog content");
-            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
-            okAction.setDefaultButton(true);
-            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
-            cancelAction.setCancelButton(true);
-            dialogPane.getActions().setAll(okAction, cancelAction);
-            M3TopAppBar topAppBar = topAppBar(
-                    "Top app bar",
-                    M3TopAppBarVariant.MEDIUM,
-                    new M3IconButton(new M3Icon("M")),
-                    new M3IconButton(new M3Icon("S"))
-            );
-            topAppBar.setScrolledUnder(true);
-            M3BottomAppBar bottomAppBar = bottomAppBar(
-                    M3BottomAppBarFloatingActionAlignment.END,
-                    new M3FloatingActionButton(new M3Icon("+")),
-                    new M3IconButton(new M3Icon("A")),
-                    new M3IconButton(new M3Icon("B"))
-            );
-            M3Toolbar toolbar = toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
-            toolbar.setVariant(M3ToolbarVariant.FLOATING);
-            M3FormRow formRow = new M3FormRow("Field", "Supporting", new M3TextField("Value"));
-            M3FormSection formSection = formSection("Section", "Supporting", formRow);
-            M3FormPane formPane = formPane(formSection);
-            M3ValidationSummary validationSummary = new M3ValidationSummary();
-            validationSummary.setShowWhenValid(true);
+                M3Banner banner = banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
+                M3OverlayPane overlayPane = new M3OverlayPane();
+                overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
+                M3DialogPane dialogPane = new M3DialogPane();
+                dialogPane.setHeaderText("Dialog");
+                dialogPane.setContentText("Dialog content");
+                M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+                okAction.setDefaultButton(true);
+                M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+                cancelAction.setCancelButton(true);
+                dialogPane.getActions().setAll(okAction, cancelAction);
+                M3TopAppBar topAppBar = topAppBar(
+                        "Top app bar",
+                        M3TopAppBarVariant.MEDIUM,
+                        new M3IconButton(new M3Icon("M")),
+                        new M3IconButton(new M3Icon("S"))
+                );
+                topAppBar.setScrolledUnder(true);
+                M3BottomAppBar bottomAppBar = bottomAppBar(
+                        M3BottomAppBarFloatingActionAlignment.END,
+                        new M3FloatingActionButton(new M3Icon("+")),
+                        new M3IconButton(new M3Icon("A")),
+                        new M3IconButton(new M3Icon("B"))
+                );
+                M3Toolbar toolbar = toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
+                toolbar.setVariant(M3ToolbarVariant.FLOATING);
+                M3FormRow formRow = new M3FormRow("Field", "Supporting", new M3TextField("Value"));
+                M3FormSection formSection = formSection("Section", "Supporting", formRow);
+                M3FormPane formPane = formPane(formSection);
+                M3ValidationSummary validationSummary = new M3ValidationSummary();
+                validationSummary.setShowWhenValid(true);
 
-            FlowPane root = new FlowPane(
-                    12.0,
-                    12.0,
-                    filledButton,
-                    tonalButton,
-                    outlinedButton,
-                    textButton,
-                    elevatedButton,
-                    iconButton,
-                    iconToggleButton,
-                    buttonGroup,
-                    splitButton,
-                    smallFab,
-                    largeFab,
-                    fabMenu,
-                    checkBox,
-                    indeterminateCheckBox,
-                    radioButton,
-                    switchControl,
-                    slider,
-                    segmentedButtonGroup,
-                    chipGroup,
-                    iconToggleButtonGroup,
-                    listItem,
-                    listPane,
-                    listView,
-                    menu,
-                    menuButton,
-                    navigationBar,
-                    navigationRail,
-                    navigationDrawer,
-                    tabBar,
-                    listSectionHeader,
-                    menuSectionHeader,
-                    text,
-                    avatar,
-                    badge,
-                    badgedBox,
-                    horizontalDivider,
-                    verticalDivider,
-                    disclosureIcon,
-                    surface,
-                    card,
-                    scrim,
-                    bottomSheet,
-                    sideSheet,
-                    carousel,
-                    textField,
-                    passwordField,
-                    textArea,
-                    textInputLayout,
-                    searchBar,
-                    searchView,
-                    datePicker,
-                    dateRangePicker,
-                    timePicker,
-                    datePickerField,
-                    timePickerField,
-                    dateRangePickerField,
-                    determinateProgressBar,
-                    indeterminateProgressBar,
-                    determinateProgressIndicator,
-                    indeterminateProgressIndicator,
-                    defaultLoadingIndicator,
-                    containedLoadingIndicator,
-                    banner,
-                    dialogPane,
-                    topAppBar,
-                    bottomAppBar,
-                    toolbar,
-                    formPane,
-                    validationSummary
-            );
-            root.setPrefWrapLength(1180.0);
-            overlayPane.setContent(root);
-            Scene scene = new Scene(overlayPane, 1180.0, 900.0);
-            Stage stage = new Stage();
+                FlowPane root = new FlowPane(
+                        12.0,
+                        12.0,
+                        filledButton,
+                        tonalButton,
+                        outlinedButton,
+                        textButton,
+                        elevatedButton,
+                        iconButton,
+                        iconToggleButton,
+                        buttonGroup,
+                        splitButton,
+                        smallFab,
+                        largeFab,
+                        fabMenu,
+                        checkBox,
+                        indeterminateCheckBox,
+                        radioButton,
+                        switchControl,
+                        slider,
+                        segmentedButtonGroup,
+                        chipGroup,
+                        iconToggleButtonGroup,
+                        listItem,
+                        listPane,
+                        listView,
+                        menu,
+                        menuButton,
+                        navigationBar,
+                        navigationRail,
+                        navigationDrawer,
+                        tabBar,
+                        listSectionHeader,
+                        menuSectionHeader,
+                        text,
+                        avatar,
+                        badge,
+                        badgedBox,
+                        horizontalDivider,
+                        verticalDivider,
+                        disclosureIcon,
+                        surface,
+                        card,
+                        scrim,
+                        bottomSheet,
+                        sideSheet,
+                        carousel,
+                        textField,
+                        passwordField,
+                        textArea,
+                        textInputLayout,
+                        searchBar,
+                        searchView,
+                        datePicker,
+                        dateRangePicker,
+                        timePicker,
+                        datePickerField,
+                        timePickerField,
+                        dateRangePickerField,
+                        determinateProgressBar,
+                        indeterminateProgressBar,
+                        determinateProgressIndicator,
+                        indeterminateProgressIndicator,
+                        defaultLoadingIndicator,
+                        containedLoadingIndicator,
+                        banner,
+                        dialogPane,
+                        topAppBar,
+                        bottomAppBar,
+                        toolbar,
+                        formPane,
+                        validationSummary
+                );
+                root.setPrefWrapLength(1180.0);
+                overlayPane.setContent(root);
+                Scene scene = new Scene(overlayPane, 1180.0, 900.0);
+                Stage stage = new Stage();
 
-            stageReference.set(stage);
-            menuButtonReference.set(menuButton);
-            subMenuItemReference.set(subMenuItem);
-            stage.setScene(scene);
-            stage.show();
-            overlayPane.showSnackbar(new M3Snackbar("Hosted snackbar"));
-            overlayPane.applyCss();
-            overlayPane.layout();
-            menuButton.showMenu();
-            subMenuItem.showSubMenu();
-        }, () -> {
-            @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
-            if (subMenuItem != null) {
-                subMenuItem.hideSubMenu();
-            }
-            @Nullable M3MenuButton menuButton = menuButtonReference.get();
-            if (menuButton != null) {
-                menuButton.hideMenu();
-            }
-            @Nullable Stage stage = stageReference.get();
-            if (stage != null) {
-                stage.close();
-            }
-        });
+                stageReference.set(stage);
+                menuButtonReference.set(menuButton);
+                subMenuItemReference.set(subMenuItem);
+                stage.setScene(scene);
+                stage.show();
+                overlayPane.showSnackbar(new M3Snackbar("Hosted snackbar"));
+                overlayPane.applyCss();
+                overlayPane.layout();
+                menuButton.showMenu();
+                subMenuItem.showSubMenu();
+            }, () -> assertTrue(standaloneControlSceneReady(stageReference)));
+        } finally {
+            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+                @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                if (subMenuItem != null) {
+                    subMenuItem.hideSubMenu();
+                }
+                @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
@@ -577,29 +581,33 @@ final class M3ThemeIntegrationTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3InternalIcon> iconReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
-                STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
-                    M3SearchBar searchBar = new M3SearchBar("Search");
-                    VBox root = new VBox(searchBar);
-                    Scene scene = new Scene(root, 360.0, 120.0);
-                    Stage stage = new Stage();
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
+                    STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
+                        M3SearchBar searchBar = new M3SearchBar("Search");
+                        VBox root = new VBox(searchBar);
+                        Scene scene = new Scene(root, 360.0, 120.0);
+                        Stage stage = new Stage();
 
-                    stageReference.set(stage);
-                    iconReference.set(assertInstanceOf(M3InternalIcon.class, searchBar.getLeading()));
-                    stage.setScene(scene);
-                    stage.show();
-                    root.applyCss();
-                    root.layout();
-                }, () -> {
-                    M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
-                    Paint fill = icon.getPath().getFill();
-                    assertEquals(Color.rgb(29, 27, 32), fill, "standalone internal icon fallback fill");
-
-                    Stage stage = stageReference.get();
-                    if (stage != null) {
-                        stage.close();
-                    }
-                });
+                        stageReference.set(stage);
+                        iconReference.set(assertInstanceOf(M3InternalIcon.class, searchBar.getLeading()));
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+                    }, () -> {
+                        M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
+                        @Nullable Paint fill = icon.getPath().getFill();
+                        assertEquals(Color.rgb(29, 27, 32), fill, "standalone internal icon fallback fill");
+                    });
+        } finally {
+            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that component metric tokens preserve application-bound JavaFX layout properties.
@@ -1627,36 +1635,47 @@ final class M3ThemeIntegrationTest {
         AtomicReference<String> stateReference = new AtomicReference<>("owner stage not created");
         AtomicBoolean showRequested = new AtomicBoolean();
         P picker = field.getPicker();
-        FxTestUtils.runOnFxThreadWhenStable(
-                () -> {
-                    @Nullable Stage stage = stageReference.get();
-                    @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
-                    stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
-                            + ", screenBounds=" + screenBounds
-                            + ", showRequested=" + showRequested.get()
-                            + ", fieldShowing=" + field.isShowing()
-                            + ", pickerScene=" + picker.getScene()
-                            + ", pickerSkin=" + picker.getSkin());
-                    if (stage == null || !stage.isShowing() || screenBounds == null) {
-                        return false;
-                    }
-                    if (showRequested.compareAndSet(false, true)) {
-                        field.showPicker();
-                        return false;
-                    }
-                    return field.isShowing() && pickerControlReady(picker);
-                },
-                STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
-                stateReference::get,
-                () -> stageReference.set(showStandalonePickerOwner(field)),
-                () -> {
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable Stage stage = stageReference.get();
+                        @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
+                        stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
+                                + ", screenBounds=" + screenBounds
+                                + ", showRequested=" + showRequested.get()
+                                + ", fieldShowing=" + field.isShowing()
+                                + ", pickerScene=" + picker.getScene()
+                                + ", pickerSkin=" + picker.getSkin());
+                        if (stage == null || !stage.isShowing() || screenBounds == null) {
+                            return false;
+                        }
+                        if (showRequested.compareAndSet(false, true)) {
+                            field.showPicker();
+                            return false;
+                        }
+                        return field.isShowing() && pickerControlReady(picker);
+                    },
+                    STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
+                    stateReference::get,
+                    () -> {
+                        Stage stage = new Stage();
+                        stageReference.set(stage);
+                        showStandalonePickerOwner(stage, field);
+                    },
+                    () -> assertTrue(field.isShowing())
+            );
+        } finally {
+            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+                try {
                     field.hidePicker();
+                } finally {
                     @Nullable Stage stage = stageReference.get();
                     if (stage != null) {
                         stage.close();
                     }
                 }
-        );
+            });
+        }
     }
 
     /// Verifies one date-range picker popup reaches a renderable fallback-styled state in isolation.
@@ -1667,47 +1686,56 @@ final class M3ThemeIntegrationTest {
         AtomicReference<String> stateReference = new AtomicReference<>("owner stage not created");
         AtomicBoolean showRequested = new AtomicBoolean();
         M3DateRangePicker picker = field.getPicker();
-        FxTestUtils.runOnFxThreadWhenStable(
-                () -> {
-                    @Nullable Stage stage = stageReference.get();
-                    @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
-                    stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
-                            + ", screenBounds=" + screenBounds
-                            + ", showRequested=" + showRequested.get()
-                            + ", fieldShowing=" + field.isShowing()
-                            + ", pickerScene=" + picker.getScene()
-                            + ", pickerSkin=" + picker.getSkin());
-                    if (stage == null || !stage.isShowing() || screenBounds == null) {
-                        return false;
-                    }
-                    if (showRequested.compareAndSet(false, true)) {
-                        field.showPicker();
-                        return false;
-                    }
-                    return field.isShowing() && pickerControlReady(picker);
-                },
-                STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
-                stateReference::get,
-                () -> stageReference.set(showStandalonePickerOwner(field)),
-                () -> {
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable Stage stage = stageReference.get();
+                        @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
+                        stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
+                                + ", screenBounds=" + screenBounds
+                                + ", showRequested=" + showRequested.get()
+                                + ", fieldShowing=" + field.isShowing()
+                                + ", pickerScene=" + picker.getScene()
+                                + ", pickerSkin=" + picker.getSkin());
+                        if (stage == null || !stage.isShowing() || screenBounds == null) {
+                            return false;
+                        }
+                        if (showRequested.compareAndSet(false, true)) {
+                            field.showPicker();
+                            return false;
+                        }
+                        return field.isShowing() && pickerControlReady(picker);
+                    },
+                    STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
+                    stateReference::get,
+                    () -> {
+                        Stage stage = new Stage();
+                        stageReference.set(stage);
+                        showStandalonePickerOwner(stage, field);
+                    },
+                    () -> assertTrue(field.isShowing())
+            );
+        } finally {
+            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+                try {
                     field.hidePicker();
+                } finally {
                     @Nullable Stage stage = stageReference.get();
                     if (stage != null) {
                         stage.close();
                     }
                 }
-        );
+            });
+        }
     }
 
-    /// Creates and shows a standalone owner window for one picker field.
-    private static Stage showStandalonePickerOwner(Control field) {
+    /// Shows a standalone owner window for one picker field.
+    private static void showStandalonePickerOwner(Stage stage, Control field) {
         VBox root = new VBox(field);
-        Stage stage = new Stage();
         stage.setScene(new Scene(root, 560.0, 360.0));
         stage.show();
         root.applyCss();
         root.layout();
-        return stage;
     }
 
     /// Verifies one Region control against generated theme CSS layout metrics.

@@ -149,8 +149,6 @@ final class M3TokenFactoryTest {
     /// Verifies that public token factories reject non-finite values before rendering.
     @Test
     void rejectsNonFiniteTokenValues() {
-        assertThrows(IllegalArgumentException.class, () -> M3Density.of(Double.NaN));
-        assertThrows(IllegalArgumentException.class, () -> M3Density.standard().compact(Double.POSITIVE_INFINITY));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> M3ElevationTokens.builder().level1(Double.POSITIVE_INFINITY)

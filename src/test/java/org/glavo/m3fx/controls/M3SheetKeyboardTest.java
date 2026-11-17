@@ -13,7 +13,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tier2Test
 @NotNullByDefault
 final class M3SheetKeyboardTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit for sheet keyboard tests.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -42,15 +45,14 @@ final class M3SheetKeyboardTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes real windows created by sheet keyboard tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -432,14 +434,16 @@ final class M3SheetKeyboardTest {
             editor.requestFocus();
             assertTrue(editor.isFocused(), "sheet content should own focus before modified shortcuts");
 
+            List<KeyCode> unhandledKeys = new ArrayList<>();
+            root.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
             KeyEvent controlTab = keyEvent(KeyCode.TAB, false, true, false, false);
             sheet.fireEvent(controlTab);
-            assertFalse(controlTab.isConsumed(), "Ctrl+Tab should remain available to application shortcuts");
+            assertEquals(List.of(KeyCode.TAB), unhandledKeys, "Ctrl+Tab should reach application shortcuts");
             assertTrue(editor.isFocused(), "Ctrl+Tab should not be converted into modal focus traversal");
 
             KeyEvent altF6 = keyEvent(KeyCode.F6, false, false, true, false);
             sheet.fireEvent(altF6);
-            assertFalse(altF6.isConsumed(), "Alt+F6 should remain available to platform or application shortcuts");
+            assertEquals(List.of(KeyCode.TAB, KeyCode.F6), unhandledKeys, "Alt+F6 should reach application shortcuts");
             assertTrue(editor.isFocused(), "Alt+F6 should not be converted into modal focus traversal");
         }));
     }
@@ -466,10 +470,12 @@ final class M3SheetKeyboardTest {
             assertTrue(action.isFocused(), "modal bottom sheet action should accept focus before changing variant");
 
             sheet.setVariant(M3SheetVariant.STANDARD);
+            List<KeyCode> unhandledKeys = new ArrayList<>();
+            root.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
             KeyEvent standardEscape = keyEvent(KeyCode.ESCAPE);
             action.fireEvent(standardEscape);
 
-            assertFalse(standardEscape.isConsumed(), "standard bottom sheet should not consume Escape as modal dismissal");
+            assertEquals(List.of(KeyCode.ESCAPE), unhandledKeys, "Standard bottom sheet must let Escape propagate");
             assertTrue(sheet.isShown(), "standard bottom sheet should remain shown after Escape");
             assertTrue(action.isFocused(), "standard bottom sheet should keep focus on the action after Escape");
         }));
@@ -497,10 +503,12 @@ final class M3SheetKeyboardTest {
             assertTrue(action.isFocused(), "modal side sheet action should accept focus before changing variant");
 
             sheet.setVariant(M3SheetVariant.STANDARD);
+            List<KeyCode> unhandledKeys = new ArrayList<>();
+            root.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
             KeyEvent standardEscape = keyEvent(KeyCode.ESCAPE);
             action.fireEvent(standardEscape);
 
-            assertFalse(standardEscape.isConsumed(), "standard side sheet should not consume Escape as modal dismissal");
+            assertEquals(List.of(KeyCode.ESCAPE), unhandledKeys, "Standard side sheet must let Escape propagate");
             assertTrue(sheet.isShown(), "standard side sheet should remain shown after Escape");
             assertTrue(action.isFocused(), "standard side sheet should keep focus on the action after Escape");
         }));
@@ -630,8 +638,9 @@ final class M3SheetKeyboardTest {
     }
 
     /// Shows a root node in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(Parent root, double width, double height) {
+    private Scene show(Parent root, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);
         stage.show();
@@ -641,8 +650,9 @@ final class M3SheetKeyboardTest {
     }
 
     /// Shows the supplied root in a modal JavaFX window and performs an initial layout pass.
-    private static Scene showModal(Parent root, double width, double height) {
+    private Scene showModal(Parent root, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         stage.initModality(Modality.APPLICATION_MODAL);
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);

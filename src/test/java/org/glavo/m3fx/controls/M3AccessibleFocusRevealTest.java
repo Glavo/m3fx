@@ -18,7 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.FxTestUtils;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.glavo.m3fx.M3TestControls.*;
@@ -44,6 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NotNullByDefault
 @Tier2Test
 final class M3AccessibleFocusRevealTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit for focus reveal tests.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -51,15 +54,14 @@ final class M3AccessibleFocusRevealTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes test windows after every focus reveal test.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -210,6 +212,7 @@ final class M3AccessibleFocusRevealTest {
             overlayPane.setSnackbarDisplayDuration(javafx.util.Duration.INDEFINITE);
 
             Stage stage = new Stage();
+            stages.add(stage);
             stage.setScene(new Scene(overlayPane, 220.0, 120.0));
             stage.show();
             M3Snackbar snackbar = new M3Snackbar("Saved");
@@ -336,6 +339,7 @@ final class M3AccessibleFocusRevealTest {
             tooltip.getActions().add(action);
             Pane root = new Pane(owner);
             Stage stage = new Stage();
+            stages.add(stage);
 
             try {
                 stage.setScene(new Scene(root, 280.0, 160.0));
@@ -775,6 +779,7 @@ final class M3AccessibleFocusRevealTest {
             M3SideSheet sideSheet = sideSheet("Details", new Label("Side"), sideAction);
             M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"), bottomAction);
             Stage stage = new Stage();
+            stages.add(stage);
             try {
                 sideSheet.setVariant(M3SheetVariant.MODAL);
                 bottomSheet.setVariant(M3SheetVariant.MODAL);
@@ -1425,8 +1430,9 @@ final class M3AccessibleFocusRevealTest {
     }
 
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(ScrollPane scrollPane, double width, double height) {
+    private Scene show(ScrollPane scrollPane, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(scrollPane, width, height);
         stage.setScene(scene);
         stage.show();

@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -380,9 +381,11 @@ final class M3DialogPaneContractTest {
 
                 stage.hide();
 
+                List<KeyCode> unhandledKeys = new ArrayList<>();
+                root.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
                 KeyEvent tab = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB);
                 root.fireEvent(tab);
-                assertFalse(tab.isConsumed(), "hidden modal windows should release scene traversal filters");
+                assertEquals(List.of(KeyCode.TAB), unhandledKeys, "Hidden modal windows must release traversal filters");
             } finally {
                 stage.close();
             }

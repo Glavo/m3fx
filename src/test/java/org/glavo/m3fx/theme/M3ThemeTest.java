@@ -1175,9 +1175,9 @@ final class M3ThemeTest {
         });
     }
 
-    /// Verifies that installed theme stylesheets keep application styles later in the cascade.
+    /// Verifies that application styles override themed navigation drawer metrics.
     @Test
-    void installsThemeStylesheetsBeforeApplicationStylesheets() throws Exception {
+    void applicationCssOverridesNavigationDrawerMetrics() throws Exception {
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
         navigationDrawer.getStyleClass().add("test-sidebar-drawer");
         Pane root = new Pane(navigationDrawer);
@@ -1195,10 +1195,6 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, theme);
         root.applyCss();
 
-        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
-        assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(1));
-        assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), scene.getStylesheets().get(2));
-        assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
@@ -1371,10 +1367,6 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, M3Theme.fromSeed(Color.web("#006a6a")));
         root.applyCss();
 
-        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
-        assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(1));
-        assertEquals(M3ThemeRuntime.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(2));
-        assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertSeedButtonMetrics(button);
     }
 

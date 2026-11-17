@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Point2D;
@@ -20,7 +19,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
@@ -32,15 +30,20 @@ import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,22 +55,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Verifies that transient interaction ownership ends when a control can no longer receive its matching release.
 @NotNullByDefault
 final class M3InteractionLifecycleTest {
+    /// Stages owned by the current test, including stages hidden before cleanup.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit before interaction lifecycle tests create scenes and stages.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Closes real stages opened by focus-transfer tests.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -190,21 +194,22 @@ final class M3InteractionLifecycleTest {
     }
 
     /// Verifies that a completed selection animation cannot restore child CSS state after a list item is detached.
+    @Tier2Test
     @Test
     void listItemDetachStopsSelectionAnimationAndRestoresSelectedStateOnReattach() throws InterruptedException {
         PseudoClass selectedPseudoClass = PseudoClass.getPseudoClass("selected");
         M3ListItem[] itemReference = new M3ListItem[1];
         Label[] headlineReference = new Label[1];
         VBox[] rootReference = new VBox[1];
-        long[] verificationNotBeforeNanos = new long[1];
+        AtomicReference<@Nullable Label> referenceHeadline = new AtomicReference<>();
 
         FxTestUtils.runOnFxThreadWhenStable(
-                () -> System.nanoTime() >= verificationNotBeforeNanos[0]
-                        && !headlineReference[0].getPseudoClassStates().contains(selectedPseudoClass),
+                () -> Objects.requireNonNull(referenceHeadline.get()).getPseudoClassStates().contains(selectedPseudoClass),
                 2,
                 () -> {
                     M3ListItem item = new M3ListItem("Selected item");
-                    VBox root = new VBox(item);
+                    M3ListItem attachedItem = new M3ListItem("Attached item");
+                    VBox root = new VBox(item, attachedItem);
                     show(root, 320.0, 120.0);
                     Label headline = assertInstanceOf(
                             Label.class,
@@ -212,6 +217,7 @@ final class M3InteractionLifecycleTest {
                     );
 
                     item.setSelected(true);
+                    attachedItem.setSelected(true);
                     root.applyCss();
                     root.layout();
                     root.getChildren().remove(item);
@@ -221,7 +227,7 @@ final class M3InteractionLifecycleTest {
                     itemReference[0] = item;
                     headlineReference[0] = headline;
                     rootReference[0] = root;
-                    verificationNotBeforeNanos[0] = System.nanoTime() + 700_000_000L;
+                    referenceHeadline.set(assertInstanceOf(Label.class, attachedItem.lookup(".m3-list-item-headline")));
                 },
                 () -> {
                     M3ListItem item = itemReference[0];
@@ -247,6 +253,7 @@ final class M3InteractionLifecycleTest {
     }
 
     /// Verifies that hidden windows suspend selected child CSS state until the item is shown again.
+    @Tier2Test
     @Test
     void listItemWindowHideSuspendsSelectedChildCssStateUntilWindowShownAgain() throws InterruptedException {
         PseudoClass selectedPseudoClass = PseudoClass.getPseudoClass("selected");
@@ -391,10 +398,11 @@ final class M3InteractionLifecycleTest {
     }
 
     /// Shows a themed scene and returns its stage.
-    private static Stage show(Pane root, double width, double height) {
+    private Stage show(Pane root, double width, double height) {
         Scene scene = new Scene(root, width, height);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         Stage stage = new Stage();
+        stages.add(stage);
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -416,7 +424,7 @@ final class M3InteractionLifecycleTest {
             boolean primaryButtonDown
     ) {
         Point2D scenePoint = node.localToScene(x, y);
-        Point2D screenPoint = node.localToScreen(x, y);
+        @Nullable Point2D screenPoint = node.localToScreen(x, y);
         double screenX = screenPoint == null ? scenePoint.getX() : screenPoint.getX();
         double screenY = screenPoint == null ? scenePoint.getY() : screenPoint.getY();
         return new MouseEvent(

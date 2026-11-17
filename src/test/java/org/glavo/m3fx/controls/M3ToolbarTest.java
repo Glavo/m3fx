@@ -103,31 +103,33 @@ final class M3ToolbarTest {
             second.setPrefSize(40.0, 50.0);
             toolbar.getItems().setAll(first, second);
             toolbar.setSkin(new M3ToolbarSkin(toolbar));
-
-            assertEquals(68.0, toolbar.minWidth(-1));
-            assertEquals(68.0, toolbar.prefWidth(-1));
-            assertEquals(Double.MAX_VALUE, toolbar.maxWidth(-1));
-            assertEquals(Double.MAX_VALUE, toolbar.maxHeight(-1));
-            toolbar.setOrientation(Orientation.VERTICAL);
-            assertEquals(80.0, toolbar.prefWidth(-1));
-            assertEquals(88.0, toolbar.minHeight(-1));
-            assertEquals(88.0, toolbar.prefHeight(-1));
-            assertEquals(Double.MAX_VALUE, toolbar.maxWidth(-1));
-            assertEquals(Double.MAX_VALUE, toolbar.maxHeight(-1));
-            toolbar.setVariant(M3ToolbarVariant.DOCKED);
-            assertEquals(90.0, toolbar.minHeight(-1));
-            assertEquals(98.0, toolbar.prefHeight(-1));
-            toolbar.setDockedMaxItemSpacing(16.0);
-            assertEquals(102.0, toolbar.prefHeight(-1));
-            toolbar.setItemSlotSize(60.0);
-            assertEquals(130.0, toolbar.minHeight(-1));
-            assertEquals(142.0, toolbar.prefHeight(-1));
-            toolbar.setItemSpacing(8.0);
-            assertEquals(134.0, toolbar.minHeight(-1));
-            toolbar.setOrientation(Orientation.HORIZONTAL);
-            assertEquals(134.0, toolbar.minWidth(-1));
-            assertEquals(142.0, toolbar.prefWidth(-1));
-            toolbar.setSkin(null);
+            try {
+                assertEquals(68.0, toolbar.minWidth(-1));
+                assertEquals(68.0, toolbar.prefWidth(-1));
+                assertEquals(Double.MAX_VALUE, toolbar.maxWidth(-1));
+                assertEquals(Double.MAX_VALUE, toolbar.maxHeight(-1));
+                toolbar.setOrientation(Orientation.VERTICAL);
+                assertEquals(80.0, toolbar.prefWidth(-1));
+                assertEquals(88.0, toolbar.minHeight(-1));
+                assertEquals(88.0, toolbar.prefHeight(-1));
+                assertEquals(Double.MAX_VALUE, toolbar.maxWidth(-1));
+                assertEquals(Double.MAX_VALUE, toolbar.maxHeight(-1));
+                toolbar.setVariant(M3ToolbarVariant.DOCKED);
+                assertEquals(90.0, toolbar.minHeight(-1));
+                assertEquals(98.0, toolbar.prefHeight(-1));
+                toolbar.setDockedMaxItemSpacing(16.0);
+                assertEquals(102.0, toolbar.prefHeight(-1));
+                toolbar.setItemSlotSize(60.0);
+                assertEquals(130.0, toolbar.minHeight(-1));
+                assertEquals(142.0, toolbar.prefHeight(-1));
+                toolbar.setItemSpacing(8.0);
+                assertEquals(134.0, toolbar.minHeight(-1));
+                toolbar.setOrientation(Orientation.HORIZONTAL);
+                assertEquals(134.0, toolbar.minWidth(-1));
+                assertEquals(142.0, toolbar.prefWidth(-1));
+            } finally {
+                toolbar.setSkin(null);
+            }
         });
     }
 }

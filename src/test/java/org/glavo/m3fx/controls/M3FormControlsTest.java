@@ -30,7 +30,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.glavo.m3fx.skins.M3FormRowSkin;
@@ -68,6 +67,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests form helper controls, skins, and accessibility metadata.
 @NotNullByDefault
 final class M3FormControlsTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -75,15 +77,14 @@ final class M3FormControlsTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes real stages opened by focus and scrolling tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : java.util.List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -333,6 +334,7 @@ final class M3FormControlsTest {
 
             VBox root = new VBox(nameLayout, emailLayout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 240.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -375,6 +377,7 @@ final class M3FormControlsTest {
             M3ValidationSummary summary = new M3ValidationSummary(validator);
             VBox root = new VBox(summary, quantity, nameLayout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 320.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -439,6 +442,7 @@ final class M3FormControlsTest {
             scrollPane.setPrefSize(320.0, 120.0);
 
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(scrollPane, 320.0, 120.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -674,6 +678,7 @@ final class M3FormControlsTest {
             M3ValidationSummary summary = new M3ValidationSummary(validator);
             VBox root = new VBox(summary, nameLayout, emailLayout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 640.0, 320.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -728,6 +733,7 @@ final class M3FormControlsTest {
 
             VBox root = new VBox(summary, hiddenAncestor);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 220.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -779,6 +785,7 @@ final class M3FormControlsTest {
             Pane summaryOwner = new Pane(summary);
             VBox root = new VBox(summaryOwner, layout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 260.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -842,6 +849,7 @@ final class M3FormControlsTest {
             M3ValidationSummary summary = new M3ValidationSummary(validator);
             VBox root = new VBox(summary, layout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 260.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -1017,6 +1025,7 @@ final class M3FormControlsTest {
             M3ValidationSummary summary = new M3ValidationSummary(firstValidator);
             VBox root = new VBox(summary, firstLayout, secondLayout, thirdLayout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 640.0, 360.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -1091,6 +1100,7 @@ final class M3FormControlsTest {
             M3ValidationSummary summary = new M3ValidationSummary(validator);
             VBox root = new VBox(focusSentinel, summary, layout);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 520.0, 260.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);
@@ -1146,6 +1156,7 @@ final class M3FormControlsTest {
                         M3ValidationSummary summary = new M3ValidationSummary(validator);
                         VBox root = new VBox(summary, layout);
                         Stage stage = new Stage();
+                        stages.add(stage);
                         Scene scene = new Scene(root, 520.0, 260.0);
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
@@ -1235,6 +1246,7 @@ final class M3FormControlsTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(280.0, 120.0);
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(scrollPane, 280.0, 120.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             stage.setScene(scene);

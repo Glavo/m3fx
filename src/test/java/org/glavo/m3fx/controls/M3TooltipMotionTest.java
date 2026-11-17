@@ -13,7 +13,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +46,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NotNullByDefault
 @Tier2Test
 final class M3TooltipMotionTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
+    /// Tooltips owned by the current test, including incompletely initialized fixtures.
+    private final List<M3Tooltip> tooltips = new ArrayList<>();
+
     /// The test-local effect duration used to make intermediate frames reliably observable.
     private static final Duration OBSERVABLE_DURATION = Duration.millis(600.0);
 
@@ -65,13 +71,19 @@ final class M3TooltipMotionTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes any popup or stage left visible after a failed assertion.
+    /// Hides tooltips and closes stages owned by this test, even when setup fails.
     @AfterEach
     void closeWindows() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
+            for (M3Tooltip tooltip : tooltips) {
+                tooltip.setAnimationsEnabled(false);
+                tooltip.hide();
             }
+            tooltips.clear();
+            for (Stage stage : stages) {
+                stage.close();
+            }
+            stages.clear();
         });
     }
 
@@ -446,7 +458,7 @@ final class M3TooltipMotionTest {
     ///
     /// @param initiallyVisible whether the tooltip should be shown synchronously at its visible endpoint
     /// @return the initialized fixture
-    private static TooltipFixture createFixture(boolean initiallyVisible) {
+    private TooltipFixture createFixture(boolean initiallyVisible) {
         M3Button owner = new M3Button("Tooltip owner");
         StackPane root = new StackPane(owner);
         Scene scene = new Scene(root, 360.0, 180.0);
@@ -454,6 +466,7 @@ final class M3TooltipMotionTest {
         FxTestUtils.setMotionScheme(root, observableMotionScheme());
 
         Stage stage = new Stage();
+        stages.add(stage);
         try {
             stage.setScene(scene);
             stage.show();
@@ -465,6 +478,7 @@ final class M3TooltipMotionTest {
                     "owner screen bounds"
             );
             M3Tooltip tooltip = new M3Tooltip("Animated tooltip");
+            tooltips.add(tooltip);
             AtomicInteger hiddenTransitions = new AtomicInteger();
             tooltip.showingProperty().addListener((observable, oldValue, newValue) -> {
                 if (!newValue) {

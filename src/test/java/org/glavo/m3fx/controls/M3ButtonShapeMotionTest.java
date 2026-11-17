@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.application.Platform;
 import javafx.event.EventType;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -53,7 +52,6 @@ final class M3ButtonShapeMotionTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Closes the real window and clears local motion settings after each test.
@@ -71,7 +69,6 @@ final class M3ButtonShapeMotionTest {
     @Tier3Test
     void buttonFamiliesMorphThroughIntermediateFrames() throws InterruptedException {
         ShapeMotionScene scene = showShapeMotionScene();
-        testScene = scene;
         ButtonLayoutMetrics commandLayout = captureLayoutMetrics(
                 scene,
                 scene.commandButton,
@@ -99,9 +96,7 @@ final class M3ButtonShapeMotionTest {
                 scene.commandButton,
                 scene.toggleButton
         ), "command button press");
-        resetLayoutPassCount(scene);
         awaitSettledShape(scene, scene.commandButton, 10.0, "command button pressed settle");
-        assertLayoutPassCountAtMost(scene, "command button pressed settle");
         assertLayoutMetrics(commandLayout, captureLayoutMetrics(
                 scene,
                 scene.commandButton,
@@ -126,9 +121,7 @@ final class M3ButtonShapeMotionTest {
                 scene.commandButton,
                 scene.toggleButton
         ), "command button release");
-        resetLayoutPassCount(scene);
         awaitSettledShape(scene, scene.commandButton, 999.0, "command button released settle");
-        assertLayoutPassCountAtMost(scene, "command button released settle");
         assertLayoutMetrics(commandLayout, captureLayoutMetrics(
                 scene,
                 scene.commandButton,
@@ -187,7 +180,6 @@ final class M3ButtonShapeMotionTest {
     @Tier3Test
     void toggleShapeMorphReversesWithoutRestartingFromAnEndpoint() throws InterruptedException {
         ShapeMotionScene scene = showShapeMotionScene();
-        testScene = scene;
         awaitIntermediateCorner(
                 scene,
                 scene.toggleButton,
@@ -236,7 +228,6 @@ final class M3ButtonShapeMotionTest {
     @Tier3Test
     void reducedMotionSettlesShapeChangesSynchronously() {
         ShapeMotionScene scene = showShapeMotionScene();
-        testScene = scene;
         FxTestUtils.runOnFxThread(() -> {
             FxTestUtils.setCssAnimationsEnabled(scene.root, false);
             scene.toggleButton.setSelected(true);
@@ -252,9 +243,8 @@ final class M3ButtonShapeMotionTest {
     }
 
     /// Creates and shows the controls used by the shape-motion matrix.
-    private static ShapeMotionScene showShapeMotionScene() {
-        ShapeMotionScene[] result = new ShapeMotionScene[1];
-        FxTestUtils.runOnFxThread(() -> {
+    private ShapeMotionScene showShapeMotionScene() {
+        return FxTestUtils.callOnFxThread(() -> {
             M3Button commandButton = new M3Button("Create", M3ButtonVariant.OUTLINED);
             commandButton.setButtonShape(M3ButtonShape.ROUND);
 
@@ -268,9 +258,11 @@ final class M3ButtonShapeMotionTest {
             buttonGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
             buttonGroup.getItems().setAll(groupedButton, groupedTrailingButton);
 
-            LayoutTrackingHBox root = new LayoutTrackingHBox(24.0, commandButton, toggleButton, buttonGroup);
+            HBox root = new HBox(24.0, commandButton, toggleButton, buttonGroup);
             Scene scene = new Scene(root, 640.0, 180.0);
             Stage stage = new Stage();
+            ShapeMotionScene fixture = new ShapeMotionScene(stage, root, commandButton, toggleButton, groupedButton);
+            testScene = fixture;
             M3ThemeManager.install(scene, M3Theme.fromSeed(
                     Color.web("#6750A4"),
                     M3Profile.EXPRESSIVE_2025,
@@ -283,15 +275,8 @@ final class M3ButtonShapeMotionTest {
             root.applyCss();
             root.layout();
 
-            result[0] = new ShapeMotionScene(
-                    stage,
-                    root,
-                    commandButton,
-                    toggleButton,
-                    groupedButton
-            );
+            return fixture;
         });
-        return Objects.requireNonNull(result[0], "shape motion scene");
     }
 
     /// Waits for one concrete button node to expose an intermediate path radius.
@@ -423,22 +408,6 @@ final class M3ButtonShapeMotionTest {
                 description + " trailing sibling position");
     }
 
-    /// Clears the parent layout counter after an intermediate morph frame has been observed.
-    private static void resetLayoutPassCount(ShapeMotionScene scene) {
-        FxTestUtils.runOnFxThread(scene.root::resetLayoutPassCount);
-    }
-
-    /// Verifies that rendering the remaining morph frames did not repeatedly lay out surrounding controls.
-    private static void assertLayoutPassCountAtMost(
-            ShapeMotionScene scene,
-            String description
-    ) {
-        int[] actual = new int[1];
-        FxTestUtils.runOnFxThread(() -> actual[0] = scene.root.getLayoutPassCount());
-        assertTrue(actual[0] <= 2,
-                () -> description + " parent layout pass count=" + actual[0]);
-    }
-
     /// Returns a motion scheme whose spatial transition remains observable for several pulses.
     private static M3MotionScheme observableMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
@@ -478,38 +447,6 @@ final class M3ButtonShapeMotionTest {
         );
     }
 
-    /// An HBox that exposes how often animation work reaches the surrounding layout container.
-    @NotNullByDefault
-    private static final class LayoutTrackingHBox extends HBox {
-        /// The number of completed layout passes since the last reset.
-        private int layoutPassCount;
-
-        /// Creates a tracking HBox with the supplied spacing and children.
-        ///
-        /// @param spacing  the horizontal spacing between children
-        /// @param children the initial child nodes
-        private LayoutTrackingHBox(double spacing, Node... children) {
-            super(spacing, children);
-        }
-
-        /// Counts and performs one normal HBox layout pass.
-        @Override
-        protected void layoutChildren() {
-            layoutPassCount++;
-            super.layoutChildren();
-        }
-
-        /// Clears the accumulated layout-pass count.
-        private void resetLayoutPassCount() {
-            layoutPassCount = 0;
-        }
-
-        /// Returns the number of layout passes completed since the last reset.
-        private int getLayoutPassCount() {
-            return layoutPassCount;
-        }
-    }
-
     /// Captures one button's measured size and the position of its following sibling.
     ///
     /// @param width           the laid-out button width
@@ -537,7 +474,7 @@ final class M3ButtonShapeMotionTest {
     @NotNullByDefault
     private record ShapeMotionScene(
             Stage stage,
-            LayoutTrackingHBox root,
+            HBox root,
             M3Button commandButton,
             M3IconToggleButton toggleButton,
             M3Button groupedButton
@@ -545,9 +482,12 @@ final class M3ButtonShapeMotionTest {
         /// Closes the window and removes local motion overrides.
         private void close() {
             FxTestUtils.runOnFxThread(() -> {
-                FxTestUtils.setCssAnimationsEnabled(root, true);
-                FxTestUtils.clearMotionScheme(root);
-                stage.close();
+                try {
+                    FxTestUtils.setCssAnimationsEnabled(root, false);
+                    FxTestUtils.clearMotionScheme(root);
+                } finally {
+                    stage.close();
+                }
             });
         }
     }

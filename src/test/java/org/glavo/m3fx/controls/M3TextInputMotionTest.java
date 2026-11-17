@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
@@ -15,7 +14,6 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
@@ -57,6 +55,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NotNullByDefault
 @Tier3Test
 final class M3TextInputMotionTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// The native rendered scale of minimized floating-label typography.
     private static final double MINIMIZED_SCALE = 1.0;
 
@@ -106,26 +107,29 @@ final class M3TextInputMotionTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Enables motion explicitly while preserving the application-wide setting.
     @BeforeEach
     void enableMotion() {
-        previousGlobalReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
-        M3MotionSettings.setGlobalReducedMotionRequested(false);
+        FxTestUtils.runOnFxThread(() -> {
+            previousGlobalReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+        });
     }
 
-    /// Closes windows left open by a failed motion assertion and restores the global motion preference.
+    /// Closes stages owned by this test and restores the global motion preference.
     @AfterEach
     void closeWindows() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
+            try {
+                for (Stage stage : stages) {
                     stage.close();
                 }
+            } finally {
+                stages.clear();
+                M3MotionSettings.setGlobalReducedMotionRequested(previousGlobalReducedMotionRequested);
             }
-            M3MotionSettings.setGlobalReducedMotionRequested(previousGlobalReducedMotionRequested);
         });
     }
 
@@ -293,7 +297,7 @@ final class M3TextInputMotionTest {
     ///
     /// @param profile the Material profile under test
     /// @throws InterruptedException if the test thread is interrupted while awaiting JavaFX pulses
-    private static void assertFloatingLabelMotion(M3Profile profile) throws InterruptedException {
+    private void assertFloatingLabelMotion(M3Profile profile) throws InterruptedException {
         MotionScene scene = createMotionScene(profile);
         double expandedScale = expandedScale(scene);
 
@@ -360,7 +364,7 @@ final class M3TextInputMotionTest {
     /// Exercises one profile with global animations disabled and verifies immediate endpoint application.
     ///
     /// @param profile the Material profile under test
-    private static void assertReducedMotionEndpoints(M3Profile profile) {
+    private void assertReducedMotionEndpoints(M3Profile profile) {
         MotionScene scene = createMotionScene(profile);
         try {
             FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -742,7 +746,7 @@ final class M3TextInputMotionTest {
     ///
     /// @param profile the Material profile installed on the scene
     /// @return the initialized real-window scene
-    private static MotionScene createMotionScene(M3Profile profile) {
+    private MotionScene createMotionScene(M3Profile profile) {
         MotionScene[] result = new MotionScene[1];
         FxTestUtils.runOnFxThread(() -> {
             M3Button initialFocus = new M3Button("Initial focus");
@@ -753,6 +757,7 @@ final class M3TextInputMotionTest {
             VBox root = new VBox(16.0, initialFocus, layout);
             Scene fxScene = new Scene(root, 420.0, 180.0);
             Stage stage = new Stage();
+            stages.add(stage);
             stage.setScene(fxScene);
             M3ThemeManager.install(fxScene, M3Theme.fromSeed(
                     Color.web("#6750A4"),

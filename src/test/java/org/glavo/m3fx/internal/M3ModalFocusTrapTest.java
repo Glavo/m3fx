@@ -12,13 +12,13 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Verifies scene-level modal focus trap ordering.
 @NotNullByDefault
 final class M3ModalFocusTrapTest {
+    /// Stages owned by the current test, including hidden or incompletely initialized stages.
+    private final List<Stage> stages = new ArrayList<>();
+
     /// Starts the JavaFX toolkit before modal focus trap tests create windows.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -39,15 +42,14 @@ final class M3ModalFocusTrapTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Closes real windows created by modal focus trap tests.
+    /// Closes stages owned by this test, including stages that are no longer visible.
     @AfterEach
     void closeStages() {
         FxTestUtils.runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                if (window instanceof Stage stage) {
-                    stage.close();
-                }
+            for (Stage stage : stages) {
+                stage.close();
             }
+            stages.clear();
         });
     }
 
@@ -192,6 +194,7 @@ final class M3ModalFocusTrapTest {
             trap.install();
 
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(root, 240.0, 120.0);
             stage.setScene(scene);
             stage.show();
@@ -226,6 +229,7 @@ final class M3ModalFocusTrapTest {
                     null
             );
             Stage stage = new Stage();
+            stages.add(stage);
             Scene scene = new Scene(owner, 240.0, 120.0);
             stage.setScene(scene);
             stage.show();
@@ -444,8 +448,9 @@ final class M3ModalFocusTrapTest {
     }
 
     /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
-    private static Scene show(Parent root, double width, double height) {
+    private Scene show(Parent root, double width, double height) {
         Stage stage = new Stage();
+        stages.add(stage);
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);
         stage.show();
