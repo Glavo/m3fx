@@ -62,6 +62,8 @@ import java.util.Objects;
 /// The default pane is empty, uses [M3ListStyle#STANDARD], has no managed selection, and permits an empty
 /// selection. The selected-item list is a live, unmodifiable observable view in child order. Nodes in the item
 /// list are owned by this control while displayed and must not belong to another parent.
+/// With the default skin, items match the CSS pseudo-classes `:first-child`, `:last-child`, and `:only-child`
+/// according to their position in [#getItems()], including headers and dividers. A sole item matches all three.
 ///
 /// ```java
 /// M3ListPane listPane = new M3ListPane();

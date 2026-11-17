@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
@@ -14,11 +15,25 @@ import org.glavo.m3fx.controls.M3ListItemBase;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /// The default non-virtualized skin for [M3ListPane].
 @NotNullByDefault
 public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
+    /// Matches the first child in item order.
+    private static final PseudoClass FIRST_CHILD = PseudoClass.getPseudoClass("first-child");
+
+    /// Matches the last child in item order.
+    private static final PseudoClass LAST_CHILD = PseudoClass.getPseudoClass("last-child");
+
+    /// Matches a child without siblings.
+    private static final PseudoClass ONLY_CHILD = PseudoClass.getPseudoClass("only-child");
+
     /// The internal vertical item container.
     private final VBox container = new VBox();
+
+    /// Whether item position pseudo-classes need to be supplied for JavaFX 17 through 23.
+    private final boolean emulateChildPositions;
 
     /// Mirrors public list item changes into the skin container.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
@@ -33,6 +48,8 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
         super(control);
         container.setManaged(false);
         getChildren().setAll(container);
+        // JavaFX 24+ marks the container as the sole child of the control here.
+        emulateChildPositions = !container.getPseudoClassStates().contains(ONLY_CHILD);
         control.getItems().addListener(itemsListener);
         control.itemSpacingProperty().addListener(itemSpacingInvalidation);
         updateItems();
@@ -43,8 +60,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().itemSpacingProperty().removeListener(itemSpacingInvalidation);
-        clearItemMargins();
-        container.getChildren().clear();
+        replaceItems(List.of());
         getChildren().remove(container);
         super.dispose();
     }
@@ -129,8 +145,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
 
     /// Mirrors the public item list into the internal container.
     private void updateItems() {
-        clearItemMargins();
-        container.getChildren().setAll(getSkinnable().getItems());
+        replaceItems(getSkinnable().getItems());
         updateItemMargins();
         getSkinnable().requestLayout();
     }
@@ -151,10 +166,36 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
         container.requestLayout();
     }
 
-    /// Removes layout constraints installed on externally owned list item nodes.
-    private void clearItemMargins() {
-        for (Node item : container.getChildren()) {
+    /// Replaces the displayed nodes, removing constraints and updating structural states on older runtimes.
+    private void replaceItems(List<Node> items) {
+        var children = container.getChildren();
+        for (Node item : children) {
             VBox.setMargin(item, null);
+        }
+        if (!emulateChildPositions) {
+            children.setAll(items);
+            return;
+        }
+
+        @Nullable Node oldFirst = children.isEmpty() ? null : children.get(0);
+        @Nullable Node oldLast = children.isEmpty() ? null : children.get(children.size() - 1);
+        children.setAll(items);
+        @Nullable Node first = children.isEmpty() ? null : children.get(0);
+        @Nullable Node last = children.isEmpty() ? null : children.get(children.size() - 1);
+        movePosition(FIRST_CHILD, oldFirst, first);
+        movePosition(LAST_CHILD, oldLast, last);
+        movePosition(ONLY_CHILD, oldFirst == oldLast ? oldFirst : null, first == last ? first : null);
+    }
+
+    /// Transfers one structural state only when the node occupying that position has changed.
+    private static void movePosition(PseudoClass state, @Nullable Node previous, @Nullable Node current) {
+        if (previous != current) {
+            if (previous != null) {
+                previous.pseudoClassStateChanged(state, false);
+            }
+            if (current != null) {
+                current.pseudoClassStateChanged(state, true);
+            }
         }
     }
 }

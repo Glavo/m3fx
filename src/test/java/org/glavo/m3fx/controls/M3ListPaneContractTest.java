@@ -72,6 +72,54 @@ final class M3ListPaneContractTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Structural CSS states follow all displayed nodes through reordering, removal, and skin disposal.
+    @Test
+    void listPaneStylesFirstLastAndOnlyChildren() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListSectionHeader header = new M3ListSectionHeader("Section");
+            M3ListItem row = new M3ListItem("Row");
+            M3Divider divider = new M3Divider();
+            M3ListPane list = listPane(header, row, divider);
+            Pane root = new Pane(list);
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add("data:text/css,.m3-list-pane%20.m3-list-item:only-child%7B-fx-rotate:7;%7D");
+            root.applyCss();
+            assertItemPosition(header, true, false);
+            assertItemPosition(row, false, false);
+            assertItemPosition(divider, false, true);
+
+            list.getItems().setAll(divider, row, header);
+            assertItemPosition(divider, true, false);
+            assertItemPosition(header, false, true);
+            list.getItems().setAll(row);
+            assertItemPosition(divider, false, false);
+            assertItemPosition(header, false, false);
+            assertItemPosition(row, true, true);
+            root.applyCss();
+            assertEquals(7.0, row.getRotate());
+
+            list.getItems().add(header);
+            root.applyCss();
+            assertEquals(0.0, row.getRotate());
+            assertItemPosition(row, true, false);
+            assertItemPosition(header, false, true);
+            list.getItems().clear();
+            assertItemPosition(row, false, false);
+            assertItemPosition(header, false, false);
+            list.getItems().add(row);
+            list.setSkin(null);
+            assertItemPosition(row, false, false);
+        });
+    }
+
+    /// Checks all three edge states, including those that must be absent.
+    private static void assertItemPosition(Node node, boolean first, boolean last) {
+        var states = node.getPseudoClassStates();
+        assertEquals(first, states.contains(PseudoClass.getPseudoClass("first-child")));
+        assertEquals(last, states.contains(PseudoClass.getPseudoClass("last-child")));
+        assertEquals(first && last, states.contains(PseudoClass.getPseudoClass("only-child")));
+    }
+
     /// Verifies that static lists support printable-key type-ahead focus and single selection.
     @Test
     void listPaneSupportsTypeAheadKeyboardNavigation() {
