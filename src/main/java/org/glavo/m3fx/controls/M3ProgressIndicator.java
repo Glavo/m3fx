@@ -14,6 +14,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -454,7 +456,8 @@ public final class M3ProgressIndicator extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         if (attribute == VALUE_STRING_ATTRIBUTE) {
-            return isIndeterminate() ? "Indeterminate" : Math.round(getProgress() * 100.0) + "%";
+            M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+            return isIndeterminate() ? localizer.getIndeterminateProgressText() : localizer.formatProgress(getProgress());
         }
         return switch (attribute) {
             case INDETERMINATE -> isIndeterminate();
@@ -473,6 +476,7 @@ public final class M3ProgressIndicator extends Control {
 
     /// Adds base style classes.
     private void initialize() {
+        new M3LocalizerObserver(this, localizer -> M3Accessible.notifyAttribute(this, VALUE_STRING_ATTRIBUTE));
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);

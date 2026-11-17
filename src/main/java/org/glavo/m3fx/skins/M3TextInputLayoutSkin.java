@@ -40,6 +40,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3TextInputLayoutPresentation;
@@ -196,6 +197,9 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
             M3InternalIcon.Glyph.CLOSE,
             M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
     ));
+
+    /// Observes the control's localization scope until this skin is disposed.
+    private final M3LocalizerObserver localizerObserver;
 
     /// The continuous expanded-to-minimized label progress.
     private final DoubleProperty labelProgress =
@@ -371,6 +375,11 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     public M3TextInputLayoutSkin(M3TextInputLayout control) {
         super(Objects.requireNonNull(control, "control"));
         initializeNodes();
+        localizerObserver = new M3LocalizerObserver(control, localizer -> {
+            if (!clearButton.accessibleTextProperty().isBound()) {
+                clearButton.setAccessibleText(localizer.getClearActionText());
+            }
+        });
         installControlListeners();
         updateInput(control.getInput());
         updateNodeOrientationLayout();
@@ -424,7 +433,6 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
 
         M3ControlStyles.add(clearButton, CLEAR_BUTTON_STYLE_CLASS);
-        clearButton.setAccessibleText("Clear text");
         clearButton.setOnAction(event -> control.clearText());
 
         inputContainer.getChildren().setAll(outlinePath, label, leadingSlot, trailingSlot);
@@ -476,6 +484,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
     /// Releases all presentation resources and restores the wrapped input.
     @Override
     public void dispose() {
+        localizerObserver.close();
         uninstallControlListeners();
         labelProgressAnimation.stop();
         supportingRowAnimation.stop();

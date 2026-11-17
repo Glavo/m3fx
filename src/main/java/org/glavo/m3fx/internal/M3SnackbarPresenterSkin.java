@@ -43,6 +43,9 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
     /// The observable message currently bound to the reusable node tree.
     private @Nullable M3Snackbar renderedSnackbar;
 
+    /// Refreshes the reusable dismiss affordance without changing application message content.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Forwards primary presses to the presenter's swipe gesture state machine.
     private final EventHandler<MouseEvent> swipePressedHandler =
             event -> getSkinnable().handleSwipeMousePressed(event);
@@ -73,7 +76,8 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         actionButton.getStyleClass().add("m3-snackbar-action");
         closeButton.getStyleClass().add("m3-snackbar-close");
         actionButton.setVariant(M3ButtonVariant.TEXT);
-        closeButton.setAccessibleText("Dismiss");
+        localizerObserver = new M3LocalizerObserver(control,
+                localizer -> closeButton.setAccessibleText(localizer.getDismissText()));
 
         textLabel.setWrapText(true);
         textLabel.setMaxWidth(Double.MAX_VALUE);
@@ -162,6 +166,7 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
     /// Removes listeners, handlers, bindings, and rendered message content.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3SnackbarPresenter control = getSkinnable();
         control.snackbarProperty().removeListener(snackbarListener);
         control.containerShapeProperty().removeListener(tokenInvalidation);

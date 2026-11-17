@@ -13,6 +13,12 @@ regular overlays, and a modal stack; dialogs and custom surfaces retain lifecycl
 `Scene` root or mutating a shared overlay list. The Demo and Catalog applications use this integration model, and
 real-window tests cover input blocking, focus restoration, accessibility isolation, queue ownership, and rendering.
 
+Picker, input, and validation defaults and calendar formatting use the typed `M3Localizer` extension point with nearest-node
+inheritance and runtime replacement. Application subclasses supply translations without ResourceBundle or ICU;
+explicit and bound text and formatting overrides remain application-owned. The Demo's Date Pickers page exercises
+English/German switching on retained controls. This is not an application-wide translation framework.
+Color-control descriptions still need integration with this extension point; application preset labels remain caller-owned.
+
 The remaining risk is concentrated in specification fidelity and runtime quality rather than missing infrastructure:
 
 - Some component variants and transitional states still require direct comparison with the official Material Design

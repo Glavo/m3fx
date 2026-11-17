@@ -247,6 +247,10 @@ public final class M3PopupContextSynchronizer {
             if (epoch != observationEpoch) {
                 return;
             }
+            M3LocalizerObserver.inherit(popupRoot, M3LocalizerObserver.resolve(owner));
+            if (epoch != observationEpoch) {
+                return;
+            }
             M3PopupStyles.preparePopupRoot(
                     popupRoot,
                     stylesheetSource == null ? List.of() : stylesheetSource,
@@ -371,6 +375,9 @@ public final class M3PopupContextSynchronizer {
     /// Owns listeners and mutable lookup caches used only while popup context is observed.
     @NotNullByDefault
     private final class Observation {
+        /// Shares localization observation while the popup is presented.
+        private @Nullable M3LocalizerObserver localizerObserver;
+
         /// Handles owner scene changes.
         private final ChangeListener<@Nullable Scene> ownerSceneListener =
                 (observable, oldScene, newScene) -> sync();
@@ -437,10 +444,23 @@ public final class M3PopupContextSynchronizer {
             owner.sceneProperty().addListener(ownerSceneListener);
             owner.parentProperty().addListener(ownerParentListener);
             owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
+            long epoch = observationEpoch;
+            M3LocalizerObserver replacement = new M3LocalizerObserver(owner,
+                    localizer -> M3LocalizerObserver.inherit(popupRoot, localizer));
+            if (running && epoch == observationEpoch) {
+                localizerObserver = replacement;
+            } else {
+                replacement.close();
+            }
         }
 
         /// Removes every external listener and clears observed object references.
         private void stop() {
+            @Nullable M3LocalizerObserver previous = localizerObserver;
+            localizerObserver = null;
+            if (previous != null) {
+                previous.close();
+            }
             owner.sceneProperty().removeListener(ownerSceneListener);
             owner.parentProperty().removeListener(ownerParentListener);
             owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);

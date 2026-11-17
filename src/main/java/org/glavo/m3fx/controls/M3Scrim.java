@@ -24,6 +24,8 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +58,7 @@ public final class M3Scrim extends Region {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, parameters -> parameters.length == 0 && showAccessibleItem());
-        setAccessibleText("Dismiss");
+        new M3LocalizerObserver(this, localizer -> notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         setFocusTraversable(true);
         setOpacity(getVisibleOpacity());
         setPickOnBounds(true);
@@ -288,6 +290,7 @@ public final class M3Scrim extends Region {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case TEXT -> getAccessibleText() == null ? M3Localizer.getEffectiveLocalizer(this).getDismissText() : getAccessibleText();
             case EXPANDED -> isShown();
             case FOCUS_NODE -> isShown() && M3Accessible.isEffectivelyReachable(this) ? this : null;
             default -> super.queryAccessibleAttribute(attribute, parameters);

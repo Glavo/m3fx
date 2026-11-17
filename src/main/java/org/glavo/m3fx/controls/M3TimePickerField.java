@@ -14,6 +14,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,9 +96,9 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
                         M3InternalIcon.Glyph.SCHEDULE,
                         M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
                 ),
-                "Open time picker",
-                "Enter a valid time",
-                "Time is outside the selectable range"
+                M3Localizer::getOpenTimePickerText,
+                M3Localizer::getInvalidTimeText,
+                M3Localizer::getTimeOutOfRangeText
         );
         initializePresetContent();
     }

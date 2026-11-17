@@ -14,6 +14,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,9 +112,9 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
                         M3InternalIcon.Glyph.CALENDAR,
                         M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
                 ),
-                "Open date picker",
-                "Enter a valid date",
-                "Date is outside the selectable range"
+                M3Localizer::getOpenDatePickerText,
+                M3Localizer::getInvalidDateText,
+                M3Localizer::getDateOutOfRangeText
         );
         initializePresetContent();
     }

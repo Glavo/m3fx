@@ -39,8 +39,10 @@ import java.util.Set;
 import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3FormInput;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3ScrollReveal;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -139,6 +141,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// The validator currently observed by this skin.
     private @Nullable M3FormValidator observedValidator;
 
+    /// Refreshes fallback row messages even when both summary text properties are overridden.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a validation summary skin.
     ///
     /// @param control the validation summary controlled by this skin
@@ -172,11 +177,13 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         updateNodeOrientationLayout();
         updateContent();
         getChildren().setAll(container);
+        localizerObserver = new M3LocalizerObserver(control, localizer -> updateContent());
     }
 
     /// Removes listeners, bindings, and child references before disposal.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3ValidationSummary control = getSkinnable();
         control.titleTextProperty().removeListener(summaryListener);
         control.emptyTextProperty().removeListener(summaryListener);
@@ -605,7 +612,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Returns the field label shown for one invalid input item.
-    private static String itemLabel(M3FormInput input) {
+    private String itemLabel(M3FormInput input) {
         String label = input.getLabelText();
         if (!label.isBlank()) {
             return label;
@@ -616,13 +623,13 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         if (textInput != null && !textInput.getPromptText().isBlank()) {
             return textInput.getPromptText();
         }
-        return "Field";
+        return M3Localizer.getEffectiveLocalizer(getSkinnable()).getFieldText();
     }
 
     /// Returns the error text shown for one invalid input item.
-    private static String itemError(M3FormInput input) {
+    private String itemError(M3FormInput input) {
         String errorText = input.getValidationErrorText();
-        return errorText.isBlank() ? "Invalid value" : errorText;
+        return errorText.isBlank() ? M3Localizer.getEffectiveLocalizer(getSkinnable()).getInvalidValueText() : errorText;
     }
 
     /// A cached validation row that owns its content nodes, event routing, and state-layer lifecycle.

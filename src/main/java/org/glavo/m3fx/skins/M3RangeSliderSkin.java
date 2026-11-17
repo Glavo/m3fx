@@ -33,6 +33,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3SliderMath;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -210,11 +211,18 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         }
     };
 
+    /// Refreshes both internal thumb descriptions through one localization subscription.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a range-slider skin.
     ///
     /// @param control the range slider controlled by this skin
     public M3RangeSliderSkin(M3RangeSlider control) {
         super(control);
+        localizerObserver = new M3LocalizerObserver(control, localizer -> {
+            lowThumb.setAccessibleText(localizer.getMinimumValueText());
+            highThumb.setAccessibleText(localizer.getMaximumValueText());
+        });
         leadingTrack.getStyleClass().addAll("track", "range-leading-track");
         activeTrack.getStyleClass().addAll("active-track", "range-active-track");
         trailingTrack.getStyleClass().addAll("track", "range-trailing-track");
@@ -285,6 +293,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Releases listeners, animations, focus trackers, and transient interaction state.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3RangeSlider control = getSkinnable();
         resetInteractionState();
         displayedLowPosition.removeListener(displayedPositionInvalidation);
@@ -1139,7 +1148,6 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
             setFocusTraversable(true);
             setPickOnBounds(true);
             setAccessibleRole(AccessibleRole.SLIDER);
-            setAccessibleText(thumb == Thumb.LOW ? "Minimum value" : "Maximum value");
             stateLayer.installStateTransitions(this);
             getPseudoClassStates().addListener(pseudoClassListener);
             focusedProperty().addListener(geometryInvalidation);

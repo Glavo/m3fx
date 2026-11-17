@@ -18,6 +18,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -35,6 +36,9 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
 
     /// The menu button representing collapsed hierarchy levels.
     private final M3MenuButton overflowButton = new M3MenuButton("…");
+
+    /// Refreshes the internal overflow action's description.
+    private final M3LocalizerObserver localizerObserver;
 
     /// The logical entries currently mirrored into the row, excluding separators.
     private final List<Node> visibleEntries = new ArrayList<>();
@@ -74,7 +78,8 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
         row.setManaged(false);
 
         overflowButton.getStyleClass().add("m3-breadcrumb-overflow");
-        overflowButton.setAccessibleText("More items");
+        localizerObserver = new M3LocalizerObserver(control,
+                localizer -> overflowButton.setAccessibleText(localizer.getMoreItemsText()));
         overflowButton.setMnemonicParsing(false);
         overflowButton.setVariant(M3ButtonVariant.TEXT);
         overflowButton.setSize(M3ButtonSize.EXTRA_SMALL);
@@ -93,6 +98,7 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
     /// Removes listeners and retained child references before disposal.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3Breadcrumbs control = getSkinnable();
         control.getItems().removeListener(itemsListener);
         control.maxVisibleItemsProperty().removeListener(overflowPolicyInvalidation);

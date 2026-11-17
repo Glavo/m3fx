@@ -41,9 +41,11 @@ import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -214,6 +216,18 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     /// The minute keyboard input.
     private final TextField minuteInput = new TextField();
 
+    /// The localized supporting label for the hour editor.
+    private final Label hourInputLabel = new Label();
+
+    /// The localized supporting label for the minute editor.
+    private final Label minuteInputLabel = new Label();
+
+    /// The effective localization context used by the retained presentation.
+    private M3Localizer localizer;
+
+    /// Observes inherited localization until the skin is disposed.
+    private final M3LocalizerObserver localizerObserver;
+
     /// The hour input and its supporting label.
     private final VBox hourInputGroup;
 
@@ -285,13 +299,14 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     /// @param control the time picker control
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
+        localizer = M3Localizer.getEffectiveLocalizer(control);
 
         hourSelector = createTimeCell("", HOUR_DISPLAY_STYLE_CLASS);
         minuteSelector = createTimeCell("", MINUTE_DISPLAY_STYLE_CLASS);
         periodSelector = new PeriodSelectorPane();
         dial = new DialPane();
-        hourInputGroup = createInputGroup(hourInput, "Hour");
-        minuteInputGroup = createInputGroup(minuteInput, "Minute");
+        hourInputGroup = createInputGroup(hourInput, hourInputLabel);
+        minuteInputGroup = createInputGroup(minuteInput, minuteInputLabel);
         if (control.getPseudoClassStates().contains(DIALOG_EMBEDDED_PSEUDO_CLASS)) {
             modeIcon = null;
             modeButton = null;
@@ -314,6 +329,23 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         initializeNodes();
         installListeners(control);
         getChildren().setAll(container);
+        localizerObserver = new M3LocalizerObserver(control, this::refreshLocalization);
+    }
+
+    /// Updates retained labels and numeric presentation after the effective context changes.
+    private void refreshLocalization(M3Localizer localizer) {
+        this.localizer = localizer;
+        hourInputLabel.setText(localizer.getHourText());
+        minuteInputLabel.setText(localizer.getMinuteText());
+        hourSelector.setAccessibleText(localizer.getHourText());
+        minuteSelector.setAccessibleText(localizer.getMinuteText());
+        hourInput.setAccessibleText(localizer.getHourText());
+        minuteInput.setAccessibleText(localizer.getMinuteText());
+        dial.setAccessibleText(localizer.getClockDialText());
+        periodSelector.amButton.setText(localizer.getAmText());
+        periodSelector.pmButton.setText(localizer.getPmText());
+        periodSelector.amButton.setAccessibleText(localizer.getAmText());
+        periodSelector.pmButton.setAccessibleText(localizer.getPmText());
         refreshAll();
     }
 
@@ -368,6 +400,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     /// Removes listeners, event filters, and running animation state before disposal.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3TimePicker control = getSkinnable();
         control.valueProperty().removeListener(valueInvalidation);
         control.use24HourClockProperty().removeListener(structureInvalidation);
@@ -464,8 +497,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         displaySeparator.getStyleClass().add(DISPLAY_SEPARATOR_STYLE_CLASS);
         displaySeparator.setAlignment(Pos.CENTER);
 
-        hourSelector.setAccessibleText("Hour");
-        minuteSelector.setAccessibleText("Minute");
         hourSelector.setOnAction(event -> setActiveUnit(SelectionUnit.HOUR));
         minuteSelector.setOnAction(event -> setActiveUnit(SelectionUnit.MINUTE));
         display.getChildren().setAll(hourSelector, displaySeparator, minuteSelector);
@@ -477,8 +508,8 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         inputSeparator.setAlignment(Pos.TOP_CENTER);
         inputContent.getChildren().setAll(hourInputGroup, inputSeparator, minuteInputGroup);
 
-        configureInput(hourInput, "Hour");
-        configureInput(minuteInput, "Minute");
+        configureInput(hourInput);
+        configureInput(minuteInput);
         hourInput.focusedProperty().addListener(hourInputFocusListener);
         minuteInput.focusedProperty().addListener(minuteInputFocusListener);
         hourInput.setOnAction(event -> handleInputAction(SelectionUnit.HOUR));
@@ -487,7 +518,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         M3IconButton standaloneModeButton = modeButton;
         if (standaloneModeButton != null) {
             standaloneModeButton.getStyleClass().add(MODE_BUTTON_STYLE_CLASS);
-            standaloneModeButton.setAccessibleText("Use keyboard input");
             standaloneModeButton.setOnAction(event -> control.setInputMode(!control.isInputMode()));
         }
 
@@ -536,9 +566,8 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     }
 
     /// Configures one numeric keyboard input without regular-expression allocation on each edit.
-    private static void configureInput(TextField input, String accessibleText) {
+    private static void configureInput(TextField input) {
         input.getStyleClass().add(INPUT_FIELD_STYLE_CLASS);
-        input.setAccessibleText(accessibleText);
         input.setAlignment(Pos.CENTER);
         input.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         input.setPromptText("--");
@@ -546,8 +575,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     }
 
     /// Creates one keyboard input group with the specification's supporting label below the field.
-    private static VBox createInputGroup(TextField input, String labelText) {
-        Label label = new Label(labelText);
+    private static VBox createInputGroup(TextField input, Label label) {
         label.getStyleClass().add(INPUT_LABEL_STYLE_CLASS);
         VBox group = new VBox(input, label);
         group.getStyleClass().add(INPUT_GROUP_STYLE_CLASS);
@@ -555,7 +583,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         return group;
     }
 
-    /// Accepts at most two ASCII digits in a time input.
+    /// Accepts at most two decimal digits, including localized digits, in a time input.
     private static @Nullable TextFormatter.Change filterNumericInput(TextFormatter.Change change) {
         String text = change.getControlNewText();
         if (text.length() > 2) {
@@ -563,7 +591,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         }
         for (int index = 0; index < text.length(); index++) {
             char character = text.charAt(index);
-            if (character < '0' || character > '9') {
+            if (Character.digit(character, 10) < 0) {
                 return null;
             }
         }
@@ -600,7 +628,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         M3IconButton standaloneModeButton = modeButton;
         if (standaloneModeIcon != null && standaloneModeButton != null) {
             standaloneModeIcon.setGlyph(inputMode ? M3InternalIcon.Glyph.SCHEDULE : M3InternalIcon.Glyph.KEYBOARD);
-            standaloneModeButton.setAccessibleText(inputMode ? "Use clock dial" : "Use keyboard input");
+            standaloneModeButton.setAccessibleText(inputMode ? localizer.getUseClockDialText() : localizer.getUseKeyboardInputText());
         }
         refreshInputFields();
         layoutPane.requestLayout();
@@ -623,7 +651,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     private void refreshDisplay(@Nullable LocalTime selectedTime) {
         M3TimePicker control = getSkinnable();
         String hourText = selectedTime == null ? "--" : formatHour(selectedTime, control.isUse24HourClock());
-        String minuteText = selectedTime == null ? "--" : formatTwoDigits(selectedTime.getMinute());
+        String minuteText = selectedTime == null ? "--" : localizer.formatMinute(selectedTime.getMinute());
         setTextIfChanged(hourSelector, hourText);
         setTextIfChanged(minuteSelector, minuteText);
     }
@@ -639,7 +667,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
             M3TimePicker control = getSkinnable();
             @Nullable LocalTime selectedTime = control.getValue();
             String hourText = selectedTime == null ? "" : formatHour(selectedTime, control.isUse24HourClock());
-            String minuteText = selectedTime == null ? "" : formatTwoDigits(selectedTime.getMinute());
+            String minuteText = selectedTime == null ? "" : localizer.formatMinute(selectedTime.getMinute());
             if (!hourInput.isFocused()) {
                 setTextIfChanged(hourInput, hourText);
                 hourInput.pseudoClassStateChanged(INVALID_PSEUDO_CLASS, false);
@@ -766,7 +794,11 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         }
         int value = 0;
         for (int index = 0; index < text.length(); index++) {
-            value = value * 10 + text.charAt(index) - '0';
+            int digit = Character.digit(text.charAt(index), 10);
+            if (digit < 0) {
+                return null;
+            }
+            value = value * 10 + digit;
         }
         return value;
     }
@@ -1072,7 +1104,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     }
 
     /// Updates a dial label's text, candidate, selected state, and availability.
-    private static void updateDialLabel(
+    private void updateDialLabel(
             DialLabelButton label,
             String text,
             LocalTime candidate,
@@ -1082,8 +1114,9 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         setTextIfChanged(label, text);
         if (!candidate.equals(label.getUserData())) {
             label.setUserData(candidate);
-            label.setAccessibleText(candidate.toString());
         }
+        label.setAccessibleText(localizer.formatHour(candidate.getHour()) + ":"
+                + localizer.formatMinute(candidate.getMinute()));
         label.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
         setSelectedStyleClass(label, selected);
         label.setDisable(disabled);
@@ -1136,13 +1169,15 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     }
 
     /// Formats one hour according to 12-hour or 24-hour presentation.
-    private static String formatHour(LocalTime time, boolean twentyFourHour) {
-        return twentyFourHour ? formatTwoDigits(time.getHour()) : formatTwoDigits(toDisplayHour(time.getHour()));
+    private String formatHour(LocalTime time, boolean twentyFourHour) {
+        return localizer.formatHour(twentyFourHour ? time.getHour() : toDisplayHour(time.getHour()));
     }
 
-    /// Formats a non-negative value using two decimal digits.
-    private static String formatTwoDigits(int value) {
-        return value < 10 ? "0" + value : Integer.toString(value);
+    /// Removes numeric zero padding from twelve-hour dial labels without replacing custom formatting.
+    private String formatDialHour(int hour) {
+        String text = localizer.formatHour(hour);
+        return text.length() == 2 && Character.digit(text.charAt(0), 10) == 0
+                ? text.substring(1) : text;
     }
 
     /// Converts a 24-hour value to a 12-hour display value.
@@ -1486,7 +1521,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         private DialPane() {
             getStyleClass().add(DIAL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.PARENT);
-            setAccessibleText("Clock dial");
             setFocusTraversable(true);
             setPickOnBounds(true);
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -1567,12 +1601,12 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
                 double radiusRatio;
                 if (twentyFourHour) {
                     hour = index;
-                    text = formatTwoDigits(hour);
+                    text = localizer.formatHour(hour);
                     radiusRatio = hour < 12 ? OUTER_RADIUS_RATIO : INNER_RADIUS_RATIO;
                 } else {
                     int displayHour = index == 0 ? 12 : index;
                     hour = toActualHour(displayHour, afternoon);
-                    text = Integer.toString(displayHour);
+                    text = formatDialHour(displayHour);
                     radiusRatio = OUTER_RADIUS_RATIO;
                 }
 
@@ -1602,7 +1636,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
                 labelRadiusRatios[index] = OUTER_RADIUS_RATIO;
                 updateDialLabel(
                         labels[index],
-                        formatTwoDigits(minute),
+                        localizer.formatMinute(minute),
                         candidate,
                         selectedTime != null && selectedTime.getMinute() == minute,
                         minute % step != 0 || control.isTimeDisabled(candidate)
@@ -1742,10 +1776,10 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     @NotNullByDefault
     private final class PeriodSelectorPane extends Pane {
         /// The AM selector button.
-        private final TimeCellButton amButton = createTimeCell("AM", PERIOD_CELL_STYLE_CLASS);
+        private final TimeCellButton amButton = createTimeCell("", PERIOD_CELL_STYLE_CLASS);
 
         /// The PM selector button.
-        private final TimeCellButton pmButton = createTimeCell("PM", PERIOD_CELL_STYLE_CLASS);
+        private final TimeCellButton pmButton = createTimeCell("", PERIOD_CELL_STYLE_CLASS);
 
         /// Whether the selector uses horizontal landscape geometry.
         private boolean horizontal;
@@ -1759,8 +1793,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
             setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             amButton.getStyleClass().add("m3-time-picker-period-start");
             pmButton.getStyleClass().add("m3-time-picker-period-end");
-            amButton.setAccessibleText("AM");
-            pmButton.setAccessibleText("PM");
             amButton.setOnAction(M3TimePickerSkin.this::handleTimeCellAction);
             pmButton.setOnAction(M3TimePickerSkin.this::handleTimeCellAction);
             getChildren().setAll(amButton, pmButton);

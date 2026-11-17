@@ -13,9 +13,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizedStringProperty;
+import org.glavo.m3fx.internal.M3LocalizedTextDefault;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,6 +44,10 @@ import java.time.LocalTime;
 /// overlayPane.showDialog(dialog);
 /// ```
 ///
+/// The pane headline and action labels follow the effective localizer until customized or bound. Assigning the
+/// headline explicitly preserves it even when unchanged. JavaFX does not notify unchanged action-text assignments;
+/// those labels continue following localization unless their value changes or their text property is bound.
+///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerDialog extends M3Dialog {
@@ -58,9 +66,6 @@ public final class M3TimePickerDialog extends M3Dialog {
     /// The time-picker mode button style class.
     private static final String TIME_PICKER_MODE_BUTTON_STYLE_CLASS = "m3-time-picker-mode-button";
 
-    /// The default headline text for time picker dialogs.
-    private static final String DEFAULT_TITLE = "Select time";
-
     /// The pseudo-class that delegates mode-switch placement to the dialog action row.
     private static final PseudoClass DIALOG_EMBEDDED_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("dialog-embedded");
@@ -73,6 +78,23 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// The retained confirmation action shown at the logical end of the action row.
     private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
+
+    /// Tracks application ownership of the existing cancellation action text.
+    private final M3LocalizedTextDefault cancelText = new M3LocalizedTextDefault(cancelAction.textProperty());
+
+    /// Tracks application ownership of the existing confirmation action text.
+    private final M3LocalizedTextDefault confirmText = new M3LocalizedTextDefault(confirmAction.textProperty());
+
+    /// Retains inherited localization observation for this reusable dialog's lifetime.
+    private final M3LocalizerObserver localizerObserver =
+            new M3LocalizerObserver(getDialogPane(), this::refreshLocalization);
+
+    /// Refreshes only text that has not been customized or bound by the application.
+    private void refreshLocalization(M3Localizer localizer) {
+        ((M3LocalizedStringProperty) getDialogPane().headerTextProperty()).updateDefault(localizer.getSelectTimeText());
+        cancelText.updateDefault(localizer.getCancelText());
+        confirmText.updateDefault(localizer.getConfirmText());
+    }
 
     /// Whether dialog state and time selection are currently synchronizing.
     private boolean synchronizingValue;
@@ -94,7 +116,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Creates a time picker dialog with no selected time.
     ///
-    /// The dialog headline is `Select time`, the OK action is disabled, and no time is selected initially.
+    /// The headline and action labels follow the pane's effective localizer until explicitly customized.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);
     }
@@ -187,7 +209,6 @@ public final class M3TimePickerDialog extends M3Dialog {
             }
         });
         M3DialogPane pane = getDialogPane();
-        pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
@@ -275,6 +296,10 @@ public final class M3TimePickerDialog extends M3Dialog {
         /// The mode switch placed at the logical start of the dialog action row.
         private final M3IconButton modeButton = new M3IconButton(modeIcon);
 
+        /// Retains inherited localization observation for the pane's lifetime.
+        private final M3LocalizerObserver localizerObserver =
+                new M3LocalizerObserver(this, localizer -> updateModeButton());
+
         /// Creates the specialized pane and its retained mode switch.
         private TimePickerDialogPane() {
             picker.getStyleClass().add(TIME_PICKER_DIALOG_CONTENT_STYLE_CLASS);
@@ -293,7 +318,10 @@ public final class M3TimePickerDialog extends M3Dialog {
         private void updateModeButton() {
             boolean inputMode = picker.isInputMode();
             modeIcon.setGlyph(inputMode ? M3InternalIcon.Glyph.SCHEDULE : M3InternalIcon.Glyph.KEYBOARD);
-            modeButton.setAccessibleText(inputMode ? "Use clock dial" : "Use keyboard input");
+            M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+            if (!modeButton.accessibleTextProperty().isBound()) {
+                modeButton.setAccessibleText(inputMode ? localizer.getUseClockDialText() : localizer.getUseKeyboardInputText());
+            }
         }
     }
 }

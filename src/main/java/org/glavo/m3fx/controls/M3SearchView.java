@@ -32,6 +32,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
@@ -550,7 +551,7 @@ public final class M3SearchView extends Control {
         M3IconButton backButton = new M3IconButton(icon);
         backButton.setContainerWidth(48.0);
         backButton.setContainerHeight(48.0);
-        backButton.setAccessibleText("Back");
+        new M3LocalizerObserver(backButton, localizer -> backButton.setAccessibleText(localizer.getBackText()));
         backButton.setOnAction(event -> deactivate());
         setLeading(backButton);
     }

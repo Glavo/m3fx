@@ -25,6 +25,7 @@ import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.internal.M3BottomSheetPresentation;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,11 +100,16 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> implements 
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Refreshes the internal resize affordance's description.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a bottom sheet skin.
     ///
     /// @param control the bottom sheet controlled by this skin
     public M3BottomSheetSkin(M3BottomSheet control) {
         super(control);
+        localizerObserver = new M3LocalizerObserver(control,
+                localizer -> dragHandleSlot.setAccessibleText(localizer.getResizeBottomSheetText()));
         container.setManaged(false);
         dragHandleSlot.getStyleClass().add(DRAG_HANDLE_CONTAINER_STYLE_CLASS);
         dragHandle.getStyleClass().add(DRAG_HANDLE_STYLE_CLASS);
@@ -144,6 +150,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> implements 
     /// Removes listeners, bindings, and child references before disposal.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3BottomSheet control = getSkinnable();
         headlineLabel.textProperty().unbind();
         control.contentProperty().removeListener(contentListener);
@@ -301,7 +308,6 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> implements 
         /// Creates the drag-handle target and installs activation handlers.
         private DragHandleSlot() {
             setAccessibleRole(AccessibleRole.BUTTON);
-            setAccessibleText("Resize bottom sheet");
             setPickOnBounds(true);
             setOnMouseClicked(event -> {
                 if (event.getButton() == MouseButton.PRIMARY && event.isStillSincePress()) {

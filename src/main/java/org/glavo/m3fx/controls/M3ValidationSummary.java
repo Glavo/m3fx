@@ -9,7 +9,6 @@ import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
@@ -25,7 +24,10 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3LocalizedStringProperty;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +42,8 @@ import java.util.Set;
 /// `M3ValidationSummary` observes an [M3FormValidator] and renders a compact list of invalid
 /// [M3FormInput] controls. It can show an empty valid state, include field labels and error text, and move
 /// focus to the related field when an invalid entry is activated.
+/// Default title and valid-state text follow the inherited [M3Localizer] until explicitly assigned or bound,
+/// including assignments equal to the current default. Unbinding retains the last application value.
 ///
 /// The summary observes the form validator but does not initiate validation. Application code normally validates
 /// the form in its submission path:
@@ -97,12 +101,19 @@ public final class M3ValidationSummary extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
+    /// Observes message defaults throughout this control's lifetime, including while no skin is installed.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a validation summary with no validator.
     ///
     /// The new summary uses the default title and valid-state text and remains visually empty until a validator with
     /// invalid inputs is assigned, unless [#showWhenValidProperty()] is enabled.
     public M3ValidationSummary() {
         initialize();
+        localizerObserver = new M3LocalizerObserver(this, localizer -> {
+            titleText.updateDefault(localizer.getValidationSummaryTitleText());
+            emptyText.updateDefault(localizer.getNoValidationIssuesText());
+        });
     }
 
     /// Creates a validation summary for the supplied form validator.
@@ -153,14 +164,9 @@ public final class M3ValidationSummary extends Control {
     ///
     /// An empty string suppresses the title. The value cannot be `null`.
     ///
-    /// @defaultValue `"Fix the following fields"`
-    private final StringProperty titleText = new SimpleStringProperty(this, "titleText", "Fix the following fields") {
-        /// Rejects null title text values.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "titleText"));
-        }
-    };
+    /// @defaultValue the inherited localizer's validation-summary title
+    private final M3LocalizedStringProperty titleText =
+            new M3LocalizedStringProperty(this, "titleText", M3Localizer.getEffectiveLocalizer(this).getValidationSummaryTitleText());
 
     /// Returns the title displayed above invalid field entries.
     ///
@@ -179,7 +185,7 @@ public final class M3ValidationSummary extends Control {
 
     /// Returns the `titleText` property.
     ///
-    /// The returned property is observable and bindable. Its default value is `"Fix the following fields"`.
+    /// The returned property is observable and bindable. Its default follows the inherited localizer.
     ///
     /// @return the `titleText` property
     public final StringProperty titleTextProperty() {
@@ -190,14 +196,9 @@ public final class M3ValidationSummary extends Control {
     ///
     /// An empty string suppresses the valid-state message. The value cannot be `null`.
     ///
-    /// @defaultValue `"No validation issues"`
-    private final StringProperty emptyText = new SimpleStringProperty(this, "emptyText", "No validation issues") {
-        /// Rejects null empty text values.
-        @Override
-        public void set(String newValue) {
-            super.set(Objects.requireNonNull(newValue, "emptyText"));
-        }
-    };
+    /// @defaultValue the inherited localizer's valid-state message
+    private final M3LocalizedStringProperty emptyText =
+            new M3LocalizedStringProperty(this, "emptyText", M3Localizer.getEffectiveLocalizer(this).getNoValidationIssuesText());
 
     /// Returns the text displayed when the summary renders a valid empty state.
     ///
@@ -216,7 +217,7 @@ public final class M3ValidationSummary extends Control {
 
     /// Returns the `emptyText` property.
     ///
-    /// The returned property is observable and bindable. Its default value is `"No validation issues"`.
+    /// The returned property is observable and bindable. Its default follows the inherited localizer.
     ///
     /// @return the `emptyText` property
     public final StringProperty emptyTextProperty() {

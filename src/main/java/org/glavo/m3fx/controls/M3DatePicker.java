@@ -18,9 +18,12 @@ import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.internal.M3LocalizedObjectProperty;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -28,9 +31,8 @@ import org.jetbrains.annotations.Nullable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.temporal.WeekFields;
+import java.time.format.TextStyle;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 /// A Material Design 3 calendar for selecting one local date.
@@ -43,7 +45,7 @@ import java.util.Objects;
 ///
 /// The calendar is focus traversable. Arrow keys move by day or week, Page Up and Page Down move by month, and Home
 /// and End move to the first and last day of the displayed month. Keyboard navigation changes selection only when
-/// the target date is enabled. The first weekday defaults to the current locale when the picker is constructed.
+/// the target date is enabled. The first weekday follows the effective [M3Localizer] unless explicitly overridden.
 ///
 /// A typical bounded picker can be configured as follows:
 ///
@@ -68,16 +70,21 @@ public final class M3DatePicker extends Control {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-date-picker";
 
+    /// Keeps localized property defaults current for the control's lifetime, independently of its skin.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a picker showing the current month with no selected date and no date bounds.
     public M3DatePicker() {
         initialize();
+        localizerObserver = new M3LocalizerObserver(this,
+                localizer -> firstDayOfWeek.updateDefault(localizer.getFirstDayOfWeek()));
     }
 
     /// Creates a picker whose selected value and displayed month are initialized from the specified date.
     ///
     /// @param value the initially selected date
     public M3DatePicker(LocalDate value) {
-        initialize();
+        this();
         setValue(value);
     }
 
@@ -179,18 +186,12 @@ public final class M3DatePicker extends Control {
         return displayedMonth;
     }
 
-    /// The weekday shown in the first calendar column.
-    ///
-    /// The initial value is derived from the default locale at construction time. A direct `null` assignment
-    /// recomputes the locale default. Changing the JVM default locale does not otherwise update an existing picker.
-    private final ObjectProperty<DayOfWeek> firstDayOfWeek =
-            new SimpleObjectProperty<>(this, "firstDayOfWeek", defaultFirstDayOfWeek()) {
-                /// Restores the locale default when callers set the property directly to `null`.
+    /// The first calendar weekday, following localization until explicitly assigned or bound.
+    private final M3LocalizedObjectProperty<DayOfWeek> firstDayOfWeek =
+            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", M3Localizer.getEffectiveLocalizer(this).getFirstDayOfWeek()) {
+                /// Notifies accessibility clients when visible day cells change.
                 @Override
                 protected void invalidated() {
-                    if (get() == null) {
-                        set(defaultFirstDayOfWeek());
-                    }
                     notifyAccessibleItemsChanged();
                 }
             };
@@ -202,18 +203,19 @@ public final class M3DatePicker extends Control {
         return firstDayOfWeek.get();
     }
 
-    /// Sets the weekday shown in the first calendar column.
+    /// Sets the first weekday, disabling automatic localized defaults even when the value is unchanged.
     ///
     /// @param firstDayOfWeek the weekday shown in the first calendar column
     /// @throws NullPointerException if `firstDayOfWeek` is `null`
     public final void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
-        this.firstDayOfWeek.set(Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek"));
+        this.firstDayOfWeek.set(firstDayOfWeek);
     }
 
-    /// Returns the observable property that stores the first day of the week.
+    /// Returns the observable property that stores the non-null first calendar weekday.
     ///
-    /// The property can be observed and bound. Its initial value is derived from the default locale at construction
-    /// time. Direct `null` assignments recompute that locale default; bound values must be non-null.
+    /// The value follows the effective [M3Localizer], including before a skin is installed, until explicitly
+    /// assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
+    /// non-null values. Unbinding retains the last bound value and does not restore automatic defaults.
     ///
     /// @return the first-day-of-week property
     public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
@@ -573,8 +575,13 @@ public final class M3DatePicker extends Control {
 
     /// Returns accessible text for the selected date or current month.
     private String accessibleText() {
+        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
         @Nullable LocalDate selectedDate = getValue();
-        return selectedDate == null ? getDisplayedMonth().toString() : selectedDate.toString();
+        YearMonth month = getDisplayedMonth();
+        return selectedDate == null
+                ? localizer.formatMonth(month.getMonth(), TextStyle.FULL_STANDALONE) + " "
+                        + localizer.formatYear(month.getYear())
+                : localizer.formatDate(selectedDate);
     }
 
     /// Returns the current selected date as an immutable accessibility selection list.
@@ -811,10 +818,5 @@ public final class M3DatePicker extends Control {
         if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
             throw new IllegalArgumentException("minDate must not be after maxDate");
         }
-    }
-
-    /// Returns the locale's default first day of week.
-    private static DayOfWeek defaultFirstDayOfWeek() {
-        return WeekFields.of(Locale.getDefault()).getFirstDayOfWeek();
     }
 }

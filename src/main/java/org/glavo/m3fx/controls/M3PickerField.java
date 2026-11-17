@@ -34,6 +34,9 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizedStringProperty;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
@@ -46,6 +49,7 @@ import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /// A base control for Material Design 3 text fields that edit values through a picker popup.
 ///
@@ -132,6 +136,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Whether the committed-value property currently has a unidirectional binding.
     private final ReadOnlyBooleanWrapper valueBound = new ReadOnlyBooleanWrapper(this, "valueBound");
 
+    /// Retains scoped localization updates for this control's lifetime.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a picker field around the supplied popup picker.
     ///
     /// @param picker                   the picker control used to select field values
@@ -140,9 +147,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// @param styleClass               the concrete picker field style class
     /// @param popupStyleClass          the concrete picker popup style class
     /// @param pickerIconGraphic        the graphic displayed by the trailing open button
-    /// @param openButtonAccessibleText the accessible text for the trailing open button
-    /// @param invalidTextErrorText     the error text shown when editor text cannot be parsed
-    /// @param rangeErrorText           the error text shown when editor text parses outside the selectable range
+    /// @param openButtonAccessibleText resolves the accessible text for the trailing open button
+    /// @param invalidTextErrorText     resolves the default error text when editor text cannot be parsed
+    /// @param rangeErrorText           resolves the default error text outside the selectable range
     /// @throws NullPointerException if `picker`, `pickerValue`, `formatter`, `styleClass`, `popupStyleClass`,
     ///         `pickerIconGraphic`, `openButtonAccessibleText`, `invalidTextErrorText`, or `rangeErrorText` is `null`
     M3PickerField(
@@ -152,18 +159,24 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
             String styleClass,
             String popupStyleClass,
             Node pickerIconGraphic,
-            String openButtonAccessibleText,
-            String invalidTextErrorText,
-            String rangeErrorText
+            Function<M3Localizer, String> openButtonAccessibleText,
+            Function<M3Localizer, String> invalidTextErrorText,
+            Function<M3Localizer, String> rangeErrorText
     ) {
         this.picker = Objects.requireNonNull(picker, "picker");
         this.pickerValue = Objects.requireNonNull(pickerValue, "pickerValue");
         this.popupContent = this.picker;
         this.popupStyleClass = Objects.requireNonNull(popupStyleClass, "popupStyleClass");
         this.openButton = new M3IconButton(Objects.requireNonNull(pickerIconGraphic, "pickerIconGraphic"));
+        Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText");
+        Objects.requireNonNull(rangeErrorText, "rangeErrorText");
+        Objects.requireNonNull(openButtonAccessibleText, "openButtonAccessibleText");
+        M3Localizer initialLocalizer = M3Localizer.getEffectiveLocalizer(this);
+        this.invalidTextErrorText = new M3LocalizedStringProperty(
+                this, "invalidTextErrorText", invalidTextErrorText.apply(initialLocalizer));
+        this.rangeErrorText = new M3LocalizedStringProperty(
+                this, "rangeErrorText", rangeErrorText.apply(initialLocalizer));
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
-        this.invalidTextErrorText.set(Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText"));
-        this.rangeErrorText.set(Objects.requireNonNull(rangeErrorText, "rangeErrorText"));
         editor.textProperty().bindBidirectional(text);
         editor.variantProperty().bindBidirectional(variant);
         inputLayout.characterCounterVisibleProperty().bindBidirectional(characterCounterVisible);
@@ -172,10 +185,15 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         inputLayout.labelTextProperty().bindBidirectional(labelText);
         inputLayout.supportingTextProperty().bindBidirectional(supportingText);
         inputLayout.errorTextProperty().bindBidirectional(errorText);
-        initialize(
-                Objects.requireNonNull(styleClass, "styleClass"),
-                Objects.requireNonNull(openButtonAccessibleText, "openButtonAccessibleText")
-        );
+        initialize(Objects.requireNonNull(styleClass, "styleClass"));
+        localizerObserver = new M3LocalizerObserver(this, localizer -> {
+            if (!openButton.accessibleTextProperty().isBound()) {
+                openButton.setAccessibleText(openButtonAccessibleText.apply(localizer));
+            }
+            this.invalidTextErrorText.updateDefault(invalidTextErrorText.apply(localizer));
+            this.rangeErrorText.updateDefault(rangeErrorText.apply(localizer));
+            refreshActiveValidation();
+        });
     }
 
     /// The selected and committed picker value.
@@ -278,6 +296,12 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     ///
     /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps subsequent editor updates observable with JavaFX 17 bidirectional bindings.
+        @Override
+        protected void invalidated() {
+            get();
+        }
+
         /// Keeps editor text non-null.
         @Override
         public void set(String newValue) {
@@ -652,17 +676,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         inputLayout.clearValidation();
     }
 
-    /// The non-null message used when editor text cannot be parsed.
-    ///
-    /// Concrete picker fields supply their documented initial message.
-    private final StringProperty invalidTextErrorText =
-            new SimpleStringProperty(this, "invalidTextErrorText") {
-                /// Keeps parse error text non-null.
-                @Override
-                public void set(String newValue) {
-                    super.set(Objects.requireNonNull(newValue, "invalidTextErrorText"));
-                }
-            };
+    /// The non-null parse error message, localized until explicitly assigned or bound.
+    private final M3LocalizedStringProperty invalidTextErrorText;
 
     /// Returns the parse error message used when editor text is invalid.
     ///
@@ -673,7 +688,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Sets the parse error message used when editor text is invalid.
     ///
-    /// @param invalidTextErrorText the parse error message used when editor text is invalid
+    /// @param invalidTextErrorText the non-null application-owned parse error message
     /// @throws NullPointerException if `invalidTextErrorText` is `null`
     public final void setInvalidTextErrorText(String invalidTextErrorText) {
         this.invalidTextErrorText.set(invalidTextErrorText);
@@ -681,25 +696,16 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable non-null parse-error-message property.
     ///
-    /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
-    /// published through [#validationErrorTextProperty()] when editor text cannot be parsed.
+    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the parse-error-message property
     public final StringProperty invalidTextErrorTextProperty() {
         return invalidTextErrorText;
     }
 
-    /// The non-null message used when parsed text is outside the selectable range.
-    ///
-    /// Concrete picker fields supply their documented initial message.
-    private final StringProperty rangeErrorText =
-            new SimpleStringProperty(this, "rangeErrorText") {
-                /// Keeps range error text non-null.
-                @Override
-                public void set(String newValue) {
-                    super.set(Objects.requireNonNull(newValue, "rangeErrorText"));
-                }
-            };
+    /// The non-null selectable-range error message, localized until explicitly assigned or bound.
+    private final M3LocalizedStringProperty rangeErrorText;
 
     /// Returns the range error message used when editor text is outside the selectable range.
     ///
@@ -710,7 +716,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Sets the range error message used when editor text is outside the selectable range.
     ///
-    /// @param rangeErrorText the range error message used when editor text is outside the selectable range
+    /// @param rangeErrorText the non-null application-owned selectable-range error message
     /// @throws NullPointerException if `rangeErrorText` is `null`
     public final void setRangeErrorText(String rangeErrorText) {
         this.rangeErrorText.set(rangeErrorText);
@@ -718,8 +724,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable non-null range-error-message property.
     ///
-    /// The concrete picker field supplies the initial message. The property rejects `null`; its current value is
-    /// published through [#validationErrorTextProperty()] when parsed editor text is outside the selectable range.
+    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the range-error-message property
     public final StringProperty rangeErrorTextProperty() {
@@ -1005,7 +1011,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     }
 
     /// Adds style classes and installs field-level handlers.
-    private void initialize(String styleClass, String openButtonAccessibleText) {
+    private void initialize(String styleClass) {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         M3ControlStyles.add(this, styleClass);
         M3ControlStyles.add(openButton, OPEN_BUTTON_STYLE_CLASS);
@@ -1023,7 +1029,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         editor.editableProperty().bind(valueBound.not());
         openButton.disableProperty().bind(valueBound);
-        openButton.setAccessibleText(openButtonAccessibleText);
         openButton.setOnAction(event -> togglePicker());
 
         pickerValue.addListener((observable, oldValue, newValue) -> handlePickerValueChanged(newValue));

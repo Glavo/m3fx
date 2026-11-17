@@ -9,6 +9,7 @@ import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -22,8 +23,10 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3DateRangeSelection;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +36,6 @@ import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /// The default calendar skin for [M3DateRangePicker].
 @NotNullByDefault
@@ -117,8 +119,11 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     /// The reusable day cell buttons in row-major order.
     private final List<DateCellButton> dayCells = new ArrayList<>(DAY_CELL_COUNT);
 
-    /// The locale used to create the cached month formatter.
-    private @Nullable Locale cachedFormatLocale;
+    /// Observes the picker's effective localizer until disposal.
+    private final M3LocalizerObserver localizerObserver;
+
+    /// The localizer used for the currently rendered calendar text.
+    private @Nullable M3Localizer cachedLocalizer;
 
     /// The month currently mapped into reusable day cells.
     private @Nullable YearMonth mappedMonth;
@@ -159,7 +164,12 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
         initializeNodes();
         installListeners(control);
         getChildren().setAll(container);
-        refreshCalendar();
+        localizerObserver = new M3LocalizerObserver(control, localizer -> {
+            refreshCalendar();
+            control.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+            control.notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            M3Accessible.notifyFocusNodeChanged(control);
+        });
     }
 
     /// Returns the number of day-cell nodes currently presented by the calendar grid.
@@ -198,6 +208,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     /// Removes listeners before the skin is disposed.
     @Override
     public void dispose() {
+        localizerObserver.close();
         M3DateRangePicker control = getSkinnable();
         control.selectionProperty().removeListener(rangeChange);
         control.displayedMonthProperty().removeListener(calendarInvalidation);
@@ -315,20 +326,21 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
         YearMonth displayedMonth = control.getDisplayedMonth();
         DayOfWeek firstDayOfWeek = control.getFirstDayOfWeek();
         boolean showAdjacentMonthDays = control.isShowAdjacentMonthDays();
-        Locale locale = Locale.getDefault(Locale.Category.FORMAT);
-        boolean localeChanged = !locale.equals(cachedFormatLocale);
+        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(control);
+        boolean localizerChanged = localizer != cachedLocalizer;
         boolean monthChanged = !displayedMonth.equals(mappedMonth);
         boolean firstDayChanged = firstDayOfWeek != mappedFirstDayOfWeek;
         boolean adjacentVisibilityChanged = showAdjacentMonthDays != mappedShowAdjacentMonthDays;
-        if (localeChanged || firstDayChanged) {
-            refreshWeekdayLabels(control, locale);
+        if (localizerChanged || firstDayChanged) {
+            refreshWeekdayLabels(control, localizer);
         }
-        if (monthChanged || firstDayChanged || adjacentVisibilityChanged) {
-            refreshDayCellStructure(control, displayedMonth);
+        if (localizerChanged || monthChanged || firstDayChanged || adjacentVisibilityChanged) {
+            refreshDayCellStructure(control, displayedMonth, localizer);
             mappedMonth = displayedMonth;
             mappedFirstDayOfWeek = firstDayOfWeek;
             mappedShowAdjacentMonthDays = showAdjacentMonthDays;
         }
+        cachedLocalizer = localizer;
         refreshDayCellAvailability(control);
         refreshRangeSelection();
         refreshRangeOrientation();
@@ -341,17 +353,18 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     }
 
     /// Updates localized weekday labels starting from the configured first day.
-    private void refreshWeekdayLabels(M3DateRangePicker control, Locale locale) {
+    private void refreshWeekdayLabels(M3DateRangePicker control, M3Localizer localizer) {
         DayOfWeek firstDayOfWeek = control.getFirstDayOfWeek();
         for (int column = 0; column < COLUMN_COUNT; column++) {
             DayOfWeek dayOfWeek = firstDayOfWeek.plus(column);
-            weekdayLabels.get(column).setText(dayOfWeek.getDisplayName(TextStyle.SHORT_STANDALONE, locale));
+            Label label = weekdayLabels.get(column);
+            label.setText(localizer.formatWeekday(dayOfWeek, TextStyle.SHORT_STANDALONE));
+            label.setAccessibleText(localizer.formatWeekday(dayOfWeek, TextStyle.FULL_STANDALONE));
         }
-        cachedFormatLocale = locale;
     }
 
     /// Updates day cell dates, labels, visibility, and structural state classes.
-    private void refreshDayCellStructure(M3DateRangePicker control, YearMonth displayedMonth) {
+    private void refreshDayCellStructure(M3DateRangePicker control, YearMonth displayedMonth, M3Localizer localizer) {
         LocalDate firstOfMonth = displayedMonth.atDay(1);
         int leadingDays = Math.floorMod(
                 firstOfMonth.getDayOfWeek().getValue() - control.getFirstDayOfWeek().getValue(),
@@ -368,12 +381,12 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
             boolean visible = !outsideMonth || control.isShowAdjacentMonthDays();
             boolean todayDate = date.equals(today);
 
-            String dayText = Integer.toString(date.getDayOfMonth());
+            String dayText = localizer.formatDayOfMonth(date);
             if (!dayText.equals(dayCell.getText())) {
                 dayCell.setText(dayText);
             }
             dayCell.setUserData(date);
-            dayCell.setAccessibleText(date.toString());
+            dayCell.setAccessibleText(localizer.formatDate(date));
             dayCell.setVisible(visible);
             dayCell.setMouseTransparent(!visible);
             setStyleClass(dayCell, OUTSIDE_MONTH_DAY_STYLE_CLASS, outsideMonth && visible);

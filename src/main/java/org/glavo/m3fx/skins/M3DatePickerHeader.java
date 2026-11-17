@@ -19,7 +19,9 @@ import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +32,6 @@ import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 /// Shared month and year navigation header for calendar date pickers.
@@ -63,6 +64,9 @@ final class M3DatePickerHeader extends HBox {
 
     /// The calendar control whose orientation and date bounds are represented.
     private final Control owner;
+
+    /// Observes the owning picker's effective localizer until disposal.
+    private final M3LocalizerObserver localizerObserver;
 
     /// The displayed calendar month property shared with the owning picker.
     private final ObjectProperty<YearMonth> displayedMonth;
@@ -149,11 +153,12 @@ final class M3DatePickerHeader extends HBox {
         minDate.addListener(stateInvalidation);
         maxDate.addListener(stateInvalidation);
         owner.effectiveNodeOrientationProperty().addListener(stateInvalidation);
-        refresh();
+        localizerObserver = new M3LocalizerObserver(owner, localizer -> refresh());
     }
 
     /// Releases bindings and listeners owned by this header.
     void dispose() {
+        localizerObserver.close();
         displayedMonth.removeListener(stateInvalidation);
         minDate.removeListener(stateInvalidation);
         maxDate.removeListener(stateInvalidation);
@@ -170,17 +175,23 @@ final class M3DatePickerHeader extends HBox {
     /// Synchronizes localized labels, menu entries, navigation availability, and logical arrow direction.
     private void refresh() {
         YearMonth month = displayedMonth.get();
-        Locale locale = Locale.getDefault(Locale.Category.FORMAT);
+        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(owner);
         @Nullable LocalDate minimum = minDate.get();
         @Nullable LocalDate maximum = maxDate.get();
 
-        monthButton.setText(month.getMonth().getDisplayName(TextStyle.SHORT_STANDALONE, locale));
-        yearButton.setText(Integer.toString(month.getYear()));
+        monthButton.setText(localizer.formatMonth(month.getMonth(), TextStyle.SHORT_STANDALONE));
+        yearButton.setText(localizer.formatYear(month.getYear()));
+        previousMonthButton.setAccessibleText(localizer.getPreviousMonthText());
+        nextMonthButton.setAccessibleText(localizer.getNextMonthText());
+        previousYearButton.setAccessibleText(localizer.getPreviousYearText());
+        nextYearButton.setAccessibleText(localizer.getNextYearText());
+        monthButton.setAccessibleText(localizer.getChooseMonthText() + ": " + monthButton.getText());
+        yearButton.setAccessibleText(localizer.getChooseYearText() + ": " + yearButton.getText());
 
         for (int index = 0; index < monthItems.size(); index++) {
             Month itemMonth = Month.of(index + 1);
             M3MenuItem item = monthItems.get(index);
-            item.setHeadlineText(itemMonth.getDisplayName(TextStyle.FULL_STANDALONE, locale));
+            item.setHeadlineText(localizer.formatMonth(itemMonth, TextStyle.FULL_STANDALONE));
             item.setSelected(itemMonth == month.getMonth());
             item.setDisable(monthFallsOutsideBounds(YearMonth.of(month.getYear(), itemMonth), minimum, maximum));
         }
@@ -212,7 +223,7 @@ final class M3DatePickerHeader extends HBox {
             int year = (int) candidate;
             item.setVisible(true);
             item.setManaged(true);
-            item.setHeadlineText(Integer.toString(year));
+            item.setHeadlineText(localizer.formatYear(year));
             item.setUserData(year);
             item.setSelected(year == month.getYear());
             item.setDisable(yearFallsOutsideBounds(year, minimum, maximum));

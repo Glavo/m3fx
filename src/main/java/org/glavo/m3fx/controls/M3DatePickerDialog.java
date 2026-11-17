@@ -3,17 +3,21 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.internal.M3PresetNavigation;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizedStringProperty;
+import org.glavo.m3fx.internal.M3LocalizedTextDefault;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3PickerPresetController;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,12 +54,13 @@ import java.time.LocalDate;
 /// }
 /// ```
 ///
+/// The pane headline and action labels follow the effective localizer until customized or bound. Assigning the
+/// headline explicitly preserves it even when unchanged. JavaFX does not notify unchanged action-text assignments;
+/// those labels continue following localization unless their value changes or their text property is bound.
+///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePickerDialog extends M3Dialog {
-    /// The default headline text for date picker dialogs.
-    private static final String DEFAULT_TITLE = "Select date";
-
     /// The style class applied to dialog content when preset actions are visible.
     private static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-dialog-preset-content";
 
@@ -67,7 +72,7 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
     ///
-    /// The headline is initialized to `Select date`, and Cancel and OK buttons are installed.
+    /// The headline and action labels follow the pane's effective localizer until explicitly customized.
     public M3DatePickerDialog() {
         initialize();
     }
@@ -141,6 +146,23 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// The retained confirmation action shown in the dialog action row.
     private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
+    /// Tracks application ownership of the existing cancellation action text.
+    private final M3LocalizedTextDefault cancelText = new M3LocalizedTextDefault(cancelAction.textProperty());
+
+    /// Tracks application ownership of the existing confirmation action text.
+    private final M3LocalizedTextDefault confirmText = new M3LocalizedTextDefault(confirmAction.textProperty());
+
+    /// Retains inherited localization observation for this reusable dialog's lifetime.
+    private final M3LocalizerObserver localizerObserver =
+            new M3LocalizerObserver(getDialogPane(), this::refreshLocalization);
+
+    /// Refreshes only text that has not been customized or bound by the application.
+    private void refreshLocalization(M3Localizer localizer) {
+        ((M3LocalizedStringProperty) getDialogPane().headerTextProperty()).updateDefault(localizer.getSelectDateText());
+        cancelText.updateDefault(localizer.getCancelText());
+        confirmText.updateDefault(localizer.getConfirmText());
+    }
+
     /// Whether the dialog and picker are currently synchronizing selected values.
     private boolean synchronizingValue;
 
@@ -195,7 +217,6 @@ public final class M3DatePickerDialog extends M3Dialog {
         });
         M3DialogPane pane = getDialogPane();
         picker.pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
-        pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);

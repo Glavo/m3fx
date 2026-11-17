@@ -185,6 +185,71 @@ suspending snackbar interaction until the modal layer is hidden.
 
 `M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Applications should install themes through this API; generated stylesheet locations are not stable application resources.
 
+## Localization
+
+`org.glavo.m3fx.localization.M3Localizer` is a typed object for built-in control text and calendar formatting,
+not a translation framework. The base implementation supplies English messages; its `Locale` controls regional
+calendar names and date descriptions, not automatic message translation. Override individual methods with your
+application's translations. No ResourceBundle or ICU dependency is required.
+
+```java
+/// Supplies the application's German date-entry messages.
+@NotNullByDefault
+final class GermanLocalizer extends M3Localizer {
+    /// Uses German regional calendar formatting.
+    GermanLocalizer() {
+        super(Locale.GERMANY);
+    }
+
+    /// Returns the date validation message.
+    @Override
+    public String getInvalidDateText() {
+        return "Bitte ein korrektes Datum eingeben";
+    }
+
+    /// Returns the cancellation label.
+    @Override
+    public String getCancelText() {
+        return "Abbrechen";
+    }
+}
+```
+
+Install on any node to configure that node and its descendants. The nearest node installation wins:
+
+```java
+M3Localizer.install(root, new GermanLocalizer());
+M3Localizer.install(calendar, new M3Localizer(Locale.US));
+M3Localizer effective = M3Localizer.getEffectiveLocalizer(calendar);
+M3Localizer.uninstall(calendar); // Restore inheritance from root.
+M3Localizer.install(root, new M3Localizer(Locale.US)); // Update existing controls in place.
+```
+
+Replace the installed object on the JavaFX Application Thread to switch languages at runtime. Methods return
+non-null final text and should remain stable for an instance's lifetime; mutating external translation data or
+reinstalling the same instance does not trigger a refresh. `uninstall(node)` removes only that node's installation,
+leaving descendant installations intact. Without an installation, English messages use the fallback's captured
+default format locale.
+
+User-provided and bound text wins over localized defaults. Application labels, validation overrides, preset text,
+and explicit formatters are not translated or replaced. `formatMonth(Month, TextStyle)`,
+`formatWeekday(DayOfWeek, TextStyle)`, and `formatDate(LocalDate)` customize calendar presentation;
+`formatDate` describes calendar dates for accessibility, not picker-field parsing. Date fields retain their ISO
+default and time fields retain `HH:mm`; configure their formatter properties separately. Localization does not
+change node orientation.
+
+Picker-dialog headlines preserve explicit assignments even when the assigned text equals the default. Their
+existing JavaFX action buttons preserve observable text changes and one-way bindings. JavaFX does not report
+same-value writes to those inherited button text properties, so such writes alone do not disable localized defaults.
+
+Localization currently covers calendar and time pickers, picker dialogs and fields, numeric-field messages,
+validation summaries, clear/back/overflow/dismiss actions, range-slider thumbs, sheet handles, and progress
+descriptions. Application-supplied content and preset labels remain ordinary strings; this API does not localize
+color-control descriptions.
+
+The Demo's **Date Pickers > Localization** sample switches an existing calendar and date field between English
+and an application-supplied German localizer, retaining the bound `Event date` label and explicit ISO formatter.
+
 ## Color Editing
 
 M3FX provides composable color controls based on the interaction and accessibility model of the

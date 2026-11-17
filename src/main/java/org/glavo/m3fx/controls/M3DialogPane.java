@@ -27,6 +27,7 @@ import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -119,7 +120,7 @@ public class M3DialogPane extends Control {
     /// validate this constraint when invalidated.
     ///
     /// @defaultValue `""`
-    private final StringProperty headerText = new SimpleStringProperty(this, "headerText", "") {
+    private final StringProperty headerText = new M3LocalizedStringProperty(this, "headerText", "") {
         /// Rejects null headline values and refreshes accessibility state.
         @Override
         protected void invalidated() {

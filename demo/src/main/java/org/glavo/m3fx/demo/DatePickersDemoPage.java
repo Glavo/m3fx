@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
+import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3DatePicker;
@@ -15,12 +17,17 @@ import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3DateRangePresets;
+import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3TextInputVariant;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Objects;
 
 /// Builds the DatePickers component showcase page.
@@ -36,13 +43,6 @@ final class DatePickersDemoPage extends DemoPageSupport {
     /// Creates the date picker component page.
     Node createContent() {
         LocalDate today = LocalDate.now();
-        M3DatePickerField field = new M3DatePickerField(today);
-        field.setLabelText("Event date");
-        field.setSupportingText("Editable ISO date with popup calendar");
-        field.setVariant(M3TextInputVariant.OUTLINED);
-        field.getPresets().setAll(M3DatePresets.common(today));
-        configureResponsiveWidth(field, 320.0);
-
         M3DatePickerField boundedField = new M3DatePickerField(today.plusDays(2));
         boundedField.setLabelText("Booking date");
         boundedField.setSupportingText("Limited to the next two weeks");
@@ -68,8 +68,6 @@ final class DatePickersDemoPage extends DemoPageSupport {
         rangeField.getPresets().setAll(M3DateRangePresets.common(today, rangeField.getPicker().getFirstDayOfWeek()));
         configureResponsiveWidth(rangeField, 680.0);
 
-        M3DatePicker selected = new M3DatePicker(today);
-
         M3DatePicker range = new M3DatePicker(today.plusDays(4));
         range.setMinDate(today.minusDays(3));
         range.setMaxDate(today.plusDays(18));
@@ -90,13 +88,105 @@ final class DatePickersDemoPage extends DemoPageSupport {
         presetRangeDialogButton.setOnAction(event -> showPresetDateRangePickerDialog(today));
 
         return createGallery(
-                createShowcaseGroup("Fields", field, boundedField),
+                createFullWidthShowcaseGroup("Localization", createLocalizationSample(today)),
+                createShowcaseGroup("Bounded Field", boundedField),
                 createFullWidthShowcaseGroup("Range Field", rangeField),
                 createShowcaseGroup("Dialogs", dateDialogButton, rangeDialogButton, presetRangeDialogButton),
-                createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range, dateRange),
                 createShowcaseGroup("Month Only", monthOnly)
         );
+    }
+
+    /// Creates a retained calendar and editor with subtree-scoped language switching.
+    static VBox createLocalizationSample(LocalDate date) {
+        M3DatePicker calendar = new M3DatePicker(date);
+        M3DatePickerField field = new M3DatePickerField(date);
+        field.labelTextProperty().bind(new SimpleStringProperty("Event date"));
+        field.setFormatter(DateTimeFormatter.ISO_LOCAL_DATE);
+        field.setVariant(M3TextInputVariant.OUTLINED);
+        configureResponsiveWidth(field, 320.0);
+        field.valueProperty().bindBidirectional(calendar.valueProperty());
+
+        M3SegmentedButton english = new M3SegmentedButton("English");
+        M3SegmentedButton german = new M3SegmentedButton("German");
+        M3SegmentedButtonGroup language = createSegmentedButtonGroup(english, german);
+        language.setAccessibleText("Language");
+        language.setAllowEmptySelection(false);
+        language.selectIndex(0);
+
+        VBox sample = new VBox(16.0, language, createResponsiveActionRow(calendar, field));
+        sample.setMinWidth(0.0);
+        M3Localizer.install(sample, new M3Localizer(Locale.US));
+        language.selectedButtonProperty().addListener((observable, oldValue, selected) -> {
+            if (selected != null) {
+                M3Localizer.install(sample, selected == german
+                        ? new GermanCalendarLocalizer() : new M3Localizer(Locale.US));
+            }
+        });
+        return sample;
+    }
+
+    /// Supplies application-owned German messages for this calendar sample.
+    @NotNullByDefault
+    private static final class GermanCalendarLocalizer extends M3Localizer {
+        /// Uses German calendar names and full accessible dates from the JDK.
+        private GermanCalendarLocalizer() {
+            super(Locale.GERMANY);
+        }
+
+        /// Returns the clear-text action description.
+        @Override
+        public String getClearActionText() {
+            return "Text entfernen";
+        }
+
+        /// Returns the popup calendar action description.
+        @Override
+        public String getOpenDatePickerText() {
+            return "Kalender \u00f6ffnen";
+        }
+
+        /// Returns the date validation message.
+        @Override
+        public String getInvalidDateText() {
+            return "Bitte ein korrektes Datum eingeben";
+        }
+
+        /// Returns the previous-month action description.
+        @Override
+        public String getPreviousMonthText() {
+            return "Vorheriger Monat";
+        }
+
+        /// Returns the next-month action description.
+        @Override
+        public String getNextMonthText() {
+            return "N\u00e4chster Monat";
+        }
+
+        /// Returns the previous-year action description.
+        @Override
+        public String getPreviousYearText() {
+            return "Vorheriges Jahr";
+        }
+
+        /// Returns the next-year action description.
+        @Override
+        public String getNextYearText() {
+            return "N\u00e4chstes Jahr";
+        }
+
+        /// Returns the month-menu action description.
+        @Override
+        public String getChooseMonthText() {
+            return "Monat wechseln";
+        }
+
+        /// Returns the year-menu action description.
+        @Override
+        public String getChooseYearText() {
+            return "Jahr wechseln";
+        }
     }
 
     /// Opens a date picker dialog and reports the accepted date.

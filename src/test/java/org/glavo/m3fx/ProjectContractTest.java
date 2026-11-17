@@ -67,6 +67,7 @@ final class ProjectContractTest {
             "org.glavo.m3fx.animation",
             "org.glavo.m3fx.controls",
             "org.glavo.m3fx.layout",
+            "org.glavo.m3fx.localization",
             "org.glavo.m3fx.theme",
             "org.glavo.m3fx.tokens"
     );

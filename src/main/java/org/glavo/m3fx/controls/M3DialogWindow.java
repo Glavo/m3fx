@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3DialogPresentation;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3WindowDialogPresentation;
 import org.glavo.m3fx.theme.M3Theme;
@@ -58,6 +59,9 @@ import java.util.Objects;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public final class M3DialogWindow {
+    /// Mirrors the owner's localization only for the lifetime of a presentation.
+    private @Nullable M3LocalizerObserver localizerObserver;
+
     /// The style class installed on the dedicated scene root.
     private static final String DEFAULT_ROOT_STYLE_CLASS = "m3-dialog-window-root";
 
@@ -291,6 +295,10 @@ public final class M3DialogWindow {
 
     /// Releases the host reservation after its exact presentation has disposed.
     private void releasePresentation() {
+        if (localizerObserver != null) {
+            localizerObserver.close();
+            localizerObserver = null;
+        }
         activePresentation = null;
     }
 
@@ -300,6 +308,18 @@ public final class M3DialogWindow {
         @Nullable Window owner = stage.getOwner();
         if (owner != null && owner.getScene() != null) {
             root.setNodeOrientation(owner.getScene().getRoot().getEffectiveNodeOrientation());
+            if (localizerObserver != null) {
+                localizerObserver.close();
+                localizerObserver = null;
+            }
+            @Nullable M3DialogPresentation presentation = activePresentation;
+            M3LocalizerObserver replacement = new M3LocalizerObserver(owner.getScene().getRoot(),
+                    localizer -> M3LocalizerObserver.inherit(root, localizer));
+            if (presentation != null && activePresentation == presentation) {
+                localizerObserver = replacement;
+            } else {
+                replacement.close();
+            }
         } else {
             root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         }

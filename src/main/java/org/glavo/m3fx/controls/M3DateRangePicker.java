@@ -20,9 +20,12 @@ import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.internal.M3LocalizedObjectProperty;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -30,10 +33,9 @@ import org.jetbrains.annotations.Nullable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.temporal.WeekFields;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 /// A Material Design 3 calendar for selecting an inclusive local-date range.
@@ -66,9 +68,14 @@ public final class M3DateRangePicker extends Control {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker";
 
+    /// Keeps localized property defaults current for the control's lifetime, independently of its skin.
+    private final M3LocalizerObserver localizerObserver;
+
     /// Creates a picker showing the current month with no selected range and no date bounds.
     public M3DateRangePicker() {
         initialize();
+        localizerObserver = new M3LocalizerObserver(this,
+                localizer -> firstDayOfWeek.updateDefault(localizer.getFirstDayOfWeek()));
     }
 
     /// Creates a date range picker initialized with the supplied selected range.
@@ -77,7 +84,7 @@ public final class M3DateRangePicker extends Control {
     /// @param endDate   the last selected date
     /// @throws IllegalArgumentException if `startDate` is after `endDate`
     public M3DateRangePicker(LocalDate startDate, LocalDate endDate) {
-        initialize();
+        this();
         setRange(startDate, endDate);
     }
 
@@ -258,18 +265,9 @@ public final class M3DateRangePicker extends Control {
         return displayedMonth;
     }
 
-    /// The weekday shown in the first calendar column.
-    ///
-    /// The initial value is derived from the default locale at construction time. Direct assignments reject `null`,
-    /// bound values must be non-null, and later default-locale changes do not update an existing picker.
-    private final ObjectProperty<DayOfWeek> firstDayOfWeek =
-            new SimpleObjectProperty<>(this, "firstDayOfWeek", defaultFirstDayOfWeek()) {
-                /// Keeps first day of week values non-null.
-                @Override
-                public void set(DayOfWeek newValue) {
-                    super.set(Objects.requireNonNull(newValue, "firstDayOfWeek"));
-                }
-
+    /// The first calendar weekday, following localization until explicitly assigned or bound.
+    private final M3LocalizedObjectProperty<DayOfWeek> firstDayOfWeek =
+            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", M3Localizer.getEffectiveLocalizer(this).getFirstDayOfWeek()) {
                 /// Notifies accessibility clients when visible day cells change.
                 @Override
                 protected void invalidated() {
@@ -284,18 +282,19 @@ public final class M3DateRangePicker extends Control {
         return firstDayOfWeek.get();
     }
 
-    /// Sets the weekday shown in the first calendar column.
+    /// Sets the first weekday, disabling automatic localized defaults even when the value is unchanged.
     ///
     /// @param firstDayOfWeek the weekday shown in the first calendar column
     /// @throws NullPointerException if `firstDayOfWeek` is `null`
     public final void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
-        this.firstDayOfWeek.set(Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek"));
+        this.firstDayOfWeek.set(firstDayOfWeek);
     }
 
-    /// Returns the observable property that stores the first day of the week.
+    /// Returns the observable property that stores the non-null first calendar weekday.
     ///
-    /// The property can be observed and bound. Its initial value is derived from the default locale at construction
-    /// time, and direct assignments and bound values must be non-null.
+    /// The value follows the effective [M3Localizer], including before a skin is installed, until explicitly
+    /// assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
+    /// non-null values. Unbinding retains the last bound value and does not restore automatic defaults.
     ///
     /// @return the first-day-of-week property
     public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
@@ -777,12 +776,16 @@ public final class M3DateRangePicker extends Control {
 
     /// Returns accessible text for the selected range or displayed month.
     private String accessibleText() {
+        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
         @Nullable LocalDate start = getStartDate();
         @Nullable LocalDate end = getEndDate();
         if (start == null) {
-            return getDisplayedMonth().toString();
+            YearMonth month = getDisplayedMonth();
+            return localizer.formatMonth(month.getMonth(), TextStyle.FULL_STANDALONE) + " "
+                    + localizer.formatYear(month.getYear());
         }
-        return end == null ? start.toString() : start + "/" + end;
+        return end == null ? localizer.formatDate(start)
+                : localizer.formatDate(start) + " / " + localizer.formatDate(end);
     }
 
     /// Returns the selected endpoints as an immutable accessibility selection list.
@@ -1156,10 +1159,5 @@ public final class M3DateRangePicker extends Control {
         if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
             throw new IllegalArgumentException("minDate must not be after maxDate");
         }
-    }
-
-    /// Returns the locale's default first day of week.
-    private static DayOfWeek defaultFirstDayOfWeek() {
-        return WeekFields.of(Locale.getDefault()).getFirstDayOfWeek();
     }
 }

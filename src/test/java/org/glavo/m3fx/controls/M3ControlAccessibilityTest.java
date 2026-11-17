@@ -111,7 +111,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(M3Accessible.dialogRole(), new M3SideSheet().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
-        assertEquals("Dismiss", new M3Scrim().getAccessibleText());
+        assertEquals("Dismiss", new M3Scrim().queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals(AccessibleRole.LIST_VIEW, new M3Carousel().getAccessibleRole());
         assertEquals(AccessibleRole.MENU, new M3Menu().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_BUTTON, new M3MenuButton().getAccessibleRole());
