@@ -28,7 +28,7 @@ The demo shadow jar is intended for quick inspection of the demo application. It
 Build it with:
 
 ```shell
-./gradlew shadowDemoJar
+./gradlew :demo:shadowJar
 ```
 
 The output is:
@@ -47,7 +47,7 @@ M3FX, MonetFX, and non-JavaFX runtime dependencies. JavaFX remains supplied by t
 Build it with:
 
 ```shell
-./gradlew shadowCatalogJar
+./gradlew :catalog:shadowJar
 ```
 
 The output is:
@@ -65,7 +65,7 @@ supplied by the application environment.
 Build it with:
 
 ```shell
-./gradlew shadowHmclMd3DemoJar
+./gradlew :hmcl-md3-demo:shadowJar
 ```
 
 The output is:
@@ -81,27 +81,17 @@ The jlink tasks create runtime images for the demo application. They download a 
 Build the host-platform runtime image:
 
 ```shell
-./gradlew jlinkDemoRuntime
+./gradlew :demo:jlinkRuntime
 ```
 
-Build platform-specific images for the configured architecture:
+Build all supported Windows, Linux, and macOS images for x64 and AArch64:
 
 ```shell
-./gradlew jlinkDemoWindowsRuntime
-./gradlew jlinkDemoLinuxRuntime
-./gradlew jlinkDemoMacosRuntime
+./gradlew :demo:jlinkAllPlatformArchitectureRuntimes
 ```
 
-Build fixed platform and architecture images:
-
-```shell
-./gradlew jlinkDemoWindowsX64Runtime
-./gradlew jlinkDemoWindowsAarch64Runtime
-./gradlew jlinkDemoLinuxX64Runtime
-./gradlew jlinkDemoLinuxAarch64Runtime
-./gradlew jlinkDemoMacosX64Runtime
-./gradlew jlinkDemoMacosAarch64Runtime
-```
+For one platform, use `:demo:jlinkWindowsRuntime`, `:demo:jlinkLinuxRuntime`, or `:demo:jlinkMacosRuntime`.
+To fix the architecture, insert `X64` or `Aarch64` before `Runtime`, for example `:demo:jlinkLinuxX64Runtime`.
 
 Runtime images are written under:
 
@@ -124,11 +114,11 @@ working `native-image` executable and the JavaFX controls module.
 Build and run the executable with:
 
 ```shell
-./gradlew nativeBuildDemo
-./gradlew nativeRunDemo
+./gradlew :demo:stageNativeExecutable
+./gradlew :demo:nativeRun
 ```
 
-`nativeBuildDemo` builds the demo shadow jar, compiles it with `--no-fallback`, and stages one distributable file
+`:demo:stageNativeExecutable` builds the demo shadow jar, compiles it with `--no-fallback`, and stages one distributable file
 under:
 
 ```text
@@ -149,7 +139,7 @@ X11 development packages.
 The default jlink target is inferred from the host OS and architecture. It can be overridden with Gradle properties:
 
 ```shell
-./gradlew jlinkDemoRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
+./gradlew :demo:jlinkRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
 ```
 
 Supported Liberica OS values:
@@ -189,32 +179,23 @@ Cross-platform and cross-architecture jlink use target-platform `jmods` from the
 executable must run on the host and match the target Java feature version. An explicit executable may be provided:
 
 ```shell
-./gradlew jlinkDemoLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
+./gradlew :demo:jlinkLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
 ```
 
-## Validation
+## Library Artifacts
 
-Use these tasks before distributing artifacts:
+Build the core library artifacts:
 
 ```shell
-./gradlew releaseCheck
-./gradlew check
-./gradlew fullTest
-./gradlew compileJava
-./gradlew test
-./gradlew shadowDemoJar
-./gradlew shadowHmclMd3DemoJar
-./gradlew shadowCatalogJar
-./gradlew jlinkDemoRuntime
-./gradlew jlinkDemoAllPlatformArchitectureRuntimes
+./gradlew :assemble
 ```
 
-`releaseCheck` runs `check`, `fullTest`, all three sample-application shadow-jar verifications, and
-`jlinkDemoRuntime`. It is the local release gate for library publication and the host-platform demo distribution.
+Use `./gradlew :publishToMavenLocal` to install the core library publication in the local Maven repository.
+See [TESTING.md](TESTING.md) for test tiers and CI commands.
 
 ## Nightly Demo Release
 
-The Publish Nightly Demo workflow runs daily and can also be started manually. It publishes the verified Demo Shadow
+The Publish Nightly Demo workflow runs daily and can also be started manually. It publishes the Demo Shadow
 JAR and available native demo distributions.
 
 The workflow maintains one prerelease at the `nightly` tag. Each successful run moves the tag to the tested commit,

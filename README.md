@@ -57,10 +57,9 @@ dependencies {
 Replace `<tag-or-commit>` with a tag or commit containing the JitPack configuration. JavaFX dependencies must still
 be supplied by the application as shown above.
 
-The root `jitpack.yml` uses JDK 25. It verifies publication metadata and artifacts,
-then installs only the core library publication into JitPack's local Maven repository, including the main, sources,
-and Javadoc JARs. Signing is disabled in the JitPack environment. GUI tests and sample distributions are handled by
-the project's separate verification workflows.
+The root `jitpack.yml` uses JDK 25 and installs only the core library publication into JitPack's local Maven
+repository, including the main, sources, and Javadoc JARs. Signing is disabled in the JitPack environment.
+GUI tests and sample distributions are handled by the project's separate verification workflows.
 
 Push the configuration to GitHub before requesting the desired tag or commit on JitPack. The first dependency
 request triggers the build; its status and log are available on the JitPack project page.
@@ -641,7 +640,7 @@ The `demo` project is the exhaustive verification gallery. It exposes complete c
 directionality, and motion cases used by the visual test matrix:
 
 ```shell
-./gradlew runDemo
+./gradlew :demo:run
 ```
 
 The independent `catalog` project follows the AndroidX Material 3 Catalog's Home, Component, and Example
@@ -658,7 +657,7 @@ table views, and tree views. Theme and display
 controls live in a modal bottom sheet:
 
 ```shell
-./gradlew runCatalog
+./gradlew :catalog:run
 ```
 
 The `hmcl-md3-demo` project is a Material Design 3 reinterpretation of the HMCL launcher shell. It keeps the
@@ -667,37 +666,35 @@ transitions, install wizards, and task dialogs with deterministic offline sample
 the pinned HMCL v3.16.2 source archive:
 
 ```shell
-./gradlew runHmclMd3Demo
+./gradlew :hmcl-md3-demo:run
 ```
 
 Override the source archive for mirrors or local verification with `-Pm3fx.hmcl.sourceUrl=<url>` and, when the
-archive bytes differ, `-Pm3fx.hmcl.sourceSha256=<sha256>`. Run `./gradlew :hmcl-md3-demo:verifyHmclAssets` to
-verify the extracted asset set.
+archive bytes differ, `-Pm3fx.hmcl.sourceSha256=<sha256>`. The application's run and packaging tasks prepare
+the assets automatically.
 
-Build any sample application as a shadow jar without bundling JavaFX:
+Build all sample applications as shadow jars without bundling JavaFX:
 
 ```shell
-./gradlew shadowDemoJar
-./gradlew shadowHmclMd3DemoJar
-./gradlew shadowCatalogJar
+./gradlew shadowJar
 ```
 
 The [M3FX Nightly Release](https://github.com/Glavo/m3fx/releases/tag/nightly) is rebuilt daily and can also be
-triggered manually. It publishes the latest verified Demo Shadow JAR together with platform-specific Windows x64,
+triggered manually. It publishes the latest Demo Shadow JAR together with platform-specific Windows x64,
 Linux x64, and macOS AArch64 Native Image distributions and a SHA-256 checksum manifest.
 
 Build a host-platform jlink runtime image:
 
 ```shell
-./gradlew jlinkDemoRuntime
+./gradlew :demo:jlinkRuntime
 ```
 
 Build the demo as a host-platform native executable with
 [Liberica Native Image Kit Full](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/):
 
 ```shell
-./gradlew nativeBuildDemo
-./gradlew nativeRunDemo
+./gradlew :demo:stageNativeExecutable
+./gradlew :demo:nativeRun
 ```
 
 Native Image builds require a JavaFX-enabled Liberica NIK Full installation through `GRAALVM_HOME`, or as the JDK
@@ -705,27 +702,21 @@ running Gradle. The build compiles with `--no-fallback` and stages one distribut
 `demo/build/distributions/native/<os>-<arch>/`. Native executables are platform-specific and do not replace the
 cross-platform jlink tasks.
 
-Build all supported platform and architecture runtime images:
-
-```shell
-./gradlew jlinkDemoAllPlatformArchitectureRuntimes
-```
-
 See [docs/PACKAGING.md](docs/PACKAGING.md) for shadow jar, jlink, Native Image, cross-platform runtime-image, and
-validation details.
+library publication details.
 
 ## Verification
 
-Common local gates:
+Run the default checks or all test tiers from the repository root:
 
 ```shell
 ./gradlew check --warning-mode all
-./gradlew fullTest --warning-mode all
-./gradlew releaseCheck --warning-mode all
-./gradlew jlinkDemoAllPlatformArchitectureRuntimes
+./gradlew test testTier2 testTier3 --warning-mode all
 ```
 
-`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library, demo, catalog, and HMCL MD3 demo test tier. `releaseCheck` adds all three shadow jar verifications and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` runs Tier 1 by default. Run packaging tasks separately as described in [docs/PACKAGING.md](docs/PACKAGING.md).
+Unqualified task selectors such as `test` and `shadowJar` also select matching tasks in subprojects; a path such as
+`:demo:shadowJar` selects only that project's task.
 
 See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands.
 

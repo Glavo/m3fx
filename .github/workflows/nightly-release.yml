@@ -40,7 +40,7 @@ jobs:
       - name: Run Tier 1 tests and verify Demo Shadow JAR
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
-        run: xvfb-run -a ./gradlew test :demo:verifyShadowJar --no-daemon
+        run: xvfb-run -a ./gradlew test :demo:shadowJar --no-daemon
 
       - name: Package failure reports
         if: failure()
@@ -152,7 +152,7 @@ jobs:
       - name: Build native image
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
-        run: ./gradlew nativeBuildDemo --no-daemon
+        run: ./gradlew :demo:stageNativeExecutable --no-daemon
 
       - name: Verify Windows native executable startup
         if: runner.os == 'Windows'

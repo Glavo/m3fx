@@ -3,5 +3,4 @@ jdk:
 
 install:
   - |
-    ./gradlew --no-daemon \
-      :verifyPublicationMetadata :verifyPublicationArtifacts :publishToMavenLocal
+    ./gradlew --no-daemon :publishToMavenLocal

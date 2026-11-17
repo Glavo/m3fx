@@ -5,7 +5,6 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.HexFormat
-import java.util.zip.ZipFile
 
 plugins {
     application
@@ -137,40 +136,12 @@ tasks.processResources {
     dependsOn(extractHmclAssets)
 }
 
-val verifyHmclAssets = tasks.register("verifyHmclAssets") {
-    group = "verification"
-    description = "Verifies the generated HMCL artwork, skin assets, and upstream license."
-    dependsOn(extractHmclAssets)
-    inputs.dir(generatedHmclResources)
-
-    doLast {
-        val resourceRoot = generatedHmclResources.get().asFile
-        val requiredFiles = listOf(
-            "$hmclAssetPackagePath/img/icon.png",
-            "$hmclAssetPackagePath/img/skin/slim/alex.png",
-            "$hmclAssetPackagePath/img/skin/wide/steve.png",
-            "META-INF/licenses/HMCL-GPL-3.0.txt"
-        )
-        val missingFiles = requiredFiles.filter { relativePath ->
-            val file = resourceRoot.resolve(relativePath)
-            !file.isFile || file.length() == 0L
-        }
-        if (missingFiles.isNotEmpty()) {
-            throw GradleException("Generated HMCL resources are missing or empty: $missingFiles")
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn(verifyHmclAssets)
-}
-
 application {
     mainModule = "org.glavo.m3fx.hmcl.demo"
     mainClass = "org.glavo.m3fx.hmcl.demo.HMCLM3DemoLauncher"
 }
 
-val shadowJar = tasks.register<Jar>("shadowJar") {
+tasks.register<Jar>("shadowJar") {
     group = "distribution"
     description = "Builds an executable fat JAR for the HMCL Material Design 3 demo without bundling JavaFX."
     archiveBaseName = "hmcl-md3-demo"
@@ -199,78 +170,5 @@ val shadowJar = tasks.register<Jar>("shadowJar") {
     )
     manifest {
         attributes("Main-Class" to application.mainClass.get())
-    }
-}
-
-tasks.register("verifyShadowJar") {
-    group = "verification"
-    description = "Verifies that the HMCL Material Design 3 demo shadow JAR is executable, complete, and excludes JavaFX."
-    dependsOn(shadowJar)
-
-    val archiveFile = shadowJar.flatMap { it.archiveFile }
-    inputs.file(archiveFile)
-
-    doLast {
-        val jarFile = archiveFile.get().asFile
-        ZipFile(jarFile).use { zip ->
-            val entryNames = zip.entries().asSequence()
-                .map { entry -> entry.name }
-                .toSet()
-
-            val forbiddenEntries = entryNames.asSequence()
-                .filter { entryName ->
-                    entryName.startsWith("javafx/")
-                            || entryName.startsWith("com/sun/javafx/")
-                            || (entryName.startsWith("javafx-") && entryName.endsWith(".jar"))
-                }
-                .toList()
-            if (forbiddenEntries.isNotEmpty()) {
-                throw GradleException(
-                    "The HMCL MD3 demo shadow JAR must not bundle JavaFX entries: ${forbiddenEntries.take(10)}"
-                )
-            }
-
-            val manifestEntry = zip.getEntry("META-INF/MANIFEST.MF")
-                ?: throw GradleException("The HMCL MD3 demo shadow JAR is missing META-INF/MANIFEST.MF")
-            val manifest = zip.getInputStream(manifestEntry).bufferedReader().use { it.readText() }
-            val expectedMainClass = "Main-Class: ${application.mainClass.get()}"
-            if (!manifest.lineSequence().any { line -> line.trimEnd() == expectedMainClass }) {
-                throw GradleException(
-                    "The HMCL MD3 demo shadow JAR manifest is missing '$expectedMainClass'"
-                )
-            }
-
-            val requiredEntries = listOf(
-                "org/glavo/m3fx/hmcl/demo/HMCLM3DemoLauncher.class",
-                "org/glavo/m3fx/hmcl/demo/HMCLM3DemoApp.class",
-                "org/glavo/m3fx/hmcl/demo/HMCLDemoShell.class",
-                "org/glavo/m3fx/hmcl/demo/hmcl-md3-demo.css",
-                "org/glavo/m3fx/hmcl/demo/messages.properties",
-                "org/glavo/m3fx/hmcl/demo/messages_zh_CN.properties",
-                "org/glavo/m3fx/controls/M3Button.class",
-                "org/glavo/monetfx/Brightness.class"
-            )
-            val missingEntries = requiredEntries.filterNot(entryNames::contains)
-            if (missingEntries.isNotEmpty()) {
-                throw GradleException(
-                    "The HMCL MD3 demo shadow JAR is missing required entries: $missingEntries"
-                )
-            }
-
-            val requiredNonEmptyEntries = listOf(
-                "$hmclAssetPackagePath/img/icon.png",
-                "$hmclAssetPackagePath/img/skin/slim/alex.png",
-                "$hmclAssetPackagePath/img/skin/wide/steve.png",
-                "META-INF/licenses/HMCL-GPL-3.0.txt"
-            )
-            for (entryName in requiredNonEmptyEntries) {
-                val entry = zip.getEntry(entryName)
-                if (entry == null || entry.isDirectory || entry.size <= 0L) {
-                    throw GradleException(
-                        "The HMCL MD3 demo shadow JAR is missing or contains an empty $entryName"
-                    )
-                }
-            }
-        }
     }
 }

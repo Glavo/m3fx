@@ -10,7 +10,8 @@ Tier 1 is the default test suite. It covers deterministic API contracts, tokens,
 ./gradlew test
 ```
 
-`check` includes Tier 1 together with compilation, artifact, publication, and documentation verification. New tests belong in Tier 1 unless they require the capabilities reserved for a higher tier.
+`check` runs Tier 1 by default. Run packaging tasks separately as described in [PACKAGING.md](PACKAGING.md).
+New tests belong in Tier 1 unless they require the capabilities reserved for a higher tier.
 
 ## Tier 2: Integration
 
@@ -32,15 +33,28 @@ Tier 3 covers the complete demo visual matrix, real mouse interaction, animation
 
 Annotate Tier 3 test classes or methods with `@Tier3Test`. Tier 3 should contain broad visual journeys rather than small behavioral assertions that fit Tier 1 or Tier 2.
 
-## Complete Verification
+## Full Test Suite And CI
 
 Run all test tiers for release candidates and deliberate full visual review:
 
 ```shell
-./gradlew fullTest
+./gradlew test testTier2 testTier3
 ```
 
-`releaseCheck` includes `fullTest`, publication verification, the demo, HMCL MD3 demo, and catalog shadow jars, and the host-platform jlink runtime image. Push and pull-request CI use Tier 1; manually dispatched CI runs `releaseCheck`.
+Run commands from the repository root. Unqualified task selectors include matching tasks in all subprojects, so this
+command covers the library, demo, catalog, and HMCL MD3 demo. Use a path such as `:demo:testTier2` to target one project.
+
+Push and pull-request CI run Tier 1 and build the sample shadow jars:
+
+```shell
+./gradlew check shadowJar
+```
+
+Manually dispatched CI also runs Tier 2 and Tier 3 and builds the host-platform demo runtime image:
+
+```shell
+./gradlew check testTier2 testTier3 shadowJar :demo:jlinkRuntime
+```
 
 Gradle writes HTML reports below each project's `build/reports/tests` directory, with XML results below the
 corresponding `build/test-results` directory. Visual suites additionally write reviewable snapshots and indexes

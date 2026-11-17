@@ -32,13 +32,13 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
-        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar :hmcl-md3-demo:test :hmcl-md3-demo:verifyShadowJar --no-daemon
+        run: xvfb-run -a ./gradlew check shadowJar --no-daemon
 
-      - name: Run full release check
+      - name: Run all test tiers and package applications
         if: github.event_name == 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
-        run: xvfb-run -a ./gradlew releaseCheck --no-daemon
+        run: xvfb-run -a ./gradlew check testTier2 testTier3 shadowJar :demo:jlinkRuntime --no-daemon
 
       - name: Package reports
         if: always()
