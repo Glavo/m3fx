@@ -74,7 +74,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     private final InvalidationListener shapeTokenInvalidation = observable -> synchronizePartShapes();
 
     /// Animates one part shape when an interaction pseudo-class changes.
-    private final SetChangeListener<PseudoClass> partStateListener = change -> animatePartShapes();
+    private final SetChangeListener<PseudoClass> partStateListener = this::partStateChanged;
 
     /// Creates a split button skin.
     ///
@@ -168,8 +168,16 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         splitButton.requestLayout();
     }
 
-    /// Animates both part shapes toward values resolved from their current interaction states.
-    private void animatePartShapes() {
+    /// Updates the part shapes and the menu highlight when the corresponding visual states change.
+    private void partStateChanged(SetChangeListener.Change<? extends PseudoClass> change) {
+        PseudoClass state = change.wasAdded() ? change.getElementAdded() : change.getElementRemoved();
+        if (state == SHOWING_PSEUDO_CLASS) {
+            // The persistent highlight changes even if the selected and closed radii are identical.
+            menuButton.requestLayout();
+        } else if (state != ARMED_PSEUDO_CLASS && state != PRESSED_PSEUDO_CLASS
+                && state != HOVER_PSEUDO_CLASS && state != FOCUS_VISIBLE_PSEUDO_CLASS) {
+            return;
+        }
         M3SplitButton splitButton = getSkinnable();
         animatePartShape(
                 actionShapeTransition,
@@ -198,7 +206,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         if (isPressedLike(button)) {
             return splitButton.getPressedInnerCorner();
         }
-        if (menuPart && isSelectedMenuPart(splitButton, button)) {
+        if (menuPart && button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS)) {
             return splitButton.getSelectedInnerCorner();
         }
         if (button.isHover()
@@ -215,12 +223,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
                 || button.isPressed()
                 || button.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS)
                 || button.getPseudoClassStates().contains(PRESSED_PSEUDO_CLASS);
-    }
-
-    /// Returns whether the trailing menu part is selected because its popup is showing.
-    private static boolean isSelectedMenuPart(M3SplitButton splitButton, ButtonBase button) {
-        return splitButton.isShowing()
-                || button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS);
     }
 
     /// Lays out one part state layer from the same animated shape used by its rendered surface.
@@ -240,7 +242,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         }
 
         stateLayer.setRestingOverlayOpacity(
-                menuPart && isSelectedMenuPart(splitButton, button)
+                menuPart && button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS)
                         ? SELECTED_STATE_LAYER_OPACITY
                         : 0.0
         );

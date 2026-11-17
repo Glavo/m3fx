@@ -11,6 +11,8 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -139,6 +141,47 @@ final class M3SplitButtonContractTest {
             } finally {
                 splitButton.setAnimationsEnabled(true);
                 splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Closing the popup restores the trailing surface and feedback clip without further pointer input.
+    @Test
+    void trailingShapeFollowsPopupDismissal() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MenuItem item = new M3MenuItem("PDF");
+            M3SplitButton split = splitButton("Export", item);
+            split.setAnimationsEnabled(false);
+            M3MenuButton trailing = splitButtonMenuButton(split);
+            Pane root = new Pane(split);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320, 160);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                double outer = split.getOuterCorner();
+                for (Runnable dismiss : List.<Runnable>of(split::hideMenu, item::fire, () ->
+                        item.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
+                                false, false, false, false)))) {
+                    trailing.fire();
+                    assertTrue(split.isShowing());
+                    double selected = split.getSelectedInnerCorner();
+                    assertRegionRadii(trailing, selected, outer, outer, selected);
+                    dismiss.run();
+                    assertFalse(split.isShowing());
+                    trailing.layout();
+                    boolean highlighted = trailing.isHover() || trailing.getPseudoClassStates().contains(
+                            PseudoClass.getPseudoClass("focus-visible"));
+                    double closed = highlighted ? split.getHoveredInnerCorner() : split.getInnerCorner();
+                    assertRegionRadii(trailing, closed, outer, outer, closed);
+                    assertStateLayerRadii(trailing, closed, outer, outer, closed);
+                }
+            } finally {
+                split.hideMenu();
                 stage.close();
             }
         });
