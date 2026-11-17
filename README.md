@@ -34,6 +34,37 @@ dependencies {
 
 Use the JavaFX platform classifier that matches the target runtime: `win`, `linux`, or `mac`.
 
+### JitPack
+
+To consume a Git tag or commit through [JitPack](https://jitpack.io/#Glavo/m3fx), use the following repository and
+dependency instead of `org.glavo:m3fx`:
+
+```kotlin
+repositories {
+    mavenCentral()
+    maven("https://jitpack.io") {
+        content {
+            includeGroup("com.github.Glavo")
+        }
+    }
+}
+
+dependencies {
+    implementation("com.github.Glavo:m3fx:<tag-or-commit>")
+}
+```
+
+Replace `<tag-or-commit>` with a tag or commit containing the JitPack configuration. JavaFX dependencies must still
+be supplied by the application as shown above.
+
+The root `jitpack.yml` uses JDK 25. It verifies publication metadata and artifacts,
+then installs only the core library publication into JitPack's local Maven repository, including the main, sources,
+and Javadoc JARs. Signing is disabled in the JitPack environment. GUI tests and sample distributions are handled by
+the project's separate verification workflows.
+
+Push the configuration to GitHub before requesting the desired tag or commit on JitPack. The first dependency
+request triggers the build; its status and log are available on the JitPack project page.
+
 The JPMS module name is:
 
 ```java

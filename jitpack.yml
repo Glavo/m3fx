@@ -1,2 +1,7 @@
 jdk:
   - openjdk25
+
+install:
+  - |
+    ./gradlew --no-daemon \
+      :verifyPublicationMetadata :verifyPublicationArtifacts :publishToMavenLocal
