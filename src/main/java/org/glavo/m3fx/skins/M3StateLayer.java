@@ -113,7 +113,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The optional component container paint rendered beneath interaction feedback.
     private final Region containerPaintLayer = new Region();
 
-    /// The animated bounded ripple node, created for the first ripple interaction.
+    /// The bounded press paint, shared by expanding ripples and full-area fades.
     private @Nullable Region ripple;
 
     /// The independent keyboard focus indicator ring, created when keyboard-visible focus first appears.
@@ -198,13 +198,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 /// Replaces transient feedback without retaining a ripple from the previous mode.
                 @Override
                 protected void invalidated() {
-                    stopRippleAnimation();
-                    clearRipple();
                     @Nullable Node owner = stateOwner;
-                    if (owner != null) {
-                        synchronizeOwnerStateOpacity(owner);
-                        if (pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
-                            startMotionObservation();
+                    if (owner != null && pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
+                        playCenteredRipple();
+                    } else {
+                        stopRippleAnimation();
+                        clearRipple();
+                        if (owner != null) {
+                            synchronizeOwnerStateOpacity(owner);
                         }
                     }
                     stopMotionObservationIfIdle();
@@ -551,18 +552,10 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         Node owner = animationOwner();
         boolean unavailable = isPresentationUnavailable(owner);
         pressActive = !owner.isDisabled() && !unavailable;
-        if (getPressFeedback() == PressFeedback.STATE_LAYER) {
-            stopRippleAnimation();
-            clearRipple();
-            synchronizeOwnerStateOpacity(owner);
-            if (pressActive) {
-                startMotionObservation();
-            }
-            stopMotionObservationIfIdle();
-            return;
-        }
+        boolean fade = getPressFeedback() == PressFeedback.STATE_LAYER;
+        boolean animate = !animationsDisabled(owner);
         Region ripple = ensureRipple();
-        if (unavailable || animationsDisabled(owner)) {
+        if (!pressActive || (!fade && !animate)) {
             stopRippleAnimation();
             clearRippleAndSynchronizeOwnerState();
             return;
@@ -576,17 +569,21 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         double diameter = rippleDiameter(x, y, width, height);
         double rippleOpacity = stateLayerTokens(owner).pressedOpacity();
-        RippleTransition rippleAnimation = ensureRippleAnimation(ripple);
-        rippleAnimation.stop();
+        double startOpacity = fade && animate ? ripple.getOpacity() : rippleOpacity;
+        double startScale = fade ? 1.0 : 0.0;
+        stopRippleAnimation();
         ripple.resizeRelocate(x - diameter / 2.0, y - diameter / 2.0, diameter, diameter);
-        ripple.setScaleX(0.0);
-        ripple.setScaleY(0.0);
-        ripple.setOpacity(rippleOpacity);
+        ripple.setScaleX(startScale);
+        ripple.setScaleY(startScale);
+        ripple.setOpacity(startOpacity);
         animateOverlayOpacityFromOwnerState();
-        M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
-        rippleAnimation.configureExpansion(rippleSpec, rippleOpacity);
         startMotionObservation();
-        rippleAnimation.playFromStart();
+        if (animate && (!fade || startOpacity != rippleOpacity)) {
+            RippleTransition animation = ensureRippleAnimation(ripple);
+            animation.configurePress(fade ? M3Animation.fastEffects(owner) : M3Animation.defaultSpatial(owner),
+                    startScale, startOpacity, rippleOpacity);
+            animation.playFromStart();
+        }
     }
 
     /// Starts press feedback, using the layer center as the ripple origin.
@@ -601,23 +598,22 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             clearRippleAndSynchronizeOwnerState();
             return;
         }
-        if (getPressFeedback() == PressFeedback.STATE_LAYER) {
-            animateOverlayOpacityFromOwnerState();
-            return;
-        }
         Region ripple = this.ripple;
         if (ripple == null) {
             return;
         }
         Node owner = animationOwner();
+        double startOpacity = ripple.getOpacity();
         if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
             stopRippleAnimation();
             clearRippleAndSynchronizeOwnerState();
+            stopMotionObservationIfIdle();
             return;
         }
-
-        double startOpacity = ripple.getOpacity();
         if (startOpacity <= 0.0) {
+            stopRippleAnimation();
+            animateOverlayOpacityFromOwnerState();
+            stopMotionObservationIfIdle();
             return;
         }
 
@@ -913,7 +909,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             RippleTransition rippleAnimation = this.rippleAnimation;
             if (rippleAnimation != null && rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
-                clearRippleAndSynchronizeOwnerState();
+                if (pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
+                    ensureRipple().setOpacity(stateLayerTokens(owner).pressedOpacity());
+                    synchronizeOwnerStateOpacity(owner);
+                } else {
+                    clearRippleAndSynchronizeOwnerState();
+                }
             }
             stopMotionObservationIfIdle();
             return;
@@ -1028,8 +1029,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = 0.0;
         } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
-        } else if (!hasVisibleRipple()
-                && ((getPressFeedback() == PressFeedback.STATE_LAYER && pressActive) || isPressedLike(owner))) {
+        } else if (!hasVisibleRipple() && !(pressActive && getPressFeedback() == PressFeedback.STATE_LAYER)
+                && isPressedLike(owner)) {
             // A ripple replaces pressed feedback, not the hover or focus layer beneath it.
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
@@ -1254,19 +1255,19 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             setInterpolator(Interpolator.LINEAR);
         }
 
-        /// Configures press expansion while retaining a constant visible opacity.
-        private void configureExpansion(M3MotionSpec expansionSpec, double opacity) {
+        /// Animates the press paint to its full size and opacity from the supplied starting state.
+        private void configurePress(M3MotionSpec spec, double scale, double opacity, double pressedOpacity) {
             stop();
-            Duration duration = expansionSpec.duration();
+            Duration duration = spec.duration();
             setCycleDuration(duration);
-            startScaleX = 0.0;
-            startScaleY = 0.0;
+            startScaleX = scale;
+            startScaleY = scale;
             startOpacity = opacity;
-            targetOpacity = opacity;
+            targetOpacity = pressedOpacity;
             expansionDurationMillis = duration.toMillis();
             totalDurationMillis = expansionDurationMillis;
-            expansionInterpolator = expansionSpec.interpolator();
-            opacityInterpolator = Interpolator.LINEAR;
+            expansionInterpolator = scale == 1.0 ? Interpolator.LINEAR : spec.interpolator();
+            opacityInterpolator = opacity == pressedOpacity ? Interpolator.LINEAR : spec.interpolator();
         }
 
         /// Configures a release that keeps unfinished expansion and fading on independent easing curves.

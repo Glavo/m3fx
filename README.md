@@ -324,8 +324,9 @@ even if a local setting enables it. Finite transitions settle at their target; i
 simple movement to communicate ongoing work.
 
 Press feedback can be configured independently of other motion through the inherited `-m3-press-feedback`
-CSS property. Its default is `ripple`; `state-layer` highlights the entire interaction area while pressed and
-fades to the current hover, focus, or resting state on release. With animations disabled, these changes are
+CSS property. Its default is `ripple`; `state-layer` fades in the same press color across the entire interaction
+area instead of expanding it from the pointer. Holding a press produces the same highlight in either mode,
+over any existing hover or focus feedback. On release the highlight fades out. With animations disabled, changes are
 immediate. Selection feedback, focus rings, and shape transitions retain their own behavior.
 
 ```css

@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.image.PixelReader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderStroke;
@@ -104,28 +105,27 @@ final class M3StateLayerTest {
             Region overlay = lookupRegion(layer, ".m3-state-layer");
 
             layer.playRipple(4, 8);
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
-            assertNull(layer.lookup(".m3-ripple"));
-            assertFalse(layer.isRippleAnimationRunning());
+            Region ripple = lookupRegion(layer, ".m3-ripple");
+            assertEquals(1.0, ripple.getScaleX());
+            assertEquals(0.0, ripple.getOpacity());
+            assertTrue(layer.isRippleAnimationRunning());
             layer.releaseRipple();
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
-            assertTrue(layer.isOverlayOpacityAnimationRunning());
-            layer.cancelRipple();
+            assertFalse(layer.isRippleAnimationRunning());
 
             owner.setStyle("-m3-press-feedback: ripple;");
             root.applyCss();
             layer.playRipple(4, 8);
-            Region ripple = lookupRegion(layer, ".m3-ripple");
+            assertEquals(0.0, ripple.getScaleX());
             assertTrue(layer.isRippleAnimationRunning());
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
 
             owner.setStyle("");
             root.applyCss();
             assertFalse(layer.isRippleAnimationRunning());
-            assertEquals(0.0, ripple.getOpacity(), 0.0001);
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertEquals(1.0, ripple.getScaleX());
+            assertEquals(0.1, ripple.getOpacity(), 0.0001);
             layer.releaseRipple();
-            assertTrue(layer.isOverlayOpacityAnimationRunning());
+            assertTrue(layer.isRippleAnimationRunning());
 
             root.setStyle("");
             root.applyCss();
@@ -153,9 +153,13 @@ final class M3StateLayerTest {
             owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
             assertEquals(0.264, overlay.getOpacity(), 0.0001);
             layer.playCenteredRipple();
-            assertEquals(0.28, overlay.getOpacity(), 0.0001);
+            Region press = lookupRegion(layer, ".m3-ripple");
+            assertEquals(0.264, overlay.getOpacity(), 0.0001);
+            assertEquals(0.1, press.getOpacity(), 0.0001);
+            assertEquals(1.0, press.getScaleX());
             layer.releaseRipple();
             assertEquals(0.264, overlay.getOpacity(), 0.0001);
+            assertEquals(0.0, press.getOpacity());
             assertFalse(layer.isOverlayOpacityAnimationRunning());
 
             owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
@@ -185,11 +189,11 @@ final class M3StateLayerTest {
             assertEquals(0.2, overlay.getOpacity(), 0.0001);
             layer.reset();
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
-            assertNull(layer.lookup(".m3-ripple"));
+            assertEquals(0.0, press.getOpacity());
         });
     }
 
-    /// Routes keyboard presses through different skins without creating ripples in state-layer mode.
+    /// Routes keyboard presses through different skins without spatial expansion in state-layer mode.
     @ParameterizedTest
     @ValueSource(strings = {"button", "icon-toggle", "checkbox"})
     void controlsUseInheritedStateLayerFeedbackForKeyboardActivation(String type) {
@@ -213,12 +217,14 @@ final class M3StateLayerTest {
             button.setOnAction(event -> actions[0]++);
             button.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.SPACE, false, false, false, false));
             assertTrue(button.isArmed());
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
-            assertNull(layer.lookup(".m3-ripple"));
+            Region press = lookupRegion(layer, ".m3-ripple");
+            assertEquals(0.1, press.getOpacity(), 0.0001);
+            assertEquals(1.0, press.getScaleX());
             button.fireEvent(new KeyEvent(KeyEvent.KEY_RELEASED, "", "", KeyCode.SPACE, false, false, false, false));
             assertFalse(button.isArmed());
             assertEquals(1, actions[0]);
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            assertEquals(0.0, press.getOpacity());
         });
     }
 
@@ -247,19 +253,16 @@ final class M3StateLayerTest {
             button.layout();
             M3StateLayer layer = assertInstanceOf(M3StateLayer.class, button.lookup(".m3-state-layer-container"));
             stateLayers.add(layer);
-            Region overlay = lookupRegion(layer, ".m3-state-layer");
             layer.playCenteredRipple();
-            assertNull(layer.lookup(".m3-ripple"));
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
-            layer.releaseRipple();
-            assertTrue(layer.isOverlayOpacityAnimationRunning());
-            layer.playCenteredRipple();
-            assertFalse(layer.isOverlayOpacityAnimationRunning());
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
-            layer.releaseRipple();
+            Region press = lookupRegion(layer, ".m3-ripple");
+            assertEquals(1.0, press.getScaleX());
+            assertEquals(0.0, press.getOpacity());
+            assertTrue(layer.isRippleAnimationRunning());
             button.setAnimationsEnabled(false);
-            assertFalse(layer.isOverlayOpacityAnimationRunning());
-            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            assertFalse(layer.isRippleAnimationRunning());
+            assertEquals(0.1, press.getOpacity(), 0.0001);
+            layer.releaseRipple();
+            assertEquals(0.0, press.getOpacity());
             button.setAnimationsEnabled(true);
 
             button.getStyleClass().add("local-ripple");
@@ -269,7 +272,8 @@ final class M3StateLayerTest {
             button.getStyleClass().remove("local-ripple");
             root.applyCss();
             assertFalse(layer.isRippleAnimationRunning());
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertEquals(0.1, press.getOpacity(), 0.0001);
+            assertEquals(1.0, press.getScaleX());
             layer.cancelRipple();
 
             root.getChildren().remove(branch);
@@ -282,8 +286,9 @@ final class M3StateLayerTest {
             root.getChildren().add(branch);
             root.applyCss();
             layer.playCenteredRipple();
-            assertFalse(layer.isRippleAnimationRunning());
-            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertTrue(layer.isRippleAnimationRunning());
+            assertEquals(1.0, press.getScaleX());
+            assertEquals(0.0, press.getOpacity());
             root.pseudoClassStateChanged(flat, false);
             root.applyCss();
             layer.playCenteredRipple();
@@ -840,10 +845,11 @@ final class M3StateLayerTest {
         });
     }
 
-    /// Verifies that ripples remain visible until explicitly released.
+    /// Both press animations settle at the same full-area highlight and fade only after release.
     @Tier2Test
-    @Test
-    void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"ripple", "state-layer"})
+    void pressFeedbackHoldsUntilReleaseThenFades(String feedback) throws InterruptedException {
         AtomicReference<@Nullable M3StateLayer> stateLayerReference = new AtomicReference<>();
         AtomicReference<@Nullable Region> rippleReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> releaseOpacityReference = new AtomicReference<>();
@@ -851,7 +857,13 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThreadWhenStable(
                 () -> rippleReachedExpandedFrame(rippleReference),
                 2,
-                () -> showRippleStateLayer(stateLayerReference, rippleReference, 20.0, 20.0),
+                () -> {
+                    showRippleStateLayer(stateLayerReference, rippleReference, 20.0, 20.0, feedback);
+                    Region press = Objects.requireNonNull(rippleReference.get());
+                    boolean uniform = feedback.equals("state-layer");
+                    assertEquals(uniform ? 1.0 : 0.0, press.getScaleX());
+                    assertEquals(uniform ? 0.0 : 0.1, press.getOpacity(), 0.0001);
+                },
                 () -> {
                     M3StateLayer stateLayer = Objects.requireNonNull(
                             stateLayerReference.get(),
@@ -863,6 +875,15 @@ final class M3StateLayerTest {
                     assertTrue(releaseOpacity >= 0.099);
                     assertEquals(1.0, ripple.getScaleX(), 0.001);
                     assertEquals(1.0, ripple.getScaleY(), 0.001);
+                    double baseOpacity = lookupRegion(stateLayer, ".m3-state-layer").getOpacity();
+                    double red = (1.0 - baseOpacity) * (1.0 - releaseOpacity);
+                    PixelReader pixels = stateLayer.snapshot(null, null).getPixelReader();
+                    for (int x : new int[]{8, 92}) {
+                        Color pixel = pixels.getColor(x, 20);
+                        assertEquals(red, pixel.getRed(), 0.01);
+                        assertEquals(red, pixel.getGreen(), 0.01);
+                        assertEquals(1.0, pixel.getBlue(), 0.01);
+                    }
 
                     releaseOpacityReference.set(releaseOpacity);
                     stateLayer.releaseRipple();
@@ -911,7 +932,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThreadWhen(
                 () -> rippleExpandsWhileFading(rippleReference, startScaleReference, startOpacityReference),
                 () -> {
-                    showRippleStateLayer(stateLayerReference, rippleReference, 12.0, 20.0);
+                    showRippleStateLayer(stateLayerReference, rippleReference, 12.0, 20.0, "ripple");
 
                     M3StateLayer stateLayer = Objects.requireNonNull(
                             stateLayerReference.get(),
@@ -999,9 +1020,11 @@ final class M3StateLayerTest {
             AtomicReference<@Nullable M3StateLayer> stateLayerReference,
             AtomicReference<@Nullable Region> rippleReference,
             double originX,
-            double originY
+            double originY,
+            String feedback
     ) {
         Pane root = new Pane();
+        root.setStyle("-m3-press-feedback: " + feedback + ";");
         M3StateLayer stateLayer = createStateLayer();
         root.getChildren().add(stateLayer);
         Scene scene = new Scene(root, 100.0, 40.0);
@@ -1013,6 +1036,9 @@ final class M3StateLayerTest {
         root.applyCss();
         root.resize(100.0, 40.0);
         root.layout();
+        stateLayer.setContentPaint(Color.BLUE);
+        stateLayer.setRestingOverlayOpacity(0.2);
+        stateLayer.installStateTransitions(root);
         stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
         stateLayer.playRipple(originX, originY);
 
