@@ -1,205 +1,104 @@
 # M3FX Packaging Guide
 
-## Library Usage
+## Library Artifacts
 
-M3FX is a JavaFX library. Applications own the JavaFX runtime and should provide JavaFX modules themselves.
+See the [README](../README.md) for dependency setup. Applications supply their own JavaFX
+runtime: M3FX uses compile-only JavaFX dependencies. Its JPMS `requires transitive` declarations provide module
+readability, not Maven runtime dependencies.
 
-The library publishes JavaFX as a compile-only dependency so downstream applications can choose their own JavaFX version, platform classifier, module path, and runtime-image strategy.
+Build the core library with `./gradlew :assemble`, or install its publication locally with
+`./gradlew :publishToMavenLocal`. See [TESTING.md](TESTING.md) for verification.
 
-The JPMS module descriptor declares `requires transitive javafx.controls` and `requires transitive javafx.graphics` because the public M3FX API exposes JavaFX control and graphics types. This module readability declaration does not publish OpenJFX artifacts as Maven dependencies; applications still own the OpenJFX artifact coordinates and native platform classifiers.
+## Shadow JARs
 
-Typical application dependencies:
+All three sample JARs include application classes and resources, M3FX, MonetFX, and non-JavaFX runtime dependencies.
+They require an external JavaFX runtime, including platform-native libraries, and are not self-contained distributions.
+The demo uses host-system fonts rather than bundled fonts.
 
-```kotlin
-dependencies {
-    implementation("org.glavo:m3fx:1.0-SNAPSHOT")
-    implementation("org.openjfx:javafx-base:21:win")
-    implementation("org.openjfx:javafx-graphics:21:win")
-    implementation("org.openjfx:javafx-controls:21:win")
-}
-```
+| Application | Build command | Output |
+| --- | --- | --- |
+| Demo | `./gradlew :demo:shadowJar` | `demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar` |
+| Catalog | `./gradlew :catalog:shadowJar` | `catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar` |
+| HMCL MD3 Demo | `./gradlew :hmcl-md3-demo:shadowJar` | `hmcl-md3-demo/build/libs/hmcl-md3-demo-1.0-SNAPSHOT-shadow.jar` |
 
-Use the platform classifier that matches the target runtime: `win`, `linux`, or `mac`.
-
-## Demo Shadow Jar
-
-The demo shadow jar is intended for quick inspection of the demo application. It packages the demo classes, M3FX, and non-JavaFX runtime dependencies. It intentionally excludes JavaFX artifacts and fonts, so text uses fonts provided by the host system.
-
-Build it with:
-
-```shell
-./gradlew :demo:shadowJar
-```
-
-The output is:
-
-```text
-demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar
-```
-
-Run it with a JavaFX runtime on the module path or class path according to the launcher setup used by the application environment. The shadow jar should not be treated as a self-contained desktop distribution because JavaFX native libraries are not bundled.
-
-## Catalog Shadow Jar
-
-The focused AndroidX-style Material Catalog has an independent shadow jar. It packages the Catalog application, its stylesheet,
-M3FX, MonetFX, and non-JavaFX runtime dependencies. JavaFX remains supplied by the application environment.
-
-Build it with:
-
-```shell
-./gradlew :catalog:shadowJar
-```
-
-The output is:
-
-```text
-catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar
-```
-
-## HMCL MD3 Demo Shadow Jar
-
-The HMCL Material Design 3 demo has an independent shadow jar. It packages the application, generated HMCL artwork
-and skin assets, the upstream GPL-3.0 license, M3FX, MonetFX, and non-JavaFX runtime dependencies. JavaFX remains
-supplied by the application environment.
-
-Build it with:
-
-```shell
-./gradlew :hmcl-md3-demo:shadowJar
-```
-
-The output is:
-
-```text
-hmcl-md3-demo/build/libs/hmcl-md3-demo-1.0-SNAPSHOT-shadow.jar
-```
+The HMCL JAR also includes artwork and skin assets extracted from the pinned upstream source archive, plus its
+GPL-3.0 license at `META-INF/licenses/HMCL-GPL-3.0.txt`.
 
 ## Demo Jlink Runtime
 
-The jlink tasks create runtime images for the demo application. They download a target BellSoft LibericaJDK Full archive, extract its `jmods`, and build a runtime image containing JavaFX and the demo modules. Windows and macOS targets use BellSoft zip archives; Linux targets use BellSoft `tar.gz` archives.
-
-Build the host-platform runtime image:
+These tasks download BellSoft LibericaJDK Full archives and extract their target `jmods` to create runtime images
+containing JavaFX and the demo modules under `demo/build/jlink/`. Each image is checked for its launcher, modules,
+and required runtime files.
 
 ```shell
 ./gradlew :demo:jlinkRuntime
-```
-
-Build all supported Windows, Linux, and macOS images for x64 and AArch64:
-
-```shell
 ./gradlew :demo:jlinkAllPlatformArchitectureRuntimes
 ```
 
-For one platform, use `:demo:jlinkWindowsRuntime`, `:demo:jlinkLinuxRuntime`, or `:demo:jlinkMacosRuntime`.
-To fix the architecture, insert `X64` or `Aarch64` before `Runtime`, for example `:demo:jlinkLinuxX64Runtime`.
+The first command targets the host OS and architecture; the second builds Windows, Linux, and macOS images for
+x64 and AArch64. For one platform, use `:demo:jlinkWindowsRuntime`, `:demo:jlinkLinuxRuntime`, or
+`:demo:jlinkMacosRuntime`. To fix the architecture, insert `X64` or `Aarch64` before `Runtime`, for example
+`:demo:jlinkLinuxX64Runtime`.
 
-Runtime images are written under:
+### Configuration
 
-```text
-demo/build/jlink/
+Override the default target with Gradle properties:
+
+```shell
+./gradlew :demo:jlinkRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
 ```
 
-Each jlink task validates the generated runtime image before it succeeds. The image contains the expected demo
-launcher and the JavaFX runtime required by that platform.
+| Property prefix: `m3fx.jlink.` | Default or accepted values |
+| --- | --- |
+| `os` | Host OS; `windows`, `linux`, or `macos` |
+| `arch` | Host architecture; `x86` (x64 with 64-bit default) or `aarch64` |
+| `bitness` | `64` |
+| `javaFeature` | `21` |
+| `releaseType` | `lts` |
+| `versionModifier` | `latest` |
+| `bundleType` | `jdk-full` |
+| `downloadUrl` | Optional target archive URL; otherwise resolved through BellSoft |
+| `executable` | Optional host-compatible `jlink` path |
+
+Windows and macOS archives use ZIP; Linux uses `tar.gz`. Platform and architecture variants support scoped
+properties such as `m3fx.jlink.windows.arch`, `m3fx.jlink.linuxAarch64.javaFeature`, and
+`m3fx.jlink.macosX64.downloadUrl`.
+
+Cross-platform or cross-architecture builds use target `jmods` with a host-compatible `jlink` of the same Java
+feature version. The build downloads a matching host JDK when needed, or accepts an explicit executable:
+
+```shell
+./gradlew :demo:jlinkLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
+```
 
 ## Demo Native Image
 
-The demo uses the
-[GraalVM Native Build Tools Gradle plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin) to
-compile the application ahead of time. Install the JavaFX-enabled Full distribution of
-[Liberica Native Image Kit](https://docs.bell-sw.com/liberica-nik/latest/how-to/using-nik-with-desktop-applications/)
-and point `GRAALVM_HOME` at it before starting Gradle, or run Gradle with that installation. The build requires a
-working `native-image` executable and the JavaFX controls module.
-
-Build and run the executable with:
+Install the JavaFX-enabled Full distribution of Liberica Native Image Kit and set `GRAALVM_HOME` before starting
+Gradle, or run Gradle with that installation. The build checks for `native-image` and the `javafx.controls` module.
+Platform C toolchains are required; Linux also needs JavaFX GTK, graphics, audio, and X11 development packages.
+See the [native-image workflow](../.github/workflows/demo-native-image.yml) for the CI toolchain and package list.
 
 ```shell
 ./gradlew :demo:stageNativeExecutable
 ./gradlew :demo:nativeRun
 ```
 
-`:demo:stageNativeExecutable` builds the demo shadow jar, compiles it with `--no-fallback`, and stages one distributable file
-under:
+The staging task builds a native executable without a JVM fallback and writes one distributable file:
 
 ```text
 demo/build/distributions/native/<os>-<arch>/m3fx-demo[.exe]
 ```
 
-On Windows the staged result is a single `m3fx-demo.exe` linked as a Windows GUI application, so launching it does
-not allocate a console window. The executable is not an installer and may still depend on operating-system libraries.
-The shadow jar continues to exclude OpenJFX artifacts and fonts because JavaFX and text-rendering resources come
-from the target environment.
-
-Native Image does not cross-compile desktop executables. Run the task on each target operating system and
-architecture. Platform C toolchains are required locally; Linux also requires the JavaFX GTK, graphics, audio, and
-X11 development packages.
-
-## Jlink Configuration
-
-The default jlink target is inferred from the host OS and architecture. It can be overridden with Gradle properties:
-
-```shell
-./gradlew :demo:jlinkRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
-```
-
-Supported Liberica OS values:
-
-- `windows`
-- `linux`
-- `macos`
-
-Supported architecture values:
-
-- `x86`
-- `aarch64`
-
-Useful properties:
-
-- `m3fx.jlink.os`
-- `m3fx.jlink.arch`
-- `m3fx.jlink.bitness`
-- `m3fx.jlink.javaFeature`
-- `m3fx.jlink.releaseType`
-- `m3fx.jlink.versionModifier`
-- `m3fx.jlink.bundleType`
-- `m3fx.jlink.downloadUrl`
-- `m3fx.jlink.executable`
-
-Per-platform and per-architecture variants can use scoped properties such as:
-
-```text
-m3fx.jlink.windows.arch
-m3fx.jlink.linuxAarch64.javaFeature
-m3fx.jlink.macosX64.downloadUrl
-```
-
-## Cross-Platform Notes
-
-Cross-platform and cross-architecture jlink use target-platform `jmods` from the selected LibericaJDK. The `jlink`
-executable must run on the host and match the target Java feature version. An explicit executable may be provided:
-
-```shell
-./gradlew :demo:jlinkLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
-```
-
-## Library Artifacts
-
-Build the core library artifacts:
-
-```shell
-./gradlew :assemble
-```
-
-Use `./gradlew :publishToMavenLocal` to install the core library publication in the local Maven repository.
-See [TESTING.md](TESTING.md) for test tiers and CI commands.
+Windows builds use the GUI subsystem and do not allocate a console window. The executable is not an installer
+and may still depend on OS libraries. Native Image does not cross-compile desktop executables; build on each
+target OS and architecture.
 
 ## Nightly Demo Release
 
-The Publish Nightly Demo workflow runs daily and can also be started manually. It publishes the Demo Shadow
-JAR and available native demo distributions.
-
-The workflow maintains one prerelease at the `nightly` tag. Each successful run moves the tag to the tested commit,
-updates the release notes, and replaces the stable asset names:
+The daily or manually dispatched [nightly workflow](../.github/workflows/nightly-release.yml) runs Tier 1 and
+builds the Demo Shadow JAR and native distributions for Windows x64, Linux x64, and macOS AArch64. Publication
+requires all expected build assets. Successful runs move the `nightly` tag to the tested commit and update the
+prerelease notes and stable asset names:
 
 - `m3fx-demo-nightly.jar`
 - `m3fx-demo-nightly-windows-x86_64.exe`
@@ -207,6 +106,3 @@ updates the release notes, and replaces the stable asset names:
 - `m3fx-demo-nightly-macos-aarch64.tar.gz`
 - `m3fx-demo-nightly-build.txt`
 - `SHA256SUMS`
-
-The native assets are platform-specific builds. The Shadow JAR remains an integration artifact and does not bundle
-JavaFX.

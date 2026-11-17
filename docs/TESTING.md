@@ -1,62 +1,47 @@
 # Testing
 
-M3FX separates tests by execution cost and environment sensitivity. Each tier is mutually exclusive, so a test runs in exactly one tier.
+M3FX groups tests by execution cost and environment sensitivity. The tasks in
+[build.gradle.kts](../build.gradle.kts) select tests by JUnit tags:
 
-## Tier 1: Core
+| Tier | Command | Selection and scope |
+| --- | --- | --- |
+| 1: Core | `./gradlew test` | Excludes `tier2` and `tier3`; fast API, token, state, layout, keyboard, focus, CSS, and rendering checks. Some tests briefly open windows or popups. |
+| 2: Integration | `./gradlew testTier2` | Includes `tier2`; focused rendering, animation sampling, asynchronous focus, and window-system integration. |
+| 3: Visual Matrix | `./gradlew testTier3` | Includes `tier3`; broad visual journeys, real mouse interaction, animation-frame sequences, and cross-state reports. These can take several minutes. |
 
-Tier 1 is the default test suite. It covers deterministic API contracts, tokens, control state, layout invariants, keyboard behavior, focus management, CSS integration, and rendering checks that do not require long-running animation sampling or real-window orchestration.
+`check` runs Tier 1 by default. New tests belong there unless their cost or environment sensitivity warrants a
+higher tier. Use `@Tier2Test` or `@Tier3Test` from `org.glavo.m3fx.testing` on classes or methods; prefer method-level
+placement when other tests in the class remain fast. Keep the tags mutually exclusive: the Gradle filters do not
+prevent a test carrying both tags from running in both higher tiers.
 
-```shell
-./gradlew test
-```
+## Running Locally
 
-`check` runs Tier 1 by default. Run packaging tasks separately as described in [PACKAGING.md](PACKAGING.md).
-New tests belong in Tier 1 unless they require the capabilities reserved for a higher tier.
-
-## Tier 2: Integration
-
-Tier 2 covers tests that open real JavaFX windows or popups, sample rendered pixels or animation frames, coordinate asynchronous focus, or depend on platform window-system behavior.
-
-```shell
-./gradlew testTier2
-```
-
-Annotate Tier 2 test classes or methods with `@Tier2Test`. Prefer method-level placement when the rest of a class remains fast and deterministic.
-
-## Tier 3: Visual Matrix
-
-Tier 3 covers the complete demo visual matrix, real mouse interaction, animation-frame sequences, screenshots, and cross-state visual reports. These tests are intentionally comprehensive and can take several minutes.
-
-```shell
-./gradlew testTier3
-```
-
-Annotate Tier 3 test classes or methods with `@Tier3Test`. Tier 3 should contain broad visual journeys rather than small behavioral assertions that fit Tier 1 or Tier 2.
-
-## Full Test Suite And CI
-
-Run all test tiers for release candidates and deliberate full visual review:
+Run commands from the repository root. Unqualified task selectors include matching tasks in the library, demo,
+catalog, and HMCL MD3 demo. Use a path such as `:demo:testTier2` to target one project. For a full review:
 
 ```shell
 ./gradlew test testTier2 testTier3
 ```
 
-Run commands from the repository root. Unqualified task selectors include matching tasks in all subprojects, so this
-command covers the library, demo, catalog, and HMCL MD3 demo. Use a path such as `:demo:testTier2` to target one project.
+JavaFX tests require a working display environment, including Tier 1 tests that start the toolkit. On Linux
+without a desktop session, use Xvfb, for example `xvfb-run -a ./gradlew test`.
+Run packaging separately as described in [PACKAGING.md](PACKAGING.md).
 
-Push and pull-request CI run Tier 1 and build the sample shadow jars:
+## CI
 
-```shell
-./gradlew check shadowJar
-```
+The [Build and Test workflow](../.github/workflows/demo-shadow-jar.yml) runs on JDK 21 with Xvfb. Every invocation
+first runs Tier 1 against JavaFX 17 (`-Pm3fx.javafx.version=17`). Push and pull-request builds then run the default
+checks and build all sample Shadow JARs with the default JavaFX 21 dependencies. Manual dispatch additionally
+runs Tier 2 and Tier 3 and builds the host-platform demo jlink image. The workflow is the source for exact commands
+and artifact uploads.
 
-Manually dispatched CI also runs Tier 2 and Tier 3 and builds the host-platform demo runtime image:
+## Reports
 
-```shell
-./gradlew check testTier2 testTier3 shadowJar :demo:jlinkRuntime
-```
+Each project's HTML reports are in `build/reports/tests/<task>/`, with XML results in
+`build/test-results/<task>/`, where `<task>` is `test`, `testTier2`, or `testTier3`.
+Visual suites also write snapshots and, where supported, HTML indexes to:
 
-Gradle writes HTML reports below each project's `build/reports/tests` directory, with XML results below the
-corresponding `build/test-results` directory. Visual suites additionally write reviewable snapshots and indexes
-below `build/reports/m3fx-visual`, `demo/build/reports/m3fx-demo-visual`,
-`catalog/build/reports/catalog-snapshots`, and `hmcl-md3-demo/build/reports/hmcl-snapshots`.
+- `build/reports/m3fx-visual`
+- `demo/build/reports/m3fx-demo-visual`
+- `catalog/build/reports/catalog-snapshots`
+- `hmcl-md3-demo/build/reports/hmcl-snapshots`
