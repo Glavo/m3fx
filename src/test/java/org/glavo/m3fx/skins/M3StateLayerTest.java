@@ -8,6 +8,9 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderStroke;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -16,9 +19,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.theme.M3Theme;
@@ -34,7 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -77,6 +84,210 @@ final class M3StateLayerTest {
                 stages.clear();
                 stateLayers.clear();
             }
+        });
+    }
+
+    /// Inherits feedback through ordinary parents and permits local overrides and live mode changes.
+    @Test
+    void pressFeedbackUsesCssInheritanceAndLocalOverrides() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            M3StateLayer layer = createStateLayer();
+            owner.getChildren().add(layer);
+            Pane intermediate = new Pane(owner);
+            Pane root = new Pane(intermediate);
+            new Scene(root, 200.0, 80.0);
+            root.setStyle("-m3-press-feedback: state-layer;");
+            layer.installStateTransitions(owner);
+            layer.layoutLayer(0, 0, 100, 40, 20);
+            FxTestUtils.assertNoCssWarnings(root::applyCss);
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+
+            layer.playRipple(4, 8);
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertNull(layer.lookup(".m3-ripple"));
+            assertFalse(layer.isRippleAnimationRunning());
+            layer.releaseRipple();
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertTrue(layer.isOverlayOpacityAnimationRunning());
+            layer.cancelRipple();
+
+            owner.setStyle("-m3-press-feedback: ripple;");
+            root.applyCss();
+            layer.playRipple(4, 8);
+            Region ripple = lookupRegion(layer, ".m3-ripple");
+            assertTrue(layer.isRippleAnimationRunning());
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+
+            owner.setStyle("");
+            root.applyCss();
+            assertFalse(layer.isRippleAnimationRunning());
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            layer.releaseRipple();
+            assertTrue(layer.isOverlayOpacityAnimationRunning());
+
+            root.setStyle("");
+            root.applyCss();
+            layer.playRipple(4, 8);
+            assertTrue(layer.isRippleAnimationRunning());
+        });
+    }
+
+    /// Preserves resting, hover, and focus states while clearing cancelled presses and unavailable owners.
+    @Test
+    void stateLayerPressFeedbackHonorsInteractionLifecycle() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3OverlayPane owner = new M3OverlayPane();
+            owner.setAnimationsEnabled(false);
+            owner.setStyle("-m3-press-feedback: state-layer;");
+            M3StateLayer layer = createStateLayer();
+            owner.getChildren().add(layer);
+            Pane root = new Pane(owner);
+            new Scene(root, 200.0, 80.0);
+            layer.installStateTransitions(owner);
+            layer.layoutLayer(0, 0, 100, 40, 20);
+            root.applyCss();
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+            layer.setRestingOverlayOpacity(0.2);
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            assertEquals(0.264, overlay.getOpacity(), 0.0001);
+            layer.playCenteredRipple();
+            assertEquals(0.28, overlay.getOpacity(), 0.0001);
+            layer.releaseRipple();
+            assertEquals(0.264, overlay.getOpacity(), 0.0001);
+            assertFalse(layer.isOverlayOpacityAnimationRunning());
+
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+            layer.playCenteredRipple();
+            layer.cancelRipple();
+            assertEquals(0.2, overlay.getOpacity(), 0.0001);
+            layer.playCenteredRipple();
+            owner.setDisable(true);
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            owner.setDisable(false);
+            assertEquals(0.2, overlay.getOpacity(), 0.0001);
+
+            layer.playCenteredRipple();
+            layer.setModalInteractionBlocked(true);
+            assertEquals(0.2, overlay.getOpacity(), 0.0001);
+            layer.setModalInteractionBlocked(false);
+            layer.playCenteredRipple();
+            root.setVisible(false);
+            assertEquals(0.2, overlay.getOpacity(), 0.0001);
+            root.setVisible(true);
+            layer.setDelegatedFocusVisible(true);
+            assertEquals(0.28, overlay.getOpacity(), 0.0001);
+            assertTrue(lookupRegion(layer, ".m3-focus-indicator").isVisible());
+            layer.setDelegatedFocusVisible(false);
+            layer.playCenteredRipple();
+            root.getChildren().clear();
+            assertEquals(0.2, overlay.getOpacity(), 0.0001);
+            layer.reset();
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            assertNull(layer.lookup(".m3-ripple"));
+        });
+    }
+
+    /// Routes keyboard presses through different skins without creating ripples in state-layer mode.
+    @ParameterizedTest
+    @ValueSource(strings = {"button", "icon-toggle", "checkbox"})
+    void controlsUseInheritedStateLayerFeedbackForKeyboardActivation(String type) {
+        FxTestUtils.runOnFxThread(() -> {
+            ButtonBase button = switch (type) {
+                case "icon-toggle" -> new M3IconToggleButton();
+                case "checkbox" -> new M3CheckBox();
+                default -> new M3Button("Action");
+            };
+            ((M3Animated) button).setAnimationsEnabled(false);
+            Pane root = new Pane(button);
+            root.setStyle("-m3-press-feedback: state-layer;");
+            new Scene(root, 200, 80);
+            root.applyCss();
+            button.resize(120, 40);
+            button.layout();
+            M3StateLayer layer = assertInstanceOf(M3StateLayer.class, button.lookup(".m3-state-layer-container"));
+            stateLayers.add(layer);
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+            int[] actions = {0};
+            button.setOnAction(event -> actions[0]++);
+            button.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.SPACE, false, false, false, false));
+            assertTrue(button.isArmed());
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            assertNull(layer.lookup(".m3-ripple"));
+            button.fireEvent(new KeyEvent(KeyEvent.KEY_RELEASED, "", "", KeyCode.SPACE, false, false, false, false));
+            assertFalse(button.isArmed());
+            assertEquals(1, actions[0]);
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+        });
+    }
+
+    /// Stylesheet state changes and reparenting preserve nearest-scope overrides across styled parents.
+    @Test
+    void pressFeedbackFollowsStylesheetScopes() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Action");
+            Pane branch = new Pane(button);
+            branch.setStyle("-fx-opacity: 0.9;");
+            Pane rippleScope = new Pane();
+            rippleScope.setStyle("-m3-press-feedback: ripple;");
+            Pane root = new Pane(branch, rippleScope);
+            root.getStyleClass().add("press-scope");
+            Scene scene = new Scene(root, 300, 100);
+            String css = """
+                    .press-scope:flat { -m3-press-feedback: state-layer; }
+                    .m3-button.local-ripple { -m3-press-feedback: ripple; }
+                    """;
+            scene.getStylesheets().add("data:text/css;base64,"
+                    + Base64.getEncoder().encodeToString(css.getBytes(StandardCharsets.UTF_8)));
+            PseudoClass flat = PseudoClass.getPseudoClass("flat");
+            root.pseudoClassStateChanged(flat, true);
+            FxTestUtils.assertNoCssWarnings(root::applyCss);
+            button.resize(120, 40);
+            button.layout();
+            M3StateLayer layer = assertInstanceOf(M3StateLayer.class, button.lookup(".m3-state-layer-container"));
+            stateLayers.add(layer);
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+            layer.playCenteredRipple();
+            assertNull(layer.lookup(".m3-ripple"));
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            layer.releaseRipple();
+            assertTrue(layer.isOverlayOpacityAnimationRunning());
+            layer.playCenteredRipple();
+            assertFalse(layer.isOverlayOpacityAnimationRunning());
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            layer.releaseRipple();
+            button.setAnimationsEnabled(false);
+            assertFalse(layer.isOverlayOpacityAnimationRunning());
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+            button.setAnimationsEnabled(true);
+
+            button.getStyleClass().add("local-ripple");
+            root.applyCss();
+            layer.playCenteredRipple();
+            assertTrue(layer.isRippleAnimationRunning());
+            button.getStyleClass().remove("local-ripple");
+            root.applyCss();
+            assertFalse(layer.isRippleAnimationRunning());
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            layer.cancelRipple();
+
+            root.getChildren().remove(branch);
+            rippleScope.getChildren().add(branch);
+            root.applyCss();
+            layer.playCenteredRipple();
+            assertTrue(layer.isRippleAnimationRunning());
+            layer.cancelRipple();
+            rippleScope.getChildren().remove(branch);
+            root.getChildren().add(branch);
+            root.applyCss();
+            layer.playCenteredRipple();
+            assertFalse(layer.isRippleAnimationRunning());
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
+            root.pseudoClassStateChanged(flat, false);
+            root.applyCss();
+            layer.playCenteredRipple();
+            assertTrue(layer.isRippleAnimationRunning());
         });
     }
 

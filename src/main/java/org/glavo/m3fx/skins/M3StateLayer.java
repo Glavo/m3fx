@@ -8,7 +8,13 @@ import javafx.animation.Interpolator;
 import javafx.animation.Transition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
+import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.SimpleStyleableObjectProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableObjectProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.EnumConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -45,8 +51,12 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-/// A bounded Material Design 3 state layer with ripple animation support.
+import java.util.ArrayList;
+import java.util.List;
+
+/// A bounded Material Design 3 state layer with configurable press feedback.
 @NotNullByDefault
 final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Style class assigned to direct component container-paint regions.
@@ -168,6 +178,41 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
+
+    /// Whether a press has started without a matching release or cancellation.
+    private boolean pressActive;
+
+    /// The lazily created inherited CSS setting for press feedback.
+    private @Nullable StyleableObjectProperty<PressFeedback> pressFeedback;
+
+    /// Returns the press feedback selected by CSS.
+    private PressFeedback getPressFeedback() {
+        return pressFeedback == null ? PressFeedback.RIPPLE : pressFeedback.get();
+    }
+
+    /// Returns the property to which JavaFX applies inherited press-feedback declarations.
+    private StyleableObjectProperty<PressFeedback> pressFeedbackProperty() {
+        if (pressFeedback == null) {
+            pressFeedback = new SimpleStyleableObjectProperty<>(
+                    StyleableProperties.PRESS_FEEDBACK, this, "pressFeedback", PressFeedback.RIPPLE) {
+                /// Replaces transient feedback without retaining a ripple from the previous mode.
+                @Override
+                protected void invalidated() {
+                    stopRippleAnimation();
+                    clearRipple();
+                    @Nullable Node owner = stateOwner;
+                    if (owner != null) {
+                        synchronizeOwnerStateOpacity(owner);
+                        if (pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
+                            startMotionObservation();
+                        }
+                    }
+                    stopMotionObservationIfIdle();
+                }
+            };
+        }
+        return pressFeedback;
+    }
 
     /// The resting overlay opacity contributed by a persistent semantic state.
     private double restingOverlayOpacity;
@@ -400,6 +445,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             focusVisibleTracker = null;
         }
         stateOwner = null;
+        pressActive = false;
         restingOverlayOpacity = 0.0;
         delegatedFocusVisible = false;
         modalInteractionBlocked = false;
@@ -496,15 +542,27 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         updateFocusIndicatorShape(x, y, width, height, radius, radius, radius, radius);
     }
 
-    /// Plays a bounded ripple from a point in this state layer's coordinate space.
+    /// Starts press feedback, expanding from the supplied point only when ripple feedback is selected.
     void playRipple(double x, double y) {
         if (!interactionFeedbackEnabled || modalInteractionBlocked) {
             clearRippleAndSynchronizeOwnerState();
             return;
         }
-        Region ripple = ensureRipple();
         Node owner = animationOwner();
-        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
+        boolean unavailable = isPresentationUnavailable(owner);
+        pressActive = !owner.isDisabled() && !unavailable;
+        if (getPressFeedback() == PressFeedback.STATE_LAYER) {
+            stopRippleAnimation();
+            clearRipple();
+            synchronizeOwnerStateOpacity(owner);
+            if (pressActive) {
+                startMotionObservation();
+            }
+            stopMotionObservationIfIdle();
+            return;
+        }
+        Region ripple = ensureRipple();
+        if (unavailable || animationsDisabled(owner)) {
             stopRippleAnimation();
             clearRippleAndSynchronizeOwnerState();
             return;
@@ -532,15 +590,20 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         rippleAnimation.playFromStart();
     }
 
-    /// Plays a bounded ripple from the layer center.
+    /// Starts press feedback, using the layer center as the ripple origin.
     void playCenteredRipple() {
         playRipple(getWidth() / 2.0, getHeight() / 2.0);
     }
 
-    /// Releases the active ripple and fades it out.
+    /// Releases press feedback and fades toward the current hover, focus, or resting state.
     void releaseRipple() {
+        pressActive = false;
         if (!interactionFeedbackEnabled || modalInteractionBlocked) {
             clearRippleAndSynchronizeOwnerState();
+            return;
+        }
+        if (getPressFeedback() == PressFeedback.STATE_LAYER) {
+            animateOverlayOpacityFromOwnerState();
             return;
         }
         Region ripple = this.ripple;
@@ -585,10 +648,14 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         rippleAnimation.playFromStart();
     }
 
-    /// Stops active ripple work and clears its visual state without changing persistent overlay state.
+    /// Cancels press feedback and restores the owner's current interaction state.
     void cancelRipple() {
+        pressActive = false;
         stopRippleAnimation();
         clearRipple();
+        if (getPressFeedback() == PressFeedback.STATE_LAYER && stateOwner != null) {
+            synchronizeOwnerStateOpacity(stateOwner);
+        }
         stopMotionObservationIfIdle();
     }
 
@@ -670,11 +737,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
+        cancelRipple();
         stopStateOpacityAnimation();
         restingOverlayOpacity = 0.0;
         overlay.setOpacity(0.0);
         setFocusIndicatorOpacity(0.0);
-        cancelRipple();
     }
 
     /// Clears transient ripple visual state.
@@ -690,6 +757,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Clears transient ripple feedback and immediately restores the owner's persistent interaction state.
     private void clearRippleAndSynchronizeOwnerState() {
+        pressActive = false;
         clearRipple();
         Node owner = stateOwner;
         if (owner != null) {
@@ -830,7 +898,12 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             return;
         }
 
-        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
+        boolean unavailable = isPresentationUnavailable(owner);
+        if (unavailable && getPressFeedback() == PressFeedback.STATE_LAYER) {
+            cancelRipple();
+            return;
+        }
+        if (unavailable || animationsDisabled(owner)) {
             StateOpacityTransition stateOpacityAnimation = this.stateOpacityAnimation;
             if (stateOpacityAnimation != null
                     && stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
@@ -901,7 +974,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         stateOpacityAnimation.playFromStart();
     }
 
-    /// Starts observing settings while at least one state-layer animation is active.
+    /// Observes settings and presentation availability during press feedback or an animation.
     private void startMotionObservation() {
         M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer == null) {
@@ -915,9 +988,10 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         observer.start();
     }
 
-    /// Pauses settings observation after both reusable transitions become idle.
+    /// Pauses observation when no held state layer or running transition requires it.
     private void stopMotionObservationIfIdle() {
-        if (isRippleAnimationRunning()
+        if ((pressActive && getPressFeedback() == PressFeedback.STATE_LAYER)
+                || isRippleAnimationRunning()
                 || isOverlayOpacityAnimationRunning()
                 || isFocusIndicatorOpacityAnimationRunning()) {
             return;
@@ -957,7 +1031,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = tokens.draggedOpacity();
         } else if (hasVisibleRipple()) {
             interactionOpacity = 0.0;
-        } else if (isPressedLike(owner)) {
+        } else if ((getPressFeedback() == PressFeedback.STATE_LAYER && pressActive) || isPressedLike(owner)) {
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
                 || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
@@ -1010,6 +1084,54 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     private Node animationOwner() {
         @Nullable Node owner = stateOwner;
         return owner == null ? this : owner;
+    }
+
+    /// Returns metadata including the inherited press-feedback setting.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Press feedback rendered by the shared state layer.
+    @NotNullByDefault
+    private enum PressFeedback {
+        /// Expands a bounded ripple from the interaction origin.
+        RIPPLE,
+        /// Highlights the complete interaction area without spatial expansion.
+        STATE_LAYER
+    }
+
+    /// Lazily initialized CSS metadata shared by all state layers.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// Inherits through normal JavaFX CSS ancestry, including non-M3FX parents.
+        private static final CssMetaData<M3StateLayer, PressFeedback> PRESS_FEEDBACK = new CssMetaData<>(
+                "-m3-press-feedback", new EnumConverter<>(PressFeedback.class), PressFeedback.RIPPLE, true) {
+            /// Allows CSS to configure the internal, unbound feedback property.
+            @Override
+            public boolean isSettable(M3StateLayer layer) {
+                return layer.pressFeedback == null || !layer.pressFeedback.isBound();
+            }
+
+            /// Returns the feedback property for the current layer.
+            @Override
+            public StyleableProperty<PressFeedback> getStyleableProperty(M3StateLayer layer) {
+                return layer.pressFeedbackProperty();
+            }
+        };
+
+        /// The inherited Pane metadata followed by the press-feedback metadata.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> metadata = new ArrayList<>(Pane.getClassCssMetaData());
+            metadata.add(PRESS_FEEDBACK);
+            STYLEABLES = List.copyOf(metadata);
+        }
+
+        /// Prevents instantiation.
+        private StyleableProperties() {
+        }
     }
 
     /// A reusable transition for persistent state-layer opacity channels.

@@ -323,6 +323,25 @@ binding. `M3MotionSettings.setGlobalReducedMotionRequested(true)` constrains opt
 even if a local setting enables it. Finite transitions settle at their target; indeterminate indicators may retain
 simple movement to communicate ongoing work.
 
+Press feedback can be configured independently of other motion through the inherited `-m3-press-feedback`
+CSS property. Its default is `ripple`; `state-layer` highlights the entire interaction area while pressed and
+fades to the current hover, focus, or resting state on release. With animations disabled, these changes are
+immediate. Selection feedback, focus rings, and shape transitions retain their own behavior.
+
+```css
+.root {
+    -m3-press-feedback: state-layer;
+}
+
+.m3-button {
+    -m3-press-feedback: ripple;
+}
+```
+
+Declarations apply through ordinary JavaFX CSS ancestry, including plain layout parents, and can be overridden
+on individual controls. Changes take effect during CSS processing and clear any existing expansion. The setting
+applies to controls using M3FX's shared press feedback; controls with only focus or drag feedback are unaffected.
+
 ## Color Editing
 
 `M3ColorPicker` composes area, slider, wheel, field, and swatch controls. The color controls use an interaction model
