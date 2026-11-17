@@ -539,7 +539,6 @@ public class M3Tooltip extends PopupControl {
             stopPopupContextSynchronizer();
             return;
         }
-        observeOwnerWindow();
         syncPopupRootThemeContext(ownerNode);
         if (!wasShowing) {
             playShowAnimation(ownerNode);
@@ -588,6 +587,7 @@ public class M3Tooltip extends PopupControl {
         setAutoFix(true);
         setAutoHide(true);
         setHideOnEscape(true);
+        addEventHandler(WindowEvent.WINDOW_SHOWN, event -> observeOwnerWindow());
         addEventHandler(WindowEvent.WINDOW_HIDING, event -> resetVisibilityAnimation());
         addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
             resetVisibilityAnimation();

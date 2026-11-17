@@ -42,6 +42,32 @@ jobs:
           GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user-home
         run: xvfb-run -a ./gradlew test :demo:verifyShadowJar --no-daemon
 
+      - name: Package failure reports
+        if: failure()
+        shell: bash
+        run: |
+          report_paths=()
+          for path in build/reports/tests build/test-results \
+            demo/build/reports/tests demo/build/test-results \
+            hs_err_pid*.log demo/hs_err_pid*.log; do
+            if [[ -e "$path" ]]; then
+              report_paths+=("$path")
+            fi
+          done
+          if (( ${#report_paths[@]} > 0 )); then
+            mkdir -p build/ci-artifacts
+            tar -czf build/ci-artifacts/m3fx-nightly-test-reports.tar.gz "${report_paths[@]}"
+          fi
+
+      - name: Upload failure reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-nightly-test-reports
+          path: build/ci-artifacts/m3fx-nightly-test-reports.tar.gz
+          if-no-files-found: ignore
+          archive: false
+
       - name: Stage Shadow JAR
         shell: bash
         run: |

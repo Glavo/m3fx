@@ -155,6 +155,7 @@ final class M3TooltipSkinTest {
                 assertEquals(4.0, content.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius());
             } finally {
                 stage.close();
+                assertFalse(tooltip.isShowing(), "Closing the owner must synchronously close its tooltip");
                 tooltip.hide();
             }
         });

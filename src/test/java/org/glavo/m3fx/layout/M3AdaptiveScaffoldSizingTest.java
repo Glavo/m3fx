@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.Parent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -81,13 +82,18 @@ final class M3AdaptiveScaffoldSizingTest {
         });
     }
 
-    /// Retains unconstrained height measurement instead of treating a negative width as zero available space.
+    /// Preserves unconstrained height measurement and the platform's content-bias sizing rules.
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void measuresUnconstrainedPaneHeight(boolean minimum) {
         FxTestUtils.runOnFxThread(() -> {
             M3AdaptiveScaffold scaffold = scaffold(M3PaneLayout.SINGLE);
-            assertEquals(108, minimum ? scaffold.minHeight(-1) : scaffold.prefHeight(-1));
+            ((Region) Objects.requireNonNull(scaffold.getMainPane())).setMaxWidth(600);
+            ResponsivePane referencePane = new ResponsivePane();
+            referencePane.setMaxWidth(600);
+            StackPane reference = new StackPane(referencePane);
+            double bodyHeight = minimum ? reference.minHeight(-1) : reference.prefHeight(-1);
+            assertEquals(58 + bodyHeight, minimum ? scaffold.minHeight(-1) : scaffold.prefHeight(-1));
             scaffold.setSkin(null);
         });
     }

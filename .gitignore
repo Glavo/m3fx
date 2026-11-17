@@ -9,6 +9,7 @@ build/
 .codex
 /teavm-local.properties
 gradle.properties
+hs_err_pid*.log
 
 ### IntelliJ IDEA ###
 .idea/

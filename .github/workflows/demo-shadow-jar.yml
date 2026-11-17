@@ -65,7 +65,11 @@ jobs:
             build/test-results \
             demo/build/test-results \
             catalog/build/test-results \
-            hmcl-md3-demo/build/test-results; do
+            hmcl-md3-demo/build/test-results \
+            hs_err_pid*.log \
+            demo/hs_err_pid*.log \
+            catalog/hs_err_pid*.log \
+            hmcl-md3-demo/hs_err_pid*.log; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi

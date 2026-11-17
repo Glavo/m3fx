@@ -173,11 +173,13 @@ final class M3TableViewTest {
                     .allMatch(row -> row.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT));
 
             Object originalSkin = tableView.getSkin();
-            TableViewSkin<ProjectRow> replacementSkin = new TableViewSkin<>(tableView);
-            tableView.setSkin(replacementSkin);
+            // JavaFX 17 may create a default skin during an attached replacement skin's constructor.
+            root.getChildren().remove(tableView);
+            FxTestUtils.replaceSkin(tableView, TableViewSkin::new);
+            root.getChildren().add(tableView);
             layout(root, 520.0, 300.0);
             assertNotSame(originalSkin, tableView.getSkin());
-            assertSame(replacementSkin, tableView.getSkin());
+            assertEquals(TableViewSkin.class, tableView.getSkin().getClass());
             assertEquals(1, tableView.lookupAll(".virtual-flow").size());
         }));
     }

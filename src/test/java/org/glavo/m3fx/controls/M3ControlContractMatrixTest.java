@@ -10786,7 +10786,7 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that visible installed tooltip popups mirror owner stylesheet and theme context changes.
     @Test
-    void tooltipPopupContextSynchronizesOwnerStylesheetsAndRuntimeTheme() {
+    void tooltipPopupContextSynchronizesOwnerStylesheetsAndRuntimeTheme() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
         AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
@@ -10800,38 +10800,50 @@ final class M3ControlContractMatrixTest {
         );
         String extraStylesheet = M3Stylesheets.controlStylesheet("button.css");
         try {
-            FxTestUtils.runOnFxThread(() -> {
-                Label target = new Label("Target");
-                Pane root = new Pane(target);
-                Scene scene = new Scene(root, 280.0, 140.0);
-                M3Tooltip tooltip = installTooltip(target, "Installed");
-                Stage stage = new Stage();
-                stageReference.set(stage);
-                sceneReference.set(scene);
-                targetReference.set(target);
-                tooltipReference.set(tooltip);
-                M3ThemeManager.install(scene, baselineTheme);
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.layout();
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> Objects.requireNonNull(stageReference.get()).isFocused(),
+                    2,
+                    () -> {
+                        Label target = new Label("Target");
+                        Pane root = new Pane(target);
+                        Scene scene = new Scene(root, 280.0, 140.0);
+                        M3Tooltip tooltip = installTooltip(target, "Installed");
+                        Stage stage = new Stage();
+                        stageReference.set(stage);
+                        sceneReference.set(scene);
+                        targetReference.set(target);
+                        tooltipReference.set(tooltip);
+                        M3ThemeManager.install(scene, baselineTheme);
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+                    },
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get());
+                        Scene scene = Objects.requireNonNull(sceneReference.get());
+                        Label target = Objects.requireNonNull(targetReference.get());
+                        M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get());
+                        tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
+                        Parent popupRoot = tooltip.getScene().getRoot();
+                        popupRootReference.set(popupRoot);
 
-                tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
-                Parent popupRoot = tooltip.getScene().getRoot();
-                popupRootReference.set(popupRoot);
+                        assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
+                        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+                        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+                        assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
-                assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
-                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
-                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
-
-                scene.getStylesheets().add(extraStylesheet);
-            });
+                        scene.getStylesheets().add(extraStylesheet);
+                    }
+            );
 
             FxTestUtils.runOnFxThread(() -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 Parent popupRoot = Objects.requireNonNull(popupRootReference.get(), "popupRoot");
-                assertTrue(popupRoot.getStylesheets().contains(extraStylesheet));
+                assertTrue(Objects.requireNonNull(tooltipReference.get()).isShowing(),
+                        "Tooltip must remain visible while owner stylesheets change");
+                assertTrue(popupRoot.getStylesheets().contains(extraStylesheet),
+                        () -> "Popup stylesheets: " + popupRoot.getStylesheets());
 
                 M3ThemeManager.install(scene, expressiveDarkTheme);
 
@@ -13110,43 +13122,52 @@ final class M3ControlContractMatrixTest {
 
     /// Verifies that an already open menu button popup mirrors runtime owner scene stylesheet changes.
     @Test
-    void menuButtonPopupMirrorsRuntimeOwnerSceneStylesheetChanges() {
+    void menuButtonPopupMirrorsRuntimeOwnerSceneStylesheetChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         M3Theme theme = M3Theme.defaultTheme();
         String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
         String secondStylesheet = M3Stylesheets.controlStylesheet("text-field.css");
         try {
-            FxTestUtils.runOnFxThread(() -> {
-                M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
-                Stage stage = new Stage();
-                stageReference.set(stage);
-                menuButtonReference.set(menuButton);
-                Pane root = new Pane(menuButton);
-                Scene scene = new Scene(root, 360.0, 180.0);
-                M3ThemeManager.install(scene, theme);
-                scene.getStylesheets().add(firstStylesheet);
-                stage.setScene(scene);
-                stage.show();
-                menuButton.resizeRelocate(24.0, 24.0, 128.0, 40.0);
-                root.applyCss();
-                root.layout();
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> Objects.requireNonNull(stageReference.get()).isFocused(),
+                    2,
+                    () -> {
+                        M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
+                        Stage stage = new Stage();
+                        stageReference.set(stage);
+                        menuButtonReference.set(menuButton);
+                        Pane root = new Pane(menuButton);
+                        Scene scene = new Scene(root, 360.0, 180.0);
+                        M3ThemeManager.install(scene, theme);
+                        scene.getStylesheets().add(firstStylesheet);
+                        stage.setScene(scene);
+                        stage.show();
+                        menuButton.resizeRelocate(24.0, 24.0, 128.0, 40.0);
+                        root.applyCss();
+                        root.layout();
+                    },
+                    () -> {
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get());
+                        Scene scene = Objects.requireNonNull(menuButton.getScene());
+                        menuButton.showMenu();
 
-                menuButton.showMenu();
+                        M3Menu menu = menuButton.getMenu();
+                        assertTrue(menuButton.isShowing());
+                        assertTrue(menu.getStylesheets().contains(firstStylesheet));
+                        assertTrue(menu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
-                M3Menu menu = menuButton.getMenu();
-                assertTrue(menuButton.isShowing());
-                assertTrue(menu.getStylesheets().contains(firstStylesheet));
-                assertTrue(menu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
-
-                scene.getStylesheets().remove(firstStylesheet);
-                scene.getStylesheets().add(secondStylesheet);
-            });
+                        scene.getStylesheets().remove(firstStylesheet);
+                        scene.getStylesheets().add(secondStylesheet);
+                    }
+            );
 
             FxTestUtils.runOnFxThread(() -> {
                 M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
                 M3Menu menu = menuButton.getMenu();
-                assertFalse(menu.getStylesheets().contains(firstStylesheet));
+                assertTrue(menuButton.isShowing(), "Menu must remain visible while owner stylesheets change");
+                assertFalse(menu.getStylesheets().contains(firstStylesheet),
+                        () -> "Menu stylesheets: " + menu.getStylesheets());
                 assertTrue(menu.getStylesheets().contains(secondStylesheet));
                 assertTrue(menu.getStylesheets().contains(M3Stylesheets.controlStylesheet("menu.css")));
                 assertSame(theme, M3ThemeManager.getTheme(menu));

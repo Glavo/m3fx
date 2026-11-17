@@ -10,6 +10,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -95,8 +96,8 @@ public final class FxTestUtils {
 
     /// Clears a control's current skin and installs a newly created replacement.
     ///
-    /// Clearing the current skin first guarantees that replacement occurs when the old and new skins have the same
-    /// runtime class. The factory is invoked after the old skin has been disposed.
+    /// Clearing the current skin first removes its child nodes on JavaFX 17 and guarantees that replacement occurs
+    /// when both skins have the same runtime class. The factory is invoked after the old skin has been disposed.
     ///
     /// @param control     the control whose skin is replaced
     /// @param skinFactory the factory that creates a skin for `control`
@@ -109,8 +110,13 @@ public final class FxTestUtils {
     ) {
         Objects.requireNonNull(control, "control");
         Objects.requireNonNull(skinFactory, "skinFactory");
-        // JavaFX 17 ignores direct replacement when both skins have the same runtime class.
+        // JavaFX 17 retains some disposed skin nodes and ignores direct replacement by the same skin class.
+        @Nullable List<Node> oldChildren = control.getSkin() instanceof SkinBase<?> skinBase
+                ? skinBase.getChildren() : null;
         control.setSkin(null);
+        if (oldChildren != null) {
+            oldChildren.clear();
+        }
         Skin<?> skin = Objects.requireNonNull(skinFactory.apply(control), "skinFactory result");
         if (skin.getSkinnable() != control) {
             throw new IllegalArgumentException("skinFactory created a skin for a different control");

@@ -296,13 +296,14 @@ public final class M3TreeViewSkin<T> extends TreeViewSkin<T> {
     /// @param newRoot the root to observe, or `null`
     private void updateObservedRoot(@Nullable TreeItem<T> oldRoot, @Nullable TreeItem<T> newRoot) {
         if (oldRoot != null) {
-            oldRoot.removeEventFilter(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
+            oldRoot.removeEventHandler(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
         }
         if (oldRoot != newRoot) {
             renderedCellItems.clear();
         }
         if (newRoot != null && !disposed) {
-            newRoot.addEventFilter(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
+            // TreeItem event filters are unavailable in JavaFX 17. Rendered row positions remain valid until layout.
+            newRoot.addEventHandler(TreeItem.<T>expandedItemCountChangeEvent(), expandedItemCountListener);
         }
     }
 

@@ -298,11 +298,13 @@ final class M3TreeViewTest {
             assertFalse(selectedCell.getBackground().getFills().isEmpty());
 
             Object originalSkin = treeView.getSkin();
-            TreeViewSkin<String> replacementSkin = new TreeViewSkin<>(treeView);
-            treeView.setSkin(replacementSkin);
+            // JavaFX 17 may create a default skin during an attached replacement skin's constructor.
+            root.getChildren().remove(treeView);
+            FxTestUtils.replaceSkin(treeView, TreeViewSkin::new);
+            root.getChildren().add(treeView);
             layout(root, 360.0, 240.0);
             assertNotSame(originalSkin, treeView.getSkin());
-            assertSame(replacementSkin, treeView.getSkin());
+            assertEquals(TreeViewSkin.class, treeView.getSkin().getClass());
             assertEquals(1, treeView.lookupAll(".virtual-flow").size());
         }));
     }

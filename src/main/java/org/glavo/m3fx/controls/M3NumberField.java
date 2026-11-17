@@ -237,6 +237,12 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     ///
     /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps repeated editor updates observable with JavaFX 17 bidirectional bindings.
+        @Override
+        protected void invalidated() {
+            get();
+        }
+
         /// Rejects null editor text.
         @Override
         public void set(String newValue) {
