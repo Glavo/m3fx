@@ -452,37 +452,6 @@ final class M3DateRangePickerFieldTest {
         });
     }
 
-    /// Verifies that the range field can show its popup when attached to a visible window.
-    @Tier2Test
-    @Test
-    void dateRangePickerFieldCanShowPopupFromVisibleWindow() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3DateRangePickerField field = new M3DateRangePickerField(
-                    LocalDate.of(2026, 5, 18),
-                    LocalDate.of(2026, 5, 22)
-            );
-            Pane root = new Pane(field);
-            Scene scene = new Scene(root, 760.0, 220.0);
-            Stage stage = new Stage();
-
-            try {
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
-                root.layout();
-
-                field.showPicker();
-
-                assertTrue(field.isShowing());
-                assertEquals(true, field.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
-            } finally {
-                stage.close();
-            }
-        });
-    }
-
     /// Verifies that keyboard dismissal from range popup picker content returns focus to the start editor.
     @Tier2Test
     @Test
@@ -510,21 +479,26 @@ final class M3DateRangePickerFieldTest {
                 field.showPicker();
                 field.getPicker().requestFocus();
                 assertTrue(field.isShowing());
+                assertEquals(true, field.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
 
                 field.getPicker().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(field.isShowing());
+                assertEquals(false, field.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
                 assertTrue(field.getStartEditor().isFocused());
             } finally {
-                stage.close();
+                try {
+                    field.hidePicker();
+                } finally {
+                    stage.close();
+                }
             }
         });
     }
 
-    /// Verifies that range field popup presets preserve accessibility focus while the popup is open.
-    @Tier2Test
+    /// Verifies accessible focus routing through editors, popup cells, and presets, including dismissal.
     @Test
-    void dateRangePickerFieldPresetFocusIsPreservedByAccessibleActions() {
+    void dateRangePickerFieldRoutesAccessibleFocusAndPreservesPresetFocus() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField(
@@ -532,7 +506,8 @@ final class M3DateRangePickerFieldTest {
                     anchor.plusDays(6)
             );
             field.getPresets().setAll(M3DateRangePresets.common(anchor, field.getPicker().getFirstDayOfWeek()));
-            Pane root = new Pane(field);
+            M3Button outsideFocus = new M3Button("Outside");
+            Pane root = new Pane(outsideFocus, field);
             Scene scene = new Scene(root, 760.0, 220.0);
             Stage stage = new Stage();
 
@@ -541,8 +516,16 @@ final class M3DateRangePickerFieldTest {
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
+                outsideFocus.resizeRelocate(24.0, 132.0, 120.0, 40.0);
                 field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
                 root.layout();
+
+                outsideFocus.requestFocus();
+                assertTrue(outsideFocus.isFocused());
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(field.getStartEditor().isFocused());
+                assertSame(field.getStartEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 Node endOpenButton = assertInstanceOf(Node.class, field.getEndInputLayout().getTrailing());
                 endOpenButton.requestFocus();
@@ -555,7 +538,28 @@ final class M3DateRangePickerFieldTest {
                 assertTrue(endOpenButton.isFocused());
                 assertSame(endOpenButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                field.getEndEditor().requestFocus();
+                assertTrue(field.getEndEditor().isFocused());
+                field.executeAccessibleAction(AccessibleAction.EXPAND);
+                assertTrue(field.isShowing());
+                Node pickerFocusNode = assertInstanceOf(
+                        Node.class,
+                        field.getPicker().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertSame(pickerFocusNode, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                assertFalse(field.isShowing());
+                assertTrue(field.getEndEditor().isFocused());
+
+                endOpenButton.requestFocus();
+                assertTrue(endOpenButton.isFocused());
                 field.showPicker();
+                assertTrue(field.isShowing());
                 Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
                 M3Button today = findPresetButton(presetContent, "Today");
 

@@ -598,9 +598,6 @@ final class M3PickerDialogTest {
             M3OverlayPane overlay = new M3OverlayPane();
             overlay.setContent(owner);
             Scene scene = new Scene(overlay, 720.0, 520.0);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            stage.setScene(scene);
-            stage.show();
 
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(date);
             M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(range);
@@ -646,6 +643,9 @@ final class M3PickerDialogTest {
             });
 
             try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
                 overlay.showDialog(dateDialog);
                 dateConfirmAction.fire();
 

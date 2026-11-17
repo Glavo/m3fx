@@ -671,12 +671,14 @@ final class M3PickerPresentationTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
+                        fieldReference.set(field);
                         field.setAnimationsEnabled(false);
                         field.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), field.getPicker().getFirstDayOfWeek()));
                         field.setPrefWidth(680.0);
 
                         Pane root = new Pane(field);
                         Stage stage = new Stage();
+                        stageReference.set(stage);
                         Scene scene = new Scene(root, 760.0, 180.0);
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
@@ -685,8 +687,6 @@ final class M3PickerPresentationTest {
                         field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
                         root.layout();
 
-                        stageReference.set(stage);
-                        fieldReference.set(field);
                         field.showPicker();
                     }, () -> {
                         M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
@@ -719,14 +719,16 @@ final class M3PickerPresentationTest {
                     });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                @Nullable M3DateRangePickerField field = fieldReference.get();
-                if (field != null) {
-                    field.hidePicker();
-                    field.setAnimationsEnabled(true);
-                }
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
+                try {
+                    @Nullable M3DateRangePickerField field = fieldReference.get();
+                    if (field != null) {
+                        field.hidePicker();
+                    }
+                } finally {
+                    @Nullable Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
                 }
             });
         }
@@ -747,6 +749,7 @@ final class M3PickerPresentationTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
+                        fieldReference.set(field);
                         field.setAnimationsEnabled(false);
                         field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                         field.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), field.getPicker().getFirstDayOfWeek()));
@@ -754,6 +757,7 @@ final class M3PickerPresentationTest {
 
                         Pane root = new Pane(field);
                         Stage stage = new Stage();
+                        stageReference.set(stage);
                         Scene scene = new Scene(root, 760.0, 180.0);
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
@@ -762,8 +766,6 @@ final class M3PickerPresentationTest {
                         field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
                         root.layout();
 
-                        stageReference.set(stage);
-                        fieldReference.set(field);
                         field.showPicker();
                     }, () -> {
                         M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
@@ -795,14 +797,16 @@ final class M3PickerPresentationTest {
                     });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                @Nullable M3DateRangePickerField field = fieldReference.get();
-                if (field != null) {
-                    field.hidePicker();
-                    field.setAnimationsEnabled(true);
-                }
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
+                try {
+                    @Nullable M3DateRangePickerField field = fieldReference.get();
+                    if (field != null) {
+                        field.hidePicker();
+                    }
+                } finally {
+                    @Nullable Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
                 }
             });
         }
@@ -821,11 +825,13 @@ final class M3PickerPresentationTest {
         try {
             FxTestUtils.runOnFxThread(() -> {
                 M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+                dateFieldReference.set(dateField);
                 dateField.setAnimationsEnabled(false);
                 dateField.getPresets().setAll(M3DatePresets.common(LocalDate.of(2026, 5, 19)));
                 dateField.setPrefWidth(420.0);
 
                 M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+                timeFieldReference.set(timeField);
                 timeField.setAnimationsEnabled(false);
                 timeField.getPicker().setUse24HourClock(true);
                 timeField.getPicker().setMinuteStep(15);
@@ -836,6 +842,7 @@ final class M3PickerPresentationTest {
                         LocalDate.of(2026, 5, 19),
                         LocalDate.of(2026, 5, 25)
                 );
+                rangeFieldReference.set(rangeField);
                 rangeField.setAnimationsEnabled(false);
                 rangeField.getPresets().setAll(M3DateRangePresets.common(
                         LocalDate.of(2026, 5, 19),
@@ -846,6 +853,7 @@ final class M3PickerPresentationTest {
                 Pane root = new Pane(dateField, timeField, rangeField);
                 root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
                 Stage stage = new Stage();
+                stageReference.set(stage);
                 Scene scene = new Scene(root, 780.0, 420.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -856,11 +864,7 @@ final class M3PickerPresentationTest {
                 rangeField.resizeRelocate(24.0, 240.0, 680.0, 96.0);
                 root.layout();
 
-                stageReference.set(stage);
                 rootReference.set(root);
-                dateFieldReference.set(dateField);
-                timeFieldReference.set(timeField);
-                rangeFieldReference.set(rangeField);
             });
 
             FxTestUtils.runOnFxThreadWhen(
@@ -925,107 +929,27 @@ final class M3PickerPresentationTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                @Nullable M3DatePickerField dateField = dateFieldReference.get();
-                if (dateField != null) {
-                    dateField.hidePicker();
-                    dateField.setAnimationsEnabled(true);
-                }
-                @Nullable M3TimePickerField timeField = timeFieldReference.get();
-                if (timeField != null) {
-                    timeField.hidePicker();
-                    timeField.setAnimationsEnabled(true);
-                }
-                @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
-                if (rangeField != null) {
-                    rangeField.hidePicker();
-                    rangeField.setAnimationsEnabled(true);
-                }
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
+                try {
+                    @Nullable M3DatePickerField dateField = dateFieldReference.get();
+                    if (dateField != null) {
+                        dateField.hidePicker();
+                    }
+                    @Nullable M3TimePickerField timeField = timeFieldReference.get();
+                    if (timeField != null) {
+                        timeField.hidePicker();
+                    }
+                    @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+                    if (rangeField != null) {
+                        rangeField.hidePicker();
+                    }
+                } finally {
+                    @Nullable Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
                 }
             });
         }
-    }
-
-    /// Verifies that date range picker fields route popup accessibility focus through real popup children.
-    @Test
-    void dateRangePickerFieldRoutesPopupAccessibilityFocus() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3DateRangePickerField field = new M3DateRangePickerField(
-                    LocalDate.of(2026, 5, 19),
-                    LocalDate.of(2026, 5, 25)
-            );
-            field.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), field.getPicker().getFirstDayOfWeek()));
-            field.setPrefWidth(680.0);
-
-            M3Button outsideFocus = new M3Button("Outside");
-            Pane root = new Pane(outsideFocus, field);
-            Stage stage = new Stage();
-            try {
-                field.setAnimationsEnabled(false);
-                Scene scene = new Scene(root, 760.0, 220.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                outsideFocus.resizeRelocate(24.0, 132.0, 120.0, 40.0);
-                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
-                root.applyCss();
-                root.layout();
-
-                outsideFocus.requestFocus();
-                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-
-                assertTrue(field.getStartEditor().isFocused());
-                assertSame(field.getStartEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                field.getEndEditor().requestFocus();
-                assertTrue(field.getEndEditor().isFocused());
-                field.executeAccessibleAction(AccessibleAction.EXPAND);
-
-                assertTrue(field.isShowing());
-                Node pickerFocusNode = assertInstanceOf(
-                        Node.class,
-                        field.getPicker().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                );
-
-                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-
-                assertTrue(pickerFocusNode.isFocused());
-                assertSame(pickerFocusNode, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
-                popupRoot.applyCss();
-                if (popupRoot instanceof Region region) {
-                    region.layout();
-                }
-                Node presetButton = assertInstanceOf(
-                        Node.class,
-                        presetContent.lookup("." + "m3-date-range-picker-field-preset-button")
-                );
-
-                presetButton.requestFocus();
-
-                assertTrue(presetButton.isFocused());
-                assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                field.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
-
-                assertTrue(presetButton.isFocused());
-                assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                presetButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
-
-                assertFalse(field.isShowing());
-                assertTrue(field.getEndEditor().isFocused());
-                assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-            } finally {
-                field.setAnimationsEnabled(true);
-                field.hidePicker();
-                stage.close();
-            }
-        });
     }
 
     /// Verifies that date pickers expose rendered day cells to accessibility clients.
@@ -1483,8 +1407,9 @@ final class M3PickerPresentationTest {
             region.layout();
         }
 
-        return presetContent.lookupAll("." + "m3-date-range-picker-field-preset-button").size() == 6
-                && presetContent.lookup("." + "m3-date-range-picker-field-preset-list") != null;
+        return !presetContent.lookupAll("." + "m3-date-range-picker-field-preset-button").isEmpty()
+                && presetContent.lookup("." + "m3-date-range-picker-field-preset-list") != null
+                && hasRenderableBounds(field.getPicker());
     }
 
     /// Verifies that hidden picker field preset content uses the orientation-aware logical start alignment.

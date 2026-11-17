@@ -142,26 +142,31 @@ final class M3DropZoneTest {
     void preservesNativeDragEventOwnership() {
         FxTestUtils.runOnFxThread(() -> {
             M3DropZone zone = new M3DropZone();
+            StackPane root = new StackPane(zone);
             AtomicInteger predicateCalls = new AtomicInteger();
             AtomicInteger applicationOverCalls = new AtomicInteger();
+            AtomicInteger parentOverCalls = new AtomicInteger();
             zone.setAcceptancePredicate(event -> {
                 predicateCalls.incrementAndGet();
                 return false;
             });
             zone.setOnDragOver(event -> applicationOverCalls.incrementAndGet());
+            root.setOnDragOver(event -> {
+                parentOverCalls.incrementAndGet();
+                assertFalse(event.isAccepted());
+            });
 
-            DragEvent rejected = dragEvent(zone, DragEvent.DRAG_OVER);
-            zone.fireEvent(rejected);
+            zone.fireEvent(dragEvent(zone, DragEvent.DRAG_OVER));
             assertEquals(1, predicateCalls.get());
             assertEquals(1, applicationOverCalls.get());
-            assertFalse(rejected.isConsumed());
-            assertFalse(rejected.isAccepted());
+            assertEquals(1, parentOverCalls.get());
             assertFalse(zone.isDragActive());
 
             zone.setDisable(true);
             zone.fireEvent(dragEvent(zone, DragEvent.DRAG_OVER));
             assertEquals(1, predicateCalls.get(), "disabled zones must not evaluate application predicates");
             assertEquals(2, applicationOverCalls.get(), "disabled controls must not consume native drag events");
+            assertEquals(2, parentOverCalls.get());
 
             zone.setDisable(false);
             IllegalStateException failure = new IllegalStateException("predicate failure");
@@ -176,15 +181,15 @@ final class M3DropZoneTest {
             assertFalse(zone.isDragActive());
 
             AtomicBoolean dropHandled = new AtomicBoolean();
+            AtomicBoolean dropCompletedAtParent = new AtomicBoolean();
             zone.setOnDragDropped(event -> {
                 dropHandled.set(true);
                 event.setDropCompleted(true);
             });
-            DragEvent dropped = dragEvent(zone, DragEvent.DRAG_DROPPED);
-            zone.fireEvent(dropped);
+            root.setOnDragDropped(event -> dropCompletedAtParent.set(event.isDropCompleted()));
+            zone.fireEvent(dragEvent(zone, DragEvent.DRAG_DROPPED));
             assertTrue(dropHandled.get());
-            assertTrue(dropped.isDropCompleted());
-            assertFalse(dropped.isConsumed());
+            assertTrue(dropCompletedAtParent.get(), "application-completed drops must reach the parent");
         });
     }
 

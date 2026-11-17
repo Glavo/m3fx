@@ -66,14 +66,14 @@ final class M3NodeTransitionReentrancyTest {
             new Scene(node);
             M3NodeTransition transition = new M3NodeTransition(node);
             transition.configure(SPEC, 0.5, 2.0, 3.0, 4.0, 5.0);
-            M3Animation.playFromStart(node, transition);
             AtomicBoolean replaced = new AtomicBoolean();
-            transition.statusProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == Animation.Status.STOPPED && replaced.compareAndSet(false, true)) {
-                    transition.configure(SPEC, 0.75, 3.0, 4.0, 5.0, 6.0);
-                }
-            });
             try {
+                M3Animation.playFromStart(node, transition);
+                transition.statusProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue == Animation.Status.STOPPED && replaced.compareAndSet(false, true)) {
+                        transition.configure(SPEC, 0.75, 3.0, 4.0, 5.0, 6.0);
+                    }
+                });
                 transition.configure(SPEC, 0.25, 4.0, 5.0, 6.0, 7.0);
                 M3Animation.finish(transition);
                 assertValues(node, new double[]{0.75, 3.0, 4.0, 5.0, 6.0});

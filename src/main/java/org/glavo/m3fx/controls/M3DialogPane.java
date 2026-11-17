@@ -153,6 +153,8 @@ public class M3DialogPane extends Control implements M3Animated {
     ///
     /// The property can be observed and bound. Its default value is the empty string, and values must be non-null.
     /// Empty and blank values omit the headline section from layout.
+    /// The default skin centers the headline when a [graphic][#graphicProperty()] is present; otherwise it aligns
+    /// the headline to the logical start edge.
     ///
     /// @return the dialog headline property
     public final StringProperty headerTextProperty() {

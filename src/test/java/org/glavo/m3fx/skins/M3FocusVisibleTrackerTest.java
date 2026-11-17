@@ -268,25 +268,23 @@ final class M3FocusVisibleTrackerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane pane = focusablePane();
             HBox firstRoot = new HBox(pane);
-            Scene firstScene = show(firstRoot, 96.0, 48.0);
+            show(firstRoot, 96.0, 48.0);
             HBox secondRoot = new HBox();
-            Scene secondScene = show(secondRoot, 96.0, 48.0);
-            int firstInitialPropertyCount = firstScene.getProperties().size();
-            int secondInitialPropertyCount = secondScene.getProperties().size();
-            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> {}, null);
+            int[] invalidations = {0};
+            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> invalidations[0]++, null);
 
             tracker.install();
             try {
-                assertTrue(firstScene.getProperties().size() > firstInitialPropertyCount);
-                assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
+                pane.requestFocus();
+                firstRoot.fireEvent(keyPressedEvent(KeyCode.A));
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
+                show(secondRoot, 96.0, 48.0);
                 firstRoot.getChildren().clear();
                 secondRoot.getChildren().add(pane);
 
-                assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
-                assertTrue(secondScene.getProperties().size() > secondInitialPropertyCount);
-
                 pane.requestFocus();
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
                 secondRoot.fireEvent(keyPressedEvent(KeyCode.A));
                 assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
@@ -299,8 +297,10 @@ final class M3FocusVisibleTrackerTest {
                 tracker.uninstall();
             }
 
-            assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
-            assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
+            int afterUninstall = invalidations[0];
+            firstRoot.fireEvent(keyPressedEvent(KeyCode.A));
+            secondRoot.fireEvent(keyPressedEvent(KeyCode.A));
+            assertEquals(afterUninstall, invalidations[0], "neither scene may notify an uninstalled tracker");
         });
     }
 
@@ -361,27 +361,48 @@ final class M3FocusVisibleTrackerTest {
         });
     }
 
-    /// Verifies that the scene-owned fallback tracker is released after its last owner uninstalls.
+    /// Verifies partial uninstall preserves other owners and final uninstall resets scene modality.
     @Test
     void fallbackTrackerReleasesSceneStateAfterLastUninstall() {
         FxTestUtils.runOnFxThread(() -> {
             Pane first = focusablePane();
             Pane second = focusablePane();
             HBox root = new HBox(first, second);
-            Scene scene = show(root, 160.0, 48.0);
-            int initialPropertyCount = scene.getProperties().size();
-            M3FocusVisibleTracker firstTracker = new M3FocusVisibleTracker(first, () -> {}, null);
-            M3FocusVisibleTracker secondTracker = new M3FocusVisibleTracker(second, () -> {}, null);
+            show(root, 160.0, 48.0);
+            int[] invalidations = new int[2];
+            M3FocusVisibleTracker firstTracker = new M3FocusVisibleTracker(first, () -> invalidations[0]++, null);
+            M3FocusVisibleTracker secondTracker = new M3FocusVisibleTracker(second, () -> invalidations[1]++, null);
+            try {
+                firstTracker.install();
+                secondTracker.install();
+                first.requestFocus();
+                root.fireEvent(keyPressedEvent(KeyCode.A));
+                assertTrue(first.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
 
-            firstTracker.install();
-            secondTracker.install();
-            assertTrue(scene.getProperties().size() > initialPropertyCount);
+                firstTracker.uninstall();
+                int firstAfterUninstall = invalidations[0];
+                second.requestFocus();
+                assertTrue(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+                root.fireEvent(primaryMousePressedEvent());
+                assertFalse(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+                root.fireEvent(keyPressedEvent(KeyCode.B));
+                assertTrue(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+                assertEquals(firstAfterUninstall, invalidations[0]);
 
-            firstTracker.uninstall();
-            assertTrue(scene.getProperties().size() > initialPropertyCount);
+                secondTracker.uninstall();
+                int secondAfterUninstall = invalidations[1];
+                root.fireEvent(keyPressedEvent(KeyCode.C));
+                assertEquals(secondAfterUninstall, invalidations[1]);
 
-            secondTracker.uninstall();
-            assertEquals(initialPropertyCount, scene.getProperties().size());
+                secondTracker.install();
+                assertFalse(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS),
+                        "a fresh registration must not inherit modality from a disposed scene observer");
+                root.fireEvent(keyPressedEvent(KeyCode.D));
+                assertTrue(second.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                firstTracker.uninstall();
+                secondTracker.uninstall();
+            }
         });
     }
 

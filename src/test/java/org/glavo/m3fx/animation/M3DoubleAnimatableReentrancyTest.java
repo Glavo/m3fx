@@ -5,6 +5,7 @@ package org.glavo.m3fx.animation;
 
 import javafx.animation.Animation;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.Scene;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
@@ -99,21 +100,26 @@ final class M3DoubleAnimatableReentrancyTest {
         withAnimatable(animatable -> {
             animatable.animateTo(5.0, SPEC);
             AtomicBoolean replaced = new AtomicBoolean();
-            animatable.statusProperty().addListener((observable, oldValue, newValue) -> {
+            ChangeListener<Animation.Status> listener = (observable, oldValue, newValue) -> {
                 if (newValue == Animation.Status.STOPPED && replaced.compareAndSet(false, true)) {
                     animatable.animateTo(20.0, SPEC);
                 }
-            });
-            if (finish) {
+            };
+            animatable.statusProperty().addListener(listener);
+            try {
+                if (finish) {
+                    animatable.finish();
+                } else {
+                    animatable.animateTo(10.0, SPEC);
+                }
+                assertEquals(20.0, animatable.getTargetValue());
+                assertEquals(0.0, animatable.getValue());
+                assertEquals(Animation.Status.RUNNING, animatable.getStatus());
                 animatable.finish();
-            } else {
-                animatable.animateTo(10.0, SPEC);
+                assertEquals(20.0, animatable.getValue());
+            } finally {
+                animatable.statusProperty().removeListener(listener);
             }
-            assertEquals(20.0, animatable.getTargetValue());
-            assertEquals(0.0, animatable.getValue());
-            assertEquals(Animation.Status.RUNNING, animatable.getStatus());
-            animatable.finish();
-            assertEquals(20.0, animatable.getValue());
         });
     }
 

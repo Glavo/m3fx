@@ -13,6 +13,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.internal.M3Css;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -92,7 +93,6 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         graphicContainer.getStyleClass().add("graphic-container");
         graphicContainer.setAlignment(Pos.CENTER);
         headerPanel.getStyleClass().add("header-panel");
-        headerPanel.setAlignment(Pos.CENTER_LEFT);
         headerLabel.setWrapText(true);
         contentContainer.getStyleClass().add("content");
         contentContainer.setAlignment(Pos.TOP_LEFT);
@@ -156,6 +156,10 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         layout.getChildren().clear();
 
         @Nullable Node graphic = control.getGraphic();
+        Pos headerAlignment = graphic == null ? Pos.CENTER_LEFT : Pos.CENTER;
+        headerPanel.setAlignment(headerAlignment);
+        headerLabel.setAlignment(headerAlignment);
+        headerLabel.setTextAlignment(graphic == null ? TextAlignment.LEFT : TextAlignment.CENTER);
         graphicContainer.getChildren().clear();
         if (graphic != null) {
             graphicContainer.getChildren().add(graphic);

@@ -506,39 +506,9 @@ final class M3PickerFieldTest {
         });
     }
 
-    /// Verifies that a picker field can show its popup when attached to a visible window.
+    /// Verifies that keyboard dismissal and popup selection return focus to the editor.
     @Test
-    void pickerFieldCanShowPopupFromVisibleWindow() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
-            Pane root = new Pane(field);
-            Scene scene = new Scene(root, 420.0, 180.0);
-            Stage stage = new Stage();
-
-            try {
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                field.resizeRelocate(24.0, 24.0, 320.0, 72.0);
-                root.layout();
-
-                field.showPicker();
-
-                assertTrue(field.isShowing());
-                assertEquals(true, field.queryAccessibleAttribute(javafx.scene.AccessibleAttribute.EXPANDED));
-
-                field.getPicker().setValue(LocalDate.of(2026, 5, 20));
-                assertEquals(LocalDate.of(2026, 5, 20), field.getValue());
-            } finally {
-                stage.close();
-            }
-        });
-    }
-
-    /// Verifies that keyboard dismissal from popup picker content returns focus to the editor.
-    @Test
-    void pickerFieldRestoresEditorFocusAfterKeyboardDismissal() {
+    void pickerFieldRestoresEditorFocusAfterKeyboardDismissalAndSelection() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             Pane root = new Pane(field);
@@ -559,6 +529,7 @@ final class M3PickerFieldTest {
                 field.showPicker();
                 field.getPicker().requestFocus();
                 assertTrue(field.isShowing());
+                assertEquals(true, field.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
                 Node popupFocusNode =
                         assertInstanceOf(Node.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertTrue(popupFocusNode == field.getPicker()
@@ -567,10 +538,24 @@ final class M3PickerFieldTest {
                 field.getPicker().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(field.isShowing());
+                assertEquals(false, field.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
                 assertTrue(field.getEditor().isFocused());
                 assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.showPicker();
+                assertTrue(field.isShowing());
+                field.getPicker().setValue(LocalDate.of(2026, 5, 20));
+
+                assertEquals(LocalDate.of(2026, 5, 20), field.getValue());
+                assertEquals("2026-05-20", field.getEditor().getText());
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
             } finally {
-                stage.close();
+                try {
+                    field.hidePicker();
+                } finally {
+                    stage.close();
+                }
             }
         });
     }

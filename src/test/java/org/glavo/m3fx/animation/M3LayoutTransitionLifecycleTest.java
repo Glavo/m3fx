@@ -44,28 +44,36 @@ final class M3LayoutTransitionLifecycleTest {
             Pane second = new Pane();
             Pane parent = parent(first, second);
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            AtomicBoolean stopped = new AtomicBoolean();
-            first.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (!first.getTransforms().isEmpty() && stopped.compareAndSet(false, true)) {
-                    if (dispose) {
-                        transition.dispose();
-                    } else {
-                        transition.stop();
+            try {
+                AtomicBoolean stopped = new AtomicBoolean();
+                first.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (!first.getTransforms().isEmpty() && stopped.compareAndSet(false, true)) {
+                        if (dispose) {
+                            transition.dispose();
+                        } else {
+                            transition.stop();
+                        }
                     }
+                });
+                transition.start();
+                assertFalse(transition.isActive());
+                assertEquals(dispose, transition.isDisposed());
+                assertTrue(first.getTransforms().isEmpty());
+                assertTrue(second.getTransforms().isEmpty());
+                first.setLayoutX(20.0);
+                assertFalse(transition.isRunning());
+                M3LayoutTransition replacement = new M3LayoutTransition(parent);
+                try {
+                    replacement.start();
+                    assertEquals(1, first.getTransforms().size());
+                    replacement.stop();
+                    assertTrue(first.getTransforms().isEmpty());
+                } finally {
+                    replacement.dispose();
                 }
-            });
-            transition.start();
-            assertFalse(transition.isActive());
-            assertEquals(dispose, transition.isDisposed());
-            assertTrue(first.getTransforms().isEmpty());
-            assertTrue(second.getTransforms().isEmpty());
-            first.setLayoutX(20.0);
-            assertFalse(transition.isRunning());
-            M3LayoutTransition replacement = new M3LayoutTransition(parent);
-            replacement.start();
-            assertEquals(1, first.getTransforms().size());
-            replacement.stop();
-            assertTrue(first.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -78,22 +86,23 @@ final class M3LayoutTransitionLifecycleTest {
             Pane third = new Pane();
             Pane parent = parent(first, second);
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            AtomicBoolean replaced = new AtomicBoolean();
-            first.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (!first.getTransforms().isEmpty() && replaced.compareAndSet(false, true)) {
-                    parent.getChildren().setAll(second, third);
-                }
-            });
             try {
+                AtomicBoolean replaced = new AtomicBoolean();
+                first.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (!first.getTransforms().isEmpty() && replaced.compareAndSet(false, true)) {
+                        parent.getChildren().setAll(second, third);
+                    }
+                });
                 transition.start();
                 assertTrue(first.getTransforms().isEmpty());
                 assertEquals(1, second.getTransforms().size());
                 assertEquals(1, third.getTransforms().size());
-            } finally {
                 transition.stop();
+                assertTrue(second.getTransforms().isEmpty());
+                assertTrue(third.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
             }
-            assertTrue(second.getTransforms().isEmpty());
-            assertTrue(third.getTransforms().isEmpty());
         });
     }
 
@@ -104,18 +113,22 @@ final class M3LayoutTransitionLifecycleTest {
             Pane parent = parent();
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            AtomicBoolean stopped = new AtomicBoolean();
-            child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (!child.getTransforms().isEmpty() && stopped.compareAndSet(false, true)) {
-                    transition.stop();
-                }
-            });
-            transition.start();
-            parent.getChildren().add(child);
-            assertFalse(transition.isActive());
-            assertTrue(child.getTransforms().isEmpty());
-            child.setLayoutX(20.0);
-            assertFalse(transition.isRunning());
+            try {
+                AtomicBoolean stopped = new AtomicBoolean();
+                child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (!child.getTransforms().isEmpty() && stopped.compareAndSet(false, true)) {
+                        transition.stop();
+                    }
+                });
+                transition.start();
+                parent.getChildren().add(child);
+                assertFalse(transition.isActive());
+                assertTrue(child.getTransforms().isEmpty());
+                child.setLayoutX(20.0);
+                assertFalse(transition.isRunning());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -127,23 +140,25 @@ final class M3LayoutTransitionLifecycleTest {
             Pane second = new Pane();
             Pane parent = parent(first, second);
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            transition.start();
-            AtomicBoolean restarted = new AtomicBoolean();
-            second.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (second.getTransforms().isEmpty() && restarted.compareAndSet(false, true)) {
-                    transition.start();
-                }
-            });
-            transition.stop();
             try {
+                transition.start();
+                AtomicBoolean restarted = new AtomicBoolean();
+                second.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (!transition.isDisposed() && second.getTransforms().isEmpty()
+                            && restarted.compareAndSet(false, true)) {
+                        transition.start();
+                    }
+                });
+                transition.stop();
                 assertTrue(transition.isActive());
                 assertEquals(1, first.getTransforms().size());
                 assertEquals(1, second.getTransforms().size());
-            } finally {
                 transition.stop();
+                assertTrue(first.getTransforms().isEmpty());
+                assertTrue(second.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
             }
-            assertTrue(first.getTransforms().isEmpty());
-            assertTrue(second.getTransforms().isEmpty());
         });
     }
 
@@ -156,22 +171,23 @@ final class M3LayoutTransitionLifecycleTest {
             Pane third = new Pane();
             Pane parent = parent(first, second, third);
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            transition.start();
-            third.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (third.getTransforms().isEmpty()) {
-                    parent.getChildren().remove(first);
-                }
-            });
             try {
+                transition.start();
+                third.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (third.getTransforms().isEmpty()) {
+                        parent.getChildren().remove(first);
+                    }
+                });
                 parent.getChildren().remove(third);
                 assertEquals(List.of(second), parent.getChildren());
                 assertTrue(first.getTransforms().isEmpty());
                 assertTrue(third.getTransforms().isEmpty());
                 assertEquals(1, second.getTransforms().size());
-            } finally {
                 transition.stop();
+                assertTrue(second.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
             }
-            assertTrue(second.getTransforms().isEmpty());
         });
     }
 
@@ -181,22 +197,26 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.start();
-            AtomicBoolean rejected = new AtomicBoolean();
-            child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (child.getTransforms().isEmpty()) {
-                    try {
-                        transition.start();
-                    } catch (IllegalStateException expected) {
-                        rejected.set(true);
+            try {
+                transition.start();
+                AtomicBoolean rejected = new AtomicBoolean();
+                child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (child.getTransforms().isEmpty()) {
+                        try {
+                            transition.start();
+                        } catch (IllegalStateException expected) {
+                            rejected.set(true);
+                        }
                     }
-                }
-            });
-            transition.dispose();
-            assertTrue(rejected.get());
-            assertTrue(transition.isDisposed());
-            assertFalse(transition.isActive());
-            assertTrue(child.getTransforms().isEmpty());
+                });
+                transition.dispose();
+                assertTrue(rejected.get());
+                assertTrue(transition.isDisposed());
+                assertFalse(transition.isActive());
+                assertTrue(child.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -207,21 +227,25 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.start();
-            child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
-                if (child.getTransforms().isEmpty()) {
-                    transition.start();
-                    if (dispose) {
-                        transition.dispose();
-                    } else {
-                        transition.stop();
+            try {
+                transition.start();
+                child.getTransforms().addListener((ListChangeListener<Transform>) change -> {
+                    if (!transition.isDisposed() && child.getTransforms().isEmpty()) {
+                        transition.start();
+                        if (dispose) {
+                            transition.dispose();
+                        } else {
+                            transition.stop();
+                        }
                     }
-                }
-            });
-            transition.stop();
-            assertFalse(transition.isActive());
-            assertEquals(dispose, transition.isDisposed());
-            assertTrue(child.getTransforms().isEmpty());
+                });
+                transition.stop();
+                assertFalse(transition.isActive());
+                assertEquals(dispose, transition.isDisposed());
+                assertTrue(child.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -232,24 +256,28 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
-            transition.start();
-            child.setLayoutX(20.0);
-            assertTrue(transition.isRunning());
-            transition.statusProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == javafx.animation.Animation.Status.STOPPED) {
-                    if (dispose) {
-                        transition.dispose();
-                    } else {
-                        transition.stop();
+            try {
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+                transition.start();
+                child.setLayoutX(20.0);
+                assertTrue(transition.isRunning());
+                transition.statusProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue == javafx.animation.Animation.Status.STOPPED) {
+                        if (dispose) {
+                            transition.dispose();
+                        } else {
+                            transition.stop();
+                        }
                     }
-                }
-            });
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(4.0), M3MotionEasing.LINEAR));
-            assertFalse(transition.isRunning());
-            assertFalse(transition.isActive());
-            assertEquals(dispose, transition.isDisposed());
-            assertTrue(child.getTransforms().isEmpty());
+                });
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(4.0), M3MotionEasing.LINEAR));
+                assertFalse(transition.isRunning());
+                assertFalse(transition.isActive());
+                assertEquals(dispose, transition.isDisposed());
+                assertTrue(child.getTransforms().isEmpty());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -259,21 +287,25 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
-            transition.start();
-            child.setLayoutX(20.0);
-            child.setLayoutY(30.0);
-            Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
-            translation.xProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue.doubleValue() == 0.0) {
-                    transition.dispose();
-                    translation.setY(123.0);
-                }
-            });
-            transition.finish();
-            assertTrue(transition.isDisposed());
-            assertTrue(child.getTransforms().isEmpty());
-            assertEquals(123.0, translation.getY());
+            try {
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+                transition.start();
+                child.setLayoutX(20.0);
+                child.setLayoutY(30.0);
+                Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
+                translation.xProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue.doubleValue() == 0.0) {
+                        transition.dispose();
+                        translation.setY(123.0);
+                    }
+                });
+                transition.finish();
+                assertTrue(transition.isDisposed());
+                assertTrue(child.getTransforms().isEmpty());
+                assertEquals(123.0, translation.getY());
+            } finally {
+                transition.dispose();
+            }
         });
     }
 
@@ -283,23 +315,23 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
-            transition.start();
-            child.setLayoutX(20.0);
-            child.setLayoutY(30.0);
-            Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
-            AtomicBoolean changed = new AtomicBoolean();
-            translation.xProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue.doubleValue() == 0.0 && changed.compareAndSet(false, true)) {
-                    child.setLayoutY(60.0);
-                }
-            });
             try {
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+                transition.start();
+                child.setLayoutX(20.0);
+                child.setLayoutY(30.0);
+                Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
+                AtomicBoolean changed = new AtomicBoolean();
+                translation.xProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue.doubleValue() == 0.0 && changed.compareAndSet(false, true)) {
+                        child.setLayoutY(60.0);
+                    }
+                });
                 transition.finish();
                 assertEquals(60.0, child.getLayoutY());
                 assertEquals(-60.0, translation.getY());
             } finally {
-                transition.stop();
+                transition.dispose();
             }
         });
     }
@@ -313,25 +345,25 @@ final class M3LayoutTransitionLifecycleTest {
             Pane third = new Pane();
             Pane parent = parent(first, second, third);
             M3LayoutTransition transition = new M3LayoutTransition(parent);
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
-            transition.start();
-            first.setLayoutX(10.0);
-            second.setLayoutX(20.0);
-            third.setLayoutX(30.0);
-            Translate secondTranslation = assertInstanceOf(Translate.class, second.getTransforms().get(0));
-            Translate thirdTranslation = assertInstanceOf(Translate.class, third.getTransforms().get(0));
-            secondTranslation.xProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue.doubleValue() == 0.0) {
-                    parent.getChildren().remove(first);
-                }
-            });
             try {
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+                transition.start();
+                first.setLayoutX(10.0);
+                second.setLayoutX(20.0);
+                third.setLayoutX(30.0);
+                Translate secondTranslation = assertInstanceOf(Translate.class, second.getTransforms().get(0));
+                Translate thirdTranslation = assertInstanceOf(Translate.class, third.getTransforms().get(0));
+                secondTranslation.xProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue.doubleValue() == 0.0) {
+                        parent.getChildren().remove(first);
+                    }
+                });
                 transition.finish();
                 assertTrue(first.getTransforms().isEmpty());
                 assertEquals(0.0, thirdTranslation.getX());
                 assertFalse(transition.isRunning());
             } finally {
-                transition.stop();
+                transition.dispose();
             }
         });
     }
@@ -343,16 +375,20 @@ final class M3LayoutTransitionLifecycleTest {
             Pane child = new Pane();
             child.setRotate(45.0);
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.start();
-            Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
-            translation.xProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                transition.start();
+                Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
+                translation.xProperty().addListener((observable, oldValue, newValue) -> {
+                    transition.dispose();
+                    translation.setY(123.0);
+                });
+                child.setLayoutX(20.0);
+                assertTrue(transition.isDisposed());
+                assertTrue(child.getTransforms().isEmpty());
+                assertEquals(123.0, translation.getY());
+            } finally {
                 transition.dispose();
-                translation.setY(123.0);
-            });
-            child.setLayoutX(20.0);
-            assertTrue(transition.isDisposed());
-            assertTrue(child.getTransforms().isEmpty());
-            assertEquals(123.0, translation.getY());
+            }
         });
     }
 
@@ -362,22 +398,22 @@ final class M3LayoutTransitionLifecycleTest {
         runWithoutListenerFailures(() -> {
             Pane child = new Pane();
             M3LayoutTransition transition = new M3LayoutTransition(parent(child));
-            transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
-            transition.start();
-            child.setLayoutX(20.0);
-            AtomicBoolean changed = new AtomicBoolean();
-            transition.statusProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == javafx.animation.Animation.Status.STOPPED && changed.compareAndSet(false, true)) {
-                    transition.setMotionSpec(M3MotionSpec.of(Duration.ZERO, M3MotionEasing.LINEAR));
-                }
-            });
             try {
+                transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(5.0), M3MotionEasing.LINEAR));
+                transition.start();
+                child.setLayoutX(20.0);
+                AtomicBoolean changed = new AtomicBoolean();
+                transition.statusProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue == javafx.animation.Animation.Status.STOPPED && changed.compareAndSet(false, true)) {
+                        transition.setMotionSpec(M3MotionSpec.of(Duration.ZERO, M3MotionEasing.LINEAR));
+                    }
+                });
                 transition.setMotionSpec(M3MotionSpec.of(Duration.seconds(4.0), M3MotionEasing.LINEAR));
                 assertFalse(transition.isRunning());
                 Translate translation = assertInstanceOf(Translate.class, child.getTransforms().get(0));
                 assertEquals(0.0, translation.getX());
             } finally {
-                transition.stop();
+                transition.dispose();
             }
         });
     }

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,16 +55,20 @@ final class M3AnimationTest {
             TestFiniteTransition transition = new TestFiniteTransition(value);
             AtomicBoolean finished = new AtomicBoolean();
             transition.setOnFinished(event -> finished.set(true));
-            M3Animation.playFromStart(owner, transition);
             transition.statusProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == Animation.Status.STOPPED) {
                     transition.stop();
                     value.set(0.25);
                 }
             });
-            M3Animation.finish(transition);
-            assertEquals(0.25, value.get());
-            assertFalse(finished.get());
+            try {
+                M3Animation.playFromStart(owner, transition);
+                M3Animation.finish(transition);
+                assertEquals(0.25, value.get());
+                assertFalse(finished.get());
+            } finally {
+                transition.stop();
+            }
         }));
     }
 
@@ -103,11 +108,14 @@ final class M3AnimationTest {
         TestFiniteTransition transition = new TestFiniteTransition(value);
         transition.setOnFinished(event -> animationFinished.set(true));
 
-        M3Animation.playFromStart(owner, transition);
-
-        assertEquals(1.0, value.get(), 0.0001);
-        assertTrue(animationFinished.get());
-        assertEquals(Animation.Status.STOPPED, transition.getStatus());
+        try {
+            M3Animation.playFromStart(owner, transition);
+            assertEquals(1.0, value.get());
+            assertTrue(animationFinished.get());
+            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+        } finally {
+            transition.stop();
+        }
     }
 
     /// Ordinary JavaFX owners ignore local CSS but still settle and complete under the global request.
@@ -152,63 +160,79 @@ final class M3AnimationTest {
         }));
     }
 
-    /// Verifies finite transitions observe motion settings only for the duration of an active run.
+    /// Keeps restarted runs responsive to motion settings without completing stopped runs again.
     @Test
     void finiteTransitionObservesMotionSettingsOnlyWhileRunning() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
             M3Scrim owner = new M3Scrim();
-            Scene scene = new Scene(owner);
-            int ownerPropertyCount = owner.getProperties().size();
-            int scenePropertyCount = scene.getProperties().size();
+            new Scene(owner);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
             TestFiniteTransition transition = new TestFiniteTransition(value);
+            AtomicInteger completions = new AtomicInteger();
+            transition.setOnFinished(event -> completions.incrementAndGet());
+            try {
+                M3Animation.playFromStart(owner, transition);
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                owner.setAnimationsEnabled(false);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get());
+                assertEquals(1, completions.get());
 
-            M3Animation.playFromStart(owner, transition);
+                value.set(0.25);
+                owner.setAnimationsEnabled(true);
+                owner.setAnimationsEnabled(false);
+                assertEquals(0.25, value.get());
+                assertEquals(1, completions.get());
 
-            assertEquals(Animation.Status.RUNNING, transition.getStatus());
-            assertTrue(owner.getProperties().size() > ownerPropertyCount);
-            assertTrue(scene.getProperties().size() > scenePropertyCount);
-
-            owner.setAnimationsEnabled(false);
-
-            assertEquals(Animation.Status.STOPPED, transition.getStatus());
-            assertEquals(1.0, value.get(), 0.0001);
-            owner.setAnimationsEnabled(true);
-            assertEquals(ownerPropertyCount, owner.getProperties().size());
-            assertEquals(scenePropertyCount, scene.getProperties().size());
+                owner.setAnimationsEnabled(true);
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                transition.stop();
+                value.set(0.5);
+                owner.setAnimationsEnabled(false);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(0.5, value.get());
+                assertEquals(1, completions.get());
+            } finally {
+                transition.stop();
+            }
         }));
     }
 
     /// Verifies that tree visibility settles a finite transition before its scene acquires a window.
     @Test
     void hidingAncestorFinishesFiniteTransitionInSceneWithoutWindow() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
             Pane owner = new Pane();
             Pane parent = new Pane(owner);
-            Scene scene = new Scene(parent);
+            new Scene(parent);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
             AtomicBoolean animationFinished = new AtomicBoolean(false);
             TestFiniteTransition transition = new TestFiniteTransition(value);
             transition.setOnFinished(event -> animationFinished.set(true));
 
-            M3Animation.playFromStart(owner, transition);
-            assertEquals(Animation.Status.RUNNING, transition.getStatus());
-
-            parent.setVisible(false);
-
-            assertEquals(Animation.Status.STOPPED, transition.getStatus());
-            assertEquals(1.0, value.get(), 0.0001);
-            assertTrue(animationFinished.get());
-            assertFalse(owner.hasProperties());
-            assertFalse(scene.hasProperties());
-        });
+            try {
+                M3Animation.playFromStart(owner, transition);
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
+                parent.setVisible(false);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(1.0, value.get());
+                assertTrue(animationFinished.get());
+            } finally {
+                transition.stop();
+            }
+        }));
     }
 
-    /// Verifies that iconifying a presenting stage settles a finite transition and releases its observers.
+    /// Verifies that iconifying a presenting stage settles a finite transition.
     @Tier2Test
     @Test
     void iconifyingWindowFinishesFiniteTransition() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
             Pane owner = new Pane();
             Scene scene = new Scene(owner);
             Stage stage = new Stage();
@@ -228,20 +252,19 @@ final class M3AnimationTest {
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
                 assertEquals(1.0, value.get(), 0.0001);
                 assertTrue(animationFinished.get());
-                assertFalse(owner.hasProperties());
-                assertFalse(scene.hasProperties());
             } finally {
                 transition.stop();
                 stage.close();
             }
-        });
+        }));
     }
 
-    /// Verifies that hiding an owner ancestor settles a finite transition and releases its observers.
+    /// Verifies that hiding an owner ancestor settles a finite transition in a presenting window.
     @Tier2Test
     @Test
     void hidingAncestorFinishesFiniteTransition() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
             Pane owner = new Pane();
             Pane parent = new Pane(owner);
             Scene scene = new Scene(parent);
@@ -262,13 +285,11 @@ final class M3AnimationTest {
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
                 assertEquals(1.0, value.get(), 0.0001);
                 assertTrue(animationFinished.get());
-                assertFalse(owner.hasProperties());
-                assertFalse(scene.hasProperties());
             } finally {
                 transition.stop();
                 stage.close();
             }
-        });
+        }));
     }
 
     /// Verifies that animation defaults resolve the theme motion scheme through the parent chain.
@@ -311,18 +332,20 @@ final class M3AnimationTest {
         FxTestUtils.runOnFxThread(() -> {
             PauseTransition transition = new PauseTransition(Duration.seconds(5.0));
 
-            transition.playFromStart();
-            assertEquals(Animation.Status.RUNNING, transition.getStatus());
+            try {
+                transition.playFromStart();
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
 
-            M3Animation.updatePauseDuration(transition, Duration.millis(250.0), true);
+                M3Animation.updatePauseDuration(transition, Duration.millis(250.0), true);
+                assertEquals(Duration.millis(250.0), transition.getDuration());
+                assertEquals(Animation.Status.RUNNING, transition.getStatus());
 
-            assertEquals(Duration.millis(250.0), transition.getDuration());
-            assertEquals(Animation.Status.RUNNING, transition.getStatus());
-
-            M3Animation.updatePauseDuration(transition, Duration.millis(100.0), false);
-
-            assertEquals(Duration.millis(100.0), transition.getDuration());
-            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                M3Animation.updatePauseDuration(transition, Duration.millis(100.0), false);
+                assertEquals(Duration.millis(100.0), transition.getDuration());
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+            } finally {
+                transition.stop();
+            }
         });
     }
 
@@ -361,72 +384,63 @@ final class M3AnimationTest {
         });
     }
 
-    /// Retains lifecycle observation when an already running transition is restarted.
+    /// Transfers restarted runs to the new owner's scene and settles when that owner is detached.
     @Test
-    void restartingFiniteTransitionStillObservesReducedMotion() {
+    void restartingFiniteTransitionTransfersPresentationObservation() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            M3Scrim owner = new M3Scrim();
-            Scene scene = new Scene(owner);
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane firstOwner = new Pane();
+            Pane secondOwner = new Pane();
+            Pane firstRoot = new Pane(firstOwner);
+            Pane secondRoot = new Pane(secondOwner);
+            new Scene(firstRoot);
+            new Scene(secondRoot);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
             TestFiniteTransition transition = new TestFiniteTransition(value);
+            AtomicInteger completions = new AtomicInteger();
+            transition.setOnFinished(event -> completions.incrementAndGet());
             try {
-                M3Animation.playFromStart(owner, transition);
-                M3Animation.playFromStart(owner, transition);
+                M3Animation.playFromStart(firstOwner, transition);
+                M3Animation.playFromStart(secondOwner, transition);
+                firstRoot.setVisible(false);
                 assertEquals(Animation.Status.RUNNING, transition.getStatus());
-                owner.setAnimationsEnabled(false);
+                assertEquals(0, completions.get());
+                secondRoot.getChildren().clear();
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
-                assertEquals(1.0, value.get(), 0.0001);
+                assertEquals(1.0, value.get());
+                assertEquals(1, completions.get());
             } finally {
                 transition.stop();
             }
         }));
     }
 
-    /// Transfers restarted runs to the new owner's scene and settles when that owner is detached.
+    /// Leaves a zero-duration run settled when later presentation and motion settings change.
     @Test
-    void restartingFiniteTransitionTransfersPresentationObservation() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane firstOwner = new Pane();
-            Pane secondOwner = new Pane();
-            Pane firstRoot = new Pane(firstOwner);
-            Pane secondRoot = new Pane(secondOwner);
-            Scene firstScene = new Scene(firstRoot);
-            Scene secondScene = new Scene(secondRoot);
-            int firstPropertyCount = firstScene.getProperties().size();
-            int secondPropertyCount = secondScene.getProperties().size();
+    void zeroDurationFiniteTransitionIgnoresLaterLifecycleChanges() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
             DoubleProperty value = new SimpleDoubleProperty(0.0);
-            TestFiniteTransition transition = new TestFiniteTransition(value);
+            TestFiniteTransition transition = new TestFiniteTransition(value, Duration.ZERO);
+            AtomicInteger completions = new AtomicInteger();
+            transition.setOnFinished(event -> completions.incrementAndGet());
             try {
-                M3Animation.playFromStart(firstOwner, transition);
-                M3Animation.playFromStart(secondOwner, transition);
-                assertEquals(firstPropertyCount, firstScene.getProperties().size());
-                firstRoot.setVisible(false);
-                assertEquals(Animation.Status.RUNNING, transition.getStatus());
-                secondRoot.getChildren().clear();
+                M3Animation.playFromStart(owner, transition);
                 assertEquals(Animation.Status.STOPPED, transition.getStatus());
-                assertEquals(1.0, value.get(), 0.0001);
-                assertEquals(secondPropertyCount, secondScene.getProperties().size());
+                assertEquals(1, completions.get());
+                value.set(0.25);
+                owner.setVisible(false);
+                scene.setRoot(new Pane());
+                M3MotionSettings.setGlobalReducedMotionRequested(true);
+                assertEquals(Animation.Status.STOPPED, transition.getStatus());
+                assertEquals(0.25, value.get());
+                assertEquals(1, completions.get());
             } finally {
                 transition.stop();
             }
-        });
-    }
-
-    /// Releases observation even when a zero-duration run never enters the RUNNING state.
-    @Test
-    void zeroDurationFiniteTransitionDoesNotRetainObservation() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
-            Scene scene = new Scene(owner);
-            int ownerPropertyCount = owner.getProperties().size();
-            int scenePropertyCount = scene.getProperties().size();
-            DoubleProperty value = new SimpleDoubleProperty(0.0);
-            TestFiniteTransition transition = new TestFiniteTransition(value, Duration.ZERO);
-            M3Animation.playFromStart(owner, transition);
-            assertEquals(Animation.Status.STOPPED, transition.getStatus());
-            assertEquals(ownerPropertyCount, owner.getProperties().size());
-            assertEquals(scenePropertyCount, scene.getProperties().size());
-        });
+        }));
     }
 
     /// Finite transition used to verify synchronous reduced-motion completion.

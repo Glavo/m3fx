@@ -3,10 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.input.KeyCode;
@@ -16,6 +18,8 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
@@ -25,6 +29,8 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +52,55 @@ final class M3DialogPaneContractTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Centers graphic headlines and restores logical-start alignment when the graphic is removed.
+    @ParameterizedTest
+    @EnumSource(value = NodeOrientation.class, names = {"LEFT_TO_RIGHT", "RIGHT_TO_LEFT"})
+    void dialogHeadlineAlignmentTracksGraphic(NodeOrientation orientation) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DialogPane pane = new M3DialogPane();
+            pane.setNodeOrientation(orientation);
+            pane.setContentText("Supporting text");
+            pane.setManaged(false);
+            Pane root = new Pane(pane);
+            Scene scene = new Scene(root, 600.0, 400.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+
+            for (double width : new double[]{304.0, 444.0}) {
+                for (String headline : List.of("Dialog title", "A longer dialog headline that wraps onto multiple lines")) {
+                    pane.setHeaderText(headline);
+                    Rectangle graphic = new Rectangle(24.0, 24.0);
+                    for (boolean withGraphic : new boolean[]{false, true, false}) {
+                        pane.setGraphic(withGraphic ? graphic : null);
+                        root.applyCss();
+                        pane.resize(width, pane.prefHeight(width));
+                        root.layout();
+                        pane.layout();
+
+                        Label label = assertInstanceOf(Label.class, pane.lookup(".header-panel .label"));
+                        Region header = lookupRegion(pane, ".header-panel");
+                        Node text = Objects.requireNonNull(label.lookup(".text"));
+                        Bounds headerBounds = header.localToScene(header.getLayoutBounds());
+                        Bounds textBounds = text.localToScene(text.getLayoutBounds());
+                        String context = orientation + ", width=" + width + ", graphic=" + withGraphic;
+                        assertTrue(textBounds.getWidth() > 0.0, context);
+                        assertEquals(withGraphic ? TextAlignment.CENTER : TextAlignment.LEFT, label.getTextAlignment());
+                        if (withGraphic) {
+                            Bounds graphicBounds = graphic.localToScene(graphic.getLayoutBounds());
+                            double center = (headerBounds.getMinX() + headerBounds.getMaxX()) / 2.0;
+                            assertEquals(center, (graphicBounds.getMinX() + graphicBounds.getMaxX()) / 2.0, 0.5, context);
+                            assertEquals(center, (textBounds.getMinX() + textBounds.getMaxX()) / 2.0, 0.5, context);
+                            assertEquals(16.0, headerBounds.getMinY() - graphicBounds.getMaxY(), 0.5, context);
+                        } else if (orientation == NodeOrientation.RIGHT_TO_LEFT) {
+                            assertEquals(headerBounds.getMaxX(), textBounds.getMaxX(), 0.5, context);
+                        } else {
+                            assertEquals(headerBounds.getMinX(), textBounds.getMinX(), 0.5, context);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /// Verifies that dialog pane component token properties are styleable from CSS.

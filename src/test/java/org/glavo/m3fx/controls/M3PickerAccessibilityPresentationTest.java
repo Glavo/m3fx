@@ -10,6 +10,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests the indexed accessibility presentation shared by picker controls and their default skins.
 @NotNullByDefault
@@ -60,10 +62,12 @@ final class M3PickerAccessibilityPresentationTest {
             assertAllItemsAreNodes(picker);
             assertEquals(LocalDate.of(2026, 6, 1), itemAt(picker, 0).getUserData());
 
+            Node replacedCell = itemAt(picker, 0);
+            assertSame(picker.getScene(), replacedCell.getScene());
             FxTestUtils.replaceSkin(picker, EmptySkin::new);
             assertEquals(0, itemCount(picker));
             assertNull(picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertNull(firstCell.getScene());
+            assertNull(replacedCell.getScene());
 
             FxTestUtils.replaceSkin(picker, M3DatePickerSkin::new);
             assertEquals(30, itemCount(picker));
@@ -91,10 +95,12 @@ final class M3PickerAccessibilityPresentationTest {
             assertAllItemsAreNodes(picker);
             assertEquals(LocalDate.of(2026, 5, 1), itemAt(picker, 0).getUserData());
 
+            Node replacedCell = itemAt(picker, 0);
+            assertSame(picker.getScene(), replacedCell.getScene());
             FxTestUtils.replaceSkin(picker, EmptySkin::new);
             assertEquals(0, itemCount(picker));
             assertNull(picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertNull(firstCell.getScene());
+            assertNull(replacedCell.getScene());
 
             FxTestUtils.replaceSkin(picker, M3DateRangePickerSkin::new);
             assertEquals(31, itemCount(picker));
@@ -108,6 +114,7 @@ final class M3PickerAccessibilityPresentationTest {
     void timePickerPresentationTracksModeAndClockFormat() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+            picker.setUse24HourClock(false);
             layout(picker, 328.0, 472.0);
 
             assertEquals(14, itemCount(picker));
@@ -119,8 +126,6 @@ final class M3PickerAccessibilityPresentationTest {
             picker.setInputMode(true);
             assertEquals(2, itemCount(picker));
             assertAllItemsAreNodes(picker);
-            assertInstanceOf(Node.class, picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-            assertNull(picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
 
             picker.setUse24HourClock(true);
             assertEquals(0, itemCount(picker));
@@ -131,15 +136,16 @@ final class M3PickerAccessibilityPresentationTest {
             assertAllItemsAreNodes(picker);
             assertInstanceOf(LocalTime.class, itemAt(picker, 0).getUserData());
 
+            Node replacedCell = itemAt(picker, 0);
+            assertSame(picker.getScene(), replacedCell.getScene());
             FxTestUtils.replaceSkin(picker, EmptySkin::new);
             assertEquals(0, itemCount(picker));
             assertNull(picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-            assertNull(firstCell.getScene());
+            assertNull(replacedCell.getScene());
 
             FxTestUtils.replaceSkin(picker, M3TimePickerSkin::new);
             assertEquals(24, itemCount(picker));
             assertAllItemsAreNodes(picker);
-            assertInstanceOf(Node.class, picker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 23));
         });
     }
 
@@ -162,7 +168,7 @@ final class M3PickerAccessibilityPresentationTest {
     /// @param control the picker control
     /// @return the exposed item count
     private static int itemCount(Control control) {
-        return (Integer) control.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT);
+        return assertInstanceOf(Integer.class, control.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
     }
 
     /// Returns one indexed accessible item and verifies that it is a node.
@@ -177,13 +183,16 @@ final class M3PickerAccessibilityPresentationTest {
         );
     }
 
-    /// Verifies that every indexed accessibility item exposed by a control is a node.
+    /// Verifies that indexed items belong to the current control scene graph and reject out-of-range indices.
     ///
     /// @param control the picker control
     private static void assertAllItemsAreNodes(Control control) {
         int count = itemCount(control);
+        assertNull(control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, -1));
         for (int index = 0; index < count; index++) {
-            itemAt(control, index);
+            Node item = itemAt(control, index);
+            assertSame(control.getScene(), item.getScene());
+            assertTrue(M3Accessible.containsNode(control, item), "Accessible item must belong to the picker");
         }
         assertNull(control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, count));
     }
