@@ -3,8 +3,10 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.scene.Scene;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.geometry.NodeOrientation;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -33,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies that tooltip theme resources remain local to their rendered content.
@@ -87,6 +90,58 @@ final class M3TooltipSkinTest {
                 stage.close();
             }
         }));
+    }
+
+    /// Rejects unavailable owners without changing an existing popup or stopping its context synchronization.
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void invalidOwnerPreservesCurrentPresentationAndContext(boolean attachedToHiddenWindow) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button owner = new M3Button("Owner");
+            Pane parent = new Pane(owner);
+            Pane invalidOwner = new Pane();
+            Stage stage = new Stage();
+            Stage hiddenStage = new Stage();
+            M3Tooltip tooltip = new M3Tooltip("Retained context");
+            try {
+                if (attachedToHiddenWindow) {
+                    hiddenStage.setScene(new Scene(invalidOwner));
+                }
+                tooltip.show(invalidOwner, 0.0, 0.0);
+                assertFalse(tooltip.isShowing());
+                stage.setScene(new Scene(parent, 300.0, 160.0));
+                stage.show();
+                owner.setAnimationsEnabled(false);
+                tooltip.show(owner, stage.getX() + 20.0, stage.getY() + 50.0);
+                Parent popupRoot = tooltip.getScene().getRoot();
+                popupRoot.applyCss();
+                assertTrue(tooltip.isShowing());
+                assertFalse(tooltip.isAnimationsEnabled());
+                double anchorX = tooltip.getAnchorX();
+                double anchorY = tooltip.getAnchorY();
+
+                tooltip.show(invalidOwner, 0.0, 0.0);
+                assertTrue(tooltip.isShowing());
+                assertSame(owner, tooltip.getOwnerNode());
+                assertSame(popupRoot, tooltip.getScene().getRoot());
+                assertEquals(anchorX, tooltip.getAnchorX());
+                assertEquals(anchorY, tooltip.getAnchorY());
+                assertFalse(tooltip.isAnimationsEnabled());
+                owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, popupRoot.getNodeOrientation());
+                owner.setAnimationsEnabled(true);
+                popupRoot.applyCss();
+                assertTrue(tooltip.isAnimationsEnabled());
+                owner.setAnimationsEnabled(false);
+                popupRoot.applyCss();
+                assertFalse(tooltip.isAnimationsEnabled());
+            } finally {
+                tooltip.setAnimationsEnabled(false);
+                tooltip.hide();
+                stage.close();
+                hiddenStage.close();
+            }
+        });
     }
 
     /// Native popup CSS inherits through an ordinary JavaFX owner with its own unrelated style.

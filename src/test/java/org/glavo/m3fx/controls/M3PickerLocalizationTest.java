@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -197,6 +198,29 @@ final class M3PickerLocalizationTest {
         });
     }
 
+    /// Application writes during a default update retain ownership on subsequent language changes.
+    @Test
+    void actionOverridesDuringLocalizationRemainApplicationOwned() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (M3Dialog dialog : List.of(
+                    new M3DatePickerDialog(), new M3DateRangePickerDialog(), new M3TimePickerDialog())) {
+                TestLocalizer first = new TestLocalizer("First");
+                M3Button cancel = dialog.getDialogPane().getActions().get(0);
+                cancel.textProperty().addListener((observable, oldValue, newValue) -> {
+                    if (first.getCancelText().equals(newValue)) {
+                        cancel.setText("Dismiss appointment");
+                    }
+                });
+                dialog.setLocalizer(first);
+                assertEquals("Dismiss appointment", cancel.getText());
+                TestLocalizer second = new TestLocalizer("Second");
+                dialog.setLocalizer(second);
+                assertEquals("Dismiss appointment", cancel.getText());
+                assertEquals(second.getConfirmText(), dialog.getDialogPane().getActions().get(1).getText());
+            }
+        });
+    }
+
     /// Binding existing headers and actions to their current value permanently stops default updates.
     @Test
     void sameValueBindingsRemainApplicationOwnedAfterUnbinding() {
@@ -272,6 +296,93 @@ final class M3PickerLocalizationTest {
             minuteInput.setText(localizer.formatMinute(30));
             minuteInput.fireEvent(new ActionEvent());
             assertEquals(LocalTime.of(8, 30), picker.getValue());
+        });
+    }
+
+    /// Unchanged valid time inputs adopt localized digits after losing actual keyboard focus.
+    @Test
+    void timeInputsRefreshLocalizationAfterValidUnchangedFocusLoss() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (boolean editHour : List.of(true, false)) {
+                LocalTime selectedTime = LocalTime.of(9, 0);
+                M3TimePicker picker = new M3TimePicker(selectedTime);
+                M3Localizer initial = new M3Localizer(Locale.US);
+                picker.setLocalizer(initial);
+                picker.setInputMode(true);
+                TextField outside = new TextField();
+                outside.relocate(24, 520);
+                Pane root = new Pane(picker, outside);
+                Stage stage = new Stage();
+                try {
+                    Scene scene = new Scene(root, 420, 580);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+                    TextField editor = input(picker, editHour ? initial.getHourText() : initial.getMinuteText());
+                    editor.requestFocus();
+                    assertTrue(editor.isFocused());
+                    assertSame(editor, scene.getFocusOwner());
+                    String originalText = editor.getText();
+                    TestLocalizer replacement = new TestLocalizer("Changed");
+                    picker.setLocalizer(replacement);
+                    assertEquals(originalText, editor.getText());
+
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+                    assertSame(selectedTime, picker.getValue());
+                    assertEquals(replacement.formatHour(9), input(picker, replacement.getHourText()).getText());
+                    assertEquals(replacement.formatMinute(0), input(picker, replacement.getMinuteText()).getText());
+                } finally {
+                    picker.setSkin(null);
+                    stage.close();
+                }
+            }
+        });
+    }
+
+    /// Failed focus-loss commits retain invalid drafts and their error state after localization changes.
+    @Test
+    void timeInputsPreserveInvalidDraftsAfterLocalizedFocusLoss() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (boolean editHour : List.of(true, false)) {
+                LocalTime selectedTime = LocalTime.of(9, 0);
+                M3TimePicker picker = new M3TimePicker(selectedTime);
+                M3Localizer initial = new M3Localizer(Locale.US);
+                picker.setLocalizer(initial);
+                picker.setInputMode(true);
+                TextField outside = new TextField();
+                outside.relocate(24, 520);
+                Pane root = new Pane(picker, outside);
+                Stage stage = new Stage();
+                try {
+                    Scene scene = new Scene(root, 420, 580);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+                    TextField editor = input(picker, editHour ? initial.getHourText() : initial.getMinuteText());
+                    editor.requestFocus();
+                    assertTrue(editor.isFocused());
+                    assertSame(editor, scene.getFocusOwner());
+                    editor.setText("99");
+                    picker.setLocalizer(new TestLocalizer("Changed"));
+                    assertEquals("99", editor.getText());
+
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+                    assertSame(selectedTime, picker.getValue());
+                    assertEquals("99", editor.getText());
+                    assertTrue(editor.getPseudoClassStates().contains(PseudoClass.getPseudoClass("invalid")));
+                } finally {
+                    picker.setSkin(null);
+                    stage.close();
+                }
+            }
         });
     }
 

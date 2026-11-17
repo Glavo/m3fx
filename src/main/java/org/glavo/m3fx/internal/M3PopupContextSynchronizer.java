@@ -408,6 +408,7 @@ public final class M3PopupContextSynchronizer {
         }
 
         /// Observes local properties and installs the current fallback.
+        /// A restart during synchronization defers installation until the current pass has finished.
         public void start() {
             if (!observing) {
                 observing = true;
@@ -542,10 +543,14 @@ public final class M3PopupContextSynchronizer {
                 }
             } finally {
                 syncing = false;
+                // Only lifecycle changes need a replacement pass; ordinary CSS reentrancy does not.
+                if (currentEpoch != epoch) {
+                    requestSync();
+                }
             }
         }
 
-        /// Coalesces popup-property changes without observing any descendants or global settings.
+        /// Coalesces popup-property changes and restarts without observing descendants or global settings.
         private void requestSync() {
             if (!observing || syncPending) {
                 return;

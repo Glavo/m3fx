@@ -733,8 +733,8 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         if (focused) {
             setActiveUnit(unit);
             inputFor(unit).selectAll();
-        } else {
-            commitInputFields();
+        } else if (commitInputFields()) {
+            refreshInputFields();
         }
     }
 

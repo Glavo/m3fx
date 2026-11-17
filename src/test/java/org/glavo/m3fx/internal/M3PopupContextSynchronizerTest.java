@@ -19,6 +19,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -122,6 +124,55 @@ final class M3PopupContextSynchronizerTest {
                 owner.setAnimationsEnabled(true);
             }
         }));
+    }
+
+    /// Restores a reentrant motion restart unless observation stops before its deferred refresh.
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void motionRestartDuringSynchronizationHonorsLatestLifecycle(boolean stopBeforeRefresh) {
+        M3Scrim owner = new M3Scrim();
+        M3Scrim inherited = new M3Scrim();
+        Pane popup = new Pane(inherited);
+        M3PopupContextSynchronizer.MotionContext context = FxTestUtils.callOnFxThread(() ->
+                new M3PopupContextSynchronizer.MotionContext(owner, popup, null));
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                new Scene(owner);
+                new Scene(popup);
+                owner.setAnimationsEnabled(false);
+                AtomicBoolean restart = new AtomicBoolean(true);
+                popup.getStyleClass().addListener((ListChangeListener<String>) change -> {
+                    if (popup.getStyleClass().contains("m3-popup-motion-context") && restart.getAndSet(false)) {
+                        context.stop();
+                        context.start();
+                    }
+                });
+                context.start();
+                assertFalse(restart.get());
+                assertTrue(popup.getStylesheets().isEmpty());
+                if (stopBeforeRefresh) {
+                    context.stop();
+                }
+            });
+            FxTestUtils.runOnFxThread(() -> {
+                popup.applyCss();
+                assertEquals(stopBeforeRefresh, popup.getStylesheets().isEmpty());
+                assertEquals(stopBeforeRefresh, inherited.isAnimationsEnabled());
+                owner.setAnimationsEnabled(true);
+                popup.applyCss();
+                assertTrue(inherited.isAnimationsEnabled());
+                owner.setAnimationsEnabled(false);
+                popup.applyCss();
+                assertEquals(stopBeforeRefresh, inherited.isAnimationsEnabled());
+
+                context.stop();
+                popup.applyCss();
+                assertTrue(popup.getStylesheets().isEmpty());
+                assertTrue(inherited.isAnimationsEnabled());
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(context::stop);
+        }
     }
 
     /// Retains the latest orientation when a popup listener changes the owner during synchronization.

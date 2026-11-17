@@ -554,9 +554,10 @@ public class M3Tooltip extends PopupControl implements M3Animated {
 
     /// Shows this tooltip and synchronizes popup context with the owner node.
     ///
-    /// The owner node must be attached to a showing window. If it is not, this method returns without showing the
-    /// popup. The anchor coordinates are expressed in screen coordinates. When shown, the tooltip inherits node
-    /// orientation, stylesheets, and theme context from `ownerNode` unless an explicit theme is set.
+    /// The owner node must be attached to a showing window. Otherwise, this request has no effect, preserving any
+    /// current presentation and its context synchronization. The anchor coordinates are expressed in screen
+    /// coordinates. When shown, the tooltip inherits node orientation, stylesheets, and theme context from
+    /// `ownerNode` unless an explicit theme is set.
     ///
     /// @param ownerNode the node that owns the popup
     /// @param anchorX   the screen x coordinate for the popup anchor
@@ -566,7 +567,6 @@ public class M3Tooltip extends PopupControl implements M3Animated {
     public void show(Node ownerNode, double anchorX, double anchorY) {
         Objects.requireNonNull(ownerNode, "ownerNode");
         if (!M3PopupWindows.canShow(ownerNode)) {
-            stopPopupContextSynchronizer();
             return;
         }
         boolean wasShowing = isShowing();

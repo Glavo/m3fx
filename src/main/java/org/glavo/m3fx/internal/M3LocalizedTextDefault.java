@@ -5,6 +5,7 @@ package org.glavo.m3fx.internal;
 
 import javafx.beans.property.Property;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -20,8 +21,8 @@ public final class M3LocalizedTextDefault {
     /// Whether an application change or binding has taken ownership.
     private boolean overridden;
 
-    /// Distinguishes localized default writes from application changes.
-    private boolean updating;
+    /// The expected internal write, or null when no default is being assigned.
+    private @Nullable String updatingValue;
 
     /// Observes ownership changes without creating a second text property.
     ///
@@ -33,8 +34,8 @@ public final class M3LocalizedTextDefault {
         target.getValue();
         target.addListener(observable -> {
             // Revalidate even internal writes so the next application change emits an invalidation.
-            target.getValue();
-            if (!updating || target.isBound()) {
+            @Nullable String value = target.getValue();
+            if (updatingValue == null || !updatingValue.equals(value) || target.isBound()) {
                 overridden = true;
             }
         });
@@ -50,11 +51,12 @@ public final class M3LocalizedTextDefault {
             overridden = true;
         }
         if (!overridden) {
-            updating = true;
+            @Nullable String previousValue = updatingValue;
+            updatingValue = value;
             try {
                 target.setValue(value);
             } finally {
-                updating = false;
+                updatingValue = previousValue;
             }
         }
     }
