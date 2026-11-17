@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Produces stable visual reports for the defining Catalog surfaces and expanded component examples.
+/// Produces visual reports for Catalog navigation, settings, adaptive sidebars, and active scroll feedback.
 ///
 /// These reports supplement structural assertions in [M3FXCatalogVisualTest]. Each image comes from a showing
 /// JavaFX Stage after CSS and layout, and is rejected when it lacks enough color variation to represent a rendered
@@ -66,7 +66,7 @@ final class M3FXCatalogSnapshotTest {
         FxTestUtils.startToolkit();
     }
 
-    /// Captures navigation, theme settings, expanded control families, and compact-window surfaces.
+    /// Captures navigation, theme settings, scroll feedback, and compact-window surfaces.
     @Test
     void writesCatalogNavigationSnapshots() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -76,9 +76,9 @@ final class M3FXCatalogSnapshotTest {
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 FxTestUtils.runOnFxThread(() -> {
                     Stage stage = new Stage();
+                    stageReference.set(stage);
                     M3FXCatalogApp app = new M3FXCatalogApp();
                     app.start(stage);
-                    stageReference.set(stage);
                     appReference.set(app);
                     Scene scene = Objects.requireNonNull(stage.getScene(), "scene");
                     sceneReference.set(scene);
@@ -115,120 +115,6 @@ final class M3FXCatalogSnapshotTest {
                     writeSnapshot(scene, "theme-settings.png");
                     app.hideSettings();
 
-                    CatalogComponent search = componentNamed(app, "Search");
-                    app.navigate(new CatalogRoute.Example(
-                            search,
-                            exampleNamed(search, "Contained docked search")
-                    ));
-                    writeSnapshot(scene, "search-view.png");
-
-                    CatalogComponent datePickers = componentNamed(app, "Date pickers");
-                    app.navigate(new CatalogRoute.Example(
-                            datePickers,
-                            exampleNamed(datePickers, "Date range picker")
-                    ));
-                    writeSnapshot(scene, "date-range-picker.png");
-
-                    CatalogComponent sideSheets = componentNamed(app, "Side sheets");
-                    app.navigate(new CatalogRoute.Example(
-                            sideSheets,
-                            exampleNamed(sideSheets, "Modal side sheet")
-                    ));
-                    writeSnapshot(scene, "modal-side-sheet.png");
-
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Adaptive",
-                            "Expanded two pane",
-                            "adaptive-expanded.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Buttons",
-                            "Extra-large buttons",
-                            "button-extra-large.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Chips",
-                            "Selected filter chip",
-                            "chip-selected.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Navigation rail",
-                            "Expanded standard rail",
-                            "navigation-rail-expanded.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Progress indicators",
-                            "Expressive determinate linear",
-                            "progress-expressive.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Segmented buttons",
-                            "Icon and label",
-                            "segmented-icons.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Switches",
-                            "Handle icons",
-                            "switch-icons.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Floating action buttons",
-                            "Size overview",
-                            "fab-icon-sizes.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Navigation bar",
-                            "Compact navigation bar",
-                            "navigation-item-icons.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Tabs",
-                            "Primary fixed tabs",
-                            "tab-indicator-alignment.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Menus",
-                            "Single-select menu",
-                            "menu-item-icons.png"
-                    );
-                    writeExampleSnapshot(
-                            scene,
-                            app,
-                            "Text fields",
-                            "Outlined error field",
-                            "text-field-error.png"
-                    );
-                    writeFirstExampleSnapshot(scene, app, "Avatars", "avatars.png");
-                    writeFirstExampleSnapshot(scene, app, "Banners", "banners.png");
-                    writeFirstExampleSnapshot(scene, app, "Color pickers", "color-picker.png");
-                    writeFirstExampleSnapshot(scene, app, "Forms", "forms.png");
-                    writeFirstExampleSnapshot(scene, app, "Icons", "icons.png");
-                    writeFirstExampleSnapshot(scene, app, "Number fields", "number-fields.png");
-                    writeFirstExampleSnapshot(scene, app, "Scrims", "scrims.png");
-                    writeFirstExampleSnapshot(scene, app, "Settings", "settings.png");
-                    writeFirstExampleSnapshot(scene, app, "Surfaces", "surfaces.png");
                     writeScrollStretchSnapshot(scene, app);
 
                     app.navigate(new CatalogRoute.Component(buttons));
@@ -313,7 +199,9 @@ final class M3FXCatalogSnapshotTest {
                             CatalogComponent buttons = componentNamed(app, "Buttons");
                             app.navigate(new CatalogRoute.Component(buttons));
                             writeSnapshot(scene, "compact-component.png");
-                            writeFirstExampleSnapshot(scene, app, "Forms", "compact-form.png");
+                            CatalogComponent forms = componentNamed(app, "Forms");
+                            app.navigate(new CatalogRoute.Example(forms, forms.examples().get(0)));
+                            writeSnapshot(scene, "compact-form.png");
                         }
                 );
 
@@ -398,42 +286,6 @@ final class M3FXCatalogSnapshotTest {
         }
     }
 
-    /// Opens and captures the first example for a named component.
-    ///
-    /// @param scene    the showing Catalog scene
-    /// @param app      the running Catalog application
-    /// @param name     the component display name
-    /// @param fileName the report file name
-    private static void writeFirstExampleSnapshot(
-            Scene scene,
-            M3FXCatalogApp app,
-            String name,
-            String fileName
-    ) {
-        CatalogComponent component = componentNamed(app, name);
-        app.navigate(new CatalogRoute.Example(component, component.examples().get(0)));
-        writeSnapshot(scene, fileName);
-    }
-
-    /// Opens and captures a named example for a named component.
-    ///
-    /// @param scene the showing Catalog scene
-    /// @param app the running Catalog application
-    /// @param componentName the component display name
-    /// @param exampleName the example display name
-    /// @param fileName the report file name
-    private static void writeExampleSnapshot(
-            Scene scene,
-            M3FXCatalogApp app,
-            String componentName,
-            String exampleName,
-            String fileName
-    ) {
-        CatalogComponent component = componentNamed(app, componentName);
-        app.navigate(new CatalogRoute.Example(component, exampleNamed(component, exampleName)));
-        writeSnapshot(scene, fileName);
-    }
-
     /// Opens a scroll-pane example, applies a retained direct pull, and captures its visible stretch.
     ///
     /// @param scene the showing Catalog scene
@@ -455,13 +307,15 @@ final class M3FXCatalogSnapshotTest {
                 .orElseThrow(() -> new AssertionError("missing scroll-pane Catalog specimen"));
         Node content = Objects.requireNonNull(specimen.getContent(), "scroll content");
         content.fireEvent(directScrollEvent(content, ScrollEvent.SCROLL_STARTED, 0.0));
-        ScrollEvent pull = directScrollEvent(content, ScrollEvent.SCROLL, 96.0);
-        M3OverscrollEffect effect = Objects.requireNonNull(specimen.getOverscrollEffect(), "overscrollEffect");
-        content.fireEvent(pull);
-        assertTrue(effect.isInProgress());
-
-        writeSnapshot(scene, "scroll-pane-stretch.png");
-        content.fireEvent(directScrollEvent(content, ScrollEvent.SCROLL_FINISHED, 0.0));
+        try {
+            ScrollEvent pull = directScrollEvent(content, ScrollEvent.SCROLL, 96.0);
+            M3OverscrollEffect effect = Objects.requireNonNull(specimen.getOverscrollEffect(), "overscrollEffect");
+            content.fireEvent(pull);
+            assertTrue(effect.isInProgress());
+            writeSnapshot(scene, "scroll-pane-stretch.png");
+        } finally {
+            content.fireEvent(directScrollEvent(content, ScrollEvent.SCROLL_FINISHED, 0.0));
+        }
     }
 
     /// Creates a direct vertical scroll event for a retained overscroll snapshot.

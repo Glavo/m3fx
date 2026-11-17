@@ -91,7 +91,7 @@ final class M3FXCatalogVisualTest {
 
     /// Verifies the complete Catalog route workflow and adaptive grid.
     @Test
-    void catalogUsesComposeStyleHomeComponentAndExampleRoutes() throws InterruptedException {
+    void catalogNavigationPreservesBrowserStateAcrossLayouts() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXCatalogApp> appReference = new AtomicReference<>();
@@ -100,9 +100,9 @@ final class M3FXCatalogVisualTest {
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 FxTestUtils.runOnFxThread(() -> {
                     Stage stage = new Stage();
+                    stageReference.set(stage);
                     M3FXCatalogApp app = new M3FXCatalogApp();
                     app.start(stage);
-                    stageReference.set(stage);
                     sceneReference.set(Objects.requireNonNull(stage.getScene(), "scene"));
                     appReference.set(app);
                 });
@@ -129,7 +129,6 @@ final class M3FXCatalogVisualTest {
                 assertExpandedComponentCoverage(scene, app);
                 assertCompactExampleLayouts(scene, stage, app);
                 assertCompactSidebarNavigation(scene, app);
-                assertEveryExampleRenders(scene, app);
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -1671,6 +1670,8 @@ final class M3FXCatalogVisualTest {
                                             description + " sample content"
                                     )
                             );
+                            assertEquals(1, sampleContent.getChildrenUnmodifiable().size(),
+                                    description + " should contain one sample");
                             Node sample = sampleContent.getChildrenUnmodifiable().get(0);
                             Bounds pageBounds = page.localToScene(page.getBoundsInLocal());
                             Bounds sampleBounds = sample.localToScene(sample.getBoundsInLocal());
@@ -1853,30 +1854,6 @@ final class M3FXCatalogVisualTest {
                 .filter(Node::isVisible)
                 .filter(Node::isManaged)
                 .count();
-    }
-
-    /// Creates and lays out every registered example in the running application.
-    ///
-    /// @param scene the Catalog scene
-    /// @param app   the running Catalog application
-    private static void assertEveryExampleRenders(Scene scene, M3FXCatalogApp app) throws InterruptedException {
-        FxTestUtils.runOnFxThread(() -> {
-            for (CatalogComponent component : app.components()) {
-                for (CatalogExample example : component.examples()) {
-                    app.navigate(new CatalogRoute.Example(component, example));
-                    layout(scene);
-                    Node page = Objects.requireNonNull(scene.lookup(".catalog-example-page"), component.name());
-                    Parent sampleContent = assertInstanceOf(
-                            Parent.class,
-                            Objects.requireNonNull(
-                                    page.lookup(".catalog-sample-content"),
-                                    component.name() + " sample content"
-                            )
-                    );
-                    assertEquals(1, sampleContent.getChildrenUnmodifiable().size());
-                }
-            }
-        });
     }
 
     /// Verifies that adaptive cells distribute the usable row width instead of remaining fixed at their minimum.

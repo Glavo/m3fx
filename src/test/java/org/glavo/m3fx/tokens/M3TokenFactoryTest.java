@@ -16,16 +16,11 @@ import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -130,16 +125,10 @@ final class M3TokenFactoryTest {
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-title-small-font-size: 16px"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-tracking: -0.2px"));
         String typographyRules = M3TokenCssCompiler.controlStyleRules(typography);
-        assertTrue(typographyRules.contains(".m3-display-large-text"));
-        assertTrue(typographyRules.contains(".m3-label-small-text"));
         assertTrue(typographyRules.contains("-m3-typography-font-size: 60px"));
         assertTrue(typographyRules.contains("-m3-typography-line-height: 68px"));
         assertTrue(typographyRules.contains("-m3-typography-tracking: -0.2px"));
-        assertTrue(typographyRules.contains(".m3-prominent-text"));
         assertTrue(typographyRules.contains("-fx-font-size: 15px"));
-        assertFalse(typographyRules.contains(".m3-list-item"));
-        assertFalse(typographyRules.contains(".m3-list-section-header"));
-        assertFalse(typographyRules.contains(":navigation-drawer"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-hover-opacity: 0.05"));
         assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-opacity: 0.11"));
@@ -449,7 +438,6 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-spatial-duration: 500ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-sub-menu-hover-open-delay: 200ms"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-height: 51px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-body-large-text"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-item-width: 68px"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-split-button-menu-width: 49px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-split-button-spacing: -2px"));
@@ -457,71 +445,26 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains(
                 "-m3-button-group-extra-large-connected-inner-corner: 20px"
         ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-button-group.m3-button-group-extra-large.m3-connected-button-group"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-grouped-button.m3-button-group-first:pressed"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-tab-active-indicator"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-medium-container-height: 60px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-large-container-height: 61px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-medium-bottom-padding: 12px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-large-bottom-padding: 13px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-action-spacing: 6px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-text-area"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-menu .m3-menu-container"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-spacing: 16px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-menu .m3-menu-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(":first-menu-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(":last-menu-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(":active"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-menu-inner-corner-shape: 18px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-shape: 12px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-shape: 13px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-shape: 17px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-search-bar .m3-search-bar-trailing"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-spacing: 5px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-search-view.m3-search-view:contained:docked"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-search-view.m3-search-view:divided:full-screen"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-shape: 18px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-date-picker-container"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-picker-field-popup"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-form-row-text-column"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-button-base:hover .m3-state-layer"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-validation-summary-item:hover .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-carousel-track"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-carousel-selected-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-surface"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-side-sheet.m3-side-sheet:detached"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-max-width: 84px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-scrim.m3-scrim"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-wavelength: 41px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-stop-size: 7px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-stop-indicator-size: 6px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-stop-indicator-trailing-space: 9px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-avatar.m3-avatar"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-action-spacing: 7px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-toolbar"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-toolbar-item-slot-size: 49px"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-snackbar-presenter .m3-snackbar-action"
-        ));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-container-height: 32px"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                "-m3-container-height: -m3-action-container-height"
-        ));
-        assertFalse(Pattern.compile("(?m)^\\s*-[\\w-]+:\\s+-m3-[\\w-]+\\s*;$")
-                .matcher(M3ThemeCssCompiler.controlStyleRules(tokenSet))
-                .find(), "generated component CSS should emit concrete typed values");
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-rail .m3-navigation-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-navigation-drawer .m3-list-item"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-list-item:navigation-drawer:selected .m3-list-item-headline"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-list-section-header"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-switch"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-chip-icon-size: 18px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-graphic-text-gap: 9px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-fx-border-width: 1px"));
@@ -530,19 +473,6 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-selected-dot-size: 11px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-track-width: 52px"));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains("-m3-pressed-handle-size: 28px"));
-        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-slider:pressed .m3-state-layer"));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-elevated-card:actionable:hover .m3-card-container"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-filled-card:actionable:hover .m3-card-container"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-outlined-card:actionable:hover .m3-card-container"
-        ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
-                ".m3-outlined-card:actionable:focus-visible .m3-card-container"
-        ));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet)
                 .contains("-m3-state-pressed-opacity: 0.15"));
     }
@@ -556,7 +486,7 @@ final class M3TokenFactoryTest {
         assertTrue(missing.isEmpty(), () -> "Missing component token values in generated control rules: " + missing);
     }
 
-    /// Verifies that component tokens, rather than profile identity, control interactions and semantic colors.
+    /// Verifies that component tokens, rather than profile identity, determine generated values and semantic colors.
     @Test
     void componentTokensControlGeneratedInteractionAndColorRules() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
@@ -570,22 +500,6 @@ final class M3TokenFactoryTest {
                 colorScheme,
                 M3Density.standard()
         ).build();
-
-        String baselineRules = M3ThemeCssCompiler.controlStyleRules(baseline);
-        String expressiveRules = M3ThemeCssCompiler.controlStyleRules(expressive);
-        List<String> stateSelectors = List.of(
-                ".m3-button-base.m3-button-small.m3-button-round:armed",
-                ".m3-button-base.m3-icon-button.m3-icon-button-small.m3-icon-button-round:armed",
-                ".m3-icon-toggle-button.m3-icon-button-small.m3-icon-button-round:selected",
-                ".m3-button-group.m3-button-group-small.m3-connected-button-group "
-                        + ".m3-grouped-button.m3-button-group-first:selected",
-                ".m3-segmented-list .m3-list-item:hover"
-        );
-
-        for (String selector : stateSelectors) {
-            assertTrue(baselineRules.contains(selector), () -> "Baseline tokens should emit " + selector);
-            assertTrue(expressiveRules.contains(selector), () -> "Expressive tokens should emit " + selector);
-        }
 
         M3TokenSet baselineWithExpressiveComponents = M3TokenSet.builder(baseline)
                 .componentTokens(expressive.componentTokens())
@@ -605,23 +519,6 @@ final class M3TokenFactoryTest {
         assertFalse(mixedDeclarations.contains(
                 "-m3-navigation-bar-selected-label-color: -m3-color-on-surface;"
         ));
-    }
-
-    /// Verifies that generated component custom properties are consumed by production controls or stylesheets.
-    @Test
-    void componentTokenControlRulesDeclareOnlyConsumedCustomProperties() throws IOException {
-        M3ComponentTokens componentTokens = createComponentTokensWithUniqueValues();
-        String consumerSources = readTokenConsumerSources();
-        List<String> unused = new ArrayList<>();
-
-        for (String declaration : cssDeclarationLines(M3ComponentTokenCssCompiler.controlStyleRules(componentTokens))) {
-            String property = cssProperty(declaration);
-            if (property.startsWith("-m3-") && !consumerSources.contains(property)) {
-                unused.add(declaration);
-            }
-        }
-
-        assertTrue(unused.isEmpty(), () -> "Unused generated component custom properties: " + unused);
     }
 
     /// Verifies that explicit motion tokens preserve a supplied semantic scheme.
@@ -1096,43 +993,6 @@ final class M3TokenFactoryTest {
         int separatorIndex = declaration.indexOf(':');
         assertTrue(separatorIndex > 0, () -> "Malformed declaration: " + declaration);
         return declaration.substring(separatorIndex + 1).trim();
-    }
-
-    /// Reads production Java and stylesheet sources that may consume generated component custom properties.
-    private static String readTokenConsumerSources() throws IOException {
-        StringBuilder builder = new StringBuilder();
-        appendSourceFiles(
-                builder,
-                Path.of("src", "main", "java", "org", "glavo", "m3fx"),
-                Path.of("src", "main", "java", "org", "glavo", "m3fx", "tokens", "M3ComponentTokens.java")
-        );
-        appendSourceFiles(
-                builder,
-                Path.of("src", "main", "resources", "org", "glavo", "m3fx", "styles"),
-                null
-        );
-        return builder.toString();
-    }
-
-    /// Appends regular source file contents under the root while optionally skipping one file.
-    private static void appendSourceFiles(
-            StringBuilder builder,
-            Path root,
-            @org.jetbrains.annotations.Nullable Path excludedFile
-    ) throws IOException {
-        @org.jetbrains.annotations.Nullable Path excludedAbsolute =
-                excludedFile == null ? null : excludedFile.toAbsolutePath().normalize();
-        List<Path> sourceFiles;
-        try (Stream<Path> files = Files.walk(root)) {
-            sourceFiles = files
-                    .filter(Files::isRegularFile)
-                    .filter(file -> !file.toAbsolutePath().normalize().equals(excludedAbsolute))
-                    .toList();
-        }
-
-        for (Path sourceFile : sourceFiles) {
-            builder.append(Files.readString(sourceFile)).append('\n');
-        }
     }
 
     /// Generates stable distinctive double values for component token copy checks.

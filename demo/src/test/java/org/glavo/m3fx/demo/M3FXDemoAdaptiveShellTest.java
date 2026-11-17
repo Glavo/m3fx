@@ -4,7 +4,6 @@
 package org.glavo.m3fx.demo;
 
 import javafx.animation.AnimationTimer;
-import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Bounds;
@@ -65,7 +64,6 @@ final class M3FXDemoAdaptiveShellTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Verifies wide and narrow navigation, global direction switching, and modal drawer dismissal as one workflow.
@@ -75,17 +73,16 @@ final class M3FXDemoAdaptiveShellTest {
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
         AtomicReference<@Nullable AnimationTimer> viewportMonitorReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1180.0);
-            stage.setHeight(820.0);
-            stageReference.set(stage);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1180.0);
+                stage.setHeight(820.0);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifyWideLeftToRightShell(sceneReference);
             switchToRightToLeft(sceneReference);
             resizeToCompactLayout(stageReference, sceneReference);
@@ -97,7 +94,7 @@ final class M3FXDemoAdaptiveShellTest {
                 if (viewportMonitor != null) {
                     viewportMonitor.stop();
                 }
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -114,17 +111,16 @@ final class M3FXDemoAdaptiveShellTest {
         AtomicBoolean transientFeedbackObserved = new AtomicBoolean();
         AtomicReference<String> transientFeedbackDescription = new AtomicReference<>("none");
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(480.0);
-            stage.setHeight(720.0);
-            stageReference.set(stage);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(480.0);
+                stage.setHeight(720.0);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -365,11 +361,11 @@ final class M3FXDemoAdaptiveShellTest {
         try {
             FxTestUtils.runOnFxThread(() -> {
                 Stage stage = new Stage();
+                stageReference.set(stage);
                 M3FXDemoApp app = new M3FXDemoApp();
                 app.start(stage);
                 stage.setWidth(1180.0);
                 stage.setHeight(820.0);
-                stageReference.set(stage);
 
                 Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
                 layout(scene);

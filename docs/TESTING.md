@@ -14,6 +14,20 @@ higher tier. Use `@Tier2Test` or `@Tier3Test` from `org.glavo.m3fx.testing` on c
 placement when other tests in the class remain fast. Keep the tags mutually exclusive: the Gradle filters do not
 prevent a test carrying both tags from running in both higher tiers.
 
+## Test Organization
+
+Library suites follow the production packages and group related contracts by control family. Fast property,
+selection, layout, and CSS assertions stay with that family; focused motion, focus, and rendering suites cover
+behaviors that require a running window. `M3ControlGalleryTest` owns cross-control theme galleries in Tier 3.
+Demo and Catalog suites cover application navigation, adaptive layouts, and their presentation matrices rather
+than repeating each library contract.
+
+Keep fixtures local to their suite unless several suites use them. Shared control helpers separate construction
+and input, resolved styles, layout geometry, motion observation, and pixel assertions. Do not add source scans,
+API-name whitelists, or tests of documentation and test infrastructure. Test observable contracts instead.
+Use bounded waits for asynchronous behavior, restore global settings, and close windows in `finally`, including
+when initialization fails. A snapshot should support a behavioral or pixel assertion, not merely create a file.
+
 ## Running Locally
 
 Run commands from the repository root. Unqualified task selectors include matching tasks in the library, demo,

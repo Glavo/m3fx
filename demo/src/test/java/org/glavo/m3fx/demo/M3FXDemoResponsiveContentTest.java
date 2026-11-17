@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
@@ -60,7 +59,6 @@ final class M3FXDemoResponsiveContentTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
     /// Verifies that every page fits the page viewport in each left-to-right responsive width.
@@ -94,17 +92,29 @@ final class M3FXDemoResponsiveContentTest {
     /// @return the showing test window and its application instance
     /// @throws InterruptedException if the test thread is interrupted while waiting for JavaFX work
     private static DemoWindow openDemoWindow() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable DemoWindow> windowReference = new AtomicReference<>();
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp application = new M3FXDemoApp();
-            application.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(860.0);
-            application.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
-            windowReference.set(new DemoWindow(stage, application));
-        });
-        return Objects.requireNonNull(windowReference.get(), "demo window");
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp application = new M3FXDemoApp();
+                application.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(860.0);
+                application.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
+                windowReference.set(new DemoWindow(stage, application));
+            });
+            return Objects.requireNonNull(windowReference.get(), "demo window");
+        } catch (RuntimeException | Error failure) {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+            throw failure;
+        }
     }
 
     /// Closes one test window after its responsive checks finish.

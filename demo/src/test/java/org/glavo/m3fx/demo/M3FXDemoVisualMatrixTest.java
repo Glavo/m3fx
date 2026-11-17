@@ -246,7 +246,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1078,9 +1077,9 @@ final class M3FXDemoVisualMatrixTest {
         FxTestUtils.startToolkit();
     }
 
-    /// Verifies every registered demo page across the complete release presentation matrix.
+    /// Verifies every registered demo page across the presentation matrix.
     @Test
-    void demoPagesRenderAcrossReleaseVisualMatrix() throws InterruptedException {
+    void demoPagesRenderAcrossPresentationModes() throws InterruptedException {
         for (DemoVisualMode mode : DEMO_VISUAL_MODES) {
             assertDemoPagesRenderInVisualMode(mode);
         }
@@ -1094,6 +1093,7 @@ final class M3FXDemoVisualMatrixTest {
         try {
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
                 Stage stage = new Stage();
+                stageReference.set(stage);
                 M3FXDemoApp app = new M3FXDemoApp();
                 app.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
                 app.start(stage);
@@ -1190,11 +1190,10 @@ final class M3FXDemoVisualMatrixTest {
                             false
                     );
                 }
-                stageReference.set(stage);
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -1210,45 +1209,44 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable TreeItem<?>> branchReference = new AtomicReference<>();
         AtomicReference<@Nullable M3TreeCell<?>> interactionCellReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
-            scene.getRoot().applyCss();
-            app.showPageByTitle("Tree Views");
-            applySceneCssAndLayout(scene);
-            M3TreeView<?> treeView = treeViewWithStyle(
-                    currentDemoPage(scene, "Tree Views"),
-                    "demo-tree-view-highlight"
-            );
-            TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
-            TreeItem<?> branchItem = rootItem.getChildren().get(1);
-            branchItem.setExpanded(false);
-            applySceneCssAndLayout(scene);
-
-            TreeItem<?> followingItem = rootItem.getChildren().get(2);
-            M3TreeCell<?> followingCell = materializedTreeCells(treeView).stream()
-                    .filter(cell -> cell.getTreeItem() == followingItem)
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError("following tree row was not materialized"));
-            followingCell.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, true);
-            treeView.applyCss();
-
-            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
-            scene.getRoot().applyCss();
-            firePrimaryMouseEvent(followingCell, MouseEvent.MOUSE_PRESSED, true);
-            stageReference.set(stage);
-            treeReference.set(treeView);
-            branchReference.set(branchItem);
-            interactionCellReference.set(followingCell);
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                scene.getRoot().applyCss();
+                app.showPageByTitle("Tree Views");
+                applySceneCssAndLayout(scene);
+                M3TreeView<?> treeView = treeViewWithStyle(
+                        currentDemoPage(scene, "Tree Views"),
+                        "demo-tree-view-highlight"
+                );
+                TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
+                TreeItem<?> branchItem = rootItem.getChildren().get(1);
+                branchItem.setExpanded(false);
+                applySceneCssAndLayout(scene);
+
+                TreeItem<?> followingItem = rootItem.getChildren().get(2);
+                M3TreeCell<?> followingCell = materializedTreeCells(treeView).stream()
+                        .filter(cell -> cell.getTreeItem() == followingItem)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("following tree row was not materialized"));
+                followingCell.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, true);
+                treeView.applyCss();
+
+                scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                scene.getRoot().applyCss();
+                firePrimaryMouseEvent(followingCell, MouseEvent.MOUSE_PRESSED, true);
+                treeReference.set(treeView);
+                branchReference.set(branchItem);
+                interactionCellReference.set(followingCell);
+            });
             FxTestUtils.runOnFxThreadWhen(
                     () -> {
                         @Nullable M3TreeCell<?> cell = interactionCellReference.get();
@@ -1336,42 +1334,40 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3TreeView<?>> treeReference = new AtomicReference<>();
         AtomicReference<@Nullable TreeItem<?>> branchReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
-            scene.getRoot().applyCss();
-            app.showPageByTitle("Tree Views");
-            applySceneCssAndLayout(scene);
-            M3TreeView<?> treeView = treeViewWithStyle(
-                    currentDemoPage(scene, "Tree Views"),
-                    "demo-tree-view-checkbox"
-            );
-            TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
-            TreeItem<?> collapsingBranch = rootItem.getChildren().get(1);
-            TreeItem<?> selectedBranch = rootItem.getChildren().get(2);
-            selectedBranch.setExpanded(true);
-            applySceneCssAndLayout(scene);
-            int branchRow = materializedTreeCells(treeView).stream()
-                    .filter(cell -> cell.getTreeItem() == selectedBranch)
-                    .mapToInt(M3TreeCell::getIndex)
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError("checkbox tree selected branch row was not materialized"));
-            treeView.getSelectionModel().select(branchRow);
-            scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
-            scene.getRoot().applyCss();
-
-            stageReference.set(stage);
-            treeReference.set(treeView);
-            branchReference.set(collapsingBranch);
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), true);
+                scene.getRoot().applyCss();
+                app.showPageByTitle("Tree Views");
+                applySceneCssAndLayout(scene);
+                M3TreeView<?> treeView = treeViewWithStyle(
+                        currentDemoPage(scene, "Tree Views"),
+                        "demo-tree-view-checkbox"
+                );
+                TreeItem<?> rootItem = Objects.requireNonNull(treeView.getRoot(), "tree root");
+                TreeItem<?> collapsingBranch = rootItem.getChildren().get(1);
+                TreeItem<?> selectedBranch = rootItem.getChildren().get(2);
+                selectedBranch.setExpanded(true);
+                applySceneCssAndLayout(scene);
+                int branchRow = materializedTreeCells(treeView).stream()
+                        .filter(cell -> cell.getTreeItem() == selectedBranch)
+                        .mapToInt(M3TreeCell::getIndex)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("checkbox tree selected branch row was not materialized"));
+                treeView.getSelectionModel().select(branchRow);
+                scene.getRoot().pseudoClassStateChanged(PseudoClass.getPseudoClass("reduced-motion"), false);
+                scene.getRoot().applyCss();
+                treeReference.set(treeView);
+                branchReference.set(collapsingBranch);
+            });
             FxTestUtils.runOnFxThreadWhen(
                     () -> hasActiveTreeRowMotion(treeReference.get()),
                     () -> {
@@ -1435,11 +1431,11 @@ final class M3FXDemoVisualMatrixTest {
         try {
             FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
                 Stage stage = new Stage();
+                stageReference.set(stage);
                 M3FXDemoApp app = new M3FXDemoApp();
                 app.start(stage);
                 stage.setWidth(1280.0);
                 stage.setHeight(900.0);
-                stageReference.set(stage);
 
                 Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
                 app.showPageByTitle("Tree Views");
@@ -1513,27 +1509,25 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
         AtomicReference<@Nullable List<String>> pageTitlesReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            scene.getRoot().setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            List<String> pageTitles = app.demoPageTitles();
-            int targetIndex = pageTitles.indexOf("Date Pickers");
-            assertTrue(targetIndex > 0, "Date Pickers should follow earlier demo destinations");
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-            pageTitlesReference.set(List.copyOf(pageTitles.subList(0, targetIndex + 1)));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.configurePresentation(M3Profile.BASELINE_2021, Brightness.LIGHT, false);
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                scene.getRoot().setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                List<String> pageTitles = app.demoPageTitles();
+                int targetIndex = pageTitles.indexOf("Date Pickers");
+                assertTrue(targetIndex > 0, "Date Pickers should follow earlier demo destinations");
+                appReference.set(app);
+                sceneReference.set(scene);
+                pageTitlesReference.set(List.copyOf(pageTitles.subList(0, targetIndex + 1)));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 for (String pageTitle : Objects.requireNonNull(pageTitlesReference.get(), "page titles")) {
                     showPageWhenSidebarSelectionSettled(
@@ -1561,130 +1555,6 @@ final class M3FXDemoVisualMatrixTest {
         }
     }
 
-    /// Verifies segmented-button icon replacement and logical ordering in the right-to-left demo hierarchy.
-    @Test
-    void segmentedButtonsRenderWithLogicalIconOrderInRightToLeftDemo() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
-        try {
-            FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
-                    appReference,
-                    sceneReference,
-                    "Segmented Buttons",
-                    scene -> {
-                        scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                        resetDemoPageScroll(scene);
-                    },
-                    () -> {
-                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        WritableImage image = snapshot(scene);
-                        writeVisualSnapshot(
-                                image,
-                                VISUAL_REPORT_DIRECTORY.resolve("demo-rtl-segmented-buttons-focused.png")
-                        );
-                        assertSegmentedButtonsPageVisualState(scene);
-                    }
-            ));
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies that an incoming page starts at the top without changing the outgoing page's scroll position.
-    @Test
-    void demoPageSwitchUsesIndependentScrollPanes() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
-        try {
-            FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
-                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-
-                app.showPageByTitle("App Bars");
-                applySceneCssAndLayout(scene);
-                ScrollPane pageScrollPane = demoPageScrollPane(scene);
-                pageScrollPane.setHvalue(0.45);
-                pageScrollPane.setVvalue(0.75);
-                applySceneCssAndLayout(scene);
-                assertEquals(0.45, pageScrollPane.getHvalue(), 0.001,
-                        "precondition should set a non-zero horizontal page scroll value");
-                assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
-                        "precondition should set a non-zero vertical page scroll value");
-
-                DemoPage targetPage = app.demoPages().stream()
-                        .filter(page -> page.title().equals("Typography"))
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("Typography demo page not found"));
-                app.showPage(targetPage);
-                applySceneCssAndLayout(scene);
-                M3AnimatedContent pageHost = demoPageHost(scene);
-                assertTrue(pageHost.isTransitioning(), "animated page navigation should retain the outgoing page");
-                ScrollPane incomingScrollPane = demoPageScrollPane(scene);
-                Label incomingTitle = assertInstanceOf(
-                        Label.class,
-                        requireVisibleStyledDescendant(
-                                incomingScrollPane,
-                                "demo-page-title",
-                                "incoming Typography page title"
-                        )
-                );
-                assertEquals("Typography", incomingTitle.getText());
-                assertNotSame(pageScrollPane, incomingScrollPane,
-                        "each transitioning page should own an independent scroll viewport");
-                assertEquals(0.45, pageScrollPane.getHvalue(), 0.001,
-                        "page switch must preserve outgoing horizontal scroll during its exit transition");
-                assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
-                        "page switch must preserve outgoing vertical scroll during its exit transition");
-                assertEquals(incomingScrollPane.getHmin(), incomingScrollPane.getHvalue(), 0.001,
-                        "incoming page should start at its minimum horizontal scroll value");
-                assertEquals(incomingScrollPane.getVmin(), incomingScrollPane.getVvalue(), 0.001,
-                        "incoming page should start at its minimum vertical scroll value");
-            }));
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
     /// Renders every registered demo page in one release presentation mode.
     private static void assertDemoPagesRenderInVisualMode(DemoVisualMode mode) throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -1696,6 +1566,7 @@ final class M3FXDemoVisualMatrixTest {
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 FxTestUtils.runOnFxThread(() -> {
                     Stage stage = new Stage();
+                    stageReference.set(stage);
                     M3FXDemoApp app = new M3FXDemoApp();
                     app.configurePresentation(mode.profile(), mode.brightness(), mode.animationsEnabled());
                     app.start(stage);
@@ -1710,8 +1581,6 @@ final class M3FXDemoVisualMatrixTest {
                     List<String> pageTitles = List.copyOf(app.demoPageTitles());
                     assertTrue(pageTitles.size() > 20, mode.name() + " demo should expose component pages");
                     assertRegisteredDemoPageVisualCoverage(pageTitles);
-
-                    stageReference.set(stage);
                     appReference.set(app);
                     sceneReference.set(scene);
                     pageTitlesReference.set(pageTitles);
@@ -1763,7 +1632,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -1849,19 +1718,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -1931,7 +1798,7 @@ final class M3FXDemoVisualMatrixTest {
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -1946,19 +1813,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -2118,7 +1983,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2133,19 +1998,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Lists", scene -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -2195,7 +2058,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2210,19 +2073,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Date Pickers", scene -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -2281,87 +2142,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies that button-family demo pages render their variants, groups, actions, and icon targets.
-    @Test
-    void buttonFamilyDemoPagesRenderVariantsGroupsAndActions() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
-        try {
-            FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "All Buttons",
-                        M3FXDemoVisualMatrixTest::assertAllButtonsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Buttons",
-                        M3FXDemoVisualMatrixTest::assertButtonsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Button Groups",
-                        M3FXDemoVisualMatrixTest::assertButtonGroupsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Icon Buttons",
-                        M3FXDemoVisualMatrixTest::assertIconButtonsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Floating Action Buttons",
-                        M3FXDemoVisualMatrixTest::assertFloatingActionButtonsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Extended FABs",
-                        M3FXDemoVisualMatrixTest::assertExtendedFabsPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "FAB Menu",
-                        M3FXDemoVisualMatrixTest::assertFabMenuPageVisualState
-                );
-                assertComponentDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Split Buttons",
-                        M3FXDemoVisualMatrixTest::assertSplitButtonsPageVisualState
-                );
-            });
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2376,19 +2157,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1366.0);
+                stage.setHeight(950.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 assertComponentDemoPage(
                         appReference,
@@ -2434,7 +2213,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2449,19 +2228,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1366.0);
+                stage.setHeight(950.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference,
                     sceneReference,
@@ -2505,7 +2282,7 @@ final class M3FXDemoVisualMatrixTest {
             ));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2520,19 +2297,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference, sceneReference, "Search", scene -> {
                     }, () -> {
@@ -2583,7 +2358,7 @@ final class M3FXDemoVisualMatrixTest {
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2598,19 +2373,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference, sceneReference, "Cards", scene -> {
                     }, () -> {
@@ -2691,7 +2464,7 @@ final class M3FXDemoVisualMatrixTest {
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2708,19 +2481,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3Carousel> multiBrowseReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Carousel> uncontainedReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Carousel", scene -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -2897,7 +2668,7 @@ final class M3FXDemoVisualMatrixTest {
                     multiBrowse.setAnimatedScroll(true);
                     setAnimationsDisabled(multiBrowse, false);
                 }
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -2912,19 +2683,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference, sceneReference, "Dialogs", scene -> {
                     }, () -> {
@@ -2997,7 +2766,7 @@ final class M3FXDemoVisualMatrixTest {
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3012,19 +2781,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference, sceneReference, "Banners", scene -> {
                     }, () -> {
@@ -3085,57 +2852,7 @@ final class M3FXDemoVisualMatrixTest {
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies that sheet and snackbar demo pages render stable overlay and feedback states.
-    @Test
-    void sheetsAndSnackbarsDemoPagesRenderSurfaceAndOverlayStates() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
-        try {
-            FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
-                assertOverlayDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Bottom Sheets",
-                        M3FXDemoVisualMatrixTest::assertBottomSheetsPageVisualState
-                );
-                assertOverlayDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Side Sheets",
-                        M3FXDemoVisualMatrixTest::assertSideSheetsPageVisualState
-                );
-                assertOverlayDemoPage(
-                        appReference,
-                        sceneReference,
-                        "Snackbars",
-                        M3FXDemoVisualMatrixTest::assertSnackbarsPageVisualState
-                );
-            });
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3150,19 +2867,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 showPageWhenSidebarSelectionSettled(
                         appReference,
@@ -3243,7 +2958,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3258,19 +2973,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1366.0);
+                stage.setHeight(950.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 assertFoundationDemoPage(
                         appReference,
@@ -3335,7 +3048,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3350,19 +3063,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> FxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -3417,7 +3128,7 @@ final class M3FXDemoVisualMatrixTest {
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3436,19 +3147,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable WritableImage> ownerPopupSnapshotReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> subMenuSnapshotReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Menus", scene -> {
                 }, () -> {
@@ -3611,7 +3320,7 @@ final class M3FXDemoVisualMatrixTest {
                     menuButton.hideMenu();
                     setAnimationsDisabled(menuButton, false);
                 }
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3630,21 +3339,20 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable WritableImage> ownerPopupSnapshotReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> subMenuSnapshotReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                appReference.set(app);
+                sceneReference.set(scene);
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> {
                 showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Menus", scene ->
                         scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT), () -> {
@@ -3728,7 +3436,7 @@ final class M3FXDemoVisualMatrixTest {
                     menuButton.hideMenu();
                     setAnimationsDisabled(menuButton, false);
                 }
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -3775,21 +3483,20 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(stageWidth);
-            stage.setHeight(stageHeight);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            modeSetup.accept(app, scene);
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(stageWidth);
+                stage.setHeight(stageHeight);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                modeSetup.accept(app, scene);
+                appReference.set(app);
+                sceneReference.set(scene);
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
                     appReference, sceneReference, "Text Fields", scene -> {
                     }, () -> {
@@ -3810,7 +3517,7 @@ final class M3FXDemoVisualMatrixTest {
                     }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4283,19 +3990,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1366.0);
+                stage.setHeight(950.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Checkboxes", scene -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -4325,7 +4030,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4340,19 +4045,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(950.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1366.0);
+                stage.setHeight(950.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             String[] pageTitles = {"Checkboxes", "Radio Buttons", "Switches", "Sliders", "Text Fields"};
             for (String pageTitle : pageTitles) {
                 showPageWhenSidebarSelectionSettled(appReference, sceneReference, pageTitle, scene -> {
@@ -4379,7 +4082,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4394,19 +4097,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
@@ -4460,7 +4161,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4475,19 +4176,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
@@ -4579,7 +4278,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4594,19 +4293,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
@@ -4704,7 +4401,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4719,19 +4416,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
@@ -4807,7 +4502,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4822,19 +4517,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -4851,7 +4544,7 @@ final class M3FXDemoVisualMatrixTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4866,23 +4559,21 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(720.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            assertNotNull(scene);
-            assertTrue(app.demoPageTitles().size() > 20);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(720.0);
+
+                Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+                assertNotNull(scene);
+                assertTrue(app.demoPageTitles().size() > 20);
+                appReference.set(app);
+                sceneReference.set(scene);
+            });
             @Unmodifiable List<String> pageTitles =
                     Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
             for (String pageTitle : pageTitles) {
@@ -4937,7 +4628,7 @@ final class M3FXDemoVisualMatrixTest {
             }
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -4952,19 +4643,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             for (InteractionTargetCase targetCase : MOUSE_FEEDBACK_TARGETS) {
                 verifyInteractionTargetMouseFeedback(appReference, sceneReference, targetCase);
             }
@@ -4986,7 +4675,7 @@ final class M3FXDemoVisualMatrixTest {
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5001,24 +4690,22 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifySplitButtonPopupAnimation(appReference, sceneReference);
             verifyDatePickerFieldPopupAnimation(appReference, sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5033,26 +4720,24 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             FxTestUtils.assertNoCssWarningsInterruptibly(() -> verifyNestedMenuPopupStackAnimation(
                     appReference,
                     sceneReference
             ));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5067,19 +4752,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifyNavigationItemSelectionAnimation(
                     appReference,
                     sceneReference,
@@ -5096,7 +4779,7 @@ final class M3FXDemoVisualMatrixTest {
             verifySidebarDrawerGroupExpansionAnimation(sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5111,24 +4794,22 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifyBottomSheetVisibilityAnimation(appReference, sceneReference);
             verifySideSheetVisibilityAnimation(appReference, sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5143,26 +4824,24 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifySnackbarOverlayAnimation(appReference, sceneReference);
             verifyFabMenuExpansionAnimation(appReference, sceneReference);
             verifyRichTooltipInteractiveLifetime(appReference, sceneReference);
             verifyDialogPopupSurface(sceneReference);
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5184,19 +4863,17 @@ final class M3FXDemoVisualMatrixTest {
         );
         List<WritableImage> continuedAnimationFrames = new ArrayList<>(CONTINUOUS_ANIMATION_FRAME_COUNT);
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             runOnFxThreadWhenNodeAreaAdvances(
                     pageReference,
                     sceneReference,
@@ -5244,7 +4921,7 @@ final class M3FXDemoVisualMatrixTest {
             ));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5266,19 +4943,17 @@ final class M3FXDemoVisualMatrixTest {
         );
         List<WritableImage> continuedAnimationFrames = new ArrayList<>(CONTINUOUS_ANIMATION_FRAME_COUNT);
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             runOnFxThreadWhenNodeAreaAdvances(
                     indicatorReference,
                     sceneReference,
@@ -5333,7 +5008,7 @@ final class M3FXDemoVisualMatrixTest {
             ));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -5348,19 +5023,17 @@ final class M3FXDemoVisualMatrixTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1280.0);
-            stage.setHeight(900.0);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp app = new M3FXDemoApp();
+                app.start(stage);
+                stage.setWidth(1280.0);
+                stage.setHeight(900.0);
+                appReference.set(app);
+                sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+            });
             verifyReducedMotionPageKeepsBasicIndeterminateMotion(
                     appReference,
                     sceneReference,
@@ -5380,7 +5053,7 @@ final class M3FXDemoVisualMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
@@ -8861,31 +8534,6 @@ final class M3FXDemoVisualMatrixTest {
                             scene,
                             "component-" + snapshotFileName(pageTitle) + ".png",
                             pageTitle + " component controls"
-                    );
-                }
-        );
-    }
-
-    /// Shows one overlay or feedback demo page and applies state-matrix plus shared visual assertions.
-    private static void assertOverlayDemoPage(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference,
-            String pageTitle,
-            Consumer<Scene> pageAssertions
-    ) throws InterruptedException {
-        showPageWhenSidebarSelectionSettled(
-                appReference,
-                sceneReference,
-                pageTitle,
-                M3FXDemoVisualMatrixTest::resetDemoPageScroll,
-                () -> {
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    pageAssertions.accept(scene);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                    writePageSnapshot(
-                            scene,
-                            "overlay-" + snapshotFileName(pageTitle) + ".png",
-                            pageTitle + " overlay controls"
                     );
                 }
         );

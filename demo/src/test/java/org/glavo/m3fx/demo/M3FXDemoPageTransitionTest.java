@@ -6,6 +6,7 @@ package org.glavo.m3fx.demo;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
@@ -59,8 +60,10 @@ final class M3FXDemoPageTransitionTest {
 
                 M3AnimatedContent host = pageHost(scene);
                 ScrollPane outgoing = currentPageScrollPane(host);
+                outgoing.setHvalue(0.45);
                 outgoing.setVvalue(0.75);
                 layout(scene);
+                assertEquals(0.45, outgoing.getHvalue(), 0.001);
                 assertEquals(0.75, outgoing.getVvalue(), 0.001);
                 M3TopAppBar appBar = assertInstanceOf(
                         M3TopAppBar.class,
@@ -77,6 +80,8 @@ final class M3FXDemoPageTransitionTest {
                 layout(scene);
 
                 ScrollPane incoming = currentPageScrollPane(host);
+                Label incomingTitle = assertInstanceOf(Label.class, incoming.lookup(".demo-page-title"));
+                assertEquals("Typography", incomingTitle.getText());
                 assertTrue(host.isTransitioning());
                 assertNotSame(outgoing, incoming);
                 assertSame(scene, outgoing.getScene());
@@ -85,6 +90,8 @@ final class M3FXDemoPageTransitionTest {
                         "Demo page size transform"
                 ).clip());
                 assertEquals(0.75, outgoing.getVvalue(), 0.001);
+                assertEquals(0.45, outgoing.getHvalue(), 0.001);
+                assertEquals(incoming.getHmin(), incoming.getHvalue(), 0.001);
                 assertEquals(incoming.getVmin(), incoming.getVvalue(), 0.001);
                 assertFalse(appBar.isScrolledUnder());
                 assertFalse(M3ScrollPane.isSmoothScrollingEnabled(outgoing));
@@ -162,17 +169,16 @@ final class M3FXDemoPageTransitionTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp application = new M3FXDemoApp();
-            application.start(stage);
-            stage.setWidth(400.0);
-            stage.setHeight(580.0);
-            stageReference.set(stage);
-            sceneReference.set(Objects.requireNonNull(application.activeScene(), "scene"));
-        });
-
         try {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                M3FXDemoApp application = new M3FXDemoApp();
+                application.start(stage);
+                stage.setWidth(400.0);
+                stage.setHeight(580.0);
+                sceneReference.set(Objects.requireNonNull(application.activeScene(), "scene"));
+            });
             FxTestUtils.runOnFxThread(() -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 layout(scene);
@@ -232,7 +238,7 @@ final class M3FXDemoPageTransitionTest {
             });
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
+                @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
                 }
