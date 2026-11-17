@@ -180,6 +180,64 @@ final class M3LocalizationTest {
         });
     }
 
+    /// Closing and adding subscribers during replacement must not deliver an obsolete outer-pass value.
+    @Test
+    void subscriptionChangesDuringReplacementUseLatestValue() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane root = new Pane();
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.GERMANY);
+            List<M3LocalizerObserver> subscriptions = new ArrayList<>();
+            List<M3Localizer> delivered = new ArrayList<>();
+            try {
+                subscriptions.add(new M3LocalizerObserver(root, value -> {
+                    if (value == first) {
+                        subscriptions.get(1).close();
+                        subscriptions.add(new M3LocalizerObserver(root, delivered::add));
+                        M3Localizer.install(root, second);
+                    }
+                }));
+                subscriptions.add(new M3LocalizerObserver(root, value -> {
+                    assertNotSame(first, value);
+                    assertNotSame(second, value);
+                }));
+                M3Localizer.install(root, first);
+                assertEquals(List.of(first, second), delivered);
+            } finally {
+                subscriptions.forEach(M3LocalizerObserver::close);
+            }
+            M3Localizer.uninstall(root);
+            assertTrue(root.getProperties().isEmpty());
+        });
+    }
+
+    /// Localization remains synchronous even when the subtree has no visible presentation.
+    @Test
+    void invisibleAndDetachedSubtreesReceiveReplacements() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane leaf = new Pane();
+            Pane branch = new Pane(leaf);
+            Pane root = new Pane(branch);
+            new Scene(root);
+            root.setVisible(false);
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.GERMANY);
+            AtomicReference<M3Localizer> current = new AtomicReference<>();
+            try (M3LocalizerObserver observer = new M3LocalizerObserver(leaf, current::set)) {
+                M3Localizer.install(root, first);
+                assertSame(first, current.get());
+                root.getChildren().clear();
+                M3Localizer.install(branch, second);
+                assertSame(second, current.get());
+                M3Localizer.uninstall(branch);
+                root.getChildren().add(branch);
+                assertSame(first, current.get());
+            }
+            assertTrue(branch.getProperties().isEmpty());
+            assertTrue(leaf.getProperties().isEmpty());
+        });
+    }
+
     /// Uses identity rather than application-defined equality to recognize a replacement instance.
     @Test
     void equalInstancesStillReplaceTranslations() {

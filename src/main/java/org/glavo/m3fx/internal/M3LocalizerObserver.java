@@ -9,7 +9,6 @@ import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -69,7 +68,7 @@ public final class M3LocalizerObserver implements AutoCloseable {
             shared.start();
             ready = true;
             if (notifyInitially) {
-                refresh();
+                refresh(resolve(node));
             }
         } catch (RuntimeException | Error exception) {
             close();
@@ -94,14 +93,10 @@ public final class M3LocalizerObserver implements AutoCloseable {
     }
 
     /// Delivers the current value, ignoring stale notifications after a reentrant change or disposal.
-    private void refresh() {
-        @Nullable Context shared = context;
-        if (ready && shared != null) {
-            M3Localizer next = resolve(shared.node);
-            if (next != delivered) {
-                delivered = next;
-                action.accept(next);
-            }
+    private void refresh(M3Localizer next) {
+        if (ready && context != null && next != delivered) {
+            delivered = next;
+            action.accept(next);
         }
     }
 
@@ -131,7 +126,7 @@ public final class M3LocalizerObserver implements AutoCloseable {
         } else {
             node.getProperties().put(LOCALIZER_KEY, localizer);
         }
-        if (node.getProperties().get(CONTEXT_KEY) instanceof Context context) {
+        if (node.hasProperties() && node.getProperties().get(CONTEXT_KEY) instanceof Context context) {
             context.reconnect();
         }
     }
@@ -164,7 +159,10 @@ public final class M3LocalizerObserver implements AutoCloseable {
         private final Node node;
 
         /// Active subscriptions, including those representing child contexts.
-        private final ArrayList<M3LocalizerObserver> observers = new ArrayList<>();
+        private final M3ObserverList<M3LocalizerObserver> observers = new M3ObserverList<>();
+
+        /// Latest value during notification, shared by consumers and replaced by any nested refresh.
+        private @Nullable M3Localizer dispatchValue;
 
         /// The parent whose inherited context is currently observed.
         private @Nullable Node observedParent;
@@ -217,10 +215,23 @@ public final class M3LocalizerObserver implements AutoCloseable {
             refresh();
         }
 
-        /// Notifies current consumers; a snapshot permits callbacks to subscribe, reparent, or close observers.
+        /// Resolves once per notification and tolerates subscription changes without copying the observer list.
         private void refresh() {
-            for (M3LocalizerObserver observer : observers.toArray(M3LocalizerObserver[]::new)) {
-                observer.refresh();
+            dispatchValue = resolve(node);
+            int limit = observers.beginDispatch();
+            try {
+                for (int index = 0; index < limit; index++) {
+                    @Nullable M3LocalizerObserver observer = observers.get(index);
+                    @Nullable M3Localizer value = dispatchValue;
+                    if (observer != null && value != null) {
+                        observer.refresh(value);
+                    }
+                }
+            } finally {
+                observers.endDispatch();
+                if (!observers.isDispatching()) {
+                    dispatchValue = null;
+                }
             }
         }
 

@@ -46,13 +46,6 @@ public final class M3MotionSettingsObserver {
     /// Changes whenever global or node-local reduced-motion settings change.
     private static final AtomicLong REDUCED_MOTION_REVISION = new AtomicLong();
 
-    /// Empty nullable observer storage reused before the first owner subscription.
-    private static final @Nullable M3MotionSettingsObserver[] EMPTY_OBSERVERS =
-            new M3MotionSettingsObserver[0];
-
-    /// Empty nullable owner storage reused before the first scene registration.
-    private static final @Nullable OwnerObserver[] EMPTY_OWNERS = new OwnerObserver[0];
-
     /// Empty nullable node storage reused before the first ancestor-chain observation.
     private static final @Nullable Node[] EMPTY_NODES = new Node[0];
 
@@ -251,17 +244,8 @@ public final class M3MotionSettingsObserver {
         /// The most recently observed effective tree-visible state.
         private boolean treeVisible;
 
-        /// Nullable observer slots; removals during dispatch leave temporary tombstones.
-        private @Nullable M3MotionSettingsObserver[] observers = EMPTY_OBSERVERS;
-
-        /// The number of occupied observer slots, including temporary tombstones.
-        private int observerSlots;
-
-        /// The number of live observers.
-        private int observerCount;
-
-        /// The number of active callback dispatches.
-        private int dispatchDepth;
+        /// Active subscriptions, with stable slots during callback dispatch.
+        private final M3ObserverList<M3MotionSettingsObserver> observers = new M3ObserverList<>();
 
         /// Whether a nested notification requested another pass.
         private boolean refreshRequested;
@@ -280,8 +264,8 @@ public final class M3MotionSettingsObserver {
         ///
         /// @param observer the subscription to add
         private void add(M3MotionSettingsObserver observer) {
-            boolean wasEmpty = observerCount == 0;
-            append(observer);
+            boolean wasEmpty = observers.isEmpty();
+            observers.add(observer);
             if (wasEmpty) {
                 owner.sceneProperty().addListener(sceneListener);
                 installTreeVisibilityObservation();
@@ -299,23 +283,10 @@ public final class M3MotionSettingsObserver {
         ///
         /// @param observer the subscription to remove
         private void remove(M3MotionSettingsObserver observer) {
-            int index = indexOf(observer);
-            if (index < 0) {
+            if (!observers.remove(observer)) {
                 return;
             }
-
-            if (dispatchDepth == 0) {
-                int moved = observerSlots - index - 1;
-                if (moved > 0) {
-                    System.arraycopy(observers, index + 1, observers, index, moved);
-                }
-                observers[--observerSlots] = null;
-            } else {
-                observers[index] = null;
-            }
-            observerCount--;
-
-            if (observerCount == 0) {
+            if (observers.isEmpty()) {
                 refreshRequested = false;
                 unregisterSceneObserver();
                 owner.sceneProperty().removeListener(sceneListener);
@@ -323,35 +294,7 @@ public final class M3MotionSettingsObserver {
                 if (owner.getProperties().get(OWNER_OBSERVER_KEY) == this) {
                     owner.getProperties().remove(OWNER_OBSERVER_KEY);
                 }
-            } else if (dispatchDepth == 0) {
-                compactObservers();
             }
-        }
-
-        /// Appends one observer, growing compact storage only during registration changes.
-        ///
-        /// @param observer the observer to append
-        private void append(M3MotionSettingsObserver observer) {
-            if (observerSlots == observers.length) {
-                int currentCapacity = observers.length;
-                int nextCapacity = currentCapacity == 0 ? 4 : currentCapacity + (currentCapacity >> 1);
-                observers = Arrays.copyOf(observers, nextCapacity);
-            }
-            observers[observerSlots++] = observer;
-            observerCount++;
-        }
-
-        /// Returns the identity index of one observer, or -1 when it is absent.
-        ///
-        /// @param observer the observer to find
-        /// @return its slot index, or -1
-        private int indexOf(M3MotionSettingsObserver observer) {
-            for (int index = 0; index < observerSlots; index++) {
-                if (observers[index] == observer) {
-                    return index;
-                }
-            }
-            return -1;
         }
 
         /// Updates scene registration after owner attachment changes.
@@ -495,10 +438,10 @@ public final class M3MotionSettingsObserver {
 
         /// Dispatches callbacks without allocating snapshots and coalesces nested refresh requests.
         private void requestRefresh() {
-            if (observerCount == 0) {
+            if (observers.isEmpty()) {
                 return;
             }
-            if (dispatchDepth != 0) {
+            if (observers.isDispatching()) {
                 refreshRequested = true;
                 return;
             }
@@ -506,11 +449,10 @@ public final class M3MotionSettingsObserver {
             do {
                 refreshRequested = false;
                 long dispatchRegistrationVersion = registrationVersion;
-                int dispatchLimit = observerSlots;
-                dispatchDepth++;
+                int dispatchLimit = observers.beginDispatch();
                 try {
                     for (int index = 0; index < dispatchLimit; index++) {
-                        @Nullable M3MotionSettingsObserver observer = observers[index];
+                        @Nullable M3MotionSettingsObserver observer = observers.get(index);
                         if (observer != null) {
                             observer.refresh();
                         }
@@ -519,35 +461,9 @@ public final class M3MotionSettingsObserver {
                         }
                     }
                 } finally {
-                    dispatchDepth--;
-                    compactObservers();
+                    observers.endDispatch();
                 }
-            } while (refreshRequested && observerCount != 0);
-        }
-
-        /// Compacts observer tombstones after the outermost dispatch.
-        private void compactObservers() {
-            if (dispatchDepth != 0) {
-                return;
-            }
-
-            if (observerSlots != observerCount) {
-                int destination = 0;
-                for (int source = 0; source < observerSlots; source++) {
-                    @Nullable M3MotionSettingsObserver observer = observers[source];
-                    if (observer != null) {
-                        observers[destination++] = observer;
-                    }
-                }
-                Arrays.fill(observers, destination, observerSlots, null);
-                observerSlots = destination;
-            }
-
-            int capacity = observers.length;
-            if (observerCount != 0 && capacity > 8 && observerCount <= (capacity >> 2)) {
-                int targetCapacity = Math.max(4, observerCount + (observerCount >> 1));
-                observers = Arrays.copyOf(observers, targetCapacity);
-            }
+            } while (refreshRequested && !observers.isEmpty());
         }
     }
 
@@ -557,14 +473,8 @@ public final class M3MotionSettingsObserver {
         /// The scene that owns this dispatcher.
         private final Scene scene;
 
-        /// Nullable owner slots; removals during dispatch leave temporary tombstones.
-        private @Nullable OwnerObserver[] owners = EMPTY_OWNERS;
-
-        /// The number of occupied owner slots, including temporary tombstones.
-        private int ownerSlots;
-
-        /// The number of live owner coordinators.
-        private int ownerCount;
+        /// Active owners, with stable slots during callback dispatch.
+        private final M3ObserverList<OwnerObserver> owners = new M3ObserverList<>();
 
         /// Receives global reduced-motion changes without retaining this scene from the static property.
         private final InvalidationListener globalSettingsListener = observable -> requestRefresh(null);
@@ -592,9 +502,6 @@ public final class M3MotionSettingsObserver {
         /// Whether the global reduced-motion property currently contains this dispatcher's weak listener.
         private boolean globalSettingsObserved;
 
-        /// The number of active owner dispatches.
-        private int dispatchDepth;
-
         /// Whether an off-thread settings notification already scheduled one FX-thread refresh.
         private volatile boolean refreshPending;
 
@@ -615,13 +522,9 @@ public final class M3MotionSettingsObserver {
         ///
         /// @param ownerObserver the owner coordinator to add
         private void add(OwnerObserver ownerObserver) {
-            if (ownerSlots == owners.length) {
-                int currentCapacity = owners.length;
-                int nextCapacity = currentCapacity == 0 ? 8 : currentCapacity + (currentCapacity >> 1);
-                owners = Arrays.copyOf(owners, nextCapacity);
-            }
-            owners[ownerSlots++] = ownerObserver;
-            if (ownerCount++ == 0) {
+            boolean wasEmpty = owners.isEmpty();
+            owners.add(ownerObserver);
+            if (wasEmpty) {
                 scene.windowProperty().addListener(windowListener);
                 updateWindow(scene.getWindow(), false);
             }
@@ -632,44 +535,13 @@ public final class M3MotionSettingsObserver {
         /// @param ownerObserver the owner coordinator to remove
         /// @return true when no owner coordinators remain
         private boolean remove(OwnerObserver ownerObserver) {
-            int index = indexOf(ownerObserver);
-            if (index < 0) {
-                return false;
-            }
-
-            if (dispatchDepth == 0) {
-                int moved = ownerSlots - index - 1;
-                if (moved > 0) {
-                    System.arraycopy(owners, index + 1, owners, index, moved);
-                }
-                owners[--ownerSlots] = null;
-            } else {
-                owners[index] = null;
-            }
-
-            if (--ownerCount != 0) {
-                if (dispatchDepth == 0) {
-                    compactOwners();
-                }
+            if (!owners.remove(ownerObserver) || !owners.isEmpty()) {
                 return false;
             }
 
             scene.windowProperty().removeListener(windowListener);
             updateWindow(null, false);
             return true;
-        }
-
-        /// Returns the identity index of one owner coordinator, or -1 when it is absent.
-        ///
-        /// @param ownerObserver the owner coordinator to find
-        /// @return its slot index, or -1
-        private int indexOf(OwnerObserver ownerObserver) {
-            for (int index = 0; index < ownerSlots; index++) {
-                if (owners[index] == ownerObserver) {
-                    return index;
-                }
-            }
-            return -1;
         }
 
         /// Reattaches shared render-activity listeners to the scene's current window.
@@ -710,7 +582,7 @@ public final class M3MotionSettingsObserver {
 
         /// Updates global setting observation for the current presentation lifecycle.
         private void updateGlobalSettingsObservation() {
-            boolean shouldObserve = ownerCount != 0
+            boolean shouldObserve = !owners.isEmpty()
                     && (observedWindow == null
                     || observedWindow.isShowing() && (observedStage == null || !observedStage.isIconified()));
             if (globalSettingsObserved == shouldObserve) {
@@ -772,18 +644,16 @@ public final class M3MotionSettingsObserver {
             if (source != null && source.getScene() != scene) {
                 return;
             }
-            int dispatchLimit = ownerSlots;
-            dispatchDepth++;
+            int dispatchLimit = owners.beginDispatch();
             try {
                 for (int index = 0; index < dispatchLimit; index++) {
-                    @Nullable OwnerObserver ownerObserver = owners[index];
+                    @Nullable OwnerObserver ownerObserver = owners.get(index);
                     if (ownerObserver != null && (source == null || contains(source, ownerObserver.owner))) {
                         ownerObserver.refreshFrom(this);
                     }
                 }
             } finally {
-                dispatchDepth--;
-                compactOwners();
+                owners.endDispatch();
             }
         }
 
@@ -799,29 +669,5 @@ public final class M3MotionSettingsObserver {
             return false;
         }
 
-        /// Compacts owner tombstones after the outermost dispatch.
-        private void compactOwners() {
-            if (dispatchDepth != 0) {
-                return;
-            }
-
-            if (ownerSlots != ownerCount) {
-                int destination = 0;
-                for (int source = 0; source < ownerSlots; source++) {
-                    @Nullable OwnerObserver ownerObserver = owners[source];
-                    if (ownerObserver != null) {
-                        owners[destination++] = ownerObserver;
-                    }
-                }
-                Arrays.fill(owners, destination, ownerSlots, null);
-                ownerSlots = destination;
-            }
-
-            int capacity = owners.length;
-            if (ownerCount != 0 && capacity > 16 && ownerCount <= (capacity >> 2)) {
-                int targetCapacity = Math.max(8, ownerCount + (ownerCount >> 1));
-                owners = Arrays.copyOf(owners, targetCapacity);
-            }
-        }
     }
 }
