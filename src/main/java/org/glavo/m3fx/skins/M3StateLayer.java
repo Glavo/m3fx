@@ -252,7 +252,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 || pseudoClass == HOVER_PSEUDO_CLASS
                 || pseudoClass == FOCUS_VISIBLE_PSEUDO_CLASS
                 || pseudoClass == PRESSED_PSEUDO_CLASS) {
-            animateOverlayOpacityFromOwnerState();
+            animateOverlayOpacityFromOwnerState(pseudoClass == HOVER_PSEUDO_CLASS);
         }
     };
 
@@ -260,7 +260,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     private final EventHandler<MouseEvent> pointerInputHandler = event -> {
         if (!modalInteractionBlocked && hoverSuppressedUntilPointerInput) {
             hoverSuppressedUntilPointerInput = false;
-            animateOverlayOpacityFromOwnerState();
+            animateOverlayOpacityFromOwnerState(true);
         }
     };
 
@@ -405,7 +405,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             stopStateOpacityAnimation();
             overlay.setOpacity(0.0);
             setFocusIndicatorOpacity(0.0);
-            animateOverlayOpacityFromOwnerState();
+            animateOverlayOpacityFromOwnerState(owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)
+                    && !isPressedLike(owner) && !owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS));
         } else {
             synchronizeOwnerStateOpacity(owner);
         }
@@ -929,6 +930,11 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Animates persistent state-layer opacity channels to values resolved from the owner state.
     void animateOverlayOpacityFromOwnerState() {
+        animateOverlayOpacityFromOwnerState(false);
+    }
+
+    /// Uses a linear fade for pointer hover; focus and other interactions retain the theme easing.
+    private void animateOverlayOpacityFromOwnerState(boolean hoverChanged) {
         Node owner = stateOwner;
         if (owner == null) {
             return;
@@ -942,19 +948,13 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             focusIndicator = ensureFocusIndicator();
         }
         double startFocusIndicatorOpacity = focusIndicator == null ? 0.0 : focusIndicator.getOpacity();
-        stopStateOpacityAnimation();
 
         boolean overlayChanged = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
         boolean focusIndicatorChanged =
                 Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
-        if (!overlayChanged && !focusIndicatorChanged) {
-            overlay.setOpacity(targetOverlayOpacity);
-            setFocusIndicatorOpacity(targetFocusIndicatorOpacity);
-            stopMotionObservationIfIdle();
-            return;
-        }
-
-        if (isPresentationUnavailable(owner) || animationsDisabled(owner)) {
+        if ((!overlayChanged && !focusIndicatorChanged)
+                || isPresentationUnavailable(owner) || animationsDisabled(owner)) {
+            stopStateOpacityAnimation();
             overlay.setOpacity(targetOverlayOpacity);
             setFocusIndicatorOpacity(targetFocusIndicatorOpacity);
             stopMotionObservationIfIdle();
@@ -963,8 +963,16 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
         StateOpacityTransition stateOpacityAnimation = ensureStateOpacityAnimation();
+        // Layout and unrelated pseudo-class notifications must not restart an in-flight hover fade.
+        if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING
+                && stateOpacityAnimation.targetOverlayOpacity == targetOverlayOpacity
+                && stateOpacityAnimation.targetFocusIndicatorOpacity == targetFocusIndicatorOpacity
+                && stateOpacityAnimation.getCycleDuration().equals(opacitySpec.duration())) {
+            return;
+        }
         stateOpacityAnimation.configure(
-                opacitySpec,
+                opacitySpec.duration(),
+                hoverChanged && !focusIndicatorChanged ? Interpolator.LINEAR : opacitySpec.interpolator(),
                 startOverlayOpacity,
                 targetOverlayOpacity,
                 startFocusIndicatorOpacity,
@@ -1156,15 +1164,16 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         /// Reconfigures both channels without replacing the animation graph.
         private void configure(
-                M3MotionSpec spec,
+                Duration duration,
+                Interpolator interpolator,
                 double startOverlayOpacity,
                 double targetOverlayOpacity,
                 double startFocusIndicatorOpacity,
                 double targetFocusIndicatorOpacity
         ) {
             stop();
-            setCycleDuration(spec.duration());
-            setInterpolator(spec.interpolator());
+            setCycleDuration(duration);
+            setInterpolator(interpolator);
             this.startOverlayOpacity = startOverlayOpacity;
             this.targetOverlayOpacity = targetOverlayOpacity;
             this.startFocusIndicatorOpacity = startFocusIndicatorOpacity;

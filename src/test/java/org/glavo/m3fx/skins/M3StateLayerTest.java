@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.PauseTransition;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -19,8 +20,12 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Path;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3Animated;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3CheckBox;
@@ -29,6 +34,7 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3MotionTokens;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -374,6 +380,49 @@ final class M3StateLayerTest {
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
             assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
         });
+    }
+
+    /// Hover opacity follows elapsed pulse time in either direction, including across a layout refresh.
+    @Tier2Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void hoverOpacityTracksElapsedTime(boolean entering) throws InterruptedException {
+        Duration duration = Duration.millis(600);
+        PauseTransition clock = new PauseTransition(duration);
+        AtomicReference<@Nullable Region> overlay = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> clock.getCurrentTime().greaterThanOrEqualTo(duration.multiply(0.35)),
+                    () -> {
+                        M3StateLayer layer = createStateLayer();
+                        Pane owner = new Pane(layer);
+                        Scene scene = new Scene(owner, 100, 40);
+                        M3TokenSet tokens = M3Theme.defaultTheme().tokens();
+                        M3MotionScheme scheme = M3MotionScheme.builder(tokens.motionTokens().scheme())
+                                .fastEffects(M3MotionSpec.of(duration, M3MotionEasing.FAST_EFFECTS)).build();
+                        M3ThemeManager.install(scene, M3Theme.fromTokenSet(M3TokenSet.builder(tokens)
+                                .motionTokens(M3MotionTokens.builder(tokens.motionTokens()).scheme(scheme).build())
+                                .build()));
+                        PseudoClass hover = PseudoClass.getPseudoClass("hover");
+                        owner.pseudoClassStateChanged(hover, true);
+                        layer.installStateTransitions(owner, entering);
+                        overlay.set(lookupRegion(layer, ".m3-state-layer"));
+                        if (!entering) {
+                            owner.pseudoClassStateChanged(hover, false);
+                        }
+                        layer.animateOverlayOpacityFromOwnerState();
+                        clock.play();
+                    },
+                    () -> {
+                        double progress = clock.getCurrentTime().toMillis() / duration.toMillis();
+                        assertTrue(progress < 0.9, "Expected an intermediate hover frame");
+                        assertEquals(0.08 * (entering ? progress : 1.0 - progress),
+                                Objects.requireNonNull(overlay.get()).getOpacity(), 0.004);
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(clock::stop);
+        }
     }
 
     /// Verifies that disabled motion applies owner-state hover opacity without starting a transition.
