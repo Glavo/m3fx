@@ -13,9 +13,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3LocalizedTextDefault;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3PresetNavigation;
@@ -44,7 +44,7 @@ import java.time.LocalTime;
 /// overlayPane.showDialog(dialog);
 /// ```
 ///
-/// The pane headline and action labels follow the effective localizer until customized or bound. Assigning the
+/// The pane headline and action labels follow this dialog's localizer until customized or bound. Assigning the
 /// headline explicitly preserves it even when unchanged. JavaFX does not notify unchanged action-text assignments;
 /// those labels continue following localization unless their value changes or their text property is bound.
 ///
@@ -85,9 +85,9 @@ public final class M3TimePickerDialog extends M3Dialog {
     /// Tracks application ownership of the existing confirmation action text.
     private final M3LocalizedTextDefault confirmText = new M3LocalizedTextDefault(confirmAction.textProperty());
 
-    /// Retains inherited localization observation for this reusable dialog's lifetime.
+    /// Retains direct localization observation for this reusable dialog's lifetime.
     private final M3LocalizerObserver localizerObserver =
-            new M3LocalizerObserver(getDialogPane(), this::refreshLocalization);
+            new M3LocalizerObserver(this, this::refreshLocalization);
 
     /// Refreshes only text that has not been customized or bound by the application.
     private void refreshLocalization(M3Localizer localizer) {
@@ -116,7 +116,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Creates a time picker dialog with no selected time.
     ///
-    /// The headline and action labels follow the pane's effective localizer until explicitly customized.
+    /// The headline and action labels follow this dialog's localizer until explicitly customized.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);
     }
@@ -185,6 +185,8 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Returns the time picker used by this dialog.
     ///
+    /// Its localizer property is bound to this dialog's [#localizerProperty()].
+    ///
     /// @return the time picker used by this dialog
     public M3TimePicker getPicker() {
         return picker;
@@ -203,6 +205,8 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Configures dialog content, buttons, value synchronization, and button state.
     private void initialize() {
+        // This dialog owns the picker and controls its built-in text for the picker lifetime.
+        picker.localizerProperty().bind(localizerProperty());
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
                 value.set(newValue);
@@ -296,9 +300,9 @@ public final class M3TimePickerDialog extends M3Dialog {
         /// The mode switch placed at the logical start of the dialog action row.
         private final M3IconButton modeButton = new M3IconButton(modeIcon);
 
-        /// Retains inherited localization observation for the pane's lifetime.
+        /// Observes the owned picker's localizer for the pane's lifetime.
         private final M3LocalizerObserver localizerObserver =
-                new M3LocalizerObserver(this, localizer -> updateModeButton());
+                new M3LocalizerObserver(picker, localizer -> updateModeButton());
 
         /// Creates the specialized pane and its retained mode switch.
         private TimePickerDialogPane() {
@@ -318,7 +322,7 @@ public final class M3TimePickerDialog extends M3Dialog {
         private void updateModeButton() {
             boolean inputMode = picker.isInputMode();
             modeIcon.setGlyph(inputMode ? M3InternalIcon.Glyph.SCHEDULE : M3InternalIcon.Glyph.KEYBOARD);
-            M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+            M3Localizer localizer = picker.getLocalizer();
             if (!modeButton.accessibleTextProperty().isBound()) {
                 modeButton.setAccessibleText(inputMode ? localizer.getUseClockDialText() : localizer.getUseKeyboardInputText());
             }

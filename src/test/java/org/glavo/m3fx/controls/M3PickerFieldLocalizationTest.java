@@ -4,12 +4,18 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -17,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,8 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Verifies scoped picker-field defaults, application overrides, and adornment skin lifetime.
+/// Verifies picker-field localization bindings, application overrides, and adornment skin lifetime.
 @NotNullByDefault
 final class M3PickerFieldLocalizationTest {
     /// Starts JavaFX before creating controls.
@@ -35,48 +43,121 @@ final class M3PickerFieldLocalizationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// A malformed translation for one control does not prevent unrelated control defaults from updating.
+    /// Owned layouts and pickers follow explicit bindings even before presentation.
     @Test
-    void translationFailureIsIsolatedAndCanBeRecovered() {
+    void ownedControlsBindToTheirFieldLocalizer() {
         FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField date = new M3DatePickerField();
             M3TimePickerField time = new M3TimePickerField();
-            VBox root = new VBox(date, time);
-            M3Localizer broken = new M3Localizer(Locale.GERMANY) {
-                /// Models a failing application translation lookup.
-                @Override
-                public String getInvalidDateText() {
-                    throw new IllegalArgumentException("missing date translation");
+            M3DateRangePickerField range = new M3DateRangePickerField();
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(M3Localizer.getDefault());
+            date.localizerProperty().bind(language);
+            time.localizerProperty().bind(language);
+            range.localizerProperty().bind(language);
+            for (M3Localizer localizer : List.of(new TaggedLocalizer("first"), new TaggedLocalizer("second"))) {
+                language.set(localizer);
+                for (M3Localized owned : List.<M3Localized>of(date.getInputLayout(), date.getPicker(),
+                        time.getInputLayout(), time.getPicker(), range.getStartInputLayout(),
+                        range.getEndInputLayout(), range.getPicker())) {
+                    assertTrue(owned.localizerProperty().isBound());
+                    assertSame(localizer, owned.getLocalizer());
                 }
-
-                /// Supplies an independent translation that remains usable.
-                @Override
-                public String getInvalidTimeText() {
-                    return "Invalid translated time";
-                }
-            };
-            assertThrows(IllegalArgumentException.class, () -> M3Localizer.install(root, broken));
-            assertEquals("Invalid translated time", time.getInvalidTextErrorText());
-            assertSame(broken, M3Localizer.getEffectiveLocalizer(date));
-            TaggedLocalizer recovered = new TaggedLocalizer("recovered");
-            M3Localizer.install(root, recovered);
-            assertEquals(recovered.getInvalidDateText(), date.getInvalidTextErrorText());
-            assertEquals(recovered.getInvalidTimeText(), time.getInvalidTextErrorText());
+            }
         });
     }
 
-    /// Reparenting and nearer installations refresh active errors without changing raw text or formatters.
+    /// Popup visibility does not create or remove the owned picker's localization binding.
     @Test
-    void pickerFieldsFollowScopeAndPreserveEditing() {
+    void ownedPickerBindingSurvivesPopupPresentation() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            TaggedLocalizer first = new TaggedLocalizer("first");
+            TaggedLocalizer second = new TaggedLocalizer("second");
+            M3DatePickerField date = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            M3TimePickerField time = new M3TimePickerField(LocalTime.NOON);
+            M3DateRangePickerField range = new M3DateRangePickerField();
+            VBox root = new VBox(date, time, range);
+            Scene scene = new Scene(root, 720, 400);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                for (M3PickerField<?, ?> field : List.of(date, time)) {
+                    field.setLocalizer(first);
+                    assertSame(first, field.getPicker().getLocalizer());
+                    field.showPicker();
+                    assertTrue(field.isShowing());
+                    field.setLocalizer(second);
+                    assertSame(second, field.getPicker().getLocalizer());
+                    assertTrue(field.getPicker().localizerProperty().isBound());
+                    field.hidePicker();
+                    assertFalse(field.isShowing());
+                    field.setLocalizer(first);
+                    assertSame(first, field.getPicker().getLocalizer());
+                    field.showPicker();
+                    assertTrue(field.isShowing());
+                    assertSame(first, field.getPicker().getLocalizer());
+                    field.hidePicker();
+                }
+                range.setLocalizer(first);
+                range.showPicker();
+                assertTrue(range.isShowing());
+                range.setLocalizer(second);
+                assertSame(second, range.getPicker().getLocalizer());
+                range.hidePicker();
+                assertFalse(range.isShowing());
+                range.setLocalizer(first);
+                assertSame(first, range.getPicker().getLocalizer());
+                assertTrue(range.getPicker().localizerProperty().isBound());
+            } finally {
+                date.hidePicker();
+                time.hidePicker();
+                range.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// A language replacement during a text notification leaves every default on the latest localizer.
+    @Test
+    void reentrantLanguageChangeRefreshesAllRangeFieldDefaults() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField();
+            TaggedLocalizer first = new TaggedLocalizer("first");
+            TaggedLocalizer second = new TaggedLocalizer("second");
+            field.labelTextProperty().addListener((observable, oldValue, newValue) -> {
+                if (field.getLocalizer() == first) {
+                    field.setLocalizer(second);
+                }
+            });
+
+            field.setLocalizer(first);
+
+            assertSame(second, field.getLocalizer());
+            assertSame(second, field.getPicker().getLocalizer());
+            assertEquals(second.getDateRangeText(), field.getLabelText());
+            assertEquals(second.getStartDateText(), field.getStartLabelText());
+            assertEquals(second.getEndDateText(), field.getEndLabelText());
+            assertEquals(second.getInvalidDateRangeText(), field.getInvalidTextErrorText());
+            assertEquals(second.getDateRangeOutOfRangeText(), field.getRangeErrorText());
+        });
+    }
+
+    /// Application language changes refresh errors without changing raw edits, formatters, or parent independence.
+    @Test
+    void pickerFieldsFollowBindingsAndPreserveEditing() {
         FxTestUtils.runOnFxThread(() -> {
             TaggedLocalizer first = new TaggedLocalizer("first");
             TaggedLocalizer second = new TaggedLocalizer("second");
             VBox left = new VBox();
             VBox right = new VBox();
-            M3Localizer.install(left, first);
-            M3Localizer.install(right, second);
             M3DatePickerField date = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             M3TimePickerField time = new M3TimePickerField(LocalTime.of(14, 35));
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            date.localizerProperty().bind(language);
+            time.localizerProperty().bind(language);
             left.getChildren().addAll(date, time);
             assertEquals("2026-05-19", date.getText());
             assertEquals("14:35", time.getText());
@@ -86,6 +167,8 @@ final class M3PickerFieldLocalizationTest {
             time.setText("unfinished time");
             assertFalse(date.commitEditorText());
             assertFalse(time.commitEditorText());
+            date.getEditor().selectRange(2, 6);
+            time.getEditor().selectRange(3, 7);
             assertEquals(first.getInvalidDateText(), date.getValidationErrorText());
             assertEquals(first.getInvalidTimeText(), time.getValidationErrorText());
             assertEquals(date.getInvalidTextErrorText(), date.invalidTextErrorTextProperty().get());
@@ -95,23 +178,34 @@ final class M3PickerFieldLocalizationTest {
 
             left.getChildren().clear();
             right.getChildren().addAll(date, time);
+            assertEquals(first.getInvalidDateText(), date.getValidationErrorText());
+            assertEquals(first.getInvalidTimeText(), time.getValidationErrorText());
+            language.set(second);
             assertEquals(second.getInvalidDateText(), date.getValidationErrorText());
             assertEquals(second.getInvalidTimeText(), time.getValidationErrorText());
             assertEquals(second.getInvalidDateText(), date.invalidTextErrorTextProperty().get());
             assertEquals(second.getInvalidTimeText(), time.invalidTextErrorTextProperty().get());
             assertEquals("unfinished date", date.getText());
             assertEquals("unfinished time", time.getText());
+            assertEquals(2, date.getEditor().getAnchor());
+            assertEquals(6, date.getEditor().getCaretPosition());
+            assertEquals(3, time.getEditor().getAnchor());
+            assertEquals(7, time.getEditor().getCaretPosition());
+            assertEquals(LocalDate.of(2026, 5, 19), date.getValue());
+            assertEquals(LocalTime.of(14, 35), time.getValue());
             assertSame(dateFormatter, date.getFormatter());
             assertSame(timeFormatter, time.getFormatter());
 
-            M3Localizer.install(date, first);
+            date.localizerProperty().unbind();
+            date.setLocalizer(first);
             assertEquals(first.getInvalidDateText(), date.getValidationErrorText());
-            M3Localizer.uninstall(date);
+            assertEquals(second.getInvalidTimeText(), time.getValidationErrorText());
+            date.localizerProperty().bind(language);
             assertEquals(second.getInvalidDateText(), date.getValidationErrorText());
         });
     }
 
-    /// Explicit default-valued overrides and bindings survive scope replacement and unbinding.
+    /// Explicit default-valued overrides and bindings survive language changes and unbinding.
     @Test
     void pickerOverridesAndFormattersRemainApplicationOwned() {
         FxTestUtils.runOnFxThread(() -> {
@@ -119,8 +213,9 @@ final class M3PickerFieldLocalizationTest {
             TaggedLocalizer second = new TaggedLocalizer("second");
             M3DatePickerField date = new M3DatePickerField();
             M3TimePickerField time = new M3TimePickerField();
-            VBox root = new VBox(date, time);
-            M3Localizer.install(root, first);
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            date.localizerProperty().bind(language);
+            time.localizerProperty().bind(language);
             assertEquals(first.getInvalidDateText(), date.invalidTextErrorTextProperty().get());
             assertEquals(first.getDateOutOfRangeText(), date.rangeErrorTextProperty().get());
             date.setInvalidTextErrorText(date.getInvalidTextErrorText());
@@ -134,7 +229,7 @@ final class M3PickerFieldLocalizationTest {
             date.setFormatter(formatter);
             date.setText("invalid");
             date.validate();
-            M3Localizer.install(root, second);
+            language.set(second);
             assertEquals(first.getInvalidDateText(), date.getValidationErrorText());
             assertEquals(first.getInvalidTimeText(), time.getValidationErrorText());
             assertEquals(date.getInvalidTextErrorText(), date.invalidTextErrorTextProperty().get());
@@ -150,7 +245,7 @@ final class M3PickerFieldLocalizationTest {
             assertEquals(second.getDateOutOfRangeText(), date.getValidationErrorText());
             SimpleStringProperty customRange = new SimpleStringProperty("custom range error");
             date.rangeErrorTextProperty().bind(customRange);
-            M3Localizer.install(root, first);
+            language.set(first);
             assertEquals("custom range error", date.getValidationErrorText());
             assertEquals("updated parse error", time.getValidationErrorText());
             assertEquals(date.getRangeErrorText(), date.rangeErrorTextProperty().get());
@@ -170,8 +265,7 @@ final class M3PickerFieldLocalizationTest {
             TaggedLocalizer first = new TaggedLocalizer("first");
             TaggedLocalizer second = new TaggedLocalizer("second");
             M3DateRangePickerField field = new M3DateRangePickerField();
-            VBox root = new VBox(field);
-            M3Localizer.install(root, first);
+            field.setLocalizer(first);
             assertEquals(first.getDateRangeText(), field.getLabelText());
             assertEquals(first.getStartDateText(), field.getStartLabelText());
             assertEquals(first.getStartDateText(), field.getStartInputLayout().getLabelText());
@@ -187,7 +281,7 @@ final class M3PickerFieldLocalizationTest {
             field.endLabelTextProperty().bind(endLabel);
             field.setStartText("invalid");
             assertFalse(field.commitEditorText());
-            M3Localizer.install(root, second);
+            field.setLocalizer(second);
             assertEquals(first.getStartDateText(), field.getStartInputLayout().getLabelText());
             assertEquals(compositeLabel, field.getLabelText());
             assertEquals("custom end", field.getEndInputLayout().getLabelText());
@@ -197,7 +291,7 @@ final class M3PickerFieldLocalizationTest {
                     field.getStartInputLayout().getTrailing().getAccessibleText());
             assertEquals("invalid", field.getStartText());
             field.setInvalidTextErrorText(field.getInvalidTextErrorText());
-            M3Localizer.install(root, first);
+            field.setLocalizer(first);
             assertEquals(second.getInvalidDateRangeText(), field.getValidationErrorText());
             assertEquals(field.getInvalidTextErrorText(), field.invalidTextErrorTextProperty().get());
 
@@ -206,12 +300,12 @@ final class M3PickerFieldLocalizationTest {
             assertFalse(field.commitEditorText());
             assertEquals(first.getDateRangeOutOfRangeText(), field.getValidationErrorText());
             field.rangeErrorTextProperty().set(field.getRangeErrorText());
-            M3Localizer.install(root, second);
+            field.setLocalizer(second);
             assertEquals(first.getDateRangeOutOfRangeText(), field.getValidationErrorText());
             assertEquals(field.getRangeErrorText(), field.rangeErrorTextProperty().get());
             SimpleStringProperty customRange = new SimpleStringProperty("custom range");
             field.rangeErrorTextProperty().bind(customRange);
-            M3Localizer.install(root, first);
+            field.setLocalizer(first);
             assertEquals("custom range", field.getValidationErrorText());
             customRange.set("updated range");
             assertEquals("updated range", field.getValidationErrorText());
@@ -244,7 +338,7 @@ final class M3PickerFieldLocalizationTest {
         });
     }
 
-    /// Disposed skins stop receiving updates and replacement skins resolve the current scope.
+    /// Disposed skins stop receiving updates and replacement skins use the current localizer.
     @Test
     void clearButtonLocalizationEndsWithSkinLifetime() {
         FxTestUtils.runOnFxThread(() -> {
@@ -254,17 +348,16 @@ final class M3PickerFieldLocalizationTest {
             editor.setText("text");
             M3TextInputLayout layout = new M3TextInputLayout(editor);
             layout.setClearButtonEnabled(true);
-            VBox root = new VBox(layout);
-            M3Localizer.install(root, first);
+            layout.setLocalizer(first);
             M3TextInputLayoutSkin skin = new M3TextInputLayoutSkin(layout);
             layout.setSkin(skin);
             Node oldButton = assertInstanceOf(Node.class, skin.clearButton());
             assertEquals(first.getClearActionText(), oldButton.getAccessibleText());
             oldButton.setAccessibleText("temporary internal text");
-            M3Localizer.install(root, second);
+            layout.setLocalizer(second);
             assertEquals(second.getClearActionText(), oldButton.getAccessibleText());
             layout.setSkin(null);
-            M3Localizer.install(root, first);
+            layout.setLocalizer(first);
             assertEquals(second.getClearActionText(), oldButton.getAccessibleText());
             M3TextInputLayoutSkin replacement = new M3TextInputLayoutSkin(layout);
             layout.setSkin(replacement);
@@ -272,10 +365,10 @@ final class M3PickerFieldLocalizationTest {
             assertEquals(first.getClearActionText(), newButton.getAccessibleText());
             SimpleStringProperty customText = new SimpleStringProperty("custom clear");
             newButton.accessibleTextProperty().bind(customText);
-            M3Localizer.install(root, second);
+            layout.setLocalizer(second);
             assertEquals("custom clear", newButton.getAccessibleText());
             newButton.accessibleTextProperty().unbind();
-            M3Localizer.install(root, first);
+            layout.setLocalizer(first);
             assertEquals(first.getClearActionText(), newButton.getAccessibleText());
             layout.setSkin(null);
         });
@@ -284,7 +377,7 @@ final class M3PickerFieldLocalizationTest {
     /// Provides distinct messages without depending on translations supplied by the default implementation.
     @NotNullByDefault
     private static final class TaggedLocalizer extends M3Localizer {
-        /// Identifies the localization scope in assertions.
+        /// Identifies the localization configuration in assertions.
         private final String tag;
 
         /// Creates one stable set of tagged English messages.

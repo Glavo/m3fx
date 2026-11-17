@@ -25,10 +25,12 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3LocalizedObjectProperty;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -53,7 +55,8 @@ import java.util.Objects;
 ///
 /// The calendar is focus traversable. Arrow keys move by day or week, Page Up and Page Down move by month, and Home
 /// and End move to the first and last day of the displayed month. Keyboard navigation changes selection only when
-/// the target date is enabled. The first weekday follows the effective [M3Localizer] unless explicitly overridden.
+/// the target date is enabled. The first weekday follows this control's [localizer][#localizerProperty()] unless
+/// explicitly overridden.
 ///
 /// A typical bounded picker can be configured as follows:
 ///
@@ -71,7 +74,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DatePicker extends Control implements M3Animated {
+public final class M3DatePicker extends Control implements M3Localized, M3Animated {
 
     /// The pseudo-class applied when the calendar is rendered by a modal picker dialog.
     static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
@@ -95,6 +98,35 @@ public final class M3DatePicker extends Control implements M3Animated {
     public M3DatePicker(LocalDate value) {
         this();
         setValue(value);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The selected date, or `null` when selection is empty.
@@ -197,7 +229,7 @@ public final class M3DatePicker extends Control implements M3Animated {
 
     /// The first calendar weekday, following localization until explicitly assigned or bound.
     private final M3LocalizedObjectProperty<DayOfWeek> firstDayOfWeek =
-            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", M3Localizer.getEffectiveLocalizer(this).getFirstDayOfWeek()) {
+            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", getLocalizer().getFirstDayOfWeek()) {
                 /// Notifies accessibility clients when visible day cells change.
                 @Override
                 protected void invalidated() {
@@ -222,8 +254,8 @@ public final class M3DatePicker extends Control implements M3Animated {
 
     /// Returns the observable property that stores the non-null first calendar weekday.
     ///
-    /// The value follows the effective [M3Localizer], including before a skin is installed, until explicitly
-    /// assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
+    /// The value follows this control's [localizer][#localizerProperty()], even before a skin is installed, until
+    /// explicitly assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
     /// non-null values. Unbinding retains the last bound value and does not restore automatic defaults.
     ///
     /// @return the first-day-of-week property
@@ -622,7 +654,7 @@ public final class M3DatePicker extends Control implements M3Animated {
 
     /// Returns accessible text for the selected date or current month.
     private String accessibleText() {
-        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+        M3Localizer localizer = getLocalizer();
         @Nullable LocalDate selectedDate = getValue();
         YearMonth month = getDisplayedMonth();
         return selectedDate == null

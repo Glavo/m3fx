@@ -19,7 +19,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3DialogPresentation;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3WindowDialogPresentation;
@@ -192,9 +191,6 @@ public final class M3DialogWindow {
     /// The presentation currently reserved for this host, including its showing callback phase.
     private @Nullable M3DialogPresentation activePresentation;
 
-    /// Mirrors the owner's localization only for the lifetime of a presentation.
-    private @Nullable M3LocalizerObserver localizerObserver;
-
     /// Supplies local owner motion to the detached dialog through CSS for one presentation.
     private @Nullable M3PopupContextSynchronizer.MotionContext motionContext;
 
@@ -308,10 +304,6 @@ public final class M3DialogWindow {
             motionContext.stop();
             motionContext = null;
         }
-        if (localizerObserver != null) {
-            localizerObserver.close();
-            localizerObserver = null;
-        }
         activePresentation = null;
     }
 
@@ -329,18 +321,6 @@ public final class M3DialogWindow {
                     new M3PopupContextSynchronizer.MotionContext(owner.getScene().getRoot(), root, null);
             motionContext = context;
             context.start();
-            if (localizerObserver != null) {
-                localizerObserver.close();
-                localizerObserver = null;
-            }
-            @Nullable M3DialogPresentation presentation = activePresentation;
-            M3LocalizerObserver replacement = new M3LocalizerObserver(owner.getScene().getRoot(),
-                    localizer -> M3LocalizerObserver.inherit(root, localizer));
-            if (presentation != null && activePresentation == presentation) {
-                localizerObserver = replacement;
-            } else {
-                replacement.close();
-            }
         } else {
             root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         }

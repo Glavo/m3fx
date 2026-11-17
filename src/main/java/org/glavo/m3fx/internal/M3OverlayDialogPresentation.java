@@ -59,6 +59,7 @@ public final class M3OverlayDialogPresentation implements M3DialogPresentation {
         M3DialogPane nonNullPane = Objects.requireNonNull(pane, "pane");
         Runnable nonNullDismissRequest = Objects.requireNonNull(dismissRequest, "dismissRequest");
         scrim.animationsEnabledProperty().bind(host.animationsEnabledProperty());
+        scrim.localizerProperty().bind(host.localizerProperty());
         scrim.setOnAction(event -> nonNullDismissRequest.run());
         scrim.setFocusTraversable(false);
         scrim.visibleProperty().addListener((observable, oldVisible, visible) -> {

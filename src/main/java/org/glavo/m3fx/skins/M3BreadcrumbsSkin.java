@@ -37,7 +37,7 @@ public final class M3BreadcrumbsSkin extends SkinBase<M3Breadcrumbs> {
     /// The menu button representing collapsed hierarchy levels.
     private final M3MenuButton overflowButton = new M3MenuButton("…");
 
-    /// Refreshes the internal overflow action's description.
+    /// Observes the breadcrumbs' localizer to refresh the internal overflow action's description.
     private final M3LocalizerObserver localizerObserver;
 
     /// The logical entries currently mirrored into the row, excluding separators.

@@ -38,9 +38,12 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +65,7 @@ import java.util.Objects;
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
-public final class M3SearchView extends Control implements M3Animated {
+public final class M3SearchView extends Control implements M3Localized, M3Animated {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-search-view";
@@ -125,6 +128,35 @@ public final class M3SearchView extends Control implements M3Animated {
     public M3SearchView(String promptText) {
         initialize();
         setPromptText(promptText);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The visual treatment used by this search view.
@@ -601,7 +633,7 @@ public final class M3SearchView extends Control implements M3Animated {
         backButton.animationsEnabledProperty().bind(animationsEnabledProperty());
         backButton.setContainerWidth(48.0);
         backButton.setContainerHeight(48.0);
-        new M3LocalizerObserver(backButton, localizer -> backButton.setAccessibleText(localizer.getBackText()));
+        new M3LocalizerObserver(this, localizer -> backButton.setAccessibleText(localizer.getBackText()));
         backButton.setOnAction(event -> deactivate());
         setLeading(backButton);
     }

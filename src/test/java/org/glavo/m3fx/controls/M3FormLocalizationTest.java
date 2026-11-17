@@ -123,31 +123,40 @@ final class M3FormLocalizationTest {
         assertEquals("From property", property.get());
     }
 
-    /// Defaults follow subtree installations, nearest overrides, removal, and reparenting without a skin.
+    /// Shared application bindings update defaults independently of parents and direct overrides.
     @Test
-    void defaultsFollowInheritedContextWithoutSkins() {
+    void defaultsFollowApplicationBindingsWithoutSkins() {
         FxTestUtils.runOnFxThread(() -> {
             M3NumberField field = new M3NumberField();
             M3ValidationSummary summary = new M3ValidationSummary();
-            M3Localizer fallback = M3Localizer.getEffectiveLocalizer(field);
+            M3Localizer fallback = M3Localizer.getDefault();
+            assertSame(fallback, field.getLocalizer());
+            assertSame(fallback, summary.getLocalizer());
             Pane firstRoot = new Pane(field, summary);
             Pane secondRoot = new Pane();
             TestLocalizer first = new TestLocalizer("First");
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(firstRoot, first);
-            M3Localizer.install(secondRoot, second);
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            field.localizerProperty().bind(language);
+            summary.localizerProperty().bind(language);
             assertDefaults(first, field, summary);
+            assertTrue(field.getInputLayout().localizerProperty().isBound());
+            assertSame(first, field.getInputLayout().getLocalizer());
 
-            M3Localizer.install(field, second);
+            field.localizerProperty().unbind();
+            field.setLocalizer(second);
             assertEquals(second.getInvalidNumberText(), field.getInvalidTextErrorText());
             assertEquals(first.getValidationSummaryTitleText(), summary.getTitleText());
-            M3Localizer.uninstall(field);
+            field.localizerProperty().bind(language);
             assertDefaults(first, field, summary);
 
             firstRoot.getChildren().clear();
             secondRoot.getChildren().addAll(field, summary);
+            assertDefaults(first, field, summary);
+            language.set(second);
             assertDefaults(second, field, summary);
-            M3Localizer.uninstall(secondRoot);
+            assertSame(second, field.getInputLayout().getLocalizer());
+            language.set(fallback);
             assertDefaults(fallback, field, summary);
         });
     }
@@ -158,16 +167,16 @@ final class M3FormLocalizationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3NumberField field = new M3NumberField();
             M3ValidationSummary summary = new M3ValidationSummary();
-            M3Localizer english = M3Localizer.getEffectiveLocalizer(field);
+            M3Localizer english = field.getLocalizer();
             field.setInvalidTextErrorText(english.getInvalidNumberText());
             field.rangeErrorTextProperty().set(english.getNumberOutOfRangeText());
             field.setDecrementAccessibleText(english.getDecrementText());
             field.incrementAccessibleTextProperty().set(english.getIncrementText());
             summary.setTitleText(english.getValidationSummaryTitleText());
             summary.emptyTextProperty().set(english.getNoValidationIssuesText());
-            Pane root = new Pane(field, summary);
-
-            M3Localizer.install(root, new TestLocalizer("Changed"));
+            TestLocalizer changed = new TestLocalizer("Changed");
+            field.setLocalizer(changed);
+            summary.setLocalizer(changed);
             assertDefaults(english, field, summary);
             assertEquals(field.getInvalidTextErrorText(), field.invalidTextErrorTextProperty().get());
             assertEquals(field.getRangeErrorText(), field.rangeErrorTextProperty().get());
@@ -185,7 +194,10 @@ final class M3FormLocalizationTest {
             M3NumberField field = new M3NumberField();
             M3ValidationSummary summary = new M3ValidationSummary();
             M3DateRangePickerField range = new M3DateRangePickerField();
-            Pane root = new Pane(field, summary, range);
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(M3Localizer.getDefault());
+            field.localizerProperty().bind(language);
+            summary.localizerProperty().bind(language);
+            range.localizerProperty().bind(language);
             @Unmodifiable List<StringProperty> properties = List.of(field.invalidTextErrorTextProperty(),
                     field.rangeErrorTextProperty(), field.decrementAccessibleTextProperty(),
                     field.incrementAccessibleTextProperty(), summary.titleTextProperty(), summary.emptyTextProperty(),
@@ -194,7 +206,7 @@ final class M3FormLocalizationTest {
             for (StringProperty property : properties) {
                 property.bind(new SimpleStringProperty(property.get()));
             }
-            M3Localizer.install(root, new TestLocalizer("Same bound values"));
+            language.set(new TestLocalizer("Same bound values"));
             for (int index = 0; index < properties.size(); index++) {
                 assertEquals(defaults.get(index), properties.get(index).get());
             }
@@ -202,7 +214,7 @@ final class M3FormLocalizationTest {
             for (StringProperty property : properties) {
                 property.bind(source);
             }
-            M3Localizer.install(root, new TestLocalizer("Bound"));
+            language.set(new TestLocalizer("Bound"));
             for (StringProperty property : properties) {
                 assertTrue(property.isBound());
                 assertEquals(source.get(), property.get());
@@ -212,21 +224,22 @@ final class M3FormLocalizationTest {
                 assertEquals(source.get(), property.get());
                 property.unbind();
             }
-            M3Localizer.install(root, new TestLocalizer("Unbound"));
+            language.set(new TestLocalizer("Unbound"));
             for (StringProperty property : properties) {
                 assertEquals(source.get(), property.get());
             }
 
             M3NumberField bidirectionalField = new M3NumberField();
             M3ValidationSummary bidirectionalSummary = new M3ValidationSummary();
-            root.getChildren().addAll(bidirectionalField, bidirectionalSummary);
+            bidirectionalField.localizerProperty().bind(language);
+            bidirectionalSummary.localizerProperty().bind(language);
             SimpleStringProperty action = new SimpleStringProperty(bidirectionalField.getIncrementAccessibleText());
             SimpleStringProperty title = new SimpleStringProperty(bidirectionalSummary.getTitleText());
             String oldAction = action.get();
             String oldTitle = title.get();
             bidirectionalField.incrementAccessibleTextProperty().bindBidirectional(action);
             bidirectionalSummary.titleTextProperty().bindBidirectional(title);
-            M3Localizer.install(root, new TestLocalizer("Bidirectional"));
+            language.set(new TestLocalizer("Bidirectional"));
             assertEquals(oldAction, action.get());
             assertEquals(oldAction, bidirectionalField.getIncrementAccessibleText());
             assertEquals(oldTitle, title.get());
@@ -256,7 +269,7 @@ final class M3FormLocalizationTest {
             AtomicInteger textChanges = new AtomicInteger();
             field.textProperty().addListener((observable, oldValue, newValue) -> textChanges.incrementAndGet());
             TestLocalizer first = new TestLocalizer("First");
-            M3Localizer.install(field, first);
+            field.setLocalizer(first);
             assertEquals(first.getInvalidNumberText(), field.getValidationErrorText());
             assertEquals("Application error", field.getErrorText());
             assertEquals("unfinished-", field.getText());
@@ -270,20 +283,20 @@ final class M3FormLocalizationTest {
             field.setText("11");
             assertFalse(field.commitEditorText());
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(field, second);
+            field.setLocalizer(second);
             assertEquals(second.getNumberOutOfRangeText(), field.getValidationErrorText());
             assertEquals("11", field.getText());
             assertEquals(4.0, field.getValue());
             field.clearValidation();
             field.setText("-");
-            M3Localizer.install(field, first);
+            field.setLocalizer(first);
             assertFalse(field.isValidationActive());
             assertEquals("-", field.getText());
 
             M3NumberField defaultFormatterField = new M3NumberField(1.5);
             NumberFormat captured = defaultFormatterField.getFormatter();
             String originalText = defaultFormatterField.getText();
-            M3Localizer.install(defaultFormatterField, new M3Localizer(Locale.GERMANY));
+            defaultFormatterField.setLocalizer(new M3Localizer(Locale.GERMANY));
             assertSame(captured, defaultFormatterField.getFormatter());
             assertEquals(originalText, defaultFormatterField.getText());
         });
@@ -296,7 +309,7 @@ final class M3FormLocalizationTest {
             M3NumberField field = new M3NumberField();
             field.setSkin(new M3NumberFieldSkin(field, field.getInputLayout()));
             TestLocalizer first = new TestLocalizer("First");
-            M3Localizer.install(field, first);
+            field.setLocalizer(first);
             Node stepper = Objects.requireNonNull(field.getInputLayout().getTrailing());
             Node decrement = Objects.requireNonNull(stepper.lookup(".m3-number-field-decrement-button"));
             Node increment = Objects.requireNonNull(stepper.lookup(".m3-number-field-increment-button"));
@@ -305,7 +318,7 @@ final class M3FormLocalizationTest {
             field.setIncrementAccessibleText("Application increment");
             field.setSkin(null);
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(field, second);
+            field.setLocalizer(second);
             field.setSkin(new M3NumberFieldSkin(field, field.getInputLayout()));
             assertEquals(second.getDecrementText(), decrement.getAccessibleText());
             assertEquals("Application increment", increment.getAccessibleText());
@@ -325,9 +338,8 @@ final class M3FormLocalizationTest {
             summary.setTitleText("Application title");
             summary.setEmptyText("Application empty state");
             summary.setSkin(new M3ValidationSummarySkin(summary));
-            Pane root = new Pane(summary, input);
             TestLocalizer first = new TestLocalizer("First");
-            M3Localizer.install(root, first);
+            summary.setLocalizer(first);
             Node row = Objects.requireNonNull(summary.lookup(".m3-validation-summary-item"));
             Label label = label(summary, ".m3-validation-summary-item-label");
             Label error = label(summary, ".m3-validation-summary-item-error");
@@ -336,7 +348,7 @@ final class M3FormLocalizationTest {
             assertEquals(first.getFieldText() + ": " + first.getInvalidValueText(), row.getAccessibleText());
 
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(root, second);
+            summary.setLocalizer(second);
             assertSame(row, summary.lookup(".m3-validation-summary-item"));
             assertEquals(second.getFieldText(), label.getText());
             assertEquals(second.getInvalidValueText(), error.getText());
@@ -344,7 +356,7 @@ final class M3FormLocalizationTest {
             input.setLabelText("Application field");
             input.setValidator((control, text) -> "Application validation");
             assertFalse(input.validate());
-            M3Localizer.install(root, first);
+            summary.setLocalizer(first);
             assertEquals("Application field", label.getText());
             assertEquals("Application validation", error.getText());
 
@@ -353,7 +365,7 @@ final class M3FormLocalizationTest {
             assertFalse(input.validate());
             assertEquals(first.getFieldText(), label.getText());
             summary.setSkin(null);
-            M3Localizer.install(root, second);
+            summary.setLocalizer(second);
             assertEquals(first.getFieldText(), label.getText());
             summary.setSkin(new M3ValidationSummarySkin(summary));
             assertEquals(second.getFieldText(), label(summary, ".m3-validation-summary-item-label").getText());
@@ -371,7 +383,7 @@ final class M3FormLocalizationTest {
             summary.setShowWhenValid(true);
             summary.setSkin(new M3ValidationSummarySkin(summary));
             for (TestLocalizer localizer : List.of(new TestLocalizer("First"), new TestLocalizer("Second"))) {
-                M3Localizer.install(summary, localizer);
+                summary.setLocalizer(localizer);
                 assertEquals(localizer.getValidationSummaryTitleText(), label(summary, ".m3-validation-summary-title").getText());
                 assertEquals(localizer.getNoValidationIssuesText(), label(summary, ".m3-validation-summary-empty-text").getText());
                 assertEquals(localizer.getValidationSummaryTitleText() + " " + localizer.getNoValidationIssuesText(),

@@ -40,6 +40,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
@@ -47,6 +48,7 @@ import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -91,7 +93,7 @@ import java.util.function.Function;
 /// @param <T> the value type edited by the field
 /// @param <P> the popup picker control type
 @NotNullByDefault
-public abstract sealed class M3PickerField<T, P extends Control> extends Control implements M3Animated, M3FormInput
+public abstract sealed class M3PickerField<T, P extends Control & M3Localized> extends Control implements M3Localized, M3Animated, M3FormInput
         permits M3DatePickerField, M3TimePickerField {
 
     /// The default style class.
@@ -145,7 +147,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Whether the committed-value property currently has a unidirectional binding.
     private final ReadOnlyBooleanWrapper valueBound = new ReadOnlyBooleanWrapper(this, "valueBound");
 
-    /// Retains scoped localization updates for this control's lifetime.
+    /// Retains direct localization updates for this control's lifetime.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates a picker field around the supplied popup picker.
@@ -180,12 +182,15 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText");
         Objects.requireNonNull(rangeErrorText, "rangeErrorText");
         Objects.requireNonNull(openButtonAccessibleText, "openButtonAccessibleText");
-        M3Localizer initialLocalizer = M3Localizer.getEffectiveLocalizer(this);
+        M3Localizer initialLocalizer = getLocalizer();
         this.invalidTextErrorText = new M3LocalizedStringProperty(
                 this, "invalidTextErrorText", invalidTextErrorText.apply(initialLocalizer));
         this.rangeErrorText = new M3LocalizedStringProperty(
                 this, "rangeErrorText", rangeErrorText.apply(initialLocalizer));
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
+        // The field owns both the popup picker and its input layout.
+        picker.localizerProperty().bind(localizerProperty());
+        inputLayout.localizerProperty().bind(localizerProperty());
         editor.textProperty().bindBidirectional(text);
         editor.variantProperty().bindBidirectional(variant);
         inputLayout.characterCounterVisibleProperty().bindBidirectional(characterCounterVisible);
@@ -203,6 +208,35 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
             this.rangeErrorText.updateDefault(rangeErrorText.apply(localizer));
             refreshActiveValidation();
         });
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The selected and committed picker value.
@@ -705,7 +739,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable non-null parse-error-message property.
     ///
-    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// The default follows this control's localizer until explicitly assigned or bound, including assignments equal
     /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the parse-error-message property
@@ -733,7 +767,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the observable, bindable non-null range-error-message property.
     ///
-    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// The default follows this control's localizer until explicitly assigned or bound, including assignments equal
     /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the range-error-message property
@@ -834,6 +868,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns the Material text input layout used by this picker field.
     ///
+    /// Its localizer property is bound to this field's [#localizerProperty()].
+    ///
     /// @return the Material text input layout used by this picker field
     final M3TextInputLayout getInputLayout() {
         return inputLayout;
@@ -842,7 +878,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Returns this field's picker control.
     ///
     /// The same picker instance is returned on every call. Changes to its supported configuration, such as selectable
-    /// range and presentation properties, affect subsequent picker interactions.
+    /// range and presentation properties, affect subsequent picker interactions. Its localizer property is bound to
+    /// this field's [#localizerProperty()].
     ///
     /// @return this field's picker control
     public final P getPicker() {

@@ -11,9 +11,9 @@ import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3LocalizedTextDefault;
+import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.glavo.m3fx.internal.M3PresetNavigation;
@@ -33,8 +33,8 @@ import java.time.LocalDate;
 /// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is managed by this dialog and must not be added to another parent. Optional presets are exposed as a
-/// live ordered list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured
-/// through the picker. Present the configured dialog in an existing scene with
+/// live ordered list and appear beside the calendar. Bounds and adjacent-month display are configured through the
+/// picker; its localizer follows this dialog's [#localizerProperty()]. Present the configured dialog in a scene with
 /// [M3OverlayPane#showDialog(M3Dialog)] or in a dedicated native window with
 /// [M3DialogWindow#showDialog(M3Dialog)].
 ///
@@ -54,7 +54,7 @@ import java.time.LocalDate;
 /// }
 /// ```
 ///
-/// The pane headline and action labels follow the effective localizer until customized or bound. Assigning the
+/// The pane headline and action labels follow this dialog's localizer until customized or bound. Assigning the
 /// headline explicitly preserves it even when unchanged. JavaFX does not notify unchanged action-text assignments;
 /// those labels continue following localization unless their value changes or their text property is bound.
 ///
@@ -72,7 +72,7 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
     ///
-    /// The headline and action labels follow the pane's effective localizer until explicitly customized.
+    /// The headline and action labels follow this dialog's localizer until explicitly customized.
     public M3DatePickerDialog() {
         initialize();
     }
@@ -152,9 +152,9 @@ public final class M3DatePickerDialog extends M3Dialog {
     /// Tracks application ownership of the existing confirmation action text.
     private final M3LocalizedTextDefault confirmText = new M3LocalizedTextDefault(confirmAction.textProperty());
 
-    /// Retains inherited localization observation for this reusable dialog's lifetime.
+    /// Retains direct localization observation for this reusable dialog's lifetime.
     private final M3LocalizerObserver localizerObserver =
-            new M3LocalizerObserver(getDialogPane(), this::refreshLocalization);
+            new M3LocalizerObserver(this, this::refreshLocalization);
 
     /// Refreshes only text that has not been customized or bound by the application.
     private void refreshLocalization(M3Localizer localizer) {
@@ -192,6 +192,8 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Returns the date picker owned and displayed by this dialog.
     ///
+    /// Its localizer property is bound to this dialog's [#localizerProperty()].
+    ///
     /// @return the date picker displayed by this dialog
     public M3DatePicker getPicker() {
         return picker;
@@ -210,6 +212,8 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Configures dialog content, buttons, value synchronization, and button state.
     private void initialize() {
+        // This dialog owns the picker and controls its built-in text for the picker lifetime.
+        picker.localizerProperty().bind(localizerProperty());
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
                 value.set(newValue);

@@ -36,8 +36,10 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3NumberFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -64,8 +66,8 @@ import java.util.Objects;
 ///
 /// Parsing and display use [#formatterProperty()]. The initial formatter is a number formatter for the default
 /// format locale at construction time and is not replaced by localization changes. Default validation and action
-/// text follows the inherited [M3Localizer] until explicitly assigned or bound, even to the current default text.
-/// Unbinding retains the last application value.
+/// text follows this control's [localizer][#localizerProperty()] until explicitly assigned or bound, even to the
+/// current default text. Unbinding retains the last application value.
 /// Localization changes preserve pending editor text. The step buttons can be hidden without disabling keyboard,
 /// scrolling, or accessibility actions.
 ///
@@ -79,7 +81,7 @@ import java.util.Objects;
 /// See [Adobe Spectrum 2 NumberField](https://react-spectrum.adobe.com/NumberField) and
 /// [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
-public final class M3NumberField extends javafx.scene.control.Control implements M3Animated, M3FormInput {
+public final class M3NumberField extends javafx.scene.control.Control implements M3Localized, M3Animated, M3FormInput {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-number-field";
@@ -139,7 +141,7 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     /// Whether the committed-value property currently has a unidirectional binding.
     private final ReadOnlyBooleanWrapper valueBound = new ReadOnlyBooleanWrapper(this, "valueBound");
 
-    /// Observes inherited message defaults for this control's lifetime, independently of its skin.
+    /// Observes this control's message defaults for its lifetime, independently of its skin.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates an empty number field with an unrestricted range and a step of one.
@@ -169,6 +171,35 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         setMin(min);
         setMax(max);
         setValue(value);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The committed numeric value, or `null` when the field is empty.
@@ -843,9 +874,9 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// The message shown when non-empty editor text cannot be parsed completely.
     ///
-    /// @defaultValue the inherited localizer's invalid-number message
+    /// @defaultValue the invalid-number message from [#getLocalizer()]
     private final M3LocalizedStringProperty invalidTextErrorText =
-            new M3LocalizedStringProperty(this, "invalidTextErrorText", M3Localizer.getEffectiveLocalizer(this).getInvalidNumberText());
+            new M3LocalizedStringProperty(this, "invalidTextErrorText", getLocalizer().getInvalidNumberText());
 
     /// Returns the message used for unparseable text.
     ///
@@ -871,9 +902,9 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// The message shown when validate commits reject range or step alignment.
     ///
-    /// @defaultValue the inherited localizer's number-range message
+    /// @defaultValue the number-range message from [#getLocalizer()]
     private final M3LocalizedStringProperty rangeErrorText =
-            new M3LocalizedStringProperty(this, "rangeErrorText", M3Localizer.getEffectiveLocalizer(this).getNumberOutOfRangeText());
+            new M3LocalizedStringProperty(this, "rangeErrorText", getLocalizer().getNumberOutOfRangeText());
 
     /// Returns the message used for range and step errors.
     ///
@@ -899,9 +930,9 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// The non-null accessible label for the decrement button.
     ///
-    /// @defaultValue the inherited localizer's decrement action description
+    /// @defaultValue the decrement action description from [#getLocalizer()]
     private final M3LocalizedStringProperty decrementAccessibleText =
-            new M3LocalizedStringProperty(this, "decrementAccessibleText", M3Localizer.getEffectiveLocalizer(this).getDecrementText());
+            new M3LocalizedStringProperty(this, "decrementAccessibleText", getLocalizer().getDecrementText());
 
     /// Returns the decrement button's accessible text.
     ///
@@ -927,9 +958,9 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// The non-null accessible label for the increment button.
     ///
-    /// @defaultValue the inherited localizer's increment action description
+    /// @defaultValue the increment action description from [#getLocalizer()]
     private final M3LocalizedStringProperty incrementAccessibleText =
-            new M3LocalizedStringProperty(this, "incrementAccessibleText", M3Localizer.getEffectiveLocalizer(this).getIncrementText());
+            new M3LocalizedStringProperty(this, "incrementAccessibleText", getLocalizer().getIncrementText());
 
     /// Returns the increment button's accessible text.
     ///
@@ -1009,6 +1040,8 @@ public final class M3NumberField extends javafx.scene.control.Control implements
     }
 
     /// Returns the field-owned text input layout for default-skin construction.
+    ///
+    /// Its localizer property is bound to this field's [#localizerProperty()].
     ///
     /// @return the field-owned text input layout
     final M3TextInputLayout getInputLayout() {
@@ -1193,6 +1226,8 @@ public final class M3NumberField extends javafx.scene.control.Control implements
 
     /// Adds style identity, property wiring, actions, and input handlers.
     private void initialize() {
+        // The field owns the layout and its built-in counter and clear-button text.
+        inputLayout.localizerProperty().bind(localizerProperty());
         editor.animationsEnabledProperty().bind(animationsEnabledProperty());
         inputLayout.animationsEnabledProperty().bind(animationsEnabledProperty());
         decrementButton.animationsEnabledProperty().bind(animationsEnabledProperty());

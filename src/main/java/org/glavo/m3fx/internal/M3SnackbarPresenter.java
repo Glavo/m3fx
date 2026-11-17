@@ -34,6 +34,8 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.localization.M3Localized;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -50,7 +52,7 @@ import java.util.Objects;
 /// models and never enter the JavaFX scene graph. Queueing, automatic timeout, motion, focus routing, and
 /// accessibility therefore remain stable while the current model or its properties change.
 @NotNullByDefault
-public final class M3SnackbarPresenter extends Control implements M3Animated {
+public final class M3SnackbarPresenter extends Control implements M3Localized, M3Animated {
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-snackbar-presenter";
 
@@ -201,6 +203,35 @@ public final class M3SnackbarPresenter extends Control implements M3Animated {
         this.snackbar.addListener((observable, oldSnackbar, newSnackbar) ->
                 observeSnackbar(oldSnackbar, newSnackbar));
         focusNotifier.start();
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// Backing property for the current message exposed by the overlay pane.

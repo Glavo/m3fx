@@ -15,10 +15,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3LocalizedObjectProperty;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests inherited calendar localization, explicit overrides, and observer disposal for both calendar controls.
+/// Tests calendar localization properties, explicit overrides, and observer disposal for both calendar controls.
 @NotNullByDefault
 final class M3CalendarLocalizationTest {
     /// The selected date shared by the test calendars.
@@ -60,11 +62,13 @@ final class M3CalendarLocalizationTest {
                 Pane root = new Pane(picker);
                 M3Localizer american = new M3Localizer(Locale.US);
                 M3Localizer french = new M3Localizer(Locale.FRANCE);
+                M3Localized localized = (M3Localized) picker;
                 ObjectProperty<DayOfWeek> property = firstWeekdayProperty(picker);
-                assertSame(M3Localizer.getEffectiveLocalizer(picker).getFirstDayOfWeek(), property.get());
+                assertSame(localized.getLocalizer().getFirstDayOfWeek(), property.get());
                 assertSame(property.get(), firstWeekday(picker));
                 assertNull(picker.getSkin());
-                M3Localizer.install(root, american);
+                ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(american);
+                localized.localizerProperty().bind(language);
                 assertEquals(DayOfWeek.SUNDAY, property.get());
                 List<DayOfWeek> changes = new ArrayList<>();
                 List<DayOfWeek> getterValues = new ArrayList<>();
@@ -73,20 +77,23 @@ final class M3CalendarLocalizationTest {
                     changes.add(newValue);
                     getterValues.add(firstWeekday(picker));
                 });
-                M3Localizer.install(root, french);
-                M3Localizer.install(root, french);
-                M3Localizer.install(root, new MarkedLocalizer(Locale.FRANCE));
+                language.set(french);
+                language.set(french);
+                language.set(new MarkedLocalizer(Locale.FRANCE));
                 assertEquals(List.of(DayOfWeek.MONDAY), changes);
-                M3Localizer.install(picker, american);
-                M3Localizer.uninstall(picker);
+                localized.localizerProperty().unbind();
+                localized.setLocalizer(american);
+                localized.localizerProperty().bind(language);
                 assertEquals(List.of(DayOfWeek.MONDAY, DayOfWeek.SUNDAY, DayOfWeek.MONDAY), changes);
                 assertEquals(changes, getterValues);
                 assertSame(property.get(), firstWeekday(picker));
                 root.getChildren().remove(picker);
-                assertEquals(1, root.getProperties().size(), "detaching must release the ancestor context");
                 Pane newRoot = new Pane();
-                M3Localizer.install(newRoot, american);
                 newRoot.getChildren().add(picker);
+                assertEquals(DayOfWeek.MONDAY, property.get());
+                assertEquals(changes, getterValues);
+                assertEquals(3, changes.size());
+                language.set(american);
                 assertEquals(DayOfWeek.SUNDAY, property.get());
                 assertSame(property.get(), firstWeekday(picker));
             }
@@ -99,7 +106,7 @@ final class M3CalendarLocalizationTest {
         FxTestUtils.runOnFxThread(() -> {
             for (boolean useSetter : List.of(false, true)) {
                 for (Control picker : createPickers()) {
-                    M3Localizer.install(picker, new M3Localizer(Locale.US));
+                    ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.US));
                     ObjectProperty<DayOfWeek> property = firstWeekdayProperty(picker);
                     if (!useSetter) {
                         property.set(property.get());
@@ -111,7 +118,7 @@ final class M3CalendarLocalizationTest {
                     }
                     List<DayOfWeek> changes = new ArrayList<>();
                     property.addListener((observable, oldValue, newValue) -> changes.add(newValue));
-                    M3Localizer.install(picker, new M3Localizer(Locale.FRANCE));
+                    ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.FRANCE));
                     assertEquals(DayOfWeek.SUNDAY, property.get());
                     assertSame(property.get(), firstWeekday(picker));
                     assertTrue(changes.isEmpty());
@@ -125,11 +132,11 @@ final class M3CalendarLocalizationTest {
     void boundFirstWeekdayRetainsOwnershipAfterUnbinding() {
         FxTestUtils.runOnFxThread(() -> {
             for (Control picker : createPickers()) {
-                M3Localizer.install(picker, new M3Localizer(Locale.US));
+                ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.US));
                 ObjectProperty<DayOfWeek> property = firstWeekdayProperty(picker);
                 ObjectProperty<DayOfWeek> source = new SimpleObjectProperty<>(property.get());
                 property.bind(source);
-                M3Localizer.install(picker, new M3Localizer(Locale.FRANCE));
+                ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.FRANCE));
                 assertTrue(property.isBound());
                 assertEquals(DayOfWeek.SUNDAY, property.get());
                 assertThrows(RuntimeException.class, () -> property.set(DayOfWeek.MONDAY));
@@ -137,7 +144,7 @@ final class M3CalendarLocalizationTest {
                 assertEquals(DayOfWeek.FRIDAY, firstWeekday(picker));
                 property.unbind();
                 assertFalse(property.isBound());
-                M3Localizer.install(picker, new M3Localizer(Locale.US));
+                ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.US));
                 assertEquals(DayOfWeek.FRIDAY, property.get());
                 assertSame(property.get(), firstWeekday(picker));
             }
@@ -149,7 +156,7 @@ final class M3CalendarLocalizationTest {
     void firstWeekdayRejectsNullWithoutTakingOwnership() {
         FxTestUtils.runOnFxThread(() -> {
             for (Control picker : createPickers()) {
-                M3Localizer.install(picker, new M3Localizer(Locale.US));
+                ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.US));
                 ObjectProperty<DayOfWeek> property = firstWeekdayProperty(picker);
                 assertThrows(NullPointerException.class, () -> property.set(null));
                 assertThrows(NullPointerException.class, () -> property.bind(new SimpleObjectProperty<>()));
@@ -159,7 +166,7 @@ final class M3CalendarLocalizationTest {
                     M3DateRangePicker range = (M3DateRangePicker) picker;
                     assertThrows(NullPointerException.class, () -> range.setFirstDayOfWeek(null));
                 }
-                M3Localizer.install(picker, new M3Localizer(Locale.FRANCE));
+                ((M3Localized) picker).setLocalizer(new M3Localizer(Locale.FRANCE));
                 assertEquals(DayOfWeek.MONDAY, property.get());
                 assertSame(property.get(), firstWeekday(picker));
             }
@@ -171,7 +178,7 @@ final class M3CalendarLocalizationTest {
     void localizedObjectPropertyRejectsNullBoundReads() {
         M3LocalizedObjectProperty<DayOfWeek> property =
                 new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", DayOfWeek.SUNDAY);
-        ObjectProperty<DayOfWeek> source = new SimpleObjectProperty<>(DayOfWeek.MONDAY);
+        ObjectProperty<@Nullable DayOfWeek> source = new SimpleObjectProperty<>(DayOfWeek.MONDAY);
         property.bind(source);
         source.set(null);
         assertThrows(NullPointerException.class, property::get);
@@ -181,40 +188,42 @@ final class M3CalendarLocalizationTest {
         property.unbind();
     }
 
-    /// Verifies text, grid order, accessibility, and node reuse on installation, replacement, and reparenting.
+    /// Verifies text, grid order, accessibility, and node reuse across property changes and reparenting.
     @Test
-    void skinsRefreshInheritedAndSameLocaleReplacements() {
+    void skinsRefreshBoundAndSameLocaleReplacements() {
         FxTestUtils.runOnFxThread(() -> {
             for (Control picker : createPickers()) {
                 Pane root = new Pane(picker);
                 M3Localizer american = new M3Localizer(Locale.US);
                 M3Localizer french = new M3Localizer(Locale.FRANCE);
-                M3Localizer.install(root, american);
+                M3Localized localized = (M3Localized) picker;
+                ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(american);
+                localized.localizerProperty().bind(language);
                 installSkin(picker);
                 GridPane grid = assertInstanceOf(GridPane.class, picker.lookup(".m3-date-picker-day-grid"));
                 @Unmodifiable List<Node> cells = List.copyOf(grid.getChildren());
                 assertCalendarText(picker, american);
 
-                M3Localizer.install(root, french);
+                language.set(french);
                 assertCalendarText(picker, french);
                 M3Localizer replacement = new MarkedLocalizer(Locale.FRANCE);
-                M3Localizer.install(root, replacement);
+                language.set(replacement);
                 assertCalendarText(picker, replacement);
                 Pane newRoot = new Pane();
-                M3Localizer.install(newRoot, french);
                 root.getChildren().remove(picker);
                 newRoot.getChildren().add(picker);
-                assertCalendarText(picker, french);
-                M3Localizer.install(picker, replacement);
-                M3Localizer.install(newRoot, american);
                 assertCalendarText(picker, replacement);
-                M3Localizer.uninstall(picker);
+                localized.localizerProperty().unbind();
+                localized.setLocalizer(replacement);
+                language.set(american);
+                assertCalendarText(picker, replacement);
+                localized.localizerProperty().bind(language);
                 assertCalendarText(picker, american);
                 firstWeekdayProperty(picker).set(DayOfWeek.SATURDAY);
-                M3Localizer.install(newRoot, french);
+                language.set(french);
                 assertEquals(DayOfWeek.SATURDAY, firstWeekday(picker));
                 assertCalendarText(picker, french);
-                M3Localizer.install(newRoot, american);
+                language.set(american);
                 assertCalendarText(picker, american);
                 for (int index = 0; index < cells.size(); index++) {
                     assertSame(cells.get(index), grid.getChildren().get(index));
@@ -244,9 +253,9 @@ final class M3CalendarLocalizationTest {
     void disposedSkinsStopRefreshingCalendarAndHeader() {
         FxTestUtils.runOnFxThread(() -> {
             for (Control picker : createPickers()) {
-                Pane root = new Pane(picker);
                 M3Localizer american = new M3Localizer(Locale.US);
-                M3Localizer.install(root, american);
+                M3Localized localized = (M3Localized) picker;
+                localized.setLocalizer(american);
                 installSkin(picker);
                 M3MenuButton month = assertInstanceOf(M3MenuButton.class,
                         picker.lookup(".m3-date-picker-month-menu-button"));
@@ -254,13 +263,13 @@ final class M3CalendarLocalizationTest {
                 String monthText = month.getText();
                 String dateText = cell.getAccessibleText();
                 picker.setSkin(null);
-                M3Localizer.install(root, new MarkedLocalizer(Locale.FRANCE));
+                localized.setLocalizer(new MarkedLocalizer(Locale.FRANCE));
                 assertEquals(DayOfWeek.MONDAY, firstWeekdayProperty(picker).get());
                 assertSame(firstWeekdayProperty(picker).get(), firstWeekday(picker));
                 assertEquals(monthText, month.getText());
                 assertEquals(dateText, cell.getAccessibleText());
                 installSkin(picker);
-                assertCalendarText(picker, M3Localizer.getEffectiveLocalizer(picker));
+                assertCalendarText(picker, localized.getLocalizer());
                 picker.setSkin(null);
             }
         });

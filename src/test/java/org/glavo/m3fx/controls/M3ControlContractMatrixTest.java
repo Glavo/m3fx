@@ -150,6 +150,7 @@ import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
@@ -44273,7 +44274,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Verifies one generic picker field popup reaches a renderable fallback-styled state in isolation.
-    private static <T, P extends Control> void assertStandalonePickerPopupReady(
+    private static <T, P extends Control & M3Localized> void assertStandalonePickerPopupReady(
             M3PickerField<T, P> field
     ) throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();

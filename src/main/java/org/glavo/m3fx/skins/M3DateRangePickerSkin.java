@@ -105,7 +105,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     private final VBox container = new VBox();
 
     /// The month navigation header.
-    private final M3DatePickerHeader header;
+    private final M3DatePickerHeader<M3DateRangePicker> header;
 
     /// The row containing localized weekday labels.
     private final HBox weekdayRow = new HBox();
@@ -119,7 +119,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     /// The reusable day cell buttons in row-major order.
     private final List<DateCellButton> dayCells = new ArrayList<>(DAY_CELL_COUNT);
 
-    /// Observes the picker's effective localizer until disposal.
+    /// Observes the picker's localizer property until disposal.
     private final M3LocalizerObserver localizerObserver;
 
     /// The localizer used for the currently rendered calendar text.
@@ -155,7 +155,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
     /// @param control the date range picker controlled by this skin
     public M3DateRangePickerSkin(M3DateRangePicker control) {
         super(control);
-        header = new M3DatePickerHeader(
+        header = new M3DatePickerHeader<>(
                 control,
                 control.displayedMonthProperty(),
                 control.minDateProperty(),
@@ -326,7 +326,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker>
         YearMonth displayedMonth = control.getDisplayedMonth();
         DayOfWeek firstDayOfWeek = control.getFirstDayOfWeek();
         boolean showAdjacentMonthDays = control.isShowAdjacentMonthDays();
-        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(control);
+        M3Localizer localizer = control.getLocalizer();
         boolean localizerChanged = localizer != cachedLocalizer;
         boolean monthChanged = !displayedMonth.equals(mappedMonth);
         boolean firstDayChanged = firstDayOfWeek != mappedFirstDayOfWeek;

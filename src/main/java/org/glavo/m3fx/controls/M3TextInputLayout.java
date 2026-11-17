@@ -38,10 +38,13 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TextInputLayoutPresentation;
+import org.glavo.m3fx.localization.M3Localized;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -75,7 +78,7 @@ import java.util.Objects;
 /// boolean valid = emailLayout.validate();
 /// ```
 @NotNullByDefault
-public final class M3TextInputLayout extends Control implements M3Animated, M3FormInput {
+public final class M3TextInputLayout extends Control implements M3Localized, M3Animated, M3FormInput {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-text-input-layout";
@@ -176,6 +179,35 @@ public final class M3TextInputLayout extends Control implements M3Animated, M3Fo
     public M3TextInputLayout(TextInputControl input) {
         this();
         setInput(Objects.requireNonNull(input, "input"));
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The wrapped text input control.

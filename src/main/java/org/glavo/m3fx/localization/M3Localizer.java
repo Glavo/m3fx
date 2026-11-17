@@ -3,8 +3,6 @@
 
 package org.glavo.m3fx.localization;
 
-import javafx.scene.Node;
-import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.time.DayOfWeek;
@@ -24,14 +22,14 @@ import java.util.Objects;
 /// Each method returns final text, not a message pattern. Results must be non-null and stable for the same inputs
 /// throughout the lifetime of this object. Methods are called synchronously and must not perform blocking I/O.
 ///
-/// Install an instance on a node with [#install(Node, M3Localizer)]. That node and its descendants use the instance
-/// until a nearer installation overrides it. Replacing the installed instance updates existing localized controls;
-/// mutating external resources used by an instance does not notify controls. Explicit control text and formatter
-/// settings take precedence over localized defaults. Localization does not change node orientation.
+/// Assign an instance through [M3Localized#localizerProperty()]. Applications can bind multiple components to
+/// one observable localizer. Replacing the instance updates localized defaults; mutating external resources used
+/// by an instance does not notify controls. Explicit control text and formatter settings take precedence over
+/// localized defaults. Localization does not change node orientation or propagate through parent nodes.
 ///
-/// Without an installation, controls use English messages and the default format locale captured when the fallback
-/// localizer is first needed. Installing a localizer on a detached subtree is supported. Access to live nodes follows
-/// the JavaFX Application Thread rules. See [Material Design](https://m3.material.io/) for component terminology.
+/// Components initially use [#getDefault()], which supplies English messages and captures the default format locale
+/// when first needed. Changes to live controls follow the JavaFX Application Thread rules.
+/// See [Material Design](https://m3.material.io/) for component terminology.
 @NotNullByDefault
 public class M3Localizer {
     /// The immutable locale used by the default regional formatting methods.
@@ -58,42 +56,14 @@ public class M3Localizer {
         return locale;
     }
 
-    /// Returns the effective localizer for a node, including inherited and fallback values.
+    /// Returns the shared English localizer used by newly created components.
     ///
-    /// @param node the node whose defaults are being resolved
-    /// @return the nearest installed localizer, or the English fallback
-    /// @throws NullPointerException if `node` is `null`
-    public static M3Localizer getEffectiveLocalizer(Node node) {
-        return M3LocalizerObserver.resolve(Objects.requireNonNull(node, "node"));
-    }
-
-    /// Installs or replaces a node's localizer for itself and its descendants.
+    /// Its regional formatting uses [Locale#getDefault(Locale.Category)] with [Locale.Category#FORMAT], captured
+    /// on first access. Subsequent changes to the process default locale do not change this instance.
     ///
-    /// Installing the same instance again has no effect. Existing controls retain application-supplied text and
-    /// formatting overrides. To change translations, install a new instance rather than mutating an existing one.
-    /// If a control refresh throws a runtime exception, other affected controls are still notified. The new
-    /// installation remains in place; the first failure is rethrown with subsequent failures suppressed.
-    ///
-    /// @param node the root of the localized subtree
-    /// @param localizer the replacement localizer
-    /// @throws NullPointerException if either argument is `null`
-    /// @throws RuntimeException if a control fails to refresh its localized content
-    public static void install(Node node, M3Localizer localizer) {
-        M3LocalizerObserver.install(Objects.requireNonNull(node, "node"),
-                Objects.requireNonNull(localizer, "localizer"));
-    }
-
-    /// Removes a node's installation and restores inheritance from its parent.
-    ///
-    /// Descendant installations are not removed. Calling this method without a direct installation has no effect.
-    /// If a control refresh throws a runtime exception, other affected controls are still notified. The installation
-    /// remains removed; the first failure is rethrown with subsequent failures suppressed.
-    ///
-    /// @param node the root whose direct installation is removed
-    /// @throws NullPointerException if `node` is `null`
-    /// @throws RuntimeException if a control fails to refresh its localized content
-    public static void uninstall(Node node) {
-        M3LocalizerObserver.install(Objects.requireNonNull(node, "node"), null);
+    /// @return the shared default localizer
+    public static M3Localizer getDefault() {
+        return DefaultHolder.INSTANCE;
     }
 
     /// Returns the clear-text action description.
@@ -348,4 +318,15 @@ public class M3Localizer {
     /// @param minute the minute of hour
     /// @return the minute with at least two decimal digits
     public String formatMinute(int minute) { return minute >= 0 && minute < 10 ? "0" + minute : Integer.toString(minute); }
+
+    /// Defers regional-default capture until a component or application requests it.
+    @NotNullByDefault
+    private static final class DefaultHolder {
+        /// The shared English localizer with captured regional defaults.
+        private static final M3Localizer INSTANCE = new M3Localizer(Locale.getDefault(Locale.Category.FORMAT));
+
+        /// Prevents instantiation.
+        private DefaultHolder() {
+        }
+    }
 }

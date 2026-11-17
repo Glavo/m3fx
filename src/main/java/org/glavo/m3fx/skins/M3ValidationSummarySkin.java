@@ -42,7 +42,6 @@ import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3ScrollReveal;
-import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -141,7 +140,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// The validator currently observed by this skin.
     private @Nullable M3FormValidator observedValidator;
 
-    /// Refreshes fallback row messages even when both summary text properties are overridden.
+    /// Observes the summary's localizer for fallback row messages even when summary text is overridden.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates a validation summary skin.
@@ -623,13 +622,13 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         if (textInput != null && !textInput.getPromptText().isBlank()) {
             return textInput.getPromptText();
         }
-        return M3Localizer.getEffectiveLocalizer(getSkinnable()).getFieldText();
+        return getSkinnable().getLocalizer().getFieldText();
     }
 
     /// Returns the error text shown for one invalid input item.
     private String itemError(M3FormInput input) {
         String errorText = input.getValidationErrorText();
-        return errorText.isBlank() ? M3Localizer.getEffectiveLocalizer(getSkinnable()).getInvalidValueText() : errorText;
+        return errorText.isBlank() ? getSkinnable().getLocalizer().getInvalidValueText() : errorText;
     }
 
     /// A cached validation row that owns its content nodes, event routing, and state-layer lifecycle.

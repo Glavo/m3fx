@@ -4,7 +4,7 @@
 /// normally create controls from [org.glavo.m3fx.controls], install an [org.glavo.m3fx.theme.M3Theme] with
 /// [org.glavo.m3fx.theme.M3ThemeManager], and use [org.glavo.m3fx.tokens] only when constructing a custom token set.
 /// [org.glavo.m3fx.animation] provides the public motion scheme and the per-node reduced-motion policy.
-/// [org.glavo.m3fx.localization] supplies overridable English messages and inherited regional formatting.
+/// [org.glavo.m3fx.localization] supplies configurable English defaults and regional formatting for individual components.
 ///
 /// JavaFX Controls and Graphics are transitive requirements because exported M3FX APIs expose JavaFX nodes,
 /// properties, paints, and animation types. [org.glavo.m3fx.layout] provides adaptive breakpoint and scaffold

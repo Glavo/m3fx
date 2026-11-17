@@ -10,7 +10,6 @@ import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
-import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,12 +51,13 @@ final class DatePickersDemoLocalizationTest {
                     sample.lookup(".m3-segmented-button-group"));
             M3MenuButton month = assertInstanceOf(M3MenuButton.class,
                     calendar.lookup(".m3-date-picker-month-menu-button"));
-            assertEquals(Locale.US, M3Localizer.getEffectiveLocalizer(calendar).getLocale());
+            assertEquals(Locale.US, calendar.getLocalizer().getLocale());
             assertEquals(DayOfWeek.SUNDAY, calendar.getFirstDayOfWeek());
 
             language.selectIndex(1);
-            assertEquals(Locale.GERMANY, M3Localizer.getEffectiveLocalizer(calendar).getLocale());
-            assertSame(M3Localizer.getEffectiveLocalizer(calendar), M3Localizer.getEffectiveLocalizer(field));
+            assertEquals(Locale.GERMANY, calendar.getLocalizer().getLocale());
+            assertSame(calendar.getLocalizer(), field.getLocalizer());
+            assertSame(field.getLocalizer(), field.getPicker().getLocalizer());
             assertEquals(Month.OCTOBER.getDisplayName(TextStyle.SHORT_STANDALONE, Locale.GERMANY), month.getText());
             assertEquals(DayOfWeek.MONDAY, calendar.getFirstDayOfWeek());
             assertEquals("Event date", field.getLabelText());

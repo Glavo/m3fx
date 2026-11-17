@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
@@ -12,9 +13,12 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests inherited picker localization, application overrides, localized input, and skin disposal.
+/// Tests explicit picker localization, application overrides, localized input, and skin disposal.
 @NotNullByDefault
 final class M3PickerLocalizationTest {
     /// Starts JavaFX before constructing controls.
@@ -38,9 +42,9 @@ final class M3PickerLocalizationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Dialog titles and actions resolve context from their pane and refresh on reparenting.
+    /// Dialog properties drive titles, actions, and owned pickers independently of pane parentage.
     @Test
-    void dialogDefaultsFollowInheritedPaneContext() {
+    void dialogDefaultsFollowExplicitApplicationBindings() {
         FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog date = new M3DatePickerDialog();
             M3DateRangePickerDialog range = new M3DateRangePickerDialog();
@@ -48,7 +52,10 @@ final class M3PickerLocalizationTest {
             Pane firstRoot = new Pane(date.getDialogPane(), range.getDialogPane(), time.getDialogPane());
             TestLocalizer first = new TestLocalizer("First");
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(firstRoot, first);
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            for (M3Dialog dialog : List.of(date, range, time)) {
+                dialog.localizerProperty().bind(language);
+            }
 
             assertEquals(first.getSelectDateText(), date.getDialogPane().getHeaderText());
             assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
@@ -58,17 +65,81 @@ final class M3PickerLocalizationTest {
                 assertEquals(first.getConfirmText(), dialog.getDialogPane().getActions().get(1).getText());
             }
 
-            M3Localizer.install(time.getDialogPane(), second);
+            assertTrue(date.getPicker().localizerProperty().isBound());
+            assertTrue(range.getPicker().localizerProperty().isBound());
+            assertTrue(time.getPicker().localizerProperty().isBound());
+            assertSame(first, date.getPicker().getLocalizer());
+            assertSame(first, range.getPicker().getLocalizer());
+            assertSame(first, time.getPicker().getLocalizer());
+
+            time.localizerProperty().unbind();
+            time.setLocalizer(second);
             assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeaderText());
-            M3Localizer.uninstall(time.getDialogPane());
+            assertSame(second, time.getPicker().getLocalizer());
+            time.localizerProperty().bind(language);
             assertEquals(first.getSelectTimeText(), time.getDialogPane().getHeaderText());
 
             Pane secondRoot = new Pane();
-            M3Localizer.install(secondRoot, second);
             firstRoot.getChildren().remove(date.getDialogPane());
             secondRoot.getChildren().add(date.getDialogPane());
-            assertEquals(second.getSelectDateText(), date.getDialogPane().getHeaderText());
+            assertEquals(first.getSelectDateText(), date.getDialogPane().getHeaderText());
             assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
+            language.set(second);
+            assertEquals(second.getSelectDateText(), date.getDialogPane().getHeaderText());
+            assertEquals(second.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
+            assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeaderText());
+            assertSame(second, date.getPicker().getLocalizer());
+            assertSame(second, range.getPicker().getLocalizer());
+            assertSame(second, time.getPicker().getLocalizer());
+        });
+    }
+
+    /// Overlay presentation preserves independent and application-bound dialog languages.
+    @Test
+    void overlayDoesNotAssignApplicationDialogLanguage() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlay = new M3OverlayPane();
+            overlay.setContent(new Pane());
+            TestLocalizer hostLanguage = new TestLocalizer("Host");
+            TestLocalizer first = new TestLocalizer("First");
+            TestLocalizer second = new TestLocalizer("Second");
+            overlay.setLocalizer(hostLanguage);
+            M3DatePickerDialog defaultDialog = new M3DatePickerDialog();
+            M3DatePickerDialog boundDialog = new M3DatePickerDialog();
+            SimpleObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            boundDialog.localizerProperty().bind(language);
+            Stage stage = new Stage();
+            Scene scene = new Scene(overlay, 720, 520);
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                M3DialogHandle defaultHandle = overlay.showDialog(defaultDialog);
+                assertSame(M3Localizer.getDefault(), defaultDialog.getLocalizer());
+                assertSame(M3Localizer.getDefault(), defaultDialog.getPicker().getLocalizer());
+                assertTrue(defaultHandle.requestClose());
+
+                M3DialogHandle boundHandle = overlay.showDialog(boundDialog);
+                assertTrue(boundDialog.localizerProperty().isBound());
+                assertSame(first, boundDialog.getLocalizer());
+                assertEquals(first.getSelectDateText(), boundDialog.getDialogPane().getHeaderText());
+                overlay.setLocalizer(new TestLocalizer("Changed host"));
+                assertSame(first, boundDialog.getLocalizer());
+                language.set(second);
+                assertSame(second, boundDialog.getPicker().getLocalizer());
+                assertEquals(second.getSelectDateText(), boundDialog.getDialogPane().getHeaderText());
+                assertTrue(boundHandle.requestClose());
+                language.set(first);
+                assertSame(first, boundDialog.getPicker().getLocalizer());
+
+                boundDialog.localizerProperty().unbind();
+                boundDialog.setLocalizer(second);
+                M3DialogHandle directHandle = overlay.showDialog(boundDialog);
+                assertSame(second, boundDialog.getLocalizer());
+                assertTrue(directHandle.requestClose());
+            } finally {
+                stage.close();
+            }
         });
     }
 
@@ -88,7 +159,7 @@ final class M3PickerLocalizationTest {
             time.getDialogPane().headerTextProperty().bind(source);
             TestLocalizer localizer = new TestLocalizer("Changed");
             for (M3Dialog dialog : List.of(date, range, time)) {
-                M3Localizer.install(dialog.getDialogPane(), localizer);
+                dialog.setLocalizer(localizer);
             }
 
             assertEquals(dateTitle, date.getDialogPane().getHeaderText());
@@ -97,7 +168,7 @@ final class M3PickerLocalizationTest {
             source.set("Appointment");
             assertEquals("Appointment", time.getDialogPane().getHeaderText());
             time.getDialogPane().headerTextProperty().unbind();
-            M3Localizer.install(time.getDialogPane(), new TestLocalizer("Next"));
+            time.setLocalizer(new TestLocalizer("Next"));
             assertEquals("Appointment", time.getDialogPane().getHeaderText());
         });
     }
@@ -116,7 +187,7 @@ final class M3PickerLocalizationTest {
                 cancel.setText(originalCancel);
                 SimpleStringProperty confirmation = new SimpleStringProperty("Save");
                 pane.getActions().get(1).textProperty().bind(confirmation);
-                M3Localizer.install(pane, new TestLocalizer("Changed"));
+                dialog.setLocalizer(new TestLocalizer("Changed"));
                 assertEquals("Appointment", pane.getHeaderText());
                 assertEquals(originalCancel, cancel.getText());
                 assertEquals("Save", pane.getActions().get(1).getText());
@@ -142,7 +213,7 @@ final class M3PickerLocalizationTest {
                     action.textProperty().bind(new SimpleStringProperty(action.getText()));
                     action.textProperty().unbind();
                 }
-                M3Localizer.install(pane, new TestLocalizer("Changed"));
+                dialog.setLocalizer(new TestLocalizer("Changed"));
                 assertEquals(header, pane.getHeaderText());
                 assertEquals(cancel, pane.getActions().get(0).getText());
                 assertEquals(confirm, pane.getActions().get(1).getText());
@@ -161,11 +232,11 @@ final class M3PickerLocalizationTest {
                     action.setText(action.getText());
                 }
                 TestLocalizer first = new TestLocalizer("First");
-                M3Localizer.install(pane, first);
+                dialog.setLocalizer(first);
                 assertEquals(first.getCancelText(), pane.getActions().get(0).getText());
                 assertEquals(first.getConfirmText(), pane.getActions().get(1).getText());
                 TestLocalizer second = new TestLocalizer("Second");
-                M3Localizer.install(pane, second);
+                dialog.setLocalizer(second);
                 assertEquals(second.getCancelText(), pane.getActions().get(0).getText());
                 assertEquals(second.getConfirmText(), pane.getActions().get(1).getText());
             }
@@ -177,11 +248,11 @@ final class M3PickerLocalizationTest {
     void timeSkinRefreshesLabelsAndAcceptsLocalizedDigits() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(9, 15));
-            Pane root = attachPicker(picker);
+            attachPicker(picker);
             ButtonBase hour = node(picker, ".m3-time-picker-hour-display", ButtonBase.class);
             ButtonBase minute = node(picker, ".m3-time-picker-minute-display", ButtonBase.class);
             TestLocalizer localizer = new TestLocalizer("Custom");
-            M3Localizer.install(root, localizer);
+            picker.setLocalizer(localizer);
             assertSame(hour, node(picker, ".m3-time-picker-hour-display", ButtonBase.class));
             assertEquals(localizer.getHourText(), hour.getAccessibleText());
             assertEquals(localizer.formatHour(9), hour.getText());
@@ -204,30 +275,30 @@ final class M3PickerLocalizationTest {
         });
     }
 
-    /// Disposed skins release observers while replacement skins receive the current context.
+    /// Disposed skins release observers while replacement skins receive the current localizer.
     @Test
-    void disposedSkinStopsRefreshingAndReplacementUsesCurrentContext() {
+    void disposedSkinStopsRefreshingAndReplacementUsesCurrentLocalizer() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.NOON);
-            Pane root = attachPicker(picker);
-            M3Localizer.install(root, new TestLocalizer("First"));
+            attachPicker(picker);
+            picker.setLocalizer(new TestLocalizer("First"));
             ButtonBase oldHour = node(picker, ".m3-time-picker-hour-display", ButtonBase.class);
             picker.setSkin(null);
             TestLocalizer second = new TestLocalizer("Second");
-            M3Localizer.install(root, second);
+            picker.setLocalizer(second);
             assertEquals("First hour", oldHour.getAccessibleText());
             picker.setSkin(new M3TimePickerSkin(picker));
             assertEquals(second.getHourText(), node(picker, ".m3-time-picker-hour-display", ButtonBase.class).getAccessibleText());
         });
     }
 
-    /// Dialog-owned mode descriptions resolve from the pane even without a picker skin.
+    /// Dialog-owned mode descriptions follow the dialog property even without a picker skin.
     @Test
-    void dialogModeActionUsesPaneContext() {
+    void dialogModeActionUsesDialogLocalizer() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePickerDialog dialog = new M3TimePickerDialog();
             TestLocalizer localizer = new TestLocalizer("Dialog");
-            M3Localizer.install(dialog.getDialogPane(), localizer);
+            dialog.setLocalizer(localizer);
             dialog.getDialogPane().setSkin(dialog.getDialogPane().createDefaultSkin());
             Node mode = assertInstanceOf(Node.class,
                     dialog.getDialogPane().lookup(".m3-time-picker-mode-button"));
@@ -235,17 +306,16 @@ final class M3PickerLocalizationTest {
             dialog.getPicker().setInputMode(true);
             assertEquals(localizer.getUseClockDialText(), mode.getAccessibleText());
             mode.accessibleTextProperty().bind(new SimpleStringProperty("Custom mode"));
-            M3Localizer.install(dialog.getDialogPane(), new TestLocalizer("Next"));
+            dialog.setLocalizer(new TestLocalizer("Next"));
             assertEquals("Custom mode", mode.getAccessibleText());
         });
     }
 
     /// Installs a skin in a scene without requiring a native window.
-    private static Pane attachPicker(M3TimePicker picker) {
+    private static void attachPicker(M3TimePicker picker) {
         Pane root = new Pane(picker);
         new Scene(root, 400, 500);
         picker.setSkin(new M3TimePickerSkin(picker));
-        return root;
     }
 
     /// Returns a required retained presentation node.

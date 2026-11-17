@@ -8,6 +8,10 @@
 /// on concrete skin classes. These skins implement Material Design 3 layout, state layers, ripple feedback, focus
 /// indication, elevation, and motion using the active M3FX token set.
 ///
+/// Localized skins observe the skinned control's [org.glavo.m3fx.localization.M3Localized#localizerProperty()]
+/// directly and release their subscriptions on disposal. Built-in labels do not inherit an ancestor's language;
+/// applications share localization by explicitly setting or binding control localizers.
+///
 /// See [Material Design](https://m3.material.io/) and the
 /// [Material Design component catalog](https://m3.material.io/components) for the component behavior mirrored
 /// by these skins.

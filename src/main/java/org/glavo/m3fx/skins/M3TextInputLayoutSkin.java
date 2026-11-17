@@ -198,7 +198,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
             M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
     ));
 
-    /// Observes the control's localization scope until this skin is disposed.
+    /// Observes the control's localizer property until this skin is disposed.
     private final M3LocalizerObserver localizerObserver;
 
     /// The continuous expanded-to-minimized label progress.

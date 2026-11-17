@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.DoublePropertyBase;
+import javafx.beans.property.ObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.SimpleStyleableBooleanProperty;
@@ -21,8 +22,10 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -51,7 +54,7 @@ import java.util.Objects;
 /// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
-public final class M3ProgressBar extends Control implements M3Animated {
+public final class M3ProgressBar extends Control implements M3Localized, M3Animated {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-progress-bar";
@@ -107,6 +110,35 @@ public final class M3ProgressBar extends Control implements M3Animated {
     public M3ProgressBar(double progress) {
         initialize();
         setProgress(progress);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The current progress value.
@@ -536,7 +568,7 @@ public final class M3ProgressBar extends Control implements M3Animated {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         if (attribute == VALUE_STRING_ATTRIBUTE) {
-            M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+            M3Localizer localizer = getLocalizer();
             return isIndeterminate() ? localizer.getIndeterminateProgressText() : localizer.formatProgress(getProgress());
         }
         return switch (attribute) {

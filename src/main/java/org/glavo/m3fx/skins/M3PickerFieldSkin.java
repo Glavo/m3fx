@@ -7,6 +7,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.localization.M3Localized;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
@@ -17,9 +18,9 @@ import java.util.Objects;
 /// bounds. The input layout is owned by the picker field and must be available when the skin is created.
 ///
 /// @param <T> the value type edited by the picker field
-/// @param <P> the popup picker control type
+/// @param <P> the localized popup picker control type
 @NotNullByDefault
-public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3PickerField<T, P>> {
+public final class M3PickerFieldSkin<T, P extends Control & M3Localized> extends SkinBase<M3PickerField<T, P>> {
     /// The retained input layout measured and positioned by this skin.
     private final M3TextInputLayout inputLayout;
 

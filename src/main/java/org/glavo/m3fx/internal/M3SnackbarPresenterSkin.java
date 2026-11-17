@@ -43,7 +43,7 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
     /// The observable message currently bound to the reusable node tree.
     private @Nullable M3Snackbar renderedSnackbar;
 
-    /// Refreshes the reusable dismiss affordance without changing application message content.
+    /// Observes the presenter's localizer for the dismiss affordance without changing application messages.
     private final M3LocalizerObserver localizerObserver;
 
     /// Forwards primary presses to the presenter's swipe gesture state machine.

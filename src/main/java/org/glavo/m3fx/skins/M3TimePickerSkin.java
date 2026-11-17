@@ -222,10 +222,10 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     /// The localized supporting label for the minute editor.
     private final Label minuteInputLabel = new Label();
 
-    /// The effective localization context used by the retained presentation.
+    /// The picker's localizer used by the retained presentation.
     private M3Localizer localizer;
 
-    /// Observes inherited localization until the skin is disposed.
+    /// Observes the picker's localizer property until the skin is disposed.
     private final M3LocalizerObserver localizerObserver;
 
     /// The hour input and its supporting label.
@@ -299,7 +299,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
     /// @param control the time picker control
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
-        localizer = M3Localizer.getEffectiveLocalizer(control);
+        localizer = control.getLocalizer();
 
         hourSelector = createTimeCell("", HOUR_DISPLAY_STYLE_CLASS);
         minuteSelector = createTimeCell("", MINUTE_DISPLAY_STYLE_CLASS);
@@ -333,7 +333,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> implements M3Picker
         localizerObserver = new M3LocalizerObserver(control, this::refreshLocalization);
     }
 
-    /// Updates retained labels and numeric presentation after the effective context changes.
+    /// Updates retained labels and numeric presentation when the picker's localizer changes.
     private void refreshLocalization(M3Localizer localizer) {
         this.localizer = localizer;
         hourInputLabel.setText(localizer.getHourText());

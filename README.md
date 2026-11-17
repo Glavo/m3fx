@@ -215,21 +215,29 @@ final class GermanLocalizer extends M3Localizer {
 }
 ```
 
-Install on any node to configure that node and its descendants. The nearest node installation wins:
+Configure individual components directly, or bind them to an application-owned language setting:
 
 ```java
-M3Localizer.install(root, new GermanLocalizer());
-M3Localizer.install(calendar, new M3Localizer(Locale.US));
-M3Localizer effective = M3Localizer.getEffectiveLocalizer(calendar);
-M3Localizer.uninstall(calendar); // Restore inheritance from root.
-M3Localizer.install(root, new M3Localizer(Locale.US)); // Update existing controls in place.
+ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(new GermanLocalizer());
+calendar.localizerProperty().bind(language);
+dateField.localizerProperty().bind(language);
+language.set(new M3Localizer(Locale.US));
+
+calendar.localizerProperty().unbind();
+calendar.setLocalizer(new GermanLocalizer());
+dateField.localizerProperty().unbind();
+dateField.setLocalizer(M3Localizer.getDefault());
 ```
 
-Replace the installed object on the JavaFX Application Thread to switch languages at runtime. Methods return
-non-null final text and should remain stable for an instance's lifetime; mutating external translation data or
-reinstalling the same instance does not trigger a refresh. `uninstall(node)` removes only that node's installation,
-leaving descendant installations intact. Without an installation, English messages use the fallback's captured
-default format locale.
+Replace the property value on the JavaFX Application Thread to switch languages at runtime. Values must be
+non-null; newly created components use `M3Localizer.getDefault()`, with English messages and a captured default
+format locale. Methods return non-null final text and should remain stable for an instance's lifetime; mutating
+external translation data or assigning the same instance does not trigger a refresh. Unbinding retains the current
+localizer. Moving a component between parents does not change its language.
+
+Composite controls explicitly connect their owned editors, picker content, and internal actions to their localizer.
+Applications configure independent controls and dialogs themselves; generic popup and window hosts do not supply
+language settings. Theme inheritance and node orientation remain independent of localization.
 
 User-provided and bound text wins over localized defaults. Application labels, validation overrides, preset text,
 and explicit formatters are not translated or replaced. `formatMonth(Month, TextStyle)`,

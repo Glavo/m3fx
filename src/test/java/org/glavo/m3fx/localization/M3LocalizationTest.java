@@ -3,13 +3,38 @@
 
 package org.glavo.m3fx.localization;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Scene;
-import javafx.collections.MapChangeListener;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.controls.M3BottomSheet;
+import org.glavo.m3fx.controls.M3Breadcrumbs;
+import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerDialog;
+import org.glavo.m3fx.controls.M3DatePickerField;
+import org.glavo.m3fx.controls.M3DateRangePicker;
+import org.glavo.m3fx.controls.M3DateRangePickerDialog;
+import org.glavo.m3fx.controls.M3DateRangePickerField;
+import org.glavo.m3fx.controls.M3Dialog;
+import org.glavo.m3fx.controls.M3NumberField;
+import org.glavo.m3fx.controls.M3OverlayPane;
+import org.glavo.m3fx.controls.M3ProgressBar;
+import org.glavo.m3fx.controls.M3ProgressIndicator;
+import org.glavo.m3fx.controls.M3RangeSlider;
+import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.controls.M3TimePicker;
+import org.glavo.m3fx.controls.M3TimePickerDialog;
+import org.glavo.m3fx.controls.M3TimePickerField;
+import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,14 +45,14 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/// Verifies localization inheritance, replacement, popup propagation, and observation lifetime.
+/// Verifies per-component localization properties, explicit bindings, and direct observation lifetime.
 @NotNullByDefault
 final class M3LocalizationTest {
-    /// Starts JavaFX before constructing scene graphs.
+    /// Starts JavaFX before constructing controls.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
@@ -44,385 +69,289 @@ final class M3LocalizationTest {
         assertEquals(DayOfWeek.MONDAY, localizer.getFirstDayOfWeek());
         assertEquals("04", localizer.formatMinute(4));
         assertFalse(localizer.formatDate(LocalDate.of(2026, 1, 5)).isBlank());
+        assertSame(M3Localizer.getDefault(), M3Localizer.getDefault());
         assertThrows(NullPointerException.class, () -> new M3Localizer(null));
         assertThrows(NullPointerException.class, () -> localizer.formatMonth(null, TextStyle.FULL));
-        assertThrows(NullPointerException.class, () -> M3Localizer.install(new Pane(), null));
     }
 
     /// Allows subclasses to override only messages they translate.
     @Test
     void partialOverridesRetainEnglishFallback() {
-        M3Localizer localizer = new M3Localizer(Locale.GERMAN) {
-            /// Supplies an application-owned translation.
-            @Override
-            public String getClearActionText() {
-                return "Text entfernen";
-            }
-        };
+        M3Localizer localizer = new PartialLocalizer();
         assertEquals("Text entfernen", localizer.getClearActionText());
         assertEquals("Dismiss", localizer.getDismissText());
     }
 
-    /// Resolves nearest installations, avoids same-instance refreshes, and restores inherited values.
+    /// Every component exposes one stable non-null property with setter and getter agreement.
     @Test
-    void replacementAndNestedOverrides() {
+    @SuppressWarnings("DataFlowIssue")
+    void componentPropertiesDefaultAndRejectNull() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane branch = new Pane(leaf);
-            Pane root = new Pane(branch);
-            M3Localizer fallback = M3Localizer.getEffectiveLocalizer(leaf);
-            M3Localizer english = new M3Localizer(Locale.US);
-            M3Localizer german = new M3Localizer(Locale.GERMANY);
+            for (M3Localized component : createComponents()) {
+                ObjectProperty<M3Localizer> property = component.localizerProperty();
+                assertSame(property, component.localizerProperty());
+                assertSame(M3Localizer.getDefault(), component.getLocalizer());
+                assertSame(component.getLocalizer(), property.get());
+                assertFalse(property.isBound());
+                assertThrows(NullPointerException.class, () -> component.setLocalizer(null));
+                assertThrows(NullPointerException.class, () -> property.set(null));
+                assertThrows(NullPointerException.class, () -> property.bind(null));
+                ObjectProperty<@Nullable M3Localizer> absent = new SimpleObjectProperty<>();
+                assertThrows(NullPointerException.class, () -> property.bind(absent));
+                assertFalse(property.isBound());
+                assertSame(M3Localizer.getDefault(), property.get());
+
+                M3Localizer first = new M3Localizer(Locale.US);
+                M3Localizer second = new M3Localizer(Locale.FRANCE);
+                component.setLocalizer(first);
+                assertSame(first, property.get());
+                property.set(second);
+                assertSame(second, component.getLocalizer());
+                component.setLocalizer(M3Localizer.getDefault());
+                assertSame(M3Localizer.getDefault(), property.get());
+            }
+        });
+    }
+
+    /// A binding source that violates the non-null contract cannot expose null through the property getter.
+    @Test
+    void localizerPropertyRejectsNullBoundReads() {
+        M3LocalizerProperty property = new M3LocalizerProperty(this);
+        ObjectProperty<@Nullable M3Localizer> source = new SimpleObjectProperty<>(M3Localizer.getDefault());
+        property.bind(source);
+        source.set(null);
+        assertThrows(NullPointerException.class, property::get);
+        M3Localizer replacement = new M3Localizer(Locale.FRANCE);
+        source.set(replacement);
+        assertSame(replacement, property.get());
+        property.unbind();
+        assertSame(replacement, property.get());
+    }
+
+    /// Explicit application bindings share replacements while unbound components retain their own value.
+    @Test
+    void sharedLanguageBindingSupportsDirectOverridesAndRebinding() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.GERMANY);
+            ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            @Unmodifiable List<M3Localized> components = createComponents();
+            for (M3Localized component : components) {
+                component.localizerProperty().bind(language);
+                assertTrue(component.localizerProperty().isBound());
+                assertSame(first, component.getLocalizer());
+                assertThrows(RuntimeException.class, () -> component.setLocalizer(second));
+            }
+            language.set(second);
+            for (M3Localized component : components) {
+                assertSame(second, component.getLocalizer());
+                component.localizerProperty().unbind();
+                assertFalse(component.localizerProperty().isBound());
+                assertSame(second, component.getLocalizer());
+            }
+            language.set(first);
+            for (M3Localized component : components) {
+                assertSame(second, component.getLocalizer());
+                component.setLocalizer(M3Localizer.getDefault());
+                assertSame(M3Localizer.getDefault(), component.getLocalizer());
+                component.localizerProperty().bind(language);
+                assertSame(first, component.getLocalizer());
+            }
+        });
+    }
+
+    /// Observation works on a non-Node dialog and stops independently for each subscription.
+    @Test
+    void directObserversDeliverImmediatelyAndCloseIndependently() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Dialog dialog = new M3Dialog();
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.US);
+            List<M3Localizer> firstChanges = new ArrayList<>();
+            List<M3Localizer> secondChanges = new ArrayList<>();
+            try (M3LocalizerObserver firstObserver = new M3LocalizerObserver(dialog, firstChanges::add);
+                 M3LocalizerObserver secondObserver = new M3LocalizerObserver(dialog, secondChanges::add)) {
+                assertEquals(List.of(M3Localizer.getDefault()), firstChanges);
+                assertEquals(firstChanges, secondChanges);
+                dialog.setLocalizer(first);
+                dialog.setLocalizer(first);
+                assertEquals(List.of(M3Localizer.getDefault(), first), firstChanges);
+                firstObserver.close();
+                firstObserver.close();
+                dialog.localizerProperty().set(second);
+                assertEquals(List.of(M3Localizer.getDefault(), first), firstChanges);
+                assertEquals(List.of(M3Localizer.getDefault(), first, second), secondChanges);
+            }
+            dialog.setLocalizer(M3Localizer.getDefault());
+            assertEquals(2, firstChanges.size());
+            assertEquals(3, secondChanges.size());
+        });
+    }
+
+    /// Distinct instances refresh observers and defaults even when application equality considers them equal.
+    @Test
+    void equalLocalizersStillRefreshDirectAndBoundProperties() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePickerDialog dialog = new M3DatePickerDialog();
+            EqualLocalizer first = new EqualLocalizer("First date");
+            EqualLocalizer second = new EqualLocalizer("Second date");
+            assertEquals(first, second);
+            assertNotSame(first, second);
             List<M3Localizer> changes = new ArrayList<>();
-            try (M3LocalizerObserver observer = new M3LocalizerObserver(leaf, changes::add)) {
-                M3Localizer.install(root, english);
-                M3Localizer.install(branch, german);
-                M3Localizer.install(root, german);
-                M3Localizer.install(branch, german);
-                assertEquals(List.of(fallback, english, german), changes);
-                M3Localizer.install(root, english);
-                M3Localizer.uninstall(branch);
-                assertSame(english, M3Localizer.getEffectiveLocalizer(leaf));
-                M3Localizer.uninstall(root);
-                assertEquals(List.of(fallback, english, german, english, fallback), changes);
+            try (M3LocalizerObserver observer = new M3LocalizerObserver(dialog, changes::add)) {
+                dialog.setLocalizer(first);
+                dialog.setLocalizer(second);
+                assertEquals(3, changes.size());
+                assertSame(first, changes.get(1));
+                assertSame(second, changes.get(2));
+                assertEquals("Second date", dialog.getDialogPane().getHeaderText());
+
+                ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+                dialog.localizerProperty().bind(language);
+                assertEquals("First date", dialog.getDialogPane().getHeaderText());
+                language.set(second);
+                assertEquals(5, changes.size());
+                assertSame(second, changes.get(4));
+                assertSame(second, dialog.getPicker().getLocalizer());
+                assertEquals("Second date", dialog.getDialogPane().getHeaderText());
             }
-            assertTrue(root.getProperties().isEmpty());
-            assertTrue(branch.getProperties().isEmpty());
-            assertTrue(leaf.getProperties().isEmpty());
         });
     }
 
-    /// Reconnects shared ancestor paths when an entire unobserved intermediate branch moves.
+    /// Failed initial callbacks rethrow the failure and remove their direct property subscription.
     @Test
-    void reparentingReleasesOldAncestors() {
+    void failedInitialCallbackDoesNotRetainSubscription() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane branch = new Pane(leaf);
-            Pane first = new Pane(branch);
-            Pane second = new Pane();
-            M3Localizer english = new M3Localizer(Locale.US);
-            M3Localizer german = new M3Localizer(Locale.GERMANY);
-            M3Localizer.install(first, english);
-            M3Localizer.install(second, german);
-            AtomicReference<M3Localizer> current = new AtomicReference<>();
-            try (M3LocalizerObserver observer = new M3LocalizerObserver(leaf, current::set)) {
-                first.getChildren().clear();
-                second.getChildren().add(branch);
-                assertSame(german, current.get());
-                assertEquals(1, first.getProperties().size());
-                M3Localizer.install(first, new M3Localizer(Locale.FRANCE));
-                assertSame(german, current.get());
+            M3Dialog dialog = new M3Dialog();
+            AtomicInteger calls = new AtomicInteger();
+            IllegalArgumentException failure = new IllegalArgumentException("translation failure");
+            assertSame(failure, assertThrows(IllegalArgumentException.class,
+                    () -> new M3LocalizerObserver(dialog, ignored -> {
+                        calls.incrementAndGet();
+                        throw failure;
+                    })));
+            dialog.setLocalizer(new M3Localizer(Locale.FRANCE));
+            assertEquals(1, calls.get());
+        });
+    }
+
+    /// Parent localizers and visibility do not affect independent values or explicit application bindings.
+    @Test
+    void reparentingAndDetachedControlsKeepTheirLanguage() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NumberField field = new M3NumberField();
+            Pane branch = new Pane(field);
+            M3OverlayPane firstRoot = new M3OverlayPane();
+            M3OverlayPane secondRoot = new M3OverlayPane();
+            firstRoot.setContent(branch);
+            new Scene(firstRoot);
+            M3Localizer first = new M3Localizer(Locale.US);
+            M3Localizer second = new M3Localizer(Locale.FRANCE);
+            firstRoot.setLocalizer(first);
+            secondRoot.setLocalizer(second);
+            assertSame(M3Localizer.getDefault(), field.getLocalizer());
+            ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
+            field.localizerProperty().bind(language);
+            List<M3Localizer> changes = new ArrayList<>();
+            try (M3LocalizerObserver observer = new M3LocalizerObserver(field, changes::add)) {
+                firstRoot.setVisible(false);
+                firstRoot.setContent(null);
+                assertSame(first, field.getLocalizer());
+                language.set(second);
+                assertSame(second, field.getLocalizer());
+                secondRoot.setContent(branch);
+                secondRoot.setLocalizer(first);
+                assertSame(second, field.getLocalizer());
+                assertEquals(List.of(first, second), changes);
             }
-            assertEquals(1, second.getProperties().size());
-            assertTrue(branch.getProperties().isEmpty());
-            assertTrue(leaf.getProperties().isEmpty());
         });
     }
 
-    /// Shares node metadata across consumers and removes it only after the last subscription closes.
+    /// Popup presentation synchronization does not assign language to application-owned content.
     @Test
-    void subscriptionsShareAndReleaseTheirContext() {
+    void popupContextDoesNotInheritOwnerLanguage() {
         FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane root = new Pane(leaf);
-            M3LocalizerObserver first = new M3LocalizerObserver(leaf, ignored -> {});
-            int entries = leaf.getProperties().size();
-            M3LocalizerObserver second = new M3LocalizerObserver(leaf, ignored -> {});
-            assertEquals(entries, leaf.getProperties().size());
-            first.close();
-            first.close();
-            assertFalse(root.getProperties().isEmpty());
-            second.close();
-            assertTrue(root.getProperties().isEmpty());
-            assertTrue(leaf.getProperties().isEmpty());
-        });
-    }
-
-    /// Does not retain a parent dependency if application metadata listeners dispose the connecting consumer.
-    @Test
-    void metadataCallbackCanCloseAnObserverDuringReparenting() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane first = new Pane(leaf);
-            Pane second = new Pane();
-            M3LocalizerObserver observer = new M3LocalizerObserver(leaf, ignored -> {});
-            second.getProperties().addListener((MapChangeListener<Object, Object>) change -> {
-                if (change.wasAdded()) {
-                    observer.close();
-                }
-            });
-            first.getChildren().clear();
-            second.getChildren().add(leaf);
-            observer.close();
-            assertTrue(first.getProperties().isEmpty());
-            assertTrue(second.getProperties().isEmpty());
-            assertTrue(leaf.getProperties().isEmpty());
-        });
-    }
-
-    /// Preserves the latest value when a subscriber replaces the localizer during notification.
-    @Test
-    void reentrantReplacementDeliversCurrentValue() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane root = new Pane();
+            M3NumberField owner = new M3NumberField();
+            new Scene(new Pane(owner));
+            M3NumberField popupField = new M3NumberField();
+            Pane popup = new Pane(popupField);
             M3Localizer first = new M3Localizer(Locale.US);
             M3Localizer second = new M3Localizer(Locale.GERMANY);
-            AtomicReference<M3Localizer> current = new AtomicReference<>();
-            try (M3LocalizerObserver redirect = new M3LocalizerObserver(root, value -> {
-                if (value == first) {
-                    M3Localizer.install(root, second);
-                }
-            }); M3LocalizerObserver observer = new M3LocalizerObserver(root, current::set)) {
-                M3Localizer.install(root, first);
-                assertSame(second, current.get());
-                assertSame(second, M3Localizer.getEffectiveLocalizer(root));
-            }
-        });
-    }
-
-    /// Closing and adding subscribers during replacement must not deliver an obsolete outer-pass value.
-    @Test
-    void subscriptionChangesDuringReplacementUseLatestValue() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane root = new Pane();
-            M3Localizer first = new M3Localizer(Locale.US);
-            M3Localizer second = new M3Localizer(Locale.GERMANY);
-            List<M3LocalizerObserver> subscriptions = new ArrayList<>();
-            List<M3Localizer> delivered = new ArrayList<>();
+            owner.setLocalizer(first);
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popup);
             try {
-                subscriptions.add(new M3LocalizerObserver(root, value -> {
-                    if (value == first) {
-                        subscriptions.get(1).close();
-                        subscriptions.add(new M3LocalizerObserver(root, delivered::add));
-                        M3Localizer.install(root, second);
-                    }
-                }));
-                subscriptions.add(new M3LocalizerObserver(root, value -> {
-                    assertNotSame(first, value);
-                    assertNotSame(second, value);
-                }));
-                M3Localizer.install(root, first);
-                assertEquals(List.of(first, second), delivered);
+                synchronizer.start();
+                assertSame(M3Localizer.getDefault(), popupField.getLocalizer());
+                owner.setLocalizer(second);
+                assertSame(M3Localizer.getDefault(), popupField.getLocalizer());
+                popupField.localizerProperty().bind(owner.localizerProperty());
+                assertSame(second, popupField.getLocalizer());
+                synchronizer.stop();
+                owner.setLocalizer(first);
+                assertSame(first, popupField.getLocalizer());
+                popupField.localizerProperty().unbind();
+                popupField.setLocalizer(second);
+                synchronizer.start();
+                assertSame(second, popupField.getLocalizer());
             } finally {
-                subscriptions.forEach(M3LocalizerObserver::close);
-            }
-            M3Localizer.uninstall(root);
-            assertTrue(root.getProperties().isEmpty());
-        });
-    }
-
-    /// Localization remains synchronous even when the subtree has no visible presentation.
-    @Test
-    void invisibleAndDetachedSubtreesReceiveReplacements() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane branch = new Pane(leaf);
-            Pane root = new Pane(branch);
-            new Scene(root);
-            root.setVisible(false);
-            M3Localizer first = new M3Localizer(Locale.US);
-            M3Localizer second = new M3Localizer(Locale.GERMANY);
-            AtomicReference<M3Localizer> current = new AtomicReference<>();
-            try (M3LocalizerObserver observer = new M3LocalizerObserver(leaf, current::set)) {
-                M3Localizer.install(root, first);
-                assertSame(first, current.get());
-                root.getChildren().clear();
-                M3Localizer.install(branch, second);
-                assertSame(second, current.get());
-                M3Localizer.uninstall(branch);
-                root.getChildren().add(branch);
-                assertSame(first, current.get());
-            }
-            assertTrue(branch.getProperties().isEmpty());
-            assertTrue(leaf.getProperties().isEmpty());
-        });
-    }
-
-    /// Uses identity rather than application-defined equality to recognize a replacement instance.
-    @Test
-    void equalInstancesStillReplaceTranslations() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane root = new Pane();
-            Pane popup = new Pane();
-            EqualLocalizer first = new EqualLocalizer();
-            EqualLocalizer second = new EqualLocalizer();
-            AtomicReference<M3Localizer> current = new AtomicReference<>();
-            AtomicReference<M3Localizer> inherited = new AtomicReference<>();
-            try (M3LocalizerObserver observer = new M3LocalizerObserver(root, current::set);
-                 M3LocalizerObserver popupObserver = new M3LocalizerObserver(popup, inherited::set)) {
-                M3Localizer.install(root, first);
-                M3Localizer.install(root, second);
-                assertSame(second, current.get());
-                M3LocalizerObserver.inherit(popup, first);
-                M3LocalizerObserver.inherit(popup, second);
-                assertSame(second, inherited.get());
+                synchronizer.stop();
             }
         });
     }
 
-    /// A failed translation refresh does not sever a newly restored ancestor subscription.
-    @Test
-    void failedRefreshStillObservesSubsequentAncestorChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane root = new Pane(leaf);
-            M3Localizer direct = new M3Localizer(Locale.US);
-            M3Localizer rejected = new M3Localizer(Locale.FRANCE);
-            M3Localizer replacement = new M3Localizer(Locale.GERMANY);
-            M3Localizer.install(leaf, direct);
-            M3Localizer.install(root, rejected);
-            AtomicReference<M3Localizer> current = new AtomicReference<>();
-            try (M3LocalizerObserver observer = new M3LocalizerObserver(leaf, value -> {
-                if (value == rejected) {
-                    throw new IllegalArgumentException("translation failure");
-                }
-                current.set(value);
-            })) {
-                assertThrows(IllegalArgumentException.class, () -> M3Localizer.uninstall(leaf));
-                M3Localizer.install(root, replacement);
-                assertSame(replacement, current.get());
-            }
-            assertTrue(leaf.getProperties().isEmpty());
-            assertEquals(1, root.getProperties().size());
-        });
+    /// Creates independent controls and dialogs covered by the public localization contract.
+    private static @Unmodifiable List<M3Localized> createComponents() {
+        return List.of(new M3TextInputLayout(), new M3NumberField(), new M3ValidationSummary(), new M3OverlayPane(),
+                new M3BottomSheet(), new M3Breadcrumbs(), new M3RangeSlider(), new M3Scrim(), new M3SearchView(),
+                new M3ProgressBar(), new M3ProgressIndicator(),
+                new M3DatePicker(), new M3DateRangePicker(), new M3TimePicker(), new M3DatePickerField(),
+                new M3DateRangePickerField(), new M3TimePickerField(), new M3Dialog(),
+                new M3DatePickerDialog(), new M3DateRangePickerDialog(), new M3TimePickerDialog());
     }
 
-    /// Runtime failures are reported only after siblings and later branches receive the replacement.
-    @Test
-    void failingCallbacksDoNotBlockOtherBranches() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane first = new Pane();
-            Pane second = new Pane();
-            Pane third = new Pane();
-            Pane root = new Pane(first, second, third);
-            M3Localizer rejected = new M3Localizer(Locale.GERMANY);
-            M3Localizer recovered = new M3Localizer(Locale.US);
-            RuntimeException primaryFailure = new IllegalArgumentException("first translation failed");
-            RuntimeException secondaryFailure = new IllegalStateException("second translation failed");
-            AtomicReference<M3Localizer> firstValue = new AtomicReference<>();
-            AtomicReference<M3Localizer> lastValue = new AtomicReference<>();
-            try (M3LocalizerObserver failingFirst = new M3LocalizerObserver(first, value -> {
-                if (value == rejected) {
-                    throw primaryFailure;
-                }
-            }); M3LocalizerObserver healthyFirst = new M3LocalizerObserver(first, firstValue::set);
-                 M3LocalizerObserver failingSecond = new M3LocalizerObserver(second, value -> {
-                     if (value == rejected) {
-                         throw secondaryFailure;
-                     }
-                 }); M3LocalizerObserver failingThird = new M3LocalizerObserver(third, value -> {
-                     if (value == rejected) {
-                         throw primaryFailure;
-                     }
-                 }); M3LocalizerObserver healthyLast = new M3LocalizerObserver(third, lastValue::set)) {
-                assertSame(primaryFailure, assertThrows(RuntimeException.class,
-                        () -> M3Localizer.install(root, rejected)));
-                assertArrayEquals(new Throwable[]{secondaryFailure}, primaryFailure.getSuppressed());
-                assertSame(rejected, firstValue.get());
-                assertSame(rejected, lastValue.get());
-                assertSame(rejected, M3Localizer.getEffectiveLocalizer(third));
-                M3Localizer.install(root, recovered);
-                assertSame(recovered, firstValue.get());
-                assertSame(recovered, lastValue.get());
-            }
-            M3Localizer.uninstall(root);
-            assertTrue(root.getProperties().isEmpty());
-            assertTrue(first.getProperties().isEmpty());
-            assertTrue(second.getProperties().isEmpty());
-            assertTrue(third.getProperties().isEmpty());
-        });
-    }
-
-    /// A failing callback cannot revert consumers to a value superseded by a nested replacement.
-    @Test
-    void failureAfterNestedReplacementPreservesLatestValue() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane root = new Pane(leaf);
-            M3Localizer first = new M3Localizer(Locale.US);
-            M3Localizer second = new M3Localizer(Locale.GERMANY);
-            List<M3Localizer> delivered = new ArrayList<>();
-            try (M3LocalizerObserver redirect = new M3LocalizerObserver(root, value -> {
-                if (value == first) {
-                    M3Localizer.install(root, second);
-                    throw new IllegalStateException("replacement callback failed");
-                }
-            }); M3LocalizerObserver observer = new M3LocalizerObserver(leaf, delivered::add)) {
-                delivered.clear();
-                assertThrows(IllegalStateException.class, () -> M3Localizer.install(root, first));
-                assertEquals(List.of(second), delivered);
-                assertSame(second, M3Localizer.getEffectiveLocalizer(leaf));
-            }
-            assertTrue(leaf.getProperties().isEmpty());
-        });
-    }
-
-    /// Models an application localizer with value equality rather than identity equality.
+    /// Models equal application configurations with different translated resources.
     @NotNullByDefault
     private static final class EqualLocalizer extends M3Localizer {
-        /// Creates another equivalent application configuration.
-        private EqualLocalizer() {
+        /// The title supplied by this particular resource instance.
+        private final String title;
+
+        /// Creates an equal configuration with a distinct title.
+        private EqualLocalizer(String title) {
             super(Locale.US);
+            this.title = title;
         }
 
-        /// Treats all instances as equivalent for application configuration comparisons.
+        /// Returns the instance-specific date title.
         @Override
-        public boolean equals(@org.jetbrains.annotations.Nullable Object other) {
+        public String getSelectDateText() {
+            return title;
+        }
+
+        /// Treats every instance of this test configuration as equivalent.
+        @Override
+        public boolean equals(@Nullable Object other) {
             return other instanceof EqualLocalizer;
         }
 
-        /// Matches the value-equality contract.
+        /// Matches the configuration equality contract.
         @Override
         public int hashCode() {
             return 1;
         }
     }
 
-    /// Rolls back subscription state when the initial application callback fails.
-    @Test
-    void failedInitialCallbackDoesNotRetainAncestorContexts() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane leaf = new Pane();
-            Pane root = new Pane(leaf);
-            assertThrows(IllegalArgumentException.class, () -> new M3LocalizerObserver(leaf, ignored -> {
-                throw new IllegalArgumentException("translation failure");
-            }));
-            assertTrue(leaf.getProperties().isEmpty());
-            assertTrue(root.getProperties().isEmpty());
-        });
-    }
+    /// Translates one message while retaining inherited English fallbacks.
+    @NotNullByDefault
+    private static final class PartialLocalizer extends M3Localizer {
+        /// Uses German regional formatting.
+        private PartialLocalizer() {
+            super(Locale.GERMAN);
+        }
 
-    /// Keeps detached popup content current without overwriting its own explicit localization.
-    @Test
-    void popupPropagationRespectsLocalOverridesAndStopsWithPresentation() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane owner = new Pane();
-            new Scene(owner);
-            Pane nested = new Pane();
-            Pane popup = new Pane(nested);
-            M3Localizer english = new M3Localizer(Locale.US);
-            M3Localizer german = new M3Localizer(Locale.GERMANY);
-            M3Localizer french = new M3Localizer(Locale.FRANCE);
-            M3Localizer.install(owner, english);
-            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popup);
-            try {
-                synchronizer.start();
-                assertSame(english, M3Localizer.getEffectiveLocalizer(nested));
-                M3Localizer.install(owner, german);
-                assertSame(german, M3Localizer.getEffectiveLocalizer(nested));
-                M3Localizer.install(popup, french);
-                M3Localizer.install(owner, english);
-                assertSame(french, M3Localizer.getEffectiveLocalizer(nested));
-                M3Localizer.uninstall(popup);
-                assertSame(english, M3Localizer.getEffectiveLocalizer(nested));
-                synchronizer.stop();
-                M3Localizer.install(owner, german);
-                assertSame(english, M3Localizer.getEffectiveLocalizer(nested));
-                synchronizer.start();
-                assertSame(german, M3Localizer.getEffectiveLocalizer(nested));
-            } finally {
-                synchronizer.stop();
-            }
-        });
+        /// Supplies an application-owned translation.
+        @Override
+        public String getClearActionText() {
+            return "Text entfernen";
+        }
     }
 }

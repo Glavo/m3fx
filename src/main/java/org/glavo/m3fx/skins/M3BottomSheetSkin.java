@@ -100,7 +100,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> implements 
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
-    /// Refreshes the internal resize affordance's description.
+    /// Observes the sheet's localizer to refresh the internal resize affordance's description.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates a bottom sheet skin.

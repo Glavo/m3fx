@@ -33,11 +33,14 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3BottomSheetPresentation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +64,7 @@ import java.util.Objects;
 ///
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
-public final class M3BottomSheet extends Control implements M3Animated {
+public final class M3BottomSheet extends Control implements M3Localized, M3Animated {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-bottom-sheet";
@@ -88,6 +91,35 @@ public final class M3BottomSheet extends Control implements M3Animated {
         initialize();
         setHeadline(headline);
         setContent(content);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The headline displayed by the sheet.

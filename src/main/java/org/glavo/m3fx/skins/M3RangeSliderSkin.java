@@ -211,7 +211,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         }
     };
 
-    /// Refreshes both internal thumb descriptions through one localization subscription.
+    /// Observes the slider's localizer to refresh both internal thumb descriptions.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates a range-slider skin.

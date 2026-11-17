@@ -21,8 +21,11 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DialogPresentation;
 import org.glavo.m3fx.internal.M3EventHandlerManager;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3OverlayDialogPresentation;
+import org.glavo.m3fx.localization.M3Localized;
+import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +74,7 @@ import java.util.Objects;
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
-public class M3Dialog implements EventTarget {
+public class M3Dialog implements M3Localized, EventTarget {
     /// The resting-height fraction used while a dialog enters or exits along the vertical axis.
     private static final double HIDDEN_SCALE_Y_FACTOR = 0.92;
 
@@ -97,6 +100,35 @@ public class M3Dialog implements EventTarget {
         presentationSpatialAnimation = new M3NodeTransition(dialogPane);
         presentationSpatialAnimation.setOnFinished(event -> handlePresentationSpatialFinished());
         dialogPane.setButtonAction(this::handleButtonAction);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// Whether a primary click on the surrounding scrim requests that this dialog close.

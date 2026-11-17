@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -97,7 +99,7 @@ final class DatePickersDemoPage extends DemoPageSupport {
         );
     }
 
-    /// Creates a retained calendar and editor with subtree-scoped language switching.
+    /// Creates a retained calendar and editor bound to one application-owned language setting.
     static VBox createLocalizationSample(LocalDate date) {
         M3DatePicker calendar = new M3DatePicker(date);
         M3DatePickerField field = new M3DatePickerField(date);
@@ -116,10 +118,12 @@ final class DatePickersDemoPage extends DemoPageSupport {
 
         VBox sample = new VBox(16.0, language, createResponsiveActionRow(calendar, field));
         sample.setMinWidth(0.0);
-        M3Localizer.install(sample, new M3Localizer(Locale.US));
+        ObjectProperty<M3Localizer> localizer = new SimpleObjectProperty<>(new M3Localizer(Locale.US));
+        calendar.localizerProperty().bind(localizer);
+        field.localizerProperty().bind(localizer);
         language.selectedButtonProperty().addListener((observable, oldValue, selected) -> {
             if (selected != null) {
-                M3Localizer.install(sample, selected == german
+                localizer.set(selected == german
                         ? new GermanCalendarLocalizer() : new M3Localizer(Locale.US));
             }
         });

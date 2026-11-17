@@ -22,6 +22,7 @@ import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +41,11 @@ import java.util.Objects;
 /// The header keeps a fixed set of month menu items and a bounded reusable window of year menu items. This avoids
 /// allocating popup content whenever the displayed month changes while still allowing the previous and next year
 /// controls to traverse the complete configured date range.
+/// Labels use the owning picker's localizer property, independent of scene-graph ancestry.
+///
+/// @param <C> the localized calendar control type
 @NotNullByDefault
-final class M3DatePickerHeader extends HBox {
+final class M3DatePickerHeader<C extends Control & M3Localized> extends HBox {
     /// The internal date-picker header style class.
     private static final String HEADER_STYLE_CLASS = "m3-date-picker-header";
 
@@ -64,9 +68,9 @@ final class M3DatePickerHeader extends HBox {
     private static final int YEAR_MENU_ITEM_COUNT = 11;
 
     /// The calendar control whose orientation and date bounds are represented.
-    private final Control owner;
+    private final C owner;
 
-    /// Observes the owning picker's effective localizer until disposal.
+    /// Observes the owning picker's localizer property until disposal.
     private final M3LocalizerObserver localizerObserver;
 
     /// The displayed calendar month property shared with the owning picker.
@@ -115,7 +119,7 @@ final class M3DatePickerHeader extends HBox {
     /// @param minDate        the optional inclusive lower date bound
     /// @param maxDate        the optional inclusive upper date bound
     M3DatePickerHeader(
-            Control owner,
+            C owner,
             ObjectProperty<YearMonth> displayedMonth,
             ObjectProperty<@Nullable LocalDate> minDate,
             ObjectProperty<@Nullable LocalDate> maxDate
@@ -192,7 +196,7 @@ final class M3DatePickerHeader extends HBox {
     /// Synchronizes localized labels, menu entries, navigation availability, and logical arrow direction.
     private void refresh() {
         YearMonth month = displayedMonth.get();
-        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(owner);
+        M3Localizer localizer = owner.getLocalizer();
         @Nullable LocalDate minimum = minDate.get();
         @Nullable LocalDate maximum = maxDate.get();
 

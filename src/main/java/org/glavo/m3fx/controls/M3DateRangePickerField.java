@@ -44,6 +44,7 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3LocalizedStringProperty;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3ObservableLists;
@@ -54,6 +55,7 @@ import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3PresetNavigation;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -97,7 +99,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DateRangePickerField extends javafx.scene.control.Control implements M3Animated, M3FormInput {
+public final class M3DateRangePickerField extends javafx.scene.control.Control implements M3Localized, M3Animated, M3FormInput {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker-field";
@@ -126,7 +128,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// Retains scoped localization updates for this control's lifetime.
+    /// Retains direct localization updates for this control's lifetime.
     private final M3LocalizerObserver localizerObserver;
 
     /// Creates an empty range field using ISO local-date text, default labels, and an unbounded picker.
@@ -145,6 +147,35 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
         initialize();
         localizerObserver = new M3LocalizerObserver(this, this::updateLocalizedText);
         setRange(startDate, endDate);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The selected start date, or `null` when the range is empty.
@@ -378,7 +409,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// The non-null parse error message, localized until explicitly assigned or bound.
     private final M3LocalizedStringProperty invalidTextErrorText =
-            new M3LocalizedStringProperty(this, "invalidTextErrorText", M3Localizer.getEffectiveLocalizer(this).getInvalidDateRangeText());
+            new M3LocalizedStringProperty(this, "invalidTextErrorText", getLocalizer().getInvalidDateRangeText());
 
     /// Returns the parse error message used when editor text is invalid.
     ///
@@ -397,7 +428,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Returns the observable, bindable non-null parse-error-message property.
     ///
-    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// The default follows this control's localizer until explicitly assigned or bound, including assignments equal
     /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the invalid-text error property
@@ -407,7 +438,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// The non-null reversed-range and selectable-range error, localized until explicitly assigned or bound.
     private final M3LocalizedStringProperty rangeErrorText =
-            new M3LocalizedStringProperty(this, "rangeErrorText", M3Localizer.getEffectiveLocalizer(this).getDateRangeOutOfRangeText());
+            new M3LocalizedStringProperty(this, "rangeErrorText", getLocalizer().getDateRangeOutOfRangeText());
 
     /// Returns the range error message used when editor text is outside the selectable range.
     ///
@@ -426,7 +457,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Returns the observable, bindable non-null range-error-message property.
     ///
-    /// The default follows the scoped localizer until explicitly assigned or bound, including assignments equal
+    /// The default follows this control's localizer until explicitly assigned or bound, including assignments equal
     /// to the current default. Changes refresh active validation. Values must be non-null.
     ///
     /// @return the range error property
@@ -679,9 +710,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     /// This label is not rendered by either endpoint input layout. Their visible labels remain controlled by
     /// [#startLabelTextProperty()] and [#endLabelTextProperty()].
     ///
-    /// @defaultValue the scoped localizer's date-range label
+    /// @defaultValue the date-range label from [#getLocalizer()]
     private final M3LocalizedStringProperty labelText =
-            new M3LocalizedStringProperty(this, "labelText", M3Localizer.getEffectiveLocalizer(this).getDateRangeText());
+            new M3LocalizedStringProperty(this, "labelText", getLocalizer().getDateRangeText());
 
     /// Returns the label used for form-validation presentation.
     ///
@@ -702,7 +733,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     /// Returns the observable, bindable composite validation-label property.
     ///
     /// The property is independent of both visible endpoint labels and rejects `null`. Its default follows the
-    /// scoped localizer until explicitly assigned or bound, even when assigned its current default text.
+    /// control's localizer until explicitly assigned or bound, even when assigned its current default text.
     ///
     /// @return the composite validation-label property
     @Override
@@ -712,9 +743,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// The label text displayed by the start-date input.
     ///
-    /// @defaultValue the scoped localizer's start-date label
+    /// @defaultValue the start-date label from [#getLocalizer()]
     private final M3LocalizedStringProperty startLabelText =
-            new M3LocalizedStringProperty(this, "startLabelText", M3Localizer.getEffectiveLocalizer(this).getStartDateText());
+            new M3LocalizedStringProperty(this, "startLabelText", getLocalizer().getStartDateText());
 
     /// Returns the label text displayed by the start date input layout.
     ///
@@ -733,7 +764,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Returns the observable property that stores the start-editor label.
     ///
-    /// The non-null default follows the scoped localizer until explicitly assigned or bound, even when assigned
+    /// The non-null default follows this control's localizer until explicitly assigned or bound, even when assigned
     /// its current default text. Unbinding retains the application-selected label.
     ///
     /// @return the start-editor label property
@@ -743,9 +774,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// The label text displayed by the end-date input.
     ///
-    /// @defaultValue the scoped localizer's end-date label
+    /// @defaultValue the end-date label from [#getLocalizer()]
     private final M3LocalizedStringProperty endLabelText =
-            new M3LocalizedStringProperty(this, "endLabelText", M3Localizer.getEffectiveLocalizer(this).getEndDateText());
+            new M3LocalizedStringProperty(this, "endLabelText", getLocalizer().getEndDateText());
 
     /// Returns the label text displayed by the end date input layout.
     ///
@@ -764,7 +795,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Returns the observable property that stores the end-editor label.
     ///
-    /// The non-null default follows the scoped localizer until explicitly assigned or bound, even when assigned
+    /// The non-null default follows this control's localizer until explicitly assigned or bound, even when assigned
     /// its current default text. Unbinding retains the application-selected label.
     ///
     /// @return the end-editor label property
@@ -1109,12 +1140,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Returns the Material text input layout used by the start date editor.
     ///
+    /// Its localizer property is bound to this field's [#localizerProperty()].
+    ///
     /// @return the Material text input layout used by the start date editor
     M3TextInputLayout getStartInputLayout() {
         return startInputLayout;
     }
 
     /// Returns the Material text input layout used by the end date editor.
+    ///
+    /// Its localizer property is bound to this field's [#localizerProperty()].
     ///
     /// @return the Material text input layout used by the end date editor
     M3TextInputLayout getEndInputLayout() {
@@ -1200,6 +1235,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
     }
 
     /// Returns the date range picker owned by this field and displayed in its popup.
+    ///
+    /// Its localizer property is bound to this field's [#localizerProperty()].
     ///
     /// @return the popup date range picker control
     public M3DateRangePicker getPicker() {
@@ -1382,6 +1419,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control i
 
     /// Adds base style classes and installs event handling.
     private void initialize() {
+        // The field owns both endpoint layouts and the popup picker.
+        startInputLayout.localizerProperty().bind(localizerProperty());
+        endInputLayout.localizerProperty().bind(localizerProperty());
+        picker.localizerProperty().bind(localizerProperty());
         startEditor.animationsEnabledProperty().bind(animationsEnabledProperty());
         endEditor.animationsEnabledProperty().bind(animationsEnabledProperty());
         startInputLayout.animationsEnabledProperty().bind(animationsEnabledProperty());

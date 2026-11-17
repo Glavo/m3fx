@@ -27,10 +27,12 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3LocalizedObjectProperty;
 import org.glavo.m3fx.internal.M3LocalizerObserver;
+import org.glavo.m3fx.internal.M3LocalizerProperty;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PickerAccessibilityPresentation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.localization.M3Localized;
 import org.glavo.m3fx.localization.M3Localizer;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -71,7 +73,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DateRangePicker extends Control implements M3Animated {
+public final class M3DateRangePicker extends Control implements M3Localized, M3Animated {
 
     /// The default style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-date-range-picker";
@@ -94,6 +96,35 @@ public final class M3DateRangePicker extends Control implements M3Animated {
     public M3DateRangePicker(LocalDate startDate, LocalDate endDate) {
         this();
         setRange(startDate, endDate);
+    }
+
+    /// The localizer, or `null` until its property is requested.
+    private @Nullable M3LocalizerProperty localizer;
+
+    /// Returns the localizer used for this component's built-in text.
+    @Override
+    public final M3Localizer getLocalizer() {
+        return localizer == null ? M3Localizer.getDefault() : localizer.get();
+    }
+
+    /// Sets the non-null localizer used for this component's built-in text.
+    ///
+    /// @throws NullPointerException if `localizer` is `null`
+    @Override
+    public final void setLocalizer(M3Localizer localizer) {
+        localizerProperty().set(localizer);
+    }
+
+    /// Returns the observable, bindable localizer property.
+    ///
+    /// The default is [M3Localizer#getDefault()]. Values must be non-null. Parent nodes do not affect this property,
+    /// and application-supplied children do not inherit it.
+    @Override
+    public final ObjectProperty<M3Localizer> localizerProperty() {
+        if (localizer == null) {
+            localizer = new M3LocalizerProperty(this);
+        }
+        return localizer;
     }
 
     /// The first selected date, or `null` when the range is empty.
@@ -275,7 +306,7 @@ public final class M3DateRangePicker extends Control implements M3Animated {
 
     /// The first calendar weekday, following localization until explicitly assigned or bound.
     private final M3LocalizedObjectProperty<DayOfWeek> firstDayOfWeek =
-            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", M3Localizer.getEffectiveLocalizer(this).getFirstDayOfWeek()) {
+            new M3LocalizedObjectProperty<>(this, "firstDayOfWeek", getLocalizer().getFirstDayOfWeek()) {
                 /// Notifies accessibility clients when visible day cells change.
                 @Override
                 protected void invalidated() {
@@ -300,8 +331,8 @@ public final class M3DateRangePicker extends Control implements M3Animated {
 
     /// Returns the observable property that stores the non-null first calendar weekday.
     ///
-    /// The value follows the effective [M3Localizer], including before a skin is installed, until explicitly
-    /// assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
+    /// The value follows this control's [localizer][#localizerProperty()], even before a skin is installed, until
+    /// explicitly assigned or bound. Assigning the current value also disables automatic defaults. Bindings must supply
     /// non-null values. Unbinding retains the last bound value and does not restore automatic defaults.
     ///
     /// @return the first-day-of-week property
@@ -822,7 +853,7 @@ public final class M3DateRangePicker extends Control implements M3Animated {
 
     /// Returns accessible text for the selected range or displayed month.
     private String accessibleText() {
-        M3Localizer localizer = M3Localizer.getEffectiveLocalizer(this);
+        M3Localizer localizer = getLocalizer();
         @Nullable LocalDate start = getStartDate();
         @Nullable LocalDate end = getEndDate();
         if (start == null) {
