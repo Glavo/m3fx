@@ -582,8 +582,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
         ripple.setOpacity(rippleOpacity);
-        stopStateOpacityAnimation();
-        overlay.setOpacity(resolvedOverlayOpacity(owner));
+        animateOverlayOpacityFromOwnerState();
         M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
         rippleAnimation.configureExpansion(rippleSpec, rippleOpacity);
         startMotionObservation();
@@ -1029,9 +1028,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = 0.0;
         } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
-        } else if (hasVisibleRipple()) {
-            interactionOpacity = 0.0;
-        } else if ((getPressFeedback() == PressFeedback.STATE_LAYER && pressActive) || isPressedLike(owner)) {
+        } else if (!hasVisibleRipple()
+                && ((getPressFeedback() == PressFeedback.STATE_LAYER && pressActive) || isPressedLike(owner))) {
+            // A ripple replaces pressed feedback, not the hover or focus layer beneath it.
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
                 || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {

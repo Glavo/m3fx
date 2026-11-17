@@ -158,7 +158,7 @@ final class M3SearchContractTest {
 
         FxTestUtils.setCssAnimationsEnabled(root, false);
         assertEquals(0.0, overlay.getOpacity(), 0.0001,
-                "persistent interaction overlays should not stack over a fading ripple");
+                "an unfocused, unhovered search bar must not retain a pressed overlay");
         searchBar.setDisable(true);
         searchBar.setDisable(false);
         assertEquals(0.0, ripple.getOpacity(), 0.0001,

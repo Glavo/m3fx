@@ -449,7 +449,7 @@ final class M3StateLayerTest {
 
             Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
             Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-            assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
+            assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
             assertTrue(stateLayer.isRippleAnimationRunning());
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
 
@@ -503,7 +503,74 @@ final class M3StateLayerTest {
         });
     }
 
-    /// Verifies that a pressed ripple uses one token-controlled feedback layer instead of stacking two opacities.
+    /// Starting, releasing, or restarting a ripple preserves existing hover and focus feedback.
+    @ParameterizedTest
+    @ValueSource(strings = {"hover", "focus-visible"})
+    void ripplePreservesPersistentInteractionFeedback(String state) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Action");
+            button.setAnimationsEnabled(false);
+            Pane root = new Pane(button);
+            new Scene(root, 200, 80);
+            root.applyCss();
+            button.resize(120, 40);
+            button.layout();
+            M3StateLayer layer = assertInstanceOf(M3StateLayer.class, button.lookup(".m3-state-layer-container"));
+            stateLayers.add(layer);
+            PseudoClass interaction = PseudoClass.getPseudoClass(state);
+            button.pseudoClassStateChanged(interaction, true);
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+            double restingOpacity = overlay.getOpacity();
+            assertTrue(restingOpacity > 0.0);
+            button.setAnimationsEnabled(true);
+
+            for (int press = 0; press < 2; press++) {
+                button.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.SPACE,
+                        false, false, false, false));
+                assertTrue(button.isArmed());
+                assertEquals(restingOpacity, overlay.getOpacity());
+                assertFalse(layer.isOverlayOpacityAnimationRunning());
+                assertTrue(layer.isRippleAnimationRunning());
+                assertEquals(0.1, lookupRegion(layer, ".m3-ripple").getOpacity(), 0.0001);
+                button.fireEvent(new KeyEvent(KeyEvent.KEY_RELEASED, "", "", KeyCode.SPACE,
+                        false, false, false, false));
+                assertFalse(button.isArmed());
+                assertEquals(restingOpacity, overlay.getOpacity());
+            }
+
+            button.pseudoClassStateChanged(interaction, false);
+            assertTrue(layer.isOverlayOpacityAnimationRunning());
+            assertEquals(restingOpacity, overlay.getOpacity());
+            button.setAnimationsEnabled(false);
+            assertEquals(0.0, overlay.getOpacity());
+            assertEquals(0.0, lookupRegion(layer, ".m3-ripple").getOpacity());
+        });
+    }
+
+    /// Starting a ripple does not jump an in-progress hover fade to its endpoint or to transparent.
+    @Test
+    void rippleRetainsIntermediateHoverOpacity() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3OverlayPane owner = new M3OverlayPane();
+            M3StateLayer layer = createStateLayer();
+            owner.getChildren().add(layer);
+            new Scene(owner, 120, 40);
+            layer.installStateTransitions(owner);
+            layer.layoutLayer(0, 0, 120, 40, 20);
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            Region overlay = lookupRegion(layer, ".m3-state-layer");
+            overlay.setOpacity(0.04);
+            layer.playRipple(20, 20);
+            assertEquals(0.04, overlay.getOpacity());
+            assertTrue(layer.isOverlayOpacityAnimationRunning());
+            layer.releaseRipple();
+            assertEquals(0.04, overlay.getOpacity());
+            owner.setAnimationsEnabled(false);
+            assertEquals(0.08, overlay.getOpacity(), 0.0001);
+        });
+    }
+
+    /// A ripple represents pressed feedback without also applying pressed opacity to the persistent overlay.
     @Test
     void pressedRippleUsesThemeOpacityWithoutStackingThePersistentOverlay() {
         FxTestUtils.runOnFxThread(() -> {
