@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies dialog content, actions, layout, and presentation configuration.
@@ -54,6 +56,63 @@ final class M3DialogPaneContractTest {
         FxTestUtils.startToolkit();
     }
 
+    /// Verifies live headline and supporting text bindings, omission, and custom content precedence.
+    @Test
+    void dialogTextPropertiesUpdatePresentation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DialogPane pane = new M3DialogPane();
+            assertEquals("", pane.getHeadline());
+            assertEquals("", pane.getSupportingText());
+            assertSame(pane, pane.headlineProperty().getBean());
+            assertSame(pane, pane.supportingTextProperty().getBean());
+            assertEquals("headline", pane.headlineProperty().getName());
+            assertEquals("supportingText", pane.supportingTextProperty().getName());
+            assertThrows(NullPointerException.class, () -> pane.setHeadline(null));
+            assertThrows(NullPointerException.class, () -> pane.setSupportingText(null));
+
+            SimpleStringProperty headline = new SimpleStringProperty("Save changes?");
+            SimpleStringProperty supportingText = new SimpleStringProperty("Your changes will be saved.");
+            pane.headlineProperty().bind(headline);
+            pane.supportingTextProperty().bind(supportingText);
+            Pane root = new Pane(pane);
+            new Scene(root);
+            root.applyCss();
+            Label headlineLabel = assertInstanceOf(Label.class, pane.lookup(".header-panel .label"));
+            Label supportingTextLabel = assertInstanceOf(Label.class, pane.lookup(".content-label"));
+            assertEquals(headline.get(), headlineLabel.getText());
+            assertEquals(supportingText.get(), supportingTextLabel.getText());
+
+            headline.set("Discard changes?");
+            supportingText.set("This action cannot be undone.");
+            assertEquals(headline.get(), pane.getHeadline());
+            assertEquals(supportingText.get(), pane.getSupportingText());
+            assertEquals(headline.get(), headlineLabel.getText());
+            assertEquals(supportingText.get(), supportingTextLabel.getText());
+            assertEquals("Discard changes? This action cannot be undone.",
+                    pane.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+
+            Label customContent = new Label("Custom content");
+            pane.setContent(customContent);
+            assertTrue(M3Accessible.containsNode(pane, customContent));
+            assertNull(pane.lookup(".content-label"));
+            supportingText.set("Updated supporting text");
+            pane.setContent(null);
+            assertNull(customContent.getParent());
+            assertSame(supportingTextLabel, pane.lookup(".content-label"));
+            assertEquals(supportingText.get(), supportingTextLabel.getText());
+            assertTrue(pane.supportingTextProperty().isBound());
+
+            headline.set(" ");
+            supportingText.set("");
+            assertNull(pane.lookup(".header-panel"));
+            assertNull(pane.lookup(".content-label"));
+            headline.set("Ready");
+            supportingText.set("All changes saved.");
+            assertSame(headlineLabel, pane.lookup(".header-panel .label"));
+            assertSame(supportingTextLabel, pane.lookup(".content-label"));
+        });
+    }
+
     /// Centers graphic headlines and restores logical-start alignment when the graphic is removed.
     @ParameterizedTest
     @EnumSource(value = NodeOrientation.class, names = {"LEFT_TO_RIGHT", "RIGHT_TO_LEFT"})
@@ -61,7 +120,7 @@ final class M3DialogPaneContractTest {
         FxTestUtils.runOnFxThread(() -> {
             M3DialogPane pane = new M3DialogPane();
             pane.setNodeOrientation(orientation);
-            pane.setContentText("Supporting text");
+            pane.setSupportingText("Supporting text");
             pane.setManaged(false);
             Pane root = new Pane(pane);
             Scene scene = new Scene(root, 600.0, 400.0);
@@ -69,7 +128,7 @@ final class M3DialogPaneContractTest {
 
             for (double width : new double[]{304.0, 444.0}) {
                 for (String headline : List.of("Dialog title", "A longer dialog headline that wraps onto multiple lines")) {
-                    pane.setHeaderText(headline);
+                    pane.setHeadline(headline);
                     Rectangle graphic = new Rectangle(24.0, 24.0);
                     for (boolean withGraphic : new boolean[]{false, true, false}) {
                         pane.setGraphic(withGraphic ? graphic : null);
@@ -226,8 +285,8 @@ final class M3DialogPaneContractTest {
     @Test
     void dialogPaneSubnodesUseMaterialStyles() {
         M3DialogPane dialogPane = new M3DialogPane();
-        dialogPane.setHeaderText("Dialog title");
-        dialogPane.setContentText("Dialog body");
+        dialogPane.setHeadline("Dialog title");
+        dialogPane.setSupportingText("Dialog body");
         M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
         okAction.setDefaultButton(true);
         dialogPane.getActions().setAll(okAction);
@@ -565,8 +624,8 @@ final class M3DialogPaneContractTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Dialog dialog = new M3Dialog();
             M3DialogPane pane = dialog.getDialogPane();
-            pane.setHeaderText("Header");
-            pane.setContentText("Body");
+            pane.setHeadline("Header");
+            pane.setSupportingText("Body");
             M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
             cancelAction.setCancelButton(true);
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
@@ -574,8 +633,8 @@ final class M3DialogPaneContractTest {
             pane.getActions().setAll(cancelAction, okAction);
 
             assertSame(pane, dialog.getDialogPane());
-            assertEquals("Header", pane.getHeaderText());
-            assertEquals("Body", pane.getContentText());
+            assertEquals("Header", pane.getHeadline());
+            assertEquals("Body", pane.getSupportingText());
             assertEquals(List.of(cancelAction, okAction), pane.getActions());
             assertTrue(dialog.isDismissOnScrimClick());
             assertTrue(pane.getStyleClass().contains("m3-dialog-pane"));

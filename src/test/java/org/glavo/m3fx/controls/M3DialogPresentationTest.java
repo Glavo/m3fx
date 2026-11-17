@@ -210,8 +210,8 @@ final class M3DialogPresentationTest {
     void unconstrainedPreferredHeightDoesNotMeasureTextAtZeroWidth() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DialogPane pane = new M3DialogPane();
-            pane.setHeaderText("Dialog title");
-            pane.setContentText("A short supporting sentence should occupy its natural number of lines.");
+            pane.setHeadline("Dialog title");
+            pane.setSupportingText("A short supporting sentence should occupy its natural number of lines.");
             M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
             cancelAction.setCancelButton(true);
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
@@ -297,7 +297,7 @@ final class M3DialogPresentationTest {
             M3Button acceptAction = new M3Button("Accept", M3ButtonVariant.TEXT);
             acceptAction.setDefaultButton(true);
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().setHeaderText("Confirm action");
+            dialog.getDialogPane().setHeadline("Confirm action");
             dialog.getDialogPane().getActions().setAll(cancelAction, acceptAction);
             List<String> lifecycle = new ArrayList<>();
             AtomicInteger closeRequests = new AtomicInteger();
@@ -446,8 +446,8 @@ final class M3DialogPresentationTest {
                         stage.show();
 
                         M3Dialog dialog = new M3Dialog();
-                        dialog.getDialogPane().setHeaderText("Rendered dialog");
-                        dialog.getDialogPane().setContentText("Visible content");
+                        dialog.getDialogPane().setHeadline("Rendered dialog");
+                        dialog.getDialogPane().setSupportingText("Visible content");
                         M3DialogHandle handle = overlayRoot.showDialog(dialog);
 
                         stageReference.set(stage);
@@ -545,7 +545,7 @@ final class M3DialogPresentationTest {
                         stage.show();
 
                         M3Dialog dialog = new M3Dialog();
-                        dialog.getDialogPane().setHeaderText("Animated dialog");
+                        dialog.getDialogPane().setHeadline("Animated dialog");
                         M3DialogHandle handle = overlayRoot.showDialog(dialog);
 
                         stageReference.set(stage);
@@ -748,7 +748,7 @@ final class M3DialogPresentationTest {
 
             M3Dialog dialog = new M3Dialog();
             M3DialogPane pane = dialog.getDialogPane();
-            pane.setHeaderText("Themed dialog");
+            pane.setHeadline("Themed dialog");
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
             okAction.setDefaultButton(true);
             pane.getActions().setAll(okAction);
@@ -801,7 +801,7 @@ final class M3DialogPresentationTest {
             stage.show();
 
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().setHeaderText("Context dialog");
+            dialog.getDialogPane().setHeadline("Context dialog");
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
             okAction.setDefaultButton(true);
             dialog.getDialogPane().getActions().setAll(okAction);
@@ -861,8 +861,8 @@ final class M3DialogPresentationTest {
             long showingWindowCount = Window.getWindows().stream().filter(Window::isShowing).count();
 
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().setHeaderText("Visible dialog");
-            dialog.getDialogPane().setContentText("Owner content remains visible below a Material scrim.");
+            dialog.getDialogPane().setHeadline("Visible dialog");
+            dialog.getDialogPane().setSupportingText("Owner content remains visible below a Material scrim.");
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
             okAction.setDefaultButton(true);
             dialog.getDialogPane().getActions().setAll(okAction);
@@ -927,7 +927,7 @@ final class M3DialogPresentationTest {
             AtomicInteger closeRequests = new AtomicInteger();
             List<String> lifecycle = new ArrayList<>();
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().setHeaderText("Owned dialog");
+            dialog.getDialogPane().setHeadline("Owned dialog");
             dialog.setOnCloseRequest(event -> {
                 assertNull(event.getAction());
                 closeRequests.incrementAndGet();
@@ -1155,9 +1155,9 @@ final class M3DialogPresentationTest {
             stage.show();
 
             M3Dialog first = new M3Dialog();
-            first.getDialogPane().setHeaderText("First");
+            first.getDialogPane().setHeadline("First");
             M3Dialog second = new M3Dialog();
-            second.getDialogPane().setHeaderText("Second");
+            second.getDialogPane().setHeadline("Second");
             @Nullable M3DialogHandle firstHandle = null;
             @Nullable M3DialogHandle secondHandle = null;
             try {

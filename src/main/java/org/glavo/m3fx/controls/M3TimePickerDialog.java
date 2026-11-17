@@ -91,7 +91,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Refreshes only text that has not been customized or bound by the application.
     private void refreshLocalization(M3Localizer localizer) {
-        ((M3LocalizedStringProperty) getDialogPane().headerTextProperty()).updateDefault(localizer.getSelectTimeText());
+        ((M3LocalizedStringProperty) getDialogPane().headlineProperty()).updateDefault(localizer.getSelectTimeText());
         cancelText.updateDefault(localizer.getCancelText());
         confirmText.updateDefault(localizer.getConfirmText());
     }

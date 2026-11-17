@@ -118,11 +118,11 @@ final class HMCLAccountsView extends BorderPane {
 
     private void showMicrosoftDialog() {
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("accounts.microsoft.title"));
+        dialog.getDialogPane().setHeadline(strings.get("accounts.microsoft.title"));
         M3Banner warning = new M3Banner(strings.get("accounts.microsoft.warning"));
         warning.setIcon(HMCLDemoIcons.create(HMCLDemoIcons.INFO));
         dialog.getDialogPane().setContent(warning);
-        dialog.getDialogPane().setContentText(strings.get("accounts.microsoft.body"));
+        dialog.getDialogPane().setSupportingText(strings.get("accounts.microsoft.body"));
 
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);
@@ -141,7 +141,7 @@ final class HMCLAccountsView extends BorderPane {
         M3TextInputLayout layout = new M3TextInputLayout(nameField);
         layout.setLabelText(strings.get("accounts.add.offline"));
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("accounts.add.offline"));
+        dialog.getDialogPane().setHeadline(strings.get("accounts.add.offline"));
         dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);

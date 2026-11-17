@@ -330,8 +330,8 @@ public final class M3FXDemoApp extends Application {
 
         M3Dialog dialog = new M3Dialog();
         M3DialogPane pane = dialog.getDialogPane();
-        pane.setHeaderText("Demo settings");
-        pane.setContentText("Adjust the catalog presentation without changing individual component examples.");
+        pane.setHeadline("Demo settings");
+        pane.setSupportingText("Adjust the catalog presentation without changing individual component examples.");
         pane.setContent(createDemoPreferencesContent(root));
         pane.setPrefWidth(520.0);
         pane.getActions().add(done);

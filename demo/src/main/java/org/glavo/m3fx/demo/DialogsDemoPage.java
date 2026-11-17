@@ -146,19 +146,19 @@ final class DialogsDemoPage extends DemoPageSupport {
 
     /// Creates a dialog with the supplied text and actions.
     ///
-    /// @param headerText  the dialog heading
-    /// @param contentText the optional supporting text
+    /// @param headline  the dialog heading
+    /// @param supportingText the optional supporting text
     /// @param actions     the dialog actions
     /// @return the configured dialog
     private static M3Dialog createDialog(
-            String headerText,
-            @Nullable String contentText,
+            String headline,
+            @Nullable String supportingText,
             M3Button... actions
     ) {
         M3Dialog dialog = new M3Dialog();
         M3DialogPane pane = dialog.getDialogPane();
-        pane.setHeaderText(headerText);
-        pane.setContentText(contentText == null ? "" : contentText);
+        pane.setHeadline(headline);
+        pane.setSupportingText(supportingText == null ? "" : supportingText);
         pane.getActions().addAll(actions);
         return dialog;
     }
@@ -187,8 +187,8 @@ final class DialogsDemoPage extends DemoPageSupport {
 
     /// Creates one inline dialog pane preview.
     private static M3DialogPane createDialogPreviewPane(
-            String headerText,
-            @Nullable String contentText,
+            String headline,
+            @Nullable String supportingText,
             M3Button... actions
     ) {
         M3DialogPane pane = new M3DialogPane();
@@ -196,9 +196,9 @@ final class DialogsDemoPage extends DemoPageSupport {
         pane.setMinWidth(0.0);
         pane.setMaxWidth(MAX_INLINE_DIALOG_PANE_WIDTH);
         pane.setMaxHeight(Region.USE_PREF_SIZE);
-        pane.setHeaderText(headerText);
-        if (contentText != null) {
-            pane.setContentText(contentText);
+        pane.setHeadline(headline);
+        if (supportingText != null) {
+            pane.setSupportingText(supportingText);
         }
         pane.getActions().addAll(actions);
         return pane;

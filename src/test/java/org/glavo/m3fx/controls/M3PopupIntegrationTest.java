@@ -1618,8 +1618,8 @@ final class M3PopupIntegrationTest {
                         overlayPane.layout();
 
                         M3Dialog dialog = new M3Dialog();
-                        dialog.getDialogPane().setHeaderText("Dark expressive dialog");
-                        dialog.getDialogPane().setContentText("Dark overlay body");
+                        dialog.getDialogPane().setHeadline("Dark expressive dialog");
+                        dialog.getDialogPane().setSupportingText("Dark overlay body");
                         M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
                         cancelAction.setCancelButton(true);
                         M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);

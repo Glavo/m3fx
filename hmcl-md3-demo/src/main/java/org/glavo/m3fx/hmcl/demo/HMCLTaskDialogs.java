@@ -80,7 +80,7 @@ final class HMCLTaskDialogs {
         content.setMaxWidth(Double.MAX_VALUE);
 
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(title);
+        dialog.getDialogPane().setHeadline(title);
         dialog.getDialogPane().setContent(content);
         dialog.setDismissOnScrimClick(false);
 

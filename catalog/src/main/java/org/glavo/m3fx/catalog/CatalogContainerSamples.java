@@ -279,7 +279,7 @@ final class CatalogContainerSamples {
     /// @return the configured dialog pane
     static Node dialog(boolean settings, boolean scrolling) {
         M3DialogPane pane = new M3DialogPane();
-        pane.setHeaderText(settings ? "Project settings" : scrolling ? "Release notes" : "Discard draft?");
+        pane.setHeadline(settings ? "Project settings" : scrolling ? "Release notes" : "Discard draft?");
         pane.setMinWidth(0.0);
         pane.setMaxWidth(560.0);
         if (settings) {
@@ -304,7 +304,7 @@ final class CatalogContainerSamples {
             scrollPane.setPrefViewportHeight(150.0);
             pane.setContent(scrollPane);
         } else {
-            pane.setContentText("This action cannot be undone.");
+            pane.setSupportingText("This action cannot be undone.");
         }
         M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);

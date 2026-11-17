@@ -324,8 +324,8 @@ final class M3ControlGalleryTest {
             scrim.setPrefSize(180.0, 72.0);
             scrim.show();
             M3DialogPane dialogPane = new M3DialogPane();
-            dialogPane.setHeaderText("Dialog title");
-            dialogPane.setContentText("Dialog content");
+            dialogPane.setHeadline("Dialog title");
+            dialogPane.setSupportingText("Dialog content");
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
             okAction.setDefaultButton(true);
             M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);

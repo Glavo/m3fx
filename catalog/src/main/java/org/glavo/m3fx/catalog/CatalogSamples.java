@@ -289,8 +289,8 @@ final class CatalogSamples {
     /// @return the dialog pane example
     static Node dialog() {
         M3DialogPane pane = new M3DialogPane();
-        pane.setHeaderText("Discard draft?");
-        pane.setContentText("This action cannot be undone.");
+        pane.setHeadline("Discard draft?");
+        pane.setSupportingText("This action cannot be undone.");
 
         M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);

@@ -204,16 +204,16 @@ final class M3LocalizationTest {
                 assertEquals(3, changes.size());
                 assertSame(first, changes.get(1));
                 assertSame(second, changes.get(2));
-                assertEquals("Second date", dialog.getDialogPane().getHeaderText());
+                assertEquals("Second date", dialog.getDialogPane().getHeadline());
 
                 ObjectProperty<M3Localizer> language = new SimpleObjectProperty<>(first);
                 dialog.localizerProperty().bind(language);
-                assertEquals("First date", dialog.getDialogPane().getHeaderText());
+                assertEquals("First date", dialog.getDialogPane().getHeadline());
                 language.set(second);
                 assertEquals(5, changes.size());
                 assertSame(second, changes.get(4));
                 assertSame(second, dialog.getPicker().getLocalizer());
-                assertEquals("Second date", dialog.getDialogPane().getHeaderText());
+                assertEquals("Second date", dialog.getDialogPane().getHeadline());
             }
         });
     }

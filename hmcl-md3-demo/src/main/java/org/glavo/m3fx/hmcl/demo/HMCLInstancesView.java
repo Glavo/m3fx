@@ -166,7 +166,7 @@ final class HMCLInstancesView extends BorderPane {
         M3TextInputLayout layout = new M3TextInputLayout(nameField);
         layout.setLabelText(strings.get("instances.directory.name"));
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instances.new_directory"));
+        dialog.getDialogPane().setHeadline(strings.get("instances.new_directory"));
         dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);

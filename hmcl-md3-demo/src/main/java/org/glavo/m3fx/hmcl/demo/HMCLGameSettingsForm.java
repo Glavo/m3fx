@@ -891,7 +891,7 @@ final class HMCLGameSettingsForm {
         M3TextInputLayout layout = new M3TextInputLayout(field);
         layout.setLabelText(title);
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(title);
+        dialog.getDialogPane().setHeadline(title);
         dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(controller.strings().get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);

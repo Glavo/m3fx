@@ -44,16 +44,16 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     private final StackPane graphicContainer = new StackPane();
 
     /// The container used for the optional headline label.
-    private final StackPane headerPanel = new StackPane();
+    private final StackPane headlineContainer = new StackPane();
 
     /// The headline label bound to the pane's headline property.
-    private final Label headerLabel = new Label();
+    private final Label headlineLabel = new Label();
 
     /// The container used for node or text content.
     private final StackPane contentContainer = new StackPane();
 
-    /// The fallback body label bound to the pane's content-text property.
-    private final Label contentLabel = new Label();
+    /// The supporting text label displayed when no custom content is present.
+    private final Label supportingTextLabel = new Label();
 
     /// The horizontal row containing the retained dialog actions.
     private final HBox actionBar = new HBox();
@@ -92,23 +92,23 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         layout.setFillWidth(true);
         graphicContainer.getStyleClass().add("graphic-container");
         graphicContainer.setAlignment(Pos.CENTER);
-        headerPanel.getStyleClass().add("header-panel");
-        headerLabel.setWrapText(true);
+        headlineContainer.getStyleClass().add("header-panel");
+        headlineLabel.setWrapText(true);
         contentContainer.getStyleClass().add("content");
         contentContainer.setAlignment(Pos.TOP_LEFT);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
+        supportingTextLabel.getStyleClass().add("content-label");
+        supportingTextLabel.setWrapText(true);
         actionBar.getStyleClass().add(ACTIONS_STYLE_CLASS);
         actionBar.setAlignment(Pos.CENTER_RIGHT);
         actionBar.spacingProperty().bind(control.actionSpacingProperty());
         HBox.setHgrow(actionSpacer, Priority.ALWAYS);
 
-        headerLabel.textProperty().bind(control.headerTextProperty());
-        contentLabel.textProperty().bind(control.contentTextProperty());
+        headlineLabel.textProperty().bind(control.headlineProperty());
+        supportingTextLabel.textProperty().bind(control.supportingTextProperty());
         control.graphicProperty().addListener(structureInvalidation);
-        control.headerTextProperty().addListener(structureInvalidation);
+        control.headlineProperty().addListener(structureInvalidation);
         control.contentProperty().addListener(structureInvalidation);
-        control.contentTextProperty().addListener(structureInvalidation);
+        control.supportingTextProperty().addListener(structureInvalidation);
         control.getActions().addListener(actionsInvalidation);
         control.containerShapeProperty().addListener(shapeInvalidation);
 
@@ -123,13 +123,13 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     public void dispose() {
         M3DialogPane control = getSkinnable();
         control.graphicProperty().removeListener(structureInvalidation);
-        control.headerTextProperty().removeListener(structureInvalidation);
+        control.headlineProperty().removeListener(structureInvalidation);
         control.contentProperty().removeListener(structureInvalidation);
-        control.contentTextProperty().removeListener(structureInvalidation);
+        control.supportingTextProperty().removeListener(structureInvalidation);
         control.getActions().removeListener(actionsInvalidation);
         control.containerShapeProperty().removeListener(shapeInvalidation);
-        headerLabel.textProperty().unbind();
-        contentLabel.textProperty().unbind();
+        headlineLabel.textProperty().unbind();
+        supportingTextLabel.textProperty().unbind();
         actionBar.spacingProperty().unbind();
         actionBar.getChildren().clear();
         layout.getChildren().clear();
@@ -156,20 +156,20 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         layout.getChildren().clear();
 
         @Nullable Node graphic = control.getGraphic();
-        Pos headerAlignment = graphic == null ? Pos.CENTER_LEFT : Pos.CENTER;
-        headerPanel.setAlignment(headerAlignment);
-        headerLabel.setAlignment(headerAlignment);
-        headerLabel.setTextAlignment(graphic == null ? TextAlignment.LEFT : TextAlignment.CENTER);
+        Pos headlineAlignment = graphic == null ? Pos.CENTER_LEFT : Pos.CENTER;
+        headlineContainer.setAlignment(headlineAlignment);
+        headlineLabel.setAlignment(headlineAlignment);
+        headlineLabel.setTextAlignment(graphic == null ? TextAlignment.LEFT : TextAlignment.CENTER);
         graphicContainer.getChildren().clear();
         if (graphic != null) {
             graphicContainer.getChildren().add(graphic);
             layout.getChildren().add(graphicContainer);
         }
 
-        headerPanel.getChildren().clear();
-        if (!control.getHeaderText().isBlank()) {
-            headerPanel.getChildren().add(headerLabel);
-            layout.getChildren().add(headerPanel);
+        headlineContainer.getChildren().clear();
+        if (!control.getHeadline().isBlank()) {
+            headlineContainer.getChildren().add(headlineLabel);
+            layout.getChildren().add(headlineContainer);
         }
 
         contentContainer.getChildren().clear();
@@ -177,8 +177,8 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         if (content != null) {
             contentContainer.getChildren().add(content);
             layout.getChildren().add(contentContainer);
-        } else if (!control.getContentText().isBlank()) {
-            contentContainer.getChildren().add(contentLabel);
+        } else if (!control.getSupportingText().isBlank()) {
+            contentContainer.getChildren().add(supportingTextLabel);
             layout.getChildren().add(contentContainer);
         }
 

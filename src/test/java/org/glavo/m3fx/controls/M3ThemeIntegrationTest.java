@@ -382,8 +382,8 @@ final class M3ThemeIntegrationTest {
                 M3OverlayPane overlayPane = new M3OverlayPane();
                 overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
                 M3DialogPane dialogPane = new M3DialogPane();
-                dialogPane.setHeaderText("Dialog");
-                dialogPane.setContentText("Dialog content");
+                dialogPane.setHeadline("Dialog");
+                dialogPane.setSupportingText("Dialog content");
                 M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
                 okAction.setDefaultButton(true);
                 M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);

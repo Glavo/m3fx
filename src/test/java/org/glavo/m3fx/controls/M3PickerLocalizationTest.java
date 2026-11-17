@@ -58,9 +58,9 @@ final class M3PickerLocalizationTest {
                 dialog.localizerProperty().bind(language);
             }
 
-            assertEquals(first.getSelectDateText(), date.getDialogPane().getHeaderText());
-            assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
-            assertEquals(first.getSelectTimeText(), time.getDialogPane().getHeaderText());
+            assertEquals(first.getSelectDateText(), date.getDialogPane().getHeadline());
+            assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeadline());
+            assertEquals(first.getSelectTimeText(), time.getDialogPane().getHeadline());
             for (M3Dialog dialog : List.of(date, range, time)) {
                 assertEquals(first.getCancelText(), dialog.getDialogPane().getActions().get(0).getText());
                 assertEquals(first.getConfirmText(), dialog.getDialogPane().getActions().get(1).getText());
@@ -75,20 +75,20 @@ final class M3PickerLocalizationTest {
 
             time.localizerProperty().unbind();
             time.setLocalizer(second);
-            assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeaderText());
+            assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeadline());
             assertSame(second, time.getPicker().getLocalizer());
             time.localizerProperty().bind(language);
-            assertEquals(first.getSelectTimeText(), time.getDialogPane().getHeaderText());
+            assertEquals(first.getSelectTimeText(), time.getDialogPane().getHeadline());
 
             Pane secondRoot = new Pane();
             firstRoot.getChildren().remove(date.getDialogPane());
             secondRoot.getChildren().add(date.getDialogPane());
-            assertEquals(first.getSelectDateText(), date.getDialogPane().getHeaderText());
-            assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
+            assertEquals(first.getSelectDateText(), date.getDialogPane().getHeadline());
+            assertEquals(first.getSelectDateRangeText(), range.getDialogPane().getHeadline());
             language.set(second);
-            assertEquals(second.getSelectDateText(), date.getDialogPane().getHeaderText());
-            assertEquals(second.getSelectDateRangeText(), range.getDialogPane().getHeaderText());
-            assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeaderText());
+            assertEquals(second.getSelectDateText(), date.getDialogPane().getHeadline());
+            assertEquals(second.getSelectDateRangeText(), range.getDialogPane().getHeadline());
+            assertEquals(second.getSelectTimeText(), time.getDialogPane().getHeadline());
             assertSame(second, date.getPicker().getLocalizer());
             assertSame(second, range.getPicker().getLocalizer());
             assertSame(second, time.getPicker().getLocalizer());
@@ -123,12 +123,12 @@ final class M3PickerLocalizationTest {
                 M3DialogHandle boundHandle = overlay.showDialog(boundDialog);
                 assertTrue(boundDialog.localizerProperty().isBound());
                 assertSame(first, boundDialog.getLocalizer());
-                assertEquals(first.getSelectDateText(), boundDialog.getDialogPane().getHeaderText());
+                assertEquals(first.getSelectDateText(), boundDialog.getDialogPane().getHeadline());
                 overlay.setLocalizer(new TestLocalizer("Changed host"));
                 assertSame(first, boundDialog.getLocalizer());
                 language.set(second);
                 assertSame(second, boundDialog.getPicker().getLocalizer());
-                assertEquals(second.getSelectDateText(), boundDialog.getDialogPane().getHeaderText());
+                assertEquals(second.getSelectDateText(), boundDialog.getDialogPane().getHeadline());
                 assertTrue(boundHandle.requestClose());
                 language.set(first);
                 assertSame(first, boundDialog.getPicker().getLocalizer());
@@ -151,26 +151,26 @@ final class M3PickerLocalizationTest {
             M3DatePickerDialog date = new M3DatePickerDialog();
             M3DateRangePickerDialog range = new M3DateRangePickerDialog();
             M3TimePickerDialog time = new M3TimePickerDialog();
-            String dateTitle = date.getDialogPane().getHeaderText();
-            String rangeTitle = range.getDialogPane().getHeaderText();
-            String timeTitle = time.getDialogPane().getHeaderText();
-            date.getDialogPane().setHeaderText(dateTitle);
-            range.getDialogPane().headerTextProperty().set(rangeTitle);
+            String dateTitle = date.getDialogPane().getHeadline();
+            String rangeTitle = range.getDialogPane().getHeadline();
+            String timeTitle = time.getDialogPane().getHeadline();
+            date.getDialogPane().setHeadline(dateTitle);
+            range.getDialogPane().headlineProperty().set(rangeTitle);
             SimpleStringProperty source = new SimpleStringProperty(timeTitle);
-            time.getDialogPane().headerTextProperty().bind(source);
+            time.getDialogPane().headlineProperty().bind(source);
             TestLocalizer localizer = new TestLocalizer("Changed");
             for (M3Dialog dialog : List.of(date, range, time)) {
                 dialog.setLocalizer(localizer);
             }
 
-            assertEquals(dateTitle, date.getDialogPane().getHeaderText());
-            assertEquals(rangeTitle, range.getDialogPane().getHeaderText());
-            assertEquals(timeTitle, time.getDialogPane().getHeaderText());
+            assertEquals(dateTitle, date.getDialogPane().getHeadline());
+            assertEquals(rangeTitle, range.getDialogPane().getHeadline());
+            assertEquals(timeTitle, time.getDialogPane().getHeadline());
             source.set("Appointment");
-            assertEquals("Appointment", time.getDialogPane().getHeaderText());
-            time.getDialogPane().headerTextProperty().unbind();
+            assertEquals("Appointment", time.getDialogPane().getHeadline());
+            time.getDialogPane().headlineProperty().unbind();
             time.setLocalizer(new TestLocalizer("Next"));
-            assertEquals("Appointment", time.getDialogPane().getHeaderText());
+            assertEquals("Appointment", time.getDialogPane().getHeadline());
         });
     }
 
@@ -181,7 +181,7 @@ final class M3PickerLocalizationTest {
             for (M3Dialog dialog : List.of(
                     new M3DatePickerDialog(), new M3DateRangePickerDialog(), new M3TimePickerDialog())) {
                 M3DialogPane pane = dialog.getDialogPane();
-                pane.setHeaderText("Appointment");
+                pane.setHeadline("Appointment");
                 M3Button cancel = pane.getActions().get(0);
                 String originalCancel = cancel.getText();
                 cancel.setText("Dismiss");
@@ -189,7 +189,7 @@ final class M3PickerLocalizationTest {
                 SimpleStringProperty confirmation = new SimpleStringProperty("Save");
                 pane.getActions().get(1).textProperty().bind(confirmation);
                 dialog.setLocalizer(new TestLocalizer("Changed"));
-                assertEquals("Appointment", pane.getHeaderText());
+                assertEquals("Appointment", pane.getHeadline());
                 assertEquals(originalCancel, cancel.getText());
                 assertEquals("Save", pane.getActions().get(1).getText());
                 confirmation.set("Save again");
@@ -228,17 +228,17 @@ final class M3PickerLocalizationTest {
             for (M3Dialog dialog : List.of(
                     new M3DatePickerDialog(), new M3DateRangePickerDialog(), new M3TimePickerDialog())) {
                 M3DialogPane pane = dialog.getDialogPane();
-                String header = pane.getHeaderText();
+                String header = pane.getHeadline();
                 String cancel = pane.getActions().get(0).getText();
                 String confirm = pane.getActions().get(1).getText();
-                pane.headerTextProperty().bind(new SimpleStringProperty(header));
-                pane.headerTextProperty().unbind();
+                pane.headlineProperty().bind(new SimpleStringProperty(header));
+                pane.headlineProperty().unbind();
                 for (M3Button action : pane.getActions()) {
                     action.textProperty().bind(new SimpleStringProperty(action.getText()));
                     action.textProperty().unbind();
                 }
                 dialog.setLocalizer(new TestLocalizer("Changed"));
-                assertEquals(header, pane.getHeaderText());
+                assertEquals(header, pane.getHeadline());
                 assertEquals(cancel, pane.getActions().get(0).getText());
                 assertEquals(confirm, pane.getActions().get(1).getText());
             }

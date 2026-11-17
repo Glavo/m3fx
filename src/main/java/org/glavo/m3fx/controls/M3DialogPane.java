@@ -47,7 +47,8 @@ import java.util.function.Consumer;
 
 /// A Material Design 3 dialog pane.
 ///
-/// The pane owns a headline, optional graphic, text or node content, and an ordered set of Material action buttons.
+/// The pane owns a headline, optional graphic, supporting text or custom content, and an ordered set of Material
+/// action buttons.
 /// It is the content surface of an [M3Dialog] and does not itself create a native window. [M3OverlayPane] and
 /// [M3DialogWindow] provide in-scene and native-window presentation.
 ///
@@ -100,7 +101,7 @@ public class M3DialogPane extends Control implements M3Animated {
 
     /// Creates an empty dialog pane with Material geometry and no actions.
     ///
-    /// Header and content text default to empty strings; graphic and content nodes default to `null`.
+    /// Headline and supporting text default to empty strings; graphic and content nodes default to `null`.
     public M3DialogPane() {
         M3ControlStyles.initialize(this, DEFAULT_STYLE_CLASS);
         // JavaFX 17 has no DIALOG role; the helper returns PARENT there.
@@ -125,11 +126,11 @@ public class M3DialogPane extends Control implements M3Animated {
     /// validate this constraint when invalidated.
     ///
     /// @defaultValue `""`
-    private final StringProperty headerText = new M3LocalizedStringProperty(this, "headerText", "") {
+    private final StringProperty headline = new M3LocalizedStringProperty(this, "headline", "") {
         /// Rejects null headline values and refreshes accessibility state.
         @Override
         protected void invalidated() {
-            Objects.requireNonNull(get(), "headerText");
+            Objects.requireNonNull(get(), "headline");
             updateAccessibleText();
         }
     };
@@ -137,16 +138,16 @@ public class M3DialogPane extends Control implements M3Animated {
     /// Returns the dialog headline.
     ///
     /// @return the non-null dialog headline, or an empty string when no headline is displayed
-    public final String getHeaderText() {
-        return headerText.get();
+    public final String getHeadline() {
+        return headline.get();
     }
 
     /// Sets the dialog headline.
     ///
-    /// @param headerText the dialog headline, or an empty string to hide it
-    /// @throws NullPointerException if `headerText` is `null`
-    public final void setHeaderText(String headerText) {
-        this.headerText.set(Objects.requireNonNull(headerText, "headerText"));
+    /// @param headline the dialog headline, or an empty string to hide it
+    /// @throws NullPointerException if `headline` is `null`
+    public final void setHeadline(String headline) {
+        this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
 
     /// Returns the observable property that stores the dialog headline.
@@ -157,48 +158,50 @@ public class M3DialogPane extends Control implements M3Animated {
     /// the headline to the logical start edge.
     ///
     /// @return the dialog headline property
-    public final StringProperty headerTextProperty() {
-        return headerText;
+    public final StringProperty headlineProperty() {
+        return headline;
     }
 
-    /// The fallback body text displayed while [content][#contentProperty()] is `null`.
+    /// The supporting text displayed while [content][#contentProperty()] is `null`.
     ///
-    /// Empty and blank values omit the fallback content section from layout. Values must be non-null; direct property
+    /// Empty and blank values omit the supporting text section from layout. Values must be non-null; direct property
     /// writes validate this constraint when invalidated.
     ///
     /// @defaultValue `""`
-    private final StringProperty contentText = new SimpleStringProperty(this, "contentText", "") {
-        /// Rejects null content text and refreshes accessibility state.
+    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
+        /// Rejects null supporting text and refreshes accessibility state.
         @Override
         protected void invalidated() {
-            Objects.requireNonNull(get(), "contentText");
+            Objects.requireNonNull(get(), "supportingText");
             updateAccessibleText();
         }
     };
 
-    /// Returns the fallback dialog body text.
+    /// Returns the dialog supporting text.
     ///
-    /// @return the non-null body text, or an empty string when no text is displayed
-    public final String getContentText() {
-        return contentText.get();
+    /// @return the non-null supporting text, which may be empty or hidden by custom content
+    public final String getSupportingText() {
+        return supportingText.get();
     }
 
-    /// Sets the fallback dialog body text used when [#getContent()] is `null`.
+    /// Sets the dialog supporting text used when [#getContent()] is `null`.
     ///
-    /// @param contentText the dialog body text, or an empty string to hide it
-    /// @throws NullPointerException if `contentText` is `null`
-    public final void setContentText(String contentText) {
-        this.contentText.set(Objects.requireNonNull(contentText, "contentText"));
+    /// @param supportingText the supporting text, or an empty string to hide it
+    /// @throws NullPointerException if `supportingText` is `null`
+    public final void setSupportingText(String supportingText) {
+        this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
 
-    /// Returns the observable property that stores the fallback body text.
+    /// Returns the observable property that stores the supporting text.
     ///
     /// The property can be observed and bound. Its default value is the empty string, and values must be non-null.
-    /// The text is displayed only while [content][#contentProperty()] is `null`.
+    /// Empty and blank values omit the supporting text section. A non-null [content][#contentProperty()] node
+    /// replaces the text visually without changing its value or binding. Removing that node displays the current
+    /// supporting text again.
     ///
-    /// @return the fallback body-text property
-    public final StringProperty contentTextProperty() {
-        return contentText;
+    /// @return the supporting-text property
+    public final StringProperty supportingTextProperty() {
+        return supportingText;
     }
 
     /// The optional graphic displayed before the dialog headline.
@@ -235,7 +238,7 @@ public class M3DialogPane extends Control implements M3Animated {
 
     /// The optional node displayed in the dialog content area.
     ///
-    /// A non-null node replaces [contentText][#contentTextProperty()] visually and must not already belong to
+    /// A non-null node replaces [supportingText][#supportingTextProperty()] visually and must not already belong to
     /// another scene-graph parent when this pane is presented.
     ///
     /// @defaultValue `null`
@@ -243,14 +246,14 @@ public class M3DialogPane extends Control implements M3Animated {
 
     /// Returns the optional dialog content node.
     ///
-    /// @return the content node, or `null` to display [#getContentText()]
+    /// @return the content node, or `null` to display [#getSupportingText()]
     public final @Nullable Node getContent() {
         return content.get();
     }
 
     /// Sets the dialog content node.
     ///
-    /// @param content the content node, or `null` to display [#getContentText()]
+    /// @param content the content node, or `null` to display [#getSupportingText()]
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
@@ -258,7 +261,7 @@ public class M3DialogPane extends Control implements M3Animated {
     /// Returns the observable property that stores the optional dialog content node.
     ///
     /// The property can be observed and bound, and its default value is `null`. A non-null node replaces the
-    /// fallback body text visually and must not already belong to another scene-graph parent when this pane is
+    /// supporting text visually and must not already belong to another scene-graph parent when this pane is
     /// presented.
     ///
     /// @return the dialog content-node property
@@ -850,11 +853,11 @@ public class M3DialogPane extends Control implements M3Animated {
         icon.getStyleClass().remove(GRAPHIC_ICON_STYLE_CLASS);
     }
 
-    /// Updates the accessibility label from the dialog header and content text.
+    /// Updates the accessibility label from the dialog headline and supporting text.
     private void updateAccessibleText() {
         StringBuilder builder = new StringBuilder();
-        appendAccessibleText(builder, getHeaderText());
-        appendAccessibleText(builder, getContentText());
+        appendAccessibleText(builder, getHeadline());
+        appendAccessibleText(builder, getSupportingText());
         setAccessibleText(builder.isEmpty() ? null : builder.toString());
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }

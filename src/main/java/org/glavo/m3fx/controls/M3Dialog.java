@@ -55,8 +55,8 @@ import java.util.Objects;
 ///
 /// ```java
 /// M3Dialog dialog = new M3Dialog();
-/// dialog.getDialogPane().setHeaderText("Delete item?");
-/// dialog.getDialogPane().setContentText("This action cannot be undone.");
+/// dialog.getDialogPane().setHeadline("Delete item?");
+/// dialog.getDialogPane().setSupportingText("This action cannot be undone.");
 /// M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
 /// cancel.setCancelButton(true);
 /// M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);

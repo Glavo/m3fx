@@ -403,8 +403,8 @@ final class M3DialogWindowPresentationTest {
     /// @return the configured dialog
     private static M3Dialog createDialog(String title) {
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(title);
-        dialog.getDialogPane().setContentText("Standalone dialog content");
+        dialog.getDialogPane().setHeadline(title);
+        dialog.getDialogPane().setSupportingText("Standalone dialog content");
         return dialog;
     }
 

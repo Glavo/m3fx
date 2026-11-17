@@ -64,7 +64,7 @@ final class M3PickerDialogTest {
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals("Select date", pane.getHeaderText());
+            assertEquals("Select date", pane.getHeadline());
             assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.setValue(value);
@@ -259,7 +259,7 @@ final class M3PickerDialogTest {
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals("Select date range", pane.getHeaderText());
+            assertEquals("Select date range", pane.getHeadline());
             assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.getPicker().setStartDate(start);
@@ -563,7 +563,7 @@ final class M3PickerDialogTest {
                     dialog.getPicker().lookup("." + "m3-time-picker-container")
             );
             assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
-            assertEquals("Select time", pane.getHeaderText());
+            assertEquals("Select time", pane.getHeadline());
             assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
             assertEquals(1, pane.lookupAll("." + "m3-time-picker-mode-button").size());
             M3IconButton modeButton = assertInstanceOf(

@@ -7661,8 +7661,8 @@ final class M3FXDemoVisualMatrixTest {
             );
             overlayReference.set(overlay);
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().setHeaderText("Dialog title");
-            dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
+            dialog.getDialogPane().setHeadline("Dialog title");
+            dialog.getDialogPane().setSupportingText("The active theme is applied to this dialog pane.");
             M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
             cancel.setCancelButton(true);
             M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);
@@ -20873,7 +20873,7 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertDialogPaneFitsOwner(Scene ownerScene, Node dialogPane) {
         Bounds bounds = dialogPane.getLayoutBounds();
         String description = dialogPane instanceof M3DialogPane pane
-                ? " `" + pane.getHeaderText() + "`"
+                ? " `" + pane.getHeadline() + "`"
                 : "";
         double effectInsets = 24.0;
         double maxWidth = Math.min(560.0 + effectInsets, ownerScene.getWidth() - 48.0);

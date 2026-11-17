@@ -1233,8 +1233,8 @@ final class M3ListPaneContractTest {
             drawer.getItems().add(drawerItem);
             drawer.setPrefWidth(320.0);
             M3DialogPane dialogPane = new M3DialogPane();
-            dialogPane.setHeaderText("Dialog title");
-            dialogPane.setContentText("Dialog body");
+            dialogPane.setHeadline("Dialog title");
+            dialogPane.setSupportingText("Dialog body");
             M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
             okAction.setDefaultButton(true);
             dialogPane.getActions().add(okAction);

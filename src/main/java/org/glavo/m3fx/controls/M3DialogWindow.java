@@ -54,7 +54,7 @@ import java.util.Objects;
 ///
 /// ```java
 /// M3Dialog dialog = new M3Dialog();
-/// dialog.getDialogPane().setHeaderText("Settings");
+/// dialog.getDialogPane().setHeadline("Settings");
 ///
 /// M3DialogWindow window = new M3DialogWindow();
 /// window.setTitle("Settings");

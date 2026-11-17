@@ -410,7 +410,7 @@ final class HMCLInstanceDetailView extends BorderPane {
         M3TextInputLayout layout = new M3TextInputLayout(field);
         layout.setLabelText(strings.get("instance.settings.name"));
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instance.manage.rename"));
+        dialog.getDialogPane().setHeadline(strings.get("instance.manage.rename"));
         dialog.getDialogPane().setContent(layout);
         M3Button cancel = new M3Button(strings.get("common.cancel"), M3ButtonVariant.TEXT);
         cancel.setCancelButton(true);
@@ -433,8 +433,8 @@ final class HMCLInstanceDetailView extends BorderPane {
             return;
         }
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.get("instance.action.manage"));
-        dialog.getDialogPane().setContentText(strings.format("instance.manage.body", instance.name()));
+        dialog.getDialogPane().setHeadline(strings.get("instance.action.manage"));
+        dialog.getDialogPane().setSupportingText(strings.format("instance.manage.body", instance.name()));
         M3Button rename = new M3Button(strings.get("instance.manage.rename"), M3ButtonVariant.TEXT);
         M3Button copy = new M3Button(strings.get("instance.manage.copy"), M3ButtonVariant.TEXT);
         M3Button delete = new M3Button(strings.get("instance.manage.delete"), M3ButtonVariant.TEXT);

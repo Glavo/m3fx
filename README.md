@@ -201,11 +201,13 @@ root.showSnackbar(message);
 
 A non-blank action label shows a button even if its callback is null. Activating it dismisses the message.
 
-Dialog actions are ordinary `M3Button` instances:
+Dialogs expose `headline` and `supportingText` properties. A custom `content` node replaces the supporting text
+without changing its value or binding. Dialog actions are ordinary `M3Button` instances:
 
 ```java
 M3Dialog dialog = new M3Dialog();
-dialog.getDialogPane().setHeaderText("Save settings?");
+dialog.getDialogPane().setHeadline("Save settings?");
+dialog.getDialogPane().setSupportingText("Your changes will be applied to this project.");
 M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
 cancel.setCancelButton(true);
 M3Button save = new M3Button("Save", M3ButtonVariant.TEXT);

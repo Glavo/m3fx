@@ -86,7 +86,7 @@ final class HMCLInstallWizard {
 
         final int[] step = {0};
         M3Dialog dialog = new M3Dialog();
-        dialog.getDialogPane().setHeaderText(strings.format("download.install.title", version.name()));
+        dialog.getDialogPane().setHeadline(strings.format("download.install.title", version.name()));
         dialog.getDialogPane().setContent(stepHost);
         dialog.setDismissOnScrimClick(false);
 

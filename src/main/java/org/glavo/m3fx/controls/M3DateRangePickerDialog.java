@@ -87,7 +87,7 @@ public final class M3DateRangePickerDialog extends M3Dialog {
 
     /// Refreshes only text that has not been customized or bound by the application.
     private void refreshLocalization(M3Localizer localizer) {
-        ((M3LocalizedStringProperty) getDialogPane().headerTextProperty()).updateDefault(localizer.getSelectDateRangeText());
+        ((M3LocalizedStringProperty) getDialogPane().headlineProperty()).updateDefault(localizer.getSelectDateRangeText());
         cancelText.updateDefault(localizer.getCancelText());
         confirmText.updateDefault(localizer.getConfirmText());
     }
