@@ -6,6 +6,8 @@ package org.glavo.m3fx.animation;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -27,12 +29,19 @@ final class M3MotionTest {
         assertEquals(1000.0, M3Motion.EXTRA_LONG4.toMillis(), 0.0001);
     }
 
-    /// Verifies that Material easing curves preserve endpoints and monotonic progress.
+    /// Every named easing preserves exact starting and ending values, including transparent fade endpoints.
+    @ParameterizedTest
+    @EnumSource(M3MotionEasing.class)
+    void easingEndpointsAreExact(M3MotionEasing easing) {
+        assertEquals(0.0, easing.interpolator().interpolate(0.0, 1.0, 0.0));
+        assertEquals(1.0, easing.interpolator().interpolate(0.0, 1.0, 1.0));
+        assertEquals(0.1, easing.interpolator().interpolate(0.1, 0.0, 0.0));
+        assertEquals(0.0, easing.interpolator().interpolate(0.1, 0.0, 1.0));
+    }
+
+    /// Verifies that the standard easing curve progresses monotonically.
     @Test
     void materialEasingCurvesAreStable() {
-        assertEquals(0.0, M3Motion.STANDARD.interpolate(0.0, 1.0, 0.0), 0.0001);
-        assertEquals(1.0, M3Motion.STANDARD.interpolate(0.0, 1.0, 1.0), 0.0001);
-
         double early = M3Motion.STANDARD.interpolate(0.0, 1.0, 0.25);
         double middle = M3Motion.STANDARD.interpolate(0.0, 1.0, 0.5);
         double late = M3Motion.STANDARD.interpolate(0.0, 1.0, 0.75);

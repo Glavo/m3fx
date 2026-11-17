@@ -18,6 +18,7 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.robot.Robot;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.controls.M3Button;
@@ -31,6 +32,7 @@ import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.testing.Tier2Test;
+import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -38,6 +40,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +78,124 @@ final class M3InteractionLifecycleTest {
             }
             stages.clear();
         });
+    }
+
+    /// Releasing outside cancels activation without suppressing subsequent pointer hover.
+    @ParameterizedTest
+    @ValueSource(strings = {"ripple", "state-layer"})
+    void buttonHoverRecoversAfterReleaseOutside(String feedback) {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Action");
+            button.setAnimationsEnabled(false);
+            button.setStyle("-m3-press-feedback: " + feedback + ";");
+            Pane root = new Pane(button);
+            new Scene(root, 320, 180);
+            root.applyCss();
+            button.resize(120, 40);
+            button.layout();
+            AtomicInteger actions = new AtomicInteger();
+            button.setOnAction(event -> actions.incrementAndGet());
+            Region overlay = lookupRegion(button, ".m3-state-layer");
+            try {
+                button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_ENTERED_TARGET, 20, 20, false));
+                assertTrue(button.isHover());
+                assertEquals(0.08, overlay.getOpacity(), 0.0001);
+                button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_PRESSED, 20, 20, true));
+                assertTrue(button.isArmed());
+                button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_EXITED_TARGET, 160, 20, true));
+                assertFalse(button.isHover());
+                assertFalse(button.isArmed());
+                button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_RELEASED, 160, 20, false));
+                assertFalse(button.isPressed());
+                assertEquals(0, actions.get());
+                assertEquals(0.0, overlay.getOpacity(), 0.0001);
+                button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_ENTERED_TARGET, 20, 20, false));
+                assertTrue(button.isHover());
+                assertFalse(button.isArmed());
+                assertEquals(0.08, overlay.getOpacity(), 0.0001);
+            } finally {
+                button.setSkin(null);
+            }
+        });
+    }
+
+    /// Native pointer capture must release animated feedback even when the pointer leaves the button.
+    @Tier3Test
+    @ParameterizedTest
+    @CsvSource({"ripple, 20", "ripple, 80", "state-layer, 20", "state-layer, 80"})
+    void nativeButtonDragOutPreservesHover(String feedback, double pointerX) throws InterruptedException {
+        M3Button button = FxTestUtils.callOnFxThread(() -> {
+            M3Button control = new M3Button("Action");
+            control.setStyle("-m3-press-feedback: " + feedback + ";");
+            control.setFocusTraversable(false);
+            control.setPrefSize(160, 48);
+            Pane root = new Pane(control);
+            control.relocate(40, 40);
+            Stage stage = show(root, 360, 200);
+            stage.setX(200);
+            stage.setY(200);
+            stage.toFront();
+            return control;
+        });
+        Robot robot = FxTestUtils.callOnFxThread(Robot::new);
+        Point2D originalPointer = FxTestUtils.callOnFxThread(robot::getMousePosition);
+        AtomicInteger actions = new AtomicInteger();
+        FxTestUtils.runOnFxThread(() -> button.setOnAction(event -> actions.incrementAndGet()));
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> button.getScene().getWindow().isFocused(), 2, () -> {}, () -> {});
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> !button.isHover(), 2,
+                    () -> robot.mouseMove(Objects.requireNonNull(button.localToScreen(240, 80))), () -> {});
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> button.isHover() && !stateLayer(button).isOverlayOpacityAnimationRunning(), 2,
+                    () -> robot.mouseMove(Objects.requireNonNull(button.localToScreen(pointerX, 24))),
+                    () -> assertEquals(0.08, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001));
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> button.isArmed() && !stateLayer(button).isRippleAnimationRunning(), 2,
+                    () -> robot.mousePress(MouseButton.PRIMARY),
+                    () -> assertTrue(button.isPressed()));
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> !button.isHover() && !button.isArmed(), 2,
+                    () -> robot.mouseMove(Objects.requireNonNull(button.localToScreen(240, 20))),
+                    () -> assertTrue(button.isPressed()));
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> !button.isPressed() && !stateLayer(button).isRippleAnimationRunning()
+                            && !stateLayer(button).isOverlayOpacityAnimationRunning(), 2,
+                    () -> robot.mouseRelease(MouseButton.PRIMARY),
+                    () -> {
+                        assertEquals(0, actions.get());
+                        assertEquals(0.0, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001);
+                        @Nullable Node ripple = button.lookup(".m3-ripple");
+                        if (ripple != null) {
+                            assertEquals(0.0, ripple.getOpacity());
+                        }
+                    });
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> button.isHover() && !stateLayer(button).isOverlayOpacityAnimationRunning(), 2,
+                    () -> robot.mouseMove(Objects.requireNonNull(button.localToScreen(pointerX, 24))),
+                    () -> {
+                        assertFalse(button.isArmed());
+                        assertEquals(0.08, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001);
+                    });
+        } catch (AssertionError failure) {
+            String state = FxTestUtils.callOnFxThread(() -> {
+                @Nullable Node ripple = button.lookup(".m3-ripple");
+                return "hover=" + button.isHover()
+                        + ", opacity=" + lookupRegion(button, ".m3-state-layer").getOpacity()
+                        + ", animating=" + stateLayer(button).isOverlayOpacityAnimationRunning()
+                        + ", ripple=" + (ripple == null ? "absent" : ripple.getOpacity())
+                        + ", pointer=" + robot.getMousePosition() + ", target=" + button.localToScreen(pointerX, 24)
+                        + ", focused=" + button.getScene().getWindow().isFocused();
+            });
+            throw new AssertionError(state, failure);
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                robot.mouseRelease(MouseButton.PRIMARY);
+                robot.mouseMove(originalPointer);
+                button.setSkin(null);
+            });
+        }
     }
 
     /// Verifies that a pending Space activation cannot survive focus transfer across interactive skin families.
@@ -447,6 +570,11 @@ final class M3InteractionLifecycleTest {
                 false,
                 new PickResult(node, scenePoint.getX(), scenePoint.getY())
         );
+    }
+
+    /// Returns the shared press-feedback layer of a skinned button.
+    private static M3StateLayer stateLayer(M3Button button) {
+        return assertInstanceOf(M3StateLayer.class, button.lookup(".m3-state-layer-container"));
     }
 
     /// Looks up a required region below a node.

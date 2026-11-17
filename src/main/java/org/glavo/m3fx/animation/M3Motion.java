@@ -130,6 +130,13 @@ public final class M3Motion {
             double yC,
             double x
     ) {
+        // Preserve exact endpoints before numerical inversion so completed fades reach zero.
+        if (x <= 0.0) {
+            return 0.0;
+        }
+        if (x >= 1.0) {
+            return 1.0;
+        }
         double low = 0.0;
         double high = 1.0;
         double t = x;
