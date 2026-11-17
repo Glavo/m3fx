@@ -19,13 +19,17 @@ import javafx.css.CssMetaData;
 import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
+import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.DragEvent;
 import javafx.scene.input.InputEvent;
+import javafx.scene.input.MouseDragEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -63,7 +67,8 @@ import java.util.Objects;
 ///
 /// Modal overlays block pointer and keyboard input directed at lower layers, restrict the root accessibility view
 /// to the uppermost modal layer, keep focus inside that layer when a reachable target exists, and suspend snackbar
-/// interaction and timeout progress. The modal node remains responsible for rendering any required scrim and for
+/// interaction and timeout progress. Mouse and drag exit notifications still reach lower layers so they can clear
+/// hover and gesture feedback. The modal node remains responsible for rendering any required scrim and for
 /// component-specific traversal or dismissal behavior. Native surfaces that must extend outside the owner scene
 /// remain [javafx.stage.PopupWindow] based and are not hosted here.
 ///
@@ -385,7 +390,8 @@ public final class M3OverlayPane extends Pane implements M3Localized, M3Animated
     /// reachable modal target, and suspends lower-layer transient feedback, snackbar interaction, and snackbar
     /// timeout progress until the final modal has been removed. The overlay itself renders its scrim and supplies
     /// component-specific traversal and dismissal. Retain the returned handle for the complete presentation
-    /// lifetime.
+    /// lifetime. Mouse and drag exit notifications remain deliverable to lower layers; activation, release,
+    /// scrolling, and keyboard input remain blocked there.
     ///
     /// @param overlay the modal overlay node to show
     /// @return the unique handle controlling this presentation
@@ -724,10 +730,17 @@ public final class M3OverlayPane extends Pane implements M3Localized, M3Animated
         return size == 0 ? null : modalOverlays.get(size - 1).node();
     }
 
-    /// Blocks input events whose target is outside the uppermost modal subtree.
+    /// Blocks background input while preserving pointer-exit notifications used to clear interaction state.
     private void filterModalInput(InputEvent event) {
         @Nullable Node topModal = topModalNode();
         if (topModal == null || event.isConsumed()) {
+            return;
+        }
+        EventType<?> type = event.getEventType();
+        // Exit notifications end feedback; releases and drops can activate controls and must stay blocked.
+        if (type == MouseEvent.MOUSE_EXITED || type == MouseEvent.MOUSE_EXITED_TARGET
+                || type == MouseDragEvent.MOUSE_DRAG_EXITED || type == MouseDragEvent.MOUSE_DRAG_EXITED_TARGET
+                || type == DragEvent.DRAG_EXITED || type == DragEvent.DRAG_EXITED_TARGET) {
             return;
         }
         Object target = event.getTarget();

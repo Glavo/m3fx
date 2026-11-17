@@ -5,11 +5,18 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.event.EventType;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.InputEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
@@ -26,6 +33,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Objects;
@@ -150,29 +159,113 @@ final class M3OverlayPaneTest {
         });
     }
 
-    /// Verifies that the uppermost modal layer consumes lower-layer input without blocking its own subtree.
+    /// Blocks background activation and movement without blocking the uppermost modal or non-modal input.
     @Test
     void modalOverlayBlocksInputOutsideItsSubtree() {
         FxTestUtils.runOnFxThread(() -> {
             Pane background = new Pane();
             Pane modal = new Pane();
             M3OverlayPane overlayPane = new M3OverlayPane();
-            AtomicInteger backgroundPresses = new AtomicInteger();
-            AtomicInteger modalPresses = new AtomicInteger();
+            AtomicInteger backgroundInputs = new AtomicInteger();
+            AtomicInteger modalInputs = new AtomicInteger();
             overlayPane.setContent(background);
-            background.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> backgroundPresses.incrementAndGet());
-            modal.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> modalPresses.incrementAndGet());
+            background.addEventHandler(InputEvent.ANY, event -> backgroundInputs.incrementAndGet());
+            modal.addEventHandler(InputEvent.ANY, event -> modalInputs.incrementAndGet());
             new Scene(overlayPane, 320.0, 180.0);
 
             M3OverlayPane.OverlayHandle modalHandle = overlayPane.showModalOverlay(modal);
+            try {
+                int expectedInputs = 0;
+                for (EventType<MouseEvent> type : List.of(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED,
+                        MouseEvent.MOUSE_CLICKED, MouseEvent.MOUSE_MOVED, MouseEvent.MOUSE_DRAGGED,
+                        MouseEvent.MOUSE_ENTERED, MouseEvent.MOUSE_ENTERED_TARGET, MouseEvent.DRAG_DETECTED)) {
+                    background.fireEvent(primaryMousePress(background).copyFor(background, background, type));
+                    modal.fireEvent(primaryMousePress(modal).copyFor(modal, modal, type));
+                    assertEquals(0, backgroundInputs.get(), type.toString());
+                    assertEquals(++expectedInputs, modalInputs.get(), type.toString());
+                }
+                for (EventType<KeyEvent> type : List.of(KeyEvent.KEY_PRESSED, KeyEvent.KEY_RELEASED)) {
+                    background.fireEvent(new KeyEvent(type, "", "", KeyCode.SPACE, false, false, false, false));
+                    modal.fireEvent(new KeyEvent(type, "", "", KeyCode.SPACE, false, false, false, false));
+                    assertEquals(0, backgroundInputs.get());
+                    assertEquals(++expectedInputs, modalInputs.get());
+                }
+                background.fireEvent(new DragEvent(DragEvent.DRAG_DROPPED, null, 4, 4, 4, 4, null,
+                        background, background, new PickResult(background, 4, 4)));
+                assertEquals(0, backgroundInputs.get());
+            } finally {
+                modalHandle.hide();
+            }
             background.fireEvent(primaryMousePress(background));
-            modal.fireEvent(primaryMousePress(modal));
-            assertEquals(0, backgroundPresses.get());
-            assertEquals(1, modalPresses.get());
+            assertEquals(1, backgroundInputs.get());
+        });
+    }
 
-            assertTrue(modalHandle.hide());
-            background.fireEvent(primaryMousePress(background));
-            assertEquals(1, backgroundPresses.get());
+    /// Exit notifications reach ordinary controls beneath regular and stacked modal layers.
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void modalOverlaysPreserveMouseExitCleanup(boolean targetVariant) {
+        FxTestUtils.runOnFxThread(() -> {
+            Button background = new Button("Background");
+            Button regularAction = new Button("Regular overlay");
+            Button lowerAction = new Button("Lower modal");
+            M3OverlayPane host = new M3OverlayPane();
+            host.setContent(new Pane(background));
+            new Scene(host, 320, 180);
+            M3OverlayPane.OverlayHandle regular = host.showOverlay(new Pane(regularAction));
+            host.applyCss();
+            background.fireEvent(pointerEvent(background, MouseEvent.MOUSE_ENTERED_TARGET));
+            regularAction.fireEvent(pointerEvent(regularAction, MouseEvent.MOUSE_ENTERED_TARGET));
+            M3OverlayPane.OverlayHandle lower = host.showModalOverlay(new Pane(lowerAction));
+            host.applyCss();
+            lowerAction.fireEvent(pointerEvent(lowerAction, MouseEvent.MOUSE_ENTERED_TARGET));
+            M3OverlayPane.OverlayHandle upper = host.showModalOverlay(new Pane());
+            try {
+                for (Button button : List.of(background, regularAction, lowerAction)) {
+                    assertTrue(button.isHover());
+                    AtomicInteger exits = new AtomicInteger();
+                    button.setOnMouseExited(event -> exits.incrementAndGet());
+                    button.arm();
+                    button.fireEvent(pointerEvent(button,
+                            targetVariant ? MouseEvent.MOUSE_EXITED_TARGET : MouseEvent.MOUSE_EXITED));
+                    assertEquals(1, exits.get());
+                    assertFalse(button.isHover());
+                    assertFalse(button.isArmed());
+                }
+            } finally {
+                upper.hide();
+                lower.hide();
+                regular.hide();
+            }
+        });
+    }
+
+    /// Full-drag and drag-and-drop exit notifications are not treated as background actions.
+    @Test
+    void modalOverlayPreservesDragExitCleanup() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane background = new Pane();
+            M3OverlayPane host = new M3OverlayPane();
+            host.setContent(background);
+            new Scene(host, 320, 180);
+            AtomicInteger exits = new AtomicInteger();
+            background.addEventHandler(InputEvent.ANY, event -> exits.incrementAndGet());
+            M3OverlayPane.OverlayHandle modal = host.showModalOverlay(new Pane());
+            try {
+                for (EventType<MouseDragEvent> type : List.of(
+                        MouseDragEvent.MOUSE_DRAG_EXITED, MouseDragEvent.MOUSE_DRAG_EXITED_TARGET)) {
+                    background.fireEvent(new MouseDragEvent(type, 4, 4, 4, 4, MouseButton.PRIMARY, 1,
+                            false, false, false, false, true, false, false, false, false,
+                            new PickResult(background, 4, 4), background));
+                }
+                for (EventType<DragEvent> type : List.of(DragEvent.DRAG_EXITED, DragEvent.DRAG_EXITED_TARGET)) {
+                    background.fireEvent(new DragEvent(type, null, 4, 4, 4, 4, null,
+                            background, background, new PickResult(background, 4, 4)));
+                }
+                assertEquals(4, exits.get());
+            } finally {
+                modal.hide();
+            }
         });
     }
 
@@ -209,7 +302,7 @@ final class M3OverlayPaneTest {
             overlayPane.applyCss();
             assertEquals(0.0, stateLayer.getOpacity(), 0.0001);
 
-            backgroundAction.fireEvent(pointerMove(backgroundAction));
+            backgroundAction.fireEvent(pointerEvent(backgroundAction, MouseEvent.MOUSE_MOVED));
             assertTrue(stateLayer.getOpacity() > 0.0);
 
             M3OverlayPane.OverlayHandle secondHandle = overlayPane.showModalOverlay(new Pane());
@@ -552,28 +645,11 @@ final class M3OverlayPaneTest {
         );
     }
 
-    /// Returns a pointer-move event targeted at the supplied node.
-    private static MouseEvent pointerMove(Node target) {
-        return new MouseEvent(
-                MouseEvent.MOUSE_MOVED,
-                4.0,
-                4.0,
-                4.0,
-                4.0,
-                MouseButton.NONE,
-                0,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                new PickResult(target, 4.0, 4.0)
-        );
+    /// Creates a pointer event without button or modifier state.
+    private static MouseEvent pointerEvent(Node target, EventType<MouseEvent> type) {
+        return new MouseEvent(type, 4, 4, 4, 4, MouseButton.NONE, 0,
+                false, false, false, false, false, false, false, false, false, false,
+                new PickResult(target, 4, 4));
     }
 
     /// Returns whether the referenced node currently owns keyboard focus.
