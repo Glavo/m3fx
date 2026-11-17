@@ -10,11 +10,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
-import javafx.css.SimpleStyleableObjectProperty;
+import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
-import javafx.css.StyleableObjectProperty;
+import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableProperty;
-import javafx.css.converter.EnumConverter;
+import javafx.css.converter.BooleanConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -182,24 +182,24 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// Whether a press has started without a matching release or cancellation.
     private boolean pressActive;
 
-    /// The lazily created inherited CSS setting for press feedback.
-    private @Nullable StyleableObjectProperty<PressFeedback> pressFeedback;
+    /// The inherited CSS setting that enables spatial ripple expansion.
+    private @Nullable StyleableBooleanProperty rippleEnabled;
 
-    /// Returns the press feedback selected by CSS.
-    private PressFeedback getPressFeedback() {
-        return pressFeedback == null ? PressFeedback.RIPPLE : pressFeedback.get();
+    /// Returns whether press feedback expands from the interaction origin.
+    private boolean isRippleEnabled() {
+        return rippleEnabled == null || rippleEnabled.get();
     }
 
-    /// Returns the property to which JavaFX applies inherited press-feedback declarations.
-    private StyleableObjectProperty<PressFeedback> pressFeedbackProperty() {
-        if (pressFeedback == null) {
-            pressFeedback = new SimpleStyleableObjectProperty<>(
-                    StyleableProperties.PRESS_FEEDBACK, this, "pressFeedback", PressFeedback.RIPPLE) {
+    /// Returns the property to which JavaFX applies inherited ripple settings.
+    private StyleableBooleanProperty rippleEnabledProperty() {
+        if (rippleEnabled == null) {
+            rippleEnabled = new SimpleStyleableBooleanProperty(
+                    StyleableProperties.RIPPLE_ENABLED, this, "rippleEnabled", true) {
                 /// Replaces transient feedback without retaining a ripple from the previous mode.
                 @Override
                 protected void invalidated() {
                     @Nullable Node owner = stateOwner;
-                    if (owner != null && pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
+                    if (owner != null && pressActive && !get()) {
                         playCenteredRipple();
                     } else {
                         stopRippleAnimation();
@@ -212,7 +212,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
                 }
             };
         }
-        return pressFeedback;
+        return rippleEnabled;
     }
 
     /// The resting overlay opacity contributed by a persistent semantic state.
@@ -552,7 +552,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         Node owner = animationOwner();
         boolean unavailable = isPresentationUnavailable(owner);
         pressActive = !owner.isDisabled() && !unavailable;
-        boolean fade = getPressFeedback() == PressFeedback.STATE_LAYER;
+        boolean fade = !isRippleEnabled();
         boolean animate = !animationsDisabled(owner);
         Region ripple = ensureRipple();
         if (!pressActive || (!fade && !animate)) {
@@ -648,7 +648,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         pressActive = false;
         stopRippleAnimation();
         clearRipple();
-        if (getPressFeedback() == PressFeedback.STATE_LAYER && stateOwner != null) {
+        if (!isRippleEnabled() && stateOwner != null) {
             synchronizeOwnerStateOpacity(stateOwner);
         }
         stopMotionObservationIfIdle();
@@ -894,7 +894,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         }
 
         boolean unavailable = isPresentationUnavailable(owner);
-        if (unavailable && getPressFeedback() == PressFeedback.STATE_LAYER) {
+        if (unavailable && !isRippleEnabled()) {
             cancelRipple();
             return;
         }
@@ -909,7 +909,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             RippleTransition rippleAnimation = this.rippleAnimation;
             if (rippleAnimation != null && rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
-                if (pressActive && getPressFeedback() == PressFeedback.STATE_LAYER) {
+                if (pressActive && !isRippleEnabled()) {
                     ensureRipple().setOpacity(stateLayerTokens(owner).pressedOpacity());
                     synchronizeOwnerStateOpacity(owner);
                 } else {
@@ -990,7 +990,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
     /// Pauses observation when no held state layer or running transition requires it.
     private void stopMotionObservationIfIdle() {
-        if ((pressActive && getPressFeedback() == PressFeedback.STATE_LAYER)
+        if ((pressActive && !isRippleEnabled())
                 || isRippleAnimationRunning()
                 || isOverlayOpacityAnimationRunning()
                 || isFocusIndicatorOpacityAnimationRunning()) {
@@ -1029,7 +1029,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             interactionOpacity = 0.0;
         } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
-        } else if (!hasVisibleRipple() && !(pressActive && getPressFeedback() == PressFeedback.STATE_LAYER)
+        } else if (!hasVisibleRipple() && (!pressActive || isRippleEnabled())
                 && isPressedLike(owner)) {
             // A ripple replaces pressed feedback, not the hover or focus layer beneath it.
             interactionOpacity = tokens.pressedOpacity();
@@ -1092,31 +1092,22 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         return StyleableProperties.STYLEABLES;
     }
 
-    /// Press feedback rendered by the shared state layer.
-    @NotNullByDefault
-    private enum PressFeedback {
-        /// Expands a bounded ripple from the interaction origin.
-        RIPPLE,
-        /// Highlights the complete interaction area without spatial expansion.
-        STATE_LAYER
-    }
-
     /// Lazily initialized CSS metadata shared by all state layers.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// Inherits through normal JavaFX CSS ancestry, including non-M3FX parents.
-        private static final CssMetaData<M3StateLayer, PressFeedback> PRESS_FEEDBACK = new CssMetaData<>(
-                "-m3-press-feedback", new EnumConverter<>(PressFeedback.class), PressFeedback.RIPPLE, true) {
+        private static final CssMetaData<M3StateLayer, Boolean> RIPPLE_ENABLED = new CssMetaData<>(
+                "-m3-ripple-enabled", BooleanConverter.getInstance(), true, true) {
             /// Allows CSS to configure the internal, unbound feedback property.
             @Override
             public boolean isSettable(M3StateLayer layer) {
-                return layer.pressFeedback == null || !layer.pressFeedback.isBound();
+                return layer.rippleEnabled == null || !layer.rippleEnabled.isBound();
             }
 
             /// Returns the feedback property for the current layer.
             @Override
-            public StyleableProperty<PressFeedback> getStyleableProperty(M3StateLayer layer) {
-                return layer.pressFeedbackProperty();
+            public StyleableProperty<Boolean> getStyleableProperty(M3StateLayer layer) {
+                return layer.rippleEnabledProperty();
             }
         };
 
@@ -1125,7 +1116,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> metadata = new ArrayList<>(Pane.getClassCssMetaData());
-            metadata.add(PRESS_FEEDBACK);
+            metadata.add(RIPPLE_ENABLED);
             STYLEABLES = List.copyOf(metadata);
         }
 

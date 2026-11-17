@@ -1,7 +1,7 @@
 /* JavaFX 17/21 require each styled ancestor to forward custom inherited properties. */
 * {
     -m3-animations-enabled: inherit;
-    -m3-press-feedback: inherit;
+    -m3-ripple-enabled: inherit;
 }
 
 .root,

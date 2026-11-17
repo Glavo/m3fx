@@ -323,19 +323,18 @@ binding. `M3MotionSettings.setGlobalReducedMotionRequested(true)` constrains opt
 even if a local setting enables it. Finite transitions settle at their target; indeterminate indicators may retain
 simple movement to communicate ongoing work.
 
-Press feedback can be configured independently of other motion through the inherited `-m3-press-feedback`
-CSS property. Its default is `ripple`; `state-layer` fades in the same press color across the entire interaction
-area instead of expanding it from the pointer. Holding a press produces the same highlight in either mode,
-over any existing hover or focus feedback. On release the highlight fades out. With animations disabled, changes are
-immediate. Selection feedback, focus rings, and shape transitions retain their own behavior.
+The inherited boolean CSS property `-m3-ripple-enabled` controls how press feedback appears. By default
+(`true`), a ripple expands from the interaction origin. Set it to `false` to fade in the same highlight
+across the entire interaction area instead. Both effects preserve hover and focus feedback and fade out
+on release. This setting does not disable press feedback or change other animations.
 
 ```css
 .root {
-    -m3-press-feedback: state-layer;
+    -m3-ripple-enabled: false;
 }
 
 .m3-button {
-    -m3-press-feedback: ripple;
+    -m3-ripple-enabled: true;
 }
 ```
 

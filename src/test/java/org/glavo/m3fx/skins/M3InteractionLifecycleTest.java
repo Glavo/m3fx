@@ -82,12 +82,12 @@ final class M3InteractionLifecycleTest {
 
     /// Releasing outside cancels activation without suppressing subsequent pointer hover.
     @ParameterizedTest
-    @ValueSource(strings = {"ripple", "state-layer"})
-    void buttonHoverRecoversAfterReleaseOutside(String feedback) {
+    @ValueSource(booleans = {true, false})
+    void buttonHoverRecoversAfterReleaseOutside(boolean rippleEnabled) {
         FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Action");
             button.setAnimationsEnabled(false);
-            button.setStyle("-m3-press-feedback: " + feedback + ";");
+            button.setStyle("-m3-ripple-enabled: " + rippleEnabled + ";");
             Pane root = new Pane(button);
             new Scene(root, 320, 180);
             root.applyCss();
@@ -122,11 +122,11 @@ final class M3InteractionLifecycleTest {
     /// Native pointer capture must release animated feedback even when the pointer leaves the button.
     @Tier3Test
     @ParameterizedTest
-    @CsvSource({"ripple, 20", "ripple, 80", "state-layer, 20", "state-layer, 80"})
-    void nativeButtonDragOutPreservesHover(String feedback, double pointerX) throws InterruptedException {
+    @CsvSource({"true, 20", "true, 80", "false, 20", "false, 80"})
+    void nativeButtonDragOutPreservesHover(boolean rippleEnabled, double pointerX) throws InterruptedException {
         M3Button button = FxTestUtils.callOnFxThread(() -> {
             M3Button control = new M3Button("Action");
-            control.setStyle("-m3-press-feedback: " + feedback + ";");
+            control.setStyle("-m3-ripple-enabled: " + rippleEnabled + ";");
             control.setFocusTraversable(false);
             control.setPrefSize(160, 48);
             Pane root = new Pane(control);
