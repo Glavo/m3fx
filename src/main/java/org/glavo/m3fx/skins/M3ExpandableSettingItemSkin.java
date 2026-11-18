@@ -60,10 +60,13 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     public M3ExpandableSettingItemSkin(M3ExpandableSettingItem control) {
         super(control);
         contentHost.getStyleClass().add("m3-expandable-setting-content");
-        contentHost.setManaged(false);
+        contentHost.setManaged(control.isExpanded());
         getChildren().add(contentHost);
         reveal.set(control.isExpanded() ? 1.0 : 0.0);
-        reveal.addListener(observable -> control.requestLayout());
+        reveal.addListener(observable -> {
+            contentHost.setManaged(reveal.get() > 0.0);
+            control.requestLayout();
+        });
         updateContentNode(control.getContent());
         control.contentProperty().addListener(contentListener);
         control.expandedProperty().addListener(expandedListener);

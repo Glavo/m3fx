@@ -46,7 +46,6 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     /// @param control the list pane controlled by this skin
     public M3ListPaneSkin(M3ListPane control) {
         super(control);
-        container.setManaged(false);
         getChildren().setAll(container);
         // JavaFX 24+ marks the container as the sole child of the control here.
         emulateChildPositions = !container.getPseudoClassStates().contains(ONLY_CHILD);

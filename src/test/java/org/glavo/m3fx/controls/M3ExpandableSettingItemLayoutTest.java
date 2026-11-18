@@ -3,12 +3,17 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.image.PixelReader;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
@@ -141,7 +146,77 @@ class M3ExpandableSettingItemLayoutTest {
         }
     }
 
-    /// Nested list panes used by HMCL game-settings groups must still reserve expanded height.
+    /// A clipped list must paint nested headlines after opening and reclaim their space after closing.
+    @Test
+    void clippedListRevealsNestedRows() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        try {
+            M3ListItem link = FxTestUtils.callOnFxThread(() -> new M3ListItem("Download mirror"));
+            M3ExpandableSettingItem group = FxTestUtils.callOnFxThread(() -> {
+                M3ListPane links = new M3ListPane();
+                links.setPadding(new Insets(0, 0, 0, 48));
+                links.getItems().addAll(new M3ListItem("Release site"), link);
+                M3ExpandableSettingItem item = new M3ExpandableSettingItem("Other channels");
+                item.setSupportingText("Choose a mirror");
+                item.setContent(links);
+                M3ListPane list = new M3ListPane();
+                list.getItems().addAll(new M3ListItem("Install"), item);
+                Rectangle clip = new Rectangle();
+                clip.setArcWidth(32);
+                clip.setArcHeight(32);
+                clip.widthProperty().bind(list.widthProperty());
+                clip.heightProperty().bind(list.heightProperty());
+                list.setClip(clip);
+                VBox root = new VBox(list, new Label("Next section"));
+                root.setStyle("-fx-background-color: white;");
+                Scene scene = new Scene(root, 440, 400);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                return item;
+            });
+            VBox root = (VBox) FxTestUtils.callOnFxThread(() -> stage.getScene().getRoot());
+            M3ListPane list = (M3ListPane) FxTestUtils.callOnFxThread(() -> root.getChildren().get(0));
+            double collapsed = FxTestUtils.callOnFxThread(list::getHeight);
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> group.getHeight() >= group.getTwoLineHeight() + link.getOneLineHeight() * 2,
+                    () -> group.setExpanded(true),
+                    () -> {
+                        Node headline = link.lookup(".m3-list-item-headline");
+                        Bounds text = headline.localToScene(headline.getLayoutBounds());
+                        assertTrue(text.getMaxY() <= list.getHeight(),
+                                () -> "Headline below list clip: " + text + ", list height " + list.getHeight());
+                        PixelReader pixels = stage.getScene().snapshot(null).getPixelReader();
+                        int ink = 0;
+                        for (int y = (int) Math.ceil(text.getMinY()); y < text.getMaxY(); y++) {
+                            for (int x = (int) Math.ceil(text.getMinX()); x < text.getMaxX(); x++) {
+                                if (pixels.getColor(x, y).getBrightness() < 0.5) {
+                                    ink++;
+                                }
+                            }
+                        }
+                        assertTrue(ink > 15, "The nested headline must paint visible text");
+                    });
+            M3ListPane links = (M3ListPane) FxTestUtils.callOnFxThread(group::getContent);
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> list.getHeight() >= collapsed + 3 * link.getOneLineHeight(),
+                    () -> {
+                        group.setAnimationsEnabled(false);
+                        links.getItems().add(new M3ListItem("Additional mirror"));
+                    },
+                    () -> assertEquals(list.getHeight(), root.getChildren().get(1).getLayoutY(), 1.0));
+            FxTestUtils.runOnFxThread(() -> group.setAnimationsEnabled(true));
+            FxTestUtils.runOnFxThreadWhen(() -> list.getHeight() == collapsed,
+                    () -> group.setExpanded(false),
+                    () -> assertEquals(collapsed, root.getChildren().get(1).getLayoutY(), 1.0));
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
+    }
+
+    /// Nested list panes used by settings groups must still reserve expanded height.
     @Test
     void nestedListPaneContentReservesExpandedHeightLikeDemoForm() {
         FxTestUtils.runOnFxThread(() -> {
