@@ -21,6 +21,7 @@ import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -89,6 +90,12 @@ public final class M3ListPane extends Control implements M3Animated {
     /// Creates an empty standard list pane with selection disabled and empty selection allowed.
     public M3ListPane() {
         initialize();
+    }
+
+    /// Returns horizontal bias so a parent measures the stacked rows at the available width.
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
     }
 
     /// The visual containment style used for list items.

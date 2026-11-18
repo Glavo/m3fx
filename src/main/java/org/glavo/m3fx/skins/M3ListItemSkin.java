@@ -9,6 +9,7 @@ import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -488,6 +489,18 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         return Double.MAX_VALUE;
     }
 
+    /// Reserves enough height to lay out the header at the assigned width.
+    @Override
+    protected double computeMinHeight(double width, double top, double right, double bottom, double left) {
+        return computePrefHeight(width, top, right, bottom, left);
+    }
+
+    /// Measures the header inside the control insets.
+    @Override
+    protected double computePrefHeight(double width, double top, double right, double bottom, double left) {
+        return top + headerHeight(width < 0 ? -1 : Math.max(0, width - left - right)) + bottom;
+    }
+
     /// Lays out the container and bounded state layer.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
@@ -716,26 +729,28 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Applies token-driven layout metrics.
     private void updateMetrics() {
         M3ListItemBase item = getSkinnable();
-        double height = preferredHeight(item);
         double horizontalPadding = item.getHorizontalPadding();
         double verticalPadding = item.getVerticalPadding();
         double spacing = item.getContentSpacing();
         container.setSpacing(spacing);
-        container.setMinHeight(height);
-        container.setPrefHeight(height);
-        container.setMaxHeight(height);
         container.setPadding(new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding));
         getSkinnable().requestLayout();
     }
 
 
-    /// Returns the preferred height for the current text structure.
-    private static double preferredHeight(M3ListItemBase item) {
-        return switch (item.getLineCount()) {
+    /// Preserves the unwrapped vertical margins when additional text lines increase the header height.
+    final double headerHeight(double width) {
+        M3ListItemBase item = getSkinnable();
+        double base = switch (item.getLineCount()) {
             case ONE_LINE -> item.getOneLineHeight();
             case TWO_LINE -> item.getTwoLineHeight();
             case THREE_LINE -> item.getThreeLineHeight();
         };
+        if (container.getContentBias() != Orientation.HORIZONTAL) {
+            return base;
+        }
+        double natural = container.prefHeight(-1);
+        return Math.max(base, natural) + (width < 0 ? 0 : Math.max(0, container.prefHeight(width) - natural));
     }
 
     /// Updates or animates the independently resolved state-container corner radii.

@@ -85,7 +85,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.minHeight(width) + bottomInset;
+        return topInset + container.minHeight(width < 0 ? -1 : Math.max(0, width - leftInset - rightInset)) + bottomInset;
     }
 
     /// Computes the preferred width from the internal item container.
@@ -109,7 +109,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.prefHeight(width) + bottomInset;
+        return topInset + container.prefHeight(width < 0 ? -1 : Math.max(0, width - leftInset - rightInset)) + bottomInset;
     }
 
     /// Computes the maximum width from the internal item container.
@@ -133,7 +133,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.maxHeight(width) + bottomInset;
+        return topInset + container.maxHeight(width < 0 ? -1 : Math.max(0, width - leftInset - rightInset)) + bottomInset;
     }
 
     /// Lays out the item container in the full control bounds.

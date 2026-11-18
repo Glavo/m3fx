@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
@@ -25,6 +26,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3ListItemSkin;
@@ -70,6 +72,49 @@ final class M3ListPaneContractTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Wrapped supporting text adds space below the headline rather than displacing or clipping it.
+    @Test
+    void wrappedSupportingTextGrowsBelowHeadline() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (M3ListItemBase item : List.of(new M3ListItem("Download"), new M3ExpandableSettingItem("Download"))) {
+                String description = "Use the download mirror appropriate for your region and network.";
+                item.setSupportingText(description);
+                item.setLeading(new Rectangle(28, 28));
+                item.setTrailing(new Rectangle(18, 18));
+                M3ListItem next = new M3ListItem("Next");
+                M3ListPane list = listPane(item, next);
+                list.setPadding(new Insets(0, 18, 0, 18));
+                VBox root = new VBox(list);
+                Scene scene = new Scene(root, 800, 400);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                root.applyCss();
+                Label supporting = (Label) item.lookup(".m3-list-item-supporting");
+                supporting.setWrapText(true);
+                root.resize(800, 400);
+                root.layout();
+                Text headline = (Text) item.lookup(".m3-list-item-headline .text");
+                Text body = (Text) supporting.lookup(".text");
+                WritableImage wide = snapshotImageOnFxThread(root);
+                double titleY = requiredRenderedTextInkBounds(wide, headline).getMinY();
+                double singleLineInkHeight = requiredRenderedTextInkBounds(wide, body).getHeight();
+                double wideHeight = item.getHeight();
+                root.resize(330, 400);
+                root.layout();
+                WritableImage narrow = snapshotImageOnFxThread(root);
+                assertTrue(item.getHeight() > wideHeight, "wrapped lines must grow the row");
+                assertEquals(titleY, requiredRenderedTextInkBounds(narrow, headline).getMinY(), 1.0);
+                assertEquals(description, body.getText());
+                var narrowBody = requiredRenderedTextInkBounds(narrow, body);
+                assertTrue(narrowBody.getHeight() > singleLineInkHeight * 1.5);
+                assertTrue(narrowBody.getMaxY() < next.localToScene(0, 0).getY());
+                assertEquals(next.localToScene(0, next.getHeight()).getY(), list.getHeight(), 1.0);
+                root.resize(800, 400);
+                root.layout();
+                assertEquals(wideHeight, item.getHeight());
+            }
+        });
     }
 
     /// Structural CSS states follow all displayed nodes through reordering, removal, and skin disposal.
@@ -536,15 +581,15 @@ final class M3ListPaneContractTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
 
         root.applyCss();
-        assertEquals(60.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+        assertEquals(60.0, listItem.prefHeight(240.0), 0.0001);
 
         listItem.setSupportingText("Supporting");
         root.applyCss();
-        assertEquals(76.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+        assertEquals(76.0, listItem.prefHeight(240.0), 0.0001);
 
         listItem.setOverlineText("Overline");
         root.applyCss();
-        assertEquals(92.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+        assertEquals(92.0, listItem.prefHeight(240.0), 0.0001);
     }
 
     /// Verifies that list items expose selected state and action behavior.

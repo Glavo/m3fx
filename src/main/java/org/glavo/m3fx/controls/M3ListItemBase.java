@@ -23,6 +23,7 @@ import javafx.css.converter.PaintConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -58,7 +59,8 @@ import java.util.function.Function;
 /// A row has a required headline and optional overline, supporting text, trailing supporting text, leading node,
 /// and trailing node. Its line count starts at one for the headline and increases for populated overline and
 /// supporting-text slots; trailing supporting text does not affect it. The resulting count selects the corresponding
-/// one-, two-, or three-line height. Leading and trailing nodes are owned by the row while displayed and therefore
+/// one-, two-, or three-line base height. When text wrapping is enabled, additional lines increase the row's
+/// preferred height at the available width. Leading and trailing nodes are owned by the row while displayed and therefore
 /// must not belong to another parent.
 ///
 /// Calling [#fire()] on an enabled row first lets the concrete row update its own semantic value, then delivers an
@@ -130,6 +132,12 @@ public abstract sealed class M3ListItemBase extends Control implements M3Animate
         setHeadlineText(headlineText);
         updateLineCount();
         updateAccessibleText();
+    }
+
+    /// Returns horizontal bias so wrapping text is measured at the assigned row width.
+    @Override
+    public Orientation getContentBias() {
+        return Orientation.HORIZONTAL;
     }
 
     /// The optional text displayed above the headline.

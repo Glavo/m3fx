@@ -10,7 +10,6 @@ import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.M3ExpandableSettingItem;
-import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.animation.M3DoubleTransition;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -93,7 +92,7 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
             double bottomInset,
             double leftInset
     ) {
-        double height = topInset + headerHeight() + bottomInset;
+        double height = super.computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
         if (reveal.get() == 0.0 || expandable().getContent() == null) {
             return height;
         }
@@ -133,7 +132,7 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         M3ExpandableSettingItem control = expandable();
-        double headerH = headerHeight();
+        double headerH = headerHeight(width);
         double usedHeader = Math.min(headerH, Math.max(0.0, height));
         // Header presentation reuses the base list-item layers within the header band only.
         super.layoutChildren(x, y, width, usedHeader);
@@ -176,16 +175,6 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
             return;
         }
         contentHost.getChildren().setAll(content);
-    }
-
-    /// Returns the preferred header height for the current line count.
-    private double headerHeight() {
-        M3ListItemBase item = getSkinnable();
-        return switch (item.getLineCount()) {
-            case ONE_LINE -> item.getOneLineHeight();
-            case TWO_LINE -> item.getTwoLineHeight();
-            case THREE_LINE -> item.getThreeLineHeight();
-        };
     }
 
     /// Returns the expandable control.
