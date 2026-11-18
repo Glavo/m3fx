@@ -14,6 +14,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
 import javafx.css.StyleableDoubleProperty;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -38,9 +39,9 @@ import java.util.Objects;
 /// A Material Design 3 switch for turning a single setting on or off.
 ///
 /// `M3Switch` is built on JavaFX [ButtonBase] and exposes a selected property rather than extending a concrete JavaFX
-/// toggle control. Activation toggles [#selectedProperty()] before firing an [ActionEvent]. Direct property changes
-/// update state without firing an action event. Pointer dragging previews the handle position and commits the state
-/// nearest the handle when released.
+/// toggle control. Activation requests the opposite value; only an accepted change made by the switch fires an
+/// [ActionEvent]. Pointer dragging previews the handle position and requests the nearest state on release if it
+/// differs from the current selection. Direct property changes fire neither event.
 ///
 /// A new switch is unselected and has no handle icons. Selected and unselected icons are optional child nodes owned
 /// by the control. Geometry properties use JavaFX logical pixels and are styleable through the control's CSS
@@ -120,7 +121,11 @@ public final class M3Switch extends ButtonBase implements M3Animated {
 
     /// Sets whether this switch is selected.
     ///
+    /// Direct assignment bypasses the toggle request and action events. If selection is bound,
+    /// update the binding source instead.
+    ///
     /// @param selected whether this switch is selected
+    /// @throws RuntimeException if selection is unidirectionally bound
     public final void setSelected(boolean selected) {
         selectedProperty().set(selected);
     }
@@ -156,6 +161,39 @@ public final class M3Switch extends ButtonBase implements M3Animated {
             };
         }
         return selected;
+    }
+
+    /// The optional handler for a proposed selection change.
+    private @Nullable ObjectProperty<@Nullable EventHandler<M3SwitchEvent>> onToggleRequest;
+
+    /// Returns the handler for toggle requests, or `null` if none is installed.
+    public final @Nullable EventHandler<M3SwitchEvent> getOnToggleRequest() {
+        return onToggleRequest == null ? null : onToggleRequest.get();
+    }
+
+    /// Sets the handler for toggle requests.
+    ///
+    /// @param handler the handler, or `null` to remove it
+    public final void setOnToggleRequest(@Nullable EventHandler<M3SwitchEvent> handler) {
+        onToggleRequestProperty().set(handler);
+    }
+
+    /// The handler invoked before an activation changes selection, including when selection is bound.
+    /// Consuming the request leaves the value under application control. The default handler is `null`.
+    ///
+    /// @return the toggle request handler property
+    /// @see M3SwitchEvent#TOGGLE_REQUEST
+    public final ObjectProperty<@Nullable EventHandler<M3SwitchEvent>> onToggleRequestProperty() {
+        if (onToggleRequest == null) {
+            onToggleRequest = new SimpleObjectProperty<>(this, "onToggleRequest") {
+                /// Registers the handler with the JavaFX dispatch chain.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(M3SwitchEvent.TOGGLE_REQUEST, get());
+                }
+            };
+        }
+        return onToggleRequest;
     }
 
     /// The optional icon shown inside the selected handle.
@@ -667,15 +705,33 @@ public final class M3Switch extends ButtonBase implements M3Animated {
         return getClassCssMetaData();
     }
 
-    /// Toggles this switch and fires its action event.
+    /// Whether a toggle request is currently being dispatched.
+    private boolean requestingToggle;
+
+    /// Requests the opposite selected value and fires one action after committing the change.
     ///
-    /// Selection changes before synchronous event delivery. This method is a no-op while the control is disabled.
+    /// Disabled switches and recursive calls during request delivery are ignored. An enabled switch first fires
+    /// [M3SwitchEvent#TOGGLE_REQUEST], even if selection is bound. If the request is consumed, the switch becomes
+    /// disabled, selection is unidirectionally bound, or a handler already applied the proposed value, this method
+    /// does not write selection or fire an action.
     @Override
     public void fire() {
-        if (!isDisabled()) {
-            setSelected(!isSelected());
-            fireEvent(new ActionEvent(this, this));
+        if (isDisabled() || requestingToggle) {
+            return;
         }
+        boolean target = !isSelected();
+        M3SwitchEvent request = new M3SwitchEvent(this, target);
+        requestingToggle = true;
+        try {
+            fireEvent(request);
+        } finally {
+            requestingToggle = false;
+        }
+        if (request.isConsumed() || isDisabled() || selectedProperty().isBound() || isSelected() == target) {
+            return;
+        }
+        setSelected(target);
+        fireEvent(new ActionEvent(this, this));
     }
 
     /// Creates the default Material Design 3 switch skin.

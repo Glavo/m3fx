@@ -10,7 +10,6 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.css.PseudoClass;
-import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
@@ -313,11 +312,15 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         }
 
         M3Switch control = getSkinnable();
-        boolean selected = thumbPosition.get() >= 0.5;
-        if (selected != control.isSelected()) {
-            control.setSelected(selected);
-            control.fireEvent(new ActionEvent(control, control));
-        } else {
+        boolean selected = control.isSelected();
+        if ((thumbPosition.get() >= 0.5) != selected) {
+            control.fire();
+        }
+        if (getSkinnable() == null) {
+            return false;
+        }
+        // A committed change already animates through the selection listener.
+        if (selected == control.isSelected()) {
             animateThumbPosition(selected);
         }
         clearDragPreview();

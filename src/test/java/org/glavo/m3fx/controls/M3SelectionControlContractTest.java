@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.PseudoClass;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Point2D;
@@ -877,6 +879,114 @@ final class M3SelectionControlContractTest {
         switchControl.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 100.0, 24.0, false));
         assertTrue(switchControl.isSelected(), "Clicking the adjacent switch label should still toggle selection");
         assertEquals(4, switchActions.get(), "Label activation should continue to fire one action event");
+    }
+
+    /// A bound switch reports the intended value without committing a click, key press, or drag preview.
+    @Test
+    void boundSwitchActivationRequestsButDoesNotWrite() {
+        FxTestUtils.runOnFxThread(() -> {
+            var model = new SimpleBooleanProperty(false);
+            M3Switch control = new M3Switch("Enable");
+            control.selectedProperty().bind(model);
+            control.setAnimationsEnabled(false);
+            Pane root = new Pane(control);
+            new Scene(root, 200, 80);
+            root.applyCss();
+            control.resize(140, 48);
+            control.layout();
+            List<Boolean> requests = new ArrayList<>();
+            control.setOnToggleRequest(event -> requests.add(event.getRequestedValue()));
+            AtomicInteger actions = new AtomicInteger();
+            control.setOnAction(event -> actions.incrementAndGet());
+            AtomicInteger changes = new AtomicInteger();
+            control.selectedProperty().addListener((obs, before, after) -> changes.incrementAndGet());
+
+            control.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 100, 24, true));
+            control.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 100, 24, false));
+            control.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+            control.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+            Region track = lookupRegion(control, ".m3-switch-track");
+            Region selectedLayer = lookupRegion(control, ".m3-switch-track-selected-layer");
+            double off = control.getTrackHeight() / 2;
+            double on = track.getWidth() - off;
+            double y = track.getHeight() / 2;
+            double sameSide = off + (on - off) * 0.4;
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_PRESSED, off, y, true));
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_DRAGGED, sameSide, y, true));
+            assertEquals(0.4, selectedLayer.getOpacity(), 0.0001);
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_RELEASED, sameSide, y, false));
+            assertEquals(0.0, selectedLayer.getOpacity(), 0.0001);
+            assertEquals(List.of(true, true), requests);
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_PRESSED, off, y, true));
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_DRAGGED, on, y, true));
+            assertEquals(1.0, selectedLayer.getOpacity(), 0.0001);
+            track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_RELEASED, on, y, false));
+            assertEquals(0.0, selectedLayer.getOpacity(), 0.0001);
+            assertEquals(List.of(true, true, true), requests);
+            assertEquals(0, actions.get());
+            assertEquals(0, changes.get());
+
+            model.set(true);
+            assertTrue(control.isSelected());
+            assertEquals(1, changes.get());
+            assertEquals(3, requests.size());
+            assertEquals(0, actions.get());
+        });
+    }
+
+    /// Ancestor vetoes do not reach model listeners, and accepted requests commit before delivering one action.
+    @Test
+    void switchCanDeferConfirmationWithoutPublishingTemporarySelection() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Switch control = new M3Switch();
+            Pane root = new Pane(control);
+            var model = new SimpleBooleanProperty(false);
+            control.selectedProperty().bindBidirectional(model);
+            List<String> events = new ArrayList<>();
+            control.setOnToggleRequest(event -> events.add("request:" + event.getRequestedValue()));
+            model.addListener((obs, before, after) -> events.add("model:" + after));
+            control.setOnAction(event -> events.add("action:" + control.isSelected()));
+            EventHandler<M3SwitchEvent> veto = M3SwitchEvent::consume;
+            root.addEventHandler(M3SwitchEvent.TOGGLE_REQUEST, veto);
+            control.fire();
+            assertEquals(List.of("request:true"), events);
+            assertFalse(model.get());
+            root.removeEventHandler(M3SwitchEvent.TOGGLE_REQUEST, veto);
+            model.set(true);
+            assertTrue(control.isSelected());
+            assertEquals(List.of("request:true", "model:true"), events);
+
+            events.clear();
+            control.fire();
+            assertEquals(List.of("request:false", "model:false", "action:false"), events);
+            events.clear();
+            control.setDisable(true);
+            control.fire();
+            assertTrue(events.isEmpty());
+        });
+    }
+
+    /// A request handler may take ownership of selection before returning.
+    @Test
+    void switchRechecksSelectionAfterRequestDelivery() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Switch control = new M3Switch();
+            var model = new SimpleBooleanProperty(false);
+            AtomicInteger actions = new AtomicInteger();
+            control.setOnAction(event -> actions.incrementAndGet());
+            control.setOnToggleRequest(event -> {
+                control.fire();
+                control.selectedProperty().bind(model);
+            });
+            control.fire();
+            assertFalse(control.isSelected());
+            assertEquals(0, actions.get());
+            control.selectedProperty().unbind();
+            control.setOnToggleRequest(event -> control.setSelected(event.getRequestedValue()));
+            control.fire();
+            assertTrue(control.isSelected());
+            assertEquals(0, actions.get());
+        });
     }
 
     /// Verifies that selection indicator animations expose intermediate and final rendered states.
