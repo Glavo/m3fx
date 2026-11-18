@@ -58,7 +58,7 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     ///
     /// @param control the expandable setting row
     public M3ExpandableSettingItemSkin(M3ExpandableSettingItem control) {
-        super(control);
+        super(control, true);
         contentHost.getStyleClass().add("m3-expandable-setting-content");
         contentHost.setManaged(control.isExpanded());
         getChildren().add(contentHost);

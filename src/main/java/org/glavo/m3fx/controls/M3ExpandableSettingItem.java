@@ -12,7 +12,6 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Skin;
-import javafx.scene.input.MouseEvent;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.skins.M3ExpandableSettingItemSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -47,9 +46,6 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
     /// The trailing disclosure indicator owned by this row.
     private final M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
 
-    /// Whether the next header action should be ignored because the pointer started in expanded content.
-    private boolean ignoreNextHeaderAction;
-
     /// Creates a collapsed expandable setting row with an empty headline.
     public M3ExpandableSettingItem() {
         this("");
@@ -66,8 +62,6 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
         disclosureIcon.setVertical(true);
         installTrailingIndicator(disclosureIcon);
         disclosureIcon.expandedProperty().bind(expandedProperty());
-        addEventFilter(MouseEvent.MOUSE_PRESSED, this::trackContentPointerPress);
-        addEventFilter(MouseEvent.MOUSE_RELEASED, this::clearContentPointerPressOnRelease);
     }
 
     /// Whether nested content is currently shown below the header row.
@@ -157,13 +151,9 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
 
     /// Toggles expansion before dispatching the header action.
     ///
-    /// @return `false` when the activation began in expanded content; otherwise `true`
+    /// @return `true` to dispatch the action after toggling
     @Override
     boolean prepareAction() {
-        if (ignoreNextHeaderAction) {
-            ignoreNextHeaderAction = false;
-            return false;
-        }
         setExpanded(!isExpanded());
         return true;
     }
@@ -188,18 +178,4 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
     protected Skin<?> createDefaultSkin() {
         return new M3ExpandableSettingItemSkin(this);
     }
-
-    /// Marks header actions to ignore when the pointer press begins inside expanded content.
-    private void trackContentPointerPress(MouseEvent event) {
-        ignoreNextHeaderAction = getSkin() instanceof M3ExpandableSettingItemSkin skin
-                && skin.isInContentArea(event.getY());
-    }
-
-    /// Clears a stale content-press flag if the gesture ends without header activation.
-    private void clearContentPointerPressOnRelease(MouseEvent event) {
-        if (event.isConsumed()) {
-            ignoreNextHeaderAction = false;
-        }
-    }
-
 }

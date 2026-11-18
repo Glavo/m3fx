@@ -24,6 +24,7 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3ExpandableSettingItem;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationItem;
@@ -196,6 +197,49 @@ final class M3InteractionLifecycleTest {
                 button.setSkin(null);
             });
         }
+    }
+
+    /// A hovered ancestor must not highlight its disclosure header when the pointer is on a nested action.
+    @Test
+    void expandableHeaderAndNestedRowHaveIndependentPointerFeedback() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem link = new M3ListItem("Download mirror");
+            M3ExpandableSettingItem group = new M3ExpandableSettingItem("Download channels");
+            group.setContent(link);
+            group.setExpanded(true);
+            group.setAnimationsEnabled(false);
+            link.setAnimationsEnabled(false);
+            AtomicInteger clicks = new AtomicInteger();
+            link.setOnAction(event -> clicks.incrementAndGet());
+            VBox root = new VBox(group);
+            new Scene(root, 360, 240);
+            root.applyCss();
+            root.layout();
+            Node header = group.lookup(".m3-list-item-container");
+            Region headerOverlay = lookupRegion(group, ".m3-state-layer");
+            Region childOverlay = lookupRegion(link, ".m3-state-layer");
+
+            group.fireEvent(primaryMouseEvent(group, MouseEvent.MOUSE_ENTERED_TARGET, 24, 20, false));
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_ENTERED_TARGET, 24, 20, false));
+            assertTrue(headerOverlay.getOpacity() > 0.0);
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_EXITED_TARGET, 24, 80, false));
+            link.fireEvent(primaryMouseEvent(link, MouseEvent.MOUSE_ENTERED_TARGET, 24, 20, false));
+            assertTrue(group.isHover());
+            assertTrue(childOverlay.getOpacity() > 0.0);
+            assertEquals(0.0, headerOverlay.getOpacity());
+            link.fireEvent(primaryMouseEvent(link, MouseEvent.MOUSE_PRESSED, 24, 20, true));
+            assertEquals(0.0, headerOverlay.getOpacity());
+            link.fireEvent(primaryMouseEvent(link, MouseEvent.MOUSE_RELEASED, 24, 20, false));
+            assertEquals(1, clicks.get());
+            assertTrue(group.isExpanded());
+
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_PRESSED, 24, 20, true));
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_RELEASED, 24, 80, false));
+            assertTrue(group.isExpanded(), "release over content must not activate the header");
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_PRESSED, 24, 20, true));
+            header.fireEvent(primaryMouseEvent(header, MouseEvent.MOUSE_RELEASED, 24, 20, false));
+            assertFalse(group.isExpanded());
+        });
     }
 
     /// Verifies that a pending Space activation cannot survive focus transfer across interactive skin families.

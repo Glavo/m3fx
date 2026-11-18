@@ -122,6 +122,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The root container that receives background styling.
     private final HBox container = new HBox();
 
+    /// The part of the item that accepts pointer activation.
+    private final Node pointerSurface;
+
     /// The bounded state layer for list item feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
 
@@ -296,7 +299,13 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     ///
     /// @param control the list item controlled by this skin
     public M3ListItemSkin(M3ListItemBase control) {
+        this(control, false);
+    }
+
+    /// Creates a list item whose pointer surface may exclude content below the header.
+    M3ListItemSkin(M3ListItemBase control, boolean headerOnly) {
         super(control);
+        pointerSurface = headerOnly ? container : control;
         selectionContainer.getStyleClass().add("m3-list-item-selection-container");
         container.getStyleClass().add("m3-list-item-container");
         textBox.getStyleClass().add("m3-list-item-text");
@@ -345,7 +354,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         // Resolve semantic resting feedback before installing transient-state transitions so a pre-existing active
         // state is synchronized immediately instead of starting an animation before the control can receive pulses.
         updatePersistentStateLayer();
-        stateLayer.installStateTransitions(control);
+        stateLayer.installStateTransitions(control, pointerSurface, false);
         control.headlineColorProperty().addListener(textColorInvalidation);
         control.supportingColorProperty().addListener(textColorInvalidation);
         control.selectedHeadlineColorProperty().addListener(textColorInvalidation);
@@ -438,8 +447,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.subMenuShowingProperty().removeListener(subMenuShowingListener);
         }
-        item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        item.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        pointerSurface.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        pointerSurface.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         item.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         container.nodeOrientationProperty().unbind();
@@ -990,8 +999,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
 
     /// Installs behavior handlers for pointer and keyboard activation.
     private void installBehaviorHandlers(M3ListItemBase item) {
-        item.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-        item.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        pointerSurface.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        pointerSurface.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         item.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
     }
@@ -1016,7 +1025,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             return;
         }
 
-        boolean shouldFire = !item.isDisabled() && item.contains(event.getX(), event.getY());
+        boolean shouldFire = !item.isDisabled() && pointerSurface.contains(event.getX(), event.getY());
         mousePressed = false;
         if (!spaceKeyPressed) {
             stateLayer.releaseRipple();
@@ -1030,7 +1039,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// Fires the list item on enter or starts activation feedback for space.
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
-        if (getSkinnable().isDisabled()) {
+        if (getSkinnable().isDisabled() || (pointerSurface != getSkinnable() && event.getTarget() != getSkinnable())) {
             return;
         }
         if ((code == KeyCode.ENTER || code == KeyCode.SPACE)

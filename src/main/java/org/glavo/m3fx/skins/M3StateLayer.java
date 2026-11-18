@@ -179,6 +179,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
 
+    /// Node whose pointer states drive this layer, or null while uninstalled.
+    private @Nullable Node pointerSurface;
+
     /// Whether a press has started without a matching release or cancellation.
     private boolean pressActive;
 
@@ -382,11 +385,20 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
     /// @param owner               the node whose interaction states drive this layer
     /// @param animateInitialState whether an already active state transitions from zero opacity
     void installStateTransitions(Node owner, boolean animateInitialState) {
-        if (stateOwner == owner) {
+        installStateTransitions(owner, owner, animateInitialState);
+    }
+
+    /// Tracks pointer states on the active surface while resolving focus and motion on the owning control.
+    void installStateTransitions(Node owner, Node surface, boolean animateInitialState) {
+        if (stateOwner == owner && pointerSurface == surface) {
             return;
         }
         uninstallStateTransitions();
         stateOwner = owner;
+        pointerSurface = surface;
+        if (surface != owner) {
+            surface.getPseudoClassStates().addListener(pseudoClassStateListener);
+        }
         modalInteractionBlocked = M3ModalInteraction.isBlocked(owner);
         hoverSuppressedUntilPointerInput = modalInteractionBlocked;
         focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromOwnerState);
@@ -394,9 +406,9 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         owner.disabledProperty().addListener(disabledStateListener);
         owner.sceneProperty().addListener(ownerSceneListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
-        owner.addEventHandler(MouseEvent.MOUSE_MOVED, pointerInputHandler);
-        owner.addEventHandler(MouseEvent.MOUSE_DRAGGED, pointerInputHandler);
-        owner.addEventHandler(MouseEvent.MOUSE_PRESSED, pointerInputHandler);
+        surface.addEventHandler(MouseEvent.MOUSE_MOVED, pointerInputHandler);
+        surface.addEventHandler(MouseEvent.MOUSE_DRAGGED, pointerInputHandler);
+        surface.addEventHandler(MouseEvent.MOUSE_PRESSED, pointerInputHandler);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
@@ -405,8 +417,8 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             stopStateOpacityAnimation();
             overlay.setOpacity(0.0);
             setFocusIndicatorOpacity(0.0);
-            animateOverlayOpacityFromOwnerState(owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)
-                    && !isPressedLike(owner) && !owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS));
+            animateOverlayOpacityFromOwnerState(surface.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)
+                    && !isPressedLike(surface) && !surface.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS));
         } else {
             synchronizeOwnerStateOpacity(owner);
         }
@@ -429,9 +441,13 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
         owner.disabledProperty().removeListener(disabledStateListener);
         owner.sceneProperty().removeListener(ownerSceneListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
-        owner.removeEventHandler(MouseEvent.MOUSE_MOVED, pointerInputHandler);
-        owner.removeEventHandler(MouseEvent.MOUSE_DRAGGED, pointerInputHandler);
-        owner.removeEventHandler(MouseEvent.MOUSE_PRESSED, pointerInputHandler);
+        Node surface = pointerSurface == null ? owner : pointerSurface;
+        if (surface != owner) {
+            surface.getPseudoClassStates().removeListener(pseudoClassStateListener);
+        }
+        surface.removeEventHandler(MouseEvent.MOUSE_MOVED, pointerInputHandler);
+        surface.removeEventHandler(MouseEvent.MOUSE_DRAGGED, pointerInputHandler);
+        surface.removeEventHandler(MouseEvent.MOUSE_PRESSED, pointerInputHandler);
         M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer != null) {
             observer.dispose();
@@ -447,6 +463,7 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             focusVisibleTracker = null;
         }
         stateOwner = null;
+        pointerSurface = null;
         pressActive = false;
         restingOverlayOpacity = 0.0;
         delegatedFocusVisible = false;
@@ -1032,20 +1049,21 @@ final class M3StateLayer extends Pane implements M3ModalInteraction.Target {
             return 0.0;
         }
         M3StateLayerTokens tokens = stateLayerTokens(owner);
+        Node surface = pointerSurface == null ? owner : pointerSurface;
         double interactionOpacity;
         if (modalInteractionBlocked) {
             interactionOpacity = 0.0;
-        } else if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
+        } else if (surface.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
             interactionOpacity = tokens.draggedOpacity();
         } else if (!hasVisibleRipple() && (!pressActive || isRippleEnabled())
-                && isPressedLike(owner)) {
+                && isPressedLike(surface)) {
             // A ripple replaces pressed feedback, not the hover or focus layer beneath it.
             interactionOpacity = tokens.pressedOpacity();
         } else if (delegatedFocusVisible
                 || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
             interactionOpacity = tokens.focusOpacity();
         } else if (!hoverSuppressedUntilPointerInput
-                && (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS))) {
+                && (surface.isHover() || surface.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS))) {
             interactionOpacity = tokens.hoverOpacity();
         } else {
             interactionOpacity = 0.0;
