@@ -3,11 +3,16 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.M3ExpandableSettingItem;
 import org.glavo.m3fx.controls.M3ListItemBase;
+import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.animation.M3DoubleTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,16 +25,33 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     /// Host for nested expandable content.
     private final StackPane contentHost = new StackPane();
 
+    /// Clips the body without resizing its children during a reveal.
+    private final Rectangle bodyClip = new Rectangle();
+
+    /// Fraction of the preferred body height reserved below the header.
+    private final DoubleProperty reveal = new SimpleDoubleProperty();
+
+    /// Retargetable motion shared by expansion and collapse.
+    private final M3DoubleTransition transition = new M3DoubleTransition(
+            reveal, M3DoubleTransition.NORMALIZED_VISIBILITY_THRESHOLD, 0.0, 1.0);
+
     /// Keeps the content host synchronized with the control content property.
     private final ChangeListener<@Nullable Node> contentListener = (observable, oldValue, newValue) -> {
         updateContentNode(newValue);
         getSkinnable().requestLayout();
     };
 
-    /// Requests layout when expansion changes.
+    /// Reveals or conceals the body from its current visible extent.
     private final ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> {
-        updateContentVisibility();
-        getSkinnable().requestLayout();
+        M3ExpandableSettingItem control = expandable();
+        double target = newValue ? 1.0 : 0.0;
+        if (control.getContent() == null || control.getScene() == null || control.getScene().getWindow() == null) {
+            transition.stop();
+            reveal.set(target);
+        } else {
+            transition.configure(M3Animation.fastSpatial(control), target);
+            M3Animation.playFromStart(control, transition);
+        }
     };
 
     /// Creates an expandable setting-item skin.
@@ -39,10 +61,10 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
         super(control);
         contentHost.getStyleClass().add("m3-expandable-setting-content");
         contentHost.setManaged(false);
-        contentHost.setMouseTransparent(false);
         getChildren().add(contentHost);
+        reveal.set(control.isExpanded() ? 1.0 : 0.0);
+        reveal.addListener(observable -> control.requestLayout());
         updateContentNode(control.getContent());
-        updateContentVisibility();
         control.contentProperty().addListener(contentListener);
         control.expandedProperty().addListener(expandedListener);
     }
@@ -51,6 +73,7 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     @Override
     public void dispose() {
         M3ExpandableSettingItem control = expandable();
+        transition.stop();
         control.contentProperty().removeListener(contentListener);
         control.expandedProperty().removeListener(expandedListener);
         contentHost.getChildren().clear();
@@ -67,7 +90,12 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + bottomInset + headerHeight() + contentHeight(width - leftInset - rightInset);
+        double height = topInset + headerHeight() + bottomInset;
+        if (reveal.get() == 0.0 || expandable().getContent() == null) {
+            return height;
+        }
+        double bodyWidth = width < 0.0 ? -1.0 : Math.max(0.0, width - leftInset - rightInset);
+        return height + reveal.get() * contentHost.prefHeight(bodyWidth);
     }
 
     /// Includes expanded content in the minimum height.
@@ -92,8 +120,8 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
             double leftInset
     ) {
         M3ExpandableSettingItem control = expandable();
-        if (!control.isExpanded() || control.getContent() == null) {
-            return headerHeight() + topInset + bottomInset;
+        if (reveal.get() < 1.0 || control.getContent() == null) {
+            return computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
         }
         return Double.MAX_VALUE;
     }
@@ -107,12 +135,21 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
         // Header presentation reuses the base list-item layers within the header band only.
         super.layoutChildren(x, y, width, usedHeader);
 
-        if (control.isExpanded() && control.getContent() != null && height > usedHeader) {
+        if (reveal.get() > 0.0 && control.getContent() != null && height > usedHeader) {
+            double natural = contentHost.prefHeight(width);
+            double available = height - usedHeader;
+            double visible = reveal.get() == 1.0 ? available : Math.min(available, natural * reveal.get());
+            if (visible < natural) {
+                bodyClip.setWidth(width);
+                bodyClip.setHeight(visible);
+                contentHost.setClip(bodyClip);
+            } else {
+                contentHost.setClip(null);
+            }
             contentHost.setVisible(true);
-            contentHost.resizeRelocate(x, y + usedHeader, width, height - usedHeader);
+            contentHost.resizeRelocate(x, y + usedHeader, width, Math.max(natural, visible));
         } else {
             contentHost.setVisible(false);
-            contentHost.resizeRelocate(x, y, 0.0, 0.0);
         }
     }
 
@@ -121,27 +158,21 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
     /// @param localY the y coordinate in control-local space
     /// @return `true` when `localY` is below the header while content is shown
     public boolean isInContentArea(double localY) {
-        M3ExpandableSettingItem control = expandable();
-        if (!control.isExpanded() || control.getContent() == null) {
-            return false;
-        }
-        return localY >= headerHeight();
+        double bodyY = localY - contentHost.getLayoutY();
+        double visibleHeight = contentHost.getClip() == null ? contentHost.getHeight() : bodyClip.getHeight();
+        return contentHost.isVisible() && bodyY >= 0.0 && bodyY < visibleHeight;
     }
 
     /// Updates the hosted content node.
     private void updateContentNode(@Nullable Node content) {
         if (content == null) {
             contentHost.getChildren().clear();
+            contentHost.setVisible(false);
+            transition.stop();
+            reveal.set(expandable().isExpanded() ? 1.0 : 0.0);
             return;
         }
         contentHost.getChildren().setAll(content);
-    }
-
-    /// Shows the content host only while expanded and content is present.
-    private void updateContentVisibility() {
-        M3ExpandableSettingItem control = expandable();
-        boolean show = control.isExpanded() && control.getContent() != null;
-        contentHost.setVisible(show);
     }
 
     /// Returns the preferred header height for the current line count.
@@ -152,19 +183,6 @@ public final class M3ExpandableSettingItemSkin extends M3ListItemSkin {
             case TWO_LINE -> item.getTwoLineHeight();
             case THREE_LINE -> item.getThreeLineHeight();
         };
-    }
-
-    /// Returns the preferred height of expanded content at the supplied width.
-    private double contentHeight(double width) {
-        M3ExpandableSettingItem control = expandable();
-        if (!control.isExpanded()) {
-            return 0.0;
-        }
-        @Nullable Node content = control.getContent();
-        if (content == null) {
-            return 0.0;
-        }
-        return Math.max(0.0, content.prefHeight(width));
     }
 
     /// Returns the expandable control.

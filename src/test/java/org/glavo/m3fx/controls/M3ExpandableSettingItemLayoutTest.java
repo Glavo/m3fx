@@ -7,6 +7,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies expandable setting rows reserve vertical space for nested content.
@@ -35,6 +37,7 @@ class M3ExpandableSettingItemLayoutTest {
     void expandedContentIncreasesPreferredAndLaidOutHeight() {
         FxTestUtils.runOnFxThread(() -> {
             M3ExpandableSettingItem item = new M3ExpandableSettingItem("Memory");
+            item.setAnimationsEnabled(false);
             item.setSupportingText("Auto");
             M3SwitchSettingItem first = new M3SwitchSettingItem("Automatic allocation");
             M3SwitchSettingItem second = new M3SwitchSettingItem("Manual allocation");
@@ -86,6 +89,56 @@ class M3ExpandableSettingItemLayoutTest {
 
             stage.close();
         });
+    }
+
+    /// Expansion reserves space progressively without shrinking the body, even when reversed before completion.
+    @Test
+    void interruptedRevealKeepsContentAtNaturalHeight() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        M3ExpandableSettingItem item = FxTestUtils.callOnFxThread(() -> new M3ExpandableSettingItem("Advanced"));
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                Region body = new Region();
+                body.setPrefHeight(160);
+                item.setContent(body);
+                item.setAnimationsEnabled(true);
+                VBox root = new VBox(item, new Label("Next"));
+                Scene scene = new Scene(root, 320, 400);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+            });
+            double collapsed = FxTestUtils.callOnFxThread(item::getHeight);
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> item.getHeight() > collapsed + 1 && item.getHeight() < collapsed + 159,
+                    () -> item.setExpanded(true),
+                    () -> {
+                        Region body = (Region) item.getContent();
+                        assertEquals(160, body.getHeight(), 0.01);
+                        assertEquals(item.getHeight() - collapsed,
+                                body.getParent().getClip().getLayoutBounds().getHeight(), 1.0);
+                        assertEquals(item.getHeight(), item.getParent().getChildrenUnmodifiable().get(1).getLayoutY(), 1);
+                        double before = item.prefHeight(item.getWidth());
+                        item.setExpanded(false);
+                        assertEquals(before, item.prefHeight(item.getWidth()), 0.01);
+                    });
+            FxTestUtils.runOnFxThreadWhen(() -> item.getHeight() == collapsed, () -> {}, () -> {
+                item.setExpanded(true);
+                item.setAnimationsEnabled(false);
+                item.getParent().layout();
+                assertTrue(item.getHeight() >= collapsed + 160);
+                item.setExpanded(false);
+                item.getParent().layout();
+                assertEquals(collapsed, item.getHeight());
+                item.setContent(null);
+                item.setExpanded(true);
+                assertEquals(collapsed, item.prefHeight(item.getWidth()));
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
     }
 
     /// Nested list panes used by HMCL game-settings groups must still reserve expanded height.

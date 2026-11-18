@@ -28,6 +28,8 @@ import java.util.Objects;
 /// The trailing disclosure indicator is a non-interactive presentation of [#expandedProperty()]. Nested content is
 /// shown below the header row while expanded; it is not a second preference value and must not be used as a stale
 /// summary of child setting rows.
+/// The default skin reveals or conceals the content vertically without scaling it. Changing the target during a
+/// transition reverses it from the current height; disabling animations applies the target immediately.
 ///
 /// Activating the header toggles expansion and delivers an action event. Pointer input that begins inside the expanded
 /// content does not toggle the header. Applications own child preference state and may place setting rows or other
@@ -189,7 +191,8 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
 
     /// Marks header actions to ignore when the pointer press begins inside expanded content.
     private void trackContentPointerPress(MouseEvent event) {
-        ignoreNextHeaderAction = isExpanded() && isInContentArea(event.getY());
+        ignoreNextHeaderAction = getSkin() instanceof M3ExpandableSettingItemSkin skin
+                && skin.isInContentArea(event.getY());
     }
 
     /// Clears a stale content-press flag if the gesture ends without header activation.
@@ -199,16 +202,4 @@ public final class M3ExpandableSettingItem extends M3SettingItemBase {
         }
     }
 
-    /// Returns whether a local y coordinate falls in the expanded content region under the current layout.
-    private boolean isInContentArea(double localY) {
-        if (!isExpanded() || getContent() == null) {
-            return false;
-        }
-        double headerHeight = switch (getLineCount()) {
-            case ONE_LINE -> getOneLineHeight();
-            case TWO_LINE -> getTwoLineHeight();
-            case THREE_LINE -> getThreeLineHeight();
-        };
-        return localY >= headerHeight;
-    }
 }
