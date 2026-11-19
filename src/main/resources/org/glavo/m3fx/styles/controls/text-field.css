@@ -58,6 +58,7 @@
     -fx-padding: 0;
 }
 
+.m3-combo-box.m3-filled-field,
 .m3-text-field.m3-filled-field,
 .m3-password-field.m3-filled-field,
 .m3-text-area.m3-filled-field {
@@ -70,6 +71,7 @@
     -fx-border-width: 0 0 1px 0;
 }
 
+.m3-combo-box.m3-filled-field:hover,
 .m3-text-field.m3-filled-field:hover,
 .m3-password-field.m3-filled-field:hover,
 .m3-text-area.m3-filled-field:hover {
@@ -78,6 +80,8 @@
     -fx-border-color: transparent transparent -m3-color-on-surface transparent;
 }
 
+.m3-combo-box.m3-filled-field:focused,
+.m3-combo-box.m3-filled-field:showing,
 .m3-text-field.m3-filled-field:focused,
 .m3-password-field.m3-filled-field:focused,
 .m3-text-area.m3-filled-field:focused {
@@ -110,6 +114,7 @@
     -fx-border-width: 0 0 2px 0;
 }
 
+.m3-combo-box.m3-outlined-field,
 .m3-text-field.m3-outlined-field,
 .m3-password-field.m3-outlined-field,
 .m3-text-area.m3-outlined-field {
@@ -122,12 +127,15 @@
     -fx-border-width: 1px;
 }
 
+.m3-combo-box.m3-outlined-field:hover,
 .m3-text-field.m3-outlined-field:hover,
 .m3-password-field.m3-outlined-field:hover,
 .m3-text-area.m3-outlined-field:hover {
     -fx-border-color: -m3-color-on-surface;
 }
 
+.m3-combo-box.m3-outlined-field:focused,
+.m3-combo-box.m3-outlined-field:showing,
 .m3-text-field.m3-outlined-field:focused,
 .m3-password-field.m3-outlined-field:focused,
 .m3-text-area.m3-outlined-field:focused {
@@ -199,6 +207,7 @@
     -fx-prompt-text-fill: -m3-state-disabled-content-color;
 }
 
+.m3-combo-box.m3-filled-field:disabled,
 .m3-text-field.m3-filled-field:disabled,
 .m3-password-field.m3-filled-field:disabled,
 .m3-text-area.m3-filled-field:disabled {
@@ -211,6 +220,7 @@
     -fx-border-width: 0 0 1px 0;
 }
 
+.m3-combo-box.m3-outlined-field:disabled,
 .m3-text-field.m3-outlined-field:disabled,
 .m3-password-field.m3-outlined-field:disabled,
 .m3-text-area.m3-outlined-field:disabled {

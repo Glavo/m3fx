@@ -1,0 +1,40 @@
+@import "text-field.css";
+
+.m3-combo-box {
+    -fx-pref-width: 240px;
+    -fx-pref-height: 56px;
+    -fx-min-height: 56px;
+    -fx-padding: 0 16px;
+}
+
+.m3-combo-box .label {
+    -fx-font-size: 16px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-combo-box .label:prompt {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-combo-options.list-view {
+    -fx-text-background-color: -m3-color-on-surface;
+    -fx-padding: 8px 0;
+    -fx-background-color: -m3-menu-container-color;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+}
+
+.m3-combo-options .list-cell {
+    -fx-font-size: 16px;
+    -fx-background-color: transparent;
+    -fx-padding: 0 16px;
+}
+
+.m3-combo-options .list-cell:filled:hover {
+    -fx-background-color: -m3-color-surface-container-highest;
+}
+
+.m3-combo-options .list-cell:filled:selected {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}

@@ -7,6 +7,8 @@ import javafx.scene.control.Label;
 import javafx.scene.Node;
 
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3ComboBox;
+import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
@@ -99,7 +101,19 @@ final class MenusDemoPage extends DemoPageSupport {
         vibrantMenu.setAllowEmptySelection(false);
         vibrantMenu.select(vibrantSelected);
 
+        M3ComboBox<String> filled = new M3ComboBox<>();
+        filled.setAccessibleText("Sort order");
+        filled.getItems().addAll("Recently opened", "Last modified", "Name");
+        filled.setValue("Recently opened");
+
+        M3ComboBox<String> outlined = new M3ComboBox<>();
+        outlined.setAccessibleText("Destination");
+        outlined.setPromptText("Choose a destination");
+        outlined.setVariant(M3TextInputVariant.OUTLINED);
+        outlined.getItems().addAll("Inbox", "Projects", "Archive");
+
         return createGallery(
+                createShowcaseGroup("Exposed Dropdown Menus", filled, outlined),
                 createShowcaseGroup("Menu Button", menuButton),
                 createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu, vibrantMenu)
         );

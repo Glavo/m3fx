@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.geometry.BoundingBox;
@@ -15,6 +16,8 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -72,6 +75,95 @@ final class M3MenuContractTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Browsing a dropdown is tentative until the user commits a choice.
+    @Test
+    void exposedDropdownCommitsOnlyConfirmedChoices() {
+        FxTestUtils.runOnFxThread(() -> {
+            var field = new M3ComboBox<Integer>();
+            field.getItems().addAll(10, 20, 30);
+            field.setValue(20);
+            field.setConverter(n -> n + " min");
+            var changes = new AtomicInteger();
+            field.valueProperty().addListener((obs, old, next) -> changes.incrementAndGet());
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 180));
+                stage.show();
+                field.requestFocus();
+                assertEquals("20 min", ((Label) field.lookup(".label")).getText());
+                field.fireEvent(primaryMouseEvent(field, MouseEvent.MOUSE_PRESSED, 8, 20, true));
+                field.fireEvent(primaryMouseEvent(field, MouseEvent.MOUSE_RELEASED, 8, 20, false));
+                assertTrue(field.isShowing());
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                assertFalse(field.isShowing());
+                assertEquals(0, changes.get());
+
+                FxTestUtils.assertNoCssWarnings(() -> field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN)));
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertEquals(20, field.getValue());
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals(30, field.getValue());
+                assertFalse(field.isShowing());
+                assertEquals(1, changes.get());
+                assertEquals("30 min", ((Label) field.lookup(".label")).getText());
+
+                var model = new SimpleObjectProperty<>(10);
+                field.valueProperty().bind(model);
+                field.show();
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertFalse(field.isShowing());
+                assertEquals(10, field.getValue());
+                field.show();
+                field.getItems().clear();
+                assertFalse(field.isShowing());
+                field.show();
+                assertFalse(field.isShowing());
+            } finally {
+                stage.hide();
+            }
+        });
+    }
+
+    /// A scrollable, field-width menu inherits direction and accepts a click on a rendered option.
+    @Test
+    void exposedDropdownAnchorsAndPicksRenderedOptions() {
+        FxTestUtils.runOnFxThread(() -> {
+            var field = new M3ComboBox<Integer>();
+            field.setVariant(M3TextInputVariant.OUTLINED);
+            field.setPromptText("Choose a time");
+            field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            for (int i = 0; i < 100; i++) {
+                field.getItems().add(i);
+            }
+            field.setValue(62);
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 180));
+                stage.show();
+                field.executeAccessibleAction(AccessibleAction.EXPAND);
+                ListView<?> list = assertInstanceOf(ListView.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                list.applyCss();
+                list.layout();
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, list.getEffectiveNodeOrientation());
+                assertEquals(field.getWidth(), list.getWidth(), 1);
+                assertEquals(62, list.getSelectionModel().getSelectedIndex());
+                assertTrue(list.getHeight() < list.getFixedCellSize() * field.getItems().size());
+                ListCell<?> cell = list.lookupAll(".list-cell").stream()
+                        .filter(n -> n instanceof ListCell<?> c && !c.isEmpty() && c.getIndex() != 62)
+                        .map(n -> (ListCell<?>) n).findFirst().orElseThrow();
+                int index = cell.getIndex();
+                cell.fireEvent(primaryMouseEvent(cell, MouseEvent.MOUSE_CLICKED, 8, 8, false));
+                assertFalse(field.isShowing());
+                assertEquals(index, field.getValue());
+            } finally {
+                stage.hide();
+            }
+        });
     }
 
     /// Verifies that menu buttons open their popup from a full-bounds pointer click near the layout edge.

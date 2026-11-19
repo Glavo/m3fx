@@ -229,7 +229,7 @@ public final class M3PopupPositioning {
     }
 
     /// Returns the visual screen bounds for an owner already resolved to screen coordinates.
-    private static Rectangle2D visualBoundsFor(Bounds ownerBounds) {
+    public static Rectangle2D visualBoundsFor(Bounds ownerBounds) {
         List<Screen> screens = Screen.getScreensForRectangle(
                 ownerBounds.getMinX(),
                 ownerBounds.getMinY(),
