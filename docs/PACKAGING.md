@@ -11,7 +11,7 @@ Build the core library with `./gradlew :assemble`, or install its publication lo
 
 ## Shadow JARs
 
-All three sample JARs include application classes and resources, M3FX, MonetFX, and non-JavaFX runtime dependencies.
+The sample JARs include application classes and resources, M3FX, MonetFX, and non-JavaFX runtime dependencies.
 They require an external JavaFX runtime, including platform-native libraries, and are not self-contained distributions.
 The demo uses host-system fonts rather than bundled fonts.
 
@@ -19,10 +19,6 @@ The demo uses host-system fonts rather than bundled fonts.
 | --- | --- | --- |
 | Demo | `./gradlew :demo:shadowJar` | `demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar` |
 | Catalog | `./gradlew :catalog:shadowJar` | `catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar` |
-| HMCL MD3 Demo | `./gradlew :hmcl-md3-demo:shadowJar` | `hmcl-md3-demo/build/libs/hmcl-md3-demo-1.0-SNAPSHOT-shadow.jar` |
-
-The HMCL JAR also includes artwork and skin assets extracted from the pinned upstream source archive, plus its
-GPL-3.0 license at `META-INF/licenses/HMCL-GPL-3.0.txt`.
 
 ## Demo Jlink Runtime
 

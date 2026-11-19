@@ -36,7 +36,7 @@ that JavaFX may have copied. Assert visible geometry and state instead of schedu
 ## Running Locally
 
 Run commands from the repository root. Unqualified task selectors include matching tasks in the library, demo,
-catalog, and HMCL MD3 demo. Use a path such as `:demo:testTier2` to target one project. For a full review:
+and catalog. Use a path such as `:demo:testTier2` to target one project. For a full review:
 
 ```shell
 ./gradlew test testTier2 testTier3
@@ -63,4 +63,3 @@ Visual suites also write snapshots and, where supported, HTML indexes to:
 - `build/reports/m3fx-visual`
 - `demo/build/reports/m3fx-demo-visual`
 - `catalog/build/reports/catalog-snapshots`
-- `hmcl-md3-demo/build/reports/hmcl-snapshots`

@@ -7,4 +7,3 @@ rootProject.name = "m3fx"
 
 include("demo")
 include("catalog")
-include("hmcl-md3-demo")

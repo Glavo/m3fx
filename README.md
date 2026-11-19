@@ -361,7 +361,6 @@ picker.valueProperty().addListener((observable, oldColor, newColor) ->
 | --- | --- | --- |
 | Demo | Component variants, states, and responsive examples. | `./gradlew :demo:run` |
 | Catalog | Focused component and example navigation. | `./gradlew :catalog:run` |
-| HMCL MD3 Demo | Launcher-style application built with M3FX. | `./gradlew :hmcl-md3-demo:run` |
 
 The [nightly release](https://github.com/Glavo/m3fx/releases/tag/nightly) provides the Demo Shadow JAR and
 platform-specific native executables. See [PACKAGING.md](docs/PACKAGING.md) for building distributions.
@@ -371,5 +370,4 @@ Run `./gradlew test` for the default Tier 1 suite. Higher-cost tests are opt-in;
 
 ## License
 
-M3FX is licensed under the Apache License, Version 2.0. The HMCL demo includes upstream assets under GPL-3.0;
-see its packaged license.
+M3FX is licensed under the Apache License, Version 2.0.

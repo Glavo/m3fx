@@ -61,15 +61,12 @@ jobs:
             build/reports/tests \
             demo/build/reports/tests \
             catalog/build/reports/tests \
-            hmcl-md3-demo/build/reports/tests \
             build/test-results \
             demo/build/test-results \
             catalog/build/test-results \
-            hmcl-md3-demo/build/test-results \
             hs_err_pid*.log \
             demo/hs_err_pid*.log \
-            catalog/hs_err_pid*.log \
-            hmcl-md3-demo/hs_err_pid*.log; do
+            catalog/hs_err_pid*.log; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi
@@ -109,13 +106,5 @@ jobs:
         with:
           name: m3fx-catalog-shadow-jar
           path: catalog/build/libs/m3fx-catalog-*-shadow.jar
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload HMCL MD3 demo shadow jar
-        uses: actions/upload-artifact@v7
-        with:
-          name: hmcl-md3-demo-shadow-jar
-          path: hmcl-md3-demo/build/libs/hmcl-md3-demo-*-shadow.jar
           if-no-files-found: error
           archive: false

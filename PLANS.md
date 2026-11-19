@@ -21,8 +21,8 @@ These areas remain to be verified; they are not a list of confirmed defects.
 - Review public API and documentation consistency, and verify JavaFX 17 compatibility alongside the
   default JavaFX 21 development setup.
 - Verify release artifacts and launch behavior on supported desktop platforms using
-  [PACKAGING.md](docs/PACKAGING.md): the modular library, all three sample shadow JARs
-  (`demo`, `catalog`, and `hmcl-md3-demo`, without bundled JavaFX), Demo jlink runtimes,
+  [PACKAGING.md](docs/PACKAGING.md): the modular library, Demo and Catalog shadow JARs
+  (without bundled JavaFX), Demo jlink runtimes,
   Native Image distributions, and CI artifacts.
 
 ## Deferred Scope
