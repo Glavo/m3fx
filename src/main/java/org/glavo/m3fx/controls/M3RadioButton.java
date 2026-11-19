@@ -135,14 +135,7 @@ public final class M3RadioButton extends ButtonBase implements M3Animated, Toggl
                     // JavaFX 17 has no aggregate TOGGLE_STATE attribute; the helper is a no-op there.
                     M3Accessible.notifyToggleStateChanged(M3RadioButton.this);
 
-                    ToggleGroup group = getToggleGroup();
-                    if (group != null) {
-                        if (selected) {
-                            group.selectToggle(M3RadioButton.this);
-                        } else if (group.getSelectedToggle() == M3RadioButton.this) {
-                            group.selectToggle(null);
-                        }
-                    }
+                    synchronizeGroupSelection(M3RadioButton.this);
                 }
 
                 /// Returns the owning bean.
@@ -159,6 +152,25 @@ public final class M3RadioButton extends ButtonBase implements M3Animated, Toggl
             };
         }
         return selected;
+    }
+
+    /// Synchronizes a radio button or radio setting row with its JavaFX toggle group.
+    static void synchronizeGroupSelection(Toggle toggle) {
+        @Nullable ToggleGroup group = toggle.getToggleGroup();
+        if (group == null) {
+            return;
+        }
+        if (toggle.isSelected()) {
+            group.selectToggle(toggle);
+        } else if (group.getSelectedToggle() == toggle) {
+            // ToggleGroup deselects the old member before publishing its already-selected successor.
+            for (Toggle member : group.getToggles()) {
+                if (member.isSelected()) {
+                    return;
+                }
+            }
+            group.selectToggle(null);
+        }
     }
 
     /// The toggle group that coordinates this radio button's selection.

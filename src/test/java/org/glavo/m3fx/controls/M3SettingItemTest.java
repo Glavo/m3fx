@@ -179,6 +179,11 @@ final class M3SettingItemTest {
             first.fire();
             assertEquals(1, firstActions.get(), "selected group members must ignore repeated activation");
 
+            group.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == null) {
+                    first.setSelected(true);
+                }
+            });
             second.fire();
             assertFalse(first.isSelected());
             assertTrue(second.isSelected());

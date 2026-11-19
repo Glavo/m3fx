@@ -56,7 +56,7 @@ public final class M3RadioButtonSettingItem extends M3SettingItemBase implements
         indicator.selectedProperty().bindBidirectional(selectedProperty());
         selectedProperty().addListener((observable, oldValue, newValue) -> {
             M3Accessible.notifyToggleStateChanged(this);
-            updateToggleGroupSelection(newValue);
+            M3RadioButton.synchronizeGroupSelection(this);
         });
     }
 
@@ -140,21 +140,6 @@ public final class M3RadioButtonSettingItem extends M3SettingItemBase implements
             };
         }
         return toggleGroup;
-    }
-
-    /// Synchronizes the JavaFX toggle group after this row's selected value changes.
-    ///
-    /// @param selected whether this row is now selected
-    private void updateToggleGroupSelection(boolean selected) {
-        @Nullable ToggleGroup group = getToggleGroup();
-        if (group == null) {
-            return;
-        }
-        if (selected) {
-            group.selectToggle(this);
-        } else if (group.getSelectedToggle() == this) {
-            group.selectToggle(null);
-        }
     }
 
     /// Selects this row or toggles its independent selected value before dispatching the row action.

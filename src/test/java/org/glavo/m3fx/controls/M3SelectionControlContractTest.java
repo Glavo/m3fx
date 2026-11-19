@@ -18,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
@@ -48,6 +49,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -1607,6 +1610,45 @@ final class M3SelectionControlContractTest {
 
         assertTrue(second.isSelected());
         assertEquals(1, secondActions.get());
+    }
+
+    /// Switching a group has one observable transition; only an explicit clear reports no selection.
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void radioGroupNotifiesOnlyTheCommittedSelection(boolean activate) {
+        /// The endpoints delivered in a single group selection notification.
+        @NotNullByDefault
+        record Change(@Nullable Toggle previous, @Nullable Toggle current) {}
+
+        ToggleGroup group = new ToggleGroup();
+        M3RadioButton a = new M3RadioButton("A");
+        M3RadioButton b = new M3RadioButton("B");
+        group.getToggles().addAll(a, b);
+        a.setSelected(true);
+        List<Change> changes = new ArrayList<>();
+        group.selectedToggleProperty().addListener((obs, oldValue, newValue) -> changes.add(new Change(oldValue, newValue)));
+
+        if (activate) {
+            b.fire();
+        } else {
+            b.setSelected(true);
+        }
+        assertEquals(List.of(new Change(a, b)), changes);
+        assertFalse(a.isSelected());
+        assertTrue(b.isSelected());
+        assertSame(b, group.getSelectedToggle());
+
+        changes.clear();
+        b.fire();
+        assertTrue(changes.isEmpty());
+        if (activate) {
+            group.selectToggle(null);
+        } else {
+            b.setSelected(false);
+        }
+        assertEquals(List.of(new Change(b, null)), changes);
+        assertFalse(b.isSelected());
+        assertNull(group.getSelectedToggle());
     }
 
     /// Verifies that directional radio navigation skips effectively hidden and disabled group members.
