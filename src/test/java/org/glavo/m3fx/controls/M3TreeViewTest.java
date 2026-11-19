@@ -211,12 +211,13 @@ final class M3TreeViewTest {
 
                     Node next = cell.getIndex() == 0 ? graphic : renderedText(cell);
                     double gap = rtl ? bounds.getMinX() - maxX(next) : minX(next) - bounds.getMaxX();
-                    assertTrue(gap >= 3.5, () -> "checkbox hover gap to adjacent content: " + gap);
+                    assertTrue(gap >= 3.5 && gap <= 8.75, () -> "checkbox hover gap to adjacent content: " + gap);
                     if (cell.getIndex() == 0) {
                         Node arrow = cell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
-                        assertTrue((rtl ? minX(arrow) - bounds.getMaxX() : bounds.getMinX() - maxX(arrow)) >= 3.5);
+                        double arrowGap = rtl ? minX(arrow) - bounds.getMaxX() : bounds.getMinX() - maxX(arrow);
+                        assertTrue(arrowGap >= 3.5 && arrowGap <= 15, () -> "disclosure to hover gap: " + arrowGap);
                         Node text = renderedText(cell);
-                        assertEquals(8.0, rtl ? minX(graphic) - maxX(text) : minX(text) - maxX(graphic), 0.75);
+                        assertEquals(4.0, rtl ? minX(graphic) - maxX(text) : minX(text) - maxX(graphic), 0.75);
                     }
                     checkbox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
                 }

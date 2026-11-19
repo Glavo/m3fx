@@ -10,7 +10,6 @@ import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
 import javafx.event.ActionEvent;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
@@ -97,7 +96,6 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
         setTextOverrun(OverrunStyle.ELLIPSIS);
         setPrefWidth(0.0);
         disclosureNode.getStyleClass().add("m3-tree-disclosure");
-        disclosureNode.setAlignment(Pos.CENTER);
         disclosureIcon.animationsEnabledProperty().bind(animationsEnabledProperty());
         disclosureIcon.setMouseTransparent(true);
         setDisclosureNode(disclosureNode);

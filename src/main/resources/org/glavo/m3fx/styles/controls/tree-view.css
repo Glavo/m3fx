@@ -70,6 +70,11 @@
     -fx-alignment: center-left;
 }
 
+.m3-tree-view.m3-checkbox-tree-selection > .virtual-flow > .clipped-container > .sheet > .m3-tree-cell {
+    -fx-padding: 0 16px 0 0;
+    -fx-graphic-text-gap: 4px;
+}
+
 .m3-tree-selection-checkbox {
     -fx-padding: 0;
 }
@@ -87,6 +92,10 @@
 
 .m3-tree-view.m3-highlight-tree-selection .m3-tree-cell:selected {
     -m3-disclosure-icon-color: -m3-color-on-secondary-container;
+}
+
+.m3-tree-view.m3-checkbox-tree-selection .m3-tree-cell > .m3-tree-disclosure {
+    -fx-alignment: center-right;
 }
 
 .m3-tree-view > .virtual-flow > .corner {
