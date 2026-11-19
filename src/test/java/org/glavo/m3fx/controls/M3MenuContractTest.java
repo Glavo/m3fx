@@ -224,6 +224,165 @@ final class M3MenuContractTest {
         });
     }
 
+    /// Typed text wins over implicit matches; explicit navigation commits a preset without parsing.
+    @Test
+    void freeInputDistinguishesDraftsFromSuggestions() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var field = new M3ComboBox<String>();
+            field.setInputMode(M3ComboBoxInputMode.FREE_INPUT);
+            var parses = new AtomicInteger();
+            field.setParser(text -> {
+                parses.incrementAndGet();
+                return text;
+            });
+            field.getItems().addAll("release", "release notes");
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 240));
+                stage.show();
+                field.requestFocus();
+                var editor = assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+                editor.setText("rel");
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(field.getItems(), list.getItems());
+                assertTrue(list.getSelectionModel().isEmpty());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertEquals("release", list.getSelectionModel().getSelectedItem());
+                editor.appendText("e");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals("rele", field.getValue());
+                assertEquals(1, parses.get());
+                assertFalse(field.isShowing());
+
+                editor.setText("rel");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertSame(field.getItems().get(1), field.getValue());
+                assertEquals(1, parses.get());
+
+                editor.setText("  new label  ");
+                assertTrue(list.getItems().isEmpty());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals("  new label  ", field.getValue());
+                assertEquals(List.of("release", "release notes"), field.getItems());
+                editor.clear();
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals("", field.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Leaving a free-input editor submits its text, independently of popup dismissal and tentative selection.
+    @Test
+    void freeInputCommitsOnFocusTransfer() throws InterruptedException {
+        var stage = FxTestUtils.callOnFxThread(Stage::new);
+        var field = FxTestUtils.callOnFxThread(() -> new M3ComboBox<Integer>());
+        var save = FxTestUtils.callOnFxThread(() -> new M3Button("Save"));
+        var saved = new AtomicReference<Integer>();
+        var parses = new AtomicInteger();
+        try {
+            FxTestUtils.runOnFxThreadWhen(stage::isFocused, () -> {
+                field.setAnimationsEnabled(false);
+                field.setInputMode(M3ComboBoxInputMode.FREE_INPUT);
+                field.getItems().add(123);
+                field.setParser(text -> {
+                    parses.incrementAndGet();
+                    return Integer.valueOf(text);
+                });
+                save.setOnAction(event -> saved.set(field.getValue()));
+                stage.setScene(new Scene(new VBox(field, save), 320, 240));
+                stage.show();
+                stage.requestFocus();
+                field.requestFocus();
+            }, () -> {
+                var editor = assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+                editor.setText("12");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertSame(save, stage.getScene().getFocusOwner());
+                assertEquals(12, field.getValue());
+                assertEquals(1, parses.get());
+                assertFalse(field.isShowing());
+
+                field.requestFocus();
+                editor.setText("34");
+                save.fireEvent(primaryMouseEvent(save, MouseEvent.MOUSE_PRESSED, 8, 8, true));
+                save.fireEvent(primaryMouseEvent(save, MouseEvent.MOUSE_RELEASED, 8, 8, false));
+                assertEquals(34, saved.get());
+                assertEquals(2, parses.get());
+
+                field.requestFocus();
+                editor.setText("bad");
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                list.getScene().getWindow().hide();
+                save.requestFocus();
+                assertEquals(3, parses.get());
+                assertEquals(34, field.getValue());
+                assertEquals("bad", editor.getText());
+                assertTrue(field.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+
+                field.requestFocus();
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                save.requestFocus();
+                assertEquals("34", editor.getText());
+                assertEquals(3, parses.get());
+                assertFalse(field.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
+    }
+
+    /// Invalid input remains editable; cancelling or submitting against a bound value cannot mutate the model.
+    @Test
+    void freeInputRejectsInvalidDraftsWithoutChangingValue() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var field = new M3ComboBox<Integer>();
+            field.setInputMode(M3ComboBoxInputMode.FREE_INPUT);
+            field.setValue(10);
+            var error = PseudoClass.getPseudoClass("error");
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 240));
+                stage.show();
+                field.requestFocus();
+                var editor = assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+                editor.setText("bad");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertTrue(field.getPseudoClassStates().contains(error));
+                field.setParser(Integer::valueOf);
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertTrue(field.isShowing());
+                assertEquals("bad", editor.getText());
+                assertEquals(10, field.getValue());
+                assertTrue(field.getPseudoClassStates().contains(error));
+                editor.setText("42");
+                assertFalse(field.getPseudoClassStates().contains(error));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals(42, field.getValue());
+                field.setParser(text -> null);
+                editor.setText("invalid");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertTrue(field.getPseudoClassStates().contains(error));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                assertEquals("42", editor.getText());
+                assertFalse(field.getPseudoClassStates().contains(error));
+
+                field.valueProperty().bind(new SimpleObjectProperty<>(80));
+                field.setParser(text -> { throw new AssertionError("Must not parse a bound value"); });
+                editor.setText("81");
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals(80, field.getValue());
+                assertEquals("80", editor.getText());
+                assertFalse(field.isShowing());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// IME preedit and candidate confirmation do not activate a menu row.
     @Test
     void filteredDropdownLeavesCompositionWithEditor() {

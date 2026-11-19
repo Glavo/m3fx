@@ -20,6 +20,8 @@ import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.jetbrains.annotations.NotNullByDefault;
 
+import java.util.function.Function;
+
 /// Builds the Menus component showcase page.
 @NotNullByDefault
 final class MenusDemoPage extends DemoPageSupport {
@@ -122,9 +124,17 @@ final class MenusDemoPage extends DemoPageSupport {
                 "feature/search", "feature/navigation", "feature/localization", "feature/themes",
                 "fix/keyboard-focus", "fix/popup-placement", "fix/text-selection", "docs/getting-started");
 
+        M3ComboBox<String> tag = new M3ComboBox<>();
+        tag.setInputMode(M3ComboBoxInputMode.FREE_INPUT);
+        tag.setParser(Function.identity());
+        tag.setAccessibleText("Issue label");
+        tag.setPromptText("Choose or enter a label");
+        tag.getItems().addAll("bug", "documentation", "enhancement", "good first issue", "help wanted");
+
         return createGallery(
                 createShowcaseGroup("Exposed Dropdown Menus", filled, outlined),
                 createShowcaseGroup("Filtered Selection", branch),
+                createShowcaseGroup("Free Input", tag),
                 createShowcaseGroup("Menu Button", menuButton),
                 createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu, vibrantMenu)
         );

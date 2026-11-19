@@ -95,6 +95,7 @@
     -fx-border-width: 0 0 2px 0;
 }
 
+.m3-combo-box.m3-filled-field:error,
 .m3-text-field.m3-filled-field:error,
 .m3-password-field.m3-filled-field:error,
 .m3-text-area.m3-filled-field:error {
@@ -108,6 +109,8 @@
     -fx-border-color: transparent transparent -m3-color-on-error-container transparent;
 }
 
+.m3-combo-box.m3-filled-field:error:editor-focused,
+.m3-combo-box.m3-filled-field:error:showing,
 .m3-text-field.m3-filled-field:error:focused,
 .m3-password-field.m3-filled-field:error:focused,
 .m3-text-area.m3-filled-field:error:focused {
@@ -150,6 +153,7 @@
     -fx-border-width: 3px;
 }
 
+.m3-combo-box.m3-outlined-field:error,
 .m3-text-field.m3-outlined-field:error,
 .m3-password-field.m3-outlined-field:error,
 .m3-text-area.m3-outlined-field:error {
@@ -163,6 +167,8 @@
     -fx-border-color: -m3-color-on-error-container;
 }
 
+.m3-combo-box.m3-outlined-field:error:editor-focused,
+.m3-combo-box.m3-outlined-field:error:showing,
 .m3-text-field.m3-outlined-field:error:focused,
 .m3-password-field.m3-outlined-field:error:focused,
 .m3-text-area.m3-outlined-field:error:focused {

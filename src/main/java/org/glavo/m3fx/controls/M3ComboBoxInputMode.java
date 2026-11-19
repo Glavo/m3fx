@@ -12,5 +12,8 @@ public enum M3ComboBoxInputMode {
     READ_ONLY,
 
     /// Lets the user type to narrow the menu. Only a menu choice can be committed.
-    FILTERED_SELECTION
+    FILTERED_SELECTION,
+
+    /// Offers filtered suggestions but also accepts text through [M3ComboBox#parserProperty()].
+    FREE_INPUT
 }
