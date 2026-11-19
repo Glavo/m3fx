@@ -16,7 +16,6 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -97,7 +96,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     private final RangeThumb highThumb = new RangeThumb(Thumb.HIGH);
 
     /// The single value indicator used by the actively manipulated handle.
-    private final Label valueIndicator = new Label();
+    private final M3SliderValueIndicator valueIndicator = new M3SliderValueIndicator();
 
     /// The animated normalized lower-handle position.
     private final DoubleProperty displayedLowPosition =
@@ -228,7 +227,6 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         trailingTrack.getStyleClass().addAll("track", "range-trailing-track");
         leadingStopIndicator.getStyleClass().add("stop-indicator");
         trailingStopIndicator.getStyleClass().add("stop-indicator");
-        valueIndicator.getStyleClass().addAll("m3-slider-value-indicator", "m3-label-large-text");
 
         leadingTrack.setMouseTransparent(true);
         activeTrack.setMouseTransparent(true);
@@ -239,8 +237,6 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         stepIndicatorLayer.setMouseTransparent(true);
         lowThumb.setManaged(false);
         highThumb.setManaged(false);
-        valueIndicator.setManaged(false);
-        valueIndicator.setMouseTransparent(true);
 
         getChildren().setAll(
                 leadingTrack,
@@ -751,7 +747,6 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     private void layoutValueIndicator(double indicatorReserve) {
         M3RangeSlider slider = getSkinnable();
         if (!slider.isShowValueIndicator() || activeThumb == Thumb.NONE) {
-            valueIndicator.setVisible(false);
             return;
         }
 
@@ -793,31 +788,20 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
     /// Refreshes value-indicator content and transient visibility.
     private void updateValueIndicator() {
         M3RangeSlider slider = getSkinnable();
-        if (activeThumb == Thumb.NONE) {
-            valueIndicator.setVisible(false);
+        if (!slider.isShowValueIndicator() || slider.isDisabled()) {
+            if (valueIndicator.isVisible()) valueIndicator.snap(false);
+            return;
+        }
+        if (activeThumb == Thumb.NONE || !(slider.isLowValueChanging() || slider.isHighValueChanging())) {
+            valueIndicator.setShowing(slider, false);
             return;
         }
         double value = activeThumb == Thumb.LOW ? slider.getLowValue() : slider.getHighValue();
-        StringConverter<Double> formatter = slider.getLabelFormatter();
-        if (formatter != null) {
-            @Nullable String text = formatter.toString(value);
-            valueIndicator.setText(text == null ? "" : text);
-        } else {
-            valueIndicator.setText(formatValue(value));
-        }
-        valueIndicator.setVisible(
-                slider.isShowValueIndicator()
-                        && !slider.isDisabled()
-                        && (slider.isLowValueChanging() || slider.isHighValueChanging())
-        );
+        valueIndicator.setText(formatLabel(value));
+        valueIndicator.setShowing(slider, true);
         if (hasLayoutBounds) {
-            layoutValueIndicator(
-                    slider.isShowValueIndicator()
-                            ? slider.getValueIndicatorBottomSpace()
-                            + (slider.getOrientation() == Orientation.VERTICAL
-                            ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT)
-                            : 0.0
-            );
+            layoutValueIndicator(slider.getValueIndicatorBottomSpace()
+                    + (slider.getOrientation() == Orientation.VERTICAL ? VALUE_INDICATOR_WIDTH : VALUE_INDICATOR_HEIGHT));
         }
     }
 
@@ -1067,11 +1051,11 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         highThumb.resetInteraction();
         activeThumb = Thumb.NONE;
         pointerDragged = false;
-        updateValueIndicator();
+        valueIndicator.snap(false);
     }
 
-    /// Formats a value with the active label formatter.
-    private String formatAccessibleValue(double value) {
+    /// Formats the thumb value for its label and accessible description.
+    private String formatLabel(double value) {
         StringConverter<Double> formatter = getSkinnable().getLabelFormatter();
         if (formatter == null) {
             return formatValue(value);
@@ -1232,7 +1216,7 @@ public class M3RangeSliderSkin extends SkinBase<M3RangeSlider> {
         public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
             Objects.requireNonNull(attribute, "attribute");
             if (attribute == VALUE_STRING_ATTRIBUTE) {
-                return formatAccessibleValue(valueForThumb(thumb));
+                return formatLabel(valueForThumb(thumb));
             }
             M3RangeSlider slider = getSkinnable();
             return switch (attribute) {

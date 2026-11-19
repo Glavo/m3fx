@@ -15,6 +15,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.Skin;
 import javafx.scene.image.WritableImage;
@@ -287,6 +288,45 @@ final class M3SliderContractTest {
         assertFalse(inactiveGraphic.getStyleClass().contains("m3-slider-inactive-track-graphic"));
         assertNull(activeGraphic.getParent());
         assertNull(inactiveGraphic.getParent());
+    }
+
+    /// Both slider types retain the label during exit and reverse without jumping on a second press.
+    @Tier2Test
+    @Test
+    void valueIndicatorsAnimateAcrossPressAndRelease() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        try {
+            var sliders = FxTestUtils.callOnFxThread(() -> {
+                var scalar = new M3Slider();
+                var range = new M3RangeSlider();
+                scalar.setShowValueIndicator(true);
+                range.setShowValueIndicator(true);
+                stage.setScene(new Scene(new VBox(scalar, range), 320, 240));
+                stage.show();
+                return List.<Control>of(scalar, range);
+            });
+            for (Control slider : sliders) {
+                var label = FxTestUtils.callOnFxThread(() -> (Label) slider.lookup(".m3-slider-value-indicator"));
+                Runnable press = () -> slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 100, 70, true));
+                Runnable release = () -> slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, 100, 70, false));
+                FxTestUtils.runOnFxThreadWhen(() -> label.getOpacity() > 0 && label.getOpacity() < 1,
+                        press, () -> assertTrue(label.isVisible() && label.getScaleX() < 1));
+                FxTestUtils.runOnFxThreadWhen(() -> label.getOpacity() == 1 && label.getScaleX() == 1,
+                        () -> {}, () -> {});
+                FxTestUtils.runOnFxThreadWhen(() -> label.getOpacity() > 0 && label.getOpacity() < 1,
+                        release, () -> {
+                            assertTrue(label.isVisible());
+                            double opacity = label.getOpacity();
+                            press.run();
+                            assertEquals(opacity, label.getOpacity(), 0.001);
+                        });
+                FxTestUtils.runOnFxThreadWhen(() -> label.getOpacity() == 1 && label.getScaleX() == 1,
+                        () -> {}, release);
+                FxTestUtils.runOnFxThreadWhen(() -> !label.isVisible(), () -> {}, () -> assertEquals(0, label.getOpacity()));
+            }
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
     }
 
     /// Verifies that slider metric tokens do not overwrite explicit preferred sizes.
@@ -604,6 +644,7 @@ final class M3SliderContractTest {
         FxTestUtils.runOnFxThread(() -> {
             M3RangeSlider range = new M3RangeSlider(0.0, 100.0, 25.0, 75.0);
             range.setSize(M3SliderSize.MEDIUM);
+            range.setAnimationsEnabled(false);
             range.setStepSize(5.0);
             range.setShowValueIndicator(true);
 

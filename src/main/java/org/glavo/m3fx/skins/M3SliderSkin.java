@@ -12,7 +12,6 @@ import javafx.event.EventHandler;
 import javafx.css.PseudoClass;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -85,7 +84,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private final StackPane inactiveTrackGraphicSlot = new StackPane();
 
     /// The optional value indicator shown during direct manipulation.
-    private final Label valueIndicator = new Label();
+    private final M3SliderValueIndicator valueIndicator = new M3SliderValueIndicator();
 
     /// The active-track graphic currently mounted by this skin.
     private @Nullable Node displayedActiveTrackGraphic;
@@ -203,7 +202,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         thumb.getStyleClass().add("thumb");
         activeTrackGraphicSlot.getStyleClass().add("m3-slider-active-track-graphic-slot");
         inactiveTrackGraphicSlot.getStyleClass().add("m3-slider-inactive-track-graphic-slot");
-        valueIndicator.getStyleClass().addAll("m3-slider-value-indicator", "m3-label-large-text");
         track.setMouseTransparent(true);
         secondaryTrack.setMouseTransparent(true);
         activeTrack.setMouseTransparent(true);
@@ -216,8 +214,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         activeTrackGraphicSlot.setMouseTransparent(true);
         inactiveTrackGraphicSlot.setManaged(false);
         inactiveTrackGraphicSlot.setMouseTransparent(true);
-        valueIndicator.setManaged(false);
-        valueIndicator.setMouseTransparent(true);
         getChildren().setAll(
                 track,
                 secondaryTrack,
@@ -1081,6 +1077,14 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Updates value-indicator content and transient visibility.
     private void updateValueIndicator() {
         M3Slider slider = getSkinnable();
+        if (!slider.isShowValueIndicator() || slider.isDisabled()) {
+            if (valueIndicator.isVisible()) valueIndicator.snap(false);
+            return;
+        }
+        if (!slider.isValueChanging() && !slider.isPressed()) {
+            valueIndicator.setShowing(slider, false);
+            return;
+        }
         StringConverter<Double> formatter = slider.getLabelFormatter();
         if (formatter != null) {
             @Nullable String text = formatter.toString(slider.getValue());
@@ -1091,11 +1095,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                     Math.rint(value) == value ? Long.toString((long) value) : Double.toString(value)
             );
         }
-        valueIndicator.setVisible(
-                slider.isShowValueIndicator()
-                        && !slider.isDisabled()
-                        && (slider.isValueChanging() || slider.isPressed())
-        );
+        valueIndicator.setShowing(slider, true);
     }
 
     /// Positions a horizontal slider's value indicator above the handle.
@@ -1108,7 +1108,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             double position
     ) {
         if (!getSkinnable().isShowValueIndicator()) {
-            valueIndicator.setVisible(false);
             return;
         }
         double trackLength = Math.max(0.0, width - thumbWidth);
@@ -1138,7 +1137,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             double position
     ) {
         if (!getSkinnable().isShowValueIndicator()) {
-            valueIndicator.setVisible(false);
             return;
         }
         double trackLength = Math.max(0.0, height - thumbWidth);
@@ -1310,7 +1308,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         displayedPosition.set(valueToPosition(getSkinnable().getValue()));
         getSkinnable().setValueChanging(false);
         stateLayer.cancelRipple();
-        updateValueIndicator();
+        valueIndicator.snap(false);
     }
 
     /// Updates the displayed position with animation when the value is not being dragged.
