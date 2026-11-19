@@ -530,6 +530,47 @@ final class M3MenuContractTest {
         }
     }
 
+    /// Keyboard browsing reveals clipped rows at the nearest edge and leaves visible rows in place.
+    @Test
+    void exposedDropdownRevealsOnlyClippedOptions() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var field = new M3ComboBox<Integer>();
+            for (int i = 0; i < 100; i++) field.getItems().add(i);
+            field.setValue(0);
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 240));
+                stage.show();
+                field.show();
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                list.layout();
+                VirtualFlow<?> flow = assertInstanceOf(VirtualFlow.class, list.lookup(".virtual-flow"));
+                flow.scrollPixels(12);
+                double top = flow.getVisibleCell(0).getLayoutY();
+                assertTrue(top < 0);
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                list.layout();
+                assertEquals(top, flow.getVisibleCell(0).getLayoutY(), 0.01);
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                list.layout();
+                assertEquals(0, flow.getVisibleCell(0).getLayoutY(), 0.01);
+
+                flow.scrollPixels(12);
+                int edge = flow.getLastVisibleCell().getIndex();
+                assertTrue(flow.getVisibleCell(edge).getLayoutY() + list.getFixedCellSize() > flow.getHeight());
+                for (int i = 1; i <= edge; i++) {
+                    field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                    list.layout();
+                }
+                assertEquals(edge, list.getSelectionModel().getSelectedIndex());
+                assertEquals(flow.getHeight(), flow.getVisibleCell(edge).getLayoutY() + list.getFixedCellSize(), 1);
+                assertEquals(0, field.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// A wheel gesture on an option moves virtualized rows without changing the pending or committed choice.
     @Tier2Test
     @Test
@@ -599,6 +640,8 @@ final class M3MenuContractTest {
                 assertEquals(NodeOrientation.RIGHT_TO_LEFT, list.getEffectiveNodeOrientation());
                 assertEquals(field.getWidth(), list.getWidth(), 1);
                 assertEquals(62, list.getSelectionModel().getSelectedIndex());
+                VirtualFlow<?> flow = assertInstanceOf(VirtualFlow.class, list.lookup(".virtual-flow"));
+                assertTrue(flow.getVisibleCell(62) != null);
                 assertTrue(list.getHeight() < list.getFixedCellSize() * field.getItems().size());
                 ScrollBar bar = assertInstanceOf(ScrollBar.class, list.lookup(".scroll-bar:vertical"));
                 assertTrue(bar.isVisible());

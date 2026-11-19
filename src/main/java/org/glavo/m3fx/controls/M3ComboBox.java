@@ -810,9 +810,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         /// Starts browsing at the committed option, or the first option.
         void highlightValue() {
             if (query != null && getInputMode() == M3ComboBoxInputMode.FREE_INPUT) {
-                if (scroll != null) scroll.stop();
                 list.getSelectionModel().clearSelection();
-                if (!list.getItems().isEmpty()) list.scrollTo(0);
             } else {
                 highlight(list.getItems().indexOf(getValue()));
             }
@@ -820,14 +818,14 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
 
         /// Keeps the pending choice visible while the user browses.
         void highlight(int index) {
-            if (scroll != null) scroll.stop();
             if (list.getItems().isEmpty()) {
                 list.getSelectionModel().clearSelection();
                 return;
             }
             int target = Math.max(0, Math.min(index, list.getItems().size() - 1));
             list.getSelectionModel().select(target);
-            list.scrollTo(target);
+            if (scroll != null) scroll.reveal(target);
+            else list.scrollTo(target); // Defer the initial reveal until the skin is installed.
         }
 
         /// Commits one option without attempting to write a bound property.

@@ -112,6 +112,13 @@ public final class M3VirtualFlowScroll {
         }
     }
 
+    /// Reveals a cell without realigning a visible row or interrupting wheel motion unnecessarily.
+    public void reveal(int index) {
+        double before = flow.getPosition();
+        flow.scrollTo(index);
+        if (flow.getPosition() != before) stop();
+    }
+
     /// Scrolls to a normalized position, optionally aligning an exact cell after settling.
     public void animateTo(double destination, @Nullable Runnable onFinished) {
         if (motion.getStatus() != Animation.Status.RUNNING) {
