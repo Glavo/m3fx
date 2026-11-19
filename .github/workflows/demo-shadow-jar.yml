@@ -34,7 +34,7 @@ jobs:
           GRADLE_USER_HOME: .gradle-user-home
         run: xvfb-run -a ./gradlew check shadowJar --no-daemon
 
-      - name: Run all test tiers and package applications
+      - name: Run all test tiers and package the demo
         if: github.event_name == 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
@@ -60,13 +60,10 @@ jobs:
           for path in \
             build/reports/tests \
             demo/build/reports/tests \
-            catalog/build/reports/tests \
             build/test-results \
             demo/build/test-results \
-            catalog/build/test-results \
             hs_err_pid*.log \
-            demo/hs_err_pid*.log \
-            catalog/hs_err_pid*.log; do
+            demo/hs_err_pid*.log; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi
@@ -98,13 +95,5 @@ jobs:
         with:
           name: m3fx-demo-shadow-jar
           path: demo/build/libs/m3fx-demo-*-shadow.jar
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload catalog shadow jar
-        uses: actions/upload-artifact@v7
-        with:
-          name: m3fx-catalog-shadow-jar
-          path: catalog/build/libs/m3fx-catalog-*-shadow.jar
           if-no-files-found: error
           archive: false

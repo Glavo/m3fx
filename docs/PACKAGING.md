@@ -9,16 +9,13 @@ readability, not Maven runtime dependencies.
 Build the core library with `./gradlew :assemble`, or install its publication locally with
 `./gradlew :publishToMavenLocal`. See [TESTING.md](TESTING.md) for verification.
 
-## Shadow JARs
+## Demo Shadow JAR
 
-The sample JARs include application classes and resources, M3FX, MonetFX, and non-JavaFX runtime dependencies.
-They require an external JavaFX runtime, including platform-native libraries, and are not self-contained distributions.
+The demo JAR includes application classes and resources, M3FX, MonetFX, and non-JavaFX runtime dependencies.
+It requires an external JavaFX runtime, including platform-native libraries.
 The demo uses host-system fonts rather than bundled fonts.
 
-| Application | Build command | Output |
-| --- | --- | --- |
-| Demo | `./gradlew :demo:shadowJar` | `demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar` |
-| Catalog | `./gradlew :catalog:shadowJar` | `catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar` |
+Build it with `./gradlew :demo:shadowJar`. The output is `demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar`.
 
 ## Demo Jlink Runtime
 

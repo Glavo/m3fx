@@ -355,12 +355,9 @@ picker.valueProperty().addListener((observable, oldColor, newColor) ->
         System.out.println(newColor.toFxColor()));
 ```
 
-## Sample Applications
+## Demo
 
-| Application | Purpose | Command |
-| --- | --- | --- |
-| Demo | Component variants, states, and responsive examples. | `./gradlew :demo:run` |
-| Catalog | Focused component and example navigation. | `./gradlew :catalog:run` |
+Run `./gradlew :demo:run` to explore component variants, states, and responsive examples.
 
 The [nightly release](https://github.com/Glavo/m3fx/releases/tag/nightly) provides the Demo Shadow JAR and
 platform-specific native executables. See [PACKAGING.md](docs/PACKAGING.md) for building distributions.

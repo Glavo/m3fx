@@ -19,7 +19,7 @@ prevent a test carrying both tags from running in both higher tiers.
 Library suites follow the production packages and group related contracts by control family. Fast property,
 selection, layout, and CSS assertions stay with that family; focused motion, focus, and rendering suites cover
 behaviors that require a running window. `M3ControlGalleryTest` owns cross-control theme galleries in Tier 3.
-Demo and Catalog suites cover application navigation, adaptive layouts, and their presentation matrices rather
+Demo suites cover application navigation, adaptive layouts, and presentation matrices rather
 than repeating each library contract.
 
 Keep fixtures local to their suite unless several suites use them. Shared control helpers separate construction
@@ -35,8 +35,8 @@ that JavaFX may have copied. Assert visible geometry and state instead of schedu
 
 ## Running Locally
 
-Run commands from the repository root. Unqualified task selectors include matching tasks in the library, demo,
-and catalog. Use a path such as `:demo:testTier2` to target one project. For a full review:
+Run commands from the repository root. Unqualified task selectors include matching tasks in the library
+and demo. Use a path such as `:demo:testTier2` to target one project. For a full review:
 
 ```shell
 ./gradlew test testTier2 testTier3
@@ -50,7 +50,7 @@ Run packaging separately as described in [PACKAGING.md](PACKAGING.md).
 
 The [Build and Test workflow](../.github/workflows/demo-shadow-jar.yml) runs on JDK 21 with Xvfb. Every invocation
 first runs Tier 1 against JavaFX 17 (`-Pm3fx.javafx.version=17`). Push and pull-request builds then run the default
-checks and build all sample Shadow JARs with the default JavaFX 21 dependencies. Manual dispatch additionally
+checks and build the demo Shadow JAR with the default JavaFX 21 dependencies. Manual dispatch additionally
 runs Tier 2 and Tier 3 and builds the host-platform demo jlink image. The workflow is the source for exact commands
 and artifact uploads.
 
@@ -62,4 +62,3 @@ Visual suites also write snapshots and, where supported, HTML indexes to:
 
 - `build/reports/m3fx-visual`
 - `demo/build/reports/m3fx-demo-visual`
-- `catalog/build/reports/catalog-snapshots`

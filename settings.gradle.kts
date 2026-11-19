@@ -6,4 +6,3 @@ DirectoryScanner.removeDefaultExclude("**/.gitignore")
 rootProject.name = "m3fx"
 
 include("demo")
-include("catalog")
