@@ -12,7 +12,11 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.SimpleStyleableBooleanProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
@@ -32,10 +36,15 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
+import org.glavo.m3fx.animation.M3Animated;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3MotionProperties;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.glavo.m3fx.internal.M3PopupStyles;
@@ -44,7 +53,10 @@ import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -59,11 +71,25 @@ import java.util.function.Function;
 ///
 /// @param <T> the option type
 @NotNullByDefault
-public final class M3ComboBox<T> extends Control {
+public final class M3ComboBox<T> extends Control implements M3Animated {
     /// The style class of the field.
     private static final String DEFAULT_STYLE_CLASS = "m3-combo-box";
     /// Marks the field while its menu is open.
     private static final PseudoClass SHOWING = PseudoClass.getPseudoClass("showing");
+    /// Resting fraction of the menu size at the collapsed endpoint.
+    private static final double COLLAPSED_SCALE = 0.96;
+    /// Inheritable CSS switch for optional field and menu motion.
+    private static final CssMetaData<M3ComboBox<?>, Boolean> ANIMATIONS_ENABLED =
+            M3MotionProperties.cssMetaData(M3ComboBox::animationsEnabledProperty,
+                    field -> field.animationsEnabled == null || !field.animationsEnabled.isBound());
+    /// CSS properties supported by this control.
+    private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+    static {
+        var metadata = new ArrayList<>(Control.getClassCssMetaData());
+        metadata.add(ANIMATIONS_ENABLED);
+        STYLEABLES = List.copyOf(metadata);
+    }
     /// The popup is created on the first successful attempt to open an attached field.
     private @Nullable ChoicePopup popup;
 
@@ -182,15 +208,50 @@ public final class M3ComboBox<T> extends Control {
         return converter;
     }
 
-    /// Reports actual popup visibility.
+    /// The optional local motion preference.
+    private @Nullable StyleableBooleanProperty animationsEnabled;
+
+    /// Returns whether the field permits optional motion.
+    @Override
+    public boolean isAnimationsEnabled() {
+        return animationsEnabled == null || animationsEnabled.get();
+    }
+
+    /// Enables or disables optional motion in the field and its menu.
+    @Override
+    public void setAnimationsEnabled(boolean enabled) {
+        animationsEnabledProperty().set(enabled);
+    }
+
+    /// The inherited animation preference, initially true.
+    @Override
+    public StyleableBooleanProperty animationsEnabledProperty() {
+        if (animationsEnabled == null) {
+            animationsEnabled = new SimpleStyleableBooleanProperty(ANIMATIONS_ENABLED, this, "animationsEnabled", true);
+        }
+        return animationsEnabled;
+    }
+
+    /// Returns the supported CSS properties, including the inherited animation switch.
+    public static @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return STYLEABLES;
+    }
+
+    /// Returns the supported CSS properties for this field.
+    @Override
+    public @Unmodifiable List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return STYLEABLES;
+    }
+
+    /// Reports whether the dropdown is open for interaction.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
-    /// Returns whether the dropdown is visible.
+    /// Returns whether the dropdown is open. It is no longer open once its exit transition begins.
     public boolean isShowing() {
         return showing.get();
     }
 
-    /// The visibility of the dropdown, initially false.
+    /// The expanded state of the dropdown, initially false.
     public ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -204,7 +265,7 @@ public final class M3ComboBox<T> extends Control {
 
     /// Dismisses the menu without committing the highlighted choice.
     public void hide() {
-        if (popup != null) popup.window.hide();
+        if (popup != null) popup.hide();
     }
 
     /// Returns the user-facing text of a value.
@@ -287,6 +348,7 @@ public final class M3ComboBox<T> extends Control {
             super(M3ComboBox.this);
             var arrow = new M3DisclosureIcon();
             arrow.setVertical(true);
+            arrow.animationsEnabledProperty().bind(animationsEnabledProperty());
             arrow.setExpanded(isShowing());
             registerChangeListener(showing, obs -> arrow.setExpanded(isShowing()));
             label.setMaxWidth(Double.MAX_VALUE);
@@ -312,17 +374,19 @@ public final class M3ComboBox<T> extends Control {
 
     /// A virtualized list whose selection represents the pending, not the committed, value.
     @NotNullByDefault
-    private final class ChoicePopup {
-        /// The detached option window.
-        final Popup window = new Popup();
+    private final class ChoicePopup extends Popup {
         /// The currently highlighted option is local to this list.
         final ListView<T> list = new ListView<>(items);
         /// Synchronizes the detached list with the field's theme.
         final M3PopupContextSynchronizer context = new M3PopupContextSynchronizer(
-                M3ComboBox.this, window.getScene().getRoot(), getUserAgentStylesheet());
+                M3ComboBox.this, getScene().getRoot(), getUserAgentStylesheet());
+        /// Drives only render transforms; popup measurement and menu scrolling remain unchanged.
+        final M3NodeTransition motion = new M3NodeTransition(list);
+        /// Translation that keeps the collapsed surface against its anchor-facing edge.
+        double collapsedOffset;
         /// Closes the popup if the anchor is removed, hidden, or disabled.
         final M3ReachabilityObserver reachability = new M3ReachabilityObserver(M3ComboBox.this, () -> {
-            if (!M3Accessible.canReach(M3ComboBox.this)) hide();
+            if (!M3Accessible.canReach(M3ComboBox.this)) super.hide();
         });
 
         /// Initializes the popup once; cells are reused as the menu scrolls.
@@ -348,32 +412,39 @@ public final class M3ComboBox<T> extends Control {
                     }
                 }
             });
-            window.setAutoHide(true);
-            M3PopupStyles.prepareStandalonePopupRoot(window.getScene().getRoot(), getUserAgentStylesheet());
-            window.getContent().add(list);
-            window.setOnShown(e -> {
-                context.start();
-                highlightValue();
-                reachability.install();
-                setVisibleState(true);
+            setAutoHide(true);
+            M3PopupStyles.prepareStandalonePopupRoot(getScene().getRoot(), getUserAgentStylesheet());
+            getContent().add(new StackPane(list));
+            motion.setOnFinished(e -> {
+                if (!M3ComboBox.this.isShowing()) super.hide();
             });
-            window.setOnHidden(e -> {
+            setOnShown(e -> {
+                context.start();
+                reachability.install();
+                transitionTo(true);
+            });
+            setOnHidden(e -> {
+                motion.stop();
                 reachability.uninstall();
                 context.stop();
                 setVisibleState(false);
             });
         }
 
-        /// Publishes visibility only after the window changes state.
+        /// Publishes the expanded state to the field and its accessible peers.
         void setVisibleState(boolean visible) {
             pseudoClassStateChanged(SHOWING, visible);
-            showing.set(visible);
+            M3ComboBox.this.showing.set(visible);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
 
         /// Fits the menu to the larger available side if it cannot fit below the field.
         void open() {
+            if (isShowing()) {
+                transitionTo(true);
+                return;
+            }
             @Nullable Bounds anchor = localToScreen(getLayoutBounds());
             if (anchor == null) return;
             Rectangle2D screen = M3PopupPositioning.visualBoundsFor(anchor);
@@ -383,7 +454,34 @@ public final class M3ComboBox<T> extends Control {
             double height = Math.min(16 + list.getFixedCellSize() * Math.min(8, items.size()), available);
             list.setPrefSize(width, height);
             var placement = M3PopupPositioning.menuBelowOrAbove(anchor, screen, width, height, 4);
-            M3PopupWindows.show(window, M3ComboBox.this, placement.x(), placement.y());
+            collapsedOffset = (placement.opensAbove() ? 1 : -1) * height * (1 - COLLAPSED_SCALE) / 2;
+            list.setScaleX(COLLAPSED_SCALE);
+            list.setScaleY(COLLAPSED_SCALE);
+            list.setTranslateY(collapsedOffset);
+            list.setOpacity(0);
+            M3PopupWindows.show(this, M3ComboBox.this, placement.x(), placement.y());
+        }
+
+        /// Routes native auto-hide and explicit dismissal through the same exit motion.
+        @Override
+        public void hide() {
+            if (!isShowing() || !M3PopupWindows.canShow(M3ComboBox.this)) {
+                super.hide();
+            } else if (M3ComboBox.this.isShowing()) {
+                transitionTo(false);
+            }
+        }
+
+        /// Reverses in flight from the current visual state without moving the native window.
+        private void transitionTo(boolean expanded) {
+            list.setMouseTransparent(!expanded);
+            if (expanded) highlightValue();
+            setVisibleState(expanded);
+            if (M3ComboBox.this.isShowing() != expanded || !isShowing()) return;
+            double scale = expanded ? 1 : COLLAPSED_SCALE;
+            motion.configure(M3Animation.fastSpatial(M3ComboBox.this), expanded ? 1 : 0,
+                    scale, scale, 0, expanded ? 0 : collapsedOffset);
+            M3Animation.playFromStart(M3ComboBox.this, motion);
         }
 
         /// Starts browsing at the committed option, or the first option.
@@ -400,6 +498,7 @@ public final class M3ComboBox<T> extends Control {
 
         /// Commits one option without attempting to write a bound property.
         void commit(int index) {
+            if (!M3ComboBox.this.isShowing()) return;
             if (!isDisabled() && !value.isBound() && index >= 0 && index < items.size()) setValue(items.get(index));
             hide();
         }

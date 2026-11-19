@@ -32,6 +32,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -126,6 +127,51 @@ final class M3MenuContractTest {
                 stage.hide();
             }
         });
+    }
+
+    /// Verifies visible transition frames, reversal on the same popup, and synchronous reduced-motion dismissal.
+    @Tier2Test
+    @Test
+    void exposedDropdownReversesAndSettlesMenuMotion() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        M3ComboBox<String> field = FxTestUtils.callOnFxThread(M3ComboBox::new);
+        AtomicReference<ListView<?>> menu = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhen(() -> menu.get().getOpacity() > 0 && menu.get().getOpacity() < 1, () -> {
+                field.getItems().addAll("First", "Second", "Third");
+                stage.setScene(new Scene(new VBox(field), 280, 160));
+                stage.show();
+                field.show();
+                menu.set(assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)));
+            }, () -> assertTrue(menu.get().getScaleY() < 1));
+
+            ListView<?> list = menu.get();
+            Window window = FxTestUtils.callOnFxThread(() -> list.getScene().getWindow());
+            FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() == 1 && list.getScaleY() == 1,
+                    () -> {}, () -> assertEquals(0, list.getTranslateY(), 0.001));
+            FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() > 0 && list.getOpacity() < 1, field::hide, () -> {
+                assertFalse(field.isShowing());
+                assertTrue(window.isShowing());
+                double opacity = list.getOpacity();
+                double scale = list.getScaleY();
+                field.show();
+                assertTrue(field.isShowing());
+                assertSame(window, list.getScene().getWindow());
+                assertEquals(opacity, list.getOpacity(), 0.001);
+                assertEquals(scale, list.getScaleY(), 0.001);
+                field.setAnimationsEnabled(false);
+                assertEquals(1, list.getOpacity());
+                assertEquals(1, list.getScaleY());
+                field.hide();
+                assertFalse(window.isShowing());
+                field.show();
+                assertEquals(1, list.getOpacity());
+                field.setAnimationsEnabled(true);
+            });
+            FxTestUtils.runOnFxThreadWhen(() -> !window.isShowing(), field::hide, () -> assertFalse(field.isShowing()));
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
     }
 
     /// A scrollable, field-width menu inherits direction and accepts a click on a rendered option.
