@@ -3,34 +3,27 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Animation;
 import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
-import javafx.event.EventTarget;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.skin.VirtualFlow;
-import javafx.scene.input.ScrollEvent;
 import javafx.stage.Window;
-import org.glavo.m3fx.animation.M3DoubleAnimatable;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListCell;
-import org.glavo.m3fx.controls.M3ScrollPane;
 import org.glavo.m3fx.controls.M3ScrollToEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusVisibleTracker;
 import org.glavo.m3fx.internal.M3ListViewPresentation;
 import org.glavo.m3fx.internal.M3ScrollReveal;
+import org.glavo.m3fx.internal.M3VirtualFlowScroll;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -51,9 +44,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     /// The fallback row height used before the virtual flow has measured a visible cell.
     private static final double DEFAULT_ROW_HEIGHT = 56.0;
 
-    /// The default wheel line distance used when a platform reports text-line scroll units.
-    private static final double DEFAULT_LINE_SCROLL_PIXELS = 40.0;
-
     /// The minimum meaningful scroll value difference.
     private static final double EPSILON = 0.000001;
 
@@ -63,34 +53,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     /// The virtualized cell container.
     private final ListViewVirtualFlow<T> flow = new ListViewVirtualFlow<>();
 
-    /// The independent normalized position used while a virtual-flow scroll is animated.
-    private final DoubleProperty animatedScrollPosition =
-            new SimpleDoubleProperty(this, "animatedScrollPosition");
-
-    /// Animates the virtual flow's normalized scroll position.
-    private final M3DoubleAnimatable smoothScrollAnimation =
-            new M3DoubleAnimatable(getSkinnable(), animatedScrollPosition, EPSILON);
-
-    /// The animated normalized position already transferred to the virtual flow.
-    private double appliedAnimatedScrollPosition;
-
-    /// Whether the active animation should commit its accumulated target when it stops naturally.
-    private boolean smoothScrollRunActive;
-
-    /// Transfers each animated position delta to the virtual flow's authoritative pixel offset.
-    private final InvalidationListener animatedScrollPositionInvalidation = observable -> {
-        double nextPosition = animatedScrollPosition.get();
-        double delta = (nextPosition - appliedAnimatedScrollPosition) * estimatedScrollablePixels();
-        appliedAnimatedScrollPosition = nextPosition;
-        if (Math.abs(delta) > EPSILON && isSceneRefreshable()) {
-            flow.scrollPixels(delta);
-        }
-        if (smoothScrollRunActive
-                && smoothScrollAnimation.getStatus() == Animation.Status.STOPPED
-                && close(nextPosition, smoothScrollAnimation.getTargetValue())) {
-            finishSmoothScrollAnimation();
-        }
-    };
+    /// Coordinates the viewport's wheel and indexed scrolling.
+    private final M3VirtualFlowScroll scroll;
 
     /// Updates virtual flow cell count when data items change.
     private final ListChangeListener<T> itemsListener = change -> refreshItemCount();
@@ -118,29 +82,11 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     private final ChangeListener<@Nullable Scene> sceneListener =
             (observable, oldScene, newScene) -> handleSceneChanged(newScene);
 
-    /// Handles wheel and trackpad scrolling through Material motion.
-    private final EventHandler<ScrollEvent> smoothScrollHandler = this::handleSmoothScroll;
-
     /// Handles semantic indexed scrolling requests from the skinnable control.
     private final EventHandler<M3ScrollToEvent> scrollToRequestHandler = event -> {
         scrollToIndex(event.getIndex(), event.isAnimated());
         event.consume();
     };
-
-    /// The completion callback attached to the currently running smooth scroll animation.
-    private @Nullable Runnable smoothScrollOnFinished;
-
-    /// Completes deferred scroll work after the position animation reaches its target.
-    private final ChangeListener<Animation.Status> smoothScrollStatusListener = (observable, oldStatus, newStatus) -> {
-        if (newStatus == Animation.Status.STOPPED
-                && smoothScrollRunActive
-                && close(smoothScrollAnimation.getValue(), smoothScrollAnimation.getTargetValue())) {
-            finishSmoothScrollAnimation();
-        }
-    };
-
-    /// The accumulated target virtual flow position.
-    private double smoothScrollTargetPosition;
 
     /// Whether a focused cell should refresh logical row focus after the next layout pass.
     private boolean focusRequestPending;
@@ -157,15 +103,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         flow.setVertical(true);
         flow.setPannable(true);
         flow.setCellFactory(flow -> createCell(control));
-        flow.styleScrollBars();
-        animatedScrollPosition.addListener(animatedScrollPositionInvalidation);
-        smoothScrollAnimation.statusProperty().addListener(smoothScrollStatusListener);
+        scroll = new M3VirtualFlowScroll(control, control, flow, this::estimatedScrollablePixels);
         flow.fixedCellSizeProperty().bind(Bindings.createDoubleBinding(
                 () -> control.getItemSpacing() > 0.0 ? 0.0 : control.getFixedCellSize(),
                 control.fixedCellSizeProperty(),
                 control.itemSpacingProperty()
         ));
-        control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         control.addEventHandler(M3ScrollToEvent.SCROLL_TO_INDEX, scrollToRequestHandler);
         getChildren().setAll(flow);
 
@@ -184,10 +127,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     @Override
     public void dispose() {
         M3ListView<T> listView = getSkinnable();
-        stopSmoothScrollAnimation();
-        smoothScrollAnimation.statusProperty().removeListener(smoothScrollStatusListener);
-        animatedScrollPosition.removeListener(animatedScrollPositionInvalidation);
-        listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
+        scroll.dispose();
         listView.removeEventHandler(M3ScrollToEvent.SCROLL_TO_INDEX, scrollToRequestHandler);
         listView.getItems().removeListener(itemsListener);
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
@@ -301,7 +241,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
                 scrollToIndex(focusedIndex, animated);
             }
         } else {
-            stopSmoothScrollAnimation();
+            scroll.stop();
         }
         getSkinnable().requestLayout();
         focusVisibleCellIfNeeded();
@@ -318,7 +258,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
             return null;
         }
 
-        stopSmoothScrollAnimation();
+        scroll.stop();
         flow.scrollTo(index);
         flow.requestLayout();
         layoutFlowAfterImmediateScroll();
@@ -349,7 +289,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     private void handleSceneChanged(@Nullable Scene scene) {
         if (scene == null) {
             focusRequestPending = false;
-            stopSmoothScrollAnimation();
+            scroll.stop();
             return;
         }
 
@@ -433,73 +373,17 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
     }
 
-    /// Handles one indirect wheel or trackpad scroll event.
-    private void handleSmoothScroll(ScrollEvent event) {
-        if (event.isDirect() || !isEventForThisFlow(event)) {
-            return;
-        }
-
-        double scrollablePixels = estimatedScrollablePixels();
-        if (scrollablePixels <= EPSILON) {
-            return;
-        }
-
-        if (!smoothScrollAnimation.isRunning()) {
-            smoothScrollTargetPosition = flow.getPosition();
-        }
-
-        double delta = scrollDeltaY(event, flow.getHeight());
-        if (Math.abs(delta) <= EPSILON) {
-            return;
-        }
-
-        double nextPosition = clamp(smoothScrollTargetPosition - delta / scrollablePixels);
-        if (close(nextPosition, smoothScrollTargetPosition)) {
-            return;
-        }
-
-        smoothScrollTargetPosition = nextPosition;
-        if (animationsEnabled()) {
-            animateSmoothScroll(null);
-        } else {
-            stopSmoothScrollAnimation();
-            flow.setPosition(smoothScrollTargetPosition);
-            flow.requestLayout();
-        }
-        event.consume();
-    }
-
-    /// Returns whether a scroll event belongs directly to this virtual flow rather than a nested scroll container.
-    private boolean isEventForThisFlow(ScrollEvent event) {
-        EventTarget target = event.getTarget();
-        if (!(target instanceof Node node)) {
-            return true;
-        }
-        if (node == getSkinnable()) {
-            return true;
-        }
-
-        @Nullable Node current = node;
-        while (current != null && current != flow) {
-            if (current instanceof ScrollPane || current instanceof VirtualFlow<?>) {
-                return false;
-            }
-            current = current.getParent();
-        }
-        return current == flow;
-    }
-
     /// Scrolls the virtual flow to an item index.
     private void scrollToIndex(int index, boolean animated) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
-            stopSmoothScrollAnimation();
+            scroll.stop();
             return;
         }
 
         if (!animated
                 || !isSceneRefreshable()
                 || !animationsEnabled()) {
-            stopSmoothScrollAnimation();
+            scroll.stop();
             flow.scrollTo(index);
             flow.requestLayout();
             layoutFlowAfterImmediateScroll();
@@ -508,7 +392,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
 
         double targetPosition = scrollPositionForIndex(index);
         if (Double.isNaN(targetPosition)) {
-            stopSmoothScrollAnimation();
+            scroll.stop();
             flow.scrollTo(index);
             flow.requestLayout();
             layoutFlowAfterImmediateScroll();
@@ -522,8 +406,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
             return;
         }
 
-        smoothScrollTargetPosition = targetPosition;
-        animateSmoothScroll(() -> finishAnimatedIndexScroll(index));
+        scroll.animateTo(targetPosition, () -> finishAnimatedIndexScroll(index));
     }
 
     /// Finishes focus updates after an animated index scroll reaches its target.
@@ -579,46 +462,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
     }
 
-    /// Animates the virtual flow to the accumulated target position.
-    private void animateSmoothScroll(@Nullable Runnable onFinished) {
-        smoothScrollOnFinished = null;
-        if (!smoothScrollAnimation.isRunning()) {
-            appliedAnimatedScrollPosition = flow.getPosition();
-            smoothScrollAnimation.snapTo(appliedAnimatedScrollPosition);
-        }
-        smoothScrollRunActive = false;
-        smoothScrollAnimation.animateTo(smoothScrollTargetPosition, M3Animation.defaultSpatial(getSkinnable()));
-        smoothScrollRunActive = smoothScrollAnimation.isRunning();
-        smoothScrollOnFinished = onFinished;
-        if (!smoothScrollRunActive) {
-            finishSmoothScrollAnimation();
-        }
-    }
-
     /// Returns the current inherited animation setting.
     private boolean animationsEnabled() {
         return M3Animation.areAnimationsEnabled(getSkinnable());
-    }
-
-    /// Runs the current smooth-scroll completion callback after the reusable transition finishes.
-    private void finishSmoothScrollAnimation() {
-        smoothScrollRunActive = false;
-        @Nullable Runnable onFinished = smoothScrollOnFinished;
-        smoothScrollOnFinished = null;
-        flow.setPosition(smoothScrollTargetPosition);
-        if (isSceneRefreshable()) {
-            flow.requestLayout();
-        }
-        if (onFinished != null) {
-            onFinished.run();
-        }
-    }
-
-    /// Stops the running smooth scroll animation.
-    private void stopSmoothScrollAnimation() {
-        smoothScrollRunActive = false;
-        smoothScrollOnFinished = null;
-        smoothScrollAnimation.stop();
     }
 
     /// Returns an estimated scrollable content height in pixels.
@@ -673,15 +519,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         return clamp(targetPixels / scrollablePixels);
     }
 
-    /// Converts an event's vertical scroll amount to pixels.
-    private static double scrollDeltaY(ScrollEvent event, double viewportHeight) {
-        return switch (event.getTextDeltaYUnits()) {
-            case LINES -> event.getTextDeltaY() * DEFAULT_LINE_SCROLL_PIXELS;
-            case PAGES -> event.getTextDeltaY() * viewportHeight;
-            case NONE -> event.getDeltaY();
-        };
-    }
-
     /// Returns a value clamped to a virtual flow position.
     private static double clamp(double value) {
         if (value <= 0.0) {
@@ -689,7 +526,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
         }
         return Math.min(value, 1.0);
     }
-
     /// Returns whether two scroll values are effectively equal.
     private static boolean close(double first, double second) {
         return Math.abs(first - second) <= EPSILON;
@@ -698,12 +534,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>>
     /// A private wrapper exposing protected virtual flow hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListCell<T>> {
-        /// Applies standalone Material styling to both virtual-flow scroll bars.
-        private void styleScrollBars() {
-            M3ScrollPane.style(getHbar());
-            M3ScrollPane.style(getVbar());
-        }
-
         /// Invalidates cached variable cell lengths after item stride metrics change.
         private void refreshCellMetrics() {
             reconfigureCells();

@@ -20,6 +20,8 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
@@ -369,6 +371,51 @@ final class M3MenuContractTest {
         }
     }
 
+    /// A wheel gesture on an option moves virtualized rows without changing the pending or committed choice.
+    @Tier2Test
+    @Test
+    void exposedDropdownAnimatesWheelScrolling() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        M3ComboBox<Integer> field = FxTestUtils.callOnFxThread(M3ComboBox::new);
+        AtomicReference<VirtualFlow<?>> viewport = new AtomicReference<>();
+        try {
+            FxTestUtils.runOnFxThreadWhen(() -> {
+                var first = viewport.get().getFirstVisibleCell();
+                return first != null && first.getIndex() > 0 && first.getIndex() < 10;
+            }, () -> {
+                for (int i = 0; i < 100; i++) field.getItems().add(i);
+                field.setValue(0);
+                field.setAnimationsEnabled(false);
+                stage.setScene(new Scene(new VBox(field), 320, 240));
+                stage.show();
+                field.show();
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                VirtualFlow<?> flow = assertInstanceOf(VirtualFlow.class, list.lookup(".virtual-flow"));
+                viewport.set(flow);
+                list.applyCss();
+                list.layout();
+                field.setAnimationsEnabled(true);
+                Node row = flow.getFirstVisibleCell();
+                row.fireEvent(scrollEvent(row, 0, -240));
+                row.fireEvent(scrollEvent(row, 0, -240));
+                assertEquals(0, flow.getPosition(), 0.0001);
+            }, () -> {
+                VirtualFlow<?> flow = viewport.get();
+                field.setAnimationsEnabled(false);
+                double range = 100 * flow.getFixedCellSize() - flow.getHeight();
+                assertEquals(480 / range, flow.getPosition(), 0.001);
+                flow.fireEvent(scrollEvent(flow, 0, -96));
+                assertEquals(576 / range, flow.getPosition(), 0.001);
+                assertEquals(0, field.getValue());
+                field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertFalse(field.isShowing());
+                assertEquals(0, field.getValue());
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(stage::close);
+        }
+    }
+
     /// A scrollable, field-width menu inherits direction and accepts a click on a rendered option.
     @Test
     void exposedDropdownAnchorsAndPicksRenderedOptions() {
@@ -394,6 +441,19 @@ final class M3MenuContractTest {
                 assertEquals(field.getWidth(), list.getWidth(), 1);
                 assertEquals(62, list.getSelectionModel().getSelectedIndex());
                 assertTrue(list.getHeight() < list.getFixedCellSize() * field.getItems().size());
+                ScrollBar bar = assertInstanceOf(ScrollBar.class, list.lookup(".scroll-bar:vertical"));
+                assertTrue(bar.isVisible());
+                assertEquals(16, bar.prefWidth(-1), 0.01);
+                list.setStyle("-monet-surface-tint: rgb(51,52,53);");
+                list.applyCss();
+                Region thumb = lookupRegion(bar, ".thumb");
+                assertRegionFill(thumb, Color.rgb(51, 52, 53));
+                var params = new SnapshotParameters();
+                params.setFill(Color.TRANSPARENT);
+                WritableImage image = thumb.snapshot(params, null);
+                Color center = image.getPixelReader().getColor((int) image.getWidth() / 2, (int) image.getHeight() / 2);
+                assertEquals(0.48, center.getOpacity(), 0.01);
+                assertEquals(0, image.getPixelReader().getColor(0, 0).getOpacity(), 0.02);
                 ListCell<?> cell = list.lookupAll(".list-cell").stream()
                         .filter(n -> n instanceof ListCell<?> c && !c.isEmpty() && c.getIndex() != 62)
                         .map(n -> (ListCell<?>) n).findFirst().orElseThrow();

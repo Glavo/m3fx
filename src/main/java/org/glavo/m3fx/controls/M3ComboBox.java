@@ -32,6 +32,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Skin;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TextField;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.InputMethodEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -55,6 +56,7 @@ import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3VirtualFlowScroll;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -540,6 +542,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         final ListView<T> list = new ListView<>(items);
         /// A live view of source choices, allocated only when an editable menu is used.
         private @Nullable FilteredList<T> filtered;
+        /// Scroll behavior for the option list's currently installed skin.
+        private @Nullable M3VirtualFlowScroll scroll;
         /// Synchronizes the detached list with the field's theme.
         final M3PopupContextSynchronizer context = new M3PopupContextSynchronizer(
                 M3ComboBox.this, getScene().getRoot(), getUserAgentStylesheet());
@@ -557,6 +561,13 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
             list.getStyleClass().add("m3-combo-options");
             list.setFixedCellSize(48);
             list.setFocusTraversable(false);
+            list.skinProperty().addListener((obs, old, next) -> {
+                if (scroll != null) {
+                    scroll.dispose();
+                    scroll = null;
+                }
+                if (next != null && isShowing()) installScrolling();
+            });
             list.setCellFactory(view -> new ListCell<>() {
                 /// Updates the display label when the cell is reused.
                 @Override protected void updateItem(@Nullable T item, boolean empty) {
@@ -586,17 +597,27 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
             });
             setOnShown(e -> {
                 context.start();
+                installScrolling();
                 reachability.install();
                 transitionTo(true);
             });
             setOnHidden(e -> {
                 motion.stop();
+                if (scroll != null) scroll.stop();
                 reachability.uninstall();
                 context.stop();
                 if (M3ComboBox.this.isShowing()) restoreEditor();
                 setVisibleState(false);
                 if (!isShowing() && filtered != null) filtered.setPredicate(null);
             });
+        }
+
+        /// Adapts the skin's viewport without adding a second scroll container.
+        private void installScrolling() {
+            if (scroll == null && list.lookup(".virtual-flow") instanceof VirtualFlow<?> flow) {
+                scroll = new M3VirtualFlowScroll(M3ComboBox.this, list, flow,
+                        () -> Math.max(0, list.getItems().size() * list.getFixedCellSize() - flow.getHeight()));
+            }
         }
 
         /// Publishes the expanded state to the field and its accessible peers.
@@ -695,6 +716,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         private void transitionTo(boolean expanded) {
             list.setMouseTransparent(!expanded);
             if (expanded) highlightValue();
+            else if (scroll != null) scroll.stop();
             setVisibleState(expanded);
             if (M3ComboBox.this.isShowing() != expanded || !isShowing()) return;
             double scale = expanded ? 1 : COLLAPSED_SCALE;
@@ -710,6 +732,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
 
         /// Keeps the pending choice visible while the user browses.
         void highlight(int index) {
+            if (scroll != null) scroll.stop();
             if (list.getItems().isEmpty()) {
                 list.getSelectionModel().clearSelection();
                 return;

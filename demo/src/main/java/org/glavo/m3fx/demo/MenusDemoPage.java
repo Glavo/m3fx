@@ -119,7 +119,8 @@ final class MenusDemoPage extends DemoPageSupport {
         branch.setAccessibleText("Branch");
         branch.setPromptText("Find a branch");
         branch.getItems().addAll("main", "release/1.0", "release/1.1", "release/2.0",
-                "feature/search", "feature/navigation", "fix/keyboard-focus");
+                "feature/search", "feature/navigation", "feature/localization", "feature/themes",
+                "fix/keyboard-focus", "fix/popup-placement", "fix/text-selection", "docs/getting-started");
 
         return createGallery(
                 createShowcaseGroup("Exposed Dropdown Menus", filled, outlined),
