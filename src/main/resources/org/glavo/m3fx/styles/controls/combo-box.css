@@ -1,5 +1,9 @@
 @import "text-field.css";
 
+.m3-combo-popup-root {
+    -fx-background-color: transparent;
+}
+
 .m3-combo-box {
     -fx-pref-width: 240px;
     -fx-pref-height: 56px;

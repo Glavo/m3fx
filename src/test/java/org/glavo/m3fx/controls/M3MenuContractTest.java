@@ -15,6 +15,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -139,7 +140,9 @@ final class M3MenuContractTest {
         try {
             FxTestUtils.runOnFxThreadWhen(() -> menu.get().getOpacity() > 0 && menu.get().getOpacity() < 1, () -> {
                 field.getItems().addAll("First", "Second", "Third");
-                stage.setScene(new Scene(new VBox(field), 280, 160));
+                Scene scene = new Scene(new VBox(field), 280, 320);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
                 stage.show();
                 field.show();
                 menu.set(assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)));
@@ -149,11 +152,18 @@ final class M3MenuContractTest {
             Window window = FxTestUtils.callOnFxThread(() -> list.getScene().getWindow());
             FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() == 1 && list.getScaleY() == 1,
                     () -> {}, () -> assertEquals(0, list.getTranslateY(), 0.001));
-            FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() > 0 && list.getOpacity() < 1, field::hide, () -> {
+            FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() > 0 && list.getOpacity() < 0.75, field::hide, () -> {
                 assertFalse(field.isShowing());
                 assertTrue(window.isShowing());
                 double opacity = list.getOpacity();
                 double scale = list.getScaleY();
+                SnapshotParameters transparent = new SnapshotParameters();
+                transparent.setFill(Color.TRANSPARENT);
+                WritableImage frame = window.getScene().getRoot().snapshot(transparent, null);
+                Color corner = frame.getPixelReader().getColor(0, 0);
+                assertEquals(0, corner.getOpacity(), 0.01, () -> "Popup corner: " + corner);
+                Color surface = frame.getPixelReader().getColor((int) frame.getWidth() / 2, (int) frame.getHeight() / 2);
+                assertEquals(opacity, surface.getOpacity(), 0.02, () -> "Fading menu surface: " + surface);
                 field.show();
                 assertTrue(field.isShowing());
                 assertSame(window, list.getScene().getWindow());

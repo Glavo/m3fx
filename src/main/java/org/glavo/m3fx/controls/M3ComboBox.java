@@ -413,6 +413,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
                 }
             });
             setAutoHide(true);
+            getScene().getRoot().getStyleClass().add("m3-combo-popup-root");
             M3PopupStyles.prepareStandalonePopupRoot(getScene().getRoot(), getUserAgentStylesheet());
             getContent().add(new StackPane(list));
             motion.setOnFinished(e -> {
