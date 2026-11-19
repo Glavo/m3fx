@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.PseudoClass;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleRole;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -176,9 +178,9 @@ final class M3TreeViewTest {
         }));
     }
 
-    /// Verifies that checkbox touch-target insets do not inflate the visible spacing between row content.
+    /// Checks the painted checkbox hover layer against adjacent content in both reading directions.
     @Test
-    void usesCompactVisualSpacingForCheckboxRows() {
+    void checkboxHoverLeavesAdjacentContentClear() {
         FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             Rectangle graphic = new Rectangle(24.0, 24.0);
             TreeItem<String> rootItem = new TreeItem<>("Root", graphic);
@@ -189,42 +191,36 @@ final class M3TreeViewTest {
             treeView.setSelectionStyle(M3TreeViewSelectionStyle.CHECKBOX);
             treeView.setPrefSize(360.0, 180.0);
             StackPane root = themedRoot(treeView, 400.0, 200.0);
-            layout(root, 400.0, 200.0);
-            // The first pass materializes cells; the second resolves their item-dependent spacing style.
-            layout(root, 400.0, 200.0);
+            treeView.getSelectionModel().select(rootItem);
+            for (NodeOrientation orientation : List.of(NodeOrientation.LEFT_TO_RIGHT, NodeOrientation.RIGHT_TO_LEFT)) {
+                treeView.setNodeOrientation(orientation);
+                layout(root, 400.0, 200.0);
+                for (M3TreeCell<?> cell : visibleCells(treeView)) {
+                    boolean rtl = orientation == NodeOrientation.RIGHT_TO_LEFT;
+                    cell.setAnimationsEnabled(false);
+                    M3CheckBox checkbox = cell.getSelectionCheckBox();
+                    Node layer = checkbox.lookup(".m3-state-layer");
+                    var before = root.snapshot(null, null);
+                    checkbox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+                    var after = root.snapshot(null, null);
+                    Bounds bounds = layer.localToScene(layer.getLayoutBounds());
+                    int sampleX = (int) (bounds.getCenterX() + bounds.getWidth() * 0.36);
+                    int sampleY = (int) bounds.getCenterY();
+                    assertNotEquals(before.getPixelReader().getArgb(sampleX, sampleY),
+                            after.getPixelReader().getArgb(sampleX, sampleY), "hover must paint outside the check mark");
 
-            M3TreeCell<?> rootCell = visibleCells(treeView).get(0);
-            Node rootBox = rootCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
-            Node rootArrow = rootCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
-            Node rootText = renderedText(rootCell);
-            assertEquals(8.0, minX(rootBox) - maxX(rootArrow), 0.75,
-                    "disclosure-to-checkbox visual gap");
-            assertEquals(8.0, minX(graphic) - maxX(rootBox), 0.75,
-                    "checkbox-to-item-graphic visual gap");
-            assertEquals(8.0, minX(rootText) - maxX(graphic), 0.75,
-                    "item-graphic-to-text visual gap");
-
-            M3TreeCell<?> childCell = visibleCells(treeView).get(1);
-            assertTrue(childCell.getStyleClass().contains("m3-tree-cell-checkbox-only"),
-                    "graphic-free checkbox row spacing style");
-            Node childBox = childCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
-            Node childText = renderedText(childCell);
-            assertEquals(8.0, minX(childText) - maxX(childBox), 0.75,
-                    "checkbox-to-text visual gap");
-
-            treeView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            layout(root, 400.0, 200.0);
-            layout(root, 400.0, 200.0);
-            rootCell = visibleCells(treeView).get(0);
-            rootBox = rootCell.getSelectionCheckBox().lookup(".m3-checkbox-box");
-            rootArrow = rootCell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
-            rootText = renderedText(rootCell);
-            assertEquals(8.0, minX(rootArrow) - maxX(rootBox), 0.75,
-                    "right-to-left disclosure-to-checkbox visual gap");
-            assertEquals(8.0, minX(rootBox) - maxX(graphic), 0.75,
-                    "right-to-left checkbox-to-item-graphic visual gap");
-            assertEquals(8.0, minX(graphic) - maxX(rootText), 0.75,
-                    "right-to-left item-graphic-to-text visual gap");
+                    Node next = cell.getIndex() == 0 ? graphic : renderedText(cell);
+                    double gap = rtl ? bounds.getMinX() - maxX(next) : minX(next) - bounds.getMaxX();
+                    assertTrue(gap >= 3.5, () -> "checkbox hover gap to adjacent content: " + gap);
+                    if (cell.getIndex() == 0) {
+                        Node arrow = cell.getDisclosureNode().lookup(".m3-disclosure-icon-shape");
+                        assertTrue((rtl ? minX(arrow) - bounds.getMaxX() : bounds.getMinX() - maxX(arrow)) >= 3.5);
+                        Node text = renderedText(cell);
+                        assertEquals(8.0, rtl ? minX(graphic) - maxX(text) : minX(text) - maxX(graphic), 0.75);
+                    }
+                    checkbox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+                }
+            }
         }));
     }
 

@@ -54,12 +54,6 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
     /// The default cell style class.
     private static final String DEFAULT_STYLE_CLASS = "m3-tree-cell";
 
-    /// The style class used when a checkbox is the row's only leading graphic.
-    private static final String CHECKBOX_ONLY_STYLE_CLASS = "m3-tree-cell-checkbox-only";
-
-    /// The horizontal overlap that removes the disclosure and checkbox touch-target insets from visual spacing.
-    private static final double CHECKBOX_DISCLOSURE_OVERLAP = 25.0;
-
     /// The retained tooltip used only while the label is visually truncated.
     private final M3Tooltip fullTextTooltip = new M3Tooltip();
 
@@ -73,7 +67,7 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
     private final M3CheckBox selectionCheckBox = new M3CheckBox();
 
     /// The leading content that combines checkbox selection with an optional item graphic.
-    private final CheckboxLeadingBox checkboxGraphic = new CheckboxLeadingBox();
+    private final HBox checkboxGraphic = new HBox();
 
     /// The complete text assigned during the latest non-empty item update.
     private @Nullable String fullText;
@@ -299,7 +293,6 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
     /// Rebuilds the leading content for the current tree item and selection style.
     private void refreshPresentation() {
         checkboxGraphic.getChildren().clear();
-        setCheckboxOnlyStyle(false);
         if (isEmpty()) {
             setGraphic(null);
             return;
@@ -311,8 +304,6 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
             checkboxGraphic.getChildren().add(selectionCheckBox);
             if (itemGraphic != null) {
                 checkboxGraphic.getChildren().add(itemGraphic);
-            } else {
-                setCheckboxOnlyStyle(true);
             }
             setGraphic(checkboxGraphic);
         } else {
@@ -324,22 +315,8 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
     /// Clears item-dependent graphic state when this cell becomes empty.
     private void clearGraphic() {
         checkboxGraphic.getChildren().clear();
-        setCheckboxOnlyStyle(false);
         selectionCheckBox.setSelected(false);
         setGraphic(null);
-    }
-
-    /// Applies the spacing variant used when no item graphic follows the selection checkbox.
-    ///
-    /// @param active whether the checkbox is the only leading graphic
-    private void setCheckboxOnlyStyle(boolean active) {
-        if (active) {
-            if (!getStyleClass().contains(CHECKBOX_ONLY_STYLE_CLASS)) {
-                getStyleClass().add(CHECKBOX_ONLY_STYLE_CLASS);
-            }
-        } else {
-            getStyleClass().remove(CHECKBOX_ONLY_STYLE_CLASS);
-        }
     }
 
     /// Returns whether the owning Material tree uses checkbox selection presentation.
@@ -401,39 +378,6 @@ public class M3TreeCell<T> extends TreeCell<T> implements M3Animated {
                     new ArrayList<>(TreeCell.getClassCssMetaData());
             styleables.add(ANIMATIONS_ENABLED);
             STYLEABLES = List.copyOf(styleables);
-        }
-    }
-
-    /// Reports compact leading width while allowing the checkbox touch target to overlap the disclosure slot.
-    @NotNullByDefault
-    private static final class CheckboxLeadingBox extends HBox {
-        /// Creates an empty compact leading-content container.
-        private CheckboxLeadingBox() {
-        }
-
-        /// Returns the minimum width after removing redundant disclosure and checkbox target insets.
-        ///
-        /// @param height the available height
-        /// @return the compact minimum width
-        @Override
-        protected double computeMinWidth(double height) {
-            return Math.max(0.0, super.computeMinWidth(height) - CHECKBOX_DISCLOSURE_OVERLAP);
-        }
-
-        /// Returns the preferred width after removing redundant disclosure and checkbox target insets.
-        ///
-        /// @param height the available height
-        /// @return the compact preferred width
-        @Override
-        protected double computePrefWidth(double height) {
-            return Math.max(0.0, super.computePrefWidth(height) - CHECKBOX_DISCLOSURE_OVERLAP);
-        }
-
-        /// Lays out leading controls and shifts their visuals into the retained disclosure target.
-        @Override
-        protected void layoutChildren() {
-            super.layoutChildren();
-            setTranslateX(-CHECKBOX_DISCLOSURE_OVERLAP);
         }
     }
 }
