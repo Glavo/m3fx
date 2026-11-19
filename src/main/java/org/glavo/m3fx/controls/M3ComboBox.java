@@ -649,24 +649,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
                 }
                 if (next != null && isShowing()) installScrolling();
             });
-            list.setCellFactory(view -> new ListCell<>() {
-                /// Updates the display label when the cell is reused.
-                @Override protected void updateItem(@Nullable T item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty ? null : format(item));
-                }
-            });
+            list.setCellFactory(view -> new OptionCell());
             list.addEventFilter(KeyEvent.KEY_PRESSED, M3ComboBox.this::handleKey);
-            list.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                if (event.getButton() != MouseButton.PRIMARY) return;
-                for (@Nullable Node n = event.getPickResult().getIntersectedNode(); n != null && n != list; n = n.getParent()) {
-                    if (n instanceof ListCell<?> cell && !cell.isEmpty()) {
-                        commit(cell.getIndex());
-                        event.consume();
-                        return;
-                    }
-                }
-            });
             setAutoHide(true);
             // Escape belongs to the editor while the input method is composing.
             setHideOnEscape(false);
@@ -690,6 +674,61 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
                 setVisibleState(false);
                 if (!isShowing() && filtered != null) filtered.setPredicate(null);
             });
+        }
+
+        /// Presents a virtualized option with the same pointer and selection feedback as a menu item.
+        @NotNullByDefault
+        private final class OptionCell extends ListCell<T> {
+            /// One presentation per cell, not per suggestion.
+            private final M3MenuItem row = new M3MenuItem();
+            /// Index currently presented, including when several options refer to the same object.
+            private int rowIndex = -1;
+
+            /// Leaves editor focus and pending selection under the control of the dropdown.
+            OptionCell() {
+                row.setFocusTraversable(false);
+                row.setMinSize(0, 0);
+                row.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+                row.animationsEnabledProperty().bind(M3ComboBox.this.animationsEnabledProperty());
+                row.setOnAction(event -> {
+                    if (!isEmpty()) commit(getIndex());
+                    event.consume();
+                });
+            }
+
+            /// Keeps the row flush with the cell, independently of its label's preferred width.
+            @Override protected Skin<?> createDefaultSkin() {
+                return new SkinBase<OptionCell>(this) {
+                    {
+                        if (getGraphic() != null) getChildren().add(row);
+                        registerChangeListener(graphicProperty(), obs -> {
+                            if (getGraphic() == null) getChildren().clear();
+                            else getChildren().setAll(row);
+                        });
+                    }
+                };
+            }
+
+            /// Reassignment ends the previous item's transient feedback before presenting its replacement.
+            @Override protected void updateItem(@Nullable T item, boolean empty) {
+                boolean replaced = getItem() != item || rowIndex != getIndex() || empty != isEmpty();
+                super.updateItem(item, empty);
+                rowIndex = getIndex();
+                if (replaced) setGraphic(null);
+                String label = empty ? "" : format(item);
+                setAccessibleText(empty ? null : label);
+                if (!empty) {
+                    row.setHeadlineText(label);
+                    if (replaced) row.setSelected(list.getSelectionModel().isSelected(getIndex()));
+                    setGraphic(row);
+                }
+            }
+
+            /// Animates changes to the pending option without changing the committed value.
+            @Override public void updateSelected(boolean selected) {
+                super.updateSelected(selected);
+                row.setSelected(!isEmpty() && isSelected());
+            }
         }
 
         /// Adapts the skin's viewport without adding a second scroll container.

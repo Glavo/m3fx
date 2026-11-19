@@ -200,7 +200,9 @@ final class M3MenuContractTest {
                 Node option = list.lookupAll(".list-cell").stream()
                         .filter(n -> n instanceof ListCell<?> c && Integer.valueOf(44).equals(c.getItem()))
                         .findFirst().orElseThrow();
-                option.fireEvent(primaryMouseEvent(option, MouseEvent.MOUSE_CLICKED, 12, 12, false));
+                Node row = option.lookup(".m3-menu-item");
+                row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, 12, 12, true));
+                row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_RELEASED, 12, 12, false));
                 assertEquals(44, field.getValue());
                 assertFalse(field.isShowing());
                 editor.setText("4");
@@ -498,6 +500,16 @@ final class M3MenuContractTest {
             Window window = FxTestUtils.callOnFxThread(() -> list.getScene().getWindow());
             FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() == 1 && list.getScaleY() == 1,
                     () -> {}, () -> assertEquals(0, list.getTranslateY(), 0.001));
+            VirtualFlow<?> flow = FxTestUtils.callOnFxThread(() -> (VirtualFlow<?>) list.lookup(".virtual-flow"));
+            Node first = FxTestUtils.callOnFxThread(() -> flow.getVisibleCell(0).lookup(".m3-menu-item-selection-container"));
+            Node second = FxTestUtils.callOnFxThread(() -> flow.getVisibleCell(1).lookup(".m3-menu-item-selection-container"));
+            FxTestUtils.runOnFxThreadWhen(() -> first.getOpacity() == 1, () -> {}, () -> assertEquals(0, second.getOpacity()));
+            FxTestUtils.runOnFxThreadWhen(() -> first.getOpacity() > 0 && first.getOpacity() < 1
+                            && second.getOpacity() > 0 && second.getOpacity() < 1,
+                    () -> field.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN)),
+                    () -> assertNull(field.getValue()));
+            FxTestUtils.runOnFxThreadWhen(() -> first.getOpacity() == 0 && second.getOpacity() == 1,
+                    () -> {}, () -> assertEquals(1, list.getSelectionModel().getSelectedIndex()));
             FxTestUtils.runOnFxThreadWhen(() -> list.getOpacity() > 0 && list.getOpacity() < 0.75, field::hide, () -> {
                 assertFalse(field.isShowing());
                 assertTrue(window.isShowing());
@@ -656,11 +668,18 @@ final class M3MenuContractTest {
                 Color center = image.getPixelReader().getColor((int) image.getWidth() / 2, (int) image.getHeight() / 2);
                 assertEquals(0.48, center.getOpacity(), 0.01);
                 assertEquals(0, image.getPixelReader().getColor(0, 0).getOpacity(), 0.02);
-                ListCell<?> cell = list.lookupAll(".list-cell").stream()
-                        .filter(n -> n instanceof ListCell<?> c && !c.isEmpty() && c.getIndex() != 62)
-                        .map(n -> (ListCell<?>) n).findFirst().orElseThrow();
+                flow.scrollTo(10);
+                list.layout();
+                for (int i = flow.getFirstVisibleCell().getIndex(); i <= flow.getLastVisibleCell().getIndex(); i++) {
+                    Node highlight = flow.getVisibleCell(i).lookup(".m3-menu-item-selection-container");
+                    assertEquals(0, highlight.getOpacity(), "A recycled row must not retain selection feedback");
+                }
+                var cell = assertInstanceOf(ListCell.class, flow.getVisibleCell(10));
                 int index = cell.getIndex();
-                cell.fireEvent(primaryMouseEvent(cell, MouseEvent.MOUSE_CLICKED, 8, 8, false));
+                var row = assertInstanceOf(M3MenuItem.class, cell.getGraphic());
+                assertEquals(cell.getWidth(), row.getWidth(), 1);
+                row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, 8, 8, true));
+                row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_RELEASED, 8, 8, false));
                 assertFalse(field.isShowing());
                 assertEquals(index, field.getValue());
             } finally {
