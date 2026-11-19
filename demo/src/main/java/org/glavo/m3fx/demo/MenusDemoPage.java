@@ -8,6 +8,7 @@ import javafx.scene.Node;
 
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3ComboBox;
+import org.glavo.m3fx.controls.M3ComboBoxInputMode;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3Menu;
@@ -112,8 +113,17 @@ final class MenusDemoPage extends DemoPageSupport {
         outlined.setVariant(M3TextInputVariant.OUTLINED);
         outlined.getItems().addAll("Inbox", "Projects", "Archive");
 
+        M3ComboBox<String> branch = new M3ComboBox<>();
+        branch.setInputMode(M3ComboBoxInputMode.FILTERED_SELECTION);
+        branch.setVariant(M3TextInputVariant.OUTLINED);
+        branch.setAccessibleText("Branch");
+        branch.setPromptText("Find a branch");
+        branch.getItems().addAll("main", "release/1.0", "release/1.1", "release/2.0",
+                "feature/search", "feature/navigation", "fix/keyboard-focus");
+
         return createGallery(
                 createShowcaseGroup("Exposed Dropdown Menus", filled, outlined),
+                createShowcaseGroup("Filtered Selection", branch),
                 createShowcaseGroup("Menu Button", menuButton),
                 createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu, vibrantMenu)
         );

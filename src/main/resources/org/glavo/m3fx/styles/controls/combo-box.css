@@ -20,6 +20,18 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.m3-combo-box .m3-combo-editor,
+.m3-combo-box .m3-combo-editor:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-font-size: 16px;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-prompt-text-fill: -m3-color-on-surface-variant;
+    -fx-highlight-fill: -m3-color-primary;
+    -fx-highlight-text-fill: -m3-color-on-primary;
+}
+
 .m3-combo-options.list-view {
     -fx-text-background-color: -m3-color-on-surface;
     -fx-padding: 8px 0;

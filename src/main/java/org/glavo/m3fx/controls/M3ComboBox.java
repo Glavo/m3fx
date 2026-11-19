@@ -12,6 +12,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.SimpleStyleableBooleanProperty;
@@ -30,6 +31,8 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Skin;
 import javafx.scene.control.SkinBase;
+import javafx.scene.control.TextField;
+import javafx.scene.input.InputMethodEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -43,6 +46,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3MotionProperties;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
@@ -57,15 +61,23 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.BiPredicate;
 
-/// A non-editable field for choosing a value from an exposed dropdown menu.
+/// A field for choosing a value from an exposed dropdown menu.
 ///
 /// Opening the menu highlights the first item equal to the current value, or the first
 /// item if none matches. Arrow keys browse without changing the value. Enter, Space,
 /// or clicking an option commits it; Escape or dismissing the popup leaves the value
 /// unchanged. A unidirectionally bound value can be displayed but not changed by the user.
+///
+/// In [M3ComboBoxInputMode#FILTERED_SELECTION] the field contains a text editor. Typing
+/// narrows the available choices without changing the committed value. Space inserts
+/// text; Enter accepts the highlighted choice, if any. Dismissing the menu or leaving
+/// the editor discards uncommitted input. The displayed value does not filter the menu
+/// until the user edits it.
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 ///
@@ -92,6 +104,14 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
     }
     /// The popup is created on the first successful attempt to open an attached field.
     private @Nullable ChoicePopup popup;
+    /// The native editor is needed only for filtered selection.
+    private @Nullable TextField editor;
+    /// A null query distinguishes the committed label from a user edit, even if the strings are equal.
+    private @Nullable String query;
+    /// Prevents programmatic display updates from starting a search.
+    private boolean updatingEditor;
+    /// Whether the input method currently owns the uncommitted text.
+    private boolean composing;
 
     /// Creates an empty filled field.
     public M3ComboBox() {
@@ -99,37 +119,160 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         getStyleClass().add(getVariant().styleClass());
         setFocusTraversable(true);
         setAccessibleRole(AccessibleRole.COMBO_BOX);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKey);
-        addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
-            if (!isDisabled() && event.getButton() == MouseButton.PRIMARY) {
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleKey);
+        addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (isFieldActivation(event)) {
                 requestFocus();
                 event.consume();
             }
         });
-        addEventHandler(MouseEvent.MOUSE_RELEASED, event -> {
-            if (!isDisabled() && event.getButton() == MouseButton.PRIMARY && contains(event.getX(), event.getY())) {
+        addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            if (isFieldActivation(event) && contains(event.getX(), event.getY())) {
                 if (isShowing()) hide(); else show();
                 event.consume();
             }
         });
-        items.addListener((ListChangeListener<T>) change -> hide());
+        items.addListener((ListChangeListener<T>) change -> {
+            if (getInputMode() == M3ComboBoxInputMode.READ_ONLY) hide();
+        });
         value.addListener(obs -> {
+            if (query != null) hide();
+            else restoreEditor();
             if (isShowing() && popup != null) popup.highlightValue();
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         });
         variant.addListener((obs, old, next) -> M3ControlStyles.replaceVariant(this,
                 next.styleClass(), M3TextInputVariant.FILLED.styleClass(), M3TextInputVariant.OUTLINED.styleClass()));
         converter.addListener(obs -> {
+            if (query == null) restoreEditor();
             if (popup != null) popup.list.refresh();
+            if (isShowing() && popup != null) popup.updateFilter();
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         });
         promptText.addListener(obs -> notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
     }
 
+    /// Lets the text editor keep its native pointer selection and caret behavior.
+    private boolean isFieldActivation(MouseEvent event) {
+        return !isDisabled() && event.getButton() == MouseButton.PRIMARY
+                && !(editor != null && event.getTarget() instanceof Node node && M3FocusGuards.containsNode(editor, node));
+    }
+
+    /// The way the user browses and searches for choices.
+    private final ObjectProperty<M3ComboBoxInputMode> inputMode =
+            new SimpleObjectProperty<>(this, "inputMode", M3ComboBoxInputMode.READ_ONLY) {
+                /// Replaces the focus target without carrying a draft across modes.
+                @Override
+                protected void invalidated() {
+                    if (popup != null) popup.dismissImmediately();
+                    query = null;
+                    boolean filtered = get() == M3ComboBoxInputMode.FILTERED_SELECTION;
+                    editor = filtered ? createEditor() : null;
+                    composing = false;
+                    pseudoClassStateChanged(EDITOR_FOCUSED, false);
+                    setFocusTraversable(!filtered);
+                    restoreEditor();
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.EDITABLE);
+                }
+            };
+
+    /// Returns the current input mode.
+    public M3ComboBoxInputMode getInputMode() {
+        return inputMode.get();
+    }
+
+    /// Sets the input mode. Switching modes dismisses the menu and preserves the committed value.
+    public void setInputMode(M3ComboBoxInputMode mode) {
+        inputMode.set(Objects.requireNonNull(mode, "mode"));
+    }
+
+    /// The input mode, initially [M3ComboBoxInputMode#READ_ONLY].
+    public ObjectProperty<M3ComboBoxInputMode> inputModeProperty() {
+        return inputMode;
+    }
+
+    /// The optional matcher for non-empty queries.
+    private final ObjectProperty<@Nullable BiPredicate<? super T, String>> filter =
+            new SimpleObjectProperty<>(this, "filter") {
+                /// Re-evaluates an open search when its matching rule changes.
+                @Override
+                protected void invalidated() {
+                    if (isShowing() && popup != null) popup.updateFilter();
+                }
+            };
+
+    /// Returns the custom item matcher, or null for case-insensitive substring matching of display text.
+    public @Nullable BiPredicate<? super T, String> getFilter() {
+        return filter.get();
+    }
+
+    /// Sets the matcher. It receives an item and the unmodified query. Empty queries always match all items.
+    public void setFilter(@Nullable BiPredicate<? super T, String> matcher) {
+        filter.set(matcher);
+    }
+
+    /// The matcher used in filtered selection mode. The default is null.
+    public ObjectProperty<@Nullable BiPredicate<? super T, String>> filterProperty() {
+        return filter;
+    }
+
+    /// Styles the field when its native editor has keyboard focus.
+    private static final PseudoClass EDITOR_FOCUSED = PseudoClass.getPseudoClass("editor-focused");
+
+    /// Creates a single-line editor whose uncommitted text is independent of the value.
+    private TextField createEditor() {
+        var text = new TextField();
+        text.getStyleClass().add("m3-combo-editor");
+        text.promptTextProperty().bind(promptText);
+        text.accessibleTextProperty().bind(accessibleTextProperty());
+        text.setMinWidth(0);
+        text.addEventFilter(InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                event -> composing = !event.getComposed().isEmpty());
+        text.textProperty().addListener((obs, old, next) -> {
+            if (editor != text || updatingEditor || composing) return;
+            query = next;
+            if (isShowing() && popup != null) popup.updateFilter();
+            else show();
+        });
+        text.focusedProperty().addListener((obs, old, focused) -> {
+            if (editor != text) return;
+            pseudoClassStateChanged(EDITOR_FOCUSED, focused);
+            if (!focused) {
+                composing = false;
+                hide();
+            }
+        });
+        return text;
+    }
+
+    /// Returns the editor to the committed value without filtering the available choices.
+    private void restoreEditor() {
+        query = null;
+        if (editor == null) return;
+        String display = format(getValue());
+        if (!display.equals(editor.getText())) {
+            updatingEditor = true;
+            try {
+                editor.setText(display);
+                editor.positionCaret(display.length());
+            } finally {
+                updatingEditor = false;
+            }
+        }
+    }
+
+    /// Requests focus on the text editor in filtered selection mode, or on the field otherwise.
+    @Override
+    public void requestFocus() {
+        if (editor != null) editor.requestFocus();
+        else super.requestFocus();
+    }
+
     /// The available choices in display order.
     private final ObservableList<T> items = FXCollections.observableArrayList();
 
-    /// Returns the live choices. Changing the list dismisses an open menu but does not clear the value.
+    /// Returns the live choices. Changes update filtered results in place and never clear the committed value.
+    /// In read-only mode changing this list dismisses an open menu.
     public ObservableList<T> getItems() {
         return items;
     }
@@ -256,9 +399,10 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         return showing.getReadOnlyProperty();
     }
 
-    /// Shows the available choices. Does nothing for an empty or unreachable field.
+    /// Shows the available choices. Does nothing for an unreachable field, or for an empty
+    /// list when the user is not editing. A search with no matches leaves the editor active.
     public void show() {
-        if (isShowing() || items.isEmpty() || !M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) return;
+        if (isShowing() || (items.isEmpty() && query == null) || !M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) return;
         if (popup == null) popup = new ChoicePopup();
         popup.open();
     }
@@ -266,6 +410,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
     /// Dismisses the menu without committing the highlighted choice.
     public void hide() {
         if (popup != null) popup.hide();
+        if (query != null) restoreEditor();
     }
 
     /// Returns the user-facing text of a value.
@@ -277,12 +422,14 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
 
     /// Handles field activation and keyboard navigation in the detached menu.
     private void handleKey(KeyEvent event) {
-        if (isDisabled() || event.isControlDown() || event.isMetaDown()
+        if (isDisabled() || composing || event.isControlDown() || event.isMetaDown()
                 || (event.isShiftDown() && event.getCode() != KeyCode.TAB)) {
             return;
         }
         switch (event.getCode()) {
             case DOWN, UP, SPACE, ENTER -> {
+                if (editor != null && (event.getCode() == KeyCode.SPACE
+                        || event.getCode() == KeyCode.ENTER && !isShowing())) return;
                 if (!isShowing()) show();
                 else if (popup != null) {
                     switch (event.getCode()) {
@@ -306,8 +453,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
             case TEXT -> getAccessibleText() != null ? getAccessibleText()
                     : getValue() == null ? getPromptText() : format(getValue());
             case EXPANDED -> isShowing();
-            case EDITABLE -> false;
-            case ITEM_COUNT -> items.size();
+            case EDITABLE -> editor != null;
+            case ITEM_COUNT -> isShowing() && popup != null ? popup.list.getItems().size() : items.size();
             case FOCUS_NODE -> isShowing() && popup != null ? popup.list : this;
             case ITEM_AT_INDEX -> isShowing() && popup != null
                     ? popup.list.queryAccessibleAttribute(attribute, parameters) : null;
@@ -342,6 +489,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
     private final class FieldSkin extends SkinBase<M3ComboBox<T>> {
         /// The current value or empty-state prompt.
         private final Label label = new Label();
+        /// Holds the active value presentation and the disclosure arrow.
+        private final HBox row = new HBox(12);
 
         /// Creates the field's presentation without creating its popup.
         FieldSkin() {
@@ -354,14 +503,26 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
             label.setMaxWidth(Double.MAX_VALUE);
             label.setMinWidth(0);
             HBox.setHgrow(label, Priority.ALWAYS);
-            var row = new HBox(12, label, arrow);
             row.setAlignment(Pos.CENTER_LEFT);
-            row.setMouseTransparent(true);
+            row.getChildren().addAll(label, arrow);
+            updateField();
+            registerChangeListener(inputMode, obs -> updateField());
             getChildren().add(row);
             registerChangeListener(value, obs -> updateLabel());
             registerChangeListener(promptText, obs -> updateLabel());
             registerChangeListener(converter, obs -> updateLabel());
             updateLabel();
+        }
+
+        /// Exchanges the value presentation without replacing the disclosure icon or popup.
+        private void updateField() {
+            Node previous = row.getChildren().get(0);
+            boolean focused = isFocused() || previous.isFocused();
+            Node content = editor == null ? label : editor;
+            HBox.setHgrow(content, Priority.ALWAYS);
+            row.getChildren().set(0, content);
+            row.setMouseTransparent(editor == null);
+            if (focused) requestFocus();
         }
 
         /// Displays only the committed value, never the popup's pending selection.
@@ -377,6 +538,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
     private final class ChoicePopup extends Popup {
         /// The currently highlighted option is local to this list.
         final ListView<T> list = new ListView<>(items);
+        /// A live view of source choices, allocated only when an editable menu is used.
+        private @Nullable FilteredList<T> filtered;
         /// Synchronizes the detached list with the field's theme.
         final M3PopupContextSynchronizer context = new M3PopupContextSynchronizer(
                 M3ComboBox.this, getScene().getRoot(), getUserAgentStylesheet());
@@ -413,6 +576,8 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
                 }
             });
             setAutoHide(true);
+            // Escape belongs to the editor while the input method is composing.
+            setHideOnEscape(false);
             getScene().getRoot().getStyleClass().add("m3-combo-popup-root");
             M3PopupStyles.prepareStandalonePopupRoot(getScene().getRoot(), getUserAgentStylesheet());
             getContent().add(new StackPane(list));
@@ -428,7 +593,9 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
                 motion.stop();
                 reachability.uninstall();
                 context.stop();
+                if (M3ComboBox.this.isShowing()) restoreEditor();
                 setVisibleState(false);
+                if (!isShowing() && filtered != null) filtered.setPredicate(null);
             });
         }
 
@@ -442,25 +609,75 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
 
         /// Fits the menu to the larger available side if it cannot fit below the field.
         void open() {
+            updateFilter();
+            @Nullable M3PopupPositioning.Placement placement = position();
+            if (placement == null) return;
             if (isShowing()) {
+                setAnchorX(placement.x());
+                setAnchorY(placement.y());
                 transitionTo(true);
                 return;
             }
-            @Nullable Bounds anchor = localToScreen(getLayoutBounds());
-            if (anchor == null) return;
-            Rectangle2D screen = M3PopupPositioning.visualBoundsFor(anchor);
-            double available = Math.max(screen.getMaxY() - anchor.getMaxY(), anchor.getMinY() - screen.getMinY()) - 12;
-            if (available <= 0) return;
-            double width = Math.min(anchor.getWidth(), screen.getWidth() - 16);
-            double height = Math.min(16 + list.getFixedCellSize() * Math.min(8, items.size()), available);
-            list.setPrefSize(width, height);
-            var placement = M3PopupPositioning.menuBelowOrAbove(anchor, screen, width, height, 4);
-            collapsedOffset = (placement.opensAbove() ? 1 : -1) * height * (1 - COLLAPSED_SCALE) / 2;
             list.setScaleX(COLLAPSED_SCALE);
             list.setScaleY(COLLAPSED_SCALE);
             list.setTranslateY(collapsedOffset);
             list.setOpacity(0);
             M3PopupWindows.show(this, M3ComboBox.this, placement.x(), placement.y());
+        }
+
+        /// Updates the menu size and computes a placement for the current number of matching rows.
+        private M3PopupPositioning.@Nullable Placement position() {
+            @Nullable Bounds anchor = localToScreen(getLayoutBounds());
+            if (anchor == null) return null;
+            Rectangle2D screen = M3PopupPositioning.visualBoundsFor(anchor);
+            double available = Math.max(screen.getMaxY() - anchor.getMaxY(), anchor.getMinY() - screen.getMinY()) - 12;
+            if (available <= 0) return null;
+            double width = Math.min(anchor.getWidth(), screen.getWidth() - 16);
+            double height = Math.min(16 + list.getFixedCellSize() * Math.max(1, Math.min(8, list.getItems().size())), available);
+            list.setPrefSize(width, height);
+            var placement = M3PopupPositioning.menuBelowOrAbove(anchor, screen, width, height, 4);
+            collapsedOffset = (placement.opensAbove() ? 1 : -1) * height * (1 - COLLAPSED_SCALE) / 2;
+            return placement;
+        }
+
+        /// Keeps source ordering and object identity, including for equal display strings.
+        private void updateFilter() {
+            if (editor == null) {
+                list.setItems(items);
+                filtered = null;
+                return;
+            }
+            if (filtered == null) {
+                filtered = new FilteredList<>(items);
+                list.setItems(filtered);
+                filtered.addListener((ListChangeListener<T>) change -> {
+                    if (!M3ComboBox.this.isShowing()) return;
+                    highlightValue();
+                    var placement = position();
+                    if (placement != null) {
+                        setAnchorX(placement.x());
+                        setAnchorY(placement.y());
+                    }
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+                });
+            }
+            @Nullable String search = query;
+            var matcher = getFilter();
+            if (search == null || search.isEmpty()) {
+                filtered.setPredicate(null);
+            } else if (matcher != null) {
+                filtered.setPredicate(item -> matcher.test(item, search));
+            } else {
+                String needle = search.toLowerCase(Locale.ROOT);
+                filtered.setPredicate(item -> format(item).toLowerCase(Locale.ROOT).contains(needle));
+            }
+        }
+
+        /// Ends a popup presentation when the input mode changes.
+        private void dismissImmediately() {
+            super.hide();
+            list.setItems(items);
+            filtered = null;
         }
 
         /// Routes native auto-hide and explicit dismissal through the same exit motion.
@@ -469,6 +686,7 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
             if (!isShowing() || !M3PopupWindows.canShow(M3ComboBox.this)) {
                 super.hide();
             } else if (M3ComboBox.this.isShowing()) {
+                restoreEditor();
                 transitionTo(false);
             }
         }
@@ -487,12 +705,16 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
 
         /// Starts browsing at the committed option, or the first option.
         void highlightValue() {
-            highlight(items.indexOf(getValue()));
+            highlight(list.getItems().indexOf(getValue()));
         }
 
         /// Keeps the pending choice visible while the user browses.
         void highlight(int index) {
-            int target = Math.max(0, Math.min(index, items.size() - 1));
+            if (list.getItems().isEmpty()) {
+                list.getSelectionModel().clearSelection();
+                return;
+            }
+            int target = Math.max(0, Math.min(index, list.getItems().size() - 1));
             list.getSelectionModel().select(target);
             list.scrollTo(target);
         }
@@ -500,7 +722,9 @@ public final class M3ComboBox<T> extends Control implements M3Animated {
         /// Commits one option without attempting to write a bound property.
         void commit(int index) {
             if (!M3ComboBox.this.isShowing()) return;
-            if (!isDisabled() && !value.isBound() && index >= 0 && index < items.size()) setValue(items.get(index));
+            var choices = list.getItems();
+            if (index < 0 || index >= choices.size()) return;
+            if (!isDisabled() && !value.isBound()) setValue(choices.get(index));
             hide();
         }
     }

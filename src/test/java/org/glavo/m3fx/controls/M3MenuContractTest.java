@@ -10,6 +10,7 @@ import javafx.event.ActionEvent;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
+import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -19,20 +20,27 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.InputMethodEvent;
+import javafx.scene.input.InputMethodHighlight;
+import javafx.scene.input.InputMethodTextRun;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.robot.Robot;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.Screen;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
@@ -43,6 +51,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.testing.Tier2Test;
+import org.glavo.m3fx.testing.Tier3Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -69,6 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /// Verifies menu selection, nested navigation, actions, and popup interaction.
 @NotNullByDefault
@@ -128,6 +138,181 @@ final class M3MenuContractTest {
                 stage.hide();
             }
         });
+    }
+
+    /// Search changes the live option view, not the value or the identity of duplicate option labels.
+    @Test
+    void filteredDropdownCommitsOnlyMatchingObjects() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var field = new M3ComboBox<Integer>();
+            field.setInputMode(M3ComboBoxInputMode.FILTERED_SELECTION);
+            field.getItems().addAll(11, 22, 33);
+            field.setConverter(n -> n == 11 ? "Main" : "Release branch");
+            field.setValue(11);
+            var stage = new Stage();
+            try {
+                var next = new TextField();
+                var scene = new Scene(new VBox(field, next), 320, 240);
+                stage.setScene(scene);
+                stage.show();
+                field.requestFocus();
+                var editor = assertInstanceOf(TextField.class, scene.getFocusOwner());
+                assertEquals("Main", editor.getText());
+                Node arrow = field.lookup(".m3-disclosure-icon");
+                arrow.fireEvent(primaryMouseEvent(arrow, MouseEvent.MOUSE_PRESSED, 12, 12, true));
+                arrow.fireEvent(primaryMouseEvent(arrow, MouseEvent.MOUSE_RELEASED, 12, 12, false));
+                assertTrue(field.isShowing());
+                editor.fireEvent(primaryMouseEvent(editor, MouseEvent.MOUSE_PRESSED, 8, 8, true));
+                editor.fireEvent(primaryMouseEvent(editor, MouseEvent.MOUSE_RELEASED, 8, 8, false));
+                assertTrue(field.isShowing());
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(List.of(11, 22, 33), list.getItems());
+                editor.selectAll();
+                editor.replaceSelection("RELEASE");
+                assertEquals(List.of(22, 33), list.getItems());
+                assertSame(editor, scene.getFocusOwner());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                editor.fireEvent(keyTypedEvent(" "));
+                assertEquals("RELEASE ", editor.getText());
+                assertEquals(11, field.getValue());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals(33, field.getValue());
+                assertFalse(field.isShowing());
+                assertEquals("Release branch", editor.getText());
+
+                editor.setText("missing");
+                assertTrue(field.isShowing());
+                assertTrue(list.getItems().isEmpty());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals("missing", editor.getText());
+                assertEquals(33, field.getValue());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                assertEquals("Release branch", editor.getText());
+
+                field.setFilter((item, query) -> item.toString().startsWith(query));
+                editor.setText("4");
+                field.getItems().add(44);
+                assertEquals(List.of(44), list.getItems());
+                list.layout();
+                Node option = list.lookupAll(".list-cell").stream()
+                        .filter(n -> n instanceof ListCell<?> c && Integer.valueOf(44).equals(c.getItem()))
+                        .findFirst().orElseThrow();
+                option.fireEvent(primaryMouseEvent(option, MouseEvent.MOUSE_CLICKED, 12, 12, false));
+                assertEquals(44, field.getValue());
+                assertFalse(field.isShowing());
+                editor.setText("4");
+                editor.clear();
+                assertEquals(field.getItems(), list.getItems());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertFalse(field.isShowing());
+                assertSame(next, scene.getFocusOwner());
+                assertEquals("Release branch", editor.getText());
+
+                field.requestFocus();
+                editor.setText("2");
+                field.setInputMode(M3ComboBoxInputMode.READ_ONLY);
+                assertFalse(field.isShowing());
+                assertEquals(44, field.getValue());
+                assertNull(field.lookup(".m3-combo-editor"));
+                assertTrue(field.isFocusTraversable());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// IME preedit and candidate confirmation do not activate a menu row.
+    @Test
+    void filteredDropdownLeavesCompositionWithEditor() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var field = new M3ComboBox<String>();
+            field.setInputMode(M3ComboBoxInputMode.FILTERED_SELECTION);
+            field.getItems().addAll("alpha", "\u4e2d\u6587");
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(new VBox(field), 320, 240));
+                stage.show();
+                field.requestFocus();
+                var editor = assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+                field.show();
+                editor.fireEvent(new InputMethodEvent(InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                        List.of(new InputMethodTextRun("zhong", InputMethodHighlight.SELECTED_RAW)), "", 5));
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertNull(field.getValue());
+                assertTrue(field.isShowing());
+                editor.fireEvent(new InputMethodEvent(InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                        List.of(), "\u4e2d", 0));
+                assertEquals("\u4e2d", editor.getText());
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(List.of("\u4e2d\u6587"), list.getItems());
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals("\u4e2d\u6587", field.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Exercises native owner-window key routing and pointer selection in a detached filtered menu.
+    @Tier3Test
+    @Test
+    void filteredDropdownKeepsNativeTypingInEditor() throws InterruptedException {
+        Stage stage = FxTestUtils.callOnFxThread(Stage::new);
+        var field = FxTestUtils.callOnFxThread(() -> new M3ComboBox<String>());
+        Robot robot = FxTestUtils.callOnFxThread(Robot::new);
+        Point2D pointer = FxTestUtils.callOnFxThread(robot::getMousePosition);
+        assumeTrue(FxTestUtils.callOnFxThread(() ->
+                        !Screen.getScreensForRectangle(pointer.getX(), pointer.getY(), 1, 1).isEmpty()),
+                "Native pointer input requires an interactive desktop");
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(stage::isFocused, 3, () -> {
+                field.setInputMode(M3ComboBoxInputMode.FILTERED_SELECTION);
+                field.setAnimationsEnabled(false);
+                field.getItems().addAll("Main", "Release notes", "Release build");
+                stage.setScene(new Scene(new VBox(field), 320, 320));
+                stage.setAlwaysOnTop(true);
+                Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+                stage.setX(screen.getMinX() + 80);
+                stage.setY(screen.getMinY() + 80);
+                stage.show();
+                stage.toFront();
+                stage.requestFocus();
+            }, () -> {
+                Node arrow = field.lookup(".m3-disclosure-icon");
+                Point2D target = arrow.localToScreen(arrow.getBoundsInLocal().getCenterX(), arrow.getBoundsInLocal().getCenterY());
+                robot.mouseMove(target);
+                assertTrue(robot.getMousePosition().distance(target) < 3,
+                        () -> "Expected pointer at " + target + " but got " + robot.getMousePosition());
+            });
+            FxTestUtils.runOnFxThreadWhen(field::isHover, () -> {}, () -> robot.mouseClick(MouseButton.PRIMARY));
+            FxTestUtils.runOnFxThreadWhen(field::isShowing, () -> {}, () -> {
+                assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+                for (KeyCode key : List.of(KeyCode.E, KeyCode.SPACE, KeyCode.B)) {
+                    robot.keyType(key);
+                }
+            });
+            FxTestUtils.runOnFxThreadWhen(() -> field.isShowing() && "e b".equals(
+                    ((TextField) field.lookup(".m3-combo-editor")).getText()), () -> {}, () -> {
+                var list = assertInstanceOf(ListView.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(List.of("Release build"), list.getItems());
+                list.layout();
+                Node option = list.lookupAll(".list-cell").stream()
+                        .filter(n -> n instanceof ListCell<?> c && "Release build".equals(c.getItem()))
+                        .findFirst().orElseThrow();
+                robot.mouseMove(option.localToScreen(18, option.getBoundsInLocal().getCenterY()));
+                robot.mouseClick(MouseButton.PRIMARY);
+            });
+            FxTestUtils.runOnFxThreadWhen(() -> !field.isShowing(), () -> {}, () -> {
+                assertEquals("Release build", field.getValue());
+                assertInstanceOf(TextField.class, stage.getScene().getFocusOwner());
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                stage.close();
+                robot.mouseMove(pointer);
+            });
+        }
     }
 
     /// Verifies visible transition frames, reversal on the same popup, and synchronous reduced-motion dismissal.

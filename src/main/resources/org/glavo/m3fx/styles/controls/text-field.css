@@ -81,6 +81,7 @@
 }
 
 .m3-combo-box.m3-filled-field:focused,
+.m3-combo-box.m3-filled-field:editor-focused,
 .m3-combo-box.m3-filled-field:showing,
 .m3-text-field.m3-filled-field:focused,
 .m3-password-field.m3-filled-field:focused,
@@ -135,6 +136,7 @@
 }
 
 .m3-combo-box.m3-outlined-field:focused,
+.m3-combo-box.m3-outlined-field:editor-focused,
 .m3-combo-box.m3-outlined-field:showing,
 .m3-text-field.m3-outlined-field:focused,
 .m3-password-field.m3-outlined-field:focused,
