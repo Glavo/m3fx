@@ -397,7 +397,8 @@ final class M3NumberFieldTest {
             M3NumberField field = decimalField(0.0, 100.0, 24.0, 2.0);
             field.setLabelText("Width");
             field.setSupportingText("Pixels");
-            field.setPrefix(new Label("W"));
+            Label prefix = new Label("°C");
+            field.setPrefix(prefix);
             field.setPrefWidth(360.0);
             M3Theme theme = iconButtonMetricTheme(34.0, 36.0, 17.0);
             StackPane root = themedRoot(field, 420.0, 140.0, theme);
@@ -430,6 +431,12 @@ final class M3NumberFieldTest {
             assertTrue(stepperBounds.getMinX() >= 0.0, stepperBounds::toString);
             assertTrue(stepperBounds.getMaxX() <= inputLayout.getWidth(), stepperBounds::toString);
             assertTrue(field.getEditor().getPadding().getRight() >= stepperBounds.getWidth());
+            Bounds unit = field.getEditor().sceneToLocal(prefix.localToScene(prefix.getLayoutBounds()));
+            assertEquals(16, unit.getMinX(), 1);
+            assertEquals(4, field.getEditor().getPadding().getLeft() - unit.getMaxX(), 1);
+            assertEquals(theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT), prefix.getTextFill());
+            Bounds button = field.getEditor().sceneToLocal(incrementButton.localToScene(incrementButton.getLayoutBounds()));
+            assertEquals(field.getEditor().getHeight() / 2, button.getCenterY(), 1);
 
             field.setHideStepper(true);
             layout(root, 420.0, 140.0);

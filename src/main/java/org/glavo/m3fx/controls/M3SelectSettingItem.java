@@ -13,6 +13,8 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -241,10 +243,29 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
         return items;
     }
 
+    /// The application-supplied label for a null choice.
+    private final StringProperty nullValueText = new SimpleStringProperty(this, "nullValueText", "");
+
+    /// Returns the label used for null, or an empty string if no label was supplied.
+    public String getNullValueText() {
+        return Objects.toString(nullValueText.get(), "");
+    }
+
+    /// Sets the text shown for a null choice in the menu and the row summary.
+    public void setNullValueText(String text) {
+        nullValueText.set(Objects.requireNonNull(text, "text"));
+    }
+
+    /// Bind this property to localized text to update the menu and current value together.
+    /// Its default is an empty string. Setting it does not add a null option to the choices.
+    public StringProperty nullValueTextProperty() {
+        return nullValueText;
+    }
+
     /// Converts a selectable value to the text shown on the row and in the menu.
     ///
     /// When the converter is `null`, the control uses [Objects#toString(Object, String)] with an empty fallback. A
-    /// `null` selected value always produces an empty trailing label and is not passed to the converter. A `null`
+    /// `null` selected value uses [#nullValueTextProperty()] and is not passed to the converter. A `null`
     /// conversion result is displayed as empty text. Reentrant value, item, and converter changes are reconciled
     /// after formatting; changes initiated by converters must eventually stabilize.
     ///
@@ -526,6 +547,12 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
         items.addListener(menuContentInvalidation);
         converter.addListener(menuContentInvalidation);
+        nullValueText.addListener(menuContentInvalidation);
+        nullValueText.addListener((observable, oldValue, newValue) -> {
+            updateValuePresentation();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+        });
         descriptionConverter.addListener(menuContentInvalidation);
         converter.addListener((observable, oldValue, newValue) -> updateValuePresentation());
 
@@ -669,9 +696,9 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
     }
 
     /// Formats a choice using the converter captured for one refresh pass.
-    private static <T> String formatValue(@Nullable T choice, @Nullable Function<? super T, @Nullable String> activeConverter) {
+    private String formatValue(@Nullable T choice, @Nullable Function<? super T, @Nullable String> activeConverter) {
         if (choice == null) {
-            return "";
+            return getNullValueText();
         }
         if (activeConverter == null) {
             return Objects.toString(choice, "");
@@ -790,6 +817,7 @@ public final class M3SelectSettingItem<T> extends M3SettingItemBase {
 
     /// Handles keyboard opening and dismissal for the popup menu.
     private void handleKeyPressed(KeyEvent event) {
+        if (event.getTarget() != this) return;
         switch (event.getCode()) {
             case DOWN -> {
                 if (showMenuAndFocusFirstItem()) {

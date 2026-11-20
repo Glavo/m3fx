@@ -112,6 +112,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         trailingColumn.setHgrow(Priority.NEVER);
 
         textColumn.getChildren().addAll(label, supportingLabel);
+        registerChangeListener(control.labelTrailingProperty(), obs -> updateView());
         container.getChildren().addAll(textColumn, contentSlot, trailingSlot);
         configureGrid(false);
         getChildren().setAll(container);
@@ -135,6 +136,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         contentSlot.getChildren().clear();
+        M3TitleLine.install(textColumn, label, null);
         trailingSlot.getChildren().clear();
         getChildren().remove(container);
         super.dispose();
@@ -228,7 +230,8 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         supportingLabel.setManaged(!supportingText.isBlank());
         supportingLabel.setVisible(!supportingText.isBlank());
 
-        boolean textVisible = !labelText.isBlank() || !supportingText.isBlank();
+        M3TitleLine.install(textColumn, label, control.getLabelTrailing());
+        boolean textVisible = !labelText.isBlank() || !supportingText.isBlank() || control.getLabelTrailing() != null;
         textColumn.setManaged(textVisible);
         textColumn.setVisible(textVisible);
         @Nullable Node content = control.getContent();

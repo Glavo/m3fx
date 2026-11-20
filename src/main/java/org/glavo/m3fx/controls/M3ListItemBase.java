@@ -264,6 +264,30 @@ public abstract sealed class M3ListItemBase extends Control implements M3Animate
         return trailingSupportingText;
     }
 
+    /// Optional content immediately after the primary text, before the row's other slots.
+    private final ObjectProperty<@Nullable Node> headlineTrailing = new SimpleObjectProperty<>(this, "headlineTrailing") {
+        /// Refreshes the accessible child list when the slot changes.
+        @Override protected void invalidated() {
+            notifyAccessibleSlotsChanged();
+        }
+    };
+
+    /// Returns the node beside the primary text, or null when the slot is empty.
+    public final @Nullable Node getHeadlineTrailing() {
+        return headlineTrailing.get();
+    }
+
+    /// Places a node beside the primary text. Pass null to remove it.
+    public final void setHeadlineTrailing(@Nullable Node node) {
+        headlineTrailing.set(node);
+    }
+
+    /// Bindable content beside the primary text, initially null. A node must be available
+    /// for parenting and distinct from the other slots. Interactive children retain their own focus and actions.
+    public final ObjectProperty<@Nullable Node> headlineTrailingProperty() {
+        return headlineTrailing;
+    }
+
     /// The optional node displayed at the logical leading edge.
     ///
     /// The node is owned by this row while displayed and may have only one parent.
@@ -1128,8 +1152,8 @@ public abstract sealed class M3ListItemBase extends Control implements M3Animate
         return switch (attribute) {
             case SELECTED -> isSelected();
             case INDEX -> M3Accessible.indexInParent(this);
-            case ITEM_COUNT -> M3Accessible.itemCount(getLeading(), getTrailing());
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getLeading(), getTrailing(), parameters);
+            case ITEM_COUNT -> M3Accessible.itemCount(getLeading(), getHeadlineTrailing(), getTrailing());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getLeading(), getHeadlineTrailing(), getTrailing(), parameters);
             case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -1158,12 +1182,12 @@ public abstract sealed class M3ListItemBase extends Control implements M3Animate
 
     /// Returns the current list row or slot accessibility focus node.
     private @Nullable Node accessibleFocusNode() {
-        @Nullable Node currentTarget = M3Accessible.currentFocusTarget(this, getLeading(), getTrailing());
+        @Nullable Node currentTarget = M3Accessible.currentFocusTarget(this, getLeading(), getHeadlineTrailing(), getTrailing());
         if (currentTarget != null) {
             return currentTarget;
         }
         @Nullable Node itemTarget = M3Accessible.focusTarget(this);
-        return itemTarget != null ? itemTarget : M3Accessible.firstFocusTarget(getLeading(), getTrailing());
+        return itemTarget != null ? itemTarget : M3Accessible.firstFocusTarget(getLeading(), getHeadlineTrailing(), getTrailing());
     }
 
     /// Focuses the current row or slot target, or an explicitly requested slot target.
@@ -1173,7 +1197,7 @@ public abstract sealed class M3ListItemBase extends Control implements M3Animate
     final boolean showAccessibleItem(Object... parameters) {
         boolean shown = parameters.length == 0
                 ? M3Accessible.showItem(this, accessibleFocusNode())
-                : M3Accessible.showCurrentOrItem(this, getLeading(), getTrailing(), parameters);
+                : M3Accessible.showCurrentOrItem(this, getLeading(), getHeadlineTrailing(), getTrailing(), parameters);
         if (shown) {
             notifyAccessibleFocusChanged();
         }

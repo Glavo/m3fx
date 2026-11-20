@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.geometry.Insets;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -11,6 +13,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.control.Label;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -19,8 +25,11 @@ import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import static org.glavo.m3fx.controls.ControlTestFixtures.keyEvent;
+import static org.glavo.m3fx.controls.ControlTestFixtures.primaryMouseEvent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,6 +122,129 @@ final class M3SettingItemTest {
             item.getSwitch().fire();
             assertFalse(item.isSelected());
             assertEquals(2, actionCount.get());
+        });
+    }
+
+    /// A bound effective value can be overridden through either activation surface and reset independently.
+    @Test
+    void switchRequestsAndHeadlineActionsStayIndependent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            var item = new M3SwitchSettingItem("Automatic updates");
+            var model = new SimpleBooleanProperty(false);
+            item.selectedProperty().bind(model);
+            var requests = new AtomicInteger();
+            var actions = new AtomicInteger();
+            var reset = new M3Button("Reset");
+            reset.setOnAction(e -> model.set(false));
+            item.setHeadlineTrailing(reset);
+            item.setOnToggleRequest(e -> {
+                assertSame(item, e.getTarget());
+                assertEquals(!model.get(), e.getRequestedValue());
+                requests.incrementAndGet();
+                e.consume();
+                model.set(e.getRequestedValue());
+            });
+            item.setOnAction(e -> actions.incrementAndGet());
+            var root = new VBox(item);
+            var scene = new Scene(root, 420, 120);
+            var stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                item.fireEvent(primaryMouseEvent(item, MouseEvent.MOUSE_PRESSED, 8, 20, true));
+                item.fireEvent(primaryMouseEvent(item, MouseEvent.MOUSE_RELEASED, 8, 20, false));
+                assertTrue(item.getSwitch().isSelected());
+                assertEquals(1, requests.get());
+                reset.requestFocus();
+                assertSame(reset, scene.getFocusOwner());
+                reset.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                reset.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertFalse(model.get());
+                assertEquals(1, requests.get());
+                item.getSwitch().fire();
+                assertTrue(model.get());
+                item.requestFocus();
+                item.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                item.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertFalse(model.get());
+                assertEquals(3, requests.get());
+                assertEquals(0, actions.get());
+                var track = (Region) item.getSwitch().lookup(".m3-switch-track");
+                double off = track.getHeight() / 2;
+                double on = track.getWidth() - off;
+                track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_PRESSED, off, off, true));
+                track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_DRAGGED, on, off, true));
+                track.fireEvent(primaryMouseEvent(track, MouseEvent.MOUSE_RELEASED, on, off, false));
+                assertEquals(4, requests.get());
+                assertTrue(model.get());
+                reset.fireEvent(primaryMouseEvent(reset, MouseEvent.MOUSE_PRESSED, 8, 8, true));
+                reset.fireEvent(primaryMouseEvent(reset, MouseEvent.MOUSE_RELEASED, 8, 8, false));
+                assertFalse(model.get());
+                assertEquals(4, requests.get());
+                item.setOnToggleRequest(null);
+                item.getSwitch().fire();
+                assertFalse(model.get());
+                assertEquals(0, actions.get());
+                item.setHeadlineTrailing(null);
+                assertNull(reset.getParent());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// A null choice shares its bindable display name with the summary without changing the value.
+    @Test
+    void nullPresetUsesLocalizedLabelInMenuAndSummary() {
+        FxTestUtils.runOnFxThread(() -> {
+            var item = new M3SelectSettingItem<@Nullable String>("Parent");
+            var translation = new SimpleStringProperty("Default");
+            item.nullValueTextProperty().bind(translation);
+            item.getItems().addAll(null, "Work");
+            var choice = (M3MenuItem) item.getMenuItems().get(0);
+            assertEquals("Default", choice.getHeadlineText());
+            translation.set("Parent preset");
+            assertEquals("Parent preset", choice.getHeadlineText());
+            assertEquals("Parent preset", item.getTrailingSupportingText());
+            item.setValue("Work");
+            choice.fire();
+            assertNull(item.getValue());
+            assertEquals("Parent preset", item.getTrailingSupportingText());
+        });
+    }
+
+    /// Tags collapse without truncating the title and the disclosure retains the complete source ordering.
+    @Test
+    void titleTagsCollapseAndExpandWithAvailableWidth() {
+        FxTestUtils.runOnFxThread(() -> {
+            var tags = new M3TagList();
+            tags.getTags().addAll("Fabric", "NeoForge", "Quilt", "Forge");
+            var item = new M3ListItem("Sodium");
+            item.setHeadlineTrailing(tags);
+            var root = new Pane(item);
+            var stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 600, 100));
+                stage.show();
+                item.resize(210, 56);
+                item.layout();
+                var menu = (M3MenuButton) tags.lookup(".m3-menu-button");
+                assertTrue(menu.isVisible());
+                long hidden = tags.lookupAll(".m3-tag-list-label").stream().filter(n -> !n.isVisible()).count();
+                assertEquals("+" + hidden, menu.getText());
+                var title = (Label) item.lookup(".m3-list-item-headline");
+                assertTrue(title.getWidth() >= title.prefWidth(-1) - 1);
+                menu.requestFocus();
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                menu.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertTrue(menu.isShowing());
+                assertEquals(tags.getTags(), menu.getItems().stream().map(n -> ((M3MenuItem) n).getHeadlineText()).toList());
+                item.resize(540, 56);
+                item.layout();
+                assertFalse(menu.isVisible());
+            } finally {
+                stage.close();
+            }
         });
     }
 

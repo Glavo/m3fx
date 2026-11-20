@@ -1,0 +1,6 @@
+.m3-tag-list .m3-tag-list-label {
+    -fx-padding: 1px 6px;
+    -fx-background-radius: 8px;
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}

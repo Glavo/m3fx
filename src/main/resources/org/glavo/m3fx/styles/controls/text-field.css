@@ -352,6 +352,15 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.m3-number-field .m3-text-input-leading {
+    -fx-min-width: 0;
+    -fx-padding: 0 4px 0 16px;
+}
+
+.m3-number-field .m3-text-input-leading > .label {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .m3-text-input-trailing:error,
 .m3-text-input-trailing:error .m3-icon-graphic {
     -m3-text-input-trailing-icon-color: -m3-color-error;

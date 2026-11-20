@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.control.ToggleGroup;
 import org.glavo.m3fx.controls.M3CheckBoxSettingItem;
@@ -12,7 +14,11 @@ import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
+import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3SelectSettingItem;
+import org.glavo.m3fx.controls.M3TagList;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// Builds the Settings rows showcase page.
 @NotNullByDefault
@@ -35,6 +41,9 @@ final class SettingsDemoPage extends DemoPageSupport {
         account.setOnAction(event -> context.showSnackbar("Account settings opened"));
 
         M3SettingItem storage = new M3SettingItem("Storage");
+        var tags = new M3TagList();
+        tags.getTags().addAll("Local", "Cloud", "Backups", "Encrypted");
+        storage.setHeadlineTrailing(tags);
         storage.setSupportingText("Review local files and cloud backups");
         storage.setLeading(createSurfaceVariantIcon("archive"));
         storage.setTrailing(createSurfaceVariantIcon("chevron-right"));
@@ -43,12 +52,21 @@ final class SettingsDemoPage extends DemoPageSupport {
         M3ListPane actionRows = createSettingsPane(M3ListStyle.STANDARD, account, storage);
 
         M3SwitchSettingItem automaticUpdates = new M3SwitchSettingItem("Automatic updates");
-        automaticUpdates.setSupportingText("Install feature updates when the device is idle");
         automaticUpdates.setLeading(createSurfaceVariantIcon("archive"));
-        automaticUpdates.setSelected(true);
-        automaticUpdates.setOnAction(event -> context.showSnackbar(
-                automaticUpdates.isSelected() ? "Automatic updates enabled" : "Automatic updates disabled"
-        ));
+        var override = new SimpleObjectProperty<@Nullable Boolean>();
+        automaticUpdates.selectedProperty().bind(Bindings.createBooleanBinding(
+                () -> !Boolean.FALSE.equals(override.get()), override));
+        automaticUpdates.supportingTextProperty().bind(Bindings.when(override.isNull())
+                .then("Using the parent preset").otherwise("Overridden for this preset"));
+        automaticUpdates.setOnToggleRequest(event -> {
+            event.consume();
+            override.set(event.getRequestedValue());
+        });
+        var restore = new M3IconButton(createSurfaceVariantIcon("undo"));
+        restore.setAccessibleText("Restore inherited value");
+        restore.disableProperty().bind(override.isNull());
+        restore.setOnAction(event -> override.set(null));
+        automaticUpdates.setHeadlineTrailing(restore);
 
         M3CheckBoxSettingItem mobileData = new M3CheckBoxSettingItem("Use mobile data");
         mobileData.setSupportingText("Allow update downloads away from Wi-Fi");
@@ -78,7 +96,10 @@ final class SettingsDemoPage extends DemoPageSupport {
         M3RadioButtonSettingItem darkTheme = createThemeSetting("Dark", "Always use the dark color scheme", themeGroup);
         systemTheme.setSelected(true);
 
-        M3ListPane choiceRows = createSettingsPane(M3ListStyle.SEGMENTED, systemTheme, lightTheme, darkTheme);
+        var preset = new M3SelectSettingItem<@Nullable String>("Parent preset");
+        preset.setNullValueText("Default preset");
+        preset.getItems().addAll(null, "Personal", "Work");
+        M3ListPane choiceRows = createSettingsPane(M3ListStyle.SEGMENTED, systemTheme, lightTheme, darkTheme, preset);
 
         return createGallery(
                 createFullWidthShowcaseGroup("Action Settings", actionRows),

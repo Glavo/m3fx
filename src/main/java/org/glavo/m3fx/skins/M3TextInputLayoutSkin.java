@@ -1054,8 +1054,8 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
 
     /// Returns the width reserved for one populated adornment slot.
     ///
-    /// The standard slot remains at least 48 logical pixels wide. Wider composite adornments retain their preferred
-    /// width so they stay inside the input container and do not overlap editable text.
+    /// The slot's minimum width reserves room for an icon target; text affixes may use a smaller minimum.
+    /// Its horizontal insets separate the content from the outline and the editable text.
     ///
     /// @param slot the populated adornment slot
     /// @return the logical width reserved for the slot
@@ -1068,7 +1068,8 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout>
         if (!Double.isFinite(preferredWidth) || preferredWidth < 0.0) {
             preferredWidth = content.getLayoutBounds().getWidth();
         }
-        return snapSizeX(Math.max(ADORNED_HORIZONTAL_PADDING, preferredWidth));
+        double minimum = slot.getMinWidth() >= 0 ? slot.getMinWidth() : ADORNED_HORIZONTAL_PADDING;
+        return snapSizeX(Math.max(minimum, slot.snappedLeftInset() + preferredWidth + slot.snappedRightInset()));
     }
 
     /// Lays out one adornment slot at its resolved logical edge.

@@ -365,6 +365,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         updateSelectedChildPseudoClasses(isSelectionCssActive(control) && control.isSelected());
         updateMenuColorStylePseudoClasses();
         updateText();
+        M3TitleLine.install(textBox, headlineLabel, control.getHeadlineTrailing());
+        registerChangeListener(control.headlineTrailingProperty(),
+                obs -> M3TitleLine.install(textBox, headlineLabel, control.getHeadlineTrailing()));
         updateSlots();
         updateSlotMetrics();
         updateMetrics();
@@ -461,6 +464,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
         updateSlot(trailingSlot, displayedTrailing, null, TRAILING_GRAPHIC_PSEUDO_CLASS);
         displayedLeading = null;
         displayedTrailing = null;
+        M3TitleLine.install(textBox, headlineLabel, null);
         getChildren().removeAll(selectionContainer, container, stateLayer);
         super.dispose();
     }

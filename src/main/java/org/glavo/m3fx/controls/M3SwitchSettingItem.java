@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.event.ActionEvent;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -34,10 +36,10 @@ public final class M3SwitchSettingItem extends M3SettingItemBase {
     private static final String DEFAULT_STYLE_CLASS = "m3-switch-setting-item";
 
     /// The trailing switch owned by this row.
-    private final M3Switch switchControl = new M3Switch();
+    private final M3Switch switchControl = new M3Switch(this::fire);
 
-    /// Whether this row is currently forwarding a nested switch action and must not toggle again.
-    private boolean forwardingSwitchAction;
+    /// Prevents a request handler from recursively activating the row.
+    private boolean requestingToggle;
 
     /// Creates an unselected switch setting row with an empty headline.
     public M3SwitchSettingItem() {
@@ -53,48 +55,60 @@ public final class M3SwitchSettingItem extends M3SettingItemBase {
         addSettingStyleClass(DEFAULT_STYLE_CLASS);
         installTrailingControl(switchControl, true);
         switchControl.animationsEnabledProperty().bind(animationsEnabledProperty());
-        switchControl.selectedProperty().bindBidirectional(selectedProperty());
+        switchControl.selectedProperty().bind(selectedProperty());
         selectedProperty().addListener((observable, oldValue, newValue) ->
                 M3Accessible.notifyToggleStateChanged(this));
-        // Nested switch activation already changed selected state; only notify row action listeners.
-        switchControl.addEventHandler(ActionEvent.ACTION, this::handleSwitchAction);
     }
 
-/// Returns the switch used to select this row.
-///
-/// The switch is not focus traversable. Its [M3Switch#selectedProperty()] remains synchronized with this row's
-/// [#selectedProperty()].
-///
-/// @return the switch used to select this row
+    /// Returns the trailing switch. Its selection is bound to the row and its activation requests
+    /// a change on the row, including when the user drags the handle.
     public M3Switch getSwitch() {
         return switchControl;
     }
 
-    /// Toggles the selected value before dispatching the row action.
-    ///
-    /// @return `false` when a nested switch action is already being forwarded; otherwise `true`
-    @Override
-    boolean prepareAction() {
-        if (forwardingSwitchAction) {
-            return false;
-        }
-        setSelected(!isSelected());
-        return true;
+    /// The optional handler for selection requests.
+    private @Nullable ObjectProperty<@Nullable EventHandler<M3SwitchEvent>> onToggleRequest;
+
+    /// Returns the handler for proposed changes, or null.
+    public @Nullable EventHandler<M3SwitchEvent> getOnToggleRequest() {
+        return onToggleRequest == null ? null : onToggleRequest.get();
     }
 
-    /// Forwards nested switch activation to row action listeners without toggling twice.
-    private void handleSwitchAction(ActionEvent event) {
-        if (isDisabled() || forwardingSwitchAction) {
-            return;
+    /// Sets the request handler, or removes it when null.
+    public void setOnToggleRequest(@Nullable EventHandler<M3SwitchEvent> handler) {
+        onToggleRequestProperty().set(handler);
+    }
+
+    /// Invoked before pointer, keyboard, or accessible activation changes selection, even when
+    /// selection is bound. Consume the request to update an application model instead.
+    /// A consumed request or a bound selection does not produce a row action.
+    public ObjectProperty<@Nullable EventHandler<M3SwitchEvent>> onToggleRequestProperty() {
+        if (onToggleRequest == null) {
+            onToggleRequest = new SimpleObjectProperty<>(this, "onToggleRequest") {
+                /// Registers the handler on the row's event dispatch chain.
+                @Override protected void invalidated() {
+                    setEventHandler(M3SwitchEvent.TOGGLE_REQUEST, get());
+                }
+            };
         }
-        forwardingSwitchAction = true;
+        return onToggleRequest;
+    }
+
+    /// Requests the proposed state before accepting the default change.
+    @Override
+    boolean prepareAction() {
+        if (requestingToggle) return false;
+        boolean target = !isSelected();
+        var request = new M3SwitchEvent(this, target);
+        requestingToggle = true;
         try {
-            // The switch already toggled selectedProperty through its fire()/drag commit path.
-            dispatchActionEvent();
+            fireEvent(request);
         } finally {
-            forwardingSwitchAction = false;
+            requestingToggle = false;
         }
-        event.consume();
+        if (request.isConsumed() || isDisabled() || selectedProperty().isBound() || isSelected() == target) return false;
+        setSelected(target);
+        return true;
     }
 
     /// Returns accessibility attributes for the switch state.

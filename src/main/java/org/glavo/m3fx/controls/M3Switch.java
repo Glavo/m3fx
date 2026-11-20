@@ -97,6 +97,15 @@ public final class M3Switch extends ButtonBase implements M3Animated {
         initialize();
     }
 
+    /// Routes user activation to the owning setting row while retaining switch drag feedback.
+    M3Switch(Runnable activateOwner) {
+        this();
+        this.activateOwner = activateOwner;
+    }
+
+    /// The activation of the owning setting row, or null for an independent switch.
+    private @Nullable Runnable activateOwner;
+
     /// Creates a switch with text.
     ///
     /// @param text the text displayed next to the switch
@@ -717,6 +726,10 @@ public final class M3Switch extends ButtonBase implements M3Animated {
     @Override
     public void fire() {
         if (isDisabled() || requestingToggle) {
+            return;
+        }
+        if (activateOwner != null) {
+            activateOwner.run();
             return;
         }
         boolean target = !isSelected();

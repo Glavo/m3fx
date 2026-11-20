@@ -166,6 +166,15 @@ final class M3FormControlsTest {
             assertSame(content, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
             assertSame(trailing, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
 
+            var reset = new M3Button("Restore");
+            row.setLabelTrailing(reset);
+            assertSame(reset, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertSame(content, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+            assertSame(trailing, row.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+            assertThrows(IllegalArgumentException.class, () -> row.setContent(reset));
+            row.setLabelTrailing(null);
+            assertNull(reset.getParent());
+
             Label label = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-label"));
             Label supporting = assertInstanceOf(Label.class, row.lookup("." + "m3-form-row-supporting-text"));
             VBox textColumn = assertInstanceOf(VBox.class, row.lookup("." + "m3-form-row-text-column"));

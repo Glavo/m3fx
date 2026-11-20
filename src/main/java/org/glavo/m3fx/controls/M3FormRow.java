@@ -197,6 +197,40 @@ public final class M3FormRow extends Control implements M3Animated {
         return supportingText;
     }
 
+    /// Optional content immediately after the primary text, before the row's other slots.
+    private final ObjectProperty<@Nullable Node> labelTrailing = new SimpleObjectProperty<>(this, "labelTrailing") {
+        /// Rejects duplicate or cyclic slot assignments.
+        @Override public void set(@Nullable Node node) {
+            validateSlotAssignment(node, getContent(), getTrailing(), "labelTrailing");
+            super.set(node);
+        }
+
+        /// Refreshes the accessible child list when the slot changes.
+        @Override protected void invalidated() {
+            validateSlotAssignment(get(), getContent(), getTrailing(), "labelTrailing");
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleFocusChanged();
+            requestLayout();
+        }
+    };
+
+    /// Returns the node beside the primary text, or null when the slot is empty.
+    public final @Nullable Node getLabelTrailing() {
+        return labelTrailing.get();
+    }
+
+    /// Places a node beside the primary text. Pass null to remove it.
+    public final void setLabelTrailing(@Nullable Node node) {
+        labelTrailing.set(node);
+    }
+
+    /// Bindable content beside the primary text, initially null. A node must be available
+    /// for parenting and distinct from the other slots. Interactive children retain their own focus and actions.
+    public final ObjectProperty<@Nullable Node> labelTrailingProperty() {
+        return labelTrailing;
+    }
+
     /// The primary row content node, or `null` for an empty slot.
     ///
     /// The node must be distinct from [trailing][#trailingProperty()], must not create a scene-graph cycle, and is
@@ -207,14 +241,14 @@ public final class M3FormRow extends Control implements M3Animated {
         /// Validates content ownership before setting the node.
         @Override
         public void set(@Nullable Node newValue) {
-            validateSlotAssignment(newValue, getTrailing(), "content");
+            validateSlotAssignment(newValue, getLabelTrailing(), getTrailing(), "content");
             super.set(newValue);
         }
 
         /// Requests layout after content changes.
         @Override
         protected void invalidated() {
-            validateSlotAssignment(get(), getTrailing(), "content");
+            validateSlotAssignment(get(), getLabelTrailing(), getTrailing(), "content");
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
@@ -260,14 +294,14 @@ public final class M3FormRow extends Control implements M3Animated {
         /// Validates trailing ownership before setting the node.
         @Override
         public void set(@Nullable Node newValue) {
-            validateSlotAssignment(newValue, getContent(), "trailing");
+            validateSlotAssignment(newValue, getLabelTrailing(), getContent(), "trailing");
             super.set(newValue);
         }
 
         /// Requests layout after trailing content changes.
         @Override
         protected void invalidated() {
-            validateSlotAssignment(get(), getContent(), "trailing");
+            validateSlotAssignment(get(), getLabelTrailing(), getContent(), "trailing");
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
@@ -451,6 +485,7 @@ public final class M3FormRow extends Control implements M3Animated {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
                     this,
+                    getLabelTrailing(),
                     getContent(),
                     getTrailing()
             ));
@@ -473,7 +508,7 @@ public final class M3FormRow extends Control implements M3Animated {
     ///
     /// @return `true` when the target accepted focus
     final boolean focusAccessibleItem() {
-        if (M3Accessible.showCurrentOrItem(this, getContent(), getTrailing())) {
+        if (M3Accessible.showCurrentOrItem(this, getLabelTrailing(), getContent(), getTrailing())) {
             notifyAccessibleFocusChanged();
             return true;
         }
@@ -485,7 +520,7 @@ public final class M3FormRow extends Control implements M3Animated {
     /// @param parameters optional accessibility target parameters
     /// @return `true` when focus moved to the default or requested item
     final boolean showAccessibleItem(Object... parameters) {
-        if (M3Accessible.showCurrentOrItem(this, getContent(), getTrailing(), parameters)) {
+        if (M3Accessible.showCurrentOrItem(this, getLabelTrailing(), getContent(), getTrailing(), parameters)) {
             notifyAccessibleFocusChanged();
             return true;
         }
@@ -513,9 +548,9 @@ public final class M3FormRow extends Control implements M3Animated {
         return switch (attribute) {
             case TEXT -> getLabelText();
             case CONTENTS -> getContent();
-            case ITEM_COUNT -> accessibleItemCount();
-            case ITEM_AT_INDEX -> accessibleItemAt(parameters);
-            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent(), getTrailing());
+            case ITEM_COUNT -> M3Accessible.itemCount(getLabelTrailing(), getContent(), getTrailing());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getLabelTrailing(), getContent(), getTrailing(), parameters);
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getLabelTrailing(), getContent(), getTrailing());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -566,7 +601,7 @@ public final class M3FormRow extends Control implements M3Animated {
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
-                M3FocusTraversal.focusTargets(getContent(), getTrailing()),
+                M3FocusTraversal.focusTargets(getLabelTrailing(), getContent(), getTrailing()),
                 true,
                 false,
                 -1,
@@ -574,33 +609,11 @@ public final class M3FormRow extends Control implements M3Animated {
         );
     }
 
-    /// Returns the number of content nodes exposed through indexed accessibility queries.
-    private int accessibleItemCount() {
-        return (getContent() == null ? 0 : 1) + (getTrailing() == null ? 0 : 1);
-    }
-
-    /// Returns the indexed accessibility item.
-    private @Nullable Node accessibleItemAt(Object... parameters) {
-        int index = M3Accessible.indexParameter(parameters);
-        if (index < 0) {
-            return null;
-        }
-
-        @Nullable Node currentContent = getContent();
-        if (currentContent != null) {
-            if (index == 0) {
-                return currentContent;
-            }
-            index--;
-        }
-
-        return index == 0 ? getTrailing() : null;
-    }
-
     /// Validates that a slot value is structurally usable and is not already assigned to the other slot.
     private void validateSlotAssignment(
             @Nullable Node candidate,
-            @Nullable Node other,
+            @Nullable Node firstOther,
+            @Nullable Node secondOther,
             String propertyName
     ) {
         if (candidate == null) {
@@ -614,7 +627,7 @@ public final class M3FormRow extends Control implements M3Animated {
                 throw new IllegalArgumentException(propertyName + " must not reference an ancestor of this row");
             }
         }
-        if (candidate == other) {
+        if (candidate == firstOther || candidate == secondOther) {
             throw new IllegalArgumentException(propertyName + " must not already be used by another slot");
         }
     }

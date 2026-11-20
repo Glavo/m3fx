@@ -4,12 +4,13 @@
 package org.glavo.m3fx.controls;
 
 import javafx.event.Event;
+import javafx.event.EventTarget;
 import javafx.event.EventType;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.io.Serial;
 
-/// Requests a change to the selected state of an [M3Switch].
+/// Requests a change to the selected state of an [M3Switch] or [M3SwitchSettingItem].
 ///
 /// The switch dispatches [#TOGGLE_REQUEST] before changing its value. A filter or handler may
 /// [consume][#consume()] the event to prevent the default change and its subsequent action event.
@@ -30,7 +31,7 @@ public final class M3SwitchEvent extends Event {
     private final M3SwitchEvent request = this;
 
     /// Creates a request targeted at the activating switch.
-    M3SwitchEvent(M3Switch source, boolean requestedValue) {
+    M3SwitchEvent(EventTarget source, boolean requestedValue) {
         super(source, source, TOGGLE_REQUEST);
         this.requestedValue = requestedValue;
     }

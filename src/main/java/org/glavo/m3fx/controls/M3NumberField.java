@@ -21,6 +21,7 @@ import javafx.css.SimpleStyleableBooleanProperty;
 import javafx.css.Styleable;
 import javafx.css.StyleableBooleanProperty;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -1238,6 +1239,8 @@ public final class M3NumberField extends javafx.scene.control.Control implements
         M3Accessible.installAccessibleActionRoute(this, this::focusEditor, null);
 
         M3ControlStyles.add(stepper, STEPPER_STYLE_CLASS);
+        stepper.setAlignment(Pos.CENTER);
+        stepper.setFillHeight(false);
         M3ControlStyles.add(decrementButton, STEP_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(decrementButton, DECREMENT_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(incrementButton, STEP_BUTTON_STYLE_CLASS);
