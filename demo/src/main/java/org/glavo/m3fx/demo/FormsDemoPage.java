@@ -14,7 +14,6 @@ import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3FormValidator;
-import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
@@ -69,8 +68,7 @@ final class FormsDemoPage extends DemoPageSupport {
                 "Common fields use the same label column and content alignment."
         );
         var emailRow = new M3FormRow("Email", "Validated on focus loss", emailLayout);
-        var restoreEmail = new M3IconButton(createSurfaceVariantIcon("undo"));
-        restoreEmail.setAccessibleText("Restore default email");
+        var restoreEmail = createInlineRestoreButton("Restore default email");
         restoreEmail.disableProperty().bind(email.textProperty().isEqualTo("support@example.com"));
         restoreEmail.setOnAction(event -> email.setText("support@example.com"));
         emailRow.setLabelTrailing(restoreEmail);

@@ -14,7 +14,6 @@ import org.glavo.m3fx.controls.M3RadioButtonSettingItem;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SettingItem;
 import org.glavo.m3fx.controls.M3SwitchSettingItem;
-import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3SelectSettingItem;
 import org.glavo.m3fx.controls.M3TagList;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -62,8 +61,7 @@ final class SettingsDemoPage extends DemoPageSupport {
             event.consume();
             override.set(event.getRequestedValue());
         });
-        var restore = new M3IconButton(createSurfaceVariantIcon("undo"));
-        restore.setAccessibleText("Restore inherited value");
+        var restore = createInlineRestoreButton("Restore inherited value");
         restore.disableProperty().bind(override.isNull());
         restore.setOnAction(event -> override.set(null));
         automaticUpdates.setHeadlineTrailing(restore);

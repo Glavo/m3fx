@@ -213,6 +213,34 @@ final class M3SettingItemTest {
         });
     }
 
+    /// A tall headline accessory must leave room for the supporting text and both vertical insets.
+    @Test
+    void twoLineRowMeasuresItsHeadlineAccessory() {
+        FxTestUtils.runOnFxThread(() -> {
+            var item = new M3SwitchSettingItem("Updates");
+            item.setSupportingText("Using the parent preset");
+            var root = new VBox(item);
+            new Scene(root, 400, 200);
+            root.applyCss();
+            root.layout();
+            double originalHeight = item.getHeight();
+
+            var reset = new M3IconButton();
+            reset.setMinHeight(originalHeight);
+            item.setHeadlineTrailing(reset);
+            root.applyCss();
+            root.layout();
+            var supporting = (Label) item.lookup(".m3-list-item-supporting");
+            var bounds = item.sceneToLocal(supporting.localToScene(supporting.getLayoutBounds()));
+            assertTrue(item.getHeight() > originalHeight);
+            assertTrue(bounds.getMaxY() <= item.getHeight() - item.getVerticalPadding() + 1);
+
+            item.setHeadlineTrailing(null);
+            root.layout();
+            assertEquals(originalHeight, item.getHeight(), 1);
+        });
+    }
+
     /// Tags collapse without truncating the title and the disclosure retains the complete source ordering.
     @Test
     void titleTagsCollapseAndExpandWithAvailableWidth() {

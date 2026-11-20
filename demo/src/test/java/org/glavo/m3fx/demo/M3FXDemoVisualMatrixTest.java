@@ -13019,6 +13019,19 @@ final class M3FXDemoVisualMatrixTest {
         List<M3SwitchSettingItem> switches = visibleNodesOfType(page, M3SwitchSettingItem.class);
         assertEquals(1, switches.size(), "Settings page switch setting count");
         assertTrue(switches.get(0).isSelected(), "automatic updates should start selected");
+        M3SwitchSettingItem updates = switches.get(0);
+        Node headline = updates.lookup(".m3-list-item-headline");
+        Node supporting = updates.lookup(".m3-list-item-supporting");
+        Bounds rowBounds = updates.localToScene(updates.getLayoutBounds());
+        Bounds titleBounds = headline.localToScene(headline.getLayoutBounds());
+        Bounds supportingBounds = supporting.localToScene(supporting.getLayoutBounds());
+        double textGap = supportingBounds.getMinY() - titleBounds.getMaxY();
+        double topMargin = titleBounds.getMinY() - rowBounds.getMinY();
+        double bottomMargin = rowBounds.getMaxY() - supportingBounds.getMaxY();
+        assertTrue(textGap >= 0 && textGap < supportingBounds.getHeight() / 2,
+                () -> "the restore action must not separate the two text lines: gap=" + textGap);
+        assertTrue(Math.min(topMargin, bottomMargin) >= updates.getVerticalPadding() - 1,
+                () -> "text must retain vertical padding: top=" + topMargin + ", bottom=" + bottomMargin);
         List<M3CheckBoxSettingItem> checkBoxes = visibleNodesOfType(page, M3CheckBoxSettingItem.class);
         assertEquals(2, checkBoxes.size(), "Settings page checkbox setting count");
         assertTrue(checkBoxes.stream().anyMatch(item -> item.isDisabled() && item.isIndeterminate()),

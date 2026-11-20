@@ -751,7 +751,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
             case THREE_LINE -> item.getThreeLineHeight();
         };
         if (container.getContentBias() != Orientation.HORIZONTAL) {
-            return base;
+            return Math.max(base, textBox.prefHeight(-1) + container.getPadding().getTop()
+                    + container.getPadding().getBottom());
         }
         double natural = container.prefHeight(-1);
         return Math.max(base, natural) + (width < 0 ? 0 : Math.max(0, container.prefHeight(width) - natural));

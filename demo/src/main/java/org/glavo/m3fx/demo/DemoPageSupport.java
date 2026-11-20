@@ -325,6 +325,18 @@ abstract class DemoPageSupport {
         return new M3IconButton(icon);
     }
 
+    /// Creates a compact restore action that fits beside a single line of desktop form text.
+    protected static M3IconButton createInlineRestoreButton(String accessibleText) {
+        var button = new M3IconButton(createIconViewport(DemoIcons.onSurfaceVariant("undo"), 18));
+        button.setAccessibleText(accessibleText);
+        button.setContainerWidth(28);
+        button.setContainerHeight(28);
+        button.setMinSize(28, 28);
+        button.setPrefSize(28, 28);
+        button.setMaxSize(28, 28);
+        return button;
+    }
+
     /// Creates a sample icon button for trailing app bar action slots.
     protected static M3IconButton createTrailingAppBarIconButton(String iconName) {
         Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), "demo-app-bar-icon");
